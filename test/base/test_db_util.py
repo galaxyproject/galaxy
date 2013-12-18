@@ -1,6 +1,6 @@
 import galaxy.model
 from galaxy.model.orm import *
-from galaxy.model.mapping import context as sa_session
+from functional.database_contexts import galaxy_context as sa_session
 from base.twilltestcase import *
 import sys
 

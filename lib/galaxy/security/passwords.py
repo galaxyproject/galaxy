@@ -2,9 +2,10 @@ import hmac
 import hashlib
 from struct import Struct
 from operator import xor
-from itertools import izip, starmap
+from itertools import starmap
 from os import urandom
 from base64 import b64encode
+from galaxy.util import safe_str_cmp
 
 SALT_LENGTH = 12
 KEY_LENGTH = 24
@@ -19,7 +20,7 @@ def hash_password( password ):
 
 def check_password( guess, hashed ):
     """
-    Check a hashed password. Supports either PBKDF2 if the hash is 
+    Check a hashed password. Supports either PBKDF2 if the hash is
     prefixed with that string, or sha1 otherwise.
     """
     if hashed.startswith( "PBKDF2" ):
@@ -73,11 +74,3 @@ def pbkdf2_bin( data, salt, iterations=1000, keylen=24, hashfunc=None ):
             rv = starmap( xor, zip( rv, u ) ) #Python < 2.6.8: starmap requires function inputs to be tuples, so we need to use zip instead of izip
         buf.extend(rv)
     return ''.join(map(chr, buf))[:keylen]
-
-def safe_str_cmp(a, b):
-    if len(a) != len(b):
-        return False
-    rv = 0
-    for x, y in izip(a, b):
-        rv |= ord(x) ^ ord(y)
-    return rv == 0

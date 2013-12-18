@@ -1,7 +1,7 @@
 <tool id="express" name="eXpress" version="1.1.1">
 	<description>Quantify the abundances of a set of target sequences from sampled subsequences</description>
 	<requirements>
-		<requirement type="binary">eXpress</requirement>
+		<requirement type="package">eXpress</requirement>
 	</requirements>
 	<command>
 		express --no-update-check

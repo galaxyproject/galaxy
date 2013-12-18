@@ -35,9 +35,9 @@ class SamplesAPIController( BaseAPIController ):
             return "Invalid request id ( %s ) specified." % str( request_id )
         rval = []
         for sample in request.samples:
-            item = sample.get_api_value()
-            item['url'] = url_for( 'samples', 
-                                   request_id=trans.security.encode_id( request_id ), 
+            item = sample.to_dict()
+            item['url'] = url_for( 'samples',
+                                   request_id=trans.security.encode_id( request_id ),
                                    id=trans.security.encode_id( sample.id ) )
             item['id'] = trans.security.encode_id( item['id'] )
             rval.append( item )
@@ -88,9 +88,9 @@ class SamplesAPIController( BaseAPIController ):
                                                                            sample_id=sample_id,
                                                                            **payload )
             return status, output
-        elif update_type == 'sample_state': 
+        elif update_type == 'sample_state':
             return self.__update_sample_state( trans, sample, sample_id, **payload )
-        elif update_type == 'sample_dataset_transfer_status': 
+        elif update_type == 'sample_dataset_transfer_status':
             # update sample_dataset transfer status
             return self.__update_sample_dataset_status( trans, **payload )
 
@@ -114,8 +114,8 @@ class SamplesAPIController( BaseAPIController ):
             trans.response.status = 400
             return "Invalid sample state requested ( %s )." % new_state_name
         requests_common_cntrller = trans.webapp.controllers[ 'requests_common' ]
-        status, output = requests_common_cntrller.update_sample_state( trans=trans, 
-                                                                       cntrller='api', 
+        status, output = requests_common_cntrller.update_sample_state( trans=trans,
+                                                                       cntrller='api',
                                                                        sample_ids=[ encoded_sample_id ],
                                                                        new_state=new_state,
                                                                        comment=comment )
@@ -132,8 +132,8 @@ class SamplesAPIController( BaseAPIController ):
         new_status = payload.pop( 'new_status' )
         error_msg = payload.get( 'error_msg', '' )
         requests_admin_cntrller = trans.webapp.controllers[ 'requests_admin' ]
-        status, output = requests_admin_cntrller.update_sample_dataset_status( trans=trans, 
-                                                                               cntrller='api', 
+        status, output = requests_admin_cntrller.update_sample_dataset_status( trans=trans,
+                                                                               cntrller='api',
                                                                                sample_dataset_ids=sample_dataset_ids,
                                                                                new_status=new_status,
                                                                                error_msg=error_msg )

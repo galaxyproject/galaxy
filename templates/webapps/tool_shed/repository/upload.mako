@@ -41,7 +41,6 @@
 ${render_tool_shed_repository_actions( repository=repository)}
 
 <div class="toolForm">
-    <div class="toolFormTitle">Repository '${repository.name | h}'</div>
     <div class="toolFormBody">
         <div class="form-row">
             <div class="warningmessage">
@@ -50,6 +49,12 @@ ${render_tool_shed_repository_actions( repository=repository)}
             </div>
             <div style="clear: both"></div>
         </div>
+    </div>
+</div>
+
+<div class="toolForm">
+    <div class="toolFormTitle">Repository '${repository.name | h}'</div>
+    <div class="toolFormBody">
         <form id="upload_form" name="upload_form" action="${h.url_for( controller='upload', action='upload', repository_id=trans.security.encode_id( repository.id ) )}" enctype="multipart/form-data" method="post">
             <div class="form-row">
                 <label>File:</label>
@@ -66,8 +71,8 @@ ${render_tool_shed_repository_actions( repository=repository)}
                 <div class="toolParamHelp" style="clear: both;">
                      Enter a url to upload your files.  In addition to http and ftp urls, urls that point to mercurial repositories (urls that start
                      with hg:// or hgs://) are allowed.  This mechanism results in the tip revision of an external mercurial repository being added
-                     to the tool shed repository as a single new changeset.  The revision history of the originating external mercurial repository is
-                     not uploaded to the tool shed repository.
+                     to the Tool Shed repository as a single new changeset.  The revision history of the originating external mercurial repository is
+                     not uploaded to the Tool Shed repository.
                 </div>
                 <div style="clear: both"></div>
             </div>

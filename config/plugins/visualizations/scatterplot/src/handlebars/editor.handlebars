@@ -1,0 +1,36 @@
+<div class="scatterplot-editor tabbable tabs-left">
+    {{! tab buttons/headers using Bootstrap }}
+    <ul class="nav nav-tabs">
+        {{! start with the data controls as the displayed tab }}
+        <li class="active">
+            <a title="Use this tab to change which data are used"
+               href="#data-control" data-toggle="tab">Data Controls</a>
+        </li>
+        <li>
+            <a title="Use this tab to change how the chart is drawn"
+               href="#chart-control" data-toggle="tab" >Chart Controls</a>
+        </li>
+        {{! both stats and chart start as disabled since there's no info yet }}
+        <li class="disabled">
+            <a title="This tab will display the chart"
+               href="#chart-display" data-toggle="tab">Chart</a>
+        </li>
+    </ul>
+
+    {{! data form, chart config form, stats, and chart all get their own tab }}
+    <div class="tab-content">
+        {{! ---------------------------- tab for data settings form }}
+        <div id="data-control" class="scatterplot-config-control tab-pane active">
+            {{! rendered separately }}
+        </div>
+    
+        {{! ---------------------------- tab for chart graphics control form }}
+        <div id="chart-control" class="scatterplot-config-control tab-pane">
+            {{! rendered separately }}
+        </div>
+
+        {{! ---------------------------- tab for actual chart }}
+        <div id="chart-display" class="scatterplot-display tab-pane"></div>
+
+    </div>{{! end .tab-content }}
+</div>{{! end .chart-control }}

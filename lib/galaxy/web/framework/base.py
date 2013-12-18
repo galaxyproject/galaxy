@@ -379,7 +379,7 @@ class Response( object ):
         """
         Send an HTTP redirect response to (target `url`)
         """
-        raise httpexceptions.HTTPFound( url, headers=self.wsgi_headeritems() )
+        raise httpexceptions.HTTPFound( url.encode('utf-8'), headers=self.wsgi_headeritems() )
 
     def wsgi_headeritems( self ):
         """

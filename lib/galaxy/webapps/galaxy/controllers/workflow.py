@@ -24,8 +24,8 @@ from galaxy.model.mapping import desc
 from galaxy.tools.parameters import RuntimeValue, visit_input_values
 from galaxy.tools.parameters.basic import DataToolParameter, DrillDownSelectToolParameter, SelectToolParameter, UnvalidatedValue
 from galaxy.tools.parameters.grouping import Conditional, Repeat
-from galaxy.util.json import from_json_string
 from galaxy.util.odict import odict
+from galaxy.util.json import to_json_string
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.util.topsort import CycleError, topsort, topsort_levels
 from galaxy.web import error, url_for
@@ -81,7 +81,7 @@ class StoredWorkflowAllPublishedGrid( grids.Grid ):
     default_filter = dict( public_url="All", username="All", tags="All" )
     use_async = True
     columns = [
-        grids.PublicURLColumn( "Name", key="name", filterable="advanced" ),
+        grids.PublicURLColumn( "Name", key="name", filterable="advanced", attach_popup=True ),
         grids.OwnerAnnotationColumn( "Annotation", key="annotation", model_annotation_association_class=model.StoredWorkflowAnnotationAssociation, filterable="advanced" ),
         grids.OwnerColumn( "Owner", key="username", model_class=model.User, filterable="advanced" ),
         grids.CommunityRatingColumn( "Community Rating", key="rating" ),
@@ -94,7 +94,16 @@ class StoredWorkflowAllPublishedGrid( grids.Grid ):
         cols_to_filter=[ columns[0], columns[1], columns[2], columns[4] ],
         key="free-text-search", visible=False, filterable="standard" )
                 )
-    operations = []
+    operations = [
+        grids.GridOperation( "Import",
+                            condition=( lambda item: not item.deleted ),
+                            allow_multiple=False,
+                            url_args=dict( action="imp" ) ),
+        grids.GridOperation( "Save as File",
+                            condition=( lambda item: not item.deleted ),
+                            allow_multiple=False,
+                            url_args=dict( action="export_to_file" ) ),
+    ]
 
     def build_initial_query( self, trans, **kwargs ):
         # Join so that searching stored_workflow.user makes sense.
@@ -132,7 +141,6 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
 
     @web.expose
     def index( self, trans ):
-        print trans.request.host_url
         return self.list( trans )
 
     @web.expose
@@ -589,8 +597,9 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         """
         # Load workflow from database
         stored = self.get_stored_workflow( trans, id )
-        # Marke as deleted and save
+        # Mark as deleted and save
         stored.deleted = True
+        trans.user.stored_workflow_menu_entries = [entry for entry in trans.user.stored_workflow_menu_entries if entry.stored_workflow != stored]
         trans.sa_session.add( stored )
         trans.sa_session.flush()
         # Display the management page
@@ -889,56 +898,6 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         """
         stored = self.get_stored_workflow( trans, id, check_ownership=False, check_accessible=True )
         return trans.fill_template( "/workflow/export.mako", item=stored, use_panels=True )
-
-    @web.expose
-    @web.require_login( "use workflows" )
-    def import_from_myexp( self, trans, myexp_id, **kwd ):
-        """
-        Imports a workflow from the myExperiment website.
-        Authenticates either by using HTTP basic, or with a cookie.
-        !!! This isn't currently used. MyExperiment uses the generic import_workflow method !!!
-        """
-        # Parse parameters
-        myexp_username = kwd.get( 'myexp_username', None )
-        myexp_password = kwd.get( 'myexp_password', None )
-        myexp_cookie = kwd.get( 'myexp_cookie', None )
-        # Get workflow content.
-        conn = httplib.HTTPConnection( trans.app.config.get( "myexperiment_url", self.__myexp_url ) )
-        # NOTE: blocks web thread.
-        headers = {}
-        if myexp_username and myexp_password:
-            auth_header = base64.b64encode( '%s:%s' % ( myexp_username, myexp_password ))
-            headers = { "Authorization" : "Basic %s" % auth_header }
-        elif myexp_cookie:
-            headers = { "Cookie" : "myexperiment_session=%s" % myexp_cookie }
-        conn.request( "GET", "/workflow.xml?id=%s&elements=content" % myexp_id, headers=headers )
-        response = conn.getresponse()
-        response_data = response.read()
-        conn.close()
-        if response.status == 200:
-            parser = SingleTagContentsParser( "content" )
-            parser.feed( response_data )
-            workflow_content = base64.b64decode( parser.tag_content )
-            # Process workflow JSON and create workflow.
-            workflow_dict = from_json_string( workflow_content )
-            # Create workflow.
-            workflow, missing_tool_tups = self._workflow_from_dict( trans, workflow_dict, source="myExperiment" )
-            workflow = workflow.latest_workflow
-            if missing_tool_tups:
-                # TODO: handle the case where the imported workflow requires tools that are not available in
-                # the local Galaxy instance.
-                pass
-
-        # Provide user feedback.
-        workflow_list_str = " <br>Return to <a href='%s'>workflow list." % url_for( controller='workflow', action='list' )
-        if response.status != 200:
-            return trans.show_error_message( "There was a problem importing the workflow. Error: %s %s" % (response_data, workflow_list_str) )
-        if workflow.has_errors:
-            return trans.show_warn_message( "Imported, but some steps in this workflow have validation errors. %s" % workflow_list_str )
-        if workflow.has_cycles:
-            return trans.show_warn_message( "Imported, but this workflow contains cycles. %s" % workflow_list_str )
-        else:
-            return trans.show_message( "Workflow '%s' imported. %s" % (workflow.name, workflow_list_str) )
 
     @web.expose
     @web.require_login( "use workflows" )
@@ -1264,6 +1223,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             for hid in dataset_ids:
                 step = model.WorkflowStep()
                 step.type = 'data_input'
+                step.tool_inputs = dict( name="Input Dataset" )
                 hid_to_output_pair[ hid ] = ( step, 'output' )
                 steps.append( step )
             # Tool steps
@@ -1342,6 +1302,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         # Build the state for each step
         errors = {}
         has_upgrade_messages = False
+        step_version_changes = []
         # has_errors is never used
         # has_errors = False
         saved_history = None
@@ -1474,7 +1435,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                             workflow_invocation_step.workflow_invocation = workflow_invocation
                             workflow_invocation_step.workflow_step = step
                             workflow_invocation_step.job = job
-                        # All jobs ran sucessfully, so we can save now
+                        # All jobs ran successfully, so we can save now
                         trans.sa_session.add( workflow_invocation )
                         invocations.append({'outputs': outputs,
                                             'new_history': new_history})
@@ -1499,6 +1460,8 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                         step.upgrade_messages = step.module.check_and_update_state()
                         if step.upgrade_messages:
                             has_upgrade_messages = True
+                        if step.type == 'tool' and step.module.version_changes:
+                            step_version_changes.extend(step.module.version_changes)
                         # Any connected input needs to have value DummyDataset (these
                         # are not persisted so we need to do it every time)
                         step.module.add_dummy_datasets( connections=step.input_connections )
@@ -1529,6 +1492,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                         steps=workflow.steps,
                         workflow=stored,
                         has_upgrade_messages=has_upgrade_messages,
+                        step_version_changes=step_version_changes,
                         errors=errors,
                         incoming=kwargs,
                         history_id=history_id,
@@ -1822,12 +1786,15 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             # FIXME: Position should be handled inside module
             step.position = step_dict['position']
             module = module_factory.from_dict( trans, step_dict, secure=False )
+            module.save_to_step( step )
             if module.type == 'tool' and module.tool is None:
                 # A required tool is not available in the local Galaxy instance.
                 missing_tool_tup = ( step_dict[ 'tool_id' ], step_dict[ 'name' ], step_dict[ 'tool_version' ] )
                 if missing_tool_tup not in missing_tool_tups:
                     missing_tool_tups.append( missing_tool_tup )
-            module.save_to_step( step )
+                # Save the entire step_dict in the unused config field, be parsed later
+                # when we do have the too when we do have the tool
+                step.config = to_json_string(step_dict)
             if step.tool_errors:
                 workflow.has_errors = True
             # Stick this in the step temporarily
@@ -1837,12 +1804,6 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             if annotation:
                 annotation = sanitize_html( annotation, 'utf-8', 'text/html' )
                 self.add_item_annotation( trans.sa_session, trans.get_user(), step, annotation )
-            # Unpack and add post-job actions.
-            post_job_actions = step_dict.get( 'post_job_actions', {} )
-            for name, pja_dict in post_job_actions.items():
-                model.PostJobAction( pja_dict[ 'action_type' ],
-                                     step, pja_dict[ 'output_name' ],
-                                     pja_dict[ 'action_arguments' ] )
         # Second pass to deal with connections between steps
         for step in steps:
             # Input connections
@@ -1870,7 +1831,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         stored.user = trans.user
         if data[ 'annotation' ]:
             self.add_item_annotation( trans.sa_session, stored.user, stored, data[ 'annotation' ] )
-        
+
         # Persist
         trans.sa_session.add( stored )
         trans.sa_session.flush()

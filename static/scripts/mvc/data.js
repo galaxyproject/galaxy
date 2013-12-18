@@ -1,16 +1,16 @@
 // Additional dependencies: jQuery, underscore.
-define(["libs/backbone/backbone-relational"], function() {
+define([], function() {
 
 /**
  * Dataset metedata.
  */
-var DatasetMetadata = Backbone.RelationalModel.extend({});
+var DatasetMetadata = Backbone.Model.extend({});
 
 /**
  * A dataset. In Galaxy, datasets are associated with a history, so
  * this object is also known as a HistoryDatasetAssociation.
  */
-var Dataset = Backbone.RelationalModel.extend({
+var Dataset = Backbone.Model.extend({
     defaults: {
         id: '',
         type: '',
@@ -20,10 +20,8 @@ var Dataset = Backbone.RelationalModel.extend({
     },
 
     initialize: function() {
-        // Set metadata.
-        // FIXME: pass back a metadata dict and then Backbone-relational
-        // can be used unpack metadata automatically.
         this._set_metadata();
+        
         // Update metadata on change.
         this.on('change', this._set_metadata, this);
     },
@@ -52,7 +50,7 @@ var Dataset = Backbone.RelationalModel.extend({
         return this.attributes.metadata.get(attribute);
     },
 
-    urlRoot: galaxy_paths.get('datasets_url')
+    urlRoot: galaxy_config.root + "api/datasets"
 });
 
 /**
@@ -120,7 +118,7 @@ var TabularDatasetChunkedView = Backbone.View.extend({
     initialize: function(options)
     {
         // load trackster button
-        (new TabularButtonTracksterView(options)).render();
+        new TabularButtonTracksterView(options);
     },
 
     render: function()
@@ -181,17 +179,19 @@ var TabularDatasetChunkedView = Backbone.View.extend({
     // -- Helper functions. --
 
     _renderCell: function(cell_contents, index, colspan) {
+        var $cell = $('<td>').text(cell_contents);
         var column_types = this.model.get_metadata('column_types');
         if (colspan !== undefined) {
-            return $('<td>').attr('colspan', colspan).addClass('stringalign').text(cell_contents);
+            $cell.attr('colspan', colspan).addClass('stringalign');
+        } else if (column_types) {
+            if (index < column_types.length) {
+                if (column_types[index] === 'str' || column_types === 'list') {
+                    /* Left align all str columns, right align the rest */
+                    $cell.addClass('stringalign');
+                }
+            }
         }
-        else if (column_types[index] === 'str' || column_types === 'list') {
-            /* Left align all str columns, right align the rest */
-            return $('<td>').addClass('stringalign').text(cell_contents);
-        }
-        else {
-            return $('<td>').text(cell_contents);
-        }
+        return $cell;
     },
 
     _renderRow: function(line) {
@@ -252,23 +252,63 @@ var TabularButtonTracksterView = Backbone.View.extend(
     // database key
     genome_build: null,
 
+    // data type
+    data_type: null,
+
     // backbone initialize
     initialize: function (options)
     {
-        // verify that metadata exists
-        var metadata = options.model.attributes.metadata.attributes;
-        if (typeof metadata.chromCol === "undefined" || typeof metadata.startCol === "undefined" || typeof metadata.endCol === "undefined")
-            console.log("TabularButtonTrackster : Metadata for column identification is missing.");
-        else {
-            // read in columns
-            this.col.chrom   = metadata.chromCol - 1;
-            this.col.start   = metadata.startCol - 1;
-            this.col.end     = metadata.endCol - 1;
+        // get options
+        var attributes  = options.model.attributes;
+        var metadata    = options.model.attributes.metadata.attributes;
+
+        // check for datatype
+        if (typeof attributes.data_type !== "undefined")
+            this.data_type = attributes.data_type;
+        else
+            console.log("TabularButtonTrackster : Data type missing.");
+
+        // check for bed-file format
+        if (this.data_type == "bed")
+        {
+            // verify that metadata exists
+            if (typeof metadata.chromCol !== "undefined" || typeof metadata.startCol !== "undefined" || typeof metadata.endCol !== "undefined")
+            {
+                // read in columns
+                this.col.chrom   = metadata.chromCol - 1;
+                this.col.start   = metadata.startCol - 1;
+                this.col.end     = metadata.endCol - 1;
+            } else
+                console.log("TabularButtonTrackster : Bed-file metadata incomplete.");
+        }
+
+        // check for vcf-file format
+        if (this.data_type == "vcf")
+        {
+            // search array
+            function search (str, array)
+            {
+                for (var j = 0; j < array.length; j++)
+                    if (array[j].match(str)) return j;
+                return -1;
+            };
+
+            // load
+            this.col.chrom = search("Chrom", metadata.column_names);
+            this.col.start = search("Pos", metadata.column_names);
+            this.col.end   = null;
+
+            // verify that metadata exists
+            if (this.col.chrom == -1 || this.col.start == -1)
+                console.log("TabularButtonTrackster : VCF-file metadata incomplete.");
         }
 
         // check
         if(this.col.chrom === null)
+        {
+            console.log("TabularButtonTrackster : Chromosome column undefined.");
             return;
+        }
 
         // get dataset id
         if (typeof options.model.attributes.id === "undefined")
@@ -285,6 +325,19 @@ var TabularButtonTracksterView = Backbone.View.extend(
         // get genome_build / database key
         if (typeof options.model.attributes.genome_build !== "undefined")
             this.genome_build = options.model.attributes.genome_build;
+
+        // render the icon from template
+        var btn_viz = new IconButtonView({ model : new IconButton({
+            title       : 'Visualize',
+            icon_class  : 'chart_curve',
+            id          : 'btn_viz'
+        })});
+        
+        // add it to the screen
+        this.$el.append(btn_viz.render().$el);
+
+        // hide the button
+        $('#btn_viz').hide();
     },
 
     // backbone events
@@ -297,29 +350,39 @@ var TabularButtonTracksterView = Backbone.View.extend(
     // show button
     btn_viz_show: function (e)
     {
+        // is numeric
+        function is_numeric(n)
+        {
+            return !isNaN(parseFloat(n)) && isFinite(n);
+        };
+
         // check
         if(this.col.chrom === null)
             return;
-            
+
         // get selected data line
         var row = $(e.target).parent();
-        
+
         // verify that location has been found
         var chrom = row.children().eq(this.col.chrom).html();
         var start = row.children().eq(this.col.start).html();
-        var end   = row.children().eq(this.col.end).html();
-        if (chrom !== "" && start !== "" && end !== "")
+
+        // end is optional
+        var end = this.col.end ? row.children().eq(this.col.end).html() : start;
+
+        // double check location
+        if (!chrom.match("^#") && chrom !== "" && is_numeric(start))
         {
             // get target gene region
             var btn_viz_pars = {
                 dataset_id  : this.dataset_id,
                 gene_region : chrom + ":" + start + "-" + end
             };
-        
+
             // get button position
             var offset  = row.offset();
             var left    = offset.left - 10;
-            var top     = offset.top;
+            var top     = offset.top - $(window).scrollTop();
 
             // update css
             $('#btn_viz').css({'position': 'fixed', 'top': top + 'px', 'left': left + 'px'});
@@ -328,6 +391,9 @@ var TabularButtonTracksterView = Backbone.View.extend(
 
             // show the button
             $('#btn_viz').show();
+        } else {
+            // hide the button
+            $('#btn_viz').hide();
         }
     },
     
@@ -352,52 +418,61 @@ var TabularButtonTracksterView = Backbone.View.extend(
                 error: function() { alert( ( "Could not add this dataset to browser" ) + '.' ); },
                 success: function(table_html) {
                     var parent = window.parent;
+                    parent.Galaxy.modal.show({
+                        title   : "View Data in a New or Saved Visualization",
+                        buttons :{
+                            "Cancel": function(){
+                                parent.Galaxy.modal.hide();
+                            },
+                            "View in saved visualization": function(){
+                                // Show new modal with saved visualizations.
+                                parent.Galaxy.modal.show(
+                                {
+                                    title: "Add Data to Saved Visualization",
+                                    body: table_html,
+                                    buttons :{
+                                        "Cancel": function(){
+                                            parent.Galaxy.modal.hide();
+                                        },
+                                        "Add to visualization": function(){
+                                            $(parent.document).find('input[name=id]:checked').each(function(){
+                                                // hide
+                                                parent.Galaxy.modal.hide();
+                                                
+                                                var vis_id = $(this).val();
+                                                dataset_params.id = vis_id;
+                                        
+                                                // add widget
+                                                parent.Galaxy.frame.add({
+                                                    title    : "Trackster",
+                                                    type     : "url",
+                                                    content  : vis_url + "/trackster?" + $.param(dataset_params)
+                                                });
+                                            });
+                                        }
+                                    }
+                                });
+                            },
+                            "View in new visualization": function(){
+                                // hide
+                                parent.Galaxy.modal.hide();
+                                
+                                var url = vis_url + "/trackster?" + $.param(dataset_params);
 
-                    parent.show_modal( ( "View Data in a New or Saved Visualization" ), "", {
-                        "Cancel": function() {
-                            parent.hide_modal();
-                        },
-                        "View in saved visualization": function() {
-                            // Show new modal with saved visualizations.
-                            parent.show_modal( ( "Add Data to Saved Visualization" ), table_html, {
-                                "Cancel": function() {
-                                    parent.hide_modal();
-                                },
-                                "Add to visualization": function() {
-                                    $(parent.document).find('input[name=id]:checked').each(function() {
-                                        var vis_id = $(this).val();
-                                        dataset_params.id = vis_id;
-                                        parent.location = vis_url + "/trackster?" + $.param(dataset_params);
-                                    });
-                                }
-                            });
-                        },
-                        "View in new visualization": function() {
-                            parent.location = vis_url + "/trackster?" + $.param(dataset_params);
+                                // add widget
+                                parent.Galaxy.frame.add({
+                                    title    : "Trackster",
+                                    type     : "url",
+                                    content  : url
+                                });
+                            }
                         }
                     });
                 }
             });
             return false;
         };
-    },
-
-    // render frame
-    render: function()
-    {
-        // render the icon from template
-        var btn_viz = new IconButtonView({ model : new IconButton({
-            title       : 'Visualize',
-            icon_class  : 'chart_curve',
-            id          : 'btn_viz'
-        })});
-        
-        // add it to the screen
-        this.$el.append(btn_viz.render().$el);
-
-        // hide the button
-        $('#btn_viz').hide();
-    }    
+    }
 });
 
 // -- Utility functions. --

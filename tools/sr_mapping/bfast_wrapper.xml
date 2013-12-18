@@ -1,7 +1,7 @@
 <tool id="bfast_wrapper" name="Map with BFAST" version="0.1.3">
   <description></description>
   <command interpreter="python">bfast_wrapper.py
-    --numThreads="4" ##HACK: hardcode numThreads for now, should come from a location file
+    --numThreads="\${GALAXY_SLOTS:-4}"
     --fastq="$input1"
     #if $input1.extension.startswith( "fastqcs" ):
         ##if extention starts with fastqcs, then we have a color space file

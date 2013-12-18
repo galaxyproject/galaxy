@@ -17,9 +17,11 @@ from galaxy.web.framework.helpers import grids, iff, time_ago
 
 log = logging.getLogger( __name__ )
 
+
 class NameColumn( grids.TextColumn ):
     def get_value( self, trans, grid, history ):
         return history.get_display_name()
+
 
 class HistoryListGrid( grids.Grid ):
 
@@ -28,21 +30,18 @@ class HistoryListGrid( grids.Grid ):
         def get_value( self, trans, grid, history ):
             state_count_dict = self.get_hda_state_counts( trans, history )
 
-            rval = []
+            rval = ''
             for state in ( 'ok', 'running', 'queued', 'error' ):
                 count = state_count_dict.get( state, 0 )
                 if count:
-                    rval.append( '<div class="count-box state-color-%s">%s</div>' % ( state, count ) )
-                else:
-                    rval.append( '' )
+                    rval += '<div class="count-box state-color-%s">%s</div> ' % (state, count)
             return rval
-
 
     class HistoryListNameColumn( NameColumn ):
         def get_link( self, trans, grid, history ):
             link = None
             if not history.deleted:
-                link = dict( operation="Switch", id=history.id, use_panels=grid.use_panels )
+                link = dict( operation="Switch", id=history.id, use_panels=grid.use_panels, async_compatible=True )
             return link
 
 
@@ -70,7 +69,7 @@ class HistoryListGrid( grids.Grid ):
     default_sort_key = "-update_time"
     columns = [
         HistoryListNameColumn( "Name", key="name", attach_popup=True, filterable="advanced" ),
-        DatasetsByStateColumn( "Datasets", key="datasets_by_state", ncells=4, sortable=False ),
+        DatasetsByStateColumn( "Datasets", key="datasets_by_state", sortable=False, nowrap=True),
         grids.IndividualTagsColumn( "Tags", key="tags", model_tag_association_class=model.HistoryTagAssociation, \
                                     filterable="advanced", grid_name="HistoryListGrid" ),
         grids.SharingStatusColumn( "Sharing", key="sharing", filterable="advanced", sortable=False ),
@@ -86,10 +85,10 @@ class HistoryListGrid( grids.Grid ):
         key="free-text-search", visible=False, filterable="standard" )
                 )
     operations = [
-        grids.GridOperation( "Switch", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False ),
-        grids.GridOperation( "View", allow_multiple=False ),
+        grids.GridOperation( "Switch", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=True ),
+        grids.GridOperation( "View", allow_multiple=False, inbound=True ),
         grids.GridOperation( "Share or Publish", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False ),
-        grids.GridOperation( "Rename", condition=( lambda item: not item.deleted ), async_compatible=False  ),
+        grids.GridOperation( "Rename", condition=( lambda item: not item.deleted ), async_compatible=False, inbound=True  ),
         grids.GridOperation( "Delete", condition=( lambda item: not item.deleted ), async_compatible=True ),
         grids.GridOperation( "Delete Permanently", condition=( lambda item: not item.purged ), confirm="History contents will be removed from disk, this cannot be undone.  Continue?", async_compatible=True ),
         grids.GridOperation( "Undelete", condition=( lambda item: item.deleted and not item.purged ), async_compatible=True ),
@@ -116,13 +115,11 @@ class SharedHistoryListGrid( grids.Grid ):
     # Custom column types
     class DatasetsByStateColumn( grids.GridColumn ):
         def get_value( self, trans, grid, history ):
-            rval = []
+            rval = ''
             for state in ( 'ok', 'running', 'queued', 'error' ):
                 total = sum( 1 for d in history.active_datasets if d.state == state )
                 if total:
-                    rval.append( '<div class="count-box state-color-%s">%s</div>' % ( state, total ) )
-                else:
-                    rval.append( '' )
+                    rval += '<div class="count-box state-color-%s">%s</div>' % ( state, total )
             return rval
 
     class SharedByColumn( grids.GridColumn ):
@@ -136,7 +133,7 @@ class SharedHistoryListGrid( grids.Grid ):
     default_filter = {}
     columns = [
         grids.GridColumn( "Name", key="name", attach_popup=True ), # link=( lambda item: dict( operation="View", id=item.id ) ), attach_popup=True ),
-        DatasetsByStateColumn( "Datasets", ncells=4, sortable=False ),
+        DatasetsByStateColumn( "Datasets", sortable=False ),
         grids.GridColumn( "Created", key="create_time", format=time_ago ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
         SharedByColumn( "Shared by", key="user_id" )
@@ -303,33 +300,33 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             if history.users_shared_with:
                 message_parts.append( "History (%s) has been shared with others, unshare it before deleting it.  " % history.name )
                 status = ERROR
-            elif not history.deleted:
-                # We'll not eliminate any DefaultHistoryPermissions in case we undelete the history later
-                history.deleted = True
-                # If deleting the current history, make a new current.
-                if history == trans.get_history():
-                    deleted_current = True
-                    trans.new_history()
-                trans.log_event( "History (%s) marked as deleted" % history.name )
-                n_deleted += 1
-            if purge and trans.app.config.allow_user_dataset_purge:
-                for hda in history.datasets:
-                    if trans.user:
-                        trans.user.total_disk_usage -= hda.quota_amount( trans.user )
-                    hda.purged = True
-                    trans.sa_session.add( hda )
-                    trans.log_event( "HDA id %s has been purged" % hda.id )
-                    trans.sa_session.flush()
-                    if hda.dataset.user_can_purge:
-                        try:
-                            hda.dataset.full_delete()
-                            trans.log_event( "Dataset id %s has been purged upon the the purge of HDA id %s" % ( hda.dataset.id, hda.id ) )
-                            trans.sa_session.add( hda.dataset )
-                        except:
-                            log.exception( 'Unable to purge dataset (%s) on purge of hda (%s):' % ( hda.dataset.id, hda.id ) )
-                history.purged = True
-                self.sa_session.add( history )
-                self.sa_session.flush()
+            else:
+                if not history.deleted:
+                    # We'll not eliminate any DefaultHistoryPermissions in case we undelete the history later
+                    history.deleted = True
+                    # If deleting the current history, make a new current.
+                    if history == trans.get_history():
+                        deleted_current = True
+                    trans.log_event( "History (%s) marked as deleted" % history.name )
+                    n_deleted += 1
+                if purge and trans.app.config.allow_user_dataset_purge:
+                    for hda in history.datasets:
+                        if trans.user:
+                            trans.user.total_disk_usage -= hda.quota_amount( trans.user )
+                        hda.purged = True
+                        trans.sa_session.add( hda )
+                        trans.log_event( "HDA id %s has been purged" % hda.id )
+                        trans.sa_session.flush()
+                        if hda.dataset.user_can_purge:
+                            try:
+                                hda.dataset.full_delete()
+                                trans.log_event( "Dataset id %s has been purged upon the the purge of HDA id %s" % ( hda.dataset.id, hda.id ) )
+                                trans.sa_session.add( hda.dataset )
+                            except:
+                                log.exception( 'Unable to purge dataset (%s) on purge of hda (%s):' % ( hda.dataset.id, hda.id ) )
+                    history.purged = True
+                    self.sa_session.add( history )
+                    self.sa_session.flush()
         trans.sa_session.flush()
         if n_deleted:
             part = "Deleted %d %s" % ( n_deleted, iff( n_deleted != 1, "histories", "history" ) )
@@ -339,6 +336,8 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                 part += " but the datasets were not removed from disk because that feature is not enabled in this Galaxy instance"
             message_parts.append( "%s.  " % part )
         if deleted_current:
+            #note: this needs to come after commits above or will use an empty history that was deleted above
+            trans.get_or_create_default_history()
             message_parts.append( "Your active history was deleted, a new empty history is now active.  " )
             status = INFO
         return ( status, " ".join( message_parts ) )
@@ -378,7 +377,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         galaxy_session = trans.get_galaxy_session()
         try:
             association = trans.sa_session.query( trans.app.model.GalaxySessionToHistoryAssociation ) \
-                                          .filter_by( session_id=galaxy_session.id, history_id=trans.security.decode_id( new_history.id ) ) \
+                                          .filter_by( session_id=galaxy_session.id, history_id=new_history.id ) \
                                           .first()
         except:
             association = None
@@ -526,7 +525,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                 if hda.dataset.user_can_purge:
                     try:
                         hda.dataset.full_delete()
-                        trans.log_event( "Dataset id %s has been purged upon the the purge of HDA id %s" % ( hda.dataset.id, hda.id ) ) 
+                        trans.log_event( "Dataset id %s has been purged upon the the purge of HDA id %s" % ( hda.dataset.id, hda.id ) )
                         trans.sa_session.add( hda.dataset )
                     except:
                         log.exception( 'Unable to purge dataset (%s) on purge of hda (%s):' % ( hda.dataset.id, hda.id ) )
@@ -571,8 +570,8 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                     # No need to check other outputs since the job's parent history is this history
                     job.mark_deleted( trans.app.config.track_jobs_in_database )
                     trans.app.job_manager.job_stop_queue.put( job.id )
-        # Regardless of whether it was previously deleted, we make a new history active
-        trans.new_history()
+        # Regardless of whether it was previously deleted, get or create default history.
+        trans.get_or_create_default_history()
         return trans.show_ok_message( "History deleted, a new history is active", refresh_frames=['history'] )
 
     @web.expose
@@ -626,10 +625,11 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         else:
             assert history.user == trans.user
         # Rename
-        history.name = sanitize_html( new_name )
+        new_name = sanitize_html( new_name )
+        history.name = new_name
         trans.sa_session.add( history )
         trans.sa_session.flush()
-        return history.name
+        return new_name
 
     @web.expose
     @web.require_login( "use Galaxy histories" )
@@ -838,8 +838,8 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             # Set imported history to be user's current history.
             trans.set_history( new_history )
             return trans.show_ok_message(
-                message="""History "%s" has been imported. <br>You can <a href="%s">start using this history</a> or %s."""
-                % ( new_history.name, web.url_for( '/' ), referer_message ), use_panels=True )
+                message="""History "%s" has been imported. <br>You can <a href="%s" onclick="parent.window.location='%s';">start using this history</a> or %s."""
+                % ( new_history.name, web.url_for( '/' ), web.url_for( '/' ), referer_message ), use_panels=True )
         elif not user_history or not user_history.datasets or confirm:
             new_history = import_history.copy()
             new_history.name = "imported: " + new_history.name
@@ -1238,8 +1238,9 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                                         cannot_change[ send_to_user ][ history ].append( hda )
         return can_change, cannot_change, no_change_needed, unique_no_change_needed, send_to_err
 
-    def _share_histories( self, trans, user, send_to_err, histories={} ):
+    def _share_histories( self, trans, user, send_to_err, histories=None ):
         # histories looks like: { userA: [ historyX, historyY ], userB: [ historyY ] }
+        histories = histories or {}
         msg = ""
         sent_to_emails = []
         for send_to_user in histories.keys():
@@ -1312,7 +1313,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         copy_choice = params.get( 'copy_choice', None )
         if not copy_choice:
             return trans.fill_template( "/history/copy.mako", id_argument=id )
-            
+
         # Extract histories for id argument, defaulting to current
         if id is None:
             histories = [ trans.history ]
@@ -1352,7 +1353,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         history = self.get_history( trans, hist_id )
         trans.set_history( history )
         return trans.response.send_redirect( url_for( "/" ) )
-        
+
     def get_item( self, trans, id ):
         return self.get_history( trans, id )
 

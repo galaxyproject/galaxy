@@ -7,6 +7,7 @@ import sys
 import tempfile
 import zipfile
 from cgi import escape
+from inspect import isclass
 from galaxy import util
 from galaxy.datatypes.metadata import MetadataElement #import directly to maintain ease of use in Datatype class definitions
 from galaxy.util import inflector
@@ -14,31 +15,20 @@ from galaxy.util.bunch import Bunch
 from galaxy.util.odict import odict
 from galaxy.util.sanitize_html import sanitize_html
 
+import dataproviders
+
 from galaxy import eggs
 eggs.require( "Paste" )
 import paste
 
 log = logging.getLogger(__name__)
 
-tmpd = tempfile.mkdtemp()
-comptypes=[]
-ziptype = '32'
-tmpf = os.path.join( tmpd, 'compression_test.zip' )
+comptypes=[]  # Is this being used anywhere, why was this here? -JohnC
 try:
-    archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_DEFLATED, True )
-    archive.close()
+    import zlib
     comptypes.append( 'zip' )
-    ziptype = '64'
-except RuntimeError:
-    log.exception( "Compression error when testing zip compression. This option will be disabled for library downloads." )
-except (TypeError, zipfile.LargeZipFile):    # ZIP64 is only in Python2.5+.  Remove TypeError when 2.4 support is dropped
-    log.warning( 'Max zip file size is 2GB, ZIP64 not supported' )
-    comptypes.append( 'zip' )
-try:
-    os.unlink( tmpf )
-except OSError:
+except ImportError:
     pass
-os.rmdir( tmpd )
 
 
 # Valid first column and strand column values vor bed, other formats
@@ -56,6 +46,7 @@ class DataMeta( type ):
                 cls.metadata_spec.update( base.metadata_spec ) #add contents of metadata spec of base class to cls
         metadata.Statement.process( cls )
 
+@dataproviders.decorators.has_dataproviders
 class Data( object ):
     """
     Base class for all datatypes.  Implements basic interfaces as well
@@ -208,6 +199,26 @@ class Data( object ):
             out = "Can't create peek %s" % str( exc )
         return out
 
+    def _archive_main_file(self, archive, display_name, data_filename):
+        """Called from _archive_composite_dataset to add central file to archive.
+
+        Unless subclassed, this will add the main dataset file (argument data_filename)
+        to the archive, as an HTML file with its filename derived from the dataset name
+        (argument outfname).
+
+        Returns a tuple of boolean, string, string: (error, msg, messagetype)
+        """
+        error, msg, messagetype = False, "", ""
+        archname = '%s.html' % display_name  # fake the real nature of the html file
+        try:
+            archive.add(data_filename, archname)
+        except IOError:
+            error = True
+            log.exception("Unable to add composite parent %s to temporary library download archive" % data_filename)
+            msg = "Unable to create archive for download, please report this error"
+            messagetype = "error"
+        return error, msg, messagetype
+
     def _archive_composite_dataset( self, trans, data=None, **kwd ):
         # save a composite object into a compressed archive for downloading
         params = util.Params( kwd )
@@ -227,11 +238,9 @@ class Data( object ):
                 if (params.do_action == 'zip'):
                     # Can't use mkstemp - the file must not exist first
                     tmpd = tempfile.mkdtemp()
+                    util.umask_fix_perms( tmpd, trans.app.config.umask, 0777, trans.app.config.gid )
                     tmpf = os.path.join( tmpd, 'library_download.' + params.do_action )
-                    if ziptype == '64':
-                        archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_DEFLATED, True )
-                    else:
-                        archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_DEFLATED )
+                    archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_DEFLATED, True )
                     archive.add = lambda x, y: archive.write( x, y.encode('CP437') )
                 elif params.do_action == 'tgz':
                     archive = util.streamball.StreamBall( 'w|gz' )
@@ -248,43 +257,41 @@ class Data( object ):
                 path = data.file_name
                 fname = os.path.split(path)[-1]
                 efp = data.extra_files_path
-                htmlname = os.path.splitext(outfname)[0]
-                if not htmlname.endswith(ext):
-                    htmlname = '%s_%s' % (htmlname,ext)
-                archname = '%s.html' % htmlname # fake the real nature of the html file
-                try:
-                    archive.add(data.file_name,archname)
-                except IOError:
-                    error = True
-                    log.exception( "Unable to add composite parent %s to temporary library download archive" % data.file_name)
-                    msg = "Unable to create archive for download, please report this error"
-                    messagetype = 'error'
-                for root, dirs, files in os.walk(efp):
-                    for fname in files:
-                        fpath = os.path.join(root,fname)
-                        rpath = os.path.relpath(fpath,efp)
-                        try:
-                            archive.add( fpath,rpath )
-                        except IOError:
-                            error = True
-                            log.exception( "Unable to add %s to temporary library download archive" % rpath)
-                            msg = "Unable to create archive for download, please report this error"
-                            messagetype = 'error'
-                            continue
+                #Add any central file to the archive,
+
+                display_name = os.path.splitext(outfname)[0]
+                if not display_name.endswith(ext):
+                    display_name = '%s_%s' % (display_name, ext)
+
+                error, msg, messagetype = self._archive_main_file(archive, display_name, path)
+                if not error:
+                    #Add any child files to the archive,
+                    for root, dirs, files in os.walk(efp):
+                        for fname in files:
+                            fpath = os.path.join(root,fname)
+                            rpath = os.path.relpath(fpath,efp)
+                            try:
+                                archive.add( fpath,rpath )
+                            except IOError:
+                                error = True
+                                log.exception( "Unable to add %s to temporary library download archive" % rpath)
+                                msg = "Unable to create archive for download, please report this error"
+                                messagetype = 'error'
+                                continue
                 if not error:
                     if params.do_action == 'zip':
                         archive.close()
                         tmpfh = open( tmpf )
                         # CANNOT clean up - unlink/rmdir was always failing because file handle retained to return - must rely on a cron job to clean up tmp
                         trans.response.set_content_type( "application/x-zip-compressed" )
-                        trans.response.headers[ "Content-Disposition" ] = 'attachment; filename="%s.zip"' % outfname 
+                        trans.response.headers[ "Content-Disposition" ] = 'attachment; filename="%s.zip"' % outfname
                         return tmpfh
                     else:
                         trans.response.set_content_type( "application/x-tar" )
                         outext = 'tgz'
                         if params.do_action == 'tbz':
                             outext = 'tbz'
-                        trans.response.headers[ "Content-Disposition" ] = 'attachment; filename="%s.%s"' % (outfname,outext) 
+                        trans.response.headers[ "Content-Disposition" ] = 'attachment; filename="%s.%s"' % (outfname,outext)
                         archive.wsgi_status = trans.response.wsgi_status()
                         archive.wsgi_headeritems = trans.response.wsgi_headeritems()
                         return archive.stream
@@ -299,7 +306,14 @@ class Data( object ):
         return open( dataset.file_name )
 
     def display_data(self, trans, data, preview=False, filename=None, to_ext=None, size=None, offset=None, **kwd):
-        """ Old display method, for transition """
+        """ Old display method, for transition - though still used by API and
+        test framework. Datatypes should be very careful if overridding this
+        method and this interface between datatypes and Galaxy will likely
+        change.
+
+        TOOD: Document alternatives to overridding this method (data
+        providers?).
+        """
         #Relocate all composite datatype display to a common location.
         composite_extensions = trans.app.datatypes_registry.get_composite_extensions( )
         composite_extensions.append('html') # for archiving composite datatypes
@@ -545,7 +559,13 @@ class Data( object ):
     def has_resolution(self):
         return False
 
-
+    def matches_any( self, target_datatypes ):
+        """
+        Check if this datatype is of any of the target_datatypes or is
+        a subtype thereof.
+        """
+        datatype_classes = tuple( [ datatype if isclass( datatype ) else datatype.__class__ for datatype in target_datatypes ] )
+        return isinstance( self, datatype_classes )
     def merge( split_files, output_file):
         """
             Merge files with copy.copyfileobj() will not hit the
@@ -572,6 +592,39 @@ class Data( object ):
             return [ 'trackster', 'circster' ]
         return []
 
+    # ------------- Dataproviders
+    def has_dataprovider( self, data_format ):
+        """
+        Returns True if `data_format` is available in `dataproviders`.
+        """
+        return ( data_format in self.dataproviders )
+
+    def dataprovider( self, dataset, data_format, **settings ):
+        """
+        Base dataprovider factory for all datatypes that returns the proper provider
+        for the given `data_format` or raises a `NoProviderAvailable`.
+        """
+        if self.has_dataprovider( data_format ):
+            return self.dataproviders[ data_format ]( self, dataset, **settings )
+        raise dataproviders.exceptions.NoProviderAvailable( self, data_format )
+
+    @dataproviders.decorators.dataprovider_factory( 'base' )
+    def base_dataprovider( self, dataset, **settings ):
+        dataset_source = dataproviders.dataset.DatasetDataProvider( dataset )
+        return dataproviders.base.DataProvider( dataset_source, **settings )
+
+    @dataproviders.decorators.dataprovider_factory( 'chunk', dataproviders.chunk.ChunkDataProvider.settings )
+    def chunk_dataprovider( self, dataset, **settings ):
+        dataset_source = dataproviders.dataset.DatasetDataProvider( dataset )
+        return dataproviders.chunk.ChunkDataProvider( dataset_source, **settings )
+
+    @dataproviders.decorators.dataprovider_factory( 'chunk64', dataproviders.chunk.Base64ChunkDataProvider.settings )
+    def chunk64_dataprovider( self, dataset, **settings ):
+        dataset_source = dataproviders.dataset.DatasetDataProvider( dataset )
+        return dataproviders.chunk.Base64ChunkDataProvider( dataset_source, **settings )
+
+
+@dataproviders.decorators.has_dataproviders
 class Text( Data ):
     file_ext = 'txt'
     line_class = 'line'
@@ -741,9 +794,30 @@ class Text( Data ):
         f.close()
     split = classmethod(split)
 
+    # ------------- Dataproviders
+    @dataproviders.decorators.dataprovider_factory( 'line', dataproviders.line.FilteredLineDataProvider.settings )
+    def line_dataprovider( self, dataset, **settings ):
+        """
+        Returns an iterator over the dataset's lines (that have been `strip`ed)
+        optionally excluding blank lines and lines that start with a comment character.
+        """
+        dataset_source = dataproviders.dataset.DatasetDataProvider( dataset )
+        return dataproviders.line.FilteredLineDataProvider( dataset_source, **settings )
+
+    @dataproviders.decorators.dataprovider_factory( 'regex-line', dataproviders.line.RegexLineDataProvider.settings )
+    def regex_line_dataprovider( self, dataset, **settings ):
+        """
+        Returns an iterator over the dataset's lines
+        optionally including/excluding lines that match one or more regex filters.
+        """
+        dataset_source = dataproviders.dataset.DatasetDataProvider( dataset )
+        return dataproviders.line.RegexLineDataProvider( dataset_source, **settings )
+
+
 class GenericAsn1( Text ):
     """Class for generic ASN.1 text format"""
     file_ext = 'asn1'
+
 
 class LineCount( Text ):
     """
@@ -751,6 +825,7 @@ class LineCount( Text ):
     line count for a related dataset. Used for custom builds.
     """
     pass
+
 
 class Newick( Text ):
     """New Hampshire/Newick Format"""

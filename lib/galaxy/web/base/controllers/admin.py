@@ -27,7 +27,7 @@ class Admin( object ):
         message = kwd.get( 'message', ''  )
         status = kwd.get( 'status', 'done' )
         if trans.webapp.name == 'galaxy':
-            installed_repositories = trans.sa_session.query( trans.model.ToolShedRepository ).first()
+            installed_repositories = trans.install_model.context.query( trans.install_model.ToolShedRepository ).first()
             installing_repository_ids = get_ids_of_tool_shed_repositories_being_installed( trans, as_string=True )
             return trans.fill_template( '/webapps/galaxy/admin/index.mako',
                                         installed_repositories=installed_repositories,
@@ -1067,17 +1067,17 @@ class Admin( object ):
 
 def get_ids_of_tool_shed_repositories_being_installed( trans, as_string=False ):
     installing_repository_ids = []
-    new_status = trans.model.ToolShedRepository.installation_status.NEW
-    cloning_status = trans.model.ToolShedRepository.installation_status.CLONING
-    setting_tool_versions_status = trans.model.ToolShedRepository.installation_status.SETTING_TOOL_VERSIONS
-    installing_dependencies_status = trans.model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES
-    loading_datatypes_status = trans.model.ToolShedRepository.installation_status.LOADING_PROPRIETARY_DATATYPES
-    for tool_shed_repository in trans.sa_session.query( trans.model.ToolShedRepository ) \
-                                                .filter( or_( trans.model.ToolShedRepository.status == new_status,
-                                                              trans.model.ToolShedRepository.status == cloning_status,
-                                                              trans.model.ToolShedRepository.status == setting_tool_versions_status,
-                                                              trans.model.ToolShedRepository.status == installing_dependencies_status,
-                                                              trans.model.ToolShedRepository.status == loading_datatypes_status ) ):
+    new_status = trans.install_model.ToolShedRepository.installation_status.NEW
+    cloning_status = trans.install_model.ToolShedRepository.installation_status.CLONING
+    setting_tool_versions_status = trans.install_model.ToolShedRepository.installation_status.SETTING_TOOL_VERSIONS
+    installing_dependencies_status = trans.install_model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES
+    loading_datatypes_status = trans.install_model.ToolShedRepository.installation_status.LOADING_PROPRIETARY_DATATYPES
+    for tool_shed_repository in trans.install_model.context.query( trans.install_model.ToolShedRepository ) \
+                                                .filter( or_( trans.install_model.ToolShedRepository.status == new_status,
+                                                              trans.install_model.ToolShedRepository.status == cloning_status,
+                                                              trans.install_model.ToolShedRepository.status == setting_tool_versions_status,
+                                                              trans.install_model.ToolShedRepository.status == installing_dependencies_status,
+                                                              trans.install_model.ToolShedRepository.status == loading_datatypes_status ) ):
         installing_repository_ids.append( trans.security.encode_id( tool_shed_repository.id ) )
     if as_string:
         return ','.join( installing_repository_ids )

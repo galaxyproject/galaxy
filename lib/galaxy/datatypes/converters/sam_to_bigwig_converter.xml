@@ -1,4 +1,9 @@
 <tool id="CONVERTER_sam_to_bigwig_0" name="Convert SAM to BigWig" version="1.0.0" hidden="true">
+    <requirements>
+        <requirement type="package">ucsc_tools</requirement>
+        <requirement type="package">samtools</requirement>
+        <requirement type="package">bedtools</requirement>
+    </requirements>
     <command>
         samtools view -bh $input | bedtools genomecov -bg -split -ibam stdin -g $chromInfo 
 

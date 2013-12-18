@@ -70,11 +70,11 @@ def __main__():
         num_sims = int( options.num_sims )
     except TypeError, e:
         stop_err( 'Make sure the number of simulations is an integer value: %s' % str( e ) )
-    if len( options.polymorphism ) > 0:
+    if options.polymorphism != 'None':
         polymorphisms = [ float( p ) for p in options.polymorphism.split( ',' ) ]
     else:
         stop_err( 'Select at least one polymorphism value to use' )
-    if len( options.detection_thresh ) > 0:
+    if options.detection_thresh != 'None':
         detection_threshes = [ float( dt ) for dt in options.detection_thresh.split( ',' ) ]
     else:
         stop_err( 'Select at least one detection threshold to use' )

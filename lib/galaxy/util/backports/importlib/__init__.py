@@ -37,6 +37,6 @@ def import_module(name, package=None):
     __import__(name)
     return sys.modules[name]
 
-    ## Note: this was copied from 
+    ## Note: this was copied from
     ## http://svn.python.org/projects/python/trunk/Lib/importlib/__init__.py
     ## on 24 September 2012

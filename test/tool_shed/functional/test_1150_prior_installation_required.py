@@ -1,5 +1,4 @@
 from tool_shed.base.twilltestcase import ShedTwillTestCase, common, os
-import tool_shed.base.test_db_util as test_db_util
 
 import logging
 log = logging.getLogger( __name__ )
@@ -31,6 +30,7 @@ Verify that convert_chars was installed first, contrary to the ordering that wou
 
 running_standalone = False
 
+
 class TestSimplePriorInstallation( ShedTwillTestCase ):
     '''Test features related to datatype converters.'''
     
@@ -38,19 +38,19 @@ class TestSimplePriorInstallation( ShedTwillTestCase ):
         """Create necessary user accounts."""
         self.galaxy_logout()
         self.galaxy_login( email=common.admin_email, username=common.admin_username )
-        galaxy_admin_user = test_db_util.get_galaxy_user( common.admin_email )
+        galaxy_admin_user = self.test_db_util.get_galaxy_user( common.admin_email )
         assert galaxy_admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
-        galaxy_admin_user_private_role = test_db_util.get_galaxy_private_role( galaxy_admin_user )
+        galaxy_admin_user_private_role = self.test_db_util.get_galaxy_private_role( galaxy_admin_user )
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        test_user_1 = test_db_util.get_user( common.test_user_1_email )
+        test_user_1 = self.test_db_util.get_user( common.test_user_1_email )
         assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % test_user_1_email
-        test_user_1_private_role = test_db_util.get_private_role( test_user_1 )
+        test_user_1_private_role = self.test_db_util.get_private_role( test_user_1 )
         self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
-        admin_user = test_db_util.get_user( common.admin_email )
+        admin_user = self.test_db_util.get_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % admin_email
-        admin_user_private_role = test_db_util.get_private_role( admin_user )
+        admin_user_private_role = self.test_db_util.get_private_role( admin_user )
         
     def test_0005_create_convert_repository( self ):
         '''Create and populate convert_chars_0150.'''
@@ -104,8 +104,8 @@ class TestSimplePriorInstallation( ShedTwillTestCase ):
             <repository toolshed="self.url" name="convert_chars" owner="test" changeset_revision="<tip>" prior_installation_required="True" />
         '''
         global running_standalone
-        column_repository = test_db_util.get_repository_by_name_and_owner( column_repository_name, common.test_user_1_name )
-        convert_repository = test_db_util.get_repository_by_name_and_owner( convert_repository_name, common.test_user_1_name )
+        column_repository = self.test_db_util.get_repository_by_name_and_owner( column_repository_name, common.test_user_1_name )
+        convert_repository = self.test_db_util.get_repository_by_name_and_owner( convert_repository_name, common.test_user_1_name )
         if running_standalone:
             dependency_xml_path = self.generate_temp_path( 'test_1150', additional_paths=[ 'column' ] )
             convert_tuple = ( self.url, convert_repository.name, convert_repository.user.username, self.get_repository_tip( convert_repository ) )
@@ -116,8 +116,8 @@ class TestSimplePriorInstallation( ShedTwillTestCase ):
             
     def test_0020_verify_repository_dependency( self ):
         '''Verify that the previously generated repositiory dependency displays correctly.'''
-        column_repository = test_db_util.get_repository_by_name_and_owner( column_repository_name, common.test_user_1_name )
-        convert_repository = test_db_util.get_repository_by_name_and_owner( convert_repository_name, common.test_user_1_name )
+        column_repository = self.test_db_util.get_repository_by_name_and_owner( column_repository_name, common.test_user_1_name )
+        convert_repository = self.test_db_util.get_repository_by_name_and_owner( convert_repository_name, common.test_user_1_name )
         self.check_repository_dependency( repository=column_repository, 
                                           depends_on_repository=convert_repository, 
                                           depends_on_changeset_revision=None, 
@@ -127,7 +127,7 @@ class TestSimplePriorInstallation( ShedTwillTestCase ):
         '''Install column_maker_0150.'''
         self.galaxy_logout()
         self.galaxy_login( email=common.admin_email, username=common.admin_username )
-        column_repository = test_db_util.get_repository_by_name_and_owner( column_repository_name, common.test_user_1_name )
+        column_repository = self.test_db_util.get_repository_by_name_and_owner( column_repository_name, common.test_user_1_name )
         preview_strings_displayed = [ 'column_maker_0150', self.get_repository_tip( column_repository ) ]
         strings_displayed = [ 'Choose the tool panel section' ]
         self.install_repository( column_repository_name, 
@@ -138,12 +138,12 @@ class TestSimplePriorInstallation( ShedTwillTestCase ):
                                  preview_strings_displayed=preview_strings_displayed,
                                  strings_displayed=strings_displayed,
                                  strings_not_displayed=[],
-                                 post_submit_strings_displayed=[ 'column_maker_0150', 'new' ],
+                                 post_submit_strings_displayed=[ 'column_maker_0150', 'New' ],
                                  includes_tools_for_display_in_tool_panel=True )
     
     def test_0030_verify_installation_order( self ):
         '''Verify that convert_chars_0150 was installed before column_maker_0150.'''
-        column_repository = test_db_util.get_installed_repository_by_name_owner( column_repository_name, common.test_user_1_name )
-        convert_repository = test_db_util.get_installed_repository_by_name_owner( convert_repository_name, common.test_user_1_name )
+        column_repository = self.test_db_util.get_installed_repository_by_name_owner( column_repository_name, common.test_user_1_name )
+        convert_repository = self.test_db_util.get_installed_repository_by_name_owner( convert_repository_name, common.test_user_1_name )
         # Column maker was selected for installation, so convert chars should have been installed first, as reflected by the update_time field.
         assert column_repository.update_time > convert_repository.update_time, 'Error: column_maker_0150 shows an earlier update time than convert_chars_0150'

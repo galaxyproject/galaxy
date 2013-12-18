@@ -47,7 +47,7 @@
 
 **What it does**
 
-Given taxonomy representation (produced by *Taxonomy manipulation->Fetch Taxonomic Ranks* tool) this utility produces a graphical representations of phylogenetic tree in PDF format.
+Given taxonomy representation (produced by *Fetch taxonomic representation* tool) this utility produces a graphical representations of phylogenetic tree in PDF format.
 
 --------
 

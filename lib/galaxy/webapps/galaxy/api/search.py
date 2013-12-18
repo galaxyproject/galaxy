@@ -5,7 +5,7 @@ import logging
 from galaxy import web
 from galaxy.web.base.controller import SharableItemSecurityMixin, BaseAPIController
 from galaxy.model.search import GalaxySearchEngine
-
+from galaxy.exceptions import ItemAccessibilityException
 
 log = logging.getLogger( __name__ )
 
@@ -30,7 +30,6 @@ class SearchController( BaseAPIController, SharableItemSecurityMixin ):
                 current_user_roles = trans.get_current_user_roles()
                 try:
                     results = query.process(trans)
-                    print results
                 except Exception, e:
                     return {'error' : str(e)}
                 for item in results:
@@ -38,14 +37,29 @@ class SearchController( BaseAPIController, SharableItemSecurityMixin ):
                     if trans.user_is_admin():
                         append = True
                     if not append:
-                        if type( item ) in ( trans.app.model.LibraryFolder, trans.app.model.LibraryDatasetDatasetAssociation, trans.app.model.LibraryDataset ):
+                        if type( item ) in [ trans.app.model.LibraryFolder, trans.app.model.LibraryDatasetDatasetAssociation, trans.app.model.LibraryDataset ]:
                             if (trans.app.security_agent.can_access_library_item( trans.get_current_user_roles(), item, trans.user ) ):
                                 append = True
-                    if not append:
-                        if hasattr(item, 'dataset'):
+                        elif type( item ) in [ trans.app.model.Job ]:
+                            if item.used_id == trans.user or trans.user_is_admin():
+                                append = True
+                        elif type( item ) in [ trans.app.model.Page ]:
+                            try:
+                                if self.security_check( trans, item, False, True):
+                                    append = True
+                            except ItemAccessibilityException:
+                                append = False
+                        elif type ( item ) in [ trans.app.model.PageRevision ]:
+                            try:
+                                if self.security_check( trans, item.page, False, True):
+                                    append = True
+                            except ItemAccessibilityException:
+                                append = False
+                        elif hasattr(item, 'dataset'):
                             if trans.app.security_agent.can_access_dataset( current_user_roles, item.dataset ):
                                 append = True
+
                     if append:
                         row = query.item_to_api_value(item)
-                        out.append( self.encode_all_ids( trans, row) )
+                        out.append( self.encode_all_ids( trans, row, True) )
         return { 'results' : out }

@@ -1,5 +1,6 @@
 from tool_shed.base.twilltestcase import ShedTwillTestCase, common, os
-import tool_shed.base.test_db_util as test_db_util
+
+
 import logging
 log = logging.getLogger(__name__)
 
@@ -22,6 +23,7 @@ first_changeset_hash = ''
 8. Visit the following url and check for appropriate strings: <tool shed base url>/view/<invalid owner>
 '''
 
+
 class TestRepositoryCitableURLs( ShedTwillTestCase ):
     '''Test repository citable url features.'''
     def test_0000_initiate_users( self ):
@@ -32,14 +34,14 @@ class TestRepositoryCitableURLs( ShedTwillTestCase ):
         """
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        test_user_1 = test_db_util.get_user( common.test_user_1_email )
+        test_user_1 = self.test_db_util.get_user( common.test_user_1_email )
         assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_1_email
-        test_user_1_private_role = test_db_util.get_private_role( test_user_1 )
+        test_user_1_private_role = self.test_db_util.get_private_role( test_user_1 )
         self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
-        admin_user = test_db_util.get_user( common.admin_email )
+        admin_user = self.test_db_util.get_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
-        admin_user_private_role = test_db_util.get_private_role( admin_user )
+        admin_user_private_role = self.test_db_util.get_private_role( admin_user )
     def test_0005_create_repository( self ):
         """Create and populate the filtering_0420 repository"""
         """
@@ -52,7 +54,7 @@ class TestRepositoryCitableURLs( ShedTwillTestCase ):
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         strings_displayed = [ 'Repository %s' % "'%s'" % repository_name, 
-                              'Repository %s has been created' % "'%s'" % repository_name ]
+                              'Repository %s has been created' % "<b>%s</b>" % repository_name ]
         repository = self.get_or_create_repository( name=repository_name, 
                                                     description=repository_description, 
                                                     long_description=repository_long_description, 
@@ -77,7 +79,7 @@ class TestRepositoryCitableURLs( ShedTwillTestCase ):
         Add valid change set revision 1.
         The repository should now contain two changeset revisions, 0:<revision hash> and 1:<revision hash>.
         '''
-        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         self.upload_file( repository, 
                           filename='readme.txt',
                           filepath=None,
@@ -93,8 +95,8 @@ class TestRepositoryCitableURLs( ShedTwillTestCase ):
         We are at step 3.
         Visit the following url and check for appropriate strings: <tool shed base url>/view/user1
         '''
-        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
-        test_user_1 = test_db_util.get_user( common.test_user_1_email )
+        repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        test_user_1 = self.test_db_util.get_user( common.test_user_1_email )
         encoded_user_id = self.security.encode_id( test_user_1.id )
         # Since twill does not load the contents of an iframe, we need to check that the iframe has been generated correctly,
         # then directly load the url that the iframe should be loading and check for the expected strings.
@@ -117,8 +119,8 @@ class TestRepositoryCitableURLs( ShedTwillTestCase ):
         Visit the following url and check for strings: <tool shed base url>/view/user1/filtering_0420
             Resulting page should contain change set revision 1
         '''
-        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
-        test_user_1 = test_db_util.get_user( common.test_user_1_email )
+        repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        test_user_1 = self.test_db_util.get_user( common.test_user_1_email )
         encoded_user_id = self.security.encode_id( test_user_1.id )
         encoded_repository_id = self.security.encode_id( repository.id )
         # Since twill does not load the contents of an iframe, we need to check that the iframe has been generated correctly,
@@ -144,8 +146,8 @@ class TestRepositoryCitableURLs( ShedTwillTestCase ):
             Resulting page should not contain change set revision 1, but should contain change set revision 0.
         '''
         global first_changeset_hash
-        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
-        test_user_1 = test_db_util.get_user( common.test_user_1_email )
+        repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        test_user_1 = self.test_db_util.get_user( common.test_user_1_email )
         encoded_user_id = self.security.encode_id( test_user_1.id )
         encoded_repository_id = self.security.encode_id( repository.id )
         # Since twill does not load the contents of an iframe, we need to check that the iframe has been generated correctly,
@@ -166,8 +168,8 @@ class TestRepositoryCitableURLs( ShedTwillTestCase ):
                                strings_not_displayed_in_iframe=strings_not_displayed_in_iframe )
     def test_0030_load_sharable_url_with_invalid_changeset_revision( self ):
         '''Load a citable url with an invalid changeset revision specified.'''
-        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
-        test_user_1 = test_db_util.get_user( common.test_user_1_email )
+        repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        test_user_1 = self.test_db_util.get_user( common.test_user_1_email )
         encoded_user_id = self.security.encode_id( test_user_1.id )
         encoded_repository_id = self.security.encode_id( repository.id )
         invalid_changeset_hash = 'invalid'
@@ -195,8 +197,8 @@ class TestRepositoryCitableURLs( ShedTwillTestCase ):
         We are at step 7
         Visit the following url and check for appropriate strings: <tool shed base url>/view/user1/!!invalid!!
         '''
-        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
-        test_user_1 = test_db_util.get_user( common.test_user_1_email )
+        repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        test_user_1 = self.test_db_util.get_user( common.test_user_1_email )
         encoded_user_id = self.security.encode_id( test_user_1.id )
         tip_revision = self.get_repository_tip( repository )
         # Since twill does not load the contents of an iframe, we need to check that the iframe has been generated correctly,

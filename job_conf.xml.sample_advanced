@@ -7,7 +7,11 @@
         <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner"/>
         <plugin id="pbs" type="runner" load="galaxy.jobs.runners.pbs:PBSJobRunner" workers="2"/>
         <plugin id="drmaa" type="runner" load="galaxy.jobs.runners.drmaa:DRMAAJobRunner"/>
-        <plugin id="lwr" type="runner" load="galaxy.jobs.runners.lwr:LwrJobRunner" /> <!-- https://lwr.readthedocs.org -->
+        <plugin id="lwr" type="runner" load="galaxy.jobs.runners.lwr:LwrJobRunner">
+          <!-- More information on LWR can be found at https://lwr.readthedocs.org -->
+          <!-- Uncomment following line to use libcurl to perform HTTP calls (defaults to urllib) -->
+          <!-- <param id="transport">curl</param> -->
+        </plugin>
         <plugin id="cli" type="runner" load="galaxy.jobs.runners.cli:ShellJobRunner" />
         <plugin id="condor" type="runner" load="galaxy.jobs.runners.condor:CondorJobRunner" />
     </plugins>
@@ -46,15 +50,56 @@
             <param id="url">https://windowshost.examle.com:8913/</param>
             <!-- If set, private_token must match token remote LWR server configured with. -->
             <param id="private_token">123456789changeme</param>
+            <!-- Uncomment the following statement to disable file staging (e.g.
+                 if there is a shared file system between Galaxy and the LWR 
+                 server). Alternatively action can be set to 'copy' - to replace 
+                 http transfers with file system copies. -->
+            <!-- <param id="default_file_action">none</param> -->
+            <!-- The above option is just the default, the transfer behavior
+                 none|copy|http can be configured on a per path basis via the
+                 following file. See lib/galaxy/jobs/runners/lwr_client/action_mapper.py
+                 for examples of how to configure this file. This is very beta
+                 and nature of file will likely change.
+            -->
+            <!-- <param id="file_action_config">file_actions.json</param> -->
+            <!-- Uncomment following option to disable Galaxy tool dependency
+                 resolution and utilize remote LWR's configuraiton of tool
+                 dependency resolution instead (same options as Galaxy for
+                 dependency resolution are available in LWR).
+            -->
+            <!-- <param id="dependency_resolution">remote</params> -->
+            <!-- Uncomment following option to enable setting metadata on remote
+                 LWR server. The 'use_remote_datatypes' option is available for
+                 determining whether to use remotely configured datatypes or local
+                 ones (both alternatives are a little brittle). -->
+            <!-- <param id="remote_metadata">true</param> -->
+            <!-- <param id="use_remote_datatypes">false</param> -->
+            <!-- If remote LWR server is configured to run jobs as the real user,
+                 uncomment the following line to pass the current Galaxy user
+                 along. -->
+            <!-- <param id="submit_user">$__user_name__</param> -->
+            <!-- Various other submission parameters can be passed along to the LWR
+                 whose use will depend on the remote LWR's configured job manager.
+                 For instance:
+            -->
+            <!-- <param id="submit_native_specification">-P bignodes -R y -pe threads 8</param> -->            
         </destination>
         <destination id="ssh_torque" runner="cli">
             <param id="shell_plugin">SecureShell</param>
             <param id="job_plugin">Torque</param>
             <param id="shell_username">foo</param>
             <param id="shell_hostname">foo.example.org</param>
-            <param id="Job_Execution_Time">24:00:00</param>
+            <param id="job_Resource_List">walltime=24:00:00,ncpus=4</param>
         </destination>
-        <destination id="condor" runner="condor"/>
+        <destination id="condor" runner="condor">
+            <!-- With no params, jobs are submitted to the 'vanilla' universe with:
+                    notification = NEVER
+                    getenv = true
+                 Additional/override query ClassAd params can be specified with
+                 <param> tags.
+            -->
+            <param id="request_cpus">8</param>
+        </destination>
     </destinations>
     <tools>
         <!-- Tools can be configured to use specific destinations or handlers,

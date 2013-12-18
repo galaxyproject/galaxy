@@ -11,7 +11,7 @@ log.setLevel( 10 )
 log.addHandler( logging.StreamHandler( sys.stdout ) )
 
 from galaxy import eggs
-import pkg_resources  
+import pkg_resources
 pkg_resources.require( "SQLAlchemy >= 0.4" )
 
 import time, ConfigParser, shutil
@@ -48,16 +48,16 @@ def main():
     for key, value in config_parser.items( "app:main" ):
         config_dict[key] = value
     config = tool_shed_config.Configuration( **config_dict )
-    
+
     app = DeprecateRepositoriesApplication( config )
     cutoff_time = datetime.utcnow() - timedelta( days=options.days )
     now = strftime( "%Y-%m-%d %H:%M:%S" )
     print "\n####################################################################################"
     print "# %s - Handling stuff older than %i days" % ( now, options.days )
-    
+
     if options.info_only:
         print "# Displaying info only ( --info_only )"
-    
+
     deprecate_repositories( app, cutoff_time, days=options.days, info_only=options.info_only, verbose=options.verbose )
 
 def send_mail_to_owner( app, name, owner, email, repositories_deprecated, days=14 ):
@@ -102,7 +102,7 @@ def deprecate_repositories( app, cutoff_time, days=14, info_only=False, verbose=
     repository_ids_to_not_check = []
     # Get a unique list of repository ids from the repository_metadata table. Any repository ID found in this table is not
     # empty, and will not be checked.
-    metadata_records = sa.select( [ distinct( app.model.RepositoryMetadata.table.c.repository_id ) ], 
+    metadata_records = sa.select( [ distinct( app.model.RepositoryMetadata.table.c.repository_id ) ],
                                   from_obj=app.model.RepositoryMetadata.table ) \
                          .execute()
     for metadata_record in metadata_records:
@@ -145,7 +145,7 @@ def deprecate_repositories( app, cutoff_time, days=14, info_only=False, verbose=
     stop = time.time()
     print '# Deprecated %d repositories.' % len( repositories )
     print "# Elapsed time: ", stop - start
-    print "####################################################################################" 
+    print "####################################################################################"
 
 class DeprecateRepositoriesApplication( object ):
     """Encapsulates the state of a Universe application"""

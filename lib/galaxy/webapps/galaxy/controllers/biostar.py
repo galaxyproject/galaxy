@@ -60,11 +60,12 @@ class BiostarController( BaseUIController ):
     """
 
     @web.expose
-    def biostar_redirect( self, trans, payload={}, biostar_action=None ):
+    def biostar_redirect( self, trans, payload=None, biostar_action=None ):
         """
         Generate a redirect to a Biostar site using external authentication to
         pass Galaxy user information and information about a specific tool.
         """
+        payload = payload or {}
         # Ensure biostar integration is enabled
         if not trans.app.config.biostar_url:
             return error( "Biostar integration is not enabled" )
@@ -86,11 +87,12 @@ class BiostarController( BaseUIController ):
         return trans.response.send_redirect( url_for( trans.app.config.biostar_url, data=data, digest=digest, name=trans.app.config.biostar_key_name, action=biostar_action ) )
 
     @web.expose
-    def biostar_question_redirect( self, trans, payload={} ):
+    def biostar_question_redirect( self, trans, payload=None ):
         """
         Generate a redirect to a Biostar site using external authentication to
         pass Galaxy user information and information about a specific tool.
         """
+        payload = payload or {}
         return self.biostar_redirect( trans, payload=payload, biostar_action='new' )
 
     @web.expose

@@ -6,7 +6,7 @@ import sys, os
 import logging, logging.config
 from optparse import OptionParser
 import ConfigParser
-from galaxy.util import string_as_bool
+from galaxy.util import string_as_bool, listify
 
 from galaxy import eggs
 import pkg_resources
@@ -33,7 +33,7 @@ class Configuration( object ):
         # Database related configuration
         self.database = resolve_path( kwargs.get( "database_file", "database/community.sqlite" ), self.root )
         self.database_connection = kwargs.get( "database_connection", False )
-        self.database_engine_options = get_database_engine_options( kwargs )                        
+        self.database_engine_options = get_database_engine_options( kwargs )
         self.database_create_tables = string_as_bool( kwargs.get( "database_create_tables", "True" ) )
         # Where dataset files are stored
         self.file_path = resolve_path( kwargs.get( "file_path", "database/community_files" ), self.root )
@@ -44,12 +44,17 @@ class Configuration( object ):
         self.test_conf = resolve_path( kwargs.get( "test_conf", "" ), self.root )
         self.id_secret = kwargs.get( "id_secret", "USING THE DEFAULT IS NOT SECURE!" )
         # Tool stuff
+        self.tool_filters = listify( kwargs.get( "tool_filters", [] ) )
+        self.tool_label_filters = listify( kwargs.get( "tool_label_filters", [] ) )
+        self.tool_section_filters = listify( kwargs.get( "tool_section_filters", [] ) )
         self.tool_path = resolve_path( kwargs.get( "tool_path", "tools" ), self.root )
         self.tool_secret = kwargs.get( "tool_secret", "" )
         self.tool_data_path = resolve_path( kwargs.get( "tool_data_path", "shed-tool-data" ), os.getcwd() )
         self.tool_data_table_config_path = resolve_path( kwargs.get( 'tool_data_table_config_path', 'tool_data_table_conf.xml' ), self.root )
         self.shed_tool_data_table_config = resolve_path( kwargs.get( 'shed_tool_data_table_config', 'shed_tool_data_table_conf.xml' ), self.root )
         self.ftp_upload_dir = kwargs.get( 'ftp_upload_dir', None )
+        # Install and test framework for testing tools contained in repositories.
+        self.num_tool_test_results_saved = kwargs.get( 'num_tool_test_results_saved', 5 )
         # Location for dependencies
         if 'tool_dependency_dir' in kwargs:
             self.tool_dependency_dir = resolve_path( kwargs.get( "tool_dependency_dir" ), self.root )
@@ -59,6 +64,13 @@ class Configuration( object ):
             self.use_tool_dependencies = False
         self.update_integrated_tool_panel = False
         self.use_remote_user = string_as_bool( kwargs.get( "use_remote_user", "False" ) )
+        self.user_activation_on = kwargs.get( 'user_activation_on', None )
+        self.activation_grace_period = kwargs.get( 'activation_grace_period', None )
+        self.inactivity_box_content = kwargs.get( 'inactivity_box_content', None )
+        self.registration_warning_message = kwargs.get( 'registration_warning_message', None )
+        self.terms_url = kwargs.get( 'terms_url', None )
+        self.blacklist_location = kwargs.get( 'blacklist_file', None )
+        self.blacklist_content = None
         self.remote_user_maildomain = kwargs.get( "remote_user_maildomain", None )
         self.remote_user_logout_href = kwargs.get( "remote_user_logout_href", None )
         self.require_login = string_as_bool( kwargs.get( "require_login", "False" ) )
@@ -197,7 +209,7 @@ def configure_logging( config ):
     if level <= logging.DEBUG:
         logging.getLogger( "paste.httpserver.ThreadPool" ).setLevel( logging.WARN )
     # Remove old handlers
-    for h in root.handlers[:]: 
+    for h in root.handlers[:]:
         root.removeHandler(h)
     # Create handler
     if destination == "stdout":
@@ -205,7 +217,7 @@ def configure_logging( config ):
     else:
         handler = logging.FileHandler( destination )
     # Create formatter
-    formatter = logging.Formatter( format )    
+    formatter = logging.Formatter( format )
     # Hook everything up
     handler.setFormatter( formatter )
     root.addHandler( handler )

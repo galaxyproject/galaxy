@@ -17,6 +17,13 @@
         #left {
             background: #C1C9E5 url(${h.url_for('/static/style/menu_bg.png')}) top repeat-x;
         }
+
+        .unified-panel-body {
+            overflow: auto;
+        }
+        .toolMenu {
+            margin: 8px 0 0 10px;
+        }
     </style>
 </%def>
 
@@ -36,7 +43,7 @@
     <div class="unified-panel-header" unselectable="on">
         <div class='unified-panel-header-inner'>Administration</div>
     </div>
-    <div class="unified-panel-body" style="padding: 10px; overflow: auto;">
+    <div class="unified-panel-body">
         <div class="toolMenu">
             <div class="toolSectionList">
                 <div class="toolSectionTitle">Security</div>
@@ -45,6 +52,7 @@
                         <div class="toolTitle"><a href="${h.url_for( controller='admin', action='users' )}" target="galaxy_main">Manage users</a></div>
                         <div class="toolTitle"><a href="${h.url_for( controller='admin', action='groups' )}" target="galaxy_main">Manage groups</a></div>
                         <div class="toolTitle"><a href="${h.url_for( controller='admin', action='roles' )}" target="galaxy_main">Manage roles</a></div>
+			            <div class="toolTitle"><a href="${h.url_for( controller='userskeys', action='all_users' )}" target="galaxy_main">Manage users API keys</a></div>
                         %if trans.app.config.allow_user_impersonation:
                             <div class="toolTitle"><a href="${h.url_for( controller='admin', action='impersonate' )}" target="galaxy_main">Impersonate a user</a></div>
                         %endif
@@ -54,7 +62,9 @@
                 <div class="toolSectionTitle">Data</div>
                 <div class="toolSectionBody">
                     <div class="toolSectionBg">
-                        <div class="toolTitle"><a href="${h.url_for( controller='admin', action='quotas' )}" target="galaxy_main">Manage quotas</a></div>
+                        %if trans.app.config.enable_quotas:
+                            <div class="toolTitle"><a href="${h.url_for( controller='admin', action='quotas' )}" target="galaxy_main">Manage quotas</a></div>
+                        %endif
                         <div class="toolTitle"><a href="${h.url_for( controller='library_admin', action='browse_libraries' )}" target="galaxy_main">Manage data libraries</a></div>
                         %if trans.app.config.enable_beta_job_managers:
                             <div class="toolTitle"><a href="${h.url_for( controller='data_admin', action='manage_data' )}" target="galaxy_main">Manage local data</a></div>

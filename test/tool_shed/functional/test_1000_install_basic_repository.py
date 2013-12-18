@@ -1,5 +1,4 @@
 from tool_shed.base.twilltestcase import ShedTwillTestCase, common, os
-import tool_shed.base.test_db_util as test_db_util
 
 
 class BasicToolShedFeatures( ShedTwillTestCase ):
@@ -9,19 +8,19 @@ class BasicToolShedFeatures( ShedTwillTestCase ):
         """Create necessary user accounts."""
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        test_user_1 = test_db_util.get_user( common.test_user_1_email )
+        test_user_1 = self.test_db_util.get_user( common.test_user_1_email )
         assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % test_user_1_email
-        test_user_1_private_role = test_db_util.get_private_role( test_user_1 )
+        test_user_1_private_role = self.test_db_util.get_private_role( test_user_1 )
         self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
-        admin_user = test_db_util.get_user( common.admin_email )
+        admin_user = self.test_db_util.get_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
-        admin_user_private_role = test_db_util.get_private_role( admin_user )
+        admin_user_private_role = self.test_db_util.get_private_role( admin_user )
         self.galaxy_logout()
         self.galaxy_login( email=common.admin_email, username=common.admin_username )
-        galaxy_admin_user = test_db_util.get_galaxy_user( common.admin_email )
+        galaxy_admin_user = self.test_db_util.get_galaxy_user( common.admin_email )
         assert galaxy_admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
-        galaxy_admin_user_private_role = test_db_util.get_galaxy_private_role( galaxy_admin_user )
+        galaxy_admin_user_private_role = self.test_db_util.get_galaxy_private_role( galaxy_admin_user )
         
     def test_0005_ensure_repositories_and_categories_exist( self ):
         '''Create the 0000 category and upload the filtering repository to it, if necessary.'''
@@ -82,7 +81,7 @@ class BasicToolShedFeatures( ShedTwillTestCase ):
         
     def test_0015_browse_test_0000_category( self ):
         '''Browse the category created in test 0000. It should contain the filtering_0000 repository also created in that test.'''
-        category = test_db_util.get_category_by_name( 'Test 0000 Basic Repository Features 1' )
+        category = self.test_db_util.get_category_by_name( 'Test 0000 Basic Repository Features 1' )
         self.browse_category( category, strings_displayed=[ 'filtering_0000' ] )
         
     def test_0020_preview_filtering_repository( self ):
@@ -93,33 +92,34 @@ class BasicToolShedFeatures( ShedTwillTestCase ):
         self.install_repository( 'filtering_0000', 
                                  common.test_user_1_name, 
                                  'Test 0000 Basic Repository Features 1', 
-                                 new_tool_panel_section='test_1000' )
-        installed_repository = test_db_util.get_installed_repository_by_name_owner( 'filtering_0000', common.test_user_1_name )
+                                 new_tool_panel_section_label='test_1000' )
+        installed_repository = self.test_db_util.get_installed_repository_by_name_owner( 'filtering_0000', common.test_user_1_name )
         strings_displayed = [ 'filtering_0000',
                               "Galaxy's filtering tool",
                               'user1', 
                               self.url.replace( 'http://', '' ), 
-                              installed_repository.installed_changeset_revision ]
+                              str( installed_repository.installed_changeset_revision ) ]
         self.display_galaxy_browse_repositories_page( strings_displayed=strings_displayed )
         strings_displayed.extend( [ 'Installed tool shed repository', 'Valid tools', 'Filter1' ] )
         self.display_installed_repository_manage_page( installed_repository, strings_displayed=strings_displayed )
         self.verify_tool_metadata_for_installed_repository( installed_repository )
         
     def test_0030_install_filtering_repository_again( self ):
-        '''Attempt to install the already installed filtering repository, and check for the resulting error message.'''
-        installed_repository = test_db_util.get_installed_repository_by_name_owner( 'filtering_0000', common.test_user_1_name )
-        post_submit_strings_displayed = [ installed_repository.name,
-                                          installed_repository.owner,
-                                          installed_repository.installed_changeset_revision,
-                                          'was previously installed',
-                                          'to manage the repository' ]
+        '''Attempt to install the already installed filtering repository.'''
+        installed_repository = self.test_db_util.get_installed_repository_by_name_owner( 'filtering_0000', common.test_user_1_name )
+        # The page displayed after installation is the ajaxian "Montior installing tool shed repositories" page.  Since the filter
+        # repository was already installed, nothing will be in the process of being installed, so the grid will display 'No Items'.
+        post_submit_strings_displayed = [ 'No Items' ]
         self.install_repository( 'filtering_0000', 
                                  common.test_user_1_name, 
                                  'Test 0000 Basic Repository Features 1',
                                  post_submit_strings_displayed=post_submit_strings_displayed )
         strings_displayed = [ 'filtering_0000',
-                              'user1',
-                              installed_repository.installed_changeset_revision ]
+                              "Galaxy's filtering tool",
+                              'user1', 
+                              self.url.replace( 'http://', '' ), 
+                              str( installed_repository.installed_changeset_revision ) ]
+        self.display_installed_repository_manage_page( installed_repository, strings_displayed=strings_displayed )
         self.display_galaxy_browse_repositories_page( strings_displayed=strings_displayed )
 
     def test_0035_verify_installed_repository_metadata( self ):

@@ -1,4 +1,4 @@
-#Dan Blankenberg
+##Dan Blankenberg
 import math
 import string
 import transform
@@ -35,6 +35,34 @@ class fastqSequencingRead( SequencingRead ):
             return max( min( score, cls.quality_max ), cls.quality_min )
         return map( restrict_score, decimal_score_list )
     @classmethod
+    def transform_scores_to_valid_range( cls, decimal_score_list):
+        cls_quality_max = cls.quality_max
+        cls_quality_min = cls.quality_min
+        for i in range( len( decimal_score_list ) ):
+            score = decimal_score_list[i]
+            if(score > cls_quality_max):
+                transformed_score = cls_quality_max
+            elif( score < cls_quality_min ):
+                transformed_score = cls_quality_min
+            else:
+                transformed_score = score
+            decimal_score_list[i] = str(transformed_score)
+    @classmethod
+    def transform_scores_to_valid_range_ascii( cls, decimal_score_list ):
+        cls_quality_max = cls.quality_max
+        cls_quality_min = cls.quality_min
+        to_quality = cls.ascii_min - cls.quality_min
+        for i in range( len( decimal_score_list ) ):
+            score = decimal_score_list[i]
+            if(score > cls_quality_max):
+                transformed_score = cls_quality_max
+            elif( score < cls_quality_min ):
+                transformed_score = cls_quality_min
+            else:
+                transformed_score = score
+            transformed_score = chr(transformed_score + to_quality)
+            decimal_score_list[i] = transformed_score
+    @classmethod
     def convert_base_to_color_space( cls, sequence ):
         return cls.color_space_converter.to_color_space( sequence )
     @classmethod
@@ -54,14 +82,34 @@ class fastqSequencingRead( SequencingRead ):
             quality = self.quality.rstrip() #decimal scores should have a trailing space
             if quality:
                 try:
-                    return [ chr( int( val ) + self.ascii_min - self.quality_min ) for val in quality.split() ]
+                    to_quality = self.ascii_min - self.quality_min
+                    return [ chr( int( val ) + to_quality ) for val in quality.split() ]
                 except ValueError, e:
                     raise ValueError( 'Error Parsing quality String. ASCII quality strings cannot contain spaces (%s): %s' % ( self.quality, e ) )
             else:
                 return []
-    def get_decimal_quality_scores( self ):
+    def get_ascii_quality_scores_len( self ):
+        """
+        Compute ascii quality score length, without generating relatively
+        expensive qualty score array.
+        """
         if self.is_ascii_encoded():
-            return [ ord( val ) - self.ascii_min + self.quality_min for val in self.quality ]
+            return len( self.quality )
+        else:
+            quality = self.quality.rstrip()
+            if quality:
+                try:
+                    return len( quality.split() )
+                except ValueError, e:
+                    raise ValueError( 'Error Parsing quality String. ASCII quality strings cannot contain spaces (%s): %s' % ( self.quality, e ) )
+            else:
+                return 0
+    def get_decimal_quality_scores( self ):
+        return self.__get_decimal_quality_scores(self.is_ascii_encoded())
+    def __get_decimal_quality_scores( self, ascii ):
+        if ascii:
+            to_quality = self.quality_min - self.ascii_min
+            return [ ord( val ) + to_quality for val in self.quality ]
         else:
             quality = self.quality.rstrip() #decimal scores should have a trailing space
             if quality:
@@ -82,23 +130,27 @@ class fastqSequencingRead( SequencingRead ):
             else:
                 new_read.sequence = self.convert_color_to_base_space( self.sequence )
         new_read.description = self.description
+        is_ascii = self.is_ascii_encoded()
         if self.score_system != new_read.score_system:
             if self.score_system == 'phred':
-                score_list = self.convert_score_phred_to_solexa( self.get_decimal_quality_scores() )
+                score_list = self.convert_score_phred_to_solexa( self.__get_decimal_quality_scores(is_ascii) )
             else:
-                score_list = self.convert_score_solexa_to_phred( self.get_decimal_quality_scores() )
+                score_list = self.convert_score_solexa_to_phred( self.__get_decimal_quality_scores(is_ascii) )
         else:
-            score_list = self.get_decimal_quality_scores()
-        new_read.quality = "%s " % " ".join( map( str, new_class.restrict_scores_to_valid_range( score_list ) ) ) #need trailing space to be valid decimal fastq
+            score_list = self.__get_decimal_quality_scores(is_ascii)
         if force_quality_encoding is None:
-            if self.is_ascii_encoded():
+            if is_ascii:
                 new_encoding = 'ascii'
             else:
                 new_encoding = 'decimal'
         else:
             new_encoding = force_quality_encoding
         if new_encoding == 'ascii':
-            new_read.quality = "".join( new_read.get_ascii_quality_scores() )
+            new_class.transform_scores_to_valid_range_ascii( score_list )
+            new_read.quality = "".join( score_list )
+        else:  # decimal
+            new_class.transform_scores_to_valid_range( score_list )
+            new_read.quality = "%s " % " ".join( score_list ) #need trailing space to be valid decimal fastq
         return new_read
     def get_sequence( self ):
         return self.sequence
@@ -135,9 +187,9 @@ class fastqSequencingRead( SequencingRead ):
                 return False
         return True
     def insufficient_quality_length( self ):
-        return len( self.get_ascii_quality_scores() ) < len( self.sequence )
+        return self.get_ascii_quality_scores_len() < len( self.sequence )
     def assert_sequence_quality_lengths( self ):
-        qual_len = len( self.get_ascii_quality_scores() )
+        qual_len = self.get_ascii_quality_scores_len()
         seq_len = len( self.sequence )
         assert qual_len == seq_len, "Invalid FASTQ file: quality score length (%i) does not match sequence length (%i)" % ( qual_len, seq_len )
     def reverse( self, clone = True ):
@@ -182,7 +234,7 @@ class fastqSolexaRead( fastqSequencingRead ):
     quality_max = 62
     score_system = 'solexa'
     sequence_space = 'base'
-    
+
 class fastqCSSangerRead( fastqSequencingRead ):
     format = 'cssanger' #color space
     ascii_min = 33
@@ -202,11 +254,11 @@ class fastqCSSangerRead( fastqSequencingRead ):
         return False
     def insufficient_quality_length( self ):
         if self.has_adapter_base():
-            return len( self.get_ascii_quality_scores() ) + 1 < len( self.sequence )
+            return self.get_ascii_quality_scores_len() + 1 < len( self.sequence )
         return fastqSequencingRead.insufficient_quality_length( self )
     def assert_sequence_quality_lengths( self ):
         if self.has_adapter_base():
-            qual_len = len( self.get_ascii_quality_scores() )
+            qual_len = self.get_ascii_quality_scores_len()
             seq_len = len( self.sequence )
             assert ( qual_len + 1 == seq_len ) or ( qual_len == seq_len ), "Invalid FASTQ file: quality score length (%i) does not match sequence length (%i with adapter base)" % ( qual_len, seq_len ) #SRA adds FAKE/DUMMY quality scores to the adapter base, we'll allow the reading of the Improper score here, but remove it in the Reader when "apply_galaxy_conventions" is set to True
         else:
@@ -227,7 +279,7 @@ class fastqCSSangerRead( fastqSequencingRead ):
             rval.sequence = self.color_space_converter.to_color_space( transform.reverse( self.color_space_converter.to_base_space( rval.sequence ) ), adapter_base = adapter )
         else:
             rval.sequence = transform.reverse( rval.sequence )
-        
+
         if rval.is_ascii_encoded():
             rval.quality = rval.quality[::-1]
         else:
@@ -264,7 +316,7 @@ class fastqCSSangerRead( fastqSequencingRead ):
         elif new_adapter:
             rval.sequence = "%s%s" % ( new_adapter, rval.sequence )
         return rval
-    def apply_galaxy_conventions( self ):  
+    def apply_galaxy_conventions( self ):
         if self.has_adapter_base() and len( self.sequence ) == len( self.get_ascii_quality_scores() ): #SRA adds FAKE/DUMMY quality scores to the adapter base, we remove them here
             if self.is_ascii_encoded():
                 self.quality = self.quality[1:]
@@ -366,7 +418,7 @@ class fastqAggregator( object ):
                 return [ halfed ]
             return[ halfed - 1, halfed ]
         read_count = self.get_read_count_for_column( i )
-        
+
         min_score = self.get_score_min_for_column( i )
         max_score = self.get_score_max_for_column( i )
         sum_score = self.get_score_sum_for_column( i )
@@ -388,7 +440,7 @@ class fastqAggregator( object ):
         #determine iqr and step
         iqr = q3 - q1
         step = 1.5 * iqr
-        
+
         #Determine whiskers and outliers
         outliers = []
         score_list = sorted( self.get_score_list_for_column( i ) )
@@ -399,7 +451,7 @@ class fastqAggregator( object ):
                 break
             else:
                 outliers.append( score )
-        
+
         right_whisker = q3 + step
         score_list.reverse()
         for score in score_list:
@@ -408,17 +460,17 @@ class fastqAggregator( object ):
                 break
             else:
                 outliers.append( score )
-        
-        column_stats = { 'read_count': read_count, 
-                         'min_score': min_score, 
-                         'max_score': max_score, 
-                         'sum_score': sum_score, 
-                         'mean_score': mean_score, 
-                         'q1': q1, 
-                         'med_score': med_score, 
-                         'q3': q3, 
-                         'iqr': iqr, 
-                         'left_whisker': left_whisker, 
+
+        column_stats = { 'read_count': read_count,
+                         'min_score': min_score,
+                         'max_score': max_score,
+                         'sum_score': sum_score,
+                         'mean_score': mean_score,
+                         'q1': q1,
+                         'med_score': med_score,
+                         'q3': q3,
+                         'iqr': iqr,
+                         'left_whisker': left_whisker,
                          'right_whisker': right_whisker,
                          'outliers': outliers }
         return column_stats
@@ -439,9 +491,9 @@ class fastqReader( object ):
             #remove empty lines, apparently extra new lines at end of file is common?
             if fastq_header:
                 break
-                
+
         assert fastq_header.startswith( '@' ), 'Invalid fastq header: %s' % fastq_header
-        rval = fastqSequencingRead.get_class_by_format( self.format )()        
+        rval = fastqSequencingRead.get_class_by_format( self.format )()
         rval.identifier = fastq_header
         while True:
             line = self.file.readline()
@@ -483,7 +535,7 @@ class fastqVerboseErrorReader( fastqReader ):
     def next( self ):
         last_good_end_offset = self.file.tell()
         last_readline_count = self.file.readline_count
-        try: 
+        try:
             block = super( fastqVerboseErrorReader, self ).next()
             self.last_good_identifier = block.identifier
             return block
@@ -601,7 +653,7 @@ class fastqJoiner( object ):
         identifier = read1_id
         if read1_desc:
             identifier = identifier + ' ' + read1_desc
-        
+
         #use force quality encoding, if not present force to encoding of first read
         force_quality_encoding = self.force_quality_encoding
         if not force_quality_encoding:
@@ -609,7 +661,7 @@ class fastqJoiner( object ):
                 force_quality_encoding = 'ascii'
             else:
                 force_quality_encoding = 'decimal'
-        
+
         new_read1 = read1.convert_read_to_format( self.format, force_quality_encoding = force_quality_encoding )
         new_read2 = read2.convert_read_to_format( self.format, force_quality_encoding = force_quality_encoding )
         rval = FASTQ_FORMATS[ self.format ]()
@@ -649,7 +701,7 @@ class fastqJoiner( object ):
                 is_first = False
         return is_first
 
-class fastqSplitter( object ):   
+class fastqSplitter( object ):
     def split( self, fastq_read ):
         length = len( fastq_read )
         #Only reads of even lengths can be split

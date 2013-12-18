@@ -94,7 +94,7 @@ def upgrade(migrate_engine):
         Tool_table.drop()
     except Exception, e:
         log.debug( "Dropping tool table failed: %s" % str( e ) )
-def downgrade():
+def downgrade(migrate_engine):
     # Load existing tables
     metadata.bind = migrate_engine
     metadata.reflect()

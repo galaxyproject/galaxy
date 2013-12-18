@@ -36,7 +36,7 @@
         --JM 10G
 
         ## CPU and butterfly options.
-        --CPU 6 --bfly_opts "-V 10 --stderr" > $trinity_log 2>&amp;1
+        --CPU \${GALAXY_SLOTS:-6} --bfly_opts "-V 10 --stderr" > $trinity_log 2>&amp;1
     </command>
     <inputs>
         <conditional name="inputs">

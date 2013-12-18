@@ -69,7 +69,7 @@
     </script>
 </%def>
 
-<%def name="render_dependencies_section( install_repository_dependencies_check_box, install_tool_dependencies_check_box, containers_dict )">
+<%def name="render_dependencies_section( repository_dependencies_check_box, install_tool_dependencies_check_box, containers_dict, revision_label=None, export=False )">
     <style type="text/css">
         #dependency_table{ table-layout:fixed;
                            width:100%;
@@ -89,27 +89,44 @@
             def __str__( self ):
                 return str( self.count )
 
-        repository_dependencies_root_folder = containers_dict[ 'repository_dependencies' ]
-        tool_dependencies_root_folder = containers_dict[ 'tool_dependencies' ]
-        missing_tool_dependencies_root_folder = containers_dict[ 'missing_tool_dependencies' ]
+        repository_dependencies_root_folder = containers_dict.get( 'repository_dependencies', None )
+        tool_dependencies_root_folder = containers_dict.get( 'tool_dependencies', None )
+        missing_tool_dependencies_root_folder = containers_dict.get( 'missing_tool_dependencies', None )
         env_settings_heaader_row_displayed = False
         package_header_row_displayed = False
+        if revision_label:
+            revision_label_str = ' revision <b>%s</b> of ' % str( revision_label )
+        else:
+            revision_label_str = ' '
     %>
     <div class="form-row">
         <div class="toolParamHelp" style="clear: both;">
             <p>
-                These dependencies can be automatically handled with the installed repository, providing significant benefits, and 
-                Galaxy includes various features to manage them.
+                %if export:
+                    The following additional repositories are required by${revision_label_str}the <b>${repository.name}</b> repository
+                    and they can be exported as well.
+                %else:
+                    These dependencies can be automatically handled with${revision_label_str}the installed repository, providing significant
+                    benefits, and Galaxy includes various features to manage them.
+                %endif
             </p>
         </div>
     </div>
     %if repository_dependencies_root_folder:
-        %if install_repository_dependencies_check_box is not None:
+        %if repository_dependencies_check_box is not None:
             <div class="form-row">
-                <label>Handle repository dependencies?</label>
-                ${install_repository_dependencies_check_box.get_html()}
+                %if export:
+                    <label>Export repository dependencies?</label>
+                %else:
+                    <label>Handle repository dependencies?</label>
+                %endif
+                ${repository_dependencies_check_box.get_html()}
                 <div class="toolParamHelp" style="clear: both;">
-                    Un-check to skip automatic installation of these additional repositories required by this repository.
+                    %if export:
+                        Un-check to skip exporting the following additional repositories that are required by this repository.
+                    %else:
+                        Un-check to skip automatic installation of these additional repositories required by this repository.
+                    %endif
                 </div>
             </div>
             <div style="clear: both"></div>
@@ -316,10 +333,10 @@
         can_update = False
         if query.count():
             for tool_shed_repository in query:
-                if tool_shed_repository.status not in [ trans.model.ToolShedRepository.installation_status.INSTALLED,
-                                                        trans.model.ToolShedRepository.installation_status.ERROR,
-                                                        trans.model.ToolShedRepository.installation_status.DEACTIVATED,
-                                                        trans.model.ToolShedRepository.installation_status.UNINSTALLED ]:
+                if tool_shed_repository.status not in [ trans.install_model.ToolShedRepository.installation_status.INSTALLED,
+                                                        trans.install_model.ToolShedRepository.installation_status.ERROR,
+                                                        trans.install_model.ToolShedRepository.installation_status.DEACTIVATED,
+                                                        trans.install_model.ToolShedRepository.installation_status.UNINSTALLED ]:
                     can_update = True
                     break
     %>

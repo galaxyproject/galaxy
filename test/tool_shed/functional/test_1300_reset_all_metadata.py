@@ -1,6 +1,4 @@
 from tool_shed.base.twilltestcase import ShedTwillTestCase, common, os
-import tool_shed.base.test_db_util as test_db_util
-
 datatypes_repository_name = 'emboss_datatypes_0020'
 datatypes_repository_description = "Galaxy applicable data formats used by Emboss tools."
 datatypes_repository_long_description = "Galaxy applicable data formats used by Emboss tools.  This repository contains no tools."
@@ -13,20 +11,21 @@ base_datatypes_count = 0
 repository_datatypes_count = 0
 running_standalone = False
 
+
 class TestResetInstalledRepositoryMetadata( ShedTwillTestCase ):
     '''Verify that the "Reset selected metadata" feature works.'''
     def test_0000_initiate_users( self ):
         """Create necessary user accounts."""
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        test_user_1 = test_db_util.get_user( common.test_user_1_email )
+        test_user_1 = self.test_db_util.get_user( common.test_user_1_email )
         assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % test_user_1_email
-        test_user_1_private_role = test_db_util.get_private_role( test_user_1 )
+        test_user_1_private_role = self.test_db_util.get_private_role( test_user_1 )
         self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
-        admin_user = test_db_util.get_user( common.admin_email )
+        admin_user = self.test_db_util.get_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % admin_email
-        admin_user_private_role = test_db_util.get_private_role( admin_user )
+        admin_user_private_role = self.test_db_util.get_private_role( admin_user )
     def test_0005_create_repositories_and_categories( self ):
         '''Ensure that the necessary categories and repositories exist for these tests.'''
         global repository_datatypes_count
@@ -244,8 +243,8 @@ class TestResetInstalledRepositoryMetadata( ShedTwillTestCase ):
                               commit_message='Uploaded filtering 1.1.0 tarball.',
                               strings_displayed=[], 
                               strings_not_displayed=[] )
-            freebayes_repository = test_db_util.get_repository_by_name_and_owner( 'freebayes_0040', common.test_user_1_name )
-            filtering_repository = test_db_util.get_repository_by_name_and_owner( 'filtering_0040', common.test_user_1_name )
+            freebayes_repository = self.test_db_util.get_repository_by_name_and_owner( 'freebayes_0040', common.test_user_1_name )
+            filtering_repository = self.test_db_util.get_repository_by_name_and_owner( 'filtering_0040', common.test_user_1_name )
             repository_dependencies_path = self.generate_temp_path( 'test_0340', additional_paths=[ 'dependencies' ] )
             dependency_tuple = ( self.url, freebayes_repository.name, freebayes_repository.user.username, self.get_repository_tip( freebayes_repository ) )
             self.create_repository_dependency( repository=filtering_repository, repository_tuples=[ dependency_tuple ], filepath=repository_dependencies_path )
@@ -393,12 +392,12 @@ class TestResetInstalledRepositoryMetadata( ShedTwillTestCase ):
     def test_0015_reset_metadata_on_all_repositories( self ):
         '''Reset metadata on all repositories, then verify that it has not changed.'''
         repository_metadata = dict()
-        repositories = test_db_util.get_all_installed_repositories( actually_installed=True )
+        repositories = self.test_db_util.get_all_installed_repositories( actually_installed=True )
         for repository in repositories:
             repository_metadata[ self.security.encode_id( repository.id ) ] = repository.metadata
         self.reset_metadata_on_selected_installed_repositories( repository_metadata.keys() )
         for repository in repositories:
-            test_db_util.ga_refresh( repository )
+            self.test_db_util.ga_refresh( repository )
             old_metadata = repository_metadata[ self.security.encode_id( repository.id ) ]
             # When a repository with tools to be displayed in a tool panel section is deactivated and reinstalled, 
             # the tool panel section remains in the repository metadata. However, when the repository's metadata

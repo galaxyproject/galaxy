@@ -3,13 +3,14 @@
     <description>Find splice junctions using RNA-seq data</description>
     <version_command>tophat --version</version_command>
     <requirements>
+        <requirement type="package">samtools</requirement>
+        <requirement type="package">bowtie</requirement>
         <requirement type="package">tophat</requirement>
     </requirements>
     <command interpreter="python">
         tophat_wrapper.py
             ## Change this to accommodate the number of threads you have available.
-            --num-threads="4"
-
+            --num-threads="\${GALAXY_SLOTS:-4}"
             ## Provide outputs.
             --junctions-output=$junctions
             --hits-output=$accepted_hits

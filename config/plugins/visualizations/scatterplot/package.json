@@ -1,0 +1,24 @@
+{
+  "name": "galaxy-scatterplot",
+  "version": "0.0.0",
+  "description": "Scatterplot visualization plugin for the Galaxy informatics framework",
+  "main": " ",
+  "scripts": {
+    "test": "test"
+  },
+  "keywords": [
+    "galaxy",
+    "visualization",
+    "d3"
+  ],
+  "author": "Carl Eberhard",
+  "license": "BSD",
+  "devDependencies": {
+    "grunt": "~0.4.1",
+    "grunt-cli": "~0.1.9",
+    "grunt-contrib-handlebars": "~0.5.10",
+    "grunt-contrib-concat": "~0.3.0",
+    "grunt-contrib-uglify": "~0.2.2",
+    "grunt-contrib-watch": "~0.5.3"
+  }
+}

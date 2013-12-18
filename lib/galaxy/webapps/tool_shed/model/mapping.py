@@ -1,42 +1,23 @@
 """
 Details of how the data model objects are mapped onto the relational database
-are encapsulated here. 
+are encapsulated here.
 """
 import logging
 log = logging.getLogger( __name__ )
 
-import sys
-import datetime
-
 from galaxy.webapps.tool_shed.model import *
+import galaxy.webapps.tool_shed.model
 from galaxy.model.orm import *
 from galaxy.model.custom_types import *
-from galaxy.util.bunch import Bunch
+from galaxy.model.orm.engine_factory import build_engine
+from galaxy.model.orm.now import now
+from galaxy.model.base import ModelMapping
 import galaxy.webapps.tool_shed.util.shed_statistics as shed_statistics
 import galaxy.webapps.tool_shed.util.hgweb_config
 from galaxy.webapps.tool_shed.security import CommunityRBACAgent
 
 metadata = MetaData()
-context = Session = scoped_session( sessionmaker( autoflush=False, autocommit=True ) )
 
-# For backward compatibility with "context.current"
-context.current = Session
-
-dialect_to_egg = { 
-    "sqlite"   : "pysqlite>=2",
-    "postgres" : "psycopg2",
-    "mysql"    : "MySQL_python"
-}
-
-# NOTE REGARDING TIMESTAMPS:
-#   It is currently difficult to have the timestamps calculated by the 
-#   database in a portable way, so we're doing it in the client. This
-#   also saves us from needing to postfetch on postgres. HOWEVER: it
-#   relies on the client's clock being set correctly, so if clustering
-#   web servers, use a time server to ensure synchronization
-
-# Return the current time in UTC without any timezone information
-now = datetime.datetime.utcnow
 
 APIKeys.table = Table( "api_keys", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -72,7 +53,7 @@ Role.table = Table( "role", metadata,
     Column( "type", String( 40 ), index=True ),
     Column( "deleted", Boolean, index=True, default=False ) )
 
-UserGroupAssociation.table = Table( "user_group_association", metadata, 
+UserGroupAssociation.table = Table( "user_group_association", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "group_id", Integer, ForeignKey( "galaxy_group.id" ), index=True ),
@@ -111,6 +92,7 @@ Repository.table = Table( "repository", metadata,
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "name", TrimmedString( 255 ), index=True ),
+    Column( "type", TrimmedString( 255 ), index=True ),
     Column( "description" , TEXT ),
     Column( "long_description" , TEXT ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
@@ -204,16 +186,16 @@ Tag.table = Table( "tag", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "type", Integer ),
     Column( "parent_id", Integer, ForeignKey( "tag.id" ) ),
-    Column( "name", TrimmedString(255) ), 
+    Column( "name", TrimmedString(255) ),
     UniqueConstraint( "name" ) )
 
 # With the tables defined we can define the mappers and setup the relationships between the model objects.
-mapper( User, User.table, 
+mapper( User, User.table,
     properties=dict( active_repositories=relation( Repository, primaryjoin=( ( Repository.table.c.user_id == User.table.c.id ) & ( not_( Repository.table.c.deleted ) ) ), order_by=( Repository.table.c.name ) ),
                      galaxy_sessions=relation( GalaxySession, order_by=desc( GalaxySession.table.c.update_time ) ),
                      api_keys=relation( APIKeys, backref="user", order_by=desc( APIKeys.table.c.create_time ) ) ) )
 
-mapper( APIKeys, APIKeys.table, 
+mapper( APIKeys, APIKeys.table,
     properties = {} )
 
 mapper( Group, Group.table,
@@ -231,7 +213,7 @@ mapper( UserGroupAssociation, UserGroupAssociation.table,
 mapper( UserRoleAssociation, UserRoleAssociation.table,
     properties=dict(
         user=relation( User, backref="roles" ),
-        non_private_roles=relation( User, 
+        non_private_roles=relation( User,
                                     backref="non_private_roles",
                                     primaryjoin=( ( User.table.c.id == UserRoleAssociation.table.c.user_id ) & ( UserRoleAssociation.table.c.role_id == Role.table.c.id ) & not_( Role.table.c.name == User.table.c.email ) ) ),
         role=relation( Role ) ) )
@@ -253,7 +235,7 @@ mapper( Category, Category.table,
                                             primaryjoin=( Category.table.c.id == RepositoryCategoryAssociation.table.c.category_id ),
                                             secondaryjoin=( RepositoryCategoryAssociation.table.c.repository_id == Repository.table.c.id ) ) ) )
 
-mapper( Repository, Repository.table, 
+mapper( Repository, Repository.table,
     properties = dict(
         categories=relation( RepositoryCategoryAssociation ),
         ratings=relation( RepositoryRatingAssociation, order_by=desc( RepositoryRatingAssociation.table.c.update_time ), backref="repositories" ),
@@ -311,43 +293,21 @@ mapper( RepositoryCategoryAssociation, RepositoryCategoryAssociation.table,
         category=relation( Category ),
         repository=relation( Repository ) ) )
 
-def guess_dialect_for_url( url ):
-    return (url.split(':', 1))[0]
-
-def load_egg_for_url( url ):
-    # Load the appropriate db module
-    dialect = guess_dialect_for_url( url )
-    try:
-        egg = dialect_to_egg[dialect]
-        try:
-            pkg_resources.require( egg )
-            log.debug( "%s egg successfully loaded for %s dialect" % ( egg, dialect ) )
-        except:
-            # If the module's in the path elsewhere (i.e. non-egg), it'll still load.
-            log.warning( "%s egg not found, but an attempt will be made to use %s anyway" % ( egg, dialect ) )
-    except KeyError:
-        # Let this go, it could possibly work with db's we don't support
-        log.error( "database_connection contains an unknown SQLAlchemy database dialect: %s" % dialect )
 
 def init( file_path, url, engine_options={}, create_tables=False ):
     """Connect mappings to the database"""
-    # Load the appropriate db module
-    load_egg_for_url( url )
     # Create the database engine
-    engine = create_engine( url, **engine_options )
+    engine = build_engine( url, engine_options )
     # Connect the metadata to the database.
     metadata.bind = engine
-    # Clear any existing contextual sessions and reconfigure
-    Session.remove()
-    Session.configure( bind=engine )
-    # Create tables if needed
+
+    result = ModelMapping([galaxy.webapps.tool_shed.model], engine=engine)
+
     if create_tables:
         metadata.create_all()
-    # Pack everything into a bunch
-    result = Bunch( **globals() )
-    result.engine = engine
-    result.session = Session
+
     result.create_tables = create_tables
+
     # Load local tool shed security policy
     result.security_agent = CommunityRBACAgent( result )
     result.shed_counter = shed_statistics.ShedCounter( result )

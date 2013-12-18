@@ -1,15 +1,16 @@
-from galaxy.model import LibraryDatasetDatasetAssociation
-from galaxy.util.bunch import Bunch
-from galaxy.util.odict import odict
-from galaxy.util.json import to_json_string
-from galaxy.tools.parameters import *
-from galaxy.tools.parameters.grouping import *
-from galaxy.util.template import fill_template
-from galaxy.util.none_like import NoneDataset
-from galaxy.web import url_for
-from galaxy.exceptions import ObjectInvalid
+import os
 import galaxy.tools
-from types import *
+
+from galaxy.exceptions import ObjectInvalid
+from galaxy.model import LibraryDatasetDatasetAssociation
+from galaxy.tools.parameters import DataToolParameter, SelectToolParameter
+from galaxy.tools.parameters.grouping import Conditional, Repeat
+from galaxy.util.json import from_json_string
+from galaxy.util.json import to_json_string
+from galaxy.util.none_like import NoneDataset
+from galaxy.util.odict import odict
+from galaxy.util.template import fill_template
+from galaxy.web import url_for
 
 import logging
 log = logging.getLogger( __name__ )
@@ -21,22 +22,24 @@ class ToolAction( object ):
     """
     def execute( self, tool, trans, incoming={}, set_output_hid=True ):
         raise TypeError("Abstract method")
-    
+
 class DefaultToolAction( object ):
     """Default tool action is to run an external command"""
-    
+
     def collect_input_datasets( self, tool, param_values, trans ):
         """
-        Collect any dataset inputs from incoming. Returns a mapping from 
+        Collect any dataset inputs from incoming. Returns a mapping from
         parameter name to Dataset instance for each tool parameter that is
         of the DataToolParameter type.
         """
         input_datasets = dict()
         def visitor( prefix, input, value, parent = None ):
             def process_dataset( data, formats = None ):
+                if not data:
+                    return data
                 if formats is None:
                     formats = input.formats
-                if data and not isinstance( data.datatype, formats ):
+                if not data.datatype.matches_any( formats ):
                     # Need to refresh in case this conversion just took place, i.e. input above in tool performed the same conversion
                     trans.sa_session.refresh( data )
                     target_ext, converted_dataset = data.find_conversion_destination( formats )
@@ -54,7 +57,7 @@ class DefaultToolAction( object ):
                             trans.sa_session.flush()
                             data = new_data
                 current_user_roles = trans.get_current_user_roles()
-                if data and not trans.app.security_agent.can_access_dataset( current_user_roles, data.dataset ):
+                if not trans.app.security_agent.can_access_dataset( current_user_roles, data.dataset ):
                     raise "User does not have permission to use a dataset (%s) provided for input." % data.id
                 return data
             if isinstance( input, DataToolParameter ):
@@ -70,7 +73,7 @@ class DefaultToolAction( object ):
                         conversions = []
                         for conversion_name, conversion_extensions, conversion_datatypes in input.conversions:
                             new_data = process_dataset( input_datasets[ prefix + input.name + str( i + 1 ) ], conversion_datatypes )
-                            if not new_data or isinstance( new_data.datatype, conversion_datatypes ):
+                            if not new_data or new_data.datatype.matches_any( conversion_datatypes ):
                                 input_datasets[ prefix + conversion_name + str( i + 1 ) ] = new_data
                                 conversions.append( ( conversion_name, new_data ) )
                             else:
@@ -90,7 +93,7 @@ class DefaultToolAction( object ):
                     conversions = []
                     for conversion_name, conversion_extensions, conversion_datatypes in input.conversions:
                         new_data = process_dataset( input_datasets[ prefix + input.name ], conversion_datatypes )
-                        if not new_data or isinstance( new_data.datatype, conversion_datatypes ):
+                        if not new_data or new_data.datatype.matches_any( conversion_datatypes ):
                             input_datasets[ prefix + conversion_name ] = new_data
                             conversions.append( ( conversion_name, new_data ) )
                         else:
@@ -105,7 +108,7 @@ class DefaultToolAction( object ):
         tool.visit_inputs( param_values, visitor )
         return input_datasets
 
-    def execute(self, tool, trans, incoming={}, return_job=False, set_output_hid=True, set_output_history=True, history=None, job_params=None ):
+    def execute(self, tool, trans, incoming={}, return_job=False, set_output_hid=True, set_output_history=True, history=None, job_params=None, rerun_remap_job_id=None):
         """
         Executes a tool, creating job and tool outputs, associating them, and
         submitting the job to the job queue. If history is not specified, use
@@ -114,9 +117,9 @@ class DefaultToolAction( object ):
         def make_dict_copy( from_dict ):
             """
             Makes a copy of input dictionary from_dict such that all values that are dictionaries
-            result in creation of a new dictionary ( a sort of deepcopy ).  We may need to handle 
-            other complex types ( e.g., lists, etc ), but not sure... 
-            Yes, we need to handle lists (and now are)... 
+            result in creation of a new dictionary ( a sort of deepcopy ).  We may need to handle
+            other complex types ( e.g., lists, etc ), but not sure...
+            Yes, we need to handle lists (and now are)...
             """
             copy_from_dict = {}
             for key, value in from_dict.items():
@@ -165,11 +168,11 @@ class DefaultToolAction( object ):
                     input_values[ input.name ] = galaxy.tools.SelectToolParameterWrapper( input, input_values[ input.name ], tool.app, other_values = incoming )
                 else:
                     input_values[ input.name ] = galaxy.tools.InputValueWrapper( input, input_values[ input.name ], incoming )
-        
+
         # Set history.
         if not history:
             history = tool.get_default_history_by_trans( trans, create=True )
-        
+
         out_data = odict()
         # Collect any input datasets from the incoming parameters
         inp_data = self.collect_input_datasets( tool, incoming, trans )
@@ -182,17 +185,17 @@ class DefaultToolAction( object ):
             if not data:
                 data = NoneDataset( datatypes_registry = trans.app.datatypes_registry )
                 continue
-                
+
             # Convert LDDA to an HDA.
             if isinstance(data, LibraryDatasetDatasetAssociation):
                 data = data.to_history_dataset_association( None )
                 inp_data[name] = data
-            
+
             else: # HDA
                 if data.hid:
                     input_names.append( 'data %s' % data.hid )
             input_ext = data.ext
-            
+
             if data.dbkey not in [None, '?']:
                 input_dbkey = data.dbkey
 
@@ -203,21 +206,28 @@ class DefaultToolAction( object ):
             db_datasets[ "chromInfo" ] = db_dataset
             incoming[ "chromInfo" ] = db_dataset.file_name
         else:
-            # For custom builds, chrom info resides in converted dataset; for built-in builds, chrom info resides in tool-data/shared.
+            # -- Get chrom_info from either a custom or built-in build. --
+
             chrom_info = None
             if trans.user and ( 'dbkeys' in trans.user.preferences ) and ( input_dbkey in from_json_string( trans.user.preferences[ 'dbkeys' ] ) ):
                 # Custom build.
                 custom_build_dict = from_json_string( trans.user.preferences[ 'dbkeys' ] )[ input_dbkey ]
-                if 'fasta' in custom_build_dict:
+                # HACK: the attempt to get chrom_info below will trigger the 
+                # fasta-to-len converter if the dataset is not available or,
+                # which will in turn create a recursive loop when 
+                # running the fasta-to-len tool. So, use a hack in the second
+                # condition below to avoid getting chrom_info when running the
+                # fasta-to-len converter.
+                if 'fasta' in custom_build_dict and tool.id != 'CONVERTER_fasta_to_len':
                     build_fasta_dataset = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( custom_build_dict[ 'fasta' ] )
                     chrom_info = build_fasta_dataset.get_converted_dataset( trans, 'len' ).file_name
-            
+
             if not chrom_info:
                 # Default to built-in build.
-                chrom_info = os.path.join( trans.app.config.tool_data_path, 'shared','ucsc','chrom', "%s.len" % input_dbkey )
+                chrom_info = os.path.join( trans.app.config.len_file_path, "%s.len" % input_dbkey )
             incoming[ "chromInfo" ] = chrom_info
         inp_data.update( db_datasets )
-        
+
         # Determine output dataset permission/roles list
         existing_datasets = [ inp for inp in inp_data.values() if inp ]
         if existing_datasets:
@@ -239,7 +249,7 @@ class DefaultToolAction( object ):
         # Add the dbkey to the incoming parameters
         incoming[ "dbkey" ] = input_dbkey
         params = None #wrapped params are used by change_format action and by output.label; only perform this wrapping once, as needed
-        # Keep track of parent / child relationships, we'll create all the 
+        # Keep track of parent / child relationships, we'll create all the
         # datasets first, then create the associations
         parent_to_child_pairs = []
         child_dataset_names = set()
@@ -255,7 +265,7 @@ class DefaultToolAction( object ):
                 if output.parent:
                     parent_to_child_pairs.append( ( output.parent, name ) )
                     child_dataset_names.add( name )
-                ## What is the following hack for? Need to document under what 
+                ## What is the following hack for? Need to document under what
                 ## conditions can the following occur? (james@bx.psu.edu)
                 # HACK: the output data has already been created
                 #      this happens i.e. as a result of the async controller
@@ -271,10 +281,12 @@ class DefaultToolAction( object ):
                         ext = input_ext
                     if output.format_source is not None and output.format_source in inp_data:
                         try:
-                            ext = inp_data[output.format_source].ext
+                            input_dataset = inp_data[output.format_source]
+                            input_extension = input_dataset.ext
+                            ext = input_extension
                         except Exception, e:
                             pass
-                    
+
                     #process change_format tags
                     if output.change_format:
                         if params is None:
@@ -317,14 +329,14 @@ class DefaultToolAction( object ):
                 object_store_id = data.dataset.object_store_id      # these will be the same thing after the first output
                 # This may not be neccesary with the new parent/child associations
                 data.designation = name
-                # Copy metadata from one of the inputs if requested. 
+                # Copy metadata from one of the inputs if requested.
                 if output.metadata_source:
                     data.init_meta( copy_from=inp_data[output.metadata_source] )
                 else:
                     data.init_meta()
                 # Take dbkey from LAST input
                 data.dbkey = str(input_dbkey)
-                # Set state 
+                # Set state
                 # FIXME: shouldn't this be NEW until the job runner changes it?
                 data.state = data.states.QUEUED
                 data.blurb = "queued"
@@ -346,7 +358,7 @@ class DefaultToolAction( object ):
                         params = make_dict_copy( incoming )
                         wrap_values( tool.inputs, params, skip_missing_values = not tool.check_values )
                     data.name = self._get_default_data_name( data, tool, on_text=on_text, trans=trans, incoming=incoming, history=history, params=params, job_params=job_params )
-                # Store output 
+                # Store output
                 out_data[ name ] = data
                 if output.actions:
                     #Apply pre-job tool-output-dataset actions; e.g. setting metadata, changing format
@@ -368,7 +380,7 @@ class DefaultToolAction( object ):
             parent_dataset = out_data[ parent_name ]
             child_dataset = out_data[ child_name ]
             parent_dataset.children.append( child_dataset )
-        # Store data after custom code runs 
+        # Store data after custom code runs
         trans.sa_session.flush()
         # Create the job object
         job = trans.app.model.Job()
@@ -405,6 +417,40 @@ class DefaultToolAction( object ):
             job.params = to_json_string( job_params )
         job.set_handler(tool.get_job_handler(job_params))
         trans.sa_session.add( job )
+        # Now that we have a job id, we can remap any outputs if this is a rerun and the user chose to continue dependent jobs
+        # This functionality requires tracking jobs in the database.
+        if trans.app.config.track_jobs_in_database and rerun_remap_job_id is not None:
+            try:
+                old_job = trans.sa_session.query( trans.app.model.Job ).get(rerun_remap_job_id)
+                assert old_job is not None, '(%s/%s): Old job id is invalid' % (rerun_remap_job_id, job.id)
+                assert old_job.tool_id == job.tool_id, '(%s/%s): Old tool id (%s) does not match rerun tool id (%s)' % (old_job.id, job.id, old_job.tool_id, job.tool_id)
+                if trans.user is not None:
+                    assert old_job.user_id == trans.user.id, '(%s/%s): Old user id (%s) does not match rerun user id (%s)' % (old_job.id, job.id, old_job.user_id, trans.user.id)
+                elif trans.user is None and type( galaxy_session ) == trans.model.GalaxySession:
+                    assert old_job.session_id == galaxy_session.id, '(%s/%s): Old session id (%s) does not match rerun session id (%s)' % (old_job.id, job.id, old_job.session_id, galaxy_session.id)
+                else:
+                    raise Exception('(%s/%s): Remapping via the API is not (yet) supported' % (old_job.id, job.id))
+                for jtod in old_job.output_datasets:
+                    for (job_to_remap, jtid) in [(jtid.job, jtid) for jtid in jtod.dataset.dependent_jobs]:
+                        if (trans.user is not None and job_to_remap.user_id == trans.user.id) or (trans.user is None and job_to_remap.session_id == galaxy_session.id):
+                            if job_to_remap.state == job_to_remap.states.PAUSED:
+                                job_to_remap.state = job_to_remap.states.NEW
+                            for hda in [ dep_jtod.dataset for dep_jtod in job_to_remap.output_datasets ]:
+                                if hda.state == hda.states.PAUSED:
+                                    hda.state = hda.states.NEW
+                                    hda.info = None
+                            for p in job_to_remap.parameters:
+                                if p.name == jtid.name and p.value == str(jtod.dataset.id):
+                                    p.value = str(out_data[jtod.name].id)
+                            jtid.dataset = out_data[jtod.name]
+                            jtid.dataset.hid = jtod.dataset.hid
+                            log.info('Job %s input HDA %s remapped to new HDA %s' % (job_to_remap.id, jtod.dataset.id, jtid.dataset.id))
+                            trans.sa_session.add(job_to_remap)
+                            trans.sa_session.add(jtid)
+                    jtod.dataset.visible = False
+                    trans.sa_session.add(jtod)
+            except Exception, e:
+                log.exception('Cannot remap rerun dependencies.')
         trans.sa_session.flush()
         # Some tools are not really executable, but jobs are still created for them ( for record keeping ).
         # Examples include tools that redirect to other applications ( epigraph ).  These special tools must
@@ -415,7 +461,7 @@ class DefaultToolAction( object ):
             for name in inp_data.keys():
                 dataset = inp_data[ name ]
             redirect_url = tool.parse_redirect_url( dataset, incoming )
-            # GALAXY_URL should be include in the tool params to enable the external application 
+            # GALAXY_URL should be include in the tool params to enable the external application
             # to send back to the current Galaxy instance
             GALAXY_URL = incoming.get( 'GALAXY_URL', None )
             assert GALAXY_URL is not None, "GALAXY_URL parameter missing in tool config."

@@ -16,7 +16,7 @@ log = logging.getLogger( __name__ )
 
 
 class AdminController( BaseUIController, Admin ):
-    
+
     user_list_grid = admin_grids.UserGrid()
     role_list_grid = admin_grids.RoleGrid()
     group_list_grid = admin_grids.GroupGrid()
@@ -77,7 +77,7 @@ class AdminController( BaseUIController, Admin ):
                 return self.undelete_repository( trans, **kwd )
         # The changeset_revision_select_field in the RepositoryGrid performs a refresh_on_change
         # which sends in request parameters like changeset_revison_1, changeset_revision_2, etc.  One
-        # of the many select fields on the grid performed the refresh_on_change, so we loop through 
+        # of the many select fields on the grid performed the refresh_on_change, so we loop through
         # all of the received values to see which value is not the repository tip.  If we find it, we
         # know the refresh_on_change occurred, and we have the necessary repository id and change set
         # revision to pass on.
@@ -154,7 +154,7 @@ class AdminController( BaseUIController, Admin ):
         status = kwd.get( 'status', 'done' )
         id = kwd.get( 'id', None )
         if id:
-            # Deleting multiple items is currently not allowed (allow_multiple=False), so there will only be 1 id. 
+            # Deleting multiple items is currently not allowed (allow_multiple=False), so there will only be 1 id.
             ids = util.listify( id )
             count = 0
             deleted_repositories = ""
@@ -227,7 +227,7 @@ class AdminController( BaseUIController, Admin ):
                 if not new_name:
                     message = 'Enter a valid name'
                     status = 'error'
-                elif category.name != new_name and suc.get_category_by_name( trans, name ):
+                elif category.name != new_name and suc.get_category_by_name( trans, new_name ):
                     message = 'A category with that name already exists'
                     status = 'error'
                 else:

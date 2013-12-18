@@ -29,6 +29,8 @@ def _sniffnfix_pg9_hex(value):
     try:
         if value[0] == 'x':
             return binascii.unhexlify(value[1:])
+        elif value.startswith( '\\x' ):
+            return binascii.unhexlify( value[2:] )
         else:
             return value
     except Exception, ex:
@@ -89,7 +91,7 @@ class MetadataType( JSONType ):
 class UUIDType(TypeDecorator):
     """
     Platform-independent UUID type.
-    
+
     Based on http://docs.sqlalchemy.org/en/rel_0_8/core/types.html#backend-agnostic-guid-type
     Changed to remove sqlalchemy 0.8 specific code
 

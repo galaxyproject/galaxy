@@ -12,8 +12,10 @@ import subprocess
 from Queue import Queue, Empty
 
 import galaxy.jobs
+from galaxy.jobs.command_factory import build_command
 from galaxy import model
 from galaxy.util import DATABASE_MAX_STRING_SIZE, shrink_stream_by_size
+from galaxy.jobs.runners.util.job_script import job_script
 
 log = logging.getLogger( __name__ )
 
@@ -73,7 +75,7 @@ class BaseJobRunner( object ):
 
     def mark_as_queued(self, job_wrapper):
         self.work_queue.put( ( self.queue_job, job_wrapper ) )
-    
+
     def shutdown( self ):
         """Attempts to gracefully shut down the worker threads
         """
@@ -112,7 +114,7 @@ class BaseJobRunner( object ):
                 job_wrapper.cleanup()
             return False
         elif job_state != model.Job.states.QUEUED:
-            log.info( "(%d) Job is in state %s, skipping execution"  % ( job_id, job_state ) ) 
+            log.info( "(%d) Job is in state %s, skipping execution"  % ( job_id, job_state ) )
             # cleanup may not be safe in all states
             return False
 
@@ -142,56 +144,15 @@ class BaseJobRunner( object ):
         raise NotImplementedError()
 
     def build_command_line( self, job_wrapper, include_metadata=False, include_work_dir_outputs=True ):
-        """
-        Compose the sequence of commands necessary to execute a job. This will
-        currently include:
+        return build_command( self, job_wrapper, include_metadata=include_metadata, include_work_dir_outputs=include_work_dir_outputs )
 
-            - environment settings corresponding to any requirement tags
-            - preparing input files
-            - command line taken from job wrapper
-            - commands to set metadata (if include_metadata is True)
-        """
-
-        commands = job_wrapper.get_command_line()
-        # All job runners currently handle this case which should never
-        # occur
-        if not commands:
-            return None
-        # Prepend version string
-        if job_wrapper.version_string_cmd:
-            commands = "%s &> %s; " % ( job_wrapper.version_string_cmd, job_wrapper.get_version_string_path() ) + commands
-        # prepend getting input files (if defined)
-        if hasattr(job_wrapper, 'prepare_input_files_cmds') and job_wrapper.prepare_input_files_cmds is not None:
-            commands = "; ".join( job_wrapper.prepare_input_files_cmds + [ commands ] ) 
-        # Prepend dependency injection
-        if job_wrapper.dependency_shell_commands:
-            commands = "; ".join( job_wrapper.dependency_shell_commands + [ commands ] ) 
-
-        # Append commands to copy job outputs based on from_work_dir attribute.
-        if include_work_dir_outputs:
-            work_dir_outputs = self.get_work_dir_outputs( job_wrapper )
-            if work_dir_outputs:
-                commands += "; " + "; ".join( [ "if [ -f %s ] ; then cp %s %s ; fi" % 
-                    ( source_file, source_file, destination ) for ( source_file, destination ) in work_dir_outputs ] )
-
-        # Append metadata setting commands, we don't want to overwrite metadata
-        # that was copied over in init_meta(), as per established behavior
-        if include_metadata:
-            commands += "; cd %s; " % os.path.abspath( os.getcwd() )
-            commands += job_wrapper.setup_external_metadata( 
-                            exec_dir = os.path.abspath( os.getcwd() ),
-                            tmp_dir = job_wrapper.working_directory,
-                            dataset_files_path = self.app.model.Dataset.file_path,
-                            output_fnames = job_wrapper.get_output_fnames(),
-                            set_extension = False,
-                            kwds = { 'overwrite' : False } ) 
-        return commands
-
-    def get_work_dir_outputs( self, job_wrapper ):
+    def get_work_dir_outputs( self, job_wrapper, job_working_directory=None ):
         """
         Returns list of pairs (source_file, destination) describing path
         to work_dir output file and ultimate destination.
         """
+        if not job_working_directory:
+            job_working_directory = os.path.abspath( job_wrapper.working_directory )
 
         def in_directory( file, directory ):
             """
@@ -205,7 +166,7 @@ class BaseJobRunner( object ):
 
             return os.path.commonprefix( [ file, directory ] ) == directory
 
-        # Set up dict of dataset id --> output path; output path can be real or 
+        # Set up dict of dataset id --> output path; output path can be real or
         # false depending on outputs_to_working_directory
         output_paths = {}
         for dataset_path in job_wrapper.get_output_fnames():
@@ -227,7 +188,7 @@ class BaseJobRunner( object ):
                         if hda_tool_output and hda_tool_output.from_work_dir:
                             # Copy from working dir to HDA.
                             # TODO: move instead of copy to save time?
-                            source_file = os.path.join( os.path.abspath( job_wrapper.working_directory ), hda_tool_output.from_work_dir )
+                            source_file = os.path.join( job_working_directory, hda_tool_output.from_work_dir )
                             destination = job_wrapper.get_output_destination( output_paths[ dataset.dataset_id ] )
                             if in_directory( source_file, job_wrapper.working_directory ):
                                 output_pairs.append( ( source_file, destination ) )
@@ -237,7 +198,7 @@ class BaseJobRunner( object ):
                                 log.exception( "from_work_dir specified a location not in the working directory: %s, %s" % ( source_file, job_wrapper.working_directory ) )
         return output_pairs
 
-    def _handle_metadata_externally(self, job_wrapper):
+    def _handle_metadata_externally( self, job_wrapper, resolve_requirements=False ):
         """
         Set metadata externally. Used by the local and lwr job runners where this
         shouldn't be attached to command-line to execute.
@@ -251,6 +212,12 @@ class BaseJobRunner( object ):
                                                                             tmp_dir=job_wrapper.working_directory,
                                                                             #we don't want to overwrite metadata that was copied over in init_meta(), as per established behavior
                                                                             kwds={ 'overwrite' : False } )
+            if resolve_requirements:
+                dependency_shell_commands = self.app.datatypes_registry.set_external_metadata_tool.build_dependency_shell_commands()
+                if dependency_shell_commands:
+                    if isinstance( dependency_shell_commands, list ):
+                        dependency_shell_commands = "&&".join( dependency_shell_commands )
+                    external_metadata_script = "%s&&%s" % ( dependency_shell_commands, external_metadata_script )
             log.debug( 'executing external set_meta script for job %d: %s' % ( job_wrapper.job_id, external_metadata_script ) )
             external_metadata_proc = subprocess.Popen( args=external_metadata_script,
                                                        shell=True,
@@ -259,6 +226,16 @@ class BaseJobRunner( object ):
             job_wrapper.external_output_metadata.set_job_runner_external_pid( external_metadata_proc.pid, self.sa_session )
             external_metadata_proc.wait()
             log.debug( 'execution of external set_meta for job %d finished' % job_wrapper.job_id )
+
+    def get_job_file(self, job_wrapper, **kwds):
+        options = dict(
+            galaxy_lib=job_wrapper.galaxy_lib_dir,
+            env_setup_commands=job_wrapper.get_env_setup_clause(),
+            working_directory=os.path.abspath( job_wrapper.working_directory ),
+            command=job_wrapper.runner_command_line,
+        )
+        options.update(**kwds)
+        return job_script(**options)
 
 
 class AsynchronousJobState( object ):
@@ -348,7 +325,7 @@ class AsynchronousJobRunner( BaseJobRunner ):
         while 1:
             # Take any new watched jobs and put them on the monitor list
             try:
-                while 1: 
+                while 1:
                     async_job_state = self.monitor_queue.get_nowait()
                     if async_job_state is STOP_SIGNAL:
                         # TODO: This is where any cleanup would occur
@@ -422,7 +399,7 @@ class AsynchronousJobRunner( BaseJobRunner ):
                 which_try += 1
 
         try:
-            # This should be an 8-bit exit code, but read ahead anyway: 
+            # This should be an 8-bit exit code, but read ahead anyway:
             exit_code_str = file( job_state.exit_code_file, "r" ).read(32)
         except:
             # By default, the exit code is 0, which typically indicates success.

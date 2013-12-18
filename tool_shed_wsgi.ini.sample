@@ -12,6 +12,8 @@ host = 127.0.0.1
 
 use_threadpool = true
 threadpool_workers = 10
+# Set the number of seconds a thread can work before you should kill it (assuming it will never finish) to 3 hours.
+threadpool_kill_thread_limit = 10800
 
 # ---- Galaxy Webapps Community Interface -------------------------------------------------
 
@@ -71,6 +73,9 @@ require_login = False
 
 # path to sendmail
 sendmail_path = /usr/sbin/sendmail
+
+# Number of saved tool test results produced by the install and test framework for each repository.
+#num_tool_test_results_saved = 5
 
 # For use by email messages sent from the tool shed
 #smtp_server = smtp.your_tool_shed_server

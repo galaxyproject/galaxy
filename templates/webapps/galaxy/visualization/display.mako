@@ -1,5 +1,4 @@
 <%inherit file="/display_base.mako"/>
-<%namespace file="/visualization/trackster_common.mako" import="*" />
 
 <%def name="javascripts()">
     <% config = item_data %>
@@ -59,20 +58,17 @@
             shim: {
                 "libs/underscore": { exports: "_" },
                 "libs/backbone/backbone": { exports: "Backbone" },
-                "libs/backbone/backbone-relational": ["libs/backbone/backbone"]
             }
         });
         require( ["base", "viz/visualization", "viz/trackster_ui", "viz/trackster/tracks"], 
              function( base, visualization, trackster_ui, tracks ) {
-
-            ${render_trackster_js_vars()}
 
             // FIXME: deliberate global required for now due to requireJS integration.
             view = null;
 
             var ui = new (trackster_ui.TracksterUI)( "${h.url_for('/')}" )
                 container_element = $("#${trans.security.encode_id( visualization.id )}");
-            
+
             $(function() {
                 var is_embedded = (container_element.parents(".item-content").length > 0);
                 
@@ -82,7 +78,7 @@
                 } else { // Viewing just one shared viz
                     $("#right-border").click(function() { view.resize_window(); });
                 }
-                
+
                 // Create visualization.
                 var callback;
                 %if 'viewport' in config:

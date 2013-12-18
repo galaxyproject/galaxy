@@ -47,7 +47,7 @@
                     <%
                         encoded_repository_id = trans.security.encode_id( tool_shed_repository.id )
                         ids_of_tool_dependencies_missing_or_being_installed = [ trans.security.encode_id( td.id ) for td in tool_shed_repository.tool_dependencies_missing_or_being_installed ]
-                        link_to_manage_tool_dependencies = tool_shed_repository.status in [ trans.model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES ]
+                        link_to_manage_tool_dependencies = tool_shed_repository.status in [ trans.install_model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES ]
                     %>
                     <tr>
                         <td>
@@ -72,4 +72,3 @@
         </div>
     </div>
 %endif
-

@@ -2,24 +2,30 @@
 Utility functions used systemwide.
 
 """
-import logging, threading, random, string, re, binascii, pickle, time, datetime, math, re, os, sys, tempfile, stat, grp, smtplib, errno, shutil
+import binascii, errno, grp, logging, os, pickle, random, re, shutil, smtplib, stat, string, sys, tempfile, threading
 from email.MIMEText import MIMEText
 
 from os.path import relpath
 from hashlib import md5
+from itertools import izip
 
 from galaxy import eggs
-import pkg_resources
 
-pkg_resources.require( 'docutils' )
+eggs.require( 'docutils' )
 import docutils.core
 import docutils.writers.html4css1
 
-pkg_resources.require( 'elementtree' )
+eggs.require( 'elementtree' )
 from elementtree import ElementTree, ElementInclude
 
-pkg_resources.require( "wchartype" )
+eggs.require( "wchartype" )
 import wchartype
+
+from inflection import Inflector, English
+inflector = Inflector(English)
+
+eggs.require( "simplejson" )
+import simplejson
 
 log   = logging.getLogger(__name__)
 _lock = threading.RLock()
@@ -31,18 +37,15 @@ DATABASE_MAX_STRING_SIZE_PRETTY = '32K'
 
 gzip_magic = '\037\213'
 bz2_magic = 'BZh'
-DEFAULT_ENCODING = 'utf-8'
+DEFAULT_ENCODING = os.environ.get('GALAXY_DEFAULT_ENCODING', 'utf-8')
 NULL_CHAR = '\000'
 BINARY_CHARS = [ NULL_CHAR ]
-
-from inflection import Inflector, English
-inflector = Inflector(English)
 
 def is_multi_byte( chars ):
     for char in chars:
         try:
             char = unicode( char )
-        except UnicodeDecodeError, e:
+        except UnicodeDecodeError:
             # Probably binary
             return False
         if wchartype.is_asian( char ) or \
@@ -95,12 +98,12 @@ def synchronized(func):
 
 def file_iter(fname, sep=None):
     """
-    This generator iterates over a file and yields its lines 
-    splitted via the C{sep} parameter. Skips empty lines and lines starting with 
+    This generator iterates over a file and yields its lines
+    splitted via the C{sep} parameter. Skips empty lines and lines starting with
     the C{#} character.
-    
+
     >>> lines = [ line for line in file_iter(__file__) ]
-    >>> len(lines) !=  0 
+    >>> len(lines) !=  0
     True
     """
     for line in file(fname):
@@ -119,7 +122,7 @@ def file_reader( fp, chunk_size=CHUNK_SIZE ):
 def unique_id(KEY_SIZE=128):
     """
     Generates an unique id
-    
+
     >>> ids = [ unique_id() for i in range(1000) ]
     >>> len(set(ids))
     1000
@@ -132,6 +135,11 @@ def parse_xml(fname):
     tree = ElementTree.parse(fname)
     root = tree.getroot()
     ElementInclude.include(root)
+    return tree
+
+
+def parse_xml_string(xml_string):
+    tree = ElementTree.fromstring(xml_string)
     return tree
 
 def xml_to_string( elem, pretty=False ):
@@ -163,7 +171,7 @@ def xml_element_to_dict( elem ):
         rval[ elem.tag ] = {}
     else:
         rval[ elem.tag ] = None
-    
+
     sub_elems = list( elem )
     if sub_elems:
         sub_elem_dict = dict()
@@ -174,20 +182,20 @@ def xml_element_to_dict( elem ):
                 sub_elem_dict[ key ].append( value )
         for key, value in sub_elem_dict.iteritems():
             if len( value ) == 1:
-                rval[ elem.tag ][ k ] = value[0]
+                rval[ elem.tag ][ key ] = value[0]
             else:
-                rval[ elem.tag ][ k ] = value
+                rval[ elem.tag ][ key ] = value
     if elem.attrib:
         for key, value in elem.attrib.iteritems():
             rval[ elem.tag ][ "@%s" % key ] = value
-    
+
     if elem.text:
         text = elem.text.strip()
         if text and sub_elems or elem.attrib:
             rval[ elem.tag ][ '#text' ] = text
         else:
             rval[ elem.tag ] = text
-    
+
     return rval
 
 
@@ -282,12 +290,17 @@ def shrink_string_by_size( value, size, join_by="..", left_larger=True, beginnin
         value = "%s%s%s" % ( value[:left_index], join_by, value[-right_index:] )
     return value
 
+def pretty_print_json(json_data, is_json_string=False):
+    if is_json_string:
+        json_data = simplejson.loads(json_data)
+    return simplejson.dumps(json_data, sort_keys=True, indent=4 * ' ')
+
 # characters that are valid
 valid_chars  = set(string.letters + string.digits + " -=_.()/+*^,:?!")
 
 # characters that are allowed but need to be escaped
-mapped_chars = { '>' :'__gt__', 
-                 '<' :'__lt__', 
+mapped_chars = { '>' :'__gt__',
+                 '<' :'__lt__',
                  "'" :'__sq__',
                  '"' :'__dq__',
                  '[' :'__ob__',
@@ -363,13 +376,13 @@ def sanitize_for_filename( text, default=None ):
 
 class Params( object ):
     """
-    Stores and 'sanitizes' parameters. Alphanumeric characters and the  
+    Stores and 'sanitizes' parameters. Alphanumeric characters and the
     non-alphanumeric ones that are deemed safe are let to pass through (see L{valid_chars}).
-    Some non-safe characters are escaped to safe forms for example C{>} becomes C{__lt__} 
+    Some non-safe characters are escaped to safe forms for example C{>} becomes C{__lt__}
     (see L{mapped_chars}). All other characters are replaced with C{X}.
-    
+
     Operates on string or list values only (HTTP parameters).
-    
+
     >>> values = { 'status':'on', 'symbols':[  'alpha', '<>', '$rm&#!' ]  }
     >>> par = Params(values)
     >>> par.status
@@ -383,14 +396,14 @@ class Params( object ):
     >>> par.flatten()          # flattening to a list
     [('status', 'on'), ('symbols', 'alpha'), ('symbols', '__lt____gt__'), ('symbols', 'XrmX__pd__!')]
     """
-    
+
     # is NEVER_SANITIZE required now that sanitizing for tool parameters can be controlled on a per parameter basis and occurs via InputValueWrappers?
     NEVER_SANITIZE = ['file_data', 'url_paste', 'URL', 'filesystem_paths']
-    
+
     def __init__( self, params, sanitize=True ):
         if sanitize:
             for key, value in params.items():
-                if key not in self.NEVER_SANITIZE and True not in [ key.endswith( "|%s" % nonsanitize_parameter ) for nonsanitize_parameter in self.NEVER_SANITIZE ]: #sanitize check both ungrouped and grouped parameters by name. Anything relying on NEVER_SANITIZE should be changed to not require this and NEVER_SANITIZE should be removed. 
+                if key not in self.NEVER_SANITIZE and True not in [ key.endswith( "|%s" % nonsanitize_parameter ) for nonsanitize_parameter in self.NEVER_SANITIZE ]: #sanitize check both ungrouped and grouped parameters by name. Anything relying on NEVER_SANITIZE should be changed to not require this and NEVER_SANITIZE should be removed.
                     self.__dict__[ key ] = sanitize_param( value )
                 else:
                     self.__dict__[ key ] = value
@@ -412,11 +425,11 @@ class Params( object ):
 
     def __getattr__(self, name):
         """This is here to ensure that we get None for non existing parameters"""
-        return None 
-    
+        return None
+
     def get(self, key, default):
         return self.__dict__.get(key, default)
-    
+
     def __str__(self):
         return '%s' % self.__dict__
 
@@ -436,9 +449,9 @@ def rst_to_html( s ):
         def write( self, str ):
             if len( str ) > 0 and not str.isspace():
                 log.warn( str )
-    return docutils.core.publish_string(s, 
+    return unicodify( docutils.core.publish_string( s,
                 writer=docutils.writers.html4css1.Writer(),
-                settings_overrides={"embed_stylesheet": False, "template": os.path.join(os.path.dirname(__file__), "docutils_template.txt"), "warning_stream": FakeStream()})
+                settings_overrides={ "embed_stylesheet": False, "template": os.path.join(os.path.dirname(__file__), "docutils_template.txt"), "warning_stream": FakeStream() } ) )
 
 def xml_text(root, name=None):
     """Returns the text inside an element"""
@@ -456,7 +469,7 @@ def xml_text(root, name=None):
         return text.strip()
     # No luck, return empty string
     return ''
-    
+
 # asbool implementation pulled from PasteDeploy
 truthy = frozenset(['true', 'yes', 'on', 'y', 't', '1'])
 falsy = frozenset(['false', 'no', 'off', 'n', 'f', '0'])
@@ -496,7 +509,7 @@ def string_as_bool_or_none( string ):
     else:
         return False
 
-def listify( item ):
+def listify( item, do_strip=False ):
     """
     Make a single item a single item list, or return a list if passed a
     list.  Passing a None returns an empty list.
@@ -506,7 +519,10 @@ def listify( item ):
     elif isinstance( item, list ):
         return item
     elif isinstance( item, basestring ) and item.count( ',' ):
-        return item.split( ',' )
+        if do_strip:
+            return [token.strip() for token in item.split( ',' )]
+        else:
+            return item.split( ',' )
     else:
         return [ item ]
 
@@ -539,12 +555,36 @@ def unicodify( value, encoding=DEFAULT_ENCODING, error='replace', default=None )
     except:
         return default
 
+
+def smart_str(s, encoding='utf-8', strings_only=False, errors='strict'):
+    """
+    Returns a bytestring version of 's', encoded as specified in 'encoding'.
+
+    If strings_only is True, don't convert (some) non-string-like objects.
+
+    Adapted from an older, simpler version of django.utils.encoding.smart_str.
+    """
+    if strings_only and isinstance(s, (type(None), int)):
+        return s
+    if not isinstance(s, basestring):
+        try:
+            return str(s)
+        except UnicodeEncodeError:
+            return unicode(s).encode(encoding, errors)
+    elif isinstance(s, unicode):
+        return s.encode(encoding, errors)
+    elif s and encoding != 'utf-8':
+        return s.decode('utf-8', errors).encode(encoding, errors)
+    else:
+        return s
+
+
 def object_to_string( obj ):
     return binascii.hexlify( pickle.dumps( obj, 2 ) )
-    
+
 def string_to_object( s ):
     return pickle.loads( binascii.unhexlify( s ) )
-        
+
 def get_ucsc_by_build(build):
     sites = []
     for site in ucsc_build_sites:
@@ -702,7 +742,7 @@ def mkstemp_ln( src, prefix='mkstemp_ln_' ):
         name = names.next()
         file = os.path.join(dir, prefix + name)
         try:
-            linked_path = os.link( src, file )
+            os.link( src, file )
             return (os.path.abspath(file))
         except OSError, e:
             if e.errno == errno.EEXIST:
@@ -745,6 +785,32 @@ def umask_fix_perms( path, umask, unmasked_perms, gid=None ):
                                                                                                           path,
                                                                                                           current_group,
                                                                                                           e ) )
+
+def docstring_trim(docstring):
+    """Trimming python doc strings. Taken from: http://www.python.org/dev/peps/pep-0257/"""
+    if not docstring:
+        return ''
+    # Convert tabs to spaces (following the normal Python rules)
+    # and split into a list of lines:
+    lines = docstring.expandtabs().splitlines()
+    # Determine minimum indentation (first line doesn't count):
+    indent = sys.maxint
+    for line in lines[1:]:
+        stripped = line.lstrip()
+        if stripped:
+            indent = min(indent, len(line) - len(stripped))
+    # Remove indentation (first line is special):
+    trimmed = [lines[0].strip()]
+    if indent < sys.maxint:
+        for line in lines[1:]:
+            trimmed.append(line[indent:].rstrip())
+    # Strip off trailing and leading blank lines:
+    while trimmed and not trimmed[-1]:
+        trimmed.pop()
+    while trimmed and not trimmed[0]:
+        trimmed.pop(0)
+    # Return a single string:
+    return '\n'.join(trimmed)
 
 def nice_size(size):
     """
@@ -812,19 +878,24 @@ def send_mail( frm, to, subject, body, config ):
         log.error( "Mail is not configured for this Galaxy instance." )
         log.info( msg )
         return
-    s = smtplib.SMTP()
+    smtp_ssl = asbool( getattr(config, 'smtp_ssl', False ) )
+    if smtp_ssl:
+        s = smtplib.SMTP_SSL()
+    else:
+        s = smtplib.SMTP()
     s.connect( config.smtp_server )
-    try:
-        s.starttls()
-        log.debug( 'Initiated SSL/TLS connection to SMTP server: %s' % config.smtp_server )
-    except RuntimeError, e:
-        log.warning( 'SSL/TLS support is not available to your Python interpreter: %s' % e )
-    except smtplib.SMTPHeloError, e:
-        log.error( "The server didn't reply properly to the HELO greeting: %s" % e )
-        s.close()
-        raise
-    except smtplib.SMTPException, e:
-        log.warning( 'The server does not support the STARTTLS extension: %s' % e )
+    if not smtp_ssl:
+        try:
+            s.starttls()
+            log.debug( 'Initiated SSL/TLS connection to SMTP server: %s' % config.smtp_server )
+        except RuntimeError, e:
+            log.warning( 'SSL/TLS support is not available to your Python interpreter: %s' % e )
+        except smtplib.SMTPHeloError, e:
+            log.error( "The server didn't reply properly to the HELO greeting: %s" % e )
+            s.close()
+            raise
+        except smtplib.SMTPException, e:
+            log.warning( 'The server does not support the STARTTLS extension: %s' % e )
     if config.smtp_username and config.smtp_password:
         try:
             s.login( config.smtp_username, config.smtp_password )
@@ -863,7 +934,16 @@ def move_merge( source, target ):
         for name in os.listdir( source ):
             move_merge( os.path.join( source, name ), os.path.join( target, name ) )
     else:
-        return shutil.move( source, target ) 
+        return shutil.move( source, target )
+
+
+def safe_str_cmp(a, b):
+    if len(a) != len(b):
+        return False
+    rv = 0
+    for x, y in izip(a, b):
+        rv |= ord(x) ^ ord(y)
+    return rv == 0
 
 galaxy_root_path = os.path.join(__path__[0], "..","..","..")
 
@@ -880,5 +960,5 @@ def galaxy_directory():
     return os.path.abspath(galaxy_root_path)
 
 if __name__ == '__main__':
-    import doctest, sys
+    import doctest
     doctest.testmod(sys.modules[__name__], verbose=False)

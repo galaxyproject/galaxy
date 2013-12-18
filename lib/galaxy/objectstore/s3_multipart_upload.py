@@ -4,10 +4,8 @@ Split large file into multiple pieces for upload to S3.
 This parallelizes the task over available cores using multiprocessing.
 Code mostly taken form CloudBioLinux.
 """
-from __future__ import with_statement
 
 import os
-import sys
 import glob
 import subprocess
 import contextlib
@@ -16,10 +14,17 @@ import functools
 import multiprocessing
 from multiprocessing.pool import IMapIterator
 
-from galaxy import eggs
-eggs.require('boto')
+try:
+    from galaxy import eggs
+    eggs.require('boto')
+except ImportError:
+    pass
 
-import boto
+try:
+    import boto
+except ImportError:
+    boto = None
+
 
 def map_wrap(f):
     @functools.wraps(f)
@@ -76,7 +81,7 @@ def multipart_upload(bucket, s3_key_name, tarball, mb_size, use_rr=True):
 @contextlib.contextmanager
 def multimap(cores=None):
     """Provide multiprocessing imap like function.
-    
+
     The context manager handles setting up the pool, worked around interrupt issues
     and terminating the pool on completion.
     """

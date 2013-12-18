@@ -17,13 +17,13 @@ class DataProviderRegistry( object ):
         # type. First key is converted dataset type; if result is another dict, second key
         # is original dataset type.
         self.dataset_type_name_to_data_provider = {
-            "tabix": { 
+            "tabix": {
                 Vcf: genome.VcfTabixDataProvider,
                 Bed: genome.BedTabixDataProvider,
                 Gtf: genome.GtfTabixDataProvider,
                 ENCODEPeak: genome.ENCODEPeakTabixDataProvider,
                 Interval: genome.IntervalTabixDataProvider,
-                ChromatinInteractions: genome.ChromatinInteractionsTabixDataProvider, 
+                ChromatinInteractions: genome.ChromatinInteractionsTabixDataProvider,
                 "default" : genome.TabixDataProvider
             },
             "interval_index": genome.IntervalIndexDataProvider,
@@ -32,12 +32,12 @@ class DataProviderRegistry( object ):
             "bigwig": genome.BigWigDataProvider,
             "bigbed": genome.BigBedDataProvider,
 
-            "column": ColumnDataProvider
+            "column_with_stats": ColumnDataProvider
         }
 
     def get_data_provider( self, trans, name=None, source='data', raw=False, original_dataset=None ):
         """
-        Returns data provider matching parameter values. For standalone data 
+        Returns data provider matching parameter values. For standalone data
         sources, source parameter is ignored.
         """
 
@@ -77,22 +77,22 @@ class DataProviderRegistry( object ):
                 else:
                     converted_dataset = original_dataset.get_converted_dataset( trans, name )
                     deps = original_dataset.get_converted_dataset_deps( trans, name )
-                    data_provider = data_provider_class( original_dataset=original_dataset, 
+                    data_provider = data_provider_class( original_dataset=original_dataset,
                                                          converted_dataset=converted_dataset,
                                                          dependencies=deps )
-                
+
             elif original_dataset:
                 # No name, so look up a provider name from datatype's information.
 
                 # Dataset must have data sources to get data.
                 if not original_dataset.datatype.data_sources:
                     return None
-                
+
                 # Get data provider mapping and data provider.
                 data_provider_mapping = original_dataset.datatype.data_sources
                 if 'data_standalone' in data_provider_mapping:
-                    data_provider = self.get_data_provider( trans, 
-                                                            name=data_provider_mapping[ 'data_standalone' ], 
+                    data_provider = self.get_data_provider( trans,
+                                                            name=data_provider_mapping[ 'data_standalone' ],
                                                             original_dataset=original_dataset )
                 else:
                     source_list = data_provider_mapping[ source ]

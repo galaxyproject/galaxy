@@ -1,11 +1,10 @@
 from tool_shed.base.twilltestcase import ShedTwillTestCase, common, os
-import tool_shed.base.test_db_util as test_db_util
-
 repository_name = 'bismark_0070'
 repository_description = "Galaxy's bismark wrapper"
 repository_long_description = "Long description of Galaxy's bismark wrapper"
 category_name = 'Test 0070 Invalid Tool Revisions'
 category_description = 'Test 1070 for a repository with an invalid tool.'
+
 
 class TestFreebayesRepository( ShedTwillTestCase ):
     '''Test repository with multiple revisions with invalid tools.'''
@@ -13,25 +12,25 @@ class TestFreebayesRepository( ShedTwillTestCase ):
         """Create necessary user accounts and login as an admin user."""
         self.galaxy_logout()
         self.galaxy_login( email=common.admin_email, username=common.admin_username )
-        galaxy_admin_user = test_db_util.get_galaxy_user( common.admin_email )
+        galaxy_admin_user = self.test_db_util.get_galaxy_user( common.admin_email )
         assert galaxy_admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
-        galaxy_admin_user_private_role = test_db_util.get_galaxy_private_role( galaxy_admin_user )
+        galaxy_admin_user_private_role = self.test_db_util.get_galaxy_private_role( galaxy_admin_user )
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        test_user_1 = test_db_util.get_user( common.test_user_1_email )
+        test_user_1 = self.test_db_util.get_user( common.test_user_1_email )
         assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % test_user_1_email
-        test_user_1_private_role = test_db_util.get_private_role( test_user_1 )
+        test_user_1_private_role = self.test_db_util.get_private_role( test_user_1 )
         self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
-        admin_user = test_db_util.get_user( common.admin_email )
+        admin_user = self.test_db_util.get_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % admin_email
-        admin_user_private_role = test_db_util.get_private_role( admin_user )
+        admin_user_private_role = self.test_db_util.get_private_role( admin_user )
     def test_0005_ensure_existence_of_repository_and_category( self ):
         '''Create freebayes repository and upload only freebayes.xml. This should result in an error message and invalid tool.'''
         self.create_category( name=category_name, description=category_description )
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        category = test_db_util.get_category_by_name( category_name )
+        category = self.test_db_util.get_category_by_name( category_name )
         repository = self.get_or_create_repository( name=repository_name, 
                                                     description=repository_description, 
                                                     long_description=repository_long_description, 
@@ -62,7 +61,7 @@ class TestFreebayesRepository( ShedTwillTestCase ):
         self.galaxy_logout()
         self.galaxy_login( email=common.admin_email, username=common.admin_username )
         self.browse_tool_shed( url=self.url, strings_displayed=[ category_name ] )
-        category = test_db_util.get_category_by_name( category_name )
+        category = self.test_db_util.get_category_by_name( category_name )
         self.browse_category( category, strings_displayed=[ repository_name ] )
         self.preview_repository_in_tool_shed( repository_name, common.test_user_1_name, strings_displayed=[ repository_name ] )
     def test_0015_install_freebayes_repository( self ):
@@ -71,8 +70,8 @@ class TestFreebayesRepository( ShedTwillTestCase ):
                                  common.test_user_1_name, 
                                  category_name, 
                                  install_tool_dependencies=False, 
-                                 new_tool_panel_section='test_1070' )
-        installed_repository = test_db_util.get_installed_repository_by_name_owner( repository_name, common.test_user_1_name )
+                                 new_tool_panel_section_label='test_1070' )
+        installed_repository = self.test_db_util.get_installed_repository_by_name_owner( repository_name, common.test_user_1_name )
         strings_displayed = [ 'bismark_0070',
                               "Galaxy's bismark wrapper",
                               'user1', 

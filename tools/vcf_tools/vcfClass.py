@@ -12,12 +12,13 @@ class vcf:
     self.hasHeader = True
     self.headerText = ""
     self.headerTitles = ""
+    self.vcfFormat = ""
     #self.headerInfoText = ""
     #self.headerFormatText = ""
 
 # Store the info and format tags as well as the lines that describe
 # them in a dictionary.
-    self.numberDataSets = 0 
+    self.numberDataSets = 0
     self.includedDataSets = {}
     self.infoHeaderTags = {}
     self.infoHeaderString = {}
@@ -63,6 +64,7 @@ class vcf:
 # Determine the type of information in the header line.
   def getHeaderLine(self, filename, writeOut):
     self.headerLine = self.filehandle.readline().rstrip("\n")
+    if self.headerLine.startswith("##fileformat"): success = self.getvcfFormat()
     if self.headerLine.startswith("##INFO"): success = self.headerInfo(writeOut, "info")
     elif self.headerLine.startswith("##FORMAT"): success = self.headerInfo(writeOut, "format")
     elif self.headerLine.startswith("##FILE"): success = self.headerFiles(writeOut)
@@ -71,6 +73,18 @@ class vcf:
     else: success = self.noHeader(filename, writeOut)
 
     return success
+
+# Read VCF format
+  def getvcfFormat(self):
+      try:
+          self.vcfFormat = self.headerLine.split("=",1)[1]
+          self.vcfFormat = float( self.vcfFormat.split("VCFv",1)[1] )## Extract the version number rather than the whole string
+      except IndexError:
+          print >> sys.stderr, "\nError parsing the fileformat"
+          print >> sys.stderr, "The following fileformat header is wrongly formatted: ", self.headerLine
+          exit(1)
+      return True
+
 
 # Read information on an info field from the header line.
   def headerInfo(self, writeOut, lineType):
@@ -93,11 +107,15 @@ class vcf:
 # an integer or a '.' to indicate variable number of entries.
     if tagNumber == ".": tagNumber = "variable"
     else:
-      try: tagNumber = int(tagNumber)
-      except ValueError:
-        print >> sys.stderr, "\nError parsing header.  Problem with info tag:", tagID
-        print >> sys.stderr, "Number of fields associated with this tag is not an integer or '.'"
-        exit(1)
+      if self.vcfFormat<4.1:
+
+        try:
+            tagNumber = int(tagNumber)
+
+        except ValueError:
+            print >> sys.stderr, "\nError parsing header.  Problem with info tag:", tagID
+            print >> sys.stderr, "Number of fields associated with this tag is not an integer or '.'"
+            exit(1)
 
     if lineType == "info":
       self.infoHeaderTags[tagID] = tagNumber, tagType, tagDescription
@@ -161,7 +179,7 @@ class vcf:
     return False
 
 # If there is no header in the vcf file, close and reopen the
-# file so that the first line is avaiable for parsing as a 
+# file so that the first line is avaiable for parsing as a
 # vcf record.
   def noHeader(self, filename, writeOut):
     if writeOut: print >> sys.stdout, "No header lines present in", filename
@@ -216,7 +234,7 @@ class vcf:
     else: self.hasGenotypes = False
 
 # Add the reference sequence to the dictionary.  If it didn't previously
-# exist append the reference sequence to the end of the list as well. 
+# exist append the reference sequence to the end of the list as well.
 # This ensures that the order in which the reference sequences appeared
 # in the header can be preserved.
     if self.referenceSequence not in self.referenceSequences:
@@ -274,7 +292,7 @@ class vcf:
 # Check that there are as many fields as in the format field.  If not, this must
 # be because the information is not known.  In this case, it is permitted that
 # the genotype information is either . or ./.
-      if genotypeInfo[0] == "./." or genotypeInfo[0] == "." and len(self.genotypeFormats) != len(genotypeInfo): 
+      if genotypeInfo[0] == "./." or genotypeInfo[0] == "." and len(self.genotypeFormats) != len(genotypeInfo):
         self.genotypeFields[ self.samplesList[i] ] = "."
       else:
         if len(self.genotypeFormats) != len(genotypeInfo):
@@ -381,7 +399,7 @@ class vcf:
 
 # First check that the variant class (VC) is listed as SNP.
     vc = self.info.split("VC=",1)
-    if vc[1].find(";") != -1: snp = vc[1].split(";",1) 
+    if vc[1].find(";") != -1: snp = vc[1].split(";",1)
     else:
       snp = []
       snp.append(vc[1])

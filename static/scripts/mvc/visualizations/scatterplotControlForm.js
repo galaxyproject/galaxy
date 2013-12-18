@@ -174,7 +174,7 @@ var ScatterplotControlForm = BaseView.extend( LoggableMixin ).extend({
 
         // render the tab controls, areas and loading indicator
         this.$el.append( ScatterplotControlForm.templates.mainLayout({
-            loadingIndicatorImagePath   : galaxy_paths.get( 'image_path' ) + '/' + this.loadingIndicatorImage,
+            loadingIndicatorImagePath   : galaxy_config.root + 'static/images/' + this.loadingIndicatorImage,
             message                     : ''
         }));
 
@@ -191,7 +191,7 @@ var ScatterplotControlForm = BaseView.extend( LoggableMixin ).extend({
         }
 
         // set up behaviours
-        this.$el.find( '.tooltip' ).tooltip();
+        this.$el.find( '[title]' ).tooltip();
 
         // uncomment any of the following to have that tab show on initial load (for testing)
         //this.$el.find( 'ul.nav' ).find( 'a[href="#data-control"]' ).tab( 'show' );
@@ -562,7 +562,7 @@ var ScatterplotControlForm = BaseView.extend( LoggableMixin ).extend({
         
         var params = {
             data_type   : 'raw_data',
-            provider    : 'column',
+            provider    : 'column_with_stats',
             columns     : '[' + columns + ']'
         };
         this.log( '\t data settings (url params):', params );

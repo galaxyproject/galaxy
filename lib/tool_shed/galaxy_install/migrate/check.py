@@ -1,14 +1,19 @@
-import sys, os, logging, subprocess
+import logging
+import os
+import subprocess
+import sys
 from galaxy import eggs
-import pkg_resources
-pkg_resources.require( "SQLAlchemy" )
-pkg_resources.require( "decorator" )
-pkg_resources.require( "Tempita " )
-pkg_resources.require( "sqlalchemy-migrate" )
-
-from migrate.versioning import repository, schema
-from sqlalchemy import *
+eggs.require( "decorator" )
+eggs.require( "Tempita" )
+eggs.require( "SQLAlchemy" )
+eggs.require( "sqlalchemy_migrate" )
+from migrate.versioning import repository
+from migrate.versioning import schema
+from sqlalchemy import create_engine
+from sqlalchemy import MetaData
+from sqlalchemy import Table
 from galaxy.util.odict import odict
+from galaxy.model.orm import dialect_to_egg
 from tool_shed.util import common_util
 
 log = logging.getLogger( __name__ )
@@ -16,11 +21,6 @@ log = logging.getLogger( __name__ )
 # Path relative to galaxy
 migrate_repository_directory = os.path.dirname( __file__ ).replace( os.getcwd() + os.path.sep, '', 1 )
 migrate_repository = repository.Repository( migrate_repository_directory )
-dialect_to_egg = { 
-    "sqlite" : "pysqlite>=2",
-    "postgres" : "psycopg2",
-    "mysql" : "MySQL_python"
-}
 
 def verify_tools( app, url, galaxy_config_file, engine_options={} ):
     # Check the value in the migrate_tools.version database table column to verify that the number is in
@@ -29,7 +29,7 @@ def verify_tools( app, url, galaxy_config_file, engine_options={} ):
     try:
         egg = dialect_to_egg[ dialect ]
         try:
-            pkg_resources.require( egg )
+            eggs.require( egg )
             log.debug( "%s egg successfully loaded for %s dialect" % ( egg, dialect ) )
         except:
             # If the module is in the path elsewhere (i.e. non-egg), it'll still load.
@@ -56,10 +56,12 @@ def verify_tools( app, url, galaxy_config_file, engine_options={} ):
             if tool_panel_configs:
                 # The missing_tool_configs_dict contents are something like:
                 # {'emboss_antigenic.xml': [('emboss', '5.0.0', 'package', '\nreadme blah blah blah\n')]}
-                tool_shed_accessible, missing_tool_configs_dict = common_util.check_for_missing_tools( app, tool_panel_configs, latest_tool_migration_script_number )
+                tool_shed_accessible, missing_tool_configs_dict = common_util.check_for_missing_tools( app,
+                                                                                                       tool_panel_configs,
+                                                                                                       latest_tool_migration_script_number )
             else:
                 # It doesn't matter if the tool shed is accessible since there are no migrated tools defined in the local Galaxy instance, but
-                # we have to set the value of tool_shed_accessible to True so that the value of migrate_tools.version can be correctly set in 
+                # we have to set the value of tool_shed_accessible to True so that the value of migrate_tools.version can be correctly set in
                 # the database.
                 tool_shed_accessible = True
                 missing_tool_configs_dict = odict()
@@ -111,7 +113,7 @@ def verify_tools( app, url, galaxy_config_file, engine_options={} ):
                         msg += "setting in your main Galaxy configuration file (e.g., uninverse_wsgi.ini).\n"
                         processed_tool_dependencies = []
                         for missing_tool_config, tool_dependencies in missing_tool_configs_dict.items():
-                            for tool_dependencies_tup in tool_dependencies:
+                            for tool_dependencies_tup in missing_tool_configs_dict[ missing_tool_config ][ 'tool_dependencies' ]:
                                 if tool_dependencies_tup not in processed_tool_dependencies:
                                     msg += "------------------------------------\n"
                                     msg += "Tool Dependency\n"
@@ -119,7 +121,7 @@ def verify_tools( app, url, galaxy_config_file, engine_options={} ):
                                     msg += "Name: %s, Version: %s, Type: %s\n" % ( tool_dependencies_tup[ 0 ],
                                                                                    tool_dependencies_tup[ 1 ],
                                                                                    tool_dependencies_tup[ 2 ] )
-                                    if tool_dependencies_tup[ 3 ]:
+                                    if len( tool_dependencies_tup ) >= 4:
                                         msg += "Requirements and installation information:\n"
                                         msg += "%s\n" % tool_dependencies_tup[ 3 ]
                                     else:
@@ -140,8 +142,8 @@ def verify_tools( app, url, galaxy_config_file, engine_options={} ):
                         msg += "Tool dependencies can be installed after the repositories have been installed as well.\n\n"
                     msg += "After the installation process finishes, you can start your Galaxy server.  As part of this installation process,\n"
                     msg += "entries for each of the following tool config files will be added to the file named ./migrated_tool_conf.xml, so these\n"
-                    msg += "tools will continue to be loaded into your tool panel.  Because of this, existing entries for these files should be\n"
-                    msg += "removed from your file%s named %s, but only after the installation process finishes.\n\n" % ( plural, tool_panel_config_file_names )
+                    msg += "tools will continue to be loaded into your tool panel.  Because of this, existing entries for these tools have been\n"
+                    msg += "removed from your file%s named %s.\n\n" % ( plural, tool_panel_config_file_names )
                     for missing_tool_config, tool_dependencies in missing_tool_configs_dict.items():
                         msg += "%s\n" % missing_tool_config
                     msg += "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n"

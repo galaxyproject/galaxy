@@ -26,7 +26,7 @@ log = logging.getLogger(__name__)
 # TODO: Uploading image files of various types is supported in Galaxy, but on
 # the main public instance, the display_in_upload is not set for these data
 # types in datatypes_conf.xml because we do not allow image files to be uploaded
-# there.  There is currently no API feature that allows uploading files outside 
+# there.  There is currently no API feature that allows uploading files outside
 # of a data library ( where it requires either the upload_paths or upload_directory
 # option to be enabled, which is not the case on the main public instance ).  Because
 # of this, we're currently safe, but when the api is enhanced to allow other uploads,
@@ -112,7 +112,7 @@ class Pcd( Image ):
 
     def sniff(self, filename, image=None):
         """Determine if the file is in pcd format."""
-        return check_image_type( filename, ['PCD'], image )        
+        return check_image_type( filename, ['PCD'], image )
 
 
 class Pcx( Image ):
@@ -128,7 +128,7 @@ class Ppm( Image ):
 
     def sniff(self, filename, image=None):
         """Determine if the file is in ppm format."""
-        return check_image_type( filename, ['PPM'], image )        
+        return check_image_type( filename, ['PPM'], image )
 
 
 class Psd( Image ):
@@ -136,7 +136,7 @@ class Psd( Image ):
 
     def sniff(self, filename, image=None):
         """Determine if the file is in psd format."""
-        return check_image_type( filename, ['PSD'], image )        
+        return check_image_type( filename, ['PSD'], image )
 
 
 class Xbm( Image ):
@@ -144,7 +144,7 @@ class Xbm( Image ):
 
     def sniff(self, filename, image=None):
         """Determine if the file is in XBM format."""
-        return check_image_type( filename, ['XBM'], image )        
+        return check_image_type( filename, ['XBM'], image )
 
 
 class Xpm( Image ):
@@ -152,7 +152,7 @@ class Xpm( Image ):
 
     def sniff(self, filename, image=None):
         """Determine if the file is in XPM format."""
-        return check_image_type( filename, ['XPM'], image )        
+        return check_image_type( filename, ['XPM'], image )
 
 
 class Rgb( Image ):
@@ -184,7 +184,7 @@ class Eps( Image ):
 
     def sniff(self, filename, image=None):
         """Determine if the file is in eps format."""
-        return check_image_type( filename, ['EPS'], image )        
+        return check_image_type( filename, ['EPS'], image )
 
 
 class Rast( Image ):
@@ -214,7 +214,7 @@ Binary.register_sniffable_binary_format("pdf", "pdf", Pdf)
 def create_applet_tag_peek( class_name, archive, params ):
     text = """
 <!--[if !IE]>-->
-<object classid="java:%s" 
+<object classid="java:%s"
       type="application/x-java-applet"
       height="30" width="200" align="center" >
       <param name="archive" value="%s"/>""" % ( class_name, archive )
@@ -222,13 +222,13 @@ def create_applet_tag_peek( class_name, archive, params ):
         text += """<param name="%s" value="%s"/>""" % ( name, value )
     text += """
 <!--<![endif]-->
-<object classid="clsid:8AD9C840-044E-11D1-B3E9-00805F499D93" 
+<object classid="clsid:8AD9C840-044E-11D1-B3E9-00805F499D93"
         height="30" width="200" >
         <param name="code" value="%s" />
         <param name="archive" value="%s"/>""" % ( class_name, archive )
     for name, value in params.iteritems():
         text += """<param name="%s" value="%s"/>""" % ( name, value )
-    text += """</object> 
+    text += """</object>
 <!--[if !IE]>-->
 </object>
 <!--<![endif]-->
@@ -248,7 +248,7 @@ class Gmaj( data.Data ):
                 "nobutton": "false",
                 "urlpause" :"100",
                 "debug": "false",
-                "posturl": "history_add_to?%s" % "&".join( map( lambda x: "%s=%s" % ( x[0], quote_plus( str( x[1] ) ) ), [ ( 'copy_access_from', dataset.id), ( 'history_id', dataset.history_id ), ( 'ext', 'maf' ), ( 'name', 'GMAJ Output on data %s' % dataset.hid ), ( 'info', 'Added by GMAJ' ), ( 'dbkey', dataset.dbkey ) ] ) ) 
+                "posturl": "history_add_to?%s" % "&".join( map( lambda x: "%s=%s" % ( x[0], quote_plus( str( x[1] ) ) ), [ ( 'copy_access_from', dataset.id), ( 'history_id', dataset.history_id ), ( 'ext', 'maf' ), ( 'name', 'GMAJ Output on data %s' % dataset.hid ), ( 'info', 'Added by GMAJ' ), ( 'dbkey', dataset.dbkey ) ] ) )
                 }
                 class_name = "edu.psu.bx.gmaj.MajApplet.class"
                 archive = "/static/gmaj/gmaj.jar"
@@ -270,7 +270,7 @@ class Gmaj( data.Data ):
         return 'application/zip'
     def sniff(self, filename):
         """
-        NOTE: the sniff.convert_newlines() call in the upload utility will keep Gmaj data types from being 
+        NOTE: the sniff.convert_newlines() call in the upload utility will keep Gmaj data types from being
         correctly sniffed, but the files can be uploaded (they'll be sniffed as 'txt').  This sniff function
         is here to provide an example of a sniffer for a zip file.
         """
@@ -286,7 +286,7 @@ class Gmaj( data.Data ):
         if not contains_gmaj_file:
             return False
         return True
-            
+
 class Html( data.Text ):
     """Class describing an html file"""
     file_ext = "html"

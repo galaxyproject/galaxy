@@ -1,23 +1,9 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
 <%namespace file="/admin/tool_shed_repository/common.mako" import="*" />
+<%namespace file="/admin/tool_shed_repository/repository_actions_menu.mako" import="*" />
 
-<br/><br/>
-<ul class="manage-table-actions">
-    <li><a class="action-button" id="repository-${repository.id}-popup" class="menubutton">Repository Actions</a></li>
-    <div popupmenu="repository-${repository.id}-popup">
-        <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='manage_repository', id=trans.security.encode_id( repository.id ) )}">Manage repository</a>
-        <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='browse_repository', id=trans.security.encode_id( repository.id ) )}">Browse repository files</a>
-        <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='check_for_updates', id=trans.security.encode_id( repository.id ) )}">Get repository updates</a>
-        %if repository.can_reset_metadata:
-            <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='reset_repository_metadata', id=trans.security.encode_id( repository.id ) )}">Reset repository metadata</a>
-        %endif
-        %if repository.tool_dependencies:
-            <% tool_dependency_ids = [ trans.security.encode_id( td.id ) for td in repository.tool_dependencies ] %>
-            <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='manage_tool_dependencies', tool_dependency_ids=tool_dependency_ids )}">Manage tool dependencies</a>
-        %endif
-    </div>
-</ul>
+${render_galaxy_repository_actions( repository )}
 
 %if message:
     ${render_msg( message, status )}
@@ -50,12 +36,94 @@
                 ${repository.deleted}
             </div>
             <div class="form-row">
-                %if repository.can_deactivate:
+                <%
+                    can_deactivate_repository = repository.can_deactivate
+                    can_uninstall_repository = repository.can_uninstall( trans.app )
+                %>
+                %if can_deactivate_repository and can_uninstall_repository:
                     <% deactivate_uninstall_button_text = "Deactivate or Uninstall" %>
                     ${remove_from_disk_check_box.get_html()}
                     <label for="repository" style="display: inline;font-weight:normal;">Check to uninstall or leave blank to deactivate</label>
                     <br/><br/>
-                    <label>Deactivating this repository will result in the following:</label>
+                %elif can_deactivate_repository:
+                    <% deactivate_uninstall_button_text = "Deactivate" %>
+                %else:
+                    <% deactivate_uninstall_button_text = "Uninstall" %>
+                    ##hack to mimic check box
+                    <input type="hidden" name="remove_from_disk" value="true"/><input type="hidden" name="remove_from_disk" value="true"/>
+                %endif
+                %if not can_uninstall_repository:
+                    <%
+                        from tool_shed.util.repository_dependency_util import get_repository_tuple_for_installed_repository_manager
+                        from tool_shed.util.tool_dependency_util import get_tool_dependency_tuple_for_installed_repository_manager
+                        
+                        irm = trans.app.installed_repository_manager
+                        repository_tup = get_repository_tuple_for_installed_repository_manager( repository )
+
+                        # Get installed repositories that this repository requires.
+                        installed_dependent_repositories = []
+                        installed_runtime_dependent_tool_dependencies = []
+                        installed_dependent_repositories = irm.installed_dependent_repositories_of_installed_repositories.get( repository_tup, [] )
+
+                        # Get this repository's installed tool dependencies.
+                        installed_tool_dependencies = irm.installed_tool_dependencies_of_installed_repositories.get( repository_tup, [] )
+
+                        # Get installed runtime dependent tool dependencies of this repository's installed tool dependencies.
+                        installed_runtime_dependent_tool_dependencies = []
+                        for itd_tup in installed_tool_dependencies:
+                            installed_dependent_td_tups = \
+                                irm.installed_runtime_dependent_tool_dependencies_of_installed_tool_dependencies.get( itd_tup, [] )
+                            if installed_dependent_td_tups:
+                                installed_runtime_dependent_tool_dependencies.extend( installed_dependent_td_tups )
+                    %>
+                    %if installed_dependent_repositories or installed_runtime_dependent_tool_dependencies:
+                        <table width="100%" border="0" cellpadding="0" cellspacing="0">
+                            <tr>
+                                <td bgcolor="#D8D8D8">
+                                    <label>This repository cannot be uninstalled because it is required by the following installed items:</label>
+                                </td>
+                            </tr>
+                        </table>
+                        %if installed_dependent_repositories:
+                            <label>Dependent repositories:</label>
+                            <ul>
+                            %for installed_dependent_repository_tup in installed_dependent_repositories:
+                                <%
+                                    tool_shed, name, owner, installed_changeset_revision = installed_dependent_repository_tup
+                                %>
+                                <li>Revision <b>${ installed_changeset_revision | h}</b> of repository <b>${name | h}</b> owned by <b>${owner | h}</b></li>
+                            %endfor
+                            </ul>
+                        %endif
+                        %if installed_runtime_dependent_tool_dependencies:
+                            <label>Runtime dependent tool dependencies of this repository's tool dependencies:</label>
+                            <ul>
+                                %for td_tup in installed_runtime_dependent_tool_dependencies:
+                                    <%
+                                        tool_shed_repository_id, name, version, type = td_tup
+                                        containing_repository = irm.get_containing_repository_for_tool_dependency( td_tup )
+                                        repository_name = containing_repository.name
+                                        changeset_revision = containing_repository.changeset_revision
+                                        owner = containing_repository.owner
+                                    %>
+                                    <li>
+                                        Version <b>${version | h}</b> of ${type | h} <b>${name | h}</b> contained in revision 
+                                        <b>${changeset_revision | h}</b> of repository <b>${repository_name | h}</b> owned by <b>${owner | h}</b>
+                                    </li>
+                                %endfor
+                            </ul>
+                        %endif
+                        <br/>
+                    %endif
+                %endif
+                %if can_deactivate_repository:
+                    <table width="100%" border="0" cellpadding="0" cellspacing="0">
+                        <tr>
+                            <td bgcolor="#D8D8D8">
+                                <label>Deactivating this repository will result in the following:</label>
+                            </td>
+                        </tr>
+                    </table>
                     <div class="toolParamHelp" style="clear: both;">
                             * The repository and all of it's contents will remain on disk.
                     </div>
@@ -78,40 +146,45 @@
                         * The repository record's deleted column in the tool_shed_repository database table will be set to True.
                     </div>
                     <br/>
-                %else:
-                    <% deactivate_uninstall_button_text = "Uninstall" %>
-                    ##hack to mimic check box
-                    <input type="hidden" name="remove_from_disk" value="true"/><input type="hidden" name="remove_from_disk" value="true"/>
                 %endif
-                <label>Uninstalling this repository will result in the following:</label>
-                <div class="toolParamHelp" style="clear: both;">
-                    * The repository and all of it's contents will be removed from disk.
-                </div>
-                %if repository.includes_tools_for_display_in_tool_panel:
+                %if can_uninstall_repository:
+                    <table width="100%" border="0" cellpadding="0" cellspacing="0">
+                        <tr>
+                            <td bgcolor="#D8D8D8">
+                                <label>Uninstalling this repository will result in the following:</label>
+                            </td>
+                        </tr>
+                    </table>
                     <div class="toolParamHelp" style="clear: both;">
-                        * The repository's tool tag sets will be removed from the tool config file in which they are defined.
+                        * The repository and all of it's contents will be removed from disk.
                     </div>
+                    %if repository.includes_tools_for_display_in_tool_panel:
+                        <div class="toolParamHelp" style="clear: both;">
+                            * The repository's tool tag sets will be removed from the tool config file in which they are defined.
+                        </div>
+                    %endif
+                    %if repository.includes_tool_dependencies:
+                        <div class="toolParamHelp" style="clear: both;">
+                            * The repository's installed tool dependencies will be removed from disk.
+                        </div>
+                        <div class="toolParamHelp" style="clear: both;">
+                            * Each associated tool dependency record's status column in the tool_dependency database table will be set to 'Uninstalled'.
+                        </div>
+                    %endif
+                    %if repository.includes_datatypes:
+                        <div class="toolParamHelp" style="clear: both;">
+                            * The repository's datatypes, datatype converters and display applications will be eliminated from the datatypes registry.
+                        </div>
+                    %endif
+                    <div class="toolParamHelp" style="clear: both;">
+                        * The repository record's deleted column in the tool_shed_repository database table will be set to True.
+                    </div>
+                    <div class="toolParamHelp" style="clear: both;">
+                        * The repository record's uninstalled column in the tool_shed_repository database table will be set to True.
+                    </div>
+                    <div style="clear: both"></div>
+                    <br/>
                 %endif
-                %if repository.includes_tool_dependencies:
-                    <div class="toolParamHelp" style="clear: both;">
-                        * The repository's installed tool dependencies will be removed from disk.
-                    </div>
-                    <div class="toolParamHelp" style="clear: both;">
-                        * Each associated tool dependency record's status column in the tool_dependency database table will be set to 'Uninstalled'.
-                    </div>
-                %endif
-                %if repository.includes_datatypes:
-                    <div class="toolParamHelp" style="clear: both;">
-                        * The repository's datatypes, datatype converters and display applications will be eliminated from the datatypes registry.
-                    </div>
-                %endif
-                <div class="toolParamHelp" style="clear: both;">
-                    * The repository record's deleted column in the tool_shed_repository database table will be set to True.
-                </div>
-                <div class="toolParamHelp" style="clear: both;">
-                    * The repository record's uninstalled column in the tool_shed_repository database table will be set to True.
-                </div>
-                <div style="clear: both"></div>
             </div>
             <div class="form-row">
                 <input type="submit" name="deactivate_or_uninstall_repository_button" value="${deactivate_uninstall_button_text}"/>

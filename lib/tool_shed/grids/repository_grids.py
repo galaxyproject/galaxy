@@ -82,6 +82,13 @@ class RepositoryGrid( grids.Grid ):
             return escape_html( repository.name )
 
 
+    class TypeColumn( grids.TextColumn ):
+
+        def get_value( self, trans, grid, repository ):
+            type_class = repository.get_type_class( trans.app )
+            return escape_html( type_class.label )
+
+
     class MetadataRevisionColumn( grids.GridColumn ):
 
         def __init__( self, col_name ):
@@ -210,8 +217,9 @@ class RepositoryGrid( grids.Grid ):
         DescriptionColumn( "Synopsis",
                            key="description",
                            attach_popup=False ),
-        MetadataRevisionColumn( "Metadata Revisions" ),
-        ToolsFunctionallyCorrectColumn( "Tools Verified" ),
+        TypeColumn( "Type" ),
+        MetadataRevisionColumn( "Metadata<br/>Revisions" ),
+        ToolsFunctionallyCorrectColumn( "Tools<br/>Verified" ),
         UserColumn( "Owner",
                      model_class=model.User,
                      link=( lambda item: dict( operation="repositories_by_user", id=item.id ) ),
@@ -227,7 +235,7 @@ class RepositoryGrid( grids.Grid ):
                                   key="Category.name",
                                   visible=False )
     ]
-    columns.append( grids.MulticolFilterColumn( "Search repository name, description", 
+    columns.append( grids.MulticolFilterColumn( "Search repository name, description",
                                                 cols_to_filter=[ columns[0], columns[1] ],
                                                 key="free-text-search",
                                                 visible=False,
@@ -365,15 +373,16 @@ class MyWritableRepositoriesGrid( RepositoryGrid ):
                                    key="name",
                                    link=( lambda item: dict( operation="view_or_manage_repository", id=item.id ) ),
                                    attach_popup=False ),
-        RepositoryGrid.MetadataRevisionColumn( "Metadata Revisions" ),
-        RepositoryGrid.ToolsFunctionallyCorrectColumn( "Tools Verified" ),
+        RepositoryGrid.TypeColumn( "Type" ),
+        RepositoryGrid.MetadataRevisionColumn( "Metadata<br/>Revisions" ),
+        RepositoryGrid.ToolsFunctionallyCorrectColumn( "Tools<br/>Verified" ),
         RepositoryGrid.UserColumn( "Owner",
                                    model_class=model.User,
                                    link=( lambda item: dict( operation="repositories_by_user", id=item.id ) ),
                                    attach_popup=False,
                                    key="User.username" )
     ]
-    columns.append( grids.MulticolFilterColumn( "Search repository name", 
+    columns.append( grids.MulticolFilterColumn( "Search repository name",
                                                 cols_to_filter=[ columns[ 0 ] ],
                                                 key="free-text-search",
                                                 visible=False,
@@ -412,8 +421,9 @@ class RepositoriesByUserGrid( RepositoryGrid ):
         RepositoryGrid.DescriptionColumn( "Synopsis",
                                           key="description",
                                           attach_popup=False ),
-        RepositoryGrid.MetadataRevisionColumn( "Metadata Revisions" ),
-        RepositoryGrid.ToolsFunctionallyCorrectColumn( "Tools Verified" ),
+        RepositoryGrid.TypeColumn( "Type" ),
+        RepositoryGrid.MetadataRevisionColumn( "Metadata<br/>Revisions" ),
+        RepositoryGrid.ToolsFunctionallyCorrectColumn( "Tools<br/>Verified" ),
         RepositoryGrid.CategoryColumn( "Category",
                                        model_class=model.Category,
                                        key="Category.name",
@@ -448,8 +458,9 @@ class RepositoriesInCategoryGrid( RepositoryGrid ):
         RepositoryGrid.DescriptionColumn( "Synopsis",
                                           key="description",
                                           attach_popup=False ),
-        RepositoryGrid.MetadataRevisionColumn( "Metadata Revisions" ),
-        RepositoryGrid.ToolsFunctionallyCorrectColumn( "Tools Verified" ),
+        RepositoryGrid.TypeColumn( "Type" ),
+        RepositoryGrid.MetadataRevisionColumn( "Metadata<br/>Revisions" ),
+        RepositoryGrid.ToolsFunctionallyCorrectColumn( "Tools<br/>Verified" ),
         RepositoryGrid.UserColumn( "Owner",
                                    model_class=model.User,
                                    link=( lambda item: dict( controller="repository", operation="repositories_by_user", id=item.id ) ),
@@ -461,7 +472,7 @@ class RepositoriesInCategoryGrid( RepositoryGrid ):
                                     key="email",
                                     visible=False )
     ]
-    columns.append( grids.MulticolFilterColumn( "Search repository name, description", 
+    columns.append( grids.MulticolFilterColumn( "Search repository name, description",
                                                 cols_to_filter=[ columns[0], columns[1] ],
                                                 key="free-text-search",
                                                 visible=False,
@@ -496,11 +507,12 @@ class RepositoriesIOwnGrid( RepositoryGrid ):
                                    key="name",
                                    link=( lambda item: dict( operation="view_or_manage_repository", id=item.id ) ),
                                    attach_popup=False ),
-        RepositoryGrid.MetadataRevisionColumn( "Metadata Revisions" ),
-        RepositoryGrid.ToolsFunctionallyCorrectColumn( "Tools Verified" ),
+        RepositoryGrid.TypeColumn( "Type" ),
+        RepositoryGrid.MetadataRevisionColumn( "Metadata<br/>Revisions" ),
+        RepositoryGrid.ToolsFunctionallyCorrectColumn( "Tools<br/>Verified" ),
         RepositoryGrid.DeprecatedColumn( "Deprecated" )
     ]
-    columns.append( grids.MulticolFilterColumn( "Search repository name", 
+    columns.append( grids.MulticolFilterColumn( "Search repository name",
                                                 cols_to_filter=[ columns[0] ],
                                                 key="free-text-search",
                                                 visible=False,
@@ -532,7 +544,7 @@ class RepositoriesMissingToolTestComponentsGrid( RepositoryGrid ):
                                    link=( lambda item: dict( operation="repositories_by_user", id=item.id ) ),
                                    attach_popup=False )
     ]
-    columns.append( grids.MulticolFilterColumn( "Search repository name", 
+    columns.append( grids.MulticolFilterColumn( "Search repository name",
                                                 cols_to_filter=[ columns[0] ],
                                                 key="free-text-search",
                                                 visible=False,
@@ -619,7 +631,7 @@ class RepositoriesWithTestInstallErrorsGrid( RepositoryGrid ):
                                    link=( lambda item: dict( operation="repositories_by_user", id=item.id ) ),
                                    attach_popup=False )
     ]
-    columns.append( grids.MulticolFilterColumn( "Search repository name", 
+    columns.append( grids.MulticolFilterColumn( "Search repository name",
                                                 cols_to_filter=[ columns[0] ],
                                                 key="free-text-search",
                                                 visible=False,
@@ -706,7 +718,7 @@ class RepositoriesWithSkipTestsCheckedGrid( RepositoryGrid ):
                                    link=( lambda item: dict( operation="repositories_by_user", id=item.id ) ),
                                    attach_popup=False )
     ]
-    columns.append( grids.MulticolFilterColumn( "Search repository name", 
+    columns.append( grids.MulticolFilterColumn( "Search repository name",
                                                 cols_to_filter=[ columns[0] ],
                                                 key="free-text-search",
                                                 visible=False,
@@ -785,14 +797,15 @@ class DeprecatedRepositoriesIOwnGrid( RepositoriesIOwnGrid ):
                                          key="name",
                                          link=( lambda item: dict( operation="view_or_manage_repository", id=item.id ) ),
                                          attach_popup=False ),
-        RepositoriesIOwnGrid.MetadataRevisionColumn( "Metadata Revisions" ),
-        RepositoryGrid.ToolsFunctionallyCorrectColumn( "Tools Verified" ),
+        RepositoryGrid.TypeColumn( "Type" ),
+        RepositoriesIOwnGrid.MetadataRevisionColumn( "Metadata<br/>Revisions" ),
+        RepositoryGrid.ToolsFunctionallyCorrectColumn( "Tools<br/>Verified" ),
         RepositoriesIOwnGrid.CategoryColumn( "Category",
                                              model_class=model.Category,
                                              key="Category.name",
                                              attach_popup=False ),
     ]
-    columns.append( grids.MulticolFilterColumn( "Search repository name", 
+    columns.append( grids.MulticolFilterColumn( "Search repository name",
                                                 cols_to_filter=[ columns[0] ],
                                                 key="free-text-search",
                                                 visible=False,
@@ -824,7 +837,7 @@ class RepositoriesWithFailingToolTestsGrid( RepositoryGrid ):
                                    link=( lambda item: dict( operation="repositories_by_user", id=item.id ) ),
                                    attach_popup=False )
     ]
-    columns.append( grids.MulticolFilterColumn( "Search repository name", 
+    columns.append( grids.MulticolFilterColumn( "Search repository name",
                                                 cols_to_filter=[ columns[0] ],
                                                 key="free-text-search",
                                                 visible=False,
@@ -911,7 +924,7 @@ class RepositoriesWithNoFailingToolTestsGrid( RepositoryGrid ):
                                    link=( lambda item: dict( operation="repositories_by_user", id=item.id ) ),
                                    attach_popup=False )
     ]
-    columns.append( grids.MulticolFilterColumn( "Search repository name", 
+    columns.append( grids.MulticolFilterColumn( "Search repository name",
                                                 cols_to_filter=[ columns[0] ],
                                                 key="free-text-search",
                                                 visible=False,
@@ -1010,7 +1023,7 @@ class RepositoriesWithInvalidToolsGrid( RepositoryGrid ):
             return val
 
     title = "Repositories with invalid tools"
-    columns = [               
+    columns = [
         InvalidToolConfigColumn( "Tool config" ),
         RepositoryGrid.NameColumn( "Name",
                                    key="name",
@@ -1098,6 +1111,14 @@ class RepositoryMetadataGrid( grids.Grid ):
         def get_value( self, trans, grid, repository_metadata ):
             repository = repository_metadata.repository
             return escape_html( repository.name )
+
+
+    class RepositoryTypeColumn( grids.TextColumn ):
+
+        def get_value( self, trans, grid, repository_metadata ):
+            repository = repository_metadata.repository
+            type_class = repository.get_type_class( trans.app )
+            return escape_html( type_class.label )
 
 
     class RepositoryOwnerColumn( grids.TextColumn ):
@@ -1201,12 +1222,13 @@ class RepositoryMetadataGrid( grids.Grid ):
                               key="Repository.name",
                               link=( lambda item: dict( operation="view_or_manage_repository", id=item.id ) ),
                               attach_popup=False ),
+        RepositoryNameColumn( "Type" ),
         RepositoryOwnerColumn( "Owner",
                                model_class=model.User,
                                attach_popup=False,
                                key="User.username" )
     ]
-    columns.append( grids.MulticolFilterColumn( "Search repository name, description", 
+    columns.append( grids.MulticolFilterColumn( "Search repository name, description",
                                                 cols_to_filter=[ columns[0], columns[1] ],
                                                 key="free-text-search",
                                                 visible=False,
@@ -1248,7 +1270,7 @@ class RepositoryDependenciesGrid( RepositoryMetadataGrid ):
                             owner = rd_tup[ 2 ]
                             changeset_revision = rd_tup[ 3 ]
                             required_repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
-                            if required_repository:
+                            if required_repository and not required_repository.deleted:
                                 required_repository_id = trans.security.encode_id( required_repository.id )
                                 required_repository_metadata = metadata_util.get_repository_metadata_by_repository_id_changeset_revision( trans,
                                                                                                                                           required_repository_id,
@@ -1286,7 +1308,7 @@ class RepositoryDependenciesGrid( RepositoryMetadataGrid ):
         RepositoryMetadataGrid.ChangesetRevisionColumn( "Revision",
                                                         attach_popup=False )
     ]
-    columns.append( grids.MulticolFilterColumn( "Search repository name, owner", 
+    columns.append( grids.MulticolFilterColumn( "Search repository name, owner",
                                                 cols_to_filter=[ columns[1], columns[2] ],
                                                 key="free-text-search",
                                                 visible=False,
@@ -1353,7 +1375,7 @@ class DatatypesGrid( RepositoryMetadataGrid ):
         RepositoryMetadataGrid.ChangesetRevisionColumn( "Revision",
                                                         attach_popup=False )
     ]
-    columns.append( grids.MulticolFilterColumn( "Search repository name, owner", 
+    columns.append( grids.MulticolFilterColumn( "Search repository name, owner",
                                                 cols_to_filter=[ columns[1], columns[2] ],
                                                 key="free-text-search",
                                                 visible=False,
@@ -1428,7 +1450,7 @@ class ToolDependenciesGrid( RepositoryMetadataGrid ):
         RepositoryMetadataGrid.ChangesetRevisionColumn( "Revision",
                                                         attach_popup=False )
     ]
-    columns.append( grids.MulticolFilterColumn( "Search repository name, owner", 
+    columns.append( grids.MulticolFilterColumn( "Search repository name, owner",
                                                 cols_to_filter=[ columns[1], columns[2] ],
                                                 key="free-text-search",
                                                 visible=False,
@@ -1492,7 +1514,7 @@ class ToolsGrid( RepositoryMetadataGrid ):
         RepositoryMetadataGrid.ChangesetRevisionColumn( "Revision",
                                                         attach_popup=False )
     ]
-    columns.append( grids.MulticolFilterColumn( "Search repository name, owner", 
+    columns.append( grids.MulticolFilterColumn( "Search repository name, owner",
                                                 cols_to_filter=[ columns[1], columns[2] ],
                                                 key="free-text-search",
                                                 visible=False,
@@ -1598,8 +1620,9 @@ class ValidRepositoryGrid( RepositoryGrid ):
         RepositoryGrid.DescriptionColumn( "Synopsis",
                                           key="description",
                                           attach_popup=False ),
+        RepositoryGrid.TypeColumn( "Type" ),
         InstallableRevisionColumn( "Installable Revisions" ),
-        RepositoryGrid.ToolsFunctionallyCorrectColumn( "Tools Verified" ),
+        RepositoryGrid.ToolsFunctionallyCorrectColumn( "Tools<br/>Verified" ),
         RepositoryGrid.UserColumn( "Owner",
                                    model_class=model.User,
                                    attach_popup=False ),
@@ -1609,7 +1632,7 @@ class ValidRepositoryGrid( RepositoryGrid ):
                                   key="Category.name",
                                   visible=False )
     ]
-    columns.append( grids.MulticolFilterColumn( "Search repository name, description", 
+    columns.append( grids.MulticolFilterColumn( "Search repository name, description",
                                                 cols_to_filter=[ columns[0], columns[1] ],
                                                 key="free-text-search",
                                                 visible=False,

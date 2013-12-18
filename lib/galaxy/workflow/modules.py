@@ -201,6 +201,7 @@ class ToolModule( WorkflowModule ):
         self.post_job_actions = {}
         self.workflow_outputs = []
         self.state = None
+        self.version_changes = []
         if self.tool:
             self.errors = None
         else:
@@ -219,6 +220,8 @@ class ToolModule( WorkflowModule ):
         module = Class( trans, tool_id )
         module.state = galaxy.tools.DefaultToolState()
         if module.tool is not None:
+            if d.get('tool_version', 'Unspecified') != module.get_tool_version():
+                module.version_changes.append("%s: using version '%s' instead of version '%s' indicated in this workflow." % (tool_id, d.get('tool_version', 'Unspecified'), module.get_tool_version()) )
             module.state.decode( d[ "tool_state" ], module.tool, module.trans.app, secure=secure )
         module.errors = d.get( "tool_errors", None )
         module.post_job_actions = d.get( "post_job_actions", {} )
@@ -237,11 +240,16 @@ class ToolModule( WorkflowModule ):
             if tool:
                 tool_id = tool.id
         if ( trans.app.toolbox and tool_id in trans.app.toolbox.tools_by_id ):
+            if step.config:
+                # This step has its state saved in the config field due to the
+                # tool being previously unavailable.
+                return module_factory.from_dict(trans, from_json_string(step.config), secure=False)
             module = Class( trans, tool_id )
             module.state = galaxy.tools.DefaultToolState()
+            if step.tool_version and (step.tool_version != module.tool.version):
+                module.version_changes.append("%s: using version '%s' instead of version '%s' indicated in this workflow." % (tool_id, module.tool.version, step.tool_version))
             module.state.inputs = module.tool.params_from_strings( step.tool_inputs, trans.app, ignore_errors=True )
             module.errors = step.tool_errors
-            # module.post_job_actions = step.post_job_actions
             module.workflow_outputs = step.workflow_outputs
             pjadict = {}
             for pja in step.post_job_actions:
@@ -253,8 +261,8 @@ class ToolModule( WorkflowModule ):
     @classmethod
     def __get_tool_version( cls, trans, tool_id ):
         # Return a ToolVersion if one exists for tool_id.
-        return trans.sa_session.query( trans.app.model.ToolVersion ) \
-                               .filter( trans.app.model.ToolVersion.table.c.tool_id == tool_id ) \
+        return trans.install_model.context.query( trans.install_model.ToolVersion ) \
+                               .filter( trans.install_model.ToolVersion.table.c.tool_id == tool_id ) \
                                .first()
 
     def save_to_step( self, step ):

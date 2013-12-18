@@ -87,7 +87,7 @@ Tools.prototype._uploadFile = function _uploadFile( filepath ){
     uploadInfo[ spaceghost.data.selectors.tools.upload.fileInput ] = filepath;
 
     // click the upload tool
-    spaceghost.thenOpen( spaceghost.baseUrl ).withToolPanel( function(){
+    spaceghost.thenOpen( spaceghost.baseUrl, function(){
         // we can apprently click a tool label without expanding the tool container for it
         this.clickLabel( spaceghost.data.labels.tools.upload.panelLabel );
         this.jumpToMain( function(){

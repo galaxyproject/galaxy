@@ -1,9 +1,10 @@
-import operator, os
+import os
+import logging
 from datetime import datetime, timedelta
 from galaxy.web.base.controller import BaseUIController, web
+from decimal import Decimal
 from galaxy import model, util
-from galaxy.model.orm import and_, not_, or_, desc
-import logging
+from galaxy.model.orm import and_, desc, eagerload
 log = logging.getLogger( __name__ )
 
 class System( BaseUIController ):
@@ -39,7 +40,8 @@ class System( BaseUIController ):
                                     userless_histories_days=userless_histories_days,
                                     deleted_histories_days=deleted_histories_days,
                                     deleted_datasets_days=deleted_datasets_days,
-                                    message=message )
+                                    message=message,
+                                    nice_size=nice_size )
     def userless_histories( self, trans, **kwd ):
         """The number of userless histories and associated datasets that have not been updated for the specified number of days."""
         params = util.Params( kwd )
@@ -89,7 +91,8 @@ class System( BaseUIController ):
                         except:
                             pass
                 history_count += 1
-            message = "%d histories ( including a total of %d datasets ) were deleted more than %d days ago, but have not yet been purged.  Disk space: " %( history_count, dataset_count, deleted_histories_days ) + str( disk_space )
+            message = "%d histories ( including a total of %d datasets ) were deleted more than %d days ago, but have not yet been purged, " \
+                    "disk space: %s." % ( history_count, dataset_count, deleted_histories_days, nice_size( disk_space, True ) )
         else:
             message = "Enter the number of days."
         return str( deleted_histories_days ), message
@@ -111,8 +114,8 @@ class System( BaseUIController ):
                     disk_space += dataset.file_size
                 except:
                     pass
-            message = str( dataset_count ) + " datasets were deleted more than " + str( deleted_datasets_days ) + \
-            " days ago, but have not yet been purged, disk space: " + nice_size( disk_space ) + "."
+            message =  "%d datasets were deleted more than %d days ago, but have not yet been purged," \
+                " disk space: %s." % ( dataset_count, deleted_datasets_days, nice_size( disk_space, True ))
         else:
             message = "Enter the number of days."
         return str( deleted_datasets_days ), message
@@ -178,17 +181,23 @@ class System( BaseUIController ):
                                    .order_by( desc( model.Dataset.table.c.file_size ) )
         return file_path, disk_usage, datasets, file_size_str
 
-def nice_size( size ):
+def nice_size(size, include_bytes=False):
     """Returns a readably formatted string with the size"""
-    words = [ 'bytes', 'Kb', 'Mb', 'Gb' ]
+    niced = False
+    nice_string = "%s bytes" % size
     try:
-        size = float( size )
+        nsize = Decimal(size)
+        for x in ['bytes','KB','MB','GB']:
+            if nsize.compare(Decimal("1024.0")) == Decimal("-1"):
+                nice_string = "%3.1f %s" % (nsize, x)
+                niced = True
+                break
+            nsize /= Decimal("1024.0")
+        if not niced:
+            nice_string = "%3.1f %s" % (nsize, 'TB')
+            niced = True
+        if include_bytes and x != 'bytes':
+            nice_string = "%s (%s bytes)" % (nice_string, size)
     except:
-        return '??? bytes'
-    for ind, word in enumerate( words ):
-        step  = 1024 ** ( ind + 1 )
-        if step > size:
-            size = size / float( 1024 ** ind )
-            out  = "%.1f %s" % ( size, word )
-            return out
-    return '??? bytes'
+        pass
+    return nice_string

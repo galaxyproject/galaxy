@@ -34,13 +34,13 @@ def image_type( filename, image=None ):
     return format
 def check_image_type( filename, types, image=None ):
     format = image_type( filename, image )
-    # First check if we can  use PIL        
+    # First check if we can  use PIL
     if format in types:
         return True
     return False
 def get_image_ext ( file_path, image ):
     #determine ext
-    format = image_type( file_path, image )    
+    format = image_type( file_path, image )
     if format in [ 'JPG','JPEG' ]:
         return 'jpg'
     if format == 'PNG':
