@@ -3178,7 +3178,7 @@ class UserOpenID( object ):
         self.openid = openid
 
 class Page( object, Dictifiable ):
-    dict_element_visible_keys = [ 'id', 'title', 'latest_revision_id', 'slug' ]
+    dict_element_visible_keys = [ 'id', 'title', 'latest_revision_id', 'slug', 'published', 'importable' ]
     def __init__( self ):
         self.id = None
         self.user = None
