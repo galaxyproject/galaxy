@@ -15,6 +15,16 @@ class PageRevisionsController( BaseAPIController, SharableItemSecurityMixin, Use
 
     @web.expose_api
     def index( self, trans, page_id, **kwd ):
+        """
+        index( self, trans, page_id, **kwd )
+        * GET /api/pages/{page_id}/revisions
+            return a list of Page revisions
+
+        :param page_id: Display the revisions of Page with ID=page_id
+
+        :rtype:     list
+        :returns:   dictionaries containing different revisions of the page
+        """
         r = trans.sa_session.query( trans.app.model.PageRevision ).filter_by( page_id=trans.security.decode_id(page_id) )
         out = []
         for page in r:
@@ -26,9 +36,17 @@ class PageRevisionsController( BaseAPIController, SharableItemSecurityMixin, Use
     @web.expose_api
     def create( self, trans, page_id, payload, **kwd ):
         """
-        payload keys:
-            page_id
-            content
+        create( self, trans, page_id, payload **kwd )
+        * POST /api/pages/{page_id}/revisions
+            Create a new revision for a page
+
+        :param page_id: Add revision to Page with ID=page_id
+        :param payload: A dictionary containing::
+            'title'     = New title of the page
+            'content'   = New content of the page
+
+        :rtype:     dictionary
+        :returns:   Dictionary with 'success' or 'error' element to indicate the result of the request 
         """
         user = trans.get_user()
         error_str = ""
