@@ -13,6 +13,10 @@
 # If the tool shed url is not specified in tool_sheds_conf.xml, GALAXY_INSTALL_TEST_TOOL_SHEDS_CONF must be set to
 # a tool sheds configuration file that does specify that url or repository installation will fail.
 
+# This script accepts the command line option -w to select which set of tests to run. The default behavior is to test
+# first tool_dependency_definition repositories and then repositories with tools. Provide the value 'dependencies'
+# to test only tool_dependency_definition repositories or 'tools' to test only repositories with tools. 
+
 if [ -z $GALAXY_INSTALL_TEST_TOOL_SHED_API_KEY ] ; then
 	echo "This script requires the GALAXY_INSTALL_TEST_TOOL_SHED_API_KEY environment variable to be set and non-empty."
 	exit 1
@@ -39,14 +43,41 @@ else
 	fi
 fi
 
-# Test installation of repositories of type tool_dependency_definition.
-python test/install_and_test_tool_shed_repositories/tool_dependency_definitions/functional_tests.py $* -v --with-nosehtml --html-report-file \
-    test/install_and_test_tool_shed_repositories/tool_dependency_definitions/run_functional_tests.html \
-    test/install_and_test_tool_shed_repositories/functional/test_install_repositories.py \
-    test/functional/test_toolbox.py  
+test_tool_dependency_definitions () {
+    # Test installation of repositories of type tool_dependency_definition.
+    python test/install_and_test_tool_shed_repositories/tool_dependency_definitions/functional_tests.py $* -v --with-nosehtml --html-report-file \
+        test/install_and_test_tool_shed_repositories/tool_dependency_definitions/run_functional_tests.html \
+        test/install_and_test_tool_shed_repositories/functional/test_install_repositories.py \
+        test/functional/test_toolbox.py  
+}
 
-# Test installation of repositories that contain valid tools with defined functional tests and a test-data directory containing test files.
-#python test/install_and_test_tool_shed_repositories/repositories_with_tools/functional_tests.py $* -v --with-nosehtml --html-report-file \
-#	test/install_and_test_tool_shed_repositories/repositories_with_tools/run_functional_tests.html \
-#	test/install_and_test_tool_shed_repositories/functional/test_install_repositories.py \
-#	test/functional/test_toolbox.py  
+test_repositories_with_tools () {
+    # Test installation of repositories that contain valid tools with defined functional tests and a test-data directory containing test files.
+    python test/install_and_test_tool_shed_repositories/repositories_with_tools/functional_tests.py $* -v --with-nosehtml --html-report-file \
+        test/install_and_test_tool_shed_repositories/repositories_with_tools/run_functional_tests.html \
+        test/install_and_test_tool_shed_repositories/functional/test_install_repositories.py \
+        test/functional/test_toolbox.py  
+}
+
+which='both'
+
+while getopts "w:" arg; do
+    case $arg in
+        w)
+            which=$OPTARG
+            ;;
+    esac
+done
+
+case $which in
+    dependencies)
+        test_tool_dependency_definitions
+        ;;
+    tools)
+        test_repositories_with_tools
+        ;;
+    *)
+        test_tool_dependency_definitions
+        test_repositories_with_tools
+        ;;
+esac        
