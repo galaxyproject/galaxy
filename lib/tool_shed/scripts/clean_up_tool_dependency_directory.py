@@ -9,9 +9,12 @@ def main( args ):
         os.mkdir( args.tool_dependency_dir )
         return 0
     else:
-        for subdirectory in os.listdir( args.tool_dependency_dir ):
-            print 'Deleting directory %s from %s.' % ( subdirectory, args.tool_dependency_dir )
-            shutil.rmtree( os.path.join( args.tool_dependency_dir, subdirectory ) )
+        for content in os.listdir( args.tool_dependency_dir ):
+            print 'Deleting directory %s from %s.' % ( content, args.tool_dependency_dir )
+            if os.path.isdir( content ):
+                shutil.rmtree( os.path.join( args.tool_dependency_dir, content ) )
+            else:
+                os.remove( content )
 
 if __name__ == '__main__':
     description = 'Clean out the configured tool dependency path, creating it if it does not exist.'
