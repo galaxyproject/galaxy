@@ -73,10 +73,10 @@ else:
 test_framework = install_and_test_base_util.TOOL_DEPENDENCY_DEFINITIONS
 
 def install_and_test_repositories( app, galaxy_shed_tools_dict, galaxy_shed_tool_conf_file ):
-    results_dict = install_and_test_base_util.initialize_results_dict( test_framework )
+    install_and_test_statistics_dict = install_and_test_base_util.initialize_install_and_test_statistics_dict( test_framework )
     error_message = ''
     # Initialize a dictionary for the summary that will be printed to stdout.
-    total_repositories_installed = results_dict[ 'total_repositories_installed' ]
+    total_repositories_processed = install_and_test_statistics_dict[ 'total_repositories_processed' ]
     repositories_to_install, error_message = \
         install_and_test_base_util.get_repositories_to_install( install_and_test_base_util.galaxy_tool_shed_url, test_framework )
     if error_message:
@@ -161,27 +161,26 @@ def install_and_test_repositories( app, galaxy_shed_tools_dict, galaxy_shed_tool
                                                                                  params,
                                                                                  can_update_tool_shed )
                 log.debug( "Not testing revision %s of repository %s owned by %s because it is in the exclude list for this test run." % \
-                           ( changeset_revision, name, owner ) )
+                    ( changeset_revision, name, owner ) )
             else:
                 tool_test_results_dict = install_and_test_base_util.initialize_tool_tests_results_dict( app, tool_test_results_dict )
                 repository, error_message = install_and_test_base_util.install_repository( app, repository_dict )
+                install_and_test_statistics_dict[ 'total_repositories_processed' ] += 1
                 if error_message:
+                    # The repository installation failed.
+                    log.debug( 'Installation failed for revision %s of repository %s owned by %s.' % \
+                        ( changeset_revision, name, owner ) )
+                    install_and_test_statistics_dict[ 'repositories_with_installation_error' ].append( repository_identifier_dict )
                     tool_test_results_dict[ 'installation_errors' ][ 'current_repository' ] = error_message
                     # Even if the repository failed to install, execute the uninstall method, in case a dependency did succeed.
-                    log.debug( 'Attempting to uninstall repository %s owned by %s.' % ( name, owner ) )
+                    log.debug( 'Attempting to uninstall revision %s of repository %s owned by %s.' % ( changeset_revision, name, owner ) )
                     try:
                         repository = test_db_util.get_installed_repository_by_name_owner_changeset_revision( name, owner, changeset_revision )
                     except Exception, e:
-                        error_message = 'Unable to find installed repository %s owned by %s: %s.' % ( name, owner, str( e ) )
+                        error_message = 'Unable to find revision %s of repository %s owned by %s: %s.' % \
+                            ( changeset_revision, name, owner, str( e ) )
                         log.exception( error_message )
-                    test_result = dict( tool_shed=install_and_test_base_util.galaxy_tool_shed_url,
-                                        name=name,
-                                        owner=owner,
-                                        changeset_revision=changeset_revision,
-                                        error_message=error_message )
-                    tool_test_results_dict[ 'installation_errors' ][ 'repository_dependencies' ].append( test_result )
-                    params = dict( tools_functionally_correct=False,
-                                   test_install_error=True,
+                    params = dict( test_install_error=True,
                                    do_not_test=False )
                     # TODO: do something useful with response_dict
                     response_dict = install_and_test_base_util.register_test_result( install_and_test_base_util.galaxy_tool_shed_url,
@@ -196,22 +195,50 @@ def install_and_test_repositories( app, galaxy_shed_tools_dict, galaxy_shed_tool
                     except Exception, e:
                         log.exception( 'Error attempting to uninstall revision %s of repository %s owned by %s: %s' % \
                             ( changeset_revision, name, owner, str( e ) ) )
-                    results_dict[ 'repositories_with_installation_error' ].append( repository_identifier_dict )
-                    log.debug( 'Repository %s failed to install correctly.' % str( name ) )
+                    log.debug( 'Installation failed for revision %s of repository %s owned by %s.' % \
+                        ( changeset_revision, name, owner ) )
                 else:
-                    log.debug( 'Installation of %s succeeded.' % str( repository.name ) )
+                    log.debug( 'Installation succeeded for revision %s of repository %s owned by %s.' % \
+                        ( changeset_revision, name, owner ) )
+                    # Keep statistics for this repository's tool dependencies that resulted in installation errors.
+                    for missing_tool_dependency in repository.missing_tool_dependencies:
+                        name = str( missing_tool_dependency.name )
+                        type = str( missing_tool_dependency.type )
+                        version = str( missing_tool_dependency.version )
+                        error_message = unicodify( missing_tool_dependency.error_message )
+                        missing_tool_dependency_info_dict = dict( type=type,
+                                                                  name=name,
+                                                                  version=version,
+                                                                  error_message=error_message )
+                        install_and_test_statistics_dict[ 'tool_dependencies_with_installation_error' ].append( missing_tool_dependency_info_dict )
+                    # Attempt to uninstall this repository  and all of its dependencies if its repository dependencies or
+                    # tool dependencies resulted in an installation error.
                     missing_tool_dependencies = install_and_test_base_util.get_missing_tool_dependencies( repository )
                     if missing_tool_dependencies or repository.missing_repository_dependencies:
-                        results_dict = install_and_test_base_util.handle_missing_dependencies( app,
-                                                                                               repository,
-                                                                                               missing_tool_dependencies,
-                                                                                               repository_dict,
-                                                                                               tool_test_results_dicts,
-                                                                                               tool_test_results_dict,
-                                                                                               results_dict,
-                                                                                               can_update_tool_shed )
-    results_dict[ 'total_repositories_installed' ] = total_repositories_installed
-    return results_dict, error_message
+                        install_and_test_base_util.handle_missing_dependencies( app,
+                                                                                repository,
+                                                                                missing_tool_dependencies,
+                                                                                repository_dict,
+                                                                                tool_test_results_dicts,
+                                                                                tool_test_results_dict,
+                                                                                install_and_test_statistics_dict,
+                                                                                can_update_tool_shed )
+                    else:
+                        # This repository and all of its dependencies were successfully installed.
+                        install_and_test_statistics_dict[ 'successful_installations' ].append( repository_identifier_dict )
+                        tool_test_results_dict[ 'passed_tests' ].append( repository_identifier_dict )
+                        params = dict( test_install_error=False,
+                                       do_not_test=False )
+                        # TODO: do something useful with response_dict
+                        response_dict = install_and_test_base_util.register_test_result( install_and_test_base_util.galaxy_tool_shed_url,
+                                                                                         tool_test_results_dicts,
+                                                                                         tool_test_results_dict,
+                                                                                         repository_dict,
+                                                                                         params,
+                                                                                         can_update_tool_shed )
+
+    install_and_test_statistics_dict[ 'total_repositories_processed' ] = total_repositories_processed
+    return install_and_test_statistics_dict, error_message
 
 def main():
     if install_and_test_base_util.tool_shed_api_key is None:
@@ -419,28 +446,34 @@ def main():
                                                                persist=False )
     now = time.strftime( "%Y-%m-%d %H:%M:%S" )
     print "####################################################################################"
-    print "# %s - running repository installation and testing script." % now
+    print "# %s - installation script for repositories of type tool_dependency_definition started." % now
+    if not can_update_tool_shed:
+        print "# This run will not update the Tool Shed database."
     print "####################################################################################"
-    results_dict, error_message = install_and_test_repositories( app, galaxy_shed_tools_dict, galaxy_shed_tool_conf_file )
+    install_and_test_statistics_dict, error_message = \
+        install_and_test_repositories( app, galaxy_shed_tools_dict, galaxy_shed_tool_conf_file )
     if error_message:
         log.debug( error_message )
     else:
-        total_repositories_installed = results_dict[ 'total_repositories_installed' ]
-        repositories_with_installation_error = results_dict[ 'repositories_with_installation_error' ]
-        tool_dependencies_with_installation_error = results_dict[ 'tool_dependencies_with_installation_error' ]
+        total_repositories_processed = install_and_test_statistics_dict[ 'total_repositories_processed' ]
+        successful_installations = install_and_test_statistics_dict[ 'successful_installations' ]
+        repositories_with_installation_error = install_and_test_statistics_dict[ 'repositories_with_installation_error' ]
+        tool_dependencies_with_installation_error = install_and_test_statistics_dict[ 'tool_dependencies_with_installation_error' ]
         now = time.strftime( "%Y-%m-%d %H:%M:%S" )
         print "####################################################################################"
-        print "# %s - repository installation and testing script completed." % now
-        print "# Repository revisions tested: %s" % str( total_repositories_installed )
-        if not can_update_tool_shed:
-            print "# This run will not update the Tool Shed database."
+        print "# %s - installation script for repositories of type tool_dependency_definition completed." % now
+        print "# Repository revisions processed: %s" % str( total_repositories_processed )
+        if successful_installations:
+            print "# ----------------------------------------------------------------------------------"
+            print "# The following %d revisions with all dependencies were successfully installed:" % len( successful_installations )
+            install_and_test_base_util.show_summary_output( successful_installations )
         if repositories_with_installation_error:
-            print '# ----------------------------------------------------------------------------------'
-            print "# %d repositories have installation errors:" % len( repositories_with_installation_error )
+            print "# ----------------------------------------------------------------------------------"
+            print "# The following %d revisions have installation errors:" % len( repositories_with_installation_error )
             install_and_test_base_util.show_summary_output( repositories_with_installation_error )
         if tool_dependencies_with_installation_error:
-            print '# ----------------------------------------------------------------------------------'
-            print "# %d tool dependencies have installation errors:" % len( tool_dependencies_with_installation_error )
+            print "# ----------------------------------------------------------------------------------"
+            print "# The following %d tool dependencies have installation errors:" % len( tool_dependencies_with_installation_error )
             install_and_test_base_util.show_summary_output( tool_dependencies_with_installation_error )
         print "####################################################################################"
     log.debug( "Shutting down..." )

@@ -70,12 +70,16 @@ while getopts "w:" arg; do
 done
 
 case $which in
-    dependencies)
+    # Use "-w tool_dependency_definitions" when you want to test repositories of type tool_dependency_definition.
+    tool_dependency_definitions)
         test_tool_dependency_definitions
         ;;
-    tools)
+    # Use "-w repositories_with_tools" parameter when you want to test repositories that contain tools.
+    repositories_with_tools)
         test_repositories_with_tools
         ;;
+    # No received parameters or any received parameter not in [ tool_dependency_definitions, repositories_with_tools ]
+    # will execute both scripts.
     *)
         test_tool_dependency_definitions
         test_repositories_with_tools

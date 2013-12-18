@@ -225,7 +225,8 @@ def get_latest_downloadable_changeset_revision( url, name, owner ):
         return suc.INITIAL_CHANGELOG_HASH, error_message
 
 def get_missing_tool_dependencies( repository ):
-    log.debug( 'Checking %s repository %s for missing tool dependencies.' % ( repository.status, repository.name ) )
+    log.debug( 'Checking revision %s of repository %s owned by %s for missing tool dependencies.' % \
+        ( str( repository.changeset_revision ), str( repository.name ), str( repository.changeset_revision ) ) )
     missing_tool_dependencies = repository.missing_tool_dependencies
     for tool_dependency in repository.tool_dependencies:
         log.debug( 'Tool dependency %s version %s has status %s.' % ( tool_dependency.name, tool_dependency.version, tool_dependency.status ) )
@@ -423,12 +424,13 @@ def get_webapp_global_conf():
     return global_conf
 
 def handle_missing_dependencies( app, repository, missing_tool_dependencies, repository_dict, tool_test_results_dicts,
-                                 tool_test_results_dict, results_dict, can_update_tool_shed ):
+                                 tool_test_results_dict, can_update_tool_shed ):
     """Handle missing repository or tool dependencies for an installed repository."""
     # If a tool dependency fails to install correctly, this should be considered an installation error,
     # and functional tests should be skipped, since the tool dependency needs to be correctly installed
     # for the test to be considered reliable.
-    log.debug( 'The following dependencies of this repository are missing, so skipping functional tests.' )
+    log.debug( 'The following dependencies of revision %s of repository %s owned by %s are missing.' % \
+        ( str( repository.changeset_revision ), str( repository.name ), str( repository.owner ) ) )
     # In keeping with the standard display layout, add the error message to the dict for each tool individually.
     for dependency in repository.missing_tool_dependencies:
         name = str( dependency.name )
@@ -436,24 +438,25 @@ def handle_missing_dependencies( app, repository, missing_tool_dependencies, rep
         version = str( dependency.version )
         error_message = unicodify( dependency.error_message )
         log.debug( 'Missing tool dependency %s of type %s version %s: %s' % ( name, type, version, error_message ) )
-        test_result = dict( type=dependency.type,
-                            name=dependency.name,
-                            version=dependency.version,
-                            error_message=dependency.error_message )
-        tool_test_results_dict[ 'installation_errors' ][ 'tool_dependencies' ].append( test_result )
+        missing_tool_dependency_info_dict = dict( type=type,
+                                                  name=name,
+                                                  version=version,
+                                                  error_message=error_message )
+        tool_test_results_dict[ 'installation_errors' ][ 'tool_dependencies' ].append( missing_tool_dependency_info_dict )
     for dependency in repository.missing_repository_dependencies:
+        tool_shed = str( dependency.tool_shed )
         name = str( dependency.name )
         owner = str( dependency.owner )
         changeset_revision = str( dependency.changeset_revision )
         error_message = unicodify( dependency.error_message )
         log.debug( 'Missing repository dependency %s changeset revision %s owned by %s: %s' % \
             ( name, changeset_revision, owner, error_message ) )
-        test_result = dict( tool_shed=dependency.tool_shed,
-                            name=dependency.name,
-                            owner=dependency.owner,
-                            changeset_revision=dependency.changeset_revision,
-                            error_message=dependency.error_message )
-        tool_test_results_dict[ 'installation_errors' ][ 'repository_dependencies' ].append( test_result )
+        missing_repository_dependency_info_dict = dict( tool_shed=tool_shed,
+                                                        name=name,
+                                                        owner=owner,
+                                                        changeset_revision=changeset_revision,
+                                                        error_message=error_message )
+        tool_test_results_dict[ 'installation_errors' ][ 'repository_dependencies' ].append( missing_repository_dependency_info_dict )
     # Record the status of this repository in the tool shed.
     params = dict( tools_functionally_correct=False,
                    do_not_test=False,
@@ -465,26 +468,25 @@ def handle_missing_dependencies( app, repository, missing_tool_dependencies, rep
                                           repository_dict,
                                           params,
                                           can_update_tool_shed )
-    # Since this repository is missing components we do not want to test it, uninstall it.
+    # Uninstall this repository since it is missing dependencies.
     uninstall_repository_and_repository_dependencies( app, repository_dict )
-    results_dict[ 'repositories_failed_install' ].append( dict( name=str( repository.name ),
-                                                                owner=str( repository.owner ),
-                                                                changeset_revision=str( repository.changeset_revision ) ) )
-    return results_dict
 
-def initialize_results_dict( test_framework ):
+def initialize_install_and_test_statistics_dict( test_framework ):
     # Initialize a dictionary for the summary that will be printed to stdout.
-    results_dict = {}
+    install_and_test_statistics_dict = {}
     if test_framework == REPOSITORIES_WITH_TOOLS:
-        results_dict[ 'total_repositories_tested' ] = 0
-        results_dict[ 'all_tests_passed' ] = []
-        results_dict[ 'at_least_one_test_failed' ] = []
-        results_dict[ 'repositories_failed_install' ] = []
+        install_and_test_statistics_dict[ 'total_repositories_processed' ] = 0
+        install_and_test_statistics_dict[ 'all_tests_passed' ] = []
+        install_and_test_statistics_dict[ 'at_least_one_test_failed' ] = []
+        install_and_test_statistics_dict[ 'successful_installations' ] = []
+        install_and_test_statistics_dict[ 'repositories_with_installation_error' ] = []
+        install_and_test_statistics_dict[ 'tool_dependencies_with_installation_error' ] = []
     elif test_framework == TOOL_DEPENDENCY_DEFINITIONS:
-        results_dict[ 'total_repositories_installed' ] = 0
-        results_dict[ 'repositories_with_installation_error' ] = 0
-        results_dict[ 'tool_dependencies_with_installation_error' ] = 0
-    return results_dict
+        install_and_test_statistics_dict[ 'total_repositories_processed' ] = 0
+        install_and_test_statistics_dict[ 'successful_installations' ] = []
+        install_and_test_statistics_dict[ 'repositories_with_installation_error' ] = []
+        install_and_test_statistics_dict[ 'tool_dependencies_with_installation_error' ] = []
+    return install_and_test_statistics_dict
 
 def initialize_tool_tests_results_dict( app, tool_test_results_dict ):
     test_environment_dict = tool_test_results_dict.get( 'test_environment', {} )
