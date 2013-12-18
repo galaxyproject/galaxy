@@ -478,6 +478,7 @@ class PageView(ViewQueryBaseClass):
         'id': ViewField('id', sqlalchemy_field=(Page, "id"), id_decode=True),
         'slug': ViewField('slug', sqlalchemy_field=(Page, "slug")),        
         'title': ViewField('title', sqlalchemy_field=(Page, "title")),
+        'deleted': ViewField('deleted', sqlalchemy_field=(Page, "deleted"))
     }
 
     def search(self, trans):
