@@ -207,18 +207,11 @@
 ##
 
 <%def name="center_panel()">
-    ${self.grid_body()}
+    ${self.load()}
 </%def>
 
 ## Render the grid's basic elements. Each of these elements can be subclassed.
 <%def name="body()">
-    ${self.grid_body()}
-</%def>
-
-## Because body() is special and always exists even if not explicitly defined,
-## it's not possible to override body() in the topmost template in the chain.
-## Because of this, override grid_body() instead.
-<%def name="grid_body()">
     ${self.load()}
 </%def>
 
