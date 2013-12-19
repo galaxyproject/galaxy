@@ -45,6 +45,7 @@ from base.tool_shed_util import parse_tool_panel_config
 from galaxy.app import UniverseApplication
 from galaxy.util.json import from_json_string
 from galaxy.util.json import to_json_string
+from galaxy.util import unicodify
 from galaxy.web import buildapp
 from functional_tests import generate_config_file
 from nose.plugins import Plugin
