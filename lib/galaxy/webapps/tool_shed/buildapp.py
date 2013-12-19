@@ -94,7 +94,8 @@ def app_factory( global_conf, **kwargs ):
                             parent_resources=dict( member_name='repository', collection_name='repositories' ) )
     webapp.mapper.resource( 'repository_revision',
                             'repository_revisions',
-                            member={ 'export' : 'POST' },
+                            member={ 'repository_dependencies' : 'GET',
+                                     'export' : 'POST' },
                             controller='repository_revisions',
                             name_prefix='repository_revision_',
                             path_prefix='/api',

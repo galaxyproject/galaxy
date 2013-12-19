@@ -9,6 +9,11 @@ from galaxy.web.base.controller import BaseAPIController, HTTPBadRequest
 from tool_shed.util import export_util
 import tool_shed.util.shed_util_common as suc
 
+from galaxy import eggs
+eggs.require( 'mercurial' )
+
+from mercurial import hg
+
 log = logging.getLogger( __name__ )
 
 
@@ -61,6 +66,46 @@ class RepositoryRevisionsController( BaseAPIController ):
             return response
         except Exception, e:
             message = "Error in the Tool Shed repository_revisions API in export: %s" % str( e )
+            log.error( message, exc_info=True )
+            trans.response.status = 500
+            return message
+
+    @web.expose_api_anonymous
+    def repository_dependencies( self, trans, id, **kwd ):
+        """
+        GET /api/repository_revisions/{encoded repository_metadata id}/repository_dependencies
+        Displays information about a repository_metadata record in the Tool Shed.
+
+        :param id: the encoded id of the `RepositoryMetadata` object
+        """
+        # Example URL: http://localhost:9009/api/repository_revisions/repository_dependencies/bb125606ff9ea620
+        repository_dependencies_dicts = []
+        try:
+            repository_metadata = metadata_util.get_repository_metadata_by_id( trans, id )
+            metadata = repository_metadata.metadata
+            if metadata and 'repository_dependencies' in metadata:
+                rd_tups = metadata[ 'repository_dependencies' ][ 'repository_dependencies' ]
+                for rd_tup in rd_tups:
+                    tool_shed, name, owner, changeset_revision = rd_tup[ 0:4 ]
+                    repository_dependencies_dict = dict( tool_shed=tool_shed,
+                                                         name=name,
+                                                         owner=owner,
+                                                         changeset_revision=changeset_revision )
+                    rd = suc.get_repository_by_name_and_owner( trans.app, name, owner )
+                    encoded_rd_id = trans.security.encode_id( rd.id )
+                    rd_repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans,
+                                                                                                encoded_rd_id,
+                                                                                                changeset_revision )
+                    if rd_repository_metadata is None:
+                        repo = hg.repository( suc.get_configured_ui(), repository.repo_path( trans.app ) )
+                        rd_repository_metadata = suc.get_next_downloadable_changeset_revision( repository, repo, changeset_revision )
+                    repository_dependencies_dict[ 'url' ] = web.url_for( controller='repository_revisions',
+                                                                         action='show',
+                                                                         id=trans.security.encode_id( rd_repository_metadata.id ) )
+                    repository_dependencies_dicts.append( repository_dependencies_dict )
+            return repository_dependencies_dicts
+        except Exception, e:
+            message = "Error in the Tool Shed repository_revisions API in repository_dependencies: %s" % str( e )
             log.error( message, exc_info=True )
             trans.response.status = 500
             return message
