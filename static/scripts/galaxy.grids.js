@@ -313,17 +313,26 @@ var GridView = Backbone.View.extend({
             });
         });
         
+        // empty grid?
+        var items_length = options.items.length;
+        if (items_length == 0) {
+            return;
+        }
+        
         //
         // add operation popup menus
         //
-        for (var i in options['items'])
+        for (var i in options.items)
         {
+            // get items
+            var item = options.items[i];
+            
             // get identifiers
             var button = $('#grid-' + i + '-popup');
             button.off();
             var popup = new PopupMenu(button);
+            
             // load details
-            var item = options['items'][i];
             for (var j in options['operations'])
             {
                 // get operation details
@@ -715,7 +724,7 @@ var GridView = Backbone.View.extend({
         }
         
         // create rows
-        for (i in options.items) {
+        for (var i in options.items) {
         
             // encode ids
             var item = options.items[i];
