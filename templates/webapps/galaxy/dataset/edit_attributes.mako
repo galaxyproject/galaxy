@@ -75,6 +75,20 @@
                     <div style="clear: both"></div>
                     <div class="toolParamHelp">Add an annotation or notes to a dataset; annotations are available when a history is viewed.</div>
                 </div>
+                <div class="form-row">     
+                    <label>
+                        Extended Metadata:
+                    </label>
+                    <div style="float: left; width: 250px; margin-right: 10px;">
+                        %if data.extended_metadata:
+                            <textarea name="extended_metadata" rows="15" cols="15">${util.pretty_print_json(data.extended_metadata.data)}</textarea>
+                        %else:
+                            <textarea name="extended_metadata" rows="15" cols="15"></textarea>
+                        %endif                
+                    </div>
+                    <div style="clear: both"></div>
+                    <div class="toolParamHelp">Add an annotation or notes to a dataset; annotations are available when a history is viewed.</div>
+                </div>
             %endif
             %for name, spec in data.metadata.spec.items():
                 %if spec.visible:
