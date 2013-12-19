@@ -297,6 +297,14 @@ API Controllers
     :undoc-members:
     :show-inheritance:
 
+:mod:`lda_datasets` Module
+--------------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.lda_datasets
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`libraries` Module
 -----------------------
 
