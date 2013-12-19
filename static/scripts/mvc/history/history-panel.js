@@ -698,11 +698,16 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
             .attr( 'title', _l( 'Click to rename history' ) ).tooltip({ placement: 'bottom' })
             .make_text_editable({
                 on_finish: function( newName ){
-                    $where.find( '.history-name' ).text( newName );
-                    panel.model.save({ name: newName })
-                        .fail( function(){
-                            $where.find( '.history-name' ).text( panel.model.previous( 'name' ) );
-                        });
+                    var previousName = panel.model.get( 'name' );
+                    if( newName && newName !== previousName ){
+                        panel.$el.find( '.history-name' ).text( newName );
+                        panel.model.save({ name: newName })
+                            .fail( function(){
+                                panel.$el.find( '.history-name' ).text( panel.model.previous( 'name' ) );
+                            });
+                    } else {
+                        panel.$el.find( '.history-name' ).text( previousName );
+                    }
                 }
             });
         this._setUpDatasetActionsPopup( $where );

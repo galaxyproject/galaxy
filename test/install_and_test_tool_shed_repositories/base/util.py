@@ -119,7 +119,6 @@ else:
 # a definition for that tool shed.
 galaxy_tool_shed_url = os.environ.get( 'GALAXY_INSTALL_TEST_TOOL_SHED_URL', None )
 tool_shed_api_key = os.environ.get( 'GALAXY_INSTALL_TEST_TOOL_SHED_API_KEY', None )
-exclude_list_file = os.environ.get( 'GALAXY_INSTALL_TEST_EXCLUDE_REPOSITORIES', 'install_test_exclude.xml' )
 
 if 'GALAXY_INSTALL_TEST_SECRET' not in os.environ:
     galaxy_encode_secret = 'changethisinproductiontoo'
@@ -181,6 +180,46 @@ class ReportResults( Plugin ):
             del self.passed[ test_identifier ]
             return passed_tests
         return []
+
+def display_repositories_by_owner( repository_dicts ):
+    # Group summary display by repository owner.
+    repository_dicts_by_owner = {}
+    for repository_dict in repository_dicts:
+        name = str( repository_dict[ 'name' ] )
+        owner = str( repository_dict[ 'owner' ] )
+        changeset_revision = str( repository_dict[ 'changeset_revision' ] )
+        if owner in repository_dicts_by_owner:
+            repository_dicts_by_owner[ owner ].append( repository_dict )
+        else:
+            repository_dicts_by_owner[ owner ] = [ repository_dict ]
+    # Display grouped summary.
+    for owner, grouped_repository_dicts in repository_dicts_by_owner.items():
+        print "# "
+        for repository_dict in grouped_repository_dicts:
+            name = str( repository_dict[ 'name' ] )
+            owner = str( repository_dict[ 'owner' ] )
+            changeset_revision = str( repository_dict[ 'changeset_revision' ] )
+            print "# Revision %s of repository %s owned by %s" % ( changeset_revision, name, owner )
+
+def display_tool_dependencies_by_name( tool_dependency_dicts ):
+    # Group summary display by repository owner.
+    tool_dependency_dicts_by_name = {}
+    for tool_dependency_dict in tool_dependency_dicts:
+        name = str( tool_dependency_dict[ 'name' ] )
+        type = str( tool_dependency_dict[ 'type' ] )
+        version = str( tool_dependency_dict[ 'version' ] )
+        if name in tool_dependency_dicts_by_name:
+            tool_dependency_dicts_by_name[ name ].append( tool_dependency_dict )
+        else:
+            tool_dependency_dicts_by_name[ name ] = [ tool_dependency_dict ]
+    # Display grouped summary.
+    for name, grouped_tool_dependency_dicts in tool_dependency_dicts_by_name.items():
+        print "# "
+        for tool_dependency_dict in grouped_tool_dependency_dicts:
+            type = str( tool_dependency_dict[ 'type' ] )
+            name = str( tool_dependency_dict[ 'name' ] )
+            version = str( tool_dependency_dict[ 'version' ] )
+            print "# %s %s version %s" % ( type, name, version )
 
 def get_api_url( base, parts=[], params=None ):
     if 'api' in parts and parts.index( 'api' ) != 0:
@@ -336,6 +375,19 @@ def get_repository_current_revision( repo_path ):
     hg_id = '%d:%s' % ( ctx_rev, str( changectx ) )
     return hg_id
 
+def get_repository_dependencies_for_changeset_revision( tool_shed_url, encoded_repository_metadata_id ):
+    """
+    Return the list of dictionaries that define all repository dependencies of the repository_metadata
+    record associated with the received encoded_repository_metadata_id via the Tool Shed API.
+    """
+    error_message = ''
+    parts = [ 'api', 'repository_revisions', encoded_repository_metadata_id, 'repository_dependencies' ]
+    api_url = get_api_url( base=tool_shed_url, parts=parts )
+    repository_dependency_dicts, error_message = json_from_url( api_url )
+    if error_message:
+        return None, error_message
+    return repository_dependency_dicts, error_message
+
 def get_repository_dict( url, repository_dict ):
     error_message = ''
     parts = [ 'api', 'repositories', repository_dict[ 'repository_id' ] ]
@@ -474,18 +526,14 @@ def handle_missing_dependencies( app, repository, missing_tool_dependencies, rep
 def initialize_install_and_test_statistics_dict( test_framework ):
     # Initialize a dictionary for the summary that will be printed to stdout.
     install_and_test_statistics_dict = {}
+    install_and_test_statistics_dict[ 'total_repositories_processed' ] = 0
+    install_and_test_statistics_dict[ 'successful_repository_installations' ] = []
+    install_and_test_statistics_dict[ 'successful_tool_dependency_installations' ] = []
+    install_and_test_statistics_dict[ 'repositories_with_installation_error' ] = []
+    install_and_test_statistics_dict[ 'tool_dependencies_with_installation_error' ] = []
     if test_framework == REPOSITORIES_WITH_TOOLS:
-        install_and_test_statistics_dict[ 'total_repositories_processed' ] = 0
         install_and_test_statistics_dict[ 'all_tests_passed' ] = []
         install_and_test_statistics_dict[ 'at_least_one_test_failed' ] = []
-        install_and_test_statistics_dict[ 'successful_installations' ] = []
-        install_and_test_statistics_dict[ 'repositories_with_installation_error' ] = []
-        install_and_test_statistics_dict[ 'tool_dependencies_with_installation_error' ] = []
-    elif test_framework == TOOL_DEPENDENCY_DEFINITIONS:
-        install_and_test_statistics_dict[ 'total_repositories_processed' ] = 0
-        install_and_test_statistics_dict[ 'successful_installations' ] = []
-        install_and_test_statistics_dict[ 'repositories_with_installation_error' ] = []
-        install_and_test_statistics_dict[ 'tool_dependencies_with_installation_error' ] = []
     return install_and_test_statistics_dict
 
 def initialize_tool_tests_results_dict( app, tool_test_results_dict ):
@@ -516,6 +564,9 @@ def initialize_tool_tests_results_dict( app, tool_test_results_dict ):
     tool_test_results_dict[ 'installation_errors' ] = dict( current_repository=[],
                                                             repository_dependencies=[],
                                                             tool_dependencies=[] )
+    tool_test_results_dict[ 'successful_installations' ] = dict( current_repository=[],
+                                                                 repository_dependencies=[],
+                                                                 tool_dependencies=[] )
     return tool_test_results_dict
 
 def install_repository( app, repository_dict ):
@@ -563,10 +614,20 @@ def json_from_url( url ):
 
 def parse_exclude_list( xml_filename ):
     """Return a list of repositories to exclude from testing."""
-    # This method should return a list with the following structure:
+    # This method expects an xml document that looks something like this:
+    # <?xml version="1.0"?>
+    # <blacklist>
+    #    <repositories tool_shed="http://testtoolshed.g2.bx.psu.edu">
+    #        <reason>
+    #            <text>Some reason</text>
+    #            <repository name="some_name" owner="some_owner" />
+    #        </reason>
+    #    </repositories>
+    # </blacklist>
+    # A list is returned with the following structure:
     # [{ 'reason': The default reason or the reason specified in this section,
-    #    'repositories': [( name, owner, changeset revision if changeset revision else None ),
-    #                     ( name, owner, changeset revision if changeset revision else None )]}]
+    #    'repositories': [( name, owner, changeset_revision if changeset_revision else None ),
+    #                     ( name, owner, changeset_revision if changeset_revision else None )]}]
     exclude_list = []
     exclude_verbose = []
     xml_tree, error_message = parse_xml( xml_filename )
@@ -639,26 +700,6 @@ def run_tests( test_config ):
         test_runner = plug_runner
     result = test_runner.run( tests )
     return result, test_config.plugins._plugins
-
-def show_summary_output( repository_dicts ):
-    # Group summary display by repository owner.
-    repository_dicts_by_owner = {}
-    for repository_dict in repository_dicts:
-        name = str( repository_dict[ 'name' ] )
-        owner = str( repository_dict[ 'owner' ] )
-        changeset_revision = str( repository_dict[ 'changeset_revision' ] )
-        if owner in repository_dicts_by_owner:
-            repository_dicts_by_owner[ owner ].append( repository_dict )
-        else:
-            repository_dicts_by_owner[ owner ] = [ repository_dict ]
-    # Display grouped summary.
-    for owner, grouped_repository_dicts in repository_dicts_by_owner.items():
-        print "# "
-        for repository_dict in grouped_repository_dicts:
-            name = str( repository_dict[ 'name' ] )
-            owner = str( repository_dict[ 'owner' ] )
-            changeset_revision = str( repository_dict[ 'changeset_revision' ] )
-            print "# Revision %s of repository %s owned by %s" % ( changeset_revision, name, owner )
 
 def uninstall_repository_and_repository_dependencies( app, repository_dict ):
     """Uninstall a repository and all of its repository dependencies."""
@@ -740,7 +781,7 @@ def uninstall_tool_dependency( app, tool_dependency ):
     tool_dependency_install_path = tool_dependency.installation_directory( app )
     uninstalled, error_message = tool_dependency_util.remove_tool_dependency( app, tool_dependency )
     if error_message:
-        log.debug( 'There was an error attempting to remove directory: %s' % str( tool_dependency_install_path ) )
+        log.debug( 'Error attempting to remove directory: %s' % str( tool_dependency_install_path ) )
         log.debug( error_message )
     else:
         log.debug( 'Successfully removed tool dependency installation directory: %s' % str( tool_dependency_install_path ) )

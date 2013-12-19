@@ -66,6 +66,9 @@ galaxy_test_tmp_dir = os.path.join( test_home_directory, 'tmp' )
 default_galaxy_locales = 'en'
 default_galaxy_test_file_dir = "test-data"
 os.environ[ 'GALAXY_INSTALL_TEST_TMP_DIR' ] = galaxy_test_tmp_dir
+# This file is copied to the Galaxy root directory by buildbot. 
+# It is managed by cfengine and is not locally available.
+exclude_list_file = os.environ.get( 'GALAXY_INSTALL_TEST_EXCLUDE_REPOSITORIES', 'repositories_with_tools_exclude.xml' )
 
 # This script can be run in such a way that no Tool Shed database records should be changed.
 if '-info_only' in sys.argv or 'GALAXY_INSTALL_TEST_INFO_ONLY' in os.environ:
@@ -144,7 +147,7 @@ def install_and_test_repositories( app, galaxy_shed_tools_dict, galaxy_shed_tool
     if error_message:
         return None, error_message
     # Handle repositories not to be tested.
-    if os.path.exists( install_and_test_base_util.exclude_list_file ):
+    if os.path.exists( exclude_list_file ):
         # Entries in the exclude_list look something like this.
         # { 'reason': The default reason or the reason specified in this section,
         #   'repositories':
@@ -157,8 +160,8 @@ def install_and_test_repositories( app, galaxy_shed_tools_dict, galaxy_shed_tool
         # undeleted, this script will then test them the next time it runs. We don't need to check if a repository has been deleted
         # here because our call to the Tool Shed API filters by downloadable='true', in which case deleted will always be False.
         log.debug( 'Loading the list of repositories excluded from testing from the file %s...' % \
-            str( install_and_test_base_util.exclude_list_file ) )
-        exclude_list = install_and_test_base_util.parse_exclude_list( install_and_test_base_util.exclude_list_file )
+            str( exclude_list_file ) )
+        exclude_list = install_and_test_base_util.parse_exclude_list( exclude_list_file )
     else:
         exclude_list = []
     # Generate a test method that will use Twill to install each repository into the embedded Galaxy application that was
@@ -299,7 +302,7 @@ def install_and_test_repositories( app, galaxy_shed_tools_dict, galaxy_shed_tool
                         test_toolbox.toolbox = app.toolbox
                     else:
                         # This repository and all of its dependencies were successfully installed.
-                        install_and_test_statistics_dict[ 'successful_installations' ].append( repository_identifier_dict )
+                        install_and_test_statistics_dict[ 'successful_repository_installations' ].append( repository_identifier_dict )
                         # Configure and run functional tests for this repository. This is equivalent to sh run_functional_tests.sh -installed
                         remove_install_tests()
                         log.debug( 'Installation of %s succeeded, running all defined functional tests.' % str( repository.name ) )
@@ -560,33 +563,33 @@ def main():
         total_repositories_processed = install_and_test_statistics_dict[ 'total_repositories_processed' ]
         all_tests_passed = install_and_test_statistics_dict[ 'all_tests_passed' ]
         at_least_one_test_failed = install_and_test_statistics_dict[ 'at_least_one_test_failed' ]
-        successful_installations = install_and_test_statistics_dict[ 'successful_installations' ]
+        successful_repository_installations = install_and_test_statistics_dict[ 'successful_repository_installations' ]
         repositories_with_installation_error = install_and_test_statistics_dict[ 'repositories_with_installation_error' ]
         tool_dependencies_with_installation_error = install_and_test_statistics_dict[ 'tool_dependencies_with_installation_error' ]
         now = time.strftime( "%Y-%m-%d %H:%M:%S" )
         print "####################################################################################"
         print "# %s - installation script for repositories containing tools completed." % now
         print "# Repository revisions processed: %s" % str( total_repositories_processed )
-        if successful_installations:
+        if successful_repository_installations:
             print "# ----------------------------------------------------------------------------------"
-            print "# The following %d revisions with all dependencies were successfully installed:" % len( successful_installations )
-            install_and_test_base_util.show_summary_output( successful_installations )
+            print "# The following %d revisions were successfully installed:" % len( successful_repository_installations )
+            install_and_test_base_util.display_repositories_by_owner( successful_repository_installations )
         if all_tests_passed:
             print '# ----------------------------------------------------------------------------------'
-            print "# %d repositories successfully passed all functional tests:" % len( all_tests_passed )
-            install_and_test_base_util.show_summary_output( all_tests_passed )
+            print "# The following %d revisions successfully passed all functional tests:" % len( all_tests_passed )
+            install_and_test_base_util.display_repositories_by_owner( all_tests_passed )
         if at_least_one_test_failed:
             print '# ----------------------------------------------------------------------------------'
-            print "# %d repositories failed at least 1 functional test:" % len( at_least_one_test_failed )
-            install_and_test_base_util.show_summary_output( at_least_one_test_failed )
+            print "# The following %d revisions failed at least 1 functional test:" % len( at_least_one_test_failed )
+            install_and_test_base_util.display_repositories_by_owner( at_least_one_test_failed )
         if repositories_with_installation_error:
             print '# ----------------------------------------------------------------------------------'
-            print "# %d repositories have installation errors:" % len( repositories_with_installation_error )
-            install_and_test_base_util.show_summary_output( repositories_with_installation_error )
+            print "# The following %d revisions have installation errors:" % len( repositories_with_installation_error )
+            install_and_test_base_util.display_repositories_by_owner( repositories_with_installation_error )
         if tool_dependencies_with_installation_error:
             print "# ----------------------------------------------------------------------------------"
             print "# The following %d tool dependencies have installation errors:" % len( tool_dependencies_with_installation_error )
-            install_and_test_base_util.show_summary_output( tool_dependencies_with_installation_error )
+            install_and_test_base_util.display_tool_dependencies_by_name( tool_dependencies_with_installation_error )
         print "####################################################################################"
     log.debug( "Shutting down..." )
     # Gracefully shut down the embedded web server and UniverseApplication.

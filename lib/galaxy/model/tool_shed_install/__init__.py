@@ -265,8 +265,7 @@ class ToolShedRepository( object ):
         """Return the repository's tool dependencies that are currently installed, but possibly in an error state."""
         installed_dependencies = []
         for tool_dependency in self.tool_dependencies:
-            if tool_dependency.status in [ ToolDependency.installation_status.INSTALLED,
-                                           ToolDependency.installation_status.ERROR ]:
+            if tool_dependency.status in [ ToolDependency.installation_status.INSTALLED ]:
                 installed_dependencies.append( tool_dependency )
         return installed_dependencies
 
@@ -440,6 +439,16 @@ class ToolShedRepository( object ):
             if tool_dependency.status == ToolDependency.installation_status.INSTALLING:
                 dependencies_being_installed.append( tool_dependency )
         return dependencies_being_installed
+
+    @property
+    def tool_dependencies_installed_or_in_error( self ):
+        """Return the repository's tool dependencies that are currently installed, but possibly in an error state."""
+        installed_dependencies = []
+        for tool_dependency in self.tool_dependencies:
+            if tool_dependency.status in [ ToolDependency.installation_status.INSTALLED,
+                                           ToolDependency.installation_status.ERROR ]:
+                installed_dependencies.append( tool_dependency )
+        return installed_dependencies
 
     @property
     def tool_dependencies_missing_or_being_installed( self ):
