@@ -37,7 +37,8 @@
 
     <div class="dataset-selector"><span class="fa fa-2x fa-square-o"></span></div>
     <div class="dataset-primary-actions"></div>
-    <div class="dataset-title-bar clear">
+    {{! adding a tabindex here allows focusing the title bar and the use of keydown to expand the dataset display }}
+    <div class="dataset-title-bar clear" tabindex="0">
         <span class="dataset-state-icon state-icon"></span>
         <div class="dataset-title">
             <span class="hda-hid">{{ hid }}</span>

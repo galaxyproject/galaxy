@@ -302,7 +302,15 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
         The external script will be run with sudo, and will setuid() to the specified user.
         Effectively, will QSUB as a different user (then the one used by Galaxy).
         """
-        p = subprocess.Popen([ '/usr/bin/sudo', '-E', self.external_runJob_script, str(username), jobtemplate_filename ],
+        script_parts = self.external_runJob_script.split()
+        script = script_parts[0]
+        command = [ '/usr/bin/sudo', '-E', script]
+        for script_argument in script_parts[1:]:
+            command.append(script_argument)
+
+        command.extend( [ str(username), jobtemplate_filename ] )
+        log.info("Running command %s" % command)
+        p = subprocess.Popen(command,
                 shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         (stdoutdata, stderrdata) = p.communicate()
         exitcode = p.returncode

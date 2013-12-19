@@ -30,7 +30,7 @@ from galaxy.web import error, url_for
 from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, TextArea, TextField
 from galaxy.web.form_builder import build_select_field, HistoryField, PasswordField, WorkflowField, WorkflowMappingField
 from galaxy.workflow.modules import module_factory
-from galaxy.model.orm import eagerload, eagerload_all
+from galaxy.model.orm import eagerload, eagerload_all, desc
 from galaxy.security.validate_user_input import validate_publicname
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.model.item_attrs import Dictifiable
@@ -341,6 +341,28 @@ class UsesHistoryMixin( SharableItemSecurityMixin ):
         history = self.security_check( trans, history, check_ownership, check_accessible )
         return history
 
+    def get_user_histories( self, trans, user=None, include_deleted=False, only_deleted=False ):
+        """
+        Get all the histories for a given user (defaulting to `trans.user`)
+        ordered by update time and filtered on whether they've been deleted.
+        """
+        # handle default and/or anonymous user (which still may not have a history yet)
+        user = user or trans.user
+        if not user:
+            current_history = trans.get_history()
+            return [ current_history ] if current_history else []
+
+        history_model = trans.model.History
+        query = ( trans.sa_session.query( history_model )
+            .filter( history_model.user == user )
+            .order_by( desc( history_model.table.c.update_time ) ) )
+        if only_deleted:
+            query = query.filter( history_model.deleted == True )
+        elif not include_deleted:
+            query = query.filter( history_model.deleted == False )
+
+        return query.all()
+
     def get_history_datasets( self, trans, history, show_deleted=False, show_hidden=False, show_purged=False ):
         """ Returns history's datasets. """
         query = trans.sa_session.query( trans.model.HistoryDatasetAssociation ) \
@@ -474,6 +496,9 @@ class UsesHistoryMixin( SharableItemSecurityMixin ):
         """Returns history data in the form of a dictionary.
         """
         history_dict = history.to_dict( view='element', value_mapper={ 'id':trans.security.encode_id })
+        history_dict[ 'user_id' ] = None
+        if history.user_id:
+            history_dict[ 'user_id' ] = trans.security.encode_id( history.user_id )
 
         history_dict[ 'nice_size' ] = history.get_disk_size( nice_size=True )
         history_dict[ 'annotation' ] = history.get_item_annotation_str( trans.sa_session, trans.user, history )

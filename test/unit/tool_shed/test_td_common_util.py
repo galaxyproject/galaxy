@@ -32,7 +32,7 @@ def test_create_or_update_env_shell_file():
 
     line, path = env_file_builder.create_or_update_env_shell_file( TEST_INSTALL_DIR, dict( action="source", value=test_path ) )
     assert path == join( TEST_INSTALL_DIR, "env.sh" )
-    assert line == ". /usr/share/R/libs"
+    assert line == "if [ -f /usr/share/R/libs ] ; then . /usr/share/R/libs ; fi"
 
 def test_get_env_shell_file_paths_from_setup_environment_elem():
     xml = """<action name="setup_r_environment">

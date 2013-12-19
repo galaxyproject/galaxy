@@ -18,7 +18,7 @@ from galaxy.tools.actions import upload_common
 from galaxy.util import inflector
 from galaxy.util.json import to_json_string, from_json_string
 from galaxy.util.streamball import StreamBall
-from galaxy.web.base.controller import BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMetadataMixin
+from galaxy.web.base.controller import BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMetadataMixin, UsesLibraryMixinItems
 from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, build_select_field
 from galaxy.model.orm import and_, eagerload_all
 
@@ -65,7 +65,7 @@ try:
 except:
     pass
 
-class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMetadataMixin ):
+class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMetadataMixin, UsesLibraryMixinItems ):
     @web.json
     def library_item_updates( self, trans, ids=None, states=None ):
         # Avoid caching
@@ -1750,7 +1750,8 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
             ldda_ids = util.listify( ldda_ids )
             for ldda_id in ldda_ids:
                 try:
-                    ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( ldda_id ) )
+                    # Load the ldda requested and check whether the user has access to them
+                    ldda = self.get_library_dataset_dataset_association( trans, ldda_id )
                     assert not ldda.dataset.purged
                     lddas.append( ldda )
                 except:

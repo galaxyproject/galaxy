@@ -1,5 +1,4 @@
 from tool_shed.base.twilltestcase import ShedTwillTestCase, common, os
-import tool_shed.base.test_db_util as test_db_util
 
 import logging
 log = logging.getLogger( __name__ )
@@ -24,6 +23,7 @@ category_description = 'Test script 0500 for importing and exporting repositorie
 6. Verify the resulting page is correct.
 '''
 
+
 class TestExportImportRepository( ShedTwillTestCase ):
     '''Test exporting and importing repositories.'''
     
@@ -31,14 +31,14 @@ class TestExportImportRepository( ShedTwillTestCase ):
         """Create necessary user accounts and login as an admin user."""
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        test_user_1 = test_db_util.get_user( common.test_user_1_email )
+        test_user_1 = self.test_db_util.get_user( common.test_user_1_email )
         assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_1_email
-        test_user_1_private_role = test_db_util.get_private_role( test_user_1 )
+        test_user_1_private_role = self.test_db_util.get_private_role( test_user_1 )
         self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
-        admin_user = test_db_util.get_user( common.admin_email )
+        admin_user = self.test_db_util.get_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
-        admin_user_private_role = test_db_util.get_private_role( admin_user )
+        admin_user_private_role = self.test_db_util.get_private_role( admin_user )
         
     def test_0005_create_category_and_repository( self ):
         """Create categories for this test suite"""
@@ -61,7 +61,7 @@ class TestExportImportRepository( ShedTwillTestCase ):
         Export the repository to a temporary location.
         '''
         global capsule_filepath
-        repository = test_db_util.get_repository_by_name_and_owner( emboss_repository_name, common.test_user_1_name )
+        repository = self.test_db_util.get_repository_by_name_and_owner( emboss_repository_name, common.test_user_1_name )
         capsule_filepath = self.export_capsule( repository )
         log.debug( os.path.exists( capsule_filepath ) )
         

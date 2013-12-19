@@ -1,5 +1,6 @@
 from tool_shed.base.twilltestcase import ShedTwillTestCase, common, os
-import tool_shed.base.test_db_util as test_db_util
+
+
 import logging
 log = logging.getLogger(__name__)
 
@@ -20,7 +21,6 @@ src="/repository/static/images/<id>/count_modes.png"
 
 '''
 
-
 class TestToolHelpImages( ShedTwillTestCase ):
     '''Test features related to tool help images.'''
     
@@ -28,14 +28,14 @@ class TestToolHelpImages( ShedTwillTestCase ):
         """Create necessary user accounts."""
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        test_user_1 = test_db_util.get_user( common.test_user_1_email )
+        test_user_1 = self.test_db_util.get_user( common.test_user_1_email )
         assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % test_user_1_email
-        test_user_1_private_role = test_db_util.get_private_role( test_user_1 )
+        test_user_1_private_role = self.test_db_util.get_private_role( test_user_1 )
         self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
-        admin_user = test_db_util.get_user( common.admin_email )
+        admin_user = self.test_db_util.get_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % admin_email
-        admin_user_private_role = test_db_util.get_private_role( admin_user )
+        admin_user_private_role = self.test_db_util.get_private_role( admin_user )
         
     def test_0005_create_htseq_count_repository( self ):
         '''Create and populate htseq_count_0140.'''
@@ -73,7 +73,7 @@ class TestToolHelpImages( ShedTwillTestCase ):
 
         src="/repository/static/images/<id>/count_modes.png"
         '''
-        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         # Get the repository tip.
         changeset_revision = self.get_repository_tip( repository )
         self.display_manage_repository_page( repository )

@@ -1103,6 +1103,10 @@ SpaceGhost.prototype.getUniverseSetting = function getUniverseSetting( iniKey ){
     return match[2];
 };
 
+SpaceGhost.prototype.waitForMasthead = function wait( then ) {
+    return this.waitForText( this.data.labels.masthead.menus.user, then );
+}
+
 
 // =================================================================== TEST DATA
 /** General use selectors, labels, and text. Kept here to allow a centralized location.
@@ -1129,7 +1133,7 @@ SpaceGhost.prototype.data = {
         },
 
         masthead : {
-            adminLink : '#masthead a[href="/admin"]',
+            adminLink : '#masthead a[href="/admin/index"]',
             userMenu : {
                 userEmail       : 'a #user-email',
                 userEmail_xpath : '//a[contains(text(),"Logged in as")]/span["id=#user-email"]'

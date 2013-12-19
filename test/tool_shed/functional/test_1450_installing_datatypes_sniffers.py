@@ -1,14 +1,10 @@
 from tool_shed.base.twilltestcase import ShedTwillTestCase, common, os
-import tool_shed.base.test_db_util as test_db_util
-
 repository_name = 'proteomics_datatypes_1450'
 repository_description = "Proteomics datatypes"
 repository_long_description = "Datatypes used in proteomics"
 
 category_name = 'Test 1450 Datatype Sniffers'
 category_description = 'Test 1450 - Installing Datatype Sniffers'
-
-
 '''
 1. Get a count of datatypes and sniffers.
 2. Install proteomics_datatypes_1450.
@@ -23,7 +19,6 @@ base_datatypes_count = 0
 repository_datatypes_count = 0
 base_sniffers_count = 0
 
-
 class TestInstallDatatypesSniffers( ShedTwillTestCase ):
     '''Test installing a repository that defines datatypes and datatype sniffers.'''
   
@@ -32,19 +27,19 @@ class TestInstallDatatypesSniffers( ShedTwillTestCase ):
         global base_datatypes_count
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        test_user_1 = test_db_util.get_user( common.test_user_1_email )
+        test_user_1 = self.test_db_util.get_user( common.test_user_1_email )
         assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % test_user_1_email
-        test_user_1_private_role = test_db_util.get_private_role( test_user_1 )
+        test_user_1_private_role = self.test_db_util.get_private_role( test_user_1 )
         self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
-        admin_user = test_db_util.get_user( common.admin_email )
+        admin_user = self.test_db_util.get_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
-        admin_user_private_role = test_db_util.get_private_role( admin_user )
+        admin_user_private_role = self.test_db_util.get_private_role( admin_user )
         self.galaxy_logout()
         self.galaxy_login( email=common.admin_email, username=common.admin_username )
-        galaxy_admin_user = test_db_util.get_galaxy_user( common.admin_email )
+        galaxy_admin_user = self.test_db_util.get_galaxy_user( common.admin_email )
         assert galaxy_admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
-        galaxy_admin_user_private_role = test_db_util.get_galaxy_private_role( galaxy_admin_user )
+        galaxy_admin_user_private_role = self.test_db_util.get_galaxy_private_role( galaxy_admin_user )
         base_datatypes_count = self.get_datatypes_count()
         base_sniffers_count = self.get_sniffers_count()
         
@@ -90,8 +85,8 @@ class TestInstallDatatypesSniffers( ShedTwillTestCase ):
                                  common.test_user_1_name, 
                                  category_name,
                                  strings_displayed=strings_displayed,
-                                 new_tool_panel_section='test_1450' )
-        installed_repository = test_db_util.get_installed_repository_by_name_owner( 'proteomics_datatypes_1450', common.test_user_1_name )
+                                 new_tool_panel_section_label='test_1450' )
+        installed_repository = self.test_db_util.get_installed_repository_by_name_owner( 'proteomics_datatypes_1450', common.test_user_1_name )
         strings_displayed = [ 'user1', 
                               self.url.replace( 'http://', '' ), 
                               installed_repository.installed_changeset_revision ]
@@ -120,7 +115,7 @@ class TestInstallDatatypesSniffers( ShedTwillTestCase ):
         Deactivate proteomics_datatypes_1450 and check that the in-memory datatypes and sniffers match the base values
         determined in the first step.
         '''
-        repository = test_db_util.get_installed_repository_by_name_owner( repository_name, common.test_user_1_name )
+        repository = self.test_db_util.get_installed_repository_by_name_owner( repository_name, common.test_user_1_name )
         global repository_datatypes_count
         global base_datatypes_count
         global base_sniffers_count
@@ -138,7 +133,7 @@ class TestInstallDatatypesSniffers( ShedTwillTestCase ):
         This is step 5 - Reactivate proteomics_datatypes, verify that the count of datatypes and sniffers has been
                          increased by the contents of the repository.
         '''
-        repository = test_db_util.get_installed_repository_by_name_owner( repository_name, common.test_user_1_name )
+        repository = self.test_db_util.get_installed_repository_by_name_owner( repository_name, common.test_user_1_name )
         global repository_datatypes_count
         global base_datatypes_count
         global base_sniffers_count
@@ -159,7 +154,7 @@ class TestInstallDatatypesSniffers( ShedTwillTestCase ):
         Uninstall proteomics_datatypes_1450 and check that the in-memory datatypes and sniffers match the base values
         determined in the first step.
         '''
-        repository = test_db_util.get_installed_repository_by_name_owner( repository_name, common.test_user_1_name )
+        repository = self.test_db_util.get_installed_repository_by_name_owner( repository_name, common.test_user_1_name )
         global repository_datatypes_count
         global base_datatypes_count
         self.uninstall_repository( repository, remove_from_disk=True )
@@ -176,7 +171,7 @@ class TestInstallDatatypesSniffers( ShedTwillTestCase ):
         This is step 7 - Reinstall proteomics_datatypes_1450, verify that the count of datatypes and sniffers has been
                          increased by the contents of the repository.
         '''
-        repository = test_db_util.get_installed_repository_by_name_owner( repository_name, common.test_user_1_name )
+        repository = self.test_db_util.get_installed_repository_by_name_owner( repository_name, common.test_user_1_name )
         global repository_datatypes_count
         global base_datatypes_count
         self.reinstall_repository( repository )
@@ -187,5 +182,3 @@ class TestInstallDatatypesSniffers( ShedTwillTestCase ):
         assert current_sniffers > base_sniffers_count, \
             'Sniffer count after reinstalling proteomics_datatypes_1450 is %d, which is not greater than %d' % \
             ( current_sniffers, base_sniffers_count )
-
-

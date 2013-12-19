@@ -2,11 +2,14 @@ import new
 import sys
 from base.twilltestcase import TwillTestCase
 from base.interactor import build_interactor, stage_data_in_history
+from galaxy.tools import DataManagerTool
 import logging
 log = logging.getLogger( __name__ )
 
 toolbox = None
 
+#Do not test Data Managers as part of the standard Tool Test Framework.
+TOOL_TYPES_NO_TEST = ( DataManagerTool, )
 
 class ToolTestCase( TwillTestCase ):
     """Abstract test case that runs tests based on a `galaxy.tools.test.ToolTest`"""
@@ -17,9 +20,9 @@ class ToolTestCase( TwillTestCase ):
         """
         shed_tool_id = self.shed_tool_id
 
-        self.__handle_test_def_errors( testdef )
+        self._handle_test_def_errors( testdef )
 
-        galaxy_interactor = self.__galaxy_interactor( testdef )
+        galaxy_interactor = self._galaxy_interactor( testdef )
 
         test_history = galaxy_interactor.new_history()
 
@@ -28,14 +31,14 @@ class ToolTestCase( TwillTestCase ):
         data_list = galaxy_interactor.run_tool( testdef, test_history )
         self.assertTrue( data_list )
 
-        self.__verify_outputs( testdef, test_history, shed_tool_id, data_list, galaxy_interactor )
+        self._verify_outputs( testdef, test_history, shed_tool_id, data_list, galaxy_interactor )
 
         galaxy_interactor.delete_history( test_history )
 
-    def __galaxy_interactor( self, testdef ):
+    def _galaxy_interactor( self, testdef ):
         return build_interactor( self, testdef.interactor )
 
-    def __handle_test_def_errors(self, testdef):
+    def _handle_test_def_errors(self, testdef):
         # If the test generation had an error, raise
         if testdef.error:
             if testdef.exception:
@@ -43,7 +46,7 @@ class ToolTestCase( TwillTestCase ):
             else:
                 raise Exception( "Test parse failure" )
 
-    def __verify_outputs( self, testdef, history, shed_tool_id, data_list, galaxy_interactor ):
+    def _verify_outputs( self, testdef, history, shed_tool_id, data_list, galaxy_interactor ):
         maxseconds = testdef.maxseconds
 
         for output_index, output_tuple in enumerate(testdef.outputs):
@@ -88,6 +91,9 @@ def build_tests( testing_shed_tools=False, master_api_key=None, user_api_key=Non
 
     for i, tool_id in enumerate( toolbox.tools_by_id ):
         tool = toolbox.get_tool( tool_id )
+        if isinstance( tool, TOOL_TYPES_NO_TEST ):
+            #We do not test certain types of tools (e.g. Data Manager tools) as part of ToolTestCase 
+            continue
         if tool.tests:
             shed_tool_id = None if not testing_shed_tools else tool.id
             # Create a new subclass of ToolTestCase, dynamically adding methods

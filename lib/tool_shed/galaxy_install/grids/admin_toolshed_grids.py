@@ -31,6 +31,13 @@ def generate_latest_revision_img_str( include_mouse_over=False ):
         latest_revision_tip_str = ''
     return '<img src="%s/june_2007_style/blue/ok_small.png" %s/>' % ( url_for( '/static' ), latest_revision_tip_str )
 
+def generate_repository_can_be_uninstalled_img_str( include_mouse_over=False ):
+    if include_mouse_over:
+        can_be_uninstalled_tip_str = 'class="icon-button" title="This repository can be uninstalled"'
+    else:
+        can_be_uninstalled_tip_str = ''
+    return '<img src="%s/images/fugue/toggle-bw.png" %s/>' % ( url_for( '/static' ), can_be_uninstalled_tip_str )
+
 def generate_revision_updates_img_str( include_mouse_over=False ):
     if include_mouse_over:
         revision_updates_tip_str = 'class="icon-button" title="Updates are available in the Tool Shed for this revision"'
@@ -73,6 +80,8 @@ class InstalledRepositoryGrid( grids.Grid ):
                     tool_shed_status_str += generate_includes_workflows_img_str( include_mouse_over=True )
             else:
                 tool_shed_status_str = generate_unknown_img_str( include_mouse_over=True )
+            if tool_shed_repository.can_uninstall( trans.app ):
+                tool_shed_status_str += generate_repository_can_be_uninstalled_img_str( include_mouse_over=True )
             return tool_shed_status_str
 
 
@@ -210,6 +219,7 @@ class InstalledRepositoryGrid( grids.Grid ):
         legend_str += '%s&nbsp;&nbsp;This repository is deprecated in the Tool Shed<br/>' % generate_deprecated_repository_img_str()
         legend_str += '%s&nbsp;&nbsp;This repository contains exported workflows<br/>' % generate_includes_workflows_img_str()
         legend_str += '%s&nbsp;&nbsp;Unable to get information from the Tool Shed<br/>' % generate_unknown_img_str()
+        legend_str += '%s&nbsp;&nbsp;This repository can be uninstalled<br/>' % generate_repository_can_be_uninstalled_img_str()
         return legend_str
 
 

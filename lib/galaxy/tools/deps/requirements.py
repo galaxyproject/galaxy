@@ -15,12 +15,21 @@ class ToolRequirement( object ):
         self.type = type
         self.version = version
 
+    def to_dict( self ):
+        return dict(name=self.name, type=self.type, version=self.version)
+
+    @staticmethod
+    def from_dict( dict ):
+        version = dict.get( "version", None )
+        name = dict.get("name", None)
+        type = dict.get("type", None)
+        return ToolRequirement( name=name, type=type, version=version )
+
 
 def parse_requirements_from_xml( xml_root ):
     """
 
-    >>> from galaxy.util import parse_xml
-    >>> from elementtree import ElementTree
+    >>> from xml.etree import ElementTree
     >>> def load_requirements( contents ):
     ...     contents_document = '''<tool><requirements>%s</requirements></tool>'''
     ...     root = ElementTree.fromstring( contents_document % contents )
@@ -43,7 +52,7 @@ def parse_requirements_from_xml( xml_root ):
     requirements_elem = xml_root.find( "requirements" )
 
     requirement_elems = []
-    if requirements_elem:
+    if requirements_elem is not None:
         requirement_elems = requirements_elem.findall( 'requirement' )
 
     requirements = []

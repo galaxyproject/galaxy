@@ -50,8 +50,7 @@ class OutputNotFoundException(Exception):
         return "No remote output found for path %s" % self.path
 
 
-# TODO: Rename to job client.
-class Client(object):
+class JobClient(object):
     """
     Objects of this client class perform low-level communication with a remote LWR server.
 
@@ -162,25 +161,23 @@ class Client(object):
             raise Exception("Unknown output_type returned from LWR server %s" % output_type)
         return output_path
 
-    def fetch_work_dir_output(self, source, working_directory, output_path, action='transfer'):
+    def fetch_work_dir_output(self, name, working_directory, output_path, action='transfer'):
         """
         Download an output dataset specified with from_work_dir from the
         remote server.
 
         **Parameters**
 
-        source : str
+        name : str
             Path in job's working_directory to find output in.
         working_directory : str
             Local working_directory for the job.
         output_path : str
             Full path to output dataset.
         """
-        output = open(output_path, "wb")
-        name = os.path.basename(source)
         if action == 'transfer':
-            self.__raw_download_output(name, self.job_id, "work_dir", output)
-        elif action == 'copy':
+            self.__raw_download_output(name, self.job_id, "work_dir", output_path)
+        else:  # Even if action is none - LWR has a different work_dir so this needs to be copied.
             lwr_path = self._output_path(name, self.job_id, 'work_dir')['path']
             self._copy(lwr_path, output_path)
 
@@ -200,7 +197,7 @@ class Client(object):
         }
         self._raw_execute("download_output", output_params, output_path=output_path)
 
-    def launch(self, command_line):
+    def launch(self, command_line, requirements=[]):
         """
         Run or queue up the execution of the supplied
         `command_line` on the remote server.
@@ -214,6 +211,8 @@ class Client(object):
         submit_params = self._submit_params
         if submit_params:
             launch_params['params'] = dumps(submit_params)
+        if requirements:
+            launch_params['requirements'] = dumps([requirement.to_dict() for requirement in requirements])
         return self._raw_execute("launch", launch_params)
 
     def kill(self):
@@ -286,13 +285,13 @@ class Client(object):
             shutil.copyfile(source, destination)
 
 
-class InputCachingClient(Client):
+class InputCachingJobClient(JobClient):
     """
     Beta client that cache's staged files to prevent duplication.
     """
 
     def __init__(self, destination_params, job_id, job_manager_interface, client_cacher):
-        super(InputCachingClient, self).__init__(destination_params, job_id, job_manager_interface)
+        super(InputCachingJobClient, self).__init__(destination_params, job_id, job_manager_interface)
         self.client_cacher = client_cacher
 
     @parseJson()

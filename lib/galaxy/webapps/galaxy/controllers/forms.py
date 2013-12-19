@@ -65,6 +65,9 @@ class FormsGrid( grids.Grid ):
     global_actions = [
         grids.GridAction( "Create new form", dict( controller='forms', action='create_form_definition' ) )
     ]
+    
+    def build_initial_query( self, trans, **kwargs ):
+        return trans.sa_session.query( self.model_class ).join (model.FormDefinition, self.model_class.latest_form_id == model.FormDefinition.id)
 
 class Forms( BaseUIController ):
     # Empty TextField

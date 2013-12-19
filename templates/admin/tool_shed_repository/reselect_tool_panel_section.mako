@@ -80,7 +80,7 @@
                 </div>
                 <div class="form-row">
                     <label>Add new tool panel section:</label>
-                    <input name="new_tool_panel_section" type="textfield" value="" size="40"/>
+                    <input name="new_tool_panel_section_label" type="textfield" value="" size="40"/>
                     <div class="toolParamHelp" style="clear: both;">
                         Add a new tool panel section to contain the installed tools (optional).
                     </div>

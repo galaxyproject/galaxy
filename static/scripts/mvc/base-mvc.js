@@ -1,27 +1,4 @@
 /**
- * Simple base model for any visible element. Includes useful attributes and ability
- * to set and track visibility.
- */
-var BaseModel = Backbone.Model.extend({
-    defaults: {
-        name: null,
-        hidden: false
-    },
-
-    show: function() {
-        this.set("hidden", false);
-    },
-
-    hide: function() {
-        this.set("hidden", true);
-    },
-
-    is_visible: function() {
-        return !this.attributes.hidden;
-    }
-});
-
-/**
  * Base view that handles visibility based on model's hidden attribute.
  */
 var BaseView = Backbone.View.extend({
@@ -52,10 +29,10 @@ var BaseView = Backbone.View.extend({
  *
  *  @example
  *  // Add to your models/views at the definition using chaining:
- *      var MyModel = BaseModel.extend( LoggableMixin ).extend({ // ... });
+ *      var MyModel = Backbone.Model.extend( LoggableMixin ).extend({ // ... });
  * 
  *  // or - more explicitly AFTER the definition:
- *      var MyModel = BaseModel.extend({
+ *      var MyModel = Backbone.Model.extend({
  *          logger  : console
  *          // ...
  *          this.log( '$#%& it! - broken already...' );
@@ -173,6 +150,7 @@ var SessionStorageModel = Backbone.Model.extend({
 
 //==============================================================================
 var HiddenUntilActivatedViewMixin = /** @lends hiddenUntilActivatedMixin# */{
+//TODO: since this is a mixin, consider moving toggle, hidden into HUAVOptions
 
     /** */
     hiddenUntilActivated : function( $activator, options ){
@@ -184,7 +162,9 @@ var HiddenUntilActivatedViewMixin = /** @lends hiddenUntilActivatedMixin# */{
             showSpeed       : 'fast'
         };
         _.extend( this.HUAVOptions, options || {});
+        /** has this been shown already (and onshowFirstTime called)? */
         this.HUAVOptions.hasBeenShown = this.HUAVOptions.$elementShown.is( ':visible' );
+        this.hidden = this.isHidden();
 
         if( $activator ){
             var mixin = this;
@@ -194,21 +174,36 @@ var HiddenUntilActivatedViewMixin = /** @lends hiddenUntilActivatedMixin# */{
         }
     },
 
+    isHidden : function(){
+        return ( this.HUAVOptions.$elementShown.is( ':hidden' ) );
+    },
+
     /** */
     toggle : function(){
         // can be called manually as well with normal toggle arguments
-        if( this.HUAVOptions.$elementShown.is( ':hidden' ) ){
+        //TODO: better as a callback (when the show/hide is actually done)
+        // show
+        if( this.hidden ){
             // fire the optional fns on the first/each showing - good for render()
             if( !this.HUAVOptions.hasBeenShown ){
                 if( _.isFunction( this.HUAVOptions.onshowFirstTime ) ){
                     this.HUAVOptions.hasBeenShown = true;
                     this.HUAVOptions.onshowFirstTime.call( this );
                 }
-            } else {
-                if( _.isFunction( this.HUAVOptions.onshow ) ){
-                    this.HUAVOptions.onshow.call( this );
-                }
             }
+            if( _.isFunction( this.HUAVOptions.onshow ) ){
+                this.HUAVOptions.onshow.call( this );
+                this.trigger( 'hiddenUntilActivated:shown', this );
+            }
+            this.hidden = false;
+
+        // hide
+        } else {
+            if( _.isFunction( this.HUAVOptions.onhide ) ){
+                this.HUAVOptions.onhide.call( this );
+                this.trigger( 'hiddenUntilActivated:hidden', this );
+            }
+            this.hidden = true;
         }
         return this.HUAVOptions.showFn.apply( this.HUAVOptions.$elementShown, arguments );
     }

@@ -43,6 +43,31 @@ DATABASE = {
 }
 
 
+def require_dialect_egg( db_url ):
+    dialect = ( db_url.split( ':', 1 ) )[0]
+    try:
+        egg = dialect_to_egg[dialect]
+        try:
+            pkg_resources.require( egg )
+            log.debug( "%s egg successfully loaded for %s dialect" % ( egg, dialect ) )
+        except:
+            # If the module is in the path elsewhere (i.e. non-egg), it'll still load.
+            log.warning( "%s egg not found, but an attempt will be made to use %s anyway" % ( egg, dialect ) )
+    except KeyError:
+        # Let this go, it could possibly work with db's we don't support
+        log.error( "database_connection contains an unknown SQLAlchemy database dialect: %s" % dialect )
+
+
+def read_config_file_arg( argv, default ):
+    if '-c' in argv:
+        pos = argv.index( '-c' )
+        argv.pop(pos)
+        config_file = argv.pop( pos )
+    else:
+        config_file = default
+    return config_file
+
+
 def get_config( argv, cwd=None ):
     """
     Read sys.argv and parse out repository of migrations and database url.
@@ -73,12 +98,7 @@ def get_config( argv, cwd=None ):
         database = 'galaxy'
     database_defaults = DATABASE[ database ]
 
-    if '-c' in argv:
-        pos = argv.index( '-c' )
-        argv.pop(pos)
-        config_file = argv.pop( pos )
-    else:
-        config_file = database_defaults.get( 'config_file', DEFAULT_CONFIG_FILE )
+    config_file = read_config_file_arg( argv, database_defaults.get( 'config_file', DEFAULT_CONFIG_FILE ) )
     repo = database_defaults[ 'repo' ]
     config_prefix = database_defaults.get( 'config_prefix', DEFAULT_CONFIG_PREFIX )
     default_sqlite_file = database_defaults[ 'default_sqlite_file' ]
@@ -95,16 +115,5 @@ def get_config( argv, cwd=None ):
     else:
         db_url = "sqlite:///%s?isolation_level=IMMEDIATE" % default_sqlite_file
 
-    dialect = ( db_url.split( ':', 1 ) )[0]
-    try:
-        egg = dialect_to_egg[dialect]
-        try:
-            pkg_resources.require( egg )
-            log.debug( "%s egg successfully loaded for %s dialect" % ( egg, dialect ) )
-        except:
-            # If the module is in the path elsewhere (i.e. non-egg), it'll still load.
-            log.warning( "%s egg not found, but an attempt will be made to use %s anyway" % ( egg, dialect ) )
-    except KeyError:
-        # Let this go, it could possibly work with db's we don't support
-        log.error( "database_connection contains an unknown SQLAlchemy database dialect: %s" % dialect )
+    require_dialect_egg( db_url )
     return dict(db_url=db_url, repo=repo, config_file=config_file, database=database)

@@ -110,7 +110,7 @@ class LocalJobRunner( BaseJobRunner ):
             job_wrapper.fail( "failure running job", exception=True )
             log.exception("failure running job %d" % job_wrapper.job_id)
             return
-        self._handle_metadata_externally( job_wrapper )
+        self._handle_metadata_externally( job_wrapper, resolve_requirements=True )
         # Finish the job!
         try:
             job_wrapper.finish( stdout, stderr, exit_code )

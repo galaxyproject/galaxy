@@ -1,9 +1,22 @@
+import logging
+import os
+import re
+import test_db_util
+import time
+import urllib
+
 import galaxy.model as model
 import galaxy.model.tool_shed_install as install_model
-import common, string, os, re, test_db_util, simplejson, logging, time, sys
-import galaxy.util as util
-from base.twilltestcase import tc, from_json_string, TwillTestCase, security, urllib
-from tool_shed.util.encoding_util import tool_shed_encode, tool_shed_decode
+import galaxy.util
+
+from galaxy.web import security
+from base.twilltestcase import TwillTestCase
+from base.tool_shed_util import repository_installation_timeout
+
+from galaxy import eggs
+eggs.require( 'twill' )
+
+import twill.commands as tc
 
 log = logging.getLogger( __name__ )
 
@@ -28,26 +41,21 @@ class InstallTestRepository( TwillTestCase ):
         self.shed_tools_dict = {}
         self.home()
 
-    def deactivate_or_uninstall_repository( self, installed_repository, deactivate=False ):
-        url = '/admin_toolshed/deactivate_or_uninstall_repository?id=%s' % self.security.encode_id( installed_repository.id )
+    def deactivate_repository( self, repository ):
+        """Deactivate a repository."""
+        url = '/admin_toolshed/deactivate_or_uninstall_repository?id=%s' % self.security.encode_id( repository.id )
         self.visit_url( url )
-        if deactivate:
-            tc.fv ( 1, "remove_from_disk", 'false' )
-        else:
-            tc.fv ( 1, "remove_from_disk", 'true' )
+        tc.fv ( 1, "remove_from_disk", 'false' )
         tc.submit( 'deactivate_or_uninstall_repository_button' )
         strings_displayed = [ 'The repository named' ]
-        if deactivate:
-            strings_displayed.append( 'has been deactivated' )
-        else:
-            strings_displayed.append( 'has been uninstalled' )
+        strings_displayed.append( 'has been deactivated' )
         self.check_for_strings( strings_displayed, strings_not_displayed=[] )
 
     def initiate_installation_process( self,
                                        install_tool_dependencies=False,
                                        install_repository_dependencies=True,
                                        no_changes=True,
-                                       new_tool_panel_section=None ):
+                                       new_tool_panel_section_label=None ):
         html = self.last_page()
         # Since the installation process is by necessity asynchronous, we have to get the parameters to 'manually' initiate the
         # installation process. This regex will return the tool shed repository IDs in group(1), the encoded_kwd parameter in
@@ -57,7 +65,7 @@ class InstallTestRepository( TwillTestCase ):
         if install_parameters:
             iri_ids = install_parameters.group(1)
             # In some cases, the returned iri_ids are of the form: "[u'<encoded id>', u'<encoded id>']"
-            # This regex ensures that non-hex characters are stripped out of the list, so that util.listify/decode_id
+            # This regex ensures that non-hex characters are stripped out of the list, so that galaxy.util.listify/decode_id
             # will handle them correctly. It's safe to pass the cleaned list to manage_repositories, because it can parse
             # comma-separated values.
             repository_ids = str( iri_ids )
@@ -65,13 +73,13 @@ class InstallTestRepository( TwillTestCase ):
             encoded_kwd = install_parameters.group(2)
             reinstalling = install_parameters.group(3)
             url = '/admin_toolshed/manage_repositories?operation=install&tool_shed_repository_ids=%s&encoded_kwd=%s&reinstalling=%s' % \
-                ( ','.join( util.listify( repository_ids ) ), encoded_kwd, reinstalling )
+                ( ','.join( galaxy.util.listify( repository_ids ) ), encoded_kwd, reinstalling )
             self.visit_url( url )
-            return util.listify( repository_ids )
+            return galaxy.util.listify( repository_ids )
 
     def install_repository( self, repository_info_dict, install_tool_dependencies=True, install_repository_dependencies=True,
                             strings_displayed=[], strings_not_displayed=[], preview_strings_displayed=[],
-                            post_submit_strings_displayed=[], new_tool_panel_section=None, **kwd ):
+                            post_submit_strings_displayed=[], new_tool_panel_section_label=None, **kwd ):
         name = repository_info_dict[ 'name' ]
         owner = repository_info_dict[ 'owner' ]
         changeset_revision = repository_info_dict[ 'changeset_revision' ]
@@ -103,13 +111,13 @@ class InstallTestRepository( TwillTestCase ):
         kwd = self.set_form_value( form, kwd, 'install_tool_dependencies', install_tool_dependencies )
         kwd = self.set_form_value( form, kwd, 'install_repository_dependencies', install_repository_dependencies )
         kwd = self.set_form_value( form, kwd, 'shed_tool_conf', self.shed_tool_conf )
-        if new_tool_panel_section is not None:
-            kwd = self.set_form_value( form, kwd, 'new_tool_panel_section', new_tool_panel_section )
+        if new_tool_panel_section_label is not None:
+            kwd = self.set_form_value( form, kwd, 'new_tool_panel_section_label', new_tool_panel_section_label )
         submit_button_control = form.find_control( type='submit' )
         assert submit_button_control is not None, 'No submit button found for form %s.' % form.attrs.get( 'id' )
         self.submit_form( form.attrs.get( 'id' ), str( submit_button_control.name ), **kwd )
         self.check_for_strings( post_submit_strings_displayed, strings_not_displayed )
-        repository_ids = self.initiate_installation_process( new_tool_panel_section=new_tool_panel_section )
+        repository_ids = self.initiate_installation_process( new_tool_panel_section_label=new_tool_panel_section_label )
         log.debug( 'Waiting for the installation of repository IDs: %s' % str( repository_ids ) )
         self.wait_for_repository_installation( repository_ids )
 
@@ -129,7 +137,18 @@ class InstallTestRepository( TwillTestCase ):
                 log.debug( 'No field %s in form %s, discarding from return value.' % ( str( control ), str( form_id ) ) )
                 del( kwd[ field_name ] )
         return kwd
-        
+
+    def uninstall_repository( self, repository ):
+        """Uninstall a repository."""
+        # A repository can be uninstalled only if no dependent repositories are installed.
+        url = '/admin_toolshed/deactivate_or_uninstall_repository?id=%s' % self.security.encode_id( repository.id )
+        self.visit_url( url )
+        tc.fv ( 1, "remove_from_disk", 'true' )
+        tc.submit( 'deactivate_or_uninstall_repository_button' )
+        strings_displayed = [ 'The repository named' ]
+        strings_displayed.append( 'has been uninstalled' )
+        self.check_for_strings( strings_displayed, strings_not_displayed=[] )
+
     def visit_url( self, url, allowed_codes=[ 200 ] ):
         new_url = tc.go( url )
         return_code = tc.browser.get_code()
@@ -145,17 +164,19 @@ class InstallTestRepository( TwillTestCase ):
         if repository_ids:
             for repository_id in repository_ids:
                 galaxy_repository = test_db_util.get_repository( self.security.decode_id( repository_id ) )
-                log.debug( 'Repository %s with ID %s has initial state %s.' % ( str( galaxy_repository.name ), str( repository_id ), str( galaxy_repository.status ) ) )
+                log.debug( 'Repository %s with ID %s has initial state %s.' % \
+                    ( str( galaxy_repository.name ), str( repository_id ), str( galaxy_repository.status ) ) )
                 timeout_counter = 0
                 while galaxy_repository.status not in final_states:
                     test_db_util.refresh( galaxy_repository )
-                    log.debug( 'Repository %s with ID %s is in state %s, continuing to wait.' % ( str( galaxy_repository.name ), str( repository_id ), str( galaxy_repository.status ) ) )
+                    log.debug( 'Repository %s with ID %s is in state %s, continuing to wait.' % \
+                        ( str( galaxy_repository.name ), str( repository_id ), str( galaxy_repository.status ) ) )
                     timeout_counter = timeout_counter + 1
                     if timeout_counter % 10 == 0:
                         log.debug( 'Waited %d seconds for repository %s.' % ( timeout_counter, str( galaxy_repository.name ) ) )
-                    # This timeout currently defaults to 180 seconds, or 3 minutes.
-                    if timeout_counter > common.repository_installation_timeout:
-                        raise AssertionError( 'Repository installation timed out, %d seconds elapsed, repository state is %s.' % \
-                                              ( timeout_counter, repository.status ) )
+                    # This timeout currently defaults to 10 minutes.
+                    if timeout_counter > repository_installation_timeout:
+                        raise AssertionError( 'Repository installation timed out after %d seconds, repository state is %s.' % \
+                            ( timeout_counter, repository.status ) )
                         break
                     time.sleep( 1 )

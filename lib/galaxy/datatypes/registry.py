@@ -348,7 +348,7 @@ class Registry( object ):
                             try:
                                 aclass = getattr( module, datatype_class_name )()
                             except Exception, e:
-                                self.log.exception( 'Error calling method %s from class %s: %s' ( str( datatype_class_name ), str( module ), str( e ) ) )
+                                self.log.exception( 'Error calling method %s from class %s: %s', str( datatype_class_name ), str( module ), str( e ) )
                                 ok = False
                             if ok: 
                                 if deactivate:
@@ -598,6 +598,9 @@ class Registry( object ):
         tool_xml_text = """
             <tool id="__SET_METADATA__" name="Set External Metadata" version="1.0.1" tool_type="set_metadata">
               <type class="SetMetadataTool" module="galaxy.tools"/>
+              <requirements>
+                  <requirement type="package">samtools</requirement>
+              </requirements>
               <action module="galaxy.tools.actions.metadata" class="SetMetadataToolAction"/>
               <command>$__SET_EXTERNAL_METADATA_COMMAND_LINE__</command>
               <inputs>

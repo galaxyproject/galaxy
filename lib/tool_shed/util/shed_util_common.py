@@ -254,11 +254,8 @@ def create_or_update_tool_shed_repository( app, name, description, installed_cha
     else:
         deleted = False
         uninstalled = False
-    tool_shed_repository = get_tool_shed_repository_by_shed_name_owner_installed_changeset_revision( app,
-                                                                                                     tool_shed,
-                                                                                                     name,
-                                                                                                     owner,
-                                                                                                     installed_changeset_revision )
+    tool_shed_repository = \
+        get_tool_shed_repository_by_shed_name_owner_installed_changeset_revision( app, tool_shed, name, owner, installed_changeset_revision )
     if tool_shed_repository:
         log.debug( "Updating an existing row for repository '%s' in the tool_shed_repository table, status set to '%s'." % ( str( name ), str( status ) ) )
         tool_shed_repository.description = description
@@ -271,19 +268,20 @@ def create_or_update_tool_shed_repository( app, name, description, installed_cha
         tool_shed_repository.status = status
     else:
         log.debug( "Adding new row for repository '%s' in the tool_shed_repository table, status set to '%s'." % ( str( name ), str( status ) ) )
-        tool_shed_repository = app.install_model.ToolShedRepository( tool_shed=tool_shed,
-                                                             name=name,
-                                                             description=description,
-                                                             owner=owner,
-                                                             installed_changeset_revision=installed_changeset_revision,
-                                                             changeset_revision=current_changeset_revision,
-                                                             ctx_rev=ctx_rev,
-                                                             metadata=metadata_dict,
-                                                             includes_datatypes=includes_datatypes,
-                                                             dist_to_shed=dist_to_shed,
-                                                             deleted=deleted,
-                                                             uninstalled=uninstalled,
-                                                             status=status )
+        tool_shed_repository = \
+            app.install_model.ToolShedRepository( tool_shed=tool_shed,
+                                                  name=name,
+                                                  description=description,
+                                                  owner=owner,
+                                                  installed_changeset_revision=installed_changeset_revision,
+                                                  changeset_revision=current_changeset_revision,
+                                                  ctx_rev=ctx_rev,
+                                                  metadata=metadata_dict,
+                                                  includes_datatypes=includes_datatypes,
+                                                  dist_to_shed=dist_to_shed,
+                                                  deleted=deleted,
+                                                  uninstalled=uninstalled,
+                                                  status=status )
     context.add( tool_shed_repository )
     context.flush()
     return tool_shed_repository

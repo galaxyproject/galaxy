@@ -67,7 +67,7 @@ var User = Backbone.Model.extend( LoggableMixin ).extend(
         if( idOrCurrent === User.CURRENT_ID_STR ){
             options.url = this.urlRoot + '/' + User.CURRENT_ID_STR;
         }
-        return BaseModel.prototype.fetch.call( this, options );
+        return Backbone.Model.prototype.fetch.call( this, options );
     },
 
     /** Clears all data from the sessionStorage.

@@ -3,6 +3,8 @@ Classes for generating HTML forms
 """
 
 import logging, sys, os, time
+
+from operator import itemgetter
 from cgi import escape
 from galaxy.util import restore_text, relpath, nice_size, unicodify
 from galaxy.web import url_for
@@ -212,6 +214,7 @@ class FTPFileField(BaseField):
                                           ctime=time.strftime( "%m/%d/%Y %I:%M:%S %p", time.localtime( statinfo.st_ctime ) ) ) )
             if not uploads:
                 rval += '<tr><td colspan="4"><em>Your FTP upload directory contains no files.</em></td></tr>'
+            uploads = sorted(uploads, key=itemgetter("path"))
             for upload in uploads:
                 rval += FTPFileField.trow % ( prefix, self.name, upload['path'], upload['path'], upload['size'], upload['ctime'] )
         rval += FTPFileField.tfoot

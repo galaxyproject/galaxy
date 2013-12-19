@@ -15,7 +15,6 @@
 <script type="text/javascript" src="/static/scripts/libs/jquery/jquery.migrate.js"></script>
 <script type="text/javascript" src="/static/scripts/libs/underscore.js"></script>
 <script type="text/javascript" src="/static/scripts/libs/backbone/backbone.js"></script>
-<script type="text/javascript" src="/static/scripts/libs/backbone/backbone-relational.js"></script>
 <script type="text/javascript" src="/static/scripts/libs/handlebars.runtime.js"></script>
 <script type="text/javascript" src="/static/scripts/libs/d3.js"></script>
 <script type="text/javascript" src="/static/scripts/libs/bootstrap.js"></script>

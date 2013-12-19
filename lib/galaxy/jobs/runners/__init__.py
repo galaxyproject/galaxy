@@ -146,11 +146,13 @@ class BaseJobRunner( object ):
     def build_command_line( self, job_wrapper, include_metadata=False, include_work_dir_outputs=True ):
         return build_command( self, job_wrapper, include_metadata=include_metadata, include_work_dir_outputs=include_work_dir_outputs )
 
-    def get_work_dir_outputs( self, job_wrapper ):
+    def get_work_dir_outputs( self, job_wrapper, job_working_directory=None ):
         """
         Returns list of pairs (source_file, destination) describing path
         to work_dir output file and ultimate destination.
         """
+        if not job_working_directory:
+            job_working_directory = os.path.abspath( job_wrapper.working_directory )
 
         def in_directory( file, directory ):
             """
@@ -186,7 +188,7 @@ class BaseJobRunner( object ):
                         if hda_tool_output and hda_tool_output.from_work_dir:
                             # Copy from working dir to HDA.
                             # TODO: move instead of copy to save time?
-                            source_file = os.path.join( os.path.abspath( job_wrapper.working_directory ), hda_tool_output.from_work_dir )
+                            source_file = os.path.join( job_working_directory, hda_tool_output.from_work_dir )
                             destination = job_wrapper.get_output_destination( output_paths[ dataset.dataset_id ] )
                             if in_directory( source_file, job_wrapper.working_directory ):
                                 output_pairs.append( ( source_file, destination ) )
@@ -196,7 +198,7 @@ class BaseJobRunner( object ):
                                 log.exception( "from_work_dir specified a location not in the working directory: %s, %s" % ( source_file, job_wrapper.working_directory ) )
         return output_pairs
 
-    def _handle_metadata_externally(self, job_wrapper):
+    def _handle_metadata_externally( self, job_wrapper, resolve_requirements=False ):
         """
         Set metadata externally. Used by the local and lwr job runners where this
         shouldn't be attached to command-line to execute.
@@ -210,6 +212,12 @@ class BaseJobRunner( object ):
                                                                             tmp_dir=job_wrapper.working_directory,
                                                                             #we don't want to overwrite metadata that was copied over in init_meta(), as per established behavior
                                                                             kwds={ 'overwrite' : False } )
+            if resolve_requirements:
+                dependency_shell_commands = self.app.datatypes_registry.set_external_metadata_tool.build_dependency_shell_commands()
+                if dependency_shell_commands:
+                    if isinstance( dependency_shell_commands, list ):
+                        dependency_shell_commands = "&&".join( dependency_shell_commands )
+                    external_metadata_script = "%s&&%s" % ( dependency_shell_commands, external_metadata_script )
             log.debug( 'executing external set_meta script for job %d: %s' % ( job_wrapper.job_id, external_metadata_script ) )
             external_metadata_proc = subprocess.Popen( args=external_metadata_script,
                                                        shell=True,

@@ -93,7 +93,7 @@ def create_tool_dependency_with_initialized_env_sh_file( app, dependent_install_
                         env_file_builder.append_line( action="source", value=required_tool_dependency_env_file_path )
                         return_code = env_file_builder.return_code
                         if return_code:
-                            error_message = 'Error defining env.sh file for package %s, return_code: %s' % ( str( package_name, str( return_code ) ) )
+                            error_message = 'Error defining env.sh file for package %s, return_code: %s' % ( str( package_name ), str( return_code ) )
                             tool_dependency = tool_dependency_util.handle_tool_dependency_installation_error( app,
                                                                                                               tool_dependency,
                                                                                                               error_message,

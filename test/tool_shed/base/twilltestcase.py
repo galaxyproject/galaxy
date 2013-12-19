@@ -9,18 +9,30 @@ import logging
 import time
 import tempfile
 import tarfile
+import urllib
 import galaxy.webapps.tool_shed.util.hgweb_config
 import galaxy.model.tool_shed_install as galaxy_model
-import galaxy.util as util
+import galaxy.util
+
+from base.tool_shed_util import repository_installation_timeout
+from base.twilltestcase import TwillTestCase
+from galaxy.util.json import from_json_string
+from galaxy.web import security
+from tool_shed.util.encoding_util import tool_shed_encode
 from tool_shed.util import shed_util_common as suc
 from tool_shed.util import xml_util
-from base.twilltestcase import tc, from_json_string, TwillTestCase, security, urllib
-from tool_shed.util.encoding_util import tool_shed_encode, tool_shed_decode
 
 from galaxy import eggs
-eggs.require('mercurial')
-from mercurial import hg, ui, commands
+eggs.require( 'mercurial' )
+eggs.require( 'twill' )
+
 from mercurial.util import Abort
+from mercurial import commands
+from mercurial import hg
+from mercurial import ui
+
+import twill.commands as tc
+
 
 log = logging.getLogger( __name__ )
 
@@ -46,6 +58,7 @@ class ShedTwillTestCase( TwillTestCase ):
         self.tool_shed_test_file = None
         self.tool_data_path = os.environ.get( 'GALAXY_TEST_TOOL_DATA_PATH' )
         self.shed_tool_conf = os.environ.get( 'GALAXY_TEST_SHED_TOOL_CONF' )
+        self.test_db_util = test_db_util
         # TODO: Figure out a way to alter these attributes during tests.
         self.galaxy_tool_dependency_dir = os.environ.get( 'GALAXY_TEST_TOOL_DEPENDENCY_DIR' )
         self.shed_tools_dict = {}
@@ -121,20 +134,16 @@ class ShedTwillTestCase( TwillTestCase ):
         
     def check_galaxy_repository_tool_panel_section( self, repository, expected_tool_panel_section ):
         metadata = repository.metadata
-        assert 'tools' in metadata, 'Tools not found in metadata: %s' % metadata
+        assert 'tools' in metadata, 'Tools not found in repository metadata: %s' % metadata
         tool_metadata = metadata[ 'tools' ]
         # If integrated_tool_panel.xml is to be tested, this test method will need to be enhanced to handle tools 
         # from the same repository in different tool panel sections. Getting the first tool guid is ok, because 
         # currently all tools contained in a single repository will be loaded into the same tool panel section.
-        tool_guid = tool_metadata[ 0 ][ 'guid' ]
-        assert 'tool_panel_section' in metadata, 'Tool panel section not found in metadata: %s' % metadata
-        tool_panel_section_metadata = metadata[ 'tool_panel_section' ]
-        # tool_section_dict = dict( tool_config=guids_and_configs[ guid ],
-        #                           id=section_id,
-        #                           name=section_name,
-        #                           version=section_version )
-        # This dict is appended to tool_panel_section_metadata[ tool_guid ]
-        tool_panel_section = tool_panel_section_metadata[ tool_guid ][ 0 ][ 'name' ]
+        if repository.status in [ galaxy_model.ToolShedRepository.installation_status.UNINSTALLED,
+                                  galaxy_model.ToolShedRepository.installation_status.DEACTIVATED ]:
+            tool_panel_section = self.get_tool_panel_section_from_repository_metadata( metadata )
+        else:
+            tool_panel_section = self.get_tool_panel_section_from_api( metadata )
         assert tool_panel_section == expected_tool_panel_section, 'Expected to find tool panel section *%s*, but instead found *%s*\nMetadata: %s\n' % \
             ( expected_tool_panel_section, tool_panel_section, metadata )
         
@@ -409,6 +418,20 @@ class ShedTwillTestCase( TwillTestCase ):
         url = '/admin_toolshed/browse_repositories'
         self.visit_galaxy_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
+        
+    def display_installed_manage_data_manager_page( self, installed_repository, data_manager_names=None, strings_displayed=[], strings_not_displayed=[] ):
+        data_managers = installed_repository.metadata.get( 'data_manager', {} ).get( 'data_managers', {} )
+        if data_manager_names:
+            if not isinstance( data_manager_names, list ):
+                data_manager_names = [data_manager_names]
+            for data_manager_name in data_manager_names:
+                assert data_manager_name in data_managers, "The requested Data Manager '%s' was not found in repository metadata." % data_manager_name
+        else:
+            data_manager_name = data_managers.keys()
+        for data_manager_name in data_manager_names:
+            url = '/data_manager/manage_data_manager?id=%s' % data_managers[data_manager_name]['guid']
+            self.visit_galaxy_url( url )
+            self.check_for_strings( strings_displayed, strings_not_displayed )
         
     def display_installed_repository_manage_page( self, installed_repository, strings_displayed=[], strings_not_displayed=[] ):
         url = '/admin_toolshed/manage_repository?id=%s' % self.security.encode_id( installed_repository.id )
@@ -751,6 +774,28 @@ class ShedTwillTestCase( TwillTestCase ):
                 invalid_tools.append( dict( tools=repository_metadata.metadata[ 'invalid_tools' ], changeset_revision=repository_metadata.changeset_revision ) )
         return valid_tools, invalid_tools
         
+    def get_tool_panel_section_from_api( self, metadata ):
+        tool_metadata = metadata[ 'tools' ]
+        tool_guid = urllib.quote_plus( tool_metadata[ 0 ][ 'guid' ], safe='' )
+        api_url = '/%s' % '/'.join( [ 'api', 'tools', tool_guid ] )
+        self.visit_galaxy_url( api_url )
+        tool_dict = from_json_string( self.last_page() )
+        tool_panel_section = tool_dict[ 'panel_section_name' ]
+        return tool_panel_section
+        
+    def get_tool_panel_section_from_repository_metadata( self, metadata ):
+        tool_metadata = metadata[ 'tools' ]
+        tool_guid = tool_metadata[ 0 ][ 'guid' ]
+        assert 'tool_panel_section' in metadata, 'Tool panel section not found in metadata: %s' % metadata
+        tool_panel_section_metadata = metadata[ 'tool_panel_section' ]
+        # tool_section_dict = dict( tool_config=guids_and_configs[ guid ],
+        #                           id=section_id,
+        #                           name=section_name,
+        #                           version=section_version )
+        # This dict is appended to tool_panel_section_metadata[ tool_guid ]
+        tool_panel_section = tool_panel_section_metadata[ tool_guid ][ 0 ][ 'name' ]
+        return tool_panel_section
+        
     def grant_role_to_user( self, user, role ):
         strings_displayed = [ self.security.encode_id( role.id ), role.name ]
         strings_not_displayed = []
@@ -804,7 +849,7 @@ class ShedTwillTestCase( TwillTestCase ):
                                        install_tool_dependencies=False, 
                                        install_repository_dependencies=True, 
                                        no_changes=True, 
-                                       new_tool_panel_section=None ):
+                                       new_tool_panel_section_label=None ):
         html = self.last_page()
         # Since the installation process is by necessity asynchronous, we have to get the parameters to 'manually' initiate the 
         # installation process. This regex will return the tool shed repository IDs in group(1), the encoded_kwd parameter in 
@@ -814,7 +859,7 @@ class ShedTwillTestCase( TwillTestCase ):
         if install_parameters:
             iri_ids = install_parameters.group(1)
             # In some cases, the returned iri_ids are of the form: "[u'<encoded id>', u'<encoded id>']"
-            # This regex ensures that non-hex characters are stripped out of the list, so that util.listify/decode_id 
+            # This regex ensures that non-hex characters are stripped out of the list, so that galaxy.util.listify/decode_id 
             # will handle them correctly. It's safe to pass the cleaned list to manage_repositories, because it can parse
             # comma-separated values.
             repository_ids = str( iri_ids )
@@ -822,9 +867,9 @@ class ShedTwillTestCase( TwillTestCase ):
             encoded_kwd = install_parameters.group(2)
             reinstalling = install_parameters.group(3)
             url = '/admin_toolshed/manage_repositories?operation=install&tool_shed_repository_ids=%s&encoded_kwd=%s&reinstalling=%s' % \
-                ( ','.join( util.listify( repository_ids ) ), encoded_kwd, reinstalling )
+                ( ','.join( galaxy.util.listify( repository_ids ) ), encoded_kwd, reinstalling )
             self.visit_galaxy_url( url )
-            return util.listify( repository_ids )
+            return galaxy.util.listify( repository_ids )
         
     def install_repositories_from_search_results( self, repositories, install_tool_dependencies=False, 
                                                   strings_displayed=[], strings_not_displayed=[], **kwd ):
@@ -855,7 +900,7 @@ class ShedTwillTestCase( TwillTestCase ):
     def install_repository( self, name, owner, category_name, install_tool_dependencies=False, 
                             install_repository_dependencies=True, changeset_revision=None, 
                             strings_displayed=[], strings_not_displayed=[], preview_strings_displayed=[], 
-                            post_submit_strings_displayed=[], new_tool_panel_section=None, includes_tools_for_display_in_tool_panel=True,
+                            post_submit_strings_displayed=[], new_tool_panel_section_label=None, includes_tools_for_display_in_tool_panel=True,
                             **kwd ):
         self.browse_tool_shed( url=self.url )
         self.browse_category( test_db_util.get_category_by_name( category_name ) )
@@ -877,13 +922,13 @@ class ShedTwillTestCase( TwillTestCase ):
         kwd = self.set_form_value( form, kwd, 'install_tool_dependencies', install_tool_dependencies )
         kwd = self.set_form_value( form, kwd, 'install_repository_dependencies', install_repository_dependencies )
         kwd = self.set_form_value( form, kwd, 'shed_tool_conf', self.shed_tool_conf )
-        if new_tool_panel_section is not None:
-            kwd = self.set_form_value( form, kwd, 'new_tool_panel_section', new_tool_panel_section )
+        if new_tool_panel_section_label is not None:
+            kwd = self.set_form_value( form, kwd, 'new_tool_panel_section_label', new_tool_panel_section_label )
         submit_button_control = form.find_control( type='submit' )
         assert submit_button_control is not None, 'No submit button found for form %s.' % form.attrs.get( 'id' )
         self.submit_form( form.attrs.get( 'id' ), str( submit_button_control.name ), **kwd )
         self.check_for_strings( post_submit_strings_displayed, strings_not_displayed )
-        repository_ids = self.initiate_installation_process( new_tool_panel_section=new_tool_panel_section )
+        repository_ids = self.initiate_installation_process( new_tool_panel_section_label=new_tool_panel_section_label )
         log.debug( 'Waiting for the installation of repository IDs: %s' % str( repository_ids ) )
         self.wait_for_repository_installation( repository_ids )
 
@@ -1000,7 +1045,7 @@ class ShedTwillTestCase( TwillTestCase ):
                               install_repository_dependencies=True, 
                               install_tool_dependencies=False, 
                               no_changes=True, 
-                              new_tool_panel_section='',
+                              new_tool_panel_section_label='',
                               strings_displayed=[],
                               strings_not_displayed=[] ):
         url = '/admin_toolshed/reselect_tool_panel_section?id=%s' % self.security.encode_id( installed_repository.id )
@@ -1011,15 +1056,15 @@ class ShedTwillTestCase( TwillTestCase ):
         repo_dependencies = self.create_checkbox_query_string( field_name='install_repository_dependencies', value=install_repository_dependencies )
         tool_dependencies = self.create_checkbox_query_string( field_name='install_tool_dependencies', value=install_tool_dependencies )
         encoded_repository_id = self.security.encode_id( installed_repository.id )
-        url = '/admin_toolshed/reinstall_repository?id=%s&%s&%s&no_changes=%s&new_tool_panel_section=%s' % \
-            ( encoded_repository_id, repo_dependencies, tool_dependencies, str( no_changes ), new_tool_panel_section )
+        url = '/admin_toolshed/reinstall_repository?id=%s&%s&%s&no_changes=%s&new_tool_panel_section_label=%s' % \
+            ( encoded_repository_id, repo_dependencies, tool_dependencies, str( no_changes ), new_tool_panel_section_label )
         self.visit_galaxy_url( url )
         # Manually initiate the install process, as with installing a repository. See comments in the 
         # initiate_installation_process method for details.
         repository_ids = self.initiate_installation_process( install_tool_dependencies, 
                                                              install_repository_dependencies, 
                                                              no_changes, 
-                                                             new_tool_panel_section )
+                                                             new_tool_panel_section_label )
         # Finally, wait until all repositories are in a final state (either Error or Installed) before returning.
         self.wait_for_repository_installation( repository_ids )
         
@@ -1159,16 +1204,15 @@ class ShedTwillTestCase( TwillTestCase ):
         self.visit_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
         
-    def uninstall_repository( self, installed_repository, remove_from_disk=True ):
+    def uninstall_repository( self, installed_repository, remove_from_disk=True, is_required=False, strings_displayed=[], strings_not_displayed=[] ):
         url = '/admin_toolshed/deactivate_or_uninstall_repository?id=%s' % self.security.encode_id( installed_repository.id )
         self.visit_galaxy_url( url )
-        if remove_from_disk:
-            tc.fv ( 1, "remove_from_disk", 'true' )
-        else:
-            tc.fv ( 1, "remove_from_disk", 'false' )
+        self.check_for_strings( strings_displayed, strings_not_displayed )
+        form = tc.browser.get_form( 'deactivate_or_uninstall_repository' )
+        kwd = self.set_form_value( form, {}, 'remove_from_disk', remove_from_disk )
         tc.submit( 'deactivate_or_uninstall_repository_button' )
         strings_displayed = [ 'The repository named' ]
-        if remove_from_disk:
+        if remove_from_disk and not is_required:
             strings_displayed.append( 'has been uninstalled' )
         else:
             strings_displayed.append( 'has been deactivated' )
@@ -1294,7 +1338,7 @@ class ShedTwillTestCase( TwillTestCase ):
         
     def verify_installed_repository_data_table_entries( self, required_data_table_entries ):
         # The value of the received required_data_table_entries will be something like: [ 'sam_fa_indexes' ]
-        data_tables = util.parse_xml( self.shed_tool_data_table_conf )
+        data_tables, error_message = xml_util.parse_xml( self.shed_tool_data_table_conf )
         found = False
         # With the tool shed, the "path" attribute that is hard-coded into the tool_data_tble_conf.xml
         # file is ignored.  This is because the tool shed requires the directory location to which this
@@ -1314,6 +1358,7 @@ class ShedTwillTestCase( TwillTestCase ):
         #        <file path="tool-data/sam_fa_indices.loc" />
         #     </table>
         # </tables>
+        required_data_table_entry = None
         for table_elem in data_tables.findall( 'table' ):
             # The value of table_elem will be something like: <table comment_char="#" name="sam_fa_indexes">
             for required_data_table_entry in required_data_table_entries:
@@ -1411,8 +1456,8 @@ class ShedTwillTestCase( TwillTestCase ):
                 while galaxy_repository.status not in final_states:
                     test_db_util.ga_refresh( galaxy_repository )
                     timeout_counter = timeout_counter + 1
-                    # This timeout currently defaults to 180 seconds, or 3 minutes.
-                    if timeout_counter > common.repository_installation_timeout:
+                    # This timeout currently defaults to 10 minutes.
+                    if timeout_counter > repository_installation_timeout:
                         raise AssertionError( 'Repository installation timed out, %d seconds elapsed, repository state is %s.' % \
                                               ( timeout_counter, galaxy_repository.status ) )
                         break

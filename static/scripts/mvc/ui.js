@@ -123,13 +123,13 @@ var IconButtonMenuView = Backbone.View.extend({
         var self = this;
         this.collection.each(function(button){
             // create and add icon button to menu
-            var elt = 
-            $('<a/>').attr('href', 'javascript:void(0)')
-                     .attr('title', button.attributes.title)
-                     .addClass('icon-button menu-button')
-                     .addClass(button.attributes.icon_class)
-                     .appendTo(self.$el)
-                     .click(button.attributes.on_click);
+            var elt = $('<a/>')
+                .attr('href', 'javascript:void(0)')
+                .attr('title', button.attributes.title)
+                .addClass('icon-button menu-button')
+                .addClass(button.attributes.icon_class)
+                .appendTo(self.$el)
+                .click(button.attributes.on_click);
 
             // configure tooltip
             if (button.attributes.tooltip_config){
@@ -172,7 +172,7 @@ var create_icon_buttons_menu = function(config, global_config)
 
 // =============================================================================
 /**
- * 
+ *
  */
 var Grid = Backbone.Collection.extend({
     
@@ -513,105 +513,286 @@ var faIconButton = function( options ){
 
 
 //==============================================================================
-var searchInput = function( options ){
-//TODO: move out of global
+(function(){
+    /** searchInput: (jQuery plugin)
+     *      Creates a search input, a clear button, and loading indicator
+     *      within the selected node.
+     *
+     *      When the user either presses return or enters some minimal number
+     *      of characters, a callback is called. Pressing ESC when the input
+     *      is focused will clear the input and call a separate callback.
+     */
+
+    // contructor
+    function searchInput( parentNode, options ){
 //TODO: consolidate with tool menu functionality, use there
-//TODO: this could and should be merged/oop'd with editableText (the behaviors are mostly the same - but not style)
-    var KEYCODE_ESC = 27,
-        KEYCODE_RETURN = 13,
-        $searchInput = $( '<div/>' ),
-        defaults = {
-            initialVal      : '',
-            name            : 'search',
-            placeholder     : 'search',
-            classes         : '',
-            onclear         : function(){},
-            onsearch        : function( inputVal ){},
-            minSearchLen    : 0,
-            escWillClear    : true,
-            oninit          : function(){}
-        };
-        
-    if( jQuery.type( options ) === 'object' ){
-        options = jQuery.extend( true, defaults, options );
-    }
-    //console.debug( options );
+        var KEYCODE_ESC     = 27,
+            KEYCODE_RETURN  = 13,
+            $parentNode     = $( parentNode ),
+            firstSearch     = true,
+            defaults = {
+                initialVal      : '',
+                name            : 'search',
+                placeholder     : 'search',
+                classes         : '',
+                onclear         : function(){},
+                onfirstsearch   : null,
+                onsearch        : function( inputVal ){},
+                minSearchLen    : 0,
+                escWillClear    : true,
+                oninit          : function(){}
+            };
 
-    function clearSearchInput( event ){
-        //console.debug( this, 'clear' );
-        var $input = $( this ).parent().children( 'input' );
-        //console.debug( 'input', $input );
-        $input.val( '' );
-        $input.trigger( 'clear:searchInput' );
-        options.onclear();
-    }
-    function search( event, searchTerms ){
-        //console.debug( this, 'searching', searchTerms );
-        $( this ).trigger( 'search:searchInput', searchTerms );
-        options.onsearch( searchTerms );
-        //var $input = $( this ).parent().children( 'input' );
-        //console.debug( 'input', $input );
-    }
+        // .................................................................... input rendering and events
+        // visually clear the search, trigger an event, and call the callback
+        function clearSearchInput( event ){
+            //console.debug( this, 'clear' );
+            var $input = $( this ).parent().children( 'input' );
+            //console.debug( 'input', $input );
+            $input.val( '' );
+            $input.trigger( 'clear:searchInput' );
+            options.onclear();
+        }
 
-    function inputTemplate(){
-        // class search-query is bootstrap 2.3 style that now lives in base.less
-        return [ '<input type="text" name="', options.name, '" placeholder="', options.placeholder, '" ',
-                        'class="search-query ', options.classes, '" ', '/>'
-        ].join( '' );
-    }
-    // the search input that responds to keyboard events and displays the search value
-    function $input(){
-        return $( inputTemplate() ).css({
-            'width'         : '100%',
-            // make space for the clear button
-            'padding-right' : '24px'
-        })
-        // select all text on a focus
-        .focus( function( event ){
-            $( this ).select();
-        })
-        // attach behaviors to esc, return if desired, search on some min len string
-        .keyup( function( event ){
-            //console.debug( event.which, $( this ).val() )
-            // esc key will clear if
-            if( event.which === KEYCODE_ESC && options.escWillClear ){
-                clearSearchInput.call( this, event );
-
+        // search for searchTerms, trigger an event, call the appropo callback (based on whether this is the first)
+        function search( event, searchTerms ){
+            //console.debug( this, 'searching', searchTerms );
+            $( this ).trigger( 'search:searchInput', searchTerms );
+            if( typeof options.onfirstsearch === 'function' && firstSearch ){
+                firstSearch = false;
+                options.onfirstsearch( searchTerms );
             } else {
-                var searchTerms = $( this ).val();
-                // return key or the search string len > minSearchLen (if not 0) triggers search
-                if( ( event.which === KEYCODE_RETURN )
-                ||  ( options.minSearchLen && searchTerms.length >= options.minSearchLen ) ){
-                    search.call( this, event, searchTerms );
-                } else if( !searchTerms.length ){
-                    clearSearchInput.call( this, event );
-                }
+                options.onsearch( searchTerms );
             }
-        })
-        .val( options.initialVal );
+        }
+
+        // .................................................................... input rendering and events
+        function inputTemplate(){
+            // class search-query is bootstrap 2.3 style that now lives in base.less
+            return [ '<input type="text" name="', options.name, '" placeholder="', options.placeholder, '" ',
+                            'class="search-query ', options.classes, '" ', '/>' ].join( '' );
+        }
+
+        // the search input that responds to keyboard events and displays the search value
+        function $input(){
+            return $( inputTemplate() )
+                // select all text on a focus
+                .focus( function( event ){
+                    $( this ).select();
+                })
+                // attach behaviors to esc, return if desired, search on some min len string
+                .keyup( function( event ){
+                    // esc key will clear if desired
+                    if( event.which === KEYCODE_ESC && options.escWillClear ){
+                        clearSearchInput.call( this, event );
+
+                    } else {
+                        var searchTerms = $( this ).val();
+                        // return key or the search string len > minSearchLen (if not 0) triggers search
+                        if( ( event.which === KEYCODE_RETURN )
+                        ||  ( options.minSearchLen && searchTerms.length >= options.minSearchLen ) ){
+                            search.call( this, event, searchTerms );
+                        } else if( !searchTerms.length ){
+                            clearSearchInput.call( this, event );
+                        }
+                    }
+                })
+                .val( options.initialVal );
+        }
+
+        // .................................................................... clear button rendering and events
+        // a button for clearing the search bar, placed on the right hand side
+        function $clearBtn(){
+            return $([ '<span class="search-clear fa fa-times-circle" ',
+                             'title="', _l( 'clear search (esc)' ), '"></span>' ].join('') )
+            .tooltip({ placement: 'bottom' })
+            .click( function( event ){
+                clearSearchInput.call( this, event );
+            });
+        }
+        
+        // .................................................................... loadingIndicator rendering
+        // a button for clearing the search bar, placed on the right hand side
+        function $loadingIndicator(){
+            return $([ '<span class="search-loading fa fa-spinner fa-spin" ',
+                             'title="', _l( 'loading...' ), '"></span>' ].join('') )
+                .hide().tooltip({ placement: 'bottom' });
+        }
+
+        // .................................................................... commands
+        // visually swap the load, clear buttons
+        function toggleLoadingIndicator(){
+            $parentNode.find( '.search-loading' ).toggle();
+            $parentNode.find( '.search-clear' ).toggle();
+        }
+
+        // .................................................................... init
+        // string command (not constructor)
+        if( jQuery.type( options ) === 'string' ){
+            if( options === 'toggle-loading' ){
+                toggleLoadingIndicator();
+            }
+            return $parentNode;
+        }
+
+        // initial render
+        if( jQuery.type( options ) === 'object' ){
+            options = jQuery.extend( true, defaults, options );
+        }
+        //NOTE: prepended
+        return $parentNode.addClass( 'search-input' ).prepend([ $input(), $clearBtn(), $loadingIndicator() ]);
     }
 
-    // a button for clearing the search bar, placed on the right hand side
-    function clearBtnTemplate(){
-        return '<span class="search-clear fa fa-times-circle" title="' + _l( 'clear search (esc)' ) + '"></span>';
+    // as jq plugin
+    jQuery.fn.extend({
+        searchInput : function $searchInput( options ){
+            return this.each( function(){
+                return searchInput( this, options );
+            });
+        }
+    });
+}());
+
+
+//==============================================================================
+(function(){
+    /** Multi 'mode' button (or any element really) that changes the html
+     *      contents of itself when clicked. Pass in an ordered list of
+     *      objects with 'html' and (optional) onclick functions.
+     *
+     *      When clicked in a particular node, the onclick function will
+     *      be called (with the element as this) and the element will
+     *      switch to the next mode, replacing it's html content with
+     *      that mode's html.
+     *
+     *      If there is no next mode, the element will switch back to
+     *      the first mode.
+     * @example:
+     *     $( '.myElement' ).modeButton({
+     *         modes : [
+     *             {
+     *                 mode: 'bler',
+     *                 html: '<h5>Bler</h5>',
+     *                 onclick : function(){
+     *                     $( 'body' ).css( 'background-color', 'red' );
+     *                 }
+     *             },
+     *             {
+     *                 mode: 'bloo',
+     *                 html: '<h4>Bloo</h4>',
+     *                 onclick : function(){
+     *                     $( 'body' ).css( 'background-color', 'blue' );
+     *                 }
+     *             },
+     *             {
+     *                 mode: 'blah',
+     *                 html: '<h3>Blah</h3>',
+     *                 onclick : function(){
+     *                     $( 'body' ).css( 'background-color', 'grey' );
+     *                 }
+     *             },
+     *         ]
+     *     });
+     *     $( '.myElement' ).modeButton( 'callModeFn', 'bler' );
+     */
+    function ModeButton( element, options ){
+		this.currModeIndex = 0;
+		return this.init( element, options );
     }
-    function $clearBtn(){
-//TODO: to base.less
-//TODO: hover effects
-        return $( clearBtnTemplate() ).css({
-            position    : 'absolute',
-            right       : '15px',
-            'font-size' : '1.4em',
-            'line-height': '23px',
-            color       : 'grey'
-        })
-        .tooltip({ placement: 'bottom' })
-        .click( function( event ){
-            clearSearchInput.call( this, event );
-        });
-    }
-    return $searchInput.append([ $input(), $clearBtn() ]);
-};
+
+	ModeButton.prototype.DATA_KEY = 'mode-button';
+	ModeButton.prototype.defaults = {
+		modes : [
+			{ mode: 'default' }
+		]
+	};
+
+	ModeButton.prototype.init = function _init( element, options ){
+		options = options || {};
+		this.$element = $( element );
+		this.options = jQuery.extend( true, this.defaults, options );
+
+		var modeButton = this;
+		this.$element.click( function _ModeButtonClick( event ){
+
+			// call the curr mode fn
+			modeButton.callModeFn();
+			// inc the curr mode index
+			modeButton._incModeIndex();
+			// set the element html
+			$( this ).html( modeButton.options.modes[ modeButton.currModeIndex ].html );
+		});
+
+		this.currModeIndex = 0;
+		if( this.options.initialMode ){
+			this.currModeIndex = this._getModeIndex( this.options.initialMode );
+		}
+		return this;
+	};
+
+
+	ModeButton.prototype._getModeIndex = function __getModeIndex( modeKey ){
+		for( var i=0; i<this.options.modes.length; i+=1 ){
+			if( this.options.modes[ i ].mode === modeKey ){ return i; }
+		}
+		throw new Error( 'mode not found: ' + modeKey );
+	};
+	ModeButton.prototype.getCurrMode = function _getCurrMode(){
+		return this.options.modes[ this.currModeIndex ];
+	};
+	ModeButton.prototype.getMode = function _getMode( modeKey ){
+		if( !modeKey ){ return this.getCurrMode(); }
+		return this.options.modes[( this._getModeIndex( modeKey ) )];
+	};
+	ModeButton.prototype.hasMode = function _hasMode( modeKey ){
+		return !!this.getMode( modeKey );
+	};
+	ModeButton.prototype.currentMode = function _currentMode(){
+		return this.options.modes[ this.currModeIndex ];
+	};
+	ModeButton.prototype.setMode = function _setMode( newModeKey ){
+		var newMode = this.getMode( newModeKey );
+		this.$element.html( newMode.html || null );
+		return this;
+	};
+	ModeButton.prototype._incModeIndex = function __incModeIndex(){
+		this.currModeIndex += 1;
+		if( this.currModeIndex >= this.options.modes.length ){
+			this.currModeIndex = 0;
+		}
+		return this;
+	};
+	ModeButton.prototype.callModeFn = function _callModeFn( modeKey ){
+		var modeFn = this.getMode( modeKey ).onclick;
+		if( modeFn && jQuery.type( modeFn === 'function' ) ){
+			return modeFn.call( this );
+		}
+		return undefined;
+	};
+
+    // as jq plugin
+    jQuery.fn.extend({
+        modeButton : function $modeButton( options ){
+			var nonOptionsArgs = jQuery.makeArray( arguments ).slice( 1 );
+            return this.each( function(){
+				var $this = $( this ),
+					data = $this.data( 'mode-button' );
+
+				if( jQuery.type( options ) === 'object' ){
+					data = new ModeButton( $this, options );
+					$this.data( 'mode-button', data );
+				}
+				if( data && jQuery.type( options ) === 'string' ){
+					var fn = data[ options ];
+					if( jQuery.type( fn ) === 'function' ){
+						return fn.apply( data, nonOptionsArgs );
+					}
+				}
+				return this;
+            });
+        }
+    });
+}());
 
 
 //==============================================================================

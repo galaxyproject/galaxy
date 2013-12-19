@@ -1,5 +1,6 @@
 from tool_shed.base.twilltestcase import ShedTwillTestCase, common, os
-import tool_shed.base.test_db_util as test_db_util
+
+
 import logging
 repository_name = 'freebayes_0010'
 repository_description="Galaxy's freebayes tool"
@@ -7,25 +8,26 @@ repository_long_description="Long description of Galaxy's freebayes tool"
 category_name = 'Test 0010 Repository With Tool Dependencies'
 log = logging.getLogger( __name__ )
 
+
 class ToolWithToolDependencies( ShedTwillTestCase ):
     '''Test installing a repository with tool dependencies.'''
     def test_0000_initiate_users( self ):
         """Create necessary user accounts."""
         self.galaxy_logout()
         self.galaxy_login( email=common.admin_email, username=common.admin_username )
-        admin_user = test_db_util.get_galaxy_user( common.admin_email )
+        admin_user = self.test_db_util.get_galaxy_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % admin_email
-        admin_user_private_role = test_db_util.get_galaxy_private_role( admin_user )
+        admin_user_private_role = self.test_db_util.get_galaxy_private_role( admin_user )
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        test_user_1 = test_db_util.get_user( common.test_user_1_email )
+        test_user_1 = self.test_db_util.get_user( common.test_user_1_email )
         assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % test_user_1_email
-        test_user_1_private_role = test_db_util.get_private_role( test_user_1 )
+        test_user_1_private_role = self.test_db_util.get_private_role( test_user_1 )
         self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
-        admin_user = test_db_util.get_user( common.admin_email )
+        admin_user = self.test_db_util.get_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
-        admin_user_private_role = test_db_util.get_private_role( admin_user )
+        admin_user_private_role = self.test_db_util.get_private_role( admin_user )
     def test_0005_ensure_repositories_and_categories_exist( self ):
         '''Create the 0010 category and upload the freebayes repository to it, if necessary.'''
         category = self.create_category( name=category_name, description='Tests for a repository with tool dependencies.' )
@@ -96,7 +98,7 @@ class ToolWithToolDependencies( ShedTwillTestCase ):
         self.galaxy_logout()
         self.galaxy_login( email=common.admin_email, username=common.admin_username )
         self.browse_tool_shed( url=self.url, strings_displayed=[ category_name ] )
-        category = test_db_util.get_category_by_name( category_name )
+        category = self.test_db_util.get_category_by_name( category_name )
         self.browse_category( category, strings_displayed=[ repository_name ] )
         strings_displayed = [ repository_name, 'Valid tools', 'Tool dependencies' ]
         self.preview_repository_in_tool_shed( repository_name, common.test_user_1_name, strings_displayed=strings_displayed )
@@ -109,8 +111,8 @@ class ToolWithToolDependencies( ShedTwillTestCase ):
                                  category_name, 
                                  strings_displayed=strings_displayed,
                                  install_tool_dependencies=False, 
-                                 new_tool_panel_section='test_1010' )
-        installed_repository = test_db_util.get_installed_repository_by_name_owner( repository_name, common.test_user_1_name )
+                                 new_tool_panel_section_label='test_1010' )
+        installed_repository = self.test_db_util.get_installed_repository_by_name_owner( repository_name, common.test_user_1_name )
         strings_displayed = [ 'freebayes_0010',
                               "Galaxy's freebayes tool",
                               'user1', 

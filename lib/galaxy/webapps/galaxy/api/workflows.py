@@ -278,6 +278,10 @@ class WorkflowsAPIController(BaseAPIController, UsesAnnotations):
                 return("Workflow is not owned by or shared with current user")
 
         ret_dict = self._workflow_to_dict( trans, stored_workflow );
+        if not ret_dict:
+            #This workflow has a tool that's missing from the distribution
+            trans.response.status = 400
+            return "Workflow cannot be exported due to missing tools."
         return ret_dict
 
     @web.expose_api
@@ -453,6 +457,8 @@ class WorkflowsAPIController(BaseAPIController, UsesAnnotations):
         for step in workflow.steps:
             # Load from database representation
             module = module_factory.from_workflow_step( trans, step )
+            if not module:
+                return None
 
             ### ----------------------------------- ###
             ## RPARK EDIT ##
