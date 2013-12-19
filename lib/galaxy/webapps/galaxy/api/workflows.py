@@ -112,8 +112,6 @@ class WorkflowsAPIController(BaseAPIController, UsesAnnotations):
         # ------------------------------------------------------------------------------- #
 
 
-
-
         if 'workflow_id' not in payload:
             # create new
             if 'installed_repository_file' in payload:
@@ -241,11 +239,15 @@ class WorkflowsAPIController(BaseAPIController, UsesAnnotations):
                 visit_input_values( tool.inputs, step.state.inputs, callback )
                 job, out_data = tool.execute( trans, step.state.inputs, history=history)
                 outputs[ step.id ] = out_data
+
+                # Do post-job actions.
+                replacement_params = payload.get('replacement_params', {})
                 for pja in step.post_job_actions:
                     if pja.action_type in ActionBox.immediate_actions:
-                        ActionBox.execute(self.app, trans.sa_session, pja, job, replacement_dict=None)
+                        ActionBox.execute(trans.app, trans.sa_session, pja, job, replacement_dict=replacement_params)
                     else:
                         job.add_post_job_action(pja)
+
                 for v in out_data.itervalues():
                     rval['outputs'].append(trans.security.encode_id(v.id))
             else:
