@@ -216,14 +216,13 @@ def install_and_test_repositories( app, galaxy_shed_tools_dict, galaxy_shed_tool
                     # tool dependencies resulted in an installation error.
                     missing_tool_dependencies = install_and_test_base_util.get_missing_tool_dependencies( repository )
                     if missing_tool_dependencies or repository.missing_repository_dependencies:
-                        install_and_test_base_util.handle_missing_dependencies( app,
-                                                                                repository,
-                                                                                missing_tool_dependencies,
-                                                                                repository_dict,
-                                                                                tool_test_results_dicts,
-                                                                                tool_test_results_dict,
-                                                                                install_and_test_statistics_dict,
-                                                                                can_update_tool_shed )
+                        install_and_test_base_util.handle_missing_dependencies( app=app,
+                                                                                repository=repository,
+                                                                                missing_tool_dependencies=missing_tool_dependencies,
+                                                                                repository_dict=repository_dict,
+                                                                                tool_test_results_dicts=tool_test_results_dicts,
+                                                                                tool_test_results_dict=tool_test_results_dict,
+                                                                                can_update_tool_shed=can_update_tool_shed )
                     else:
                         # This repository and all of its dependencies were successfully installed.
                         install_and_test_statistics_dict[ 'successful_installations' ].append( repository_identifier_dict )
