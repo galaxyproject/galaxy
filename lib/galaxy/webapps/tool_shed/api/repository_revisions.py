@@ -87,10 +87,10 @@ class RepositoryRevisionsController( BaseAPIController ):
                 rd_tups = metadata[ 'repository_dependencies' ][ 'repository_dependencies' ]
                 for rd_tup in rd_tups:
                     tool_shed, name, owner, changeset_revision = rd_tup[ 0:4 ]
-                    repository_dependencies_dict = dict( tool_shed=tool_shed,
-                                                         name=name,
-                                                         owner=owner,
-                                                         changeset_revision=changeset_revision )
+                    repository_dependencies_dict = dict( tool_shed=str( tool_shed ),
+                                                         name=str( name ),
+                                                         owner=str( owner ),
+                                                         changeset_revision=str( changeset_revision ) )
                     rd = suc.get_repository_by_name_and_owner( trans.app, name, owner )
                     encoded_rd_id = trans.security.encode_id( rd.id )
                     rd_repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans,

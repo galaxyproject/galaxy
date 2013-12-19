@@ -100,9 +100,13 @@ def install_and_test_repositories( app, galaxy_shed_tools_dict, galaxy_shed_tool
         # here because our call to the Tool Shed API filters by downloadable='true', in which case deleted will always be False.
         log.debug( 'Loading the list of repositories excluded from testing from the file %s...' % \
             str( exclude_list_file ) )
-        exclude_list = install_and_test_base_util.parse_exclude_list( exclude_list_file )
+        # The following exclude_list will look something like this:
+        # [{ 'reason': The default reason or the reason specified in this section,
+        #    'repositories': [( name, owner, changeset_revision if changeset_revision else None ),
+        #                     ( name, owner, changeset_revision if changeset_revision else None )]}]
+        exclude_list_dicts = install_and_test_base_util.parse_exclude_list( exclude_list_file )
     else:
-        exclude_list = []
+        exclude_list_dicts = []
     # Generate a test method that will use Twill to install each repository into the embedded Galaxy application that was
     # started up, installing repository and tool dependencies. Upon successful installation, generate a test case for each
     # functional test defined for each tool in the repository and execute the test cases. Record the result of the tests.
@@ -146,15 +150,40 @@ def install_and_test_repositories( app, galaxy_shed_tools_dict, galaxy_shed_tool
             tool_test_results_dict = install_and_test_base_util.get_tool_test_results_dict( tool_test_results_dicts )
             # See if this repository should be skipped for any reason.
             this_repository_is_in_the_exclude_list = False
+            requires_excluded = False
             skip_reason = None
-            for exclude_dict in exclude_list:
+            for exclude_dict in exclude_list_dicts:
                 reason = exclude_dict[ 'reason' ]
                 exclude_repositories = exclude_dict[ 'repositories' ]
+                # 'repositories':
+                #    [( name, owner, changeset_revision if changeset_revision else None ),
+                #     ( name, owner, changeset_revision if changeset_revision else None )]
                 if ( name, owner, changeset_revision ) in exclude_repositories or ( name, owner, None ) in exclude_repositories:
                     this_repository_is_in_the_exclude_list = True
                     skip_reason = reason
                     break
-            if this_repository_is_in_the_exclude_list:
+                if not this_repository_is_in_the_exclude_list:
+                    # Skip this repository if it has a repository dependency that is in the exclude list.
+                    repository_dependency_dicts, error_message = \
+                        install_and_test_base_util.get_repository_dependencies_for_changeset_revision( install_and_test_base_util.galaxy_tool_shed_url,
+                                                                                                       encoded_repository_metadata_id )
+                    if error_message:
+                        log.debug( 'Error getting repository dependencies for revision %s of repository %s owned by %s:' % \
+                            ( changeset_revision, name, owner ) )
+                        log.debug( error_message )
+                    else:
+                        for repository_dependency_dict in repository_dependency_dicts:
+                            rd_name = repository_dependency_dict[ 'name' ]
+                            rd_owner = repository_dependency_dict[ 'owner' ]
+                            rd_changeset_revision = repository_dependency_dict[ 'changeset_revision' ]
+                            if ( rd_name, rd_owner, rd_changeset_revision ) in exclude_repositories or \
+                                ( rd_name, rd_owner, None ) in exclude_repositories:
+                                skip_reason = 'This repository requires revision %s of repository %s owned by %s which is excluded from testing.' % \
+                                    ( rd_changeset_revision, rd_name, rd_owner )
+                                requires_excluded = True
+                                break
+            # Register the reason this repository is being skipped if, in fact, it is.
+            if this_repository_is_in_the_exclude_list or requires_excluded:
                 tool_test_results_dict[ 'not_tested' ] = dict( reason=skip_reason )
                 params = dict( do_not_test=False )
                 # TODO: do something useful with response_dict

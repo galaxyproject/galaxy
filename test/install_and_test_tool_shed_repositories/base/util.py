@@ -375,6 +375,19 @@ def get_repository_current_revision( repo_path ):
     hg_id = '%d:%s' % ( ctx_rev, str( changectx ) )
     return hg_id
 
+def get_repository_dependencies_for_changeset_revision( tool_shed_url, encoded_repository_metadata_id ):
+    """
+    Return the list of dictionaries that define all repository dependencies of the repository_metadata
+    record associated with the received encoded_repository_metadata_id via the Tool Shed API.
+    """
+    error_message = ''
+    parts = [ 'api', 'repository_revisions', encoded_repository_metadata_id, 'repository_dependencies' ]
+    api_url = get_api_url( base=tool_shed_url, parts=parts )
+    repository_dependency_dicts, error_message = json_from_url( api_url )
+    if error_message:
+        return None, error_message
+    return repository_dependency_dicts, error_message
+
 def get_repository_dict( url, repository_dict ):
     error_message = ''
     parts = [ 'api', 'repositories', repository_dict[ 'repository_id' ] ]
@@ -613,8 +626,8 @@ def parse_exclude_list( xml_filename ):
     # </blacklist>
     # A list is returned with the following structure:
     # [{ 'reason': The default reason or the reason specified in this section,
-    #    'repositories': [( name, owner, changeset revision if changeset revision else None ),
-    #                     ( name, owner, changeset revision if changeset revision else None )]}]
+    #    'repositories': [( name, owner, changeset_revision if changeset_revision else None ),
+    #                     ( name, owner, changeset_revision if changeset_revision else None )]}]
     exclude_list = []
     exclude_verbose = []
     xml_tree, error_message = parse_xml( xml_filename )
