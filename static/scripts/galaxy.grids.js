@@ -158,7 +158,18 @@ var GridView = Backbone.View.extend({
                    .keyup(function () { $(this).css("font-style", "normal"); });
         });
     },
-    
+  
+    // refresh frames
+    handle_refresh: function (refresh_frames) {
+        if (refresh_frames) {
+            if ($.inArray('history', refresh_frames) > -1) {
+                if( top.Galaxy && top.Galaxy.currHistoryPanel ){
+                    top.Galaxy.currHistoryPanel.loadCurrentHistory();
+                }
+            }
+        }
+    },
+
     // Initialize
     init_grid: function(grid_config)
     {
@@ -167,7 +178,10 @@ var GridView = Backbone.View.extend({
         
         // get options
         var options = this.grid.attributes;
-    
+        
+        // handle refresh requests
+        this.handle_refresh(options.refresh_frames);
+        
         // strip protocol and domain
         var url = this.grid.get('url_base');
         url = url.replace(/^.*\/\/[^\/]+/, '');

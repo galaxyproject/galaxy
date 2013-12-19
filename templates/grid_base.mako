@@ -15,7 +15,6 @@
             return '/base.mako'
 %>
 <%inherit file="${inherit(context)}"/>
-<%namespace file="/refresh_frames.mako" import="handle_refresh_frames" />
 <%namespace file="/display_common.mako" import="get_class_plural" />
 
 <%def name="load(embedded = False, insert = None)">
@@ -67,8 +66,13 @@
         'use_panels'                    : context.get('use_panels'),
         'insert'                        : insert,
         'default_filter_dict'           : default_filter_dict,
-        'advanced_search'               : advanced_search
+        'advanced_search'               : advanced_search,
+        'refresh_frames'                : []
     }
+
+    # add refresh frames
+    if refresh_frames:
+        self.grid_config['refresh_frames'] = refresh_frames
 
     ## add current item if exists
     if current_item:
@@ -243,7 +247,6 @@
         });
     </script>
 
-    ${handle_refresh_frames()}
 </%def>
 
 <%def name="stylesheets()">
