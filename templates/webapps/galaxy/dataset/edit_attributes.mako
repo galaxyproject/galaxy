@@ -81,9 +81,9 @@
                     </label>
                     <div style="float: left; width: 250px; margin-right: 10px;">
                         %if data.extended_metadata:
-                            <textarea name="extended_metadata" rows="15" cols="15">${util.pretty_print_json(data.extended_metadata.data)}</textarea>
+                            <textarea name="extended_metadata" rows="8" cols="40">${util.pretty_print_json(data.extended_metadata.data)}</textarea>
                         %else:
-                            <textarea name="extended_metadata" rows="15" cols="15"></textarea>
+                            <textarea name="extended_metadata" rows="8" cols="40"></textarea>
                         %endif                
                     </div>
                     <div style="clear: both"></div>

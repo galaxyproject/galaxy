@@ -38,7 +38,7 @@ from galaxy.model.item_attrs import Dictifiable
 from galaxy.datatypes.interval import ChromatinInteractions
 from galaxy.datatypes.data import Text
 
-from galaxy.model import ExtendedMetadata, ExtendedMetadataIndex, LibraryDatasetDatasetAssociation
+from galaxy.model import ExtendedMetadata, ExtendedMetadataIndex, LibraryDatasetDatasetAssociation, HistoryDatasetAssociation
 
 from galaxy.datatypes.display_applications import util as da_util
 from galaxy.datatypes.metadata import FileParameter
@@ -2496,15 +2496,32 @@ class UsesExtendedMetadataMixin( SharableItemSecurityMixin ):
         return None
 
     def set_item_extended_metadata_obj( self, trans, item, extmeta_obj, check_writable=False):
-        print "setting", extmeta_obj.data
         if item.__class__ == LibraryDatasetDatasetAssociation:
             if not check_writable or trans.app.security_agent.can_modify_library_item( trans.get_current_user_roles(), item, trans.user ):
+                item.extended_metadata = extmeta_obj
+                trans.sa_session.flush()
+        if item.__class__ == HistoryDatasetAssociation:
+            history = None
+            if check_writable:
+                history = self.security_check( trans, item, check_ownership=True, check_accessible=True )
+            else:
+                history = self.security_check( trans, item, check_ownership=False, check_accessible=True )
+            if history:
                 item.extended_metadata = extmeta_obj
                 trans.sa_session.flush()
 
     def unset_item_extended_metadata_obj( self, trans, item, check_writable=False):
         if item.__class__ == LibraryDatasetDatasetAssociation:
             if not check_writable or trans.app.security_agent.can_modify_library_item( trans.get_current_user_roles(), item, trans.user ):
+                item.extended_metadata = None
+                trans.sa_session.flush()
+        if item.__class__ == HistoryDatasetAssociation:
+            history = None
+            if check_writable:
+                history = self.security_check( trans, item, check_ownership=True, check_accessible=True )
+            else:
+                history = self.security_check( trans, item, check_ownership=False, check_accessible=True )
+            if history:
                 item.extended_metadata = None
                 trans.sa_session.flush()
 

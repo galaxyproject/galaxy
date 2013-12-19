@@ -132,6 +132,10 @@ def app_factory( global_conf, **kwargs ):
                                name_prefix="library_dataset_",
                                path_prefix='/api/libraries/:library_id/contents/:library_content_id' )
 
+    _add_item_extended_metadata_controller( webapp,
+                               name_prefix="history_dataset_",
+                               path_prefix='/api/histories/:history_id/contents/:history_content_id' )
+
     _add_item_annotation_controller( webapp,
                                name_prefix="history_content_",
                                path_prefix='/api/histories/:history_id/contents/:history_content_id' )

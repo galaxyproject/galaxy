@@ -292,6 +292,24 @@ def history_dataset_handle_tag(view, left, operator, right):
         raise GalaxyParseError("Invalid comparison operator: %s" % (operator))
 
 
+def history_dataset_extended_metadata_filter(view, left, operator, right):
+    view.do_query = True
+    if 'extended_metadata_joined' not in view.state:
+        view.query = view.query.join( ExtendedMetadata )
+        view.state['extended_metadata_joined'] = True
+    alias = aliased( ExtendedMetadataIndex )
+    field = "/%s" % ("/".join(left.split(".")[1:]))
+    #print "FIELD", field
+    view.query = view.query.filter(
+        and_(
+            ExtendedMetadata.id == alias.extended_metadata_id,
+            alias.path == field,
+            alias.value == str(right)
+        )
+    )
+
+
+
 class HistoryDatasetView(ViewQueryBaseClass):
     DOMAIN = "history_dataset"
     FIELDS = {
@@ -306,6 +324,7 @@ class HistoryDatasetView(ViewQueryBaseClass):
             sqlalchemy_field=(HistoryDatasetAssociation, "copied_from_history_dataset_association_id"),
             id_decode=True),
         'deleted': ViewField('deleted', sqlalchemy_field=(HistoryDatasetAssociation, "deleted")),
+        'extended_metadata': ViewField('extended_metadata', handler=history_dataset_extended_metadata_filter)
     }
 
     def search(self, trans):

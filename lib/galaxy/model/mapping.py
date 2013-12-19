@@ -1206,7 +1206,6 @@ mapper( model.UserOpenID, model.UserOpenID.table,
 
 mapper( model.ValidationError, model.ValidationError.table )
 
-
 simple_mapping( model.HistoryDatasetAssociation,
     dataset=relation(
         model.Dataset,
