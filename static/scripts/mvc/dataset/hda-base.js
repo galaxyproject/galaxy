@@ -354,7 +354,7 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
             html = '<div>' + this.model.get( 'misc_blurb' ) + '</div>' + html;
         }
         return this._render_stateBodyHelper( html,
-            this.defaultPrimaryActionButtonRenderers.concat([ this._render_downloadButton ])
+            [ this._render_downloadButton ].concat( this.defaultPrimaryActionButtonRenderers )
         );
     },
         
