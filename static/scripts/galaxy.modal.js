@@ -27,7 +27,7 @@ var GalaxyModal = Backbone.View.extend(
             this.create(options);
 
         // Bind the hiding events
-        this.bindEvents(event, self);
+        // this.bindEvents(event, self);
     },
 
     // bind the click-to-hide function
