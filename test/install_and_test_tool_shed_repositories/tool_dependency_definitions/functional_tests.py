@@ -182,8 +182,8 @@ def install_and_test_repositories( app, galaxy_shed_tools_dict, galaxy_shed_tool
                                     ( rd_changeset_revision, rd_name, rd_owner )
                                 requires_excluded = True
                                 break
-            # Register the reason this repository is being skipped if, in fact, it is.
             if this_repository_is_in_the_exclude_list or requires_excluded:
+                # If this repository is being skipped, register the reason.
                 tool_test_results_dict[ 'not_tested' ] = dict( reason=skip_reason )
                 params = dict( do_not_test=False )
                 # TODO: do something useful with response_dict
@@ -233,77 +233,12 @@ def install_and_test_repositories( app, galaxy_shed_tools_dict, galaxy_shed_tool
                         ( changeset_revision, name, owner ) )
                 else:
                     # The repository was successfully installed.
-                    log.debug( 'Installation succeeded for revision %s of repository %s owned by %s.' % \
-                        ( changeset_revision, name, owner ) )
-                    install_and_test_statistics_dict[ 'successful_repository_installations' ].append( repository_identifier_dict )
-                    tool_test_results_dict[ 'successful_installations' ][ 'current_repository' ]\
-                        .append( repository_identifier_dict )
-                    params = dict( test_install_error=False,
-                                   do_not_test=False )
-                    if repository.missing_repository_dependencies:
-                        params[ 'test_install_error' ] = True
-                        # Keep statistics for this repository's repository dependencies that resulted in installation errors.
-                        for missing_repository_dependency in repository.missing_repository_dependencies:
-                            tool_shed = str( missing_repository_dependency.tool_shed )
-                            name = str( missing_repository_dependency.name )
-                            owner = str( missing_repository_dependency.owner )
-                            changset_revision = str( missing_repository_dependency.changeset_revision )
-                            error_message = unicodify( missing_repository_dependency.error_message )
-                            missing_repository_dependency_info_dict = dict( tool_shed=tool_shed,
-                                                                            name=name,
-                                                                            owner=owner,
-                                                                            changset_revision=changset_revision,
-                                                                            error_message=error_message )
-                            install_and_test_statistics_dict[ 'repositories_with_installation_error' ]\
-                                .append( missing_repository_dependency_dict )
-                            tool_test_results_dict[ 'installation_errors' ][ 'repository_dependencies' ]\
-                                .append( missing_repository_dependency_info_dict )
-                    if repository.missing_tool_dependencies:
-                        params[ 'test_install_error' ] = True
-                        # Keep statistics for this repository's tool dependencies that resulted in installation errors.
-                        for missing_tool_dependency in repository.missing_tool_dependencies:
-                            name = str( missing_tool_dependency.name )
-                            type = str( missing_tool_dependency.type )
-                            version = str( missing_tool_dependency.version )
-                            error_message = unicodify( missing_tool_dependency.error_message )
-                            missing_tool_dependency_info_dict = dict( type=type,
-                                                                      name=name,
-                                                                      version=version,
-                                                                      error_message=error_message )
-                            install_and_test_statistics_dict[ 'tool_dependencies_with_installation_error' ]\
-                                .append( missing_tool_dependency_info_dict )
-                            tool_test_results_dict[ 'installation_errors' ][ 'tool_dependencies' ]\
-                                .append( missing_tool_dependency_info_dict )
-                    if repository.installed_repository_dependencies:
-                        # Keep statistics for this repository's tool dependencies that resulted in successful installations.
-                        for repository_dependency in repository.installed_repository_dependencies:
-                            tool_shed = str( repository_dependency.tool_shed )
-                            name = str( repository_dependency.name )
-                            owner = str( repository_dependency.owner )
-                            changeset_revision = str( repository_dependency.changeset_revision )
-                            repository_dependency_info_dict = dict( tool_shed=tool_shed,
-                                                                    name=name,
-                                                                    owner=owner,
-                                                                    changeset_revision=changeset_revision )
-                            install_and_test_statistics_dict[ 'successful_repository_installations' ]\
-                                .append( repository_dependency_info_dict )
-                            tool_test_results_dict[ 'successful_installations' ][ 'repository_dependencies' ]\
-                                .append( repository_dependency_info_dict )
-                    if repository.installed_tool_dependencies:
-                        # Keep statistics for this repository's tool dependencies that resulted in successful installations.
-                        for tool_dependency in repository.installed_tool_dependencies:
-                            name = str( tool_dependency.name )
-                            type = str( tool_dependency.type )
-                            version = str( tool_dependency.version )
-                            installation_directory = tool_dependency.installation_directory( app )
-                            tool_dependency_info_dict = dict( type=type,
-                                                              name=name,
-                                                              version=version,
-                                                              installation_directory=installation_directory )
-                            install_and_test_statistics_dict[ 'successful_tool_dependency_installations' ]\
-                                .append( tool_dependency_info_dict )
-                            tool_test_results_dict[ 'successful_installations' ][ 'tool_dependencies' ]\
-                                .append( tool_dependency_info_dict )
+                    params, install_and_test_statistics_dict, tool_test_results_dict = \
+                        install_and_test_base_util.register_installed_and_missing_dependencies( app,
+                                                                                                repository,
+                                                                                                repository_identifier_dict,
+                                                                                                install_and_test_statistics_dict,
+                                                                                                tool_test_results_dict )
                     # TODO: do something useful with response_dict
                     response_dict = install_and_test_base_util.register_test_result( install_and_test_base_util.galaxy_tool_shed_url,
                                                                                      tool_test_results_dicts,
