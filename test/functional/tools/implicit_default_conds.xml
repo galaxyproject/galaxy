@@ -1,0 +1,49 @@
+<tool id="implicit_default_conds" name="implicit_default_conds">
+    <command>
+        echo "$param_group[0].p1.val"  >> $out_file1;
+        echo "$param_group[0].p2.val"  >> $out_file1;
+    </command>
+    <inputs>
+        <repeat name="param_group" title="Param Group" min="1">
+            <conditional name="p1">
+                <param name="type" type="select">
+                    <option value="default">THE DEFAULT</option>
+                    <option value="different">A different value</option>
+                </param>
+                <when value="default">
+                    <param name="val" value="p1default" type="text" />
+                </when>
+                <when value="different">
+                    <param name="val" value="p1different" type="text" />
+                </when>
+            </conditional>
+            <conditional name="p2">
+                <param name="type" type="select">
+                    <option value="default">THE DEFAULT</option>
+                    <option value="different" selected="true">A different value</option>
+                </param>
+                <when value="default">
+                    <param name="val" value="p2default" type="text" />
+                </when>
+                <when value="different">
+                    <param name="val" value="p2different" type="text" />
+                </when>
+            </conditional>
+            <param name="int_param" type="integer" value="8" />
+        </repeat>
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="txt" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="int_param" value="7" /> <!-- Specify at least one value in repeat to force one instance. -->
+            <output name="out_file1">
+                <assert_contents>
+                    <has_line line="p1default" />
+                    <has_line line="p2different" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>

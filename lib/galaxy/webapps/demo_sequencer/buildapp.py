@@ -68,7 +68,7 @@ def app_factory( global_conf, **kwargs ):
         webapp = wrap_in_static( webapp, global_conf, **kwargs )
     # Return
     return webapp
-    
+
 def wrap_in_middleware( app, global_conf, **local_conf ):
     """Based on the configuration wrap `app` in a set of common and useful middleware."""
     # Merge the global and local configurations
@@ -80,7 +80,7 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
     # other middleware):
     app = httpexceptions.make_middleware( app, conf )
     log.debug( "Enabling 'httpexceptions' middleware" )
-    # The recursive middleware allows for including requests in other 
+    # The recursive middleware allows for including requests in other
     # requests or forwarding of requests, all on the server side.
     if asbool(conf.get('use_recursive', True)):
         from paste import recursive
@@ -130,7 +130,7 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
     app = XForwardedHostMiddleware( app )
     log.debug( "Enabling 'x-forwarded-host' middleware" )
     return app
-    
+
 def wrap_in_static( app, global_conf, **local_conf ):
     from paste.urlmap import URLMap
     from galaxy.web.framework.middleware.static import CacheableStaticURLParser as Static
@@ -152,7 +152,7 @@ def wrap_in_static( app, global_conf, **local_conf ):
     urlmap["/favicon.ico"] = Static( conf.get( "static_favicon_dir" ), cache_time )
     # URL mapper becomes the root webapp
     return urlmap
-    
+
 def build_template_error_formatters():
     """
     Build a list of template error formatters for WebError. When an error

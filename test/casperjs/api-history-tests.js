@@ -107,7 +107,7 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
     this.test.comment( 'A bad id to show should throw an error' );
     this.assertRaises( function(){
         this.api.histories.show( '1234123412341234' );
-    }, 'Error in history API at showing history detail: 400 Bad Request', 'Raises an exception' );
+    }, '400 Bad Request', 'Raises an exception' );
 
 
     // ------------------------------------------------------------------------------------------- CREATE
@@ -131,8 +131,10 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
     this.test.comment( 'calling delete should delete the given history and remove it from the standard index' );
     var deletedHistory = this.api.histories.delete_( createdHistory.id );
     //this.debug( 'returned from delete:\n' + this.jsonStr( deletedHistory ) );
-    this.test.assert( deletedHistory === 'OK',
-        "Deletion returned 'OK' - even though that's not a great, informative response: " + deletedHistory );
+    this.test.assert( deletedHistory.id === createdHistory.id,
+        "Deletion returned id matching created history: " + deletedHistory.id );
+    this.test.assert( deletedHistory.deleted === true,
+        "Deletion return 'deleted: true': " + deletedHistory.deleted );
 
     newFirstHistory = this.api.histories.index()[0];
     //this.debug( 'newFirstHistory:\n' + this.jsonStr( newFirstHistory ) );
@@ -170,8 +172,8 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
     });
     this.test.assert( countKeys( returned ) === 0, "No changed returned: " + this.jsonStr( returned ) );
 
-    this.test.comment( 'updating using a nonsense key should fail with an error' );
-    var err = {};
+    this.test.comment( 'updating using a nonsense key should fail silently' );
+    var err = null;
     try {
         returned = this.api.histories.update( newFirstHistory.id, {
             konamiCode : 'uuddlrlrba'
@@ -180,8 +182,7 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
         err = error;
         //this.debug( this.jsonStr( err ) );
     }
-    this.test.assert( !!err.message, "Error occurred: " + err.message );
-    this.test.assert( err.status === 400, "Error status is 400: " + err.status );
+    this.test.assert( err === null, "No error occurred: " + this.jsonStr( err ) );
 
     this.test.comment( 'updating by attempting to change type should cause an error' );
     err = {};
@@ -252,7 +253,7 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
         deleted: true
     });
     //this.debug( 'returned:\n' + this.jsonStr( returned ) );
-    historyShow = this.api.histories.show( newFirstHistory.id );
+    historyShow = this.api.histories.show( newFirstHistory.id, true );
     this.test.assert( historyShow.deleted === true, "Update set the deleted flag: " + historyShow.deleted );
 
     this.test.comment( 'update should allow changing the deleted flag back' );

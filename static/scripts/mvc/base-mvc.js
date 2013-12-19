@@ -2,36 +2,35 @@
  * Simple base model for any visible element. Includes useful attributes and ability
  * to set and track visibility.
  */
-var BaseModel = Backbone.RelationalModel.extend({
+var BaseModel = Backbone.Model.extend({
     defaults: {
         name: null,
         hidden: false
     },
-    
+
     show: function() {
         this.set("hidden", false);
     },
-    
+
     hide: function() {
         this.set("hidden", true);
     },
-    
+
     is_visible: function() {
         return !this.attributes.hidden;
     }
 });
 
-
 /**
  * Base view that handles visibility based on model's hidden attribute.
  */
 var BaseView = Backbone.View.extend({
-    
+
     initialize: function() {
         this.model.on("change:hidden", this.update_visible, this);
         this.update_visible();
     },
-    
+
     update_visible: function() {
         if( this.model.attributes.hidden ){
             this.$el.hide();
@@ -89,206 +88,128 @@ var LoggableMixin =  /** @lends LoggableMixin# */{
 };
 
 
-// =============================================================================
-/** @class string localizer (and global short form alias)
- *
- *  @example
- *  // set with either:
- *      GalaxyLocalization.setLocalizedString( original, localized )
- *      GalaxyLocalization.setLocalizedString({ original1 : localized1, original2 : localized2 })
- *  // get with either:
- *      GalaxyLocalization.localize( string )
- *      _l( string )
- *
- *  @constructs
+//==============================================================================
+/** Backbone model that syncs to the browser's sessionStorage API.
  */
-//TODO: move to Galaxy.Localization (maybe galaxy.base.js)
-var GalaxyLocalization = jQuery.extend( {}, {
-    /** shortened, alias reference to GalaxyLocalization.localize */
-    ALIAS_NAME : '_l',
-    /** map of available localized strings (english -> localized) */
-    localizedStrings : {},
+var SessionStorageModel = Backbone.Model.extend({
+    initialize : function( initialAttrs ){
+        // create unique id if none provided
+        initialAttrs.id = ( !_.isString( initialAttrs.id ) )?( _.uniqueId() ):( initialAttrs.id );
+        this.id = initialAttrs.id;
 
-    /** Set a single English string -> localized string association, or set an entire map of those associations
-     *  @param {String or Object} str_or_obj english (key) string or a map of english -> localized strings
-     *  @param {String} localized string if str_or_obj was a string
+        // load existing from storage (if any), clear any attrs set by bbone before init is called,
+        //  layer initial over existing and defaults, and save
+        var existing = ( !this.isNew() )?( this._read( this ) ):( {} );
+        this.clear({ silent: true });
+        this.save( _.extend( {}, this.defaults, existing, initialAttrs ), { silent: true });
+
+        // save on any change to it immediately
+        this.on( 'change', function(){
+            this.save();
+        });
+    },
+
+    /** override of bbone sync to save to sessionStorage rather than REST
+     *      bbone options (success, errror, etc.) should still apply
      */
-    setLocalizedString : function( str_or_obj, localizedString ){
-        //console.debug( this + '.setLocalizedString:', str_or_obj, localizedString );
-        var self = this;
-        
-        // DRY non-duplicate assignment function
-        var setStringIfNotDuplicate = function( original, localized ){
-            // do not set if identical - strcmp expensive but should only happen once per page per word
-            if( original !== localized ){
-                self.localizedStrings[ original ] = localized;
-            }
-        };
-        
-        if( jQuery.type( str_or_obj ) === "string" ){
-            setStringIfNotDuplicate( str_or_obj, localizedString );
-        
-        } else if( jQuery.type( str_or_obj ) === "object" ){
-            jQuery.each( str_or_obj, function( key, val ){
-                //console.debug( 'key=>val', key, '=>', val );
-                // could recurse here but no reason
-                setStringIfNotDuplicate( key, val );
-            });
-            
-        } else {
-            throw( 'Localization.setLocalizedString needs either a string or object as the first argument,' +
-                   ' given: ' + str_or_obj );
+    sync : function( method, model, options ){
+        if( !options.silent ){
+            model.trigger( 'request', model, {}, options );
         }
+        var returned;
+        switch( method ){
+            case 'create'   : returned = this._create( model ); break;
+            case 'read'     : returned = this._read( model );   break;
+            case 'update'   : returned = this._update( model ); break;
+            case 'delete'   : returned = this._delete( model ); break;
+        }
+        if( returned !== undefined || returned !== null ){
+            if( options.success ){ options.success(); }
+        } else {
+            if( options.error ){ options.error(); }
+        }
+        return returned;
     },
-    
-    /** Attempt to get a localized string for strToLocalize. If not found, return the original strToLocalize.
-     * @param {String} strToLocalize the string to localize
-     * @returns either the localized string if found or strToLocalize if not found
-     */
-    localize : function( strToLocalize ){
-        //console.debug( this + '.localize:', strToLocalize );
 
-        //// uncomment this section to cache strings that need to be localized but haven't been
-        //if( !_.has( this.localizedStrings, strToLocalize ) ){
-        //    //console.debug( 'localization NOT found:', strToLocalize );
-        //    if( !this.nonLocalized ){ this.nonLocalized = {}; }
-        //    this.nonLocalized[ strToLocalize ] = false;
-        //}
-
-        // return the localized version if it's there, the strToLocalize if not
-        return this.localizedStrings[ strToLocalize ] || strToLocalize;
+    /** set storage to the stringified item */
+    _create : function( model ){
+        var json = model.toJSON(),
+            set = sessionStorage.setItem( model.id, JSON.stringify( json ) );
+        return ( set === null )?( set ):( json );
     },
-    
-    /** String representation. */
-    toString : function(){ return 'GalaxyLocalization'; }
+
+    /** read and parse json from storage */
+    _read : function( model ){
+        return JSON.parse( sessionStorage.getItem( model.id ) );
+    },
+
+    /** set storage to the item (alias to create) */
+    _update : function( model ){
+        return model._create( model );
+    },
+
+    /** remove the item from storage */
+    _delete : function( model ){
+        return sessionStorage.removeItem( model.id );
+    },
+
+    /** T/F whether sessionStorage contains the model's id (data is present) */
+    isNew : function(){
+        return !sessionStorage.hasOwnProperty( this.id );
+    },
+
+    _log : function(){
+        return JSON.stringify( this.toJSON(), null, '  ' );
+    },
+    toString : function(){
+        return 'SessionStorageModel(' + this.id + ')';
+    }
+
 });
-
-// global localization alias
-window[ GalaxyLocalization.ALIAS_NAME ] = function( str ){ return GalaxyLocalization.localize( str ); };
+(function(){
+    SessionStorageModel.prototype = _.omit( SessionStorageModel.prototype, 'url', 'urlRoot' );
+}());
 
 
 //==============================================================================
-/**
- *  @class persistant storage adapter.
- *      Provides an easy interface to object based storage using method chaining.
- *      Allows easy change of the storage engine used (h5's local storage?).
- *  @augments StorageRecursionHelper
- *
- *  @param {String} storageKey : the key the storage engine will place the storage object under
- *  @param {Object} storageDefaults : [optional] initial object to set up storage with
- *
- *  @example
- *  // example of construction and use
- *  HistoryPanel.storage = new PersistanStorage( HistoryPanel.toString(), { visibleItems, {} });
- *  itemView.bind( 'toggleBodyVisibility', function( id, visible ){
- *      if( visible ){
- *          HistoryPanel.storage.get( 'visibleItems' ).set( id, true );
- *      } else {
- *          HistoryPanel.storage.get( 'visibleItems' ).deleteKey( id );
- *      }
- *  });
- *  @constructor
- */
-var PersistantStorage = function( storageKey, storageDefaults ){
-    if( !storageKey ){
-        throw( "PersistantStorage needs storageKey argument" );
-    }
-    storageDefaults = storageDefaults || {};
+var HiddenUntilActivatedViewMixin = /** @lends hiddenUntilActivatedMixin# */{
 
-    // ~constants for the current engine
-    //TODO:?? this would be greatly simplified if we're IE9+ only (setters/getters)
-    var STORAGE_ENGINE_GETTER       = jQuery.jStorage.get,
-        STORAGE_ENGINE_SETTER       = jQuery.jStorage.set,
-        STORAGE_ENGINE_KEY_DELETER  = jQuery.jStorage.deleteKey;
-
-    /** Inner, recursive, private class for method chaining access.
-     *  @name StorageRecursionHelper
-     *  @constructor
-     */
-    function StorageRecursionHelper( data, parent ){
-        //console.debug( 'new StorageRecursionHelper. data:', data );
-        data = data || {};
-        parent = parent || null;
-
-        return /** @lends StorageRecursionHelper.prototype */{
-            /** get a value from the storage obj named 'key',
-             *  if it's an object - return a new StorageRecursionHelper wrapped around it
-             *  if it's something simpler - return the value
-             *  if this isn't passed a key - return the data at this level of recursion
-             */
-            get : function( key ){
-                //console.debug( this + '.get', key );
-                if( key === undefined ){
-                    return data;
-                } else if( data.hasOwnProperty( key ) ){
-                    return ( jQuery.type( data[ key ] ) === 'object' )?
-                        ( new StorageRecursionHelper( data[ key ], this ) )
-                        :( data[ key ] );
-                }
-                return undefined;
-            },
-            /** get the underlying data based on this key */
-            // set a value on the current data - then pass up to top to save current entire object in storage
-            set : function( key, value ){
-                //TODO: add parameterless variation setting the data somehow
-                //  ??: difficult bc of obj by ref, closure
-                //console.debug( this + '.set', key, value );
-                data[ key ] = value;
-                this._save();
-                return this;
-            },
-            // remove a key at this level - then save entire (as 'set' above)
-            deleteKey : function( key ){
-                //console.debug( this + '.deleteKey', key );
-                delete data[ key ];
-                this._save();
-                return this;
-            },
-            // pass up the recursion chain (see below for base case)
-            _save : function(){
-                //console.debug( this + '.save', parent );
-                return parent._save();
-            },
-            toString : function(){
-                return ( 'StorageRecursionHelper(' + data + ')' );
-            }
+    /** */
+    hiddenUntilActivated : function( $activator, options ){
+        // call this in your view's initialize fn
+        options = options || {};
+        this.HUAVOptions = {
+            $elementShown   : this.$el,
+            showFn          : jQuery.prototype.toggle,
+            showSpeed       : 'fast'
         };
+        _.extend( this.HUAVOptions, options || {});
+        this.HUAVOptions.hasBeenShown = this.HUAVOptions.$elementShown.is( ':visible' );
+
+        if( $activator ){
+            var mixin = this;
+            $activator.on( 'click', function( ev ){
+                mixin.toggle( mixin.HUAVOptions.showSpeed );
+            });
+        }
+    },
+
+    /** */
+    toggle : function(){
+        // can be called manually as well with normal toggle arguments
+        if( this.HUAVOptions.$elementShown.is( ':hidden' ) ){
+            // fire the optional fns on the first/each showing - good for render()
+            if( !this.HUAVOptions.hasBeenShown ){
+                if( _.isFunction( this.HUAVOptions.onshowFirstTime ) ){
+                    this.HUAVOptions.hasBeenShown = true;
+                    this.HUAVOptions.onshowFirstTime.call( this );
+                }
+            } else {
+                if( _.isFunction( this.HUAVOptions.onshow ) ){
+                    this.HUAVOptions.onshow.call( this );
+                }
+            }
+        }
+        return this.HUAVOptions.showFn.apply( this.HUAVOptions.$elementShown, arguments );
     }
-
-    //??: more readable to make another class?
-    var returnedStorage = {};
-        // attempt to get starting data from engine...
-        data = STORAGE_ENGINE_GETTER( storageKey );
-
-    // ...if that fails, use the defaults (and store them)
-    if( data === null ){
-        //console.debug( 'no previous data. using defaults...' );
-        data = jQuery.extend( true, {}, storageDefaults );
-        STORAGE_ENGINE_SETTER( storageKey, data );
-    }
-
-    // the object returned by this constructor will be a modified StorageRecursionHelper
-    returnedStorage = new StorageRecursionHelper( data );
-
-    jQuery.extend( returnedStorage, /**  @lends PersistantStorage.prototype */{
-        /** The base case for save()'s upward recursion - save everything to storage.
-         *  @private
-         *  @param {Any} newData data object to save to storage
-         */
-        _save : function( newData ){
-            //console.debug( returnedStorage, '._save:', JSON.stringify( returnedStorage.get() ) );
-            return STORAGE_ENGINE_SETTER( storageKey, returnedStorage.get() );
-        },
-        /** Delete function to remove the entire base data object from the storageEngine.
-         */
-        destroy : function(){
-            //console.debug( returnedStorage, '.destroy:' );
-            return STORAGE_ENGINE_KEY_DELETER( storageKey );
-        },
-        /** String representation.
-         */
-        toString : function(){ return 'PersistantStorage(' + storageKey + ')'; }
-    });
-    
-    return returnedStorage;
 };

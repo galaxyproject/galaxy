@@ -771,7 +771,7 @@ class FuncLoader(_Loader):
     """ Loader that supports specifying functions inside modules, without
     using eggs at all. Configuration should be in the format:
         use = call:my.module.path:function_name
-        
+
     Dot notation is supported in both the module and function name, e.g.:
         use = call:my.module.path:object.method
     """

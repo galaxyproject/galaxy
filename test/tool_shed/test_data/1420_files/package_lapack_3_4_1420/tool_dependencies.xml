@@ -1,0 +1,18 @@
+<tool_dependency>
+    <package name="lapack" version="3.4.2">
+        <install version="1.0">
+            <actions>
+                <!-- first action is always downloading -->
+                <action type="download_by_url">file://__PATH__</action>
+				<action type="move_directory_files">
+					<source_directory>.</source_directory>
+					<destination_directory>$INSTALL_DIR</destination_directory>
+				</action>
+                <action type="set_environment">
+                    <environment_variable name="LAPACK_LIB_DIR" action="set_to">$INSTALL_DIR/lapack/lib</environment_variable>
+                </action>
+            </actions>
+        </install>
+        <readme>LAPACK requires gcc and gfortran. LAPACK_LIB_DIR will be set (including liblapack.a and libblas.a). </readme>
+    </package>
+</tool_dependency>

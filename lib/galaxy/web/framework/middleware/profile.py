@@ -12,7 +12,7 @@ from cStringIO import StringIO
 from paste import response
 
 try:
-    # Included in Python 2.5 
+    # Included in Python 2.5
     import cProfile
 except:
     try:
@@ -91,7 +91,7 @@ class ProfileMiddleware(object):
         output = pstats_as_html( stats, self.limit )
         body += template % output
         return [body]
-            
+
 def pstats_as_html( stats, *sel_list ):
     """
     Return an HTML representation of a pstats.Stats object.
@@ -149,15 +149,15 @@ def pstats_as_html( stats, *sel_list ):
         rval.append( "</table>")
         # Concatenate result
         return "".join( rval )
-      
+
 def get_func_list( stats, sel_list ):
     """
-    Use 'sel_list' to select a list of functions to display. 
+    Use 'sel_list' to select a list of functions to display.
     """
     # Determine if an ordering was applied
     if stats.fcn_list:
         list = stats.fcn_list[:]
-        order_message = "Ordered by: " + stats.sort_type 
+        order_message = "Ordered by: " + stats.sort_type
     else:
         list = stats.stats.keys()
         order_message = "Random listing order was used"
@@ -167,8 +167,8 @@ def get_func_list( stats, sel_list ):
         list, select_message = stats.eval_print_amount( selection, list, select_message )
     # Return the list of functions selected and the message
     return list, order_message, select_message
-    
-def func_std_string( func_name ): 
+
+def func_std_string( func_name ):
     """
     Match what old profile produced
     """

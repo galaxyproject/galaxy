@@ -23,10 +23,10 @@ log = logging.getLogger(__name__)
 
 # Contains the meta columns and the words that map to it; list aliases on the
 # right side of the : in decreasing order of priority
-alias_spec = { 
-    'chromCol'  : [ 'chrom' , 'CHROMOSOME' , 'CHROM', 'Chromosome Name' ],  
+alias_spec = {
+    'chromCol'  : [ 'chrom' , 'CHROMOSOME' , 'CHROM', 'Chromosome Name' ],
     'startCol'  : [ 'start' , 'START', 'chromStart', 'txStart', 'Start Position (bp)' ],
-    'endCol'    : [ 'end'   , 'END'  , 'STOP', 'chromEnd', 'txEnd', 'End Position (bp)'  ], 
+    'endCol'    : [ 'end'   , 'END'  , 'STOP', 'chromEnd', 'txEnd', 'End Position (bp)'  ],
     'strandCol' : [ 'strand', 'STRAND', 'Strand' ],
     'nameCol'   : [ 'name', 'NAME', 'Name', 'name2', 'NAME2', 'Name2', 'Ensembl Gene ID', 'Ensembl Transcript ID', 'Ensembl Peptide ID' ]
 }
@@ -41,7 +41,7 @@ for key, value in alias_spec.items():
 # VIEWPORT_MAX_READS_PER_LINE * VIEWPORT_READLINE_BUFFER_SIZE bytes in size,
 # then we will not generate a viewport for that dataset
 VIEWPORT_READLINE_BUFFER_SIZE = 1048576 # 1MB
-VIEWPORT_MAX_READS_PER_LINE = 10 
+VIEWPORT_MAX_READS_PER_LINE = 10
 
 @dataproviders.decorators.has_dataproviders
 class Interval( Tabular ):
@@ -85,7 +85,7 @@ class Interval( Tabular ):
                                     setattr( dataset.metadata, meta_name, elems.index( header_val ) + 1 )
                                     break #next meta_name
                         break  # Our metadata is set, so break out of the outer loop
-                    else: 
+                    else:
                         # Header lines in Interval files are optional. For example, BED is Interval but has no header.
                         # We'll make a best guess at the location of the metadata columns.
                         metadata_is_set = False
@@ -114,7 +114,7 @@ class Interval( Tabular ):
                                     #        int( elems[3] )
                                     #    except:
                                     #        if overwrite or not dataset.metadata.element_is_set( 'nameCol' ):
-                                    #            dataset.metadata.nameCol = 4 
+                                    #            dataset.metadata.nameCol = 4
                                     if len( elems ) < 6 or elems[5] not in data.valid_strand:
                                         if overwrite or not dataset.metadata.element_is_set(  'strandCol' ):
                                             dataset.metadata.strandCol = 0
@@ -154,15 +154,15 @@ class Interval( Tabular ):
             if end_col is None:
                 end_col = int( dataset.metadata.endCol ) - 1
             # Scan lines of file to find a reasonable chromosome and range
-            chrom = None 
-            start = sys.maxint 
+            chrom = None
+            start = sys.maxint
             end = 0
             max_col = max( chrom_col, start_col, end_col )
             fh = open( dataset.file_name )
             while True:
                 line = fh.readline( VIEWPORT_READLINE_BUFFER_SIZE )
                 # Stop if at end of file
-                if not line: 
+                if not line:
                     break
                 # Skip comment lines
                 if not line.startswith( '#' ):
@@ -173,7 +173,7 @@ class Interval( Tabular ):
                                 start = min( start, int( fields[ start_col ] ) )
                                 end = max( end, int( fields[ end_col ] ) )
                                 # Set chrom last, in case start and end are not integers
-                                chrom = fields[ chrom_col ] 
+                                chrom = fields[ chrom_col ]
                             viewport_feature_count -= 1
                     except Exception, e:
                         # Most likely a non-integer field has been encountered
@@ -196,7 +196,7 @@ class Interval( Tabular ):
         except Exception, e:
             # Unexpected error, possibly missing metadata
             log.exception( "Exception caught attempting to generate viewport for dataset '%d'", dataset.id )
-        return ( None, None, None ) 
+        return ( None, None, None )
 
     def as_ucsc_display_file( self, dataset, **kwd ):
         """Returns file contents with only the bed data"""
@@ -220,7 +220,7 @@ class Interval( Tabular ):
         else:
             for elems in util.file_iter(dataset.file_name):
                 tmp = [ elems[c], elems[s], elems[e] ]
-                os.write(fd, '%s\n' % '\t'.join(tmp) )    
+                os.write(fd, '%s\n' % '\t'.join(tmp) )
         os.close(fd)
         return open(temp_name)
     def display_peek( self, dataset ):
@@ -233,8 +233,8 @@ class Interval( Tabular ):
         """
         # Filter UCSC sites to only those that are supported by this build and
         # enabled.
-        valid_sites = [ ( name, url ) 
-                        for name, url in util.get_ucsc_by_build( dataset.dbkey ) 
+        valid_sites = [ ( name, url )
+                        for name, url in util.get_ucsc_by_build( dataset.dbkey )
                         if name in app.config.ucsc_display_sites ]
         if not valid_sites:
             return []
@@ -246,11 +246,11 @@ class Interval( Tabular ):
         # Accumulate links for valid sites
         ret_val = []
         for site_name, site_url in valid_sites:
-            internal_url = url_for( controller='dataset', dataset_id=dataset.id, 
+            internal_url = url_for( controller='dataset', dataset_id=dataset.id,
                                     action='display_at', filename='ucsc_' + site_name )
-            display_url = urllib.quote_plus( "%s%s/display_as?id=%i&display_app=%s&authz_method=display_at" 
+            display_url = urllib.quote_plus( "%s%s/display_as?id=%i&display_app=%s&authz_method=display_at"
                     % (base_url, url_for( controller='root' ), dataset.id, type) )
-            redirect_url = urllib.quote_plus( "%sdb=%s&position=%s:%s-%s&hgt.customText=%%s" 
+            redirect_url = urllib.quote_plus( "%sdb=%s&position=%s:%s-%s&hgt.customText=%%s"
                     % (site_url, dataset.dbkey, chrom, start, stop ) )
             link = '%s?redirect_url=%s&display_url=%s' % ( internal_url, redirect_url, display_url )
             ret_val.append( ( site_name, link ) )
@@ -258,7 +258,7 @@ class Interval( Tabular ):
     def validate( self, dataset ):
         """Validate an interval file using the bx GenomicIntervalReader"""
         errors = list()
-        c, s, e, t = dataset.metadata.chromCol, dataset.metadata.startCol, dataset.metadata.endCol, dataset.metadata.strandCol 
+        c, s, e, t = dataset.metadata.chromCol, dataset.metadata.startCol, dataset.metadata.endCol, dataset.metadata.strandCol
         c, s, e, t = int(c)-1, int(s)-1, int(e)-1, int(t)-1
         infile = open(dataset.file_name, "r")
         reader = GenomicIntervalReader(
@@ -284,10 +284,10 @@ class Interval( Tabular ):
     def sniff( self, filename ):
         """
         Checks for 'intervalness'
-    
+
         This format is mostly used by galaxy itself.  Valid interval files should include
         a valid header comment, but this seems to be loosely regulated.
-        
+
         >>> fname = get_test_fname( 'test_space.txt' )
         >>> Interval().sniff( fname )
         False
@@ -339,9 +339,9 @@ class Interval( Tabular ):
     def genomic_region_dataprovider( self, dataset, **settings ):
         return dataproviders.dataset.GenomicRegionDataProvider( dataset, **settings )
 
-    @dataproviders.decorators.dataprovider_factory( 'genomic-region-map',
+    @dataproviders.decorators.dataprovider_factory( 'genomic-region-dict',
                                                     dataproviders.dataset.GenomicRegionDataProvider.settings )
-    def genomic_region_map_dataprovider( self, dataset, **settings ):
+    def genomic_region_dict_dataprovider( self, dataset, **settings ):
         settings[ 'named_columns' ] = True
         return self.genomic_region_dataprovider( dataset, **settings )
 
@@ -350,9 +350,9 @@ class Interval( Tabular ):
     def interval_dataprovider( self, dataset, **settings ):
         return dataproviders.dataset.IntervalDataProvider( dataset, **settings )
 
-    @dataproviders.decorators.dataprovider_factory( 'interval-map',
+    @dataproviders.decorators.dataprovider_factory( 'interval-dict',
                                                     dataproviders.dataset.IntervalDataProvider.settings )
-    def interval_map_dataprovider( self, dataset, **settings ):
+    def interval_dict_dataprovider( self, dataset, **settings ):
         settings[ 'named_columns' ] = True
         return self.interval_dataprovider( dataset, **settings )
 
@@ -363,14 +363,14 @@ class BedGraph( Interval ):
     file_ext = "bedgraph"
     track_type = "LineTrack"
     data_sources = { "data": "bigwig", "index": "bigwig" }
-        
+
     def as_ucsc_display_file( self, dataset, **kwd ):
         """
-            Returns file contents as is with no modifications. 
+            Returns file contents as is with no modifications.
             TODO: this is a functional stub and will need to be enhanced moving forward to provide additional support for bedgraph.
         """
         return open( dataset.file_name )
-        
+
     def get_estimated_display_viewport( self, dataset, chrom_col = 0, start_col = 1, end_col = 2 ):
         """
             Set viewport based on dataset's first 100 lines.
@@ -389,7 +389,7 @@ class Bed( Interval ):
     MetadataElement( name="endCol", default=3, desc="End column", param=metadata.ColumnParameter )
     MetadataElement( name="strandCol", desc="Strand column (click box & select)", param=metadata.ColumnParameter, optional=True, no_value=0 )
     MetadataElement( name="columns", default=3, desc="Number of columns", readonly=True, visible=False )
-    MetadataElement( name="viz_filter_cols", desc="Score column for visualization", default=[4], param=metadata.ColumnParameter, multiple=True )
+    MetadataElement( name="viz_filter_cols", desc="Score column for visualization", default=[4], param=metadata.ColumnParameter, optional=True, multiple=True )
     ###do we need to repeat these? they are the same as should be inherited from interval type
 
     def set_meta( self, dataset, overwrite = True, **kwd ):
@@ -417,7 +417,7 @@ class Bed( Interval ):
                                 break
                 if metadata_set: break
             Tabular.set_meta( self, dataset, overwrite = overwrite, skip = i )
-    
+
     def as_ucsc_display_file( self, dataset, **kwd ):
         """Returns file contents with only the bed data. If bed 6+, treat as interval."""
         for line in open(dataset.file_name):
@@ -440,7 +440,7 @@ class Bed( Interval ):
                                 int(fields[9])
                                 if len(fields) > 10:
                                     fields2 = fields[10].rstrip(",").split(",") #remove trailing comma and split on comma
-                                    for field in fields2: 
+                                    for field in fields2:
                                         int(field)
                                     if len(fields) > 11:
                                         fields2 = fields[11].rstrip(",").split(",") #remove trailing comma and split on comma
@@ -449,23 +449,23 @@ class Bed( Interval ):
             except: return Interval.as_ucsc_display_file(self, dataset)
             #only check first line for proper form
             break
-            
+
         try: return open(dataset.file_name)
         except: return "This item contains no content"
 
     def sniff( self, filename ):
         """
         Checks for 'bedness'
-        
-        BED lines have three required fields and nine additional optional fields. 
-        The number of fields per line must be consistent throughout any single set of data in 
-        an annotation track.  The order of the optional fields is binding: lower-numbered 
+
+        BED lines have three required fields and nine additional optional fields.
+        The number of fields per line must be consistent throughout any single set of data in
+        an annotation track.  The order of the optional fields is binding: lower-numbered
         fields must always be populated if higher-numbered fields are used.  The data type of
         all 12 columns is:
         1-str, 2-int, 3-int, 4-str, 5-int, 6-str, 7-int, 8-int, 9-int or list, 10-int, 11-list, 12-list
-        
+
         For complete details see http://genome.ucsc.edu/FAQ/FAQformat#format1
-        
+
         >>> fname = get_test_fname( 'test_tab.bed' )
         >>> Bed().sniff( fname )
         True
@@ -493,7 +493,7 @@ class Bed( Interval ):
                     try:
                         int( hdr[1] )
                         int( hdr[2] )
-                    except: 
+                    except:
                         return False
                     if len( hdr ) > 4:
                         #hdr[3] is a string, 'name', which defines the name of the BED line - difficult to test for this.
@@ -532,7 +532,7 @@ class Bed( Interval ):
                         #hdr[11] is blockStarts - A comma-separated list of block starts.
                         try: block_starts = hdr[11].rstrip(',').split(',')
                         except: return False
-                        if len(block_sizes) != block_count or len(block_starts) != block_count: return False   
+                        if len(block_sizes) != block_count or len(block_starts) != block_count: return False
                 else: return False
             return True
         except: return False
@@ -541,7 +541,7 @@ class BedStrict( Bed ):
     """Tab delimited data in strict BED format - no non-standard columns allowed"""
 
     file_ext = "bedstrict"
-    
+
     #no user change of datatype allowed
     allow_datatype_change = False
 
@@ -552,18 +552,18 @@ class BedStrict( Bed ):
     MetadataElement( name="strandCol", desc="Strand column (click box & select)", readonly=True, param=metadata.MetadataParameter, no_value=0, optional=True )
     MetadataElement( name="nameCol", desc="Name/Identifier column (click box & select)", readonly=True, param=metadata.MetadataParameter, no_value=0, optional=True )
     MetadataElement( name="columns", default=3, desc="Number of columns", readonly=True, visible=False )
-    
+
     def __init__( self, **kwd ):
         Tabular.__init__( self, **kwd )
         self.clear_display_apps() #only new style display applications for this datatype
-    
+
     def set_meta( self, dataset, overwrite = True, **kwd ):
         Tabular.set_meta( self, dataset, overwrite = overwrite, **kwd) #need column count first
         if dataset.metadata.columns >= 4:
             dataset.metadata.nameCol = 4
             if dataset.metadata.columns >= 6:
                 dataset.metadata.strandCol = 6
-    
+
     def sniff( self, filename ):
         return False #NOTE: This would require aggressively validating the entire file
 
@@ -605,8 +605,8 @@ class Gff( Tabular, _RemoteCallMixin ):
     MetadataElement( name="column_types", default=['str','str','str','int','int','int','str','str','str'], param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False )
 
     MetadataElement( name="attributes", default=0, desc="Number of attributes", readonly=True, visible=False, no_value=0 )
-    MetadataElement( name="attribute_types", default={}, desc="Attribute types", param=metadata.DictParameter, readonly=True, visible=False, no_value=[] )    
-    
+    MetadataElement( name="attribute_types", default={}, desc="Attribute types", param=metadata.DictParameter, readonly=True, visible=False, no_value=[] )
+
     def __init__( self, **kwd ):
         """Initialize datatype, by adding GBrowse display app"""
         Tabular.__init__(self, **kwd)
@@ -614,11 +614,11 @@ class Gff( Tabular, _RemoteCallMixin ):
         self.add_display_app( 'gbrowse', 'display in Gbrowse', 'as_gbrowse_display_file', 'gbrowse_links' )
 
     def set_attribute_metadata( self, dataset ):
-        """ 
+        """
         Sets metadata elements for dataset's attributes.
         """
 
-        # Use first N lines to set metadata for dataset attributes. Attributes 
+        # Use first N lines to set metadata for dataset attributes. Attributes
         # not found in the first N lines will not have metadata.
         num_lines = 200
         attribute_types = {}
@@ -636,7 +636,7 @@ class Gff( Tabular, _RemoteCallMixin ):
                                 int( value )
                                 value_type = "int"
                             except:
-                                try: 
+                                try:
                                     # Try float.
                                     float( value )
                                     value_type = "float"
@@ -647,7 +647,7 @@ class Gff( Tabular, _RemoteCallMixin ):
                         pass
                 if i + 1 == num_lines:
                     break
-        
+
         # Set attribute metadata and then set additional metadata.
         dataset.metadata.attribute_types = attribute_types
         dataset.metadata.attributes = len( attribute_types )
@@ -681,8 +681,8 @@ class Gff( Tabular, _RemoteCallMixin ):
         max_line_count = max( viewport_feature_count, 500 ) # maximum number of lines to check; includes comment lines
         if self.displayable( dataset ):
             try:
-                seqid = None 
-                start = sys.maxint 
+                seqid = None
+                start = sys.maxint
                 stop = 0
                 fh = open( dataset.file_name )
                 while True:
@@ -693,7 +693,7 @@ class Gff( Tabular, _RemoteCallMixin ):
                             elems = line.rstrip( '\n\r' ).split()
                             if len( elems ) > 3:
                                 # line looks like:
-                                # ##sequence-region   ctg123 1 1497228 
+                                # ##sequence-region   ctg123 1 1497228
                                 seqid = elems[1] # IV
                                 start = int( elems[2] )# 6000000
                                 stop = int( elems[3] ) # 6030000
@@ -773,11 +773,11 @@ class Gff( Tabular, _RemoteCallMixin ):
     def sniff( self, filename ):
         """
         Determines whether the file is in gff format
-        
+
         GFF lines have nine required fields that must be tab-separated.
-        
+
         For complete details see http://genome.ucsc.edu/FAQ/FAQformat#format3
-        
+
         >>> fname = get_test_fname( 'gff_version_3.gff' )
         >>> Gff().sniff( fname )
         False
@@ -818,9 +818,9 @@ class Gff( Tabular, _RemoteCallMixin ):
     def genomic_region_dataprovider( self, dataset, **settings ):
         return dataproviders.dataset.GenomicRegionDataProvider( dataset, 0, 3, 4, **settings )
 
-    @dataproviders.decorators.dataprovider_factory( 'genomic-region-map',
+    @dataproviders.decorators.dataprovider_factory( 'genomic-region-dict',
                                                     dataproviders.dataset.GenomicRegionDataProvider.settings )
-    def genomic_region_map_dataprovider( self, dataset, **settings ):
+    def genomic_region_dict_dataprovider( self, dataset, **settings ):
         settings[ 'named_columns' ] = True
         return self.genomic_region_dataprovider( dataset, **settings )
 
@@ -829,9 +829,9 @@ class Gff( Tabular, _RemoteCallMixin ):
     def interval_dataprovider( self, dataset, **settings ):
         return dataproviders.dataset.IntervalDataProvider( dataset, 0, 3, 4, 6, 2, **settings )
 
-    @dataproviders.decorators.dataprovider_factory( 'interval-map',
+    @dataproviders.decorators.dataprovider_factory( 'interval-dict',
                                                     dataproviders.dataset.IntervalDataProvider.settings )
-    def interval_map_dataprovider( self, dataset, **settings ):
+    def interval_dict_dataprovider( self, dataset, **settings ):
         settings[ 'named_columns' ] = True
         return self.interval_dataprovider( dataset, **settings )
 
@@ -843,10 +843,10 @@ class Gff3( Gff ):
     valid_gff3_phase = ['.', '0', '1', '2']
     column_names = [ 'Seqid', 'Source', 'Type', 'Start', 'End', 'Score', 'Strand', 'Phase', 'Attributes' ]
     track_type = Interval.track_type
-        
+
     """Add metadata elements"""
     MetadataElement( name="column_types", default=['str','str','str','int','int','float','str','int','list'], param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False )
-    
+
     def __init__(self, **kwd):
         """Initialize datatype, by adding GBrowse display app"""
         Gff.__init__(self, **kwd)
@@ -863,10 +863,10 @@ class Gff3( Gff ):
                 if len( elems ) == 9:
                     try:
                         start = int( elems[3] )
-                        valid_start = True                                    
+                        valid_start = True
                     except:
                         if elems[3] == '.':
-                            valid_start = True                                        
+                            valid_start = True
                     try:
                         end = int( elems[4] )
                         valid_end = True
@@ -881,10 +881,10 @@ class Gff3( Gff ):
     def sniff( self, filename ):
         """
         Determines whether the file is in gff version 3 format
-        
+
         GFF 3 format:
-    
-        1) adds a mechanism for representing more than one level 
+
+        1) adds a mechanism for representing more than one level
            of hierarchical grouping of features and subfeatures.
         2) separates the ideas of group membership and feature name/id
         3) constrains the feature type field to be taken from a controlled
@@ -893,13 +893,13 @@ class Gff3( Gff ):
            one group at a time.
         5) provides an explicit convention for pairwise alignments
         6) provides an explicit convention for features that occupy disjunct regions
-        
+
         The format consists of 9 columns, separated by tabs (NOT spaces).
-        
+
         Undefined fields are replaced with the "." character, as described in the original GFF spec.
-    
+
         For complete details see http://song.sourceforge.net/gff3.shtml
-        
+
         >>> fname = get_test_fname( 'test.gff' )
         >>> Gff3().sniff( fname )
         False
@@ -918,7 +918,7 @@ class Gff3( Gff ):
                     return False
                 # Header comments may have been stripped, so inspect the data
                 if hdr and hdr[0] and not hdr[0].startswith( '#' ):
-                    if len(hdr) != 9: 
+                    if len(hdr) != 9:
                         return False
                     try:
                         int( hdr[3] )
@@ -948,25 +948,25 @@ class Gtf( Gff ):
     file_ext = "gtf"
     column_names = [ 'Seqname', 'Source', 'Feature', 'Start', 'End', 'Score', 'Strand', 'Frame', 'Attributes' ]
     track_type = Interval.track_type
-    
+
     """Add metadata elements"""
     MetadataElement( name="columns", default=9, desc="Number of columns", readonly=True, visible=False )
     MetadataElement( name="column_types", default=['str','str','str','int','int','float','str','int','list'], param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False )
-    
+
     def sniff( self, filename ):
         """
         Determines whether the file is in gtf format
-        
-        GTF lines have nine required fields that must be tab-separated. The first eight GTF fields are the same as GFF. 
-        The group field has been expanded into a list of attributes. Each attribute consists of a type/value pair. 
+
+        GTF lines have nine required fields that must be tab-separated. The first eight GTF fields are the same as GFF.
+        The group field has been expanded into a list of attributes. Each attribute consists of a type/value pair.
         Attributes must end in a semi-colon, and be separated from any following attribute by exactly one space.
         The attribute list must begin with the two mandatory attributes:
 
             gene_id value - A globally unique identifier for the genomic source of the sequence.
             transcript_id value - A globally unique identifier for the predicted transcript.
-        
+
         For complete details see http://genome.ucsc.edu/FAQ/FAQformat#format4
-        
+
         >>> fname = get_test_fname( '1.bed' )
         >>> Gtf().sniff( fname )
         False
@@ -1021,7 +1021,7 @@ class Wiggle( Tabular, _RemoteCallMixin ):
     data_sources = { "data": "bigwig", "index": "bigwig" }
 
     MetadataElement( name="columns", default=3, desc="Number of columns", readonly=True, visible=False )
-    
+
     def __init__( self, **kwd ):
         Tabular.__init__( self, **kwd )
         self.add_display_app( 'ucsc', 'display at UCSC', 'as_ucsc_display_file', 'ucsc_links' )
@@ -1032,8 +1032,8 @@ class Wiggle( Tabular, _RemoteCallMixin ):
         max_line_count = max( viewport_feature_count, 500 ) # maximum number of lines to check; includes comment lines
         if self.displayable( dataset ):
             try:
-                chrom = None 
-                start = sys.maxint 
+                chrom = None
+                start = sys.maxint
                 end = 0
                 span = 1
                 step = None
@@ -1132,7 +1132,7 @@ class Wiggle( Tabular, _RemoteCallMixin ):
                         break
         if self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
             #we'll arbitrarily only use the first 100 data lines in this wig file to calculate tabular attributes (column types)
-            #this should be sufficient, except when we have mixed wig track types (bed, variable, fixed), 
+            #this should be sufficient, except when we have mixed wig track types (bed, variable, fixed),
             #    but those cases are not a single table that would have consistant column definitions
             #optional metadata values set in Tabular class will be 'None'
             max_data_lines = 100
@@ -1140,18 +1140,18 @@ class Wiggle( Tabular, _RemoteCallMixin ):
     def sniff( self, filename ):
         """
         Determines wether the file is in wiggle format
-    
+
         The .wig format is line-oriented. Wiggle data is preceeded by a track definition line,
         which adds a number of options for controlling the default display of this track.
         Following the track definition line is the track data, which can be entered in several
         different formats.
-    
+
         The track definition line begins with the word 'track' followed by the track type.
         The track type with version is REQUIRED, and it currently must be wiggle_0.  For example,
         track type=wiggle_0...
-        
+
         For complete details see http://genome.ucsc.edu/goldenPath/help/wiggle.html
-        
+
         >>> fname = get_test_fname( 'interval1.bed' )
         >>> Wiggle().sniff( fname )
         False
@@ -1189,7 +1189,7 @@ class Wiggle( Tabular, _RemoteCallMixin ):
         t_end = math.ceil( end / resolution )
         x = numpy.arange( t_start, t_end ) * resolution
         y = data[ t_start : t_end ]
-    
+
         return zip(x.tolist(), y.tolist())
     def get_track_resolution( self, dataset, start, end):
         range = end - start
@@ -1206,8 +1206,8 @@ class Wiggle( Tabular, _RemoteCallMixin ):
         dataset_source = dataproviders.dataset.DatasetDataProvider( dataset )
         return dataproviders.dataset.WiggleDataProvider( dataset_source, **settings )
 
-    @dataproviders.decorators.dataprovider_factory( 'wiggle-map', dataproviders.dataset.WiggleDataProvider.settings )
-    def wiggle_map_dataprovider( self, dataset, **settings ):
+    @dataproviders.decorators.dataprovider_factory( 'wiggle-dict', dataproviders.dataset.WiggleDataProvider.settings )
+    def wiggle_dict_dataprovider( self, dataset, **settings ):
         dataset_source = dataproviders.dataset.DatasetDataProvider( dataset )
         settings[ 'named_columns' ] = True
         return dataproviders.dataset.WiggleDataProvider( dataset_source, **settings )
@@ -1229,7 +1229,7 @@ class CustomTrack ( Tabular ):
     def get_estimated_display_viewport( self, dataset, chrom_col = None, start_col = None, end_col = None ):
         """Return a chrom, start, stop tuple for viewing a file."""
         #FIXME: only BED and WIG custom tracks are currently supported
-        #As per previously existing behavior, viewport will only be over the first intervals 
+        #As per previously existing behavior, viewport will only be over the first intervals
         max_line_count = 100 # maximum number of lines to check; includes comment lines
         variable_step_wig = False
         chrom = None
@@ -1255,7 +1255,7 @@ class CustomTrack ( Tabular ):
                                     start = int( line.rstrip( '\n\r' ).split("start=")[1].split()[0] )
                                     return ( chrom, str( start ), str( start + span )  )
                                 else:
-                                    variable_step_wig = True 
+                                    variable_step_wig = True
                             else:
                                 fields = line.rstrip().split( '\t' )
                                 if len( fields ) >= 3:
@@ -1296,12 +1296,12 @@ class CustomTrack ( Tabular ):
     def sniff( self, filename ):
         """
         Determines whether the file is in customtrack format.
-        
+
         CustomTrack files are built within Galaxy and are basically bed or interval files with the first line looking
         something like this.
-        
+
         track name="User Track" description="User Supplied Track (from Galaxy)" color=0,0,0 visibility=1
-        
+
         >>> fname = get_test_fname( 'complete.bed' )
         >>> CustomTrack().sniff( fname )
         False
@@ -1325,61 +1325,61 @@ class CustomTrack ( Tabular ):
                         if not color_found or not visibility_found: return False
                     else: return False
                 except: return False
-            else:     
+            else:
                 try:
                     if hdr[0] and not hdr[0].startswith( '#' ):
-                        if len( hdr ) < 3: 
+                        if len( hdr ) < 3:
                             return False
                         try:
                             int( hdr[1] )
                             int( hdr[2] )
-                        except: 
+                        except:
                             return False
-                except: 
+                except:
                     return False
         return True
-        
+
 
 class ENCODEPeak( Interval ):
     '''
-    Human ENCODE peak format. There are both broad and narrow peak formats. 
+    Human ENCODE peak format. There are both broad and narrow peak formats.
     Formats are very similar; narrow peak has an additional column, though.
-    
+
     Broad peak ( http://genome.ucsc.edu/FAQ/FAQformat#format13 ):
-    This format is used to provide called regions of signal enrichment based 
+    This format is used to provide called regions of signal enrichment based
     on pooled, normalized (interpreted) data. It is a BED 6+3 format.
-    
+
     Narrow peak http://genome.ucsc.edu/FAQ/FAQformat#format12 and :
     This format is used to provide called peaks of signal enrichment based on
     pooled, normalized (interpreted) data. It is a BED6+4 format.
     '''
-    
+
     file_ext = "encodepeak"
     column_names = [ 'Chrom', 'Start', 'End', 'Name', 'Score', 'Strand', 'SignalValue', 'pValue', 'qValue', 'Peak' ]
     data_sources = { "data": "tabix", "index": "bigwig" }
-    
+
     """Add metadata elements"""
     MetadataElement( name="chromCol", default=1, desc="Chrom column", param=metadata.ColumnParameter )
     MetadataElement( name="startCol", default=2, desc="Start column", param=metadata.ColumnParameter )
     MetadataElement( name="endCol", default=3, desc="End column", param=metadata.ColumnParameter )
     MetadataElement( name="strandCol", desc="Strand column (click box & select)", param=metadata.ColumnParameter, optional=True, no_value=0 )
     MetadataElement( name="columns", default=3, desc="Number of columns", readonly=True, visible=False )
-    
+
     def sniff( self, filename ):
         return False
-        
+
 
 class ChromatinInteractions( Interval ):
     '''
     Chromatin interactions obtained from 3C/5C/Hi-C experiments.
     '''
-    
+
     file_ext = "chrint"
     track_type = "DiagonalHeatmapTrack"
     data_sources = { "data": "tabix", "index": "bigwig" }
-    
+
     column_names = [ 'Chrom1', 'Start1', 'End1', 'Chrom2', 'Start2', 'End2', 'Value' ]
-    
+
     """Add metadata elements"""
     MetadataElement( name="chrom1Col", default=1, desc="Chrom1 column", param=metadata.ColumnParameter )
     MetadataElement( name="start1Col", default=2, desc="Start1 column", param=metadata.ColumnParameter )
@@ -1390,7 +1390,7 @@ class ChromatinInteractions( Interval ):
     MetadataElement( name="valueCol", default=7, desc="Value column", param=metadata.ColumnParameter )
 
     MetadataElement( name="columns", default=7, desc="Number of columns", readonly=True, visible=False )
-    
+
     def sniff( self, filename ):
         return False
 

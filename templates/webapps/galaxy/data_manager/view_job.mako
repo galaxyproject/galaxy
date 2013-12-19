@@ -20,7 +20,7 @@
     </thead>
     <tbody>
         <tr><td>Name:</td><td>${hda.name | h}</td></tr>
-        <tr><td>Created:</td><td>${hda.create_time.strftime("%b %d, %Y")}</td></tr>
+        <tr><td>Created:</td><td>${hda.create_time.strftime(trans.app.config.pretty_datetime_format)}</td></tr>
         <tr><td>Filesize:</td><td>${nice_size(hda.dataset.file_size)}</td></tr>
         <tr><td>Tool Exit Code:</td><td>${job.exit_code | h}</td></tr>
         <tr><td>Full Path:</td><td>${hda.file_name | h}</td></tr>

@@ -38,8 +38,8 @@ class TagHandler( object ):
         item_tag_assoc_class = self.get_tag_assoc_class( item_class )
         if not item_tag_assoc_class:
             return []
-        # Build select statement.    
-        cols_to_select = [ item_tag_assoc_class.table.c.tag_id, func.count( '*' ) ] 
+        # Build select statement.
+        cols_to_select = [ item_tag_assoc_class.table.c.tag_id, func.count( '*' ) ]
         from_obj = item_tag_assoc_class.table.join( item_class.table ).join( trans.app.model.Tag.table )
         where_clause = ( self.get_id_col_in_item_tag_assoc_table( item_class ) == item.id )
         order_by = [ func.count( "*" ).desc() ]
@@ -56,7 +56,7 @@ class TagHandler( object ):
         community_tags = []
         for row in result_set:
             tag_id = row[0]
-            community_tags.append( self.get_tag_by_id( trans, tag_id ) )        
+            community_tags.append( self.get_tag_by_id( trans, tag_id ) )
         return community_tags
     def get_tool_tags( self, trans ):
         result_set = trans.sa_session.execute( select( columns=[ trans.app.model.ToolTagAssociation.table.c.tag_id ],
@@ -115,7 +115,7 @@ class TagHandler( object ):
             # Add tag to association.
             item.tags.append( item_tag_assoc )
             item_tag_assoc.tag = tag
-            item_tag_assoc.user = user    
+            item_tag_assoc.user = user
         # Apply attributes to item-tag association. Strip whitespace from user name and tag.
         lc_value = None
         if value:
@@ -146,7 +146,7 @@ class TagHandler( object ):
         return ", ".join( tags_str_list )
     def get_tag_by_id( self, trans, tag_id ):
         """Get a Tag object from a tag id."""
-        return trans.sa_session.query( trans.app.model.Tag ).filter_by( id=tag_id ).first()    
+        return trans.sa_session.query( trans.app.model.Tag ).filter_by( id=tag_id ).first()
     def get_tag_by_name( self, trans, tag_name ):
         """Get a Tag object from a tag name (string)."""
         if tag_name:
@@ -189,11 +189,11 @@ class TagHandler( object ):
         scrubbed_tag_name = self._scrub_tag_name( tag_name )
         for item_tag_assoc in item.tags:
             if ( item_tag_assoc.user == user ) and ( item_tag_assoc.user_tname == scrubbed_tag_name ):
-                return item_tag_assoc 
+                return item_tag_assoc
         return None
     def parse_tags( self, tag_str ):
         """
-        Returns a list of raw (tag-name, value) pairs derived from a string; method scrubs tag names and values as well. 
+        Returns a list of raw (tag-name, value) pairs derived from a string; method scrubs tag names and values as well.
         Return value is a dictionary where tag-names are keys.
         """
         # Gracefully handle None.

@@ -1,6 +1,6 @@
 import os, sys, urllib, urllib2
 
-new_path = [ os.path.join( os.path.dirname( __file__ ), '..', '..', '..', 'lib' ) ]
+new_path = [ os.path.join( os.path.dirname( __file__ ), '..', '..', '..', '..', 'lib' ) ]
 new_path.extend( sys.path[ 1: ] )
 sys.path = new_path
 
@@ -20,7 +20,7 @@ def encode_id( config_id_secret, obj_id ):
     id_cipher = Blowfish.new( config_id_secret )
     # Convert to string
     s = str( obj_id )
-    # Pad to a multiple of 8 with leading "!" 
+    # Pad to a multiple of 8 with leading "!"
     s = ( "!" * ( 8 - len(s) % 8 ) ) + s
     # Encrypt
     return id_cipher.encrypt( s ).encode( 'hex' )
@@ -45,10 +45,10 @@ def delete( api_key, url, data, return_formatted=True ):
     print '--------'
     print r
 
-def display( api_key, url, return_formatted=True ):
+def display( url, api_key=None, return_formatted=True ):
     # Sends an API GET request and acts as a generic formatter for the JSON response.
     try:
-        r = get( api_key, url )
+        r = get( url, api_key=api_key )
     except urllib2.HTTPError, e:
         print e
         print e.read( 1024 ) # Only return the first 1K of errors.
@@ -82,43 +82,44 @@ def display( api_key, url, return_formatted=True ):
     else:
         print 'response is unknown type: %s' % type( r )
 
-def get( api_key, url ):
+def get( url, api_key=None ):
     # Do the actual GET.
-    url = make_url( api_key, url )
+    url = make_url( url, api_key=api_key )
     try:
         return simplejson.loads( urllib2.urlopen( url ).read() )
     except simplejson.decoder.JSONDecodeError, e:
         print "URL did not return JSON data"
         sys.exit(1)
 
-def make_url( api_key, url, args=None ):
+def make_url( url, api_key=None, args=None ):
     # Adds the API Key to the URL if it's not already there.
     if args is None:
         args = []
     argsep = '&'
     if '?' not in url:
         argsep = '?'
-    if '?key=' not in url and '&key=' not in url:
-        args.insert( 0, ( 'key', api_key ) )
+    if api_key:
+        if '?key=' not in url and '&key=' not in url:
+            args.insert( 0, ( 'key', api_key ) )
     return url + argsep + '&'.join( [ '='.join( t ) for t in args ] )
 
-def post( api_key, url, data ):
+def post( url, data, api_key=None ):
     # Do the actual POST.
-    url = make_url( api_key, url )
+    url = make_url( url, api_key=api_key )
     req = urllib2.Request( url, headers = { 'Content-Type': 'application/json' }, data = simplejson.dumps( data ) )
     return simplejson.loads( urllib2.urlopen( req ).read() )
 
-def put( api_key, url, data ):
+def put( url, data, api_key=None ):
     # Do the actual PUT.
-    url = make_url( api_key, url )
+    url = make_url( url, api_key=api_key )
     req = urllib2.Request( url, headers = { 'Content-Type': 'application/json' }, data = simplejson.dumps( data ))
     req.get_method = lambda: 'PUT'
     return simplejson.loads( urllib2.urlopen( req ).read() )
 
-def submit( api_key, url, data, return_formatted=True ):
+def submit( url, data, api_key=None, return_formatted=True ):
     # Sends an API POST request and acts as a generic formatter for the JSON response - 'data' will become the JSON payload read by Galaxy.
     try:
-        r = post( api_key, url, data )
+        r = post( url, data, api_key=api_key )
     except urllib2.HTTPError, e:
         if return_formatted:
             print e
@@ -157,7 +158,7 @@ def update( api_key, url, data, return_formatted=True ):
             print e.read( 1024 )
             sys.exit( 1 )
         else:
-            return 'Error. '+ str( e.read( 1024 ) )
+            return 'Error. ' + str( e.read( 1024 ) )
     if not return_formatted:
         return r
     print 'Response'

@@ -1,7 +1,7 @@
-import tempfile
+import tempfile, os
 from __init__ import ToolAction
 from galaxy.util.odict import odict
-from galaxy.tools.imp_exp import *
+from galaxy.tools.imp_exp import JobImportHistoryArchiveWrapper, JobExportHistoryArchiveWrapper
 
 import logging
 log = logging.getLogger( __name__ )
@@ -34,7 +34,7 @@ class ImportHistoryToolAction( ToolAction ):
         archive_dir = os.path.abspath( tempfile.mkdtemp() )
         jiha = trans.app.model.JobImportHistoryArchive( job=job, archive_dir=archive_dir )
         trans.sa_session.add( jiha )
-        
+
         #
         # Add parameters to job_parameter table.
         #

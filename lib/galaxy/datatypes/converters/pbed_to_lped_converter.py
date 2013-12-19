@@ -15,7 +15,7 @@ galhtmlprefix = """<?xml version="1.0" encoding="utf-8" ?>
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-<meta name="generator" content="Galaxy %s tool output - see http://g2.trac.bx.psu.edu/" />
+<meta name="generator" content="Galaxy %s tool output - see http://getgalaxy.org" />
 <title></title>
 <link rel="stylesheet" href="/static/style/base.css" type="text/css" />
 </head>
@@ -28,11 +28,11 @@ def timenow():
     """
     return time.strftime('%d/%m/%Y %H:%M:%S', time.localtime(time.time()))
 
-   
+
 def rgConv(inpedfilepath,outhtmlname,outfilepath,plink):
     """
     """
-    
+
     basename = os.path.split(inpedfilepath)[-1] # get basename
     outroot = os.path.join(outfilepath,basename)
     cl = '%s --noweb --bfile %s --recode --out %s ' % (plink,inpedfilepath,outroot)
@@ -66,7 +66,7 @@ def main():
     f = file(outhtmlname,'w')
     f.write(galhtmlprefix % prog)
     flist = os.listdir(outfilepath)
-    s = '## Rgenetics: http://rgenetics.org Galaxy Tools %s %s' % (prog,timenow()) # becomes info
+    s = '## Rgenetics: http://bitbucket.org/rgalaxy Galaxy Tools %s %s' % (prog,timenow()) # becomes info
     print s
     f.write('<div>%s\n<ol>' % (s))
     for i, data in enumerate( flist ):
@@ -74,7 +74,7 @@ def main():
     f.write("</div></body></html>")
     f.close()
 
-  
+
 
 if __name__ == "__main__":
    main()

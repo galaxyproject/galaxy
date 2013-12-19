@@ -6,10 +6,13 @@ Lower level of visualization framework which does three main things:
 """
 import os
 import shutil
+import glob
 
 from galaxy import util
 import galaxy.model
 from galaxy.web import url_for
+
+from galaxy.web.base import pluginframework
 
 import logging
 log = logging.getLogger( __name__ )
@@ -26,25 +29,28 @@ allow data_sources with no model_class but have tests (isAdmin, etc.)
 some confused vocabulary in docs, var names
 tests:
     anding, grouping, not
+    has_dataprovider
+    user is admin
 data_sources:
     lists of
 add description element to visualization.
 
-TESTS to add:
-    has dataprovider
-    user is admin
+user_pref for ordering/ex/inclusion of particular visualizations
 """
 
 # ------------------------------------------------------------------- the registry
-class VisualizationsRegistry( object ):
+class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
     """
     Main responsibilities are:
+        - discovering visualization plugins in the filesystem
         - testing if an object has a visualization that can be applied to it
         - generating a link to controllers.visualization.render with
             the appropriate params
         - validating and parsing params into resources (based on a context)
             used in the visualization template
     """
+    #: name of this plugin
+    #: any built in visualizations that have their own render method in ctrls/visualization
     # these should be handled somewhat differently - and be passed onto their resp. methods in ctrl.visualization
     #TODO: change/remove if/when they can be updated to use this system
     BUILT_IN_VISUALIZATIONS = [
@@ -53,50 +59,81 @@ class VisualizationsRegistry( object ):
         'sweepster',
         'phyloviz'
     ]
-    # where to search for visualiztion templates (relative to templates/webapps/galaxy)
-    # this can be overridden individually in the config entries
-    TEMPLATE_ROOT = 'visualization'
 
     def __str__( self ):
-        listings_keys_str = ','.join( self.listings.keys() ) if self.listings else ''
-        return 'VisualizationsRegistry(%s)' %( listings_keys_str )
+        return self.__class__.__name__
 
-    def __init__( self, galaxy_root, configuration_filepath ):
-        # load the registry from the given xml file using the given parser
-        configuration_filepath = os.path.join( galaxy_root, configuration_filepath )
-        configuration_filepath = self.check_conf_filepath( configuration_filepath )
-        self.configuration_filepath = configuration_filepath
-        self.load()
-
+    def __init__( self, app, **kwargs ):
+        self.config_parser = VisualizationsConfigParser()
+        super( VisualizationsRegistry, self ).__init__( app, 'visualizations', **kwargs )
         # what to use to parse query strings into resources/vars for the template
         self.resource_parser = ResourceParser()
+        log.debug( '%s loaded', str( self ) )
 
-    def check_conf_filepath( self, configuration_filepath ):
+    def is_plugin( self, plugin_path ):
         """
-        If given file at filepath exists, return that filepath. If not,
-        see if filepath + '.sample' exists and, if so, copy that into filepath.
+        Determines whether the given filesystem path contains a plugin.
 
-        If neither original or sample exist, throw an IOError (currently,
-        this is a requireed file).
-        """
-        if os.path.exists( configuration_filepath ):
-            return configuration_filepath
-        else:
-            sample_file = configuration_filepath + '.sample'
-            if os.path.exists( sample_file ):
-                shutil.copy2( sample_file, configuration_filepath )
-                return configuration_filepath
-        raise IOError( 'visualization configuration file (%s) not found' %( configuration_filepath ) )
+        In this base class, all sub-directories are considered plugins.
 
-    def load( self ):
+        :type   plugin_path:    string
+        :param  plugin_path:    relative or absolute filesystem path to the
+            potential plugin
+        :rtype:                 bool
+        :returns:               True if the path contains a plugin
         """
-        Builds the registry by parsing the xml in `self.configuration_filepath`
-        and stores the results in `self.listings`.
+        # plugin_path must be a directory, have a config dir, and a config file matching the plugin dir name
+        if not os.path.isdir( plugin_path ):
+            # super won't work here - different criteria
+            return False
+        if not 'config' in os.listdir( plugin_path ):
+            return False
+        expected_config_filename = '%s.xml' %( os.path.split( plugin_path )[1] )
+        if not os.path.isfile( os.path.join( plugin_path, 'config', expected_config_filename ) ):
+            return False
+        return True
 
-        Provided as separate method from `__init__` in order to re-load a
-        new configuration without restarting the instance.
+    def load_plugin( self, plugin_path ):
         """
-        self.listings = VisualizationsConfigParser.parse( self.configuration_filepath )
+        Create the visualization plugin object, parse its configuration file,
+        and return it.
+
+        Plugin bunches are decorated with:
+            * config_file : the path to this visualization's config file
+            * config :      the parsed configuration for this visualization
+
+        :type   plugin_path:    string
+        :param  plugin_path:    relative or absolute filesystem path to the plugin
+        :rtype:                 ``util.bunch.Bunch``
+        :returns:               the loaded plugin object
+        """
+        #TODO: possibly move this after the config parsing to allow config to override?
+        plugin = super( VisualizationsRegistry, self ).load_plugin( plugin_path )
+
+        # config file is required, otherwise skip this visualization
+        plugin[ 'config_file' ] = os.path.join( plugin_path, 'config', ( plugin.name + '.xml' ) )
+        config = self.config_parser.parse_file( plugin.config_file )
+            
+        if not config:
+            return None
+        plugin[ 'config' ] = config
+
+        return plugin
+
+    # -- getting resources for visualization templates from link query strings --
+    # -- building links to visualizations from objects --
+    def get_visualizations( self, trans, target_object ):
+        """
+        Get the names of visualizations usable on the `target_object` and
+        the urls to call in order to render the visualizations.
+        """
+        #TODO:?? a list of objects? YAGNI?
+        applicable_visualizations = []
+        for vis_name in self.plugins:
+            url_data = self.get_visualization( trans, vis_name, target_object )
+            if url_data:
+                applicable_visualizations.append( url_data )
+        return applicable_visualizations
 
     def get_visualization( self, trans, visualization_name, target_object ):
         """
@@ -104,12 +141,11 @@ class VisualizationsRegistry( object ):
         `visualization_name` if it's applicable to `target_object` or
         `None` if it's not.
         """
-        # a little weird to pass trans because this registry is part of the trans.app
-        listing_data = self.listings.get( visualization_name, None )
-        if not listing_data:
+        visualization = self.plugins.get( visualization_name, None )
+        if not visualization:
             return None
 
-        data_sources = listing_data[ 'data_sources' ]
+        data_sources = visualization.config[ 'data_sources' ]
         for data_source in data_sources:
             # currently a model class is required
             model_class = data_source[ 'model_class' ]
@@ -123,11 +159,11 @@ class VisualizationsRegistry( object ):
 
             param_data = data_source[ 'to_params' ]
             url = self.get_visualization_url( trans, target_object, visualization_name, param_data )
-            link_text = listing_data.get( 'link_text', None )
+            link_text = visualization.config.get( 'link_text', None )
             if not link_text:
                 # default to visualization name, titlecase, and replace underscores
                 link_text = visualization_name.title().replace( '_', ' ' )
-            render_location = listing_data.get( 'render_location' )
+            render_location = visualization.config.get( 'render_location', 'galaxy_main' )
             # remap some of these vars for direct use in ui.js, PopupMenu (e.g. text->html)
             return {
                 'href'  : url,
@@ -137,25 +173,12 @@ class VisualizationsRegistry( object ):
 
         return None
 
-    # -- building links to visualizations from objects --
-    def get_visualizations( self, trans, target_object ):
-        """
-        Get the names of visualizations usable on the `target_object` and
-        the urls to call in order to render the visualizations.
-        """
-        #TODO:?? a list of objects? YAGNI?
-        applicable_visualizations = []
-        for vis_name in self.listings:
-            url_data = self.get_visualization( trans, vis_name, target_object )
-            if url_data:
-                applicable_visualizations.append( url_data )
-        return applicable_visualizations
-
     def is_object_applicable( self, trans, target_object, data_source_tests ):
         """
         Run a visualization's data_source tests to find out if
         it be applied to the target_object.
         """
+        #log.debug( 'is_object_applicable( self, trans, %s, %s )', target_object, data_source_tests )
         for test in data_source_tests:
             test_type   = test[ 'type' ]
             result_type = test[ 'result_type' ]
@@ -178,7 +201,6 @@ class VisualizationsRegistry( object ):
             if test_fn( target_object, test_result ):
                 #log.debug( 'test passed' )
                 return True
-
         return False
 
     def get_visualization_url( self, trans, target_object, visualization_name, param_data ):
@@ -233,9 +255,9 @@ class VisualizationsRegistry( object ):
 
         Both `params` and `param_modifiers` default to an empty dictionary.
         """
-        visualization = self.listings.get( visualization_name )
-        expected_params = visualization.get( 'params', {} )
-        param_modifiers = visualization.get( 'param_modifiers', {} )
+        visualization = self.plugins.get( visualization_name )
+        expected_params = visualization.config.get( 'params', {} )
+        param_modifiers = visualization.config.get( 'param_modifiers', {} )
         return ( expected_params, param_modifiers )
 
     def query_dict_to_resources( self, trans, controller, visualization_name, query_dict ):
@@ -273,13 +295,6 @@ class VisualizationsConfigParser( object ):
     """
     VALID_RENDER_LOCATIONS = [ 'galaxy_main', '_top', '_blank' ]
 
-    @classmethod
-    def parse( cls, xml_filepath, debug=True ):
-        """
-        Static class interface
-        """
-        return cls( debug ).parse_file( xml_filepath )
-
     def __init__( self, debug=False ):
         self.debug = debug
 
@@ -291,34 +306,16 @@ class VisualizationsConfigParser( object ):
     def parse_file( self, xml_filepath ):
         """
         Parse the given XML file for visualizations data.
-
-        If an error occurs while parsing a visualizations entry it is skipped.
+        :returns: tuple of ( `visualization_name`, `visualization` )
         """
-        returned = {}
         try:
             xml_tree = galaxy.util.parse_xml( xml_filepath )
-            for visualization_conf in xml_tree.getroot().findall( 'visualization' ):
-                visualization = None
-                visualization_name = visualization_conf.get( 'name' )
-
-                try:
-                    visualization = self.parse_visualization( visualization_conf )
-                # skip vis' with parsing errors - don't shutdown the startup
-                except ParsingException, parse_exc:
-                    log.error( 'Skipped visualization configuration "%s" due to parsing errors: %s',
-                        visualization_name, str( parse_exc ), exc_info=self.debug )
-
-                if visualization:
-                    returned[ visualization_name ] = visualization
-
-        except Exception, exc:
-            log.error( 'Error parsing visualization configuration file %s: %s',
-                xml_filepath, str( exc ), exc_info=( not self.debug ) )
-            #TODO: change when this is required
-            if self.debug:
-                raise
-
-        return returned
+            visualization = self.parse_visualization( xml_tree.getroot() )
+            return visualization
+        # skip vis' with parsing errors - don't shutdown the startup
+        except ParsingException, parse_exc:
+            log.exception( 'Skipped visualization config "%s" due to parsing errors', xml_filepath )
+            return None
 
     def parse_visualization( self, xml_tree ):
         """
@@ -439,6 +436,7 @@ class DataSourceParser( object ):
             returned[ 'tests' ] = tests
 
         # to_params (optional, 0 or more) - tells the registry to set certain params based on the model_clas, tests
+        returned[ 'to_params' ] = {}
         to_params = self.parse_to_params( xml_tree.findall( 'to_param' ) )
         if to_params:
             returned[ 'to_params' ] = to_params
@@ -479,7 +477,7 @@ class DataSourceParser( object ):
             return lambda o: getattr( o, next_attr_name )
 
         # recursive case
-        return lambda o: getattr( self._build_getattr_lambda( attr_name_list[:-1] ), next_attr_name )
+        return lambda o: getattr( self._build_getattr_lambda( attr_name_list[:-1] )( o ), next_attr_name )
 
     def parse_tests( self, xml_tree_list ):
         """
@@ -495,7 +493,7 @@ class DataSourceParser( object ):
             return tests
 
         for test_elem in xml_tree_list:
-            test_type = test_elem.get( 'type' )
+            test_type = test_elem.get( 'type', 'eq' )
             test_result = test_elem.text
             if not test_type or not test_result:
                 log.warn( 'Skipping test. Needs both type attribute and text node to be parsed: '
@@ -504,19 +502,26 @@ class DataSourceParser( object ):
 
             # test_attr can be a dot separated chain of object attributes (e.g. dataset.datatype) - convert to list
             #TODO: too dangerous - constrain these to some allowed list
+            #TODO: does this err if no test_attr - it should...
             test_attr = test_elem.get( 'test_attr' )
             test_attr = test_attr.split( self.ATTRIBUTE_SPLIT_CHAR ) if isinstance( test_attr, str ) else []
             # build a lambda function that gets the desired attribute to test
             getter = self._build_getattr_lambda( test_attr )
 
             # result type should tell the registry how to convert the result before the test
-            test_result_type = test_elem.get( 'result_type' ) or 'string'
+            test_result_type = test_elem.get( 'result_type', 'string' )
 
             # test functions should be sent an object to test, and the parsed result expected from the test
-            #TODO: currently, isinstance and string equivalance are the only test types supported
-            if test_type == 'isinstance':
+
+            # is test_attr attribute an instance of result
+            if   test_type == 'isinstance':
                 #TODO: wish we could take this further but it would mean passing in the datatypes_registry
                 test_fn = lambda o, result: isinstance( getter( o ), result )
+
+            # does the object itself have a datatype attr and does that datatype have the given dataprovider
+            elif test_type == 'has_dataprovider':
+                test_fn = lambda o, result: (     hasattr( getter( o ), 'has_dataprovider' )
+                                              and getter( o ).has_dataprovider( result ) )
 
             # default to simple (string) equilavance (coercing the test_attr to a string)
             else:

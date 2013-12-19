@@ -1,34 +1,40 @@
-import calendar, operator, os, socket
-from datetime import datetime, date, timedelta
-from time import mktime, strftime, localtime
-from galaxy.web.base.controller import BaseUIController, web
+import calendar
+from datetime import date, timedelta
+from galaxy import eggs
 from galaxy import model, util
-from galaxy.web.framework.helpers import time_ago, iff, grids
-from galaxy.model.orm import and_, not_, or_
-import pkg_resources
-pkg_resources.require( "SQLAlchemy >= 0.4" )
+from galaxy.model.orm import and_
+from galaxy.web.base.controller import BaseUIController, web
+from galaxy.web.framework.helpers import grids
+eggs.require( "SQLAlchemy >= 0.4" )
 import sqlalchemy as sa
+
 import logging
 log = logging.getLogger( __name__ )
 
+
 class SpecifiedDateListGrid( grids.Grid ):
+
     class WorkflowNameColumn( grids.TextColumn ):
         def get_value( self, trans, grid, stored_workflow ):
             return stored_workflow.name
+
     class CreateTimeColumn( grids.DateTimeColumn ):
         def get_value( self, trans, grid, stored_workflow ):
             return stored_workflow.create_time
+
     class UserColumn( grids.TextColumn ):
         def get_value( self, trans, grid, stored_workflow ):
             if stored_workflow.user:
                 return stored_workflow.user.email
             return 'unknown'
+
     class EmailColumn( grids.GridColumn ):
         def filter( self, trans, user, query, column_filter ):
             if column_filter == 'All':
                 return query
             return query.filter( and_( model.StoredWorkflow.table.c.user_id == model.User.table.c.id,
                                        model.User.table.c.email == column_filter ) )
+
     class SpecifiedDateColumn( grids.GridColumn ):
         def filter( self, trans, user, query, column_filter ):
             if column_filter == 'All':
@@ -79,8 +85,8 @@ class SpecifiedDateListGrid( grids.Grid ):
                      model_class=model.User,
                      visible=False ),
     ]
-    columns.append( grids.MulticolFilterColumn( "Search", 
-                                                cols_to_filter=[ columns[0], columns[2] ], 
+    columns.append( grids.MulticolFilterColumn( "Search",
+                                                cols_to_filter=[ columns[0], columns[2] ],
                                                 key="free-text-search",
                                                 visible=False,
                                                 filterable="standard" ) )
@@ -93,6 +99,7 @@ class SpecifiedDateListGrid( grids.Grid ):
         return trans.sa_session.query( self.model_class ) \
                                .join( model.User ) \
                                .enable_eagerloads( False )
+
 
 class Workflows( BaseUIController ):
 
@@ -120,7 +127,7 @@ class Workflows( BaseUIController ):
                                                                   **kwd ) )
             elif operation == "user_per_month":
                 stored_workflow_id = kwd.get( 'id', None )
-                workflow = get_workflow( trans, workflow_id )
+                workflow = get_workflow( trans, stored_workflow_id )
                 if workflow.user:
                     kwd[ 'email' ] = workflow.user.email
                 else:
@@ -129,9 +136,9 @@ class Workflows( BaseUIController ):
                                                                   action='user_per_month',
                                                                   **kwd ) )
         return self.specified_date_list_grid( trans, **kwd )
+
     @web.expose
     def per_month_all( self, trans, **kwd ):
-        params = util.Params( kwd )
         message = ''
         q = sa.select( ( sa.func.date_trunc( 'month', sa.func.date( model.StoredWorkflow.table.c.create_time ) ).label( 'date' ),sa.func.count( model.StoredWorkflow.table.c.id ).label( 'total_workflows' ) ),
                        from_obj = [ sa.outerjoin( model.StoredWorkflow.table, model.User.table ) ],
@@ -146,9 +153,9 @@ class Workflows( BaseUIController ):
         return trans.fill_template( '/webapps/reports/workflows_per_month_all.mako',
                                     workflows=workflows,
                                     message=message )
+
     @web.expose
     def per_user( self, trans, **kwd ):
-        params = util.Params( kwd )
         message = ''
         workflows = []
         q = sa.select( ( model.User.table.c.email.label( 'user_email' ),
@@ -157,9 +164,10 @@ class Workflows( BaseUIController ):
                        group_by = [ 'user_email' ],
                        order_by = [ sa.desc( 'total_workflows' ), 'user_email' ] )
         for row in q.execute():
-            workflows.append( ( row.user_email, 
+            workflows.append( ( row.user_email,
                                 row.total_workflows ) )
         return trans.fill_template( '/webapps/reports/workflows_per_user.mako', workflows=workflows, message=message )
+
     @web.expose
     def user_per_month( self, trans, **kwd ):
         params = util.Params( kwd )
@@ -174,7 +182,7 @@ class Workflows( BaseUIController ):
                        order_by = [ sa.desc( 'date' ) ] )
         workflows = []
         for row in q.execute():
-            workflows.append( ( row.date.strftime( "%Y-%m" ), 
+            workflows.append( ( row.date.strftime( "%Y-%m" ),
                                 row.total_workflows,
                                 row.date.strftime( "%B" ),
                                 row.date.strftime( "%Y" ) ) )

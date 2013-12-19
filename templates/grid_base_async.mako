@@ -1,6 +1,8 @@
 <%namespace file="./grid_base.mako" import="*" />
 <%namespace file="/display_common.mako" import="render_message" />
 
+${init()}
+
 <%
     # Set flag to indicate whether grid has operations that operate on multiple items.
     multiple_item_ops_exist = False

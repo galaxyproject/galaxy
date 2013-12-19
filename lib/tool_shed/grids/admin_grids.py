@@ -1,15 +1,19 @@
-import os, logging
-from galaxy.web.framework.helpers import time_ago, grids
+import logging
+import os
+from galaxy.web.framework.helpers import grids
+from galaxy.web.framework.helpers import time_ago
 from galaxy.webapps.tool_shed import model
 from galaxy.model.orm import and_
 import tool_shed.util.shed_util_common as suc
-from tool_shed.grids.repository_grids import RepositoryGrid, CategoryGrid
+from tool_shed.grids.repository_grids import CategoryGrid
+from tool_shed.grids.repository_grids import RepositoryGrid
 
 from galaxy import eggs
-import pkg_resources
+eggs.require( 'mercurial' )
 
-pkg_resources.require( 'mercurial' )
-from mercurial import hg, ui, commands
+from mercurial import commands
+from mercurial import hg
+from mercurial import ui
 
 log = logging.getLogger( __name__ )
 
@@ -81,8 +85,8 @@ class UserGrid( grids.Grid ):
                      key="email",
                      visible=False )
     ]
-    columns.append( grids.MulticolFilterColumn( "Search", 
-                                                cols_to_filter=[ columns[0], columns[1] ], 
+    columns.append( grids.MulticolFilterColumn( "Search",
+                                                cols_to_filter=[ columns[0], columns[1] ],
                                                 key="free-text-search",
                                                 visible=False,
                                                 filterable="standard" ) )
@@ -168,8 +172,8 @@ class RoleGrid( grids.Grid ):
                              visible=False,
                              filterable="advanced" )
     ]
-    columns.append( grids.MulticolFilterColumn( "Search", 
-                                                cols_to_filter=[ columns[0], columns[1], columns[2] ], 
+    columns.append( grids.MulticolFilterColumn( "Search",
+                                                cols_to_filter=[ columns[0], columns[1], columns[2] ],
                                                 key="free-text-search",
                                                 visible=False,
                                                 filterable="standard" ) )
@@ -241,8 +245,8 @@ class GroupGrid( grids.Grid ):
                              visible=False,
                              filterable="advanced" )
     ]
-    columns.append( grids.MulticolFilterColumn( "Search", 
-                                                cols_to_filter=[ columns[0], columns[1], columns[2] ], 
+    columns.append( grids.MulticolFilterColumn( "Search",
+                                                cols_to_filter=[ columns[0], columns[1], columns[2] ],
                                                 key="free-text-search",
                                                 visible=False,
                                                 filterable="standard" ) )
@@ -306,7 +310,7 @@ class AdminRepositoryGrid( RepositoryGrid ):
                 RepositoryGrid.DeprecatedColumn( "Deprecated", key="deprecated", attach_popup=False ),
                 # Columns that are valid for filtering but are not visible.
                 DeletedColumn( "Deleted", key="deleted", attach_popup=False ) ]
-    columns.append( grids.MulticolFilterColumn( "Search repository name", 
+    columns.append( grids.MulticolFilterColumn( "Search repository name",
                                                 cols_to_filter=[ columns[0] ],
                                                 key="free-text-search",
                                                 visible=False,
@@ -421,7 +425,7 @@ class RepositoryMetadataGrid( grids.Grid ):
         DeprecatedColumn( "Deprecated", attach_popup=False ),
         MaliciousColumn( "Malicious", attach_popup=False )
     ]
-    columns.append( grids.MulticolFilterColumn( "Search repository name", 
+    columns.append( grids.MulticolFilterColumn( "Search repository name",
                                                 cols_to_filter=[ columns[1] ],
                                                 key="free-text-search",
                                                 visible=False,

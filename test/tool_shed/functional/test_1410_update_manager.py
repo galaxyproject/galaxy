@@ -121,5 +121,11 @@ class TestUpdateManager( ShedTwillTestCase ):
         time.sleep( 3 )
         self.galaxy_logout()
         self.galaxy_login( email=common.admin_email, username=common.admin_username )
-        self.display_galaxy_browse_repositories_page( strings_displayed=[ 'state-color-running' ] )
+        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        self.update_tool_shed_status()
+        ok_icon = '/static/june_2007_style/blue/ok_small.png'
+        ok_title = 'This is the latest installable revision of this repository'
+        updates_icon = '/static/images/icon_warning_sml.gif'
+        strings_displayed = [ '<img src="%s" class="icon-button" title="%s"/><img src="%s' % ( ok_icon, ok_title, updates_icon ) ]
+        self.display_galaxy_browse_repositories_page( strings_displayed=strings_displayed )
         

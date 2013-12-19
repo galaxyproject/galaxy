@@ -35,16 +35,18 @@ ${render_galaxy_repository_actions( repository )}
                     else:
                         error_message = ''
                     if not can_install:
-                        if tool_dependency.status in [ trans.model.ToolDependency.installation_status.UNINSTALLED ]:
+                        if tool_dependency.status in [ trans.install_model.ToolDependency.installation_status.NEVER_INSTALLED,
+                                                       trans.install_model.ToolDependency.installation_status.UNINSTALLED ]:
                             can_install = True
                     if not can_uninstall:
-                        if tool_dependency.status not in [ trans.model.ToolDependency.installation_status.UNINSTALLED ]:
+                        if tool_dependency.status not in [ trans.install_model.ToolDependency.installation_status.NEVER_INSTALLED,
+                                                           trans.install_model.ToolDependency.installation_status.UNINSTALLED ]:
                             can_uninstall = True
                 %>
                 <tr>
                     <td>
-                        %if tool_dependency.status not in [ trans.model.ToolDependency.installation_status.UNINSTALLED ]:
-                            <a target="galaxy_main" href="${h.url_for( controller='admin_toolshed', action='manage_repository_tool_dependencies', operation='browse', tool_dependency_ids=trans.security.encode_id( tool_dependency.id ) )}">
+                        %if tool_dependency.status not in [ trans.install_model.ToolDependency.installation_status.UNINSTALLED ]:
+                            <a target="galaxy_main" href="${h.url_for( controller='admin_toolshed', action='manage_repository_tool_dependencies', operation='browse', tool_dependency_ids=trans.security.encode_id( tool_dependency.id ), repository_id=trans.security.encode_id( repository.id ) )}">
                                 ${tool_dependency.name}
                             </a>
                         %else:
@@ -60,13 +62,13 @@ ${render_galaxy_repository_actions( repository )}
         </table>
         %if can_install:
             <br/>
-            <form name="install_tool_dependencies" id="install_tool_dependencies" action="${h.url_for( controller='admin_toolshed', action='manage_tool_dependencies', operation='install' )}" method="post" >
+            <form name="install_tool_dependencies" id="install_tool_dependencies" action="${h.url_for( controller='admin_toolshed', action='manage_tool_dependencies', operation='install', repository_id=trans.security.encode_id( repository.id ) )}" method="post" >
                 <div class="form-row">
                     Check each tool dependency that you want to install and click <b>Install</b>.
                 </div>
                 <div style="clear: both"></div>
                 <div class="form-row">
-                    <input type="checkbox" id="checkAllUninstalled" name="select_all_uninstalled_tool_dependencies_checkbox" value="true" onclick="checkAllFields( 'uninstalled_tool_dependency_ids', 'checkAllUninstalled' );"/><input type="hidden" name="select_all_uninstalled_tool_dependencies_checkbox" value="true"/><b>Select/unselect all tool dependencies</b>
+                    <input type="checkbox" id="checkAllUninstalled" name="select_all_uninstalled_tool_dependencies_checkbox" value="true" onclick="checkAllUninstalledToolDependencyIdFields(1);"/><input type="hidden" name="select_all_uninstalled_tool_dependencies_checkbox" value="true"/><b>Select/unselect all tool dependencies</b>
                 </div>
                 <div style="clear: both"></div>
                 <div class="form-row">
@@ -81,13 +83,13 @@ ${render_galaxy_repository_actions( repository )}
         %endif
         %if can_uninstall:
             <br/>
-            <form name="uninstall_tool_dependencies" id="uninstall_tool_dependencies" action="${h.url_for( controller='admin_toolshed', action='manage_repository_tool_dependencies', operation='uninstall' )}" method="post" >
+            <form name="uninstall_tool_dependencies" id="uninstall_tool_dependencies" action="${h.url_for( controller='admin_toolshed', action='manage_repository_tool_dependencies', operation='uninstall', repository_id=trans.security.encode_id( repository.id ) )}" method="post" >
                 <div class="form-row">
                     Check each tool dependency that you want to uninstall and click <b>Uninstall</b>.
                 </div>
                 <div style="clear: both"></div>
                 <div class="form-row">
-                    <input type="checkbox" id="checkAllInstalled" name="select_all_installed_tool_dependencies_checkbox" value="true" onclick="checkAllFields( 'inst_td_ids', 'checkAllInstalled' );"/><input type="hidden" name="select_all_installed_tool_dependencies_checkbox" value="true"/><b>Select/unselect all tool dependencies</b>
+                    <input type="checkbox" id="checkAllInstalled" name="select_all_installed_tool_dependencies_checkbox" value="true" onclick="checkAllInstalledToolDependencyIdFields(1);"/><input type="hidden" name="select_all_installed_tool_dependencies_checkbox" value="true"/><b>Select/unselect all tool dependencies</b>
                 </div>
                 <div style="clear: both"></div>
                 <div class="form-row">

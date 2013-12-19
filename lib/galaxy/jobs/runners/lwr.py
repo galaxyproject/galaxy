@@ -3,12 +3,15 @@ import logging
 from galaxy import model
 from galaxy.jobs.runners import AsynchronousJobState, AsynchronousJobRunner
 from galaxy.jobs import JobDestination
+from galaxy.util import string_as_bool_or_none
 
 import errno
 from time import sleep
 import os
 
-from lwr_client import FileStager, Client, url_to_destination_params
+from .lwr_client import ClientManager, url_to_destination_params
+from .lwr_client import finish_job as lwr_finish_job
+from .lwr_client import submit_job as lwr_submit_job
 
 log = logging.getLogger( __name__ )
 
@@ -21,12 +24,13 @@ class LwrJobRunner( AsynchronousJobRunner ):
     """
     runner_name = "LWRRunner"
 
-    def __init__( self, app, nworkers, transport=None ):
+    def __init__( self, app, nworkers, transport=None, cache=None ):
         """Start the job runner """
         super( LwrJobRunner, self ).__init__( app, nworkers )
         self._init_monitor_thread()
         self._init_worker_threads()
-        self.transport_type = transport
+        client_manager_kwargs = {'transport_type': transport, 'cache': string_as_bool_or_none(cache)}
+        self.client_manager = ClientManager(**client_manager_kwargs)
 
     def url_to_destination( self, url ):
         """Convert a legacy URL to a job destination"""
@@ -78,10 +82,9 @@ class LwrJobRunner( AsynchronousJobRunner ):
             input_files = job_wrapper.get_input_fnames()
             working_directory = job_wrapper.working_directory
             tool = job_wrapper.tool
-            file_stager = FileStager(client, tool, command_line, job_wrapper.extra_filenames, input_files, output_files, working_directory)
-            rebuilt_command_line = file_stager.get_rewritten_command_line()
-            job_id = file_stager.job_id
-            client.launch( rebuilt_command_line )
+            config_files = job_wrapper.extra_filenames
+            job_id = lwr_submit_job(client, tool, command_line, config_files, input_files, output_files, working_directory)
+            log.info("lwr job submitted with job_id %s" % job_id)
             job_wrapper.set_job_destination( job_destination, job_id )
             job_wrapper.change_state( model.Job.states.QUEUED )
         except:
@@ -105,7 +108,10 @@ class LwrJobRunner( AsynchronousJobRunner ):
         job_id = job_wrapper.job_id
         if hasattr(job_wrapper, 'task_id'):
             job_id = "%s_%s" % (job_id, job_wrapper.task_id)
-        return self.get_client( job_wrapper.job_destination.params, job_id )
+        params = job_wrapper.job_destination.params.copy()
+        for key, value in params.iteritems():
+            params[key] = model.User.expand_user_properties( job_wrapper.get_job().user, value )
+        return self.get_client( params, job_id )
 
     def get_client_from_state(self, job_state):
         job_destination_params = job_state.job_destination.params
@@ -113,42 +119,35 @@ class LwrJobRunner( AsynchronousJobRunner ):
         return self.get_client( job_destination_params, job_id )
 
     def get_client( self, job_destination_params, job_id ):
-        return Client( job_destination_params, job_id, transport_type=self.transport_type )
+        return self.client_manager.get_client( job_destination_params, job_id )
 
     def finish_job( self, job_state ):
-        stderr = stdout = command_line = ''
+        stderr = stdout = ''
         job_wrapper = job_state.job_wrapper
         try:
             client = self.get_client_from_state(job_state)
 
             run_results = client.raw_check_complete()
-            stdout = run_results['stdout']
-            stderr = run_results['stderr']
+            stdout = run_results.get('stdout', '')
+            stderr = run_results.get('stderr', '')
 
-            download_failure_exceptions = []
-            if job_wrapper.get_state() not in [ model.Job.states.ERROR, model.Job.states.DELETED ]:
-                work_dir_outputs = self.get_work_dir_outputs(job_wrapper)
-                output_files = self.get_output_files(job_wrapper)
-                for source_file, output_file in work_dir_outputs:
-                    try:
-                        client.download_work_dir_output(source_file, job_wrapper.working_directory, output_file)
-                    except Exception, e:
-                        download_failure_exceptions.append(e)
-                    # Remove from full output_files list so don't try to download directly.
-                    output_files.remove(output_file)
-                for output_file in output_files:
-                    try:
-                        client.download_output(output_file, working_directory=job_wrapper.working_directory)
-                    except Exception, e:
-                        download_failure_exceptions.append(e)
-            if download_failure_exceptions or self.app.config.cleanup_job == "always":
-                try:
-                    client.clean()
-                except:
-                    log.warn("Failed to cleanup remote LWR job")
-            if download_failure_exceptions:
+            # Use LWR client code to transfer/copy files back
+            # and cleanup job if needed.
+            completed_normally = \
+                job_wrapper.get_state() not in [ model.Job.states.ERROR, model.Job.states.DELETED ]
+            cleanup_job = self.app.config.cleanup_job
+            work_dir_outputs = self.get_work_dir_outputs( job_wrapper )
+            output_files = self.get_output_files( job_wrapper )
+            finish_args = dict( client=client,
+                                working_directory=job_wrapper.working_directory,
+                                job_completed_normally=completed_normally,
+                                cleanup_job=cleanup_job,
+                                work_dir_outputs=work_dir_outputs,
+                                output_files=output_files )
+            failed = lwr_finish_job( **finish_args )
+
+            if failed:
                 job_wrapper.fail("Failed to find or download one or more job outputs from remote server.", exception=True)
-            log.debug('execution finished: %s' % command_line)
         except:
             message = "Failed to communicate with remote job server."
             job_wrapper.fail( message, exception=True )

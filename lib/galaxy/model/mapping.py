@@ -3,43 +3,27 @@ Details of how the data model objects are mapped onto the relational database
 are encapsulated here.
 """
 
-import datetime
 import logging
 import pkg_resources
-import inspect
 
-from sqlalchemy import and_, asc, Boolean, Column, create_engine, DateTime, desc, ForeignKey, Integer, MetaData, not_, Numeric, select, String, Table, TEXT, Unicode, UniqueConstraint
+from sqlalchemy import and_, asc, Boolean, Column, DateTime, desc, ForeignKey, Integer, MetaData, not_, Numeric, select, String, Table, TEXT, Unicode, UniqueConstraint
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.orderinglist import ordering_list
 from sqlalchemy.types import BigInteger
-from sqlalchemy.orm import backref, object_session, relation, scoped_session, sessionmaker, mapper, class_mapper
+from sqlalchemy.orm import backref, object_session, relation, mapper, class_mapper
 from sqlalchemy.orm.collections import attribute_mapped_collection
 
 from galaxy import model
-from galaxy.model.orm import dialect_to_egg
+from galaxy.model.orm.engine_factory import build_engine
+from galaxy.model.orm.now import now
 from galaxy.model.custom_types import JSONType, MetadataType, TrimmedString, UUIDType
+from galaxy.model.base import ModelMapping
 from galaxy.security import GalaxyRBACAgent
-from galaxy.util.bunch import Bunch
-
 
 log = logging.getLogger( __name__ )
 
 metadata = MetaData()
-context = Session = scoped_session( sessionmaker( autoflush=False, autocommit=True ) )
 
-# For backward compatibility with "context.current"
-context.current = Session
-
-
-# NOTE REGARDING TIMESTAMPS:
-#   It is currently difficult to have the timestamps calculated by the
-#   database in a portable way, so we're doing it in the client. This
-#   also saves us from needing to postfetch on postgres. HOWEVER: it
-#   relies on the client's clock being set correctly, so if clustering
-#   web servers, use a time server to ensure synchronization
-
-# Return the current time in UTC without any timezone information
-now = datetime.datetime.utcnow
 
 model.User.table = Table( "galaxy_user", metadata,
     Column( "id", Integer, primary_key=True),
@@ -52,7 +36,10 @@ model.User.table = Table( "galaxy_user", metadata,
     Column( "form_values_id", Integer, ForeignKey( "form_values.id" ), index=True ),
     Column( "deleted", Boolean, index=True, default=False ),
     Column( "purged", Boolean, index=True, default=False ),
-    Column( "disk_usage", Numeric( 15, 0 ), index=True ) )
+    Column( "disk_usage", Numeric( 15, 0 ), index=True ) ,
+    Column( "active", Boolean, index=True, default=True, nullable=False ),
+    Column( "activation_token", TrimmedString( 64 ), nullable=True, index=True ) )
+
 
 model.UserAddress.table = Table( "user_address", metadata,
     Column( "id", Integer, primary_key=True),
@@ -391,67 +378,6 @@ model.LibraryDatasetDatasetInfoAssociation.table = Table( 'library_dataset_datas
     Column( "form_definition_id", Integer, ForeignKey( "form_definition.id" ), index=True ),
     Column( "form_values_id", Integer, ForeignKey( "form_values.id" ), index=True ),
     Column( "deleted", Boolean, index=True, default=False ) )
-
-model.ToolShedRepository.table = Table( "tool_shed_repository", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "tool_shed", TrimmedString( 255 ), index=True ),
-    Column( "name", TrimmedString( 255 ), index=True ),
-    Column( "description" , TEXT ),
-    Column( "owner", TrimmedString( 255 ), index=True ),
-    Column( "installed_changeset_revision", TrimmedString( 255 ) ),
-    Column( "changeset_revision", TrimmedString( 255 ), index=True ),
-    Column( "ctx_rev", TrimmedString( 10 ) ),
-    Column( "metadata", JSONType, nullable=True ),
-    Column( "includes_datatypes", Boolean, index=True, default=False ),
-    Column( "update_available", Boolean, default=False ),
-    Column( "deleted", Boolean, index=True, default=False ),
-    Column( "uninstalled", Boolean, default=False ),
-    Column( "dist_to_shed", Boolean, default=False ),
-    Column( "status", TrimmedString( 255 ) ),
-    Column( "error_message", TEXT ) )
-
-model.RepositoryRepositoryDependencyAssociation.table = Table( 'repository_repository_dependency_association', metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "tool_shed_repository_id", Integer, ForeignKey( "tool_shed_repository.id" ), index=True ),
-    Column( "repository_dependency_id", Integer, ForeignKey( "repository_dependency.id" ), index=True ) )
-
-model.RepositoryDependency.table = Table( "repository_dependency", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "tool_shed_repository_id", Integer, ForeignKey( "tool_shed_repository.id" ), index=True, nullable=False ) )
-
-model.ToolDependency.table = Table( "tool_dependency", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "tool_shed_repository_id", Integer, ForeignKey( "tool_shed_repository.id" ), index=True, nullable=False ),
-    Column( "name", TrimmedString( 255 ) ),
-    Column( "version", TEXT ),
-    Column( "type", TrimmedString( 40 ) ),
-    Column( "status", TrimmedString( 255 ), nullable=False ),
-    Column( "error_message", TEXT ) )
-
-model.ToolVersion.table = Table( "tool_version", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "tool_id", String( 255 ) ),
-    Column( "tool_shed_repository_id", Integer, ForeignKey( "tool_shed_repository.id" ), index=True, nullable=True ) )
-
-model.ToolVersionAssociation.table = Table( "tool_version_association", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "tool_id", Integer, ForeignKey( "tool_version.id" ), index=True, nullable=False ),
-    Column( "parent_id", Integer, ForeignKey( "tool_version.id" ), index=True, nullable=False ) )
-
-model.MigrateTools.table = Table( "migrate_tools", metadata,
-    Column( "repository_id", TrimmedString( 255 ) ),
-    Column( "repository_path", TEXT ),
-    Column( "version", Integer ) )
 
 model.Job.table = Table( "job", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -1789,40 +1715,6 @@ mapper( model.Page, model.Page.table,
                      ratings=relation( model.PageRatingAssociation, order_by=model.PageRatingAssociation.table.c.id, backref="pages" )
                    ) )
 
-mapper( model.ToolShedRepository, model.ToolShedRepository.table,
-    properties=dict( tool_versions=relation( model.ToolVersion,
-                                             primaryjoin=( model.ToolShedRepository.table.c.id == model.ToolVersion.table.c.tool_shed_repository_id ),
-                                             backref='tool_shed_repository' ),
-                     tool_dependencies=relation( model.ToolDependency,
-                                                 primaryjoin=( model.ToolShedRepository.table.c.id == model.ToolDependency.table.c.tool_shed_repository_id ),
-                                                 order_by=model.ToolDependency.table.c.name,
-                                                 backref='tool_shed_repository' ),
-                     required_repositories=relation( model.RepositoryRepositoryDependencyAssociation,
-                                                    primaryjoin=( model.ToolShedRepository.table.c.id == model.RepositoryRepositoryDependencyAssociation.table.c.tool_shed_repository_id ) ) ) )
-
-mapper( model.RepositoryRepositoryDependencyAssociation, model.RepositoryRepositoryDependencyAssociation.table,
-    properties=dict( repository=relation( model.ToolShedRepository,
-                                          primaryjoin=( model.RepositoryRepositoryDependencyAssociation.table.c.tool_shed_repository_id == model.ToolShedRepository.table.c.id ) ),
-                     repository_dependency=relation( model.RepositoryDependency,
-                                                     primaryjoin=( model.RepositoryRepositoryDependencyAssociation.table.c.repository_dependency_id == model.RepositoryDependency.table.c.id ) ) ) )
-
-mapper( model.RepositoryDependency, model.RepositoryDependency.table,
-    properties=dict( repository=relation( model.ToolShedRepository,
-                                          primaryjoin=( model.RepositoryDependency.table.c.tool_shed_repository_id == model.ToolShedRepository.table.c.id ) ) ) )
-
-mapper( model.ToolDependency, model.ToolDependency.table )
-
-mapper( model.ToolVersion, model.ToolVersion.table,
-    properties=dict(
-        parent_tool_association=relation( model.ToolVersionAssociation,
-            primaryjoin=( model.ToolVersion.table.c.id == model.ToolVersionAssociation.table.c.tool_id ) ),
-        child_tool_association=relation( model.ToolVersionAssociation,
-            primaryjoin=( model.ToolVersion.table.c.id == model.ToolVersionAssociation.table.c.parent_id ) )
-    )
- )
-
-mapper( model.ToolVersionAssociation, model.ToolVersionAssociation.table )
-
 # Set up proxy so that
 #   Page.users_shared_with
 # returns a list of users that page is shared with.
@@ -1996,25 +1888,8 @@ def db_next_hid( self ):
 
 model.History._next_hid = db_next_hid
 
-def guess_dialect_for_url( url ):
-    return (url.split(':', 1))[0]
 
-def load_egg_for_url( url ):
-    # Load the appropriate db module
-    dialect = guess_dialect_for_url( url )
-    try:
-        egg = dialect_to_egg[dialect]
-        try:
-            pkg_resources.require( egg )
-            log.debug( "%s egg successfully loaded for %s dialect" % ( egg, dialect ) )
-        except:
-            # If the module's in the path elsewhere (i.e. non-egg), it'll still load.
-            log.warning( "%s egg not found, but an attempt will be made to use %s anyway" % ( egg, dialect ) )
-    except KeyError:
-        # Let this go, it could possibly work with db's we don't support
-        log.error( "database_connection contains an unknown SQLAlchemy database dialect: %s" % dialect )
-
-def init( file_path, url, engine_options={}, create_tables=False, database_query_profiling_proxy=False, object_store=None, trace_logger=None, use_pbkdf2=True ):
+def init( file_path, url, engine_options={}, create_tables=False, map_install_models=False, database_query_profiling_proxy=False, object_store=None, trace_logger=None, use_pbkdf2=True ):
     """Connect mappings to the database"""
     # Connect dataset to the file path
     model.Dataset.file_path = file_path
@@ -2023,45 +1898,25 @@ def init( file_path, url, engine_options={}, create_tables=False, database_query
     # Use PBKDF2 password hashing?
     model.User.use_pbkdf2 = use_pbkdf2
     # Load the appropriate db module
-    load_egg_for_url( url )
-    # Should we use the logging proxy?
-    if database_query_profiling_proxy:
-        import galaxy.model.orm.logging_connection_proxy as logging_connection_proxy
-        proxy = logging_connection_proxy.LoggingProxy()
-    # If metlog is enabled, do micrologging
-    elif trace_logger:
-        import galaxy.model.orm.logging_connection_proxy as logging_connection_proxy
-        proxy = logging_connection_proxy.TraceLoggerProxy( trace_logger )
-    else:
-        proxy = None
-    # Create the database engine
-    engine = create_engine( url, proxy=proxy, **engine_options )
+    engine = build_engine( url, engine_options, database_query_profiling_proxy, trace_logger )
+
     # Connect the metadata to the database.
     metadata.bind = engine
-    # Clear any existing contextual sessions and reconfigure
-    Session.remove()
-    Session.configure( bind=engine )
+
+    model_modules = [model]
+    if map_install_models:
+        import galaxy.model.tool_shed_install.mapping
+        from galaxy.model import tool_shed_install
+        model_modules.append(tool_shed_install)
+
+    result = ModelMapping(model_modules, engine=engine)
+
     # Create tables if needed
     if create_tables:
         metadata.create_all()
         # metadata.engine.commit()
-    # Pack everything into a bunch -- inspecting should work better than
-    # grabbing everything in globals(), but it's possible that there's code
-    # working somewhere that expects random stuff we'd incidentally included.
-    m_obs = inspect.getmembers(model, inspect.isclass)
-    m_obs = dict([m for m in m_obs if m[1].__module__ == 'galaxy.model'])
-    result = Bunch( **m_obs )
-    result.engine = engine
-    result.session = Session
-    # For backward compatibility with "model.context.current"
-    result.context = Session
+
     result.create_tables = create_tables
     #load local galaxy security policy
     result.security_agent = GalaxyRBACAgent( result )
     return result
-
-def get_suite():
-    """Get unittest suite for this module"""
-    import unittest, mapping_tests
-    return unittest.makeSuite( mapping_tests.MappingTests )
-

@@ -1,8 +1,19 @@
+import common
+import string
+import os
+import re
+import test_db_util
+import simplejson
+import shutil
+import logging
+import time
+import tempfile
+import tarfile
 import galaxy.webapps.tool_shed.util.hgweb_config
-import galaxy.model as galaxy_model
-import common, string, os, re, test_db_util, simplejson, logging, time
+import galaxy.model.tool_shed_install as galaxy_model
 import galaxy.util as util
 from tool_shed.util import shed_util_common as suc
+from tool_shed.util import xml_util
 from base.twilltestcase import tc, from_json_string, TwillTestCase, security, urllib
 from tool_shed.util.encoding_util import tool_shed_encode, tool_shed_decode
 
@@ -44,7 +55,7 @@ class ShedTwillTestCase( TwillTestCase ):
         url = '/repository_review/create_component?operation=create'
         self.visit_url( url )
         self.submit_form( 1, 'create_component_button', **kwd )
-        
+
     def browse_category( self, category, strings_displayed=[], strings_not_displayed=[] ):
         url = '/repository/browse_valid_categories?sort=name&operation=valid_repositories_by_category&id=%s' % \
               self.security.encode_id( category.id )
@@ -89,6 +100,16 @@ class ShedTwillTestCase( TwillTestCase ):
         self.check_repository_changelog( repository )
         self.check_string_count_in_page( 'Repository metadata is associated with this change set.', metadata_count )
         
+    def check_exported_repository_dependency( self, dependency_filename, repository_name, repository_owner ):
+        root, error_message = xml_util.parse_xml( dependency_filename )
+        for elem in root.findall( 'repository' ):
+            if 'changeset_revision' in elem:
+                raise AssertionError( 'Exported repository %s with owner %s has a dependency with a defined changeset revision.' % \
+                                      ( repository_name, repository_owner ) )
+            if 'toolshed' in elem:
+                raise AssertionError( 'Exported repository %s with owner %s has a dependency with a defined tool shed.' % \
+                                      ( repository_name, repository_owner ) )
+
     def check_for_valid_tools( self, repository, strings_displayed=[], strings_not_displayed=[] ):
         strings_displayed.append( 'Valid tools' )
         self.display_manage_repository_page( repository, strings_displayed, strings_not_displayed )
@@ -114,7 +135,7 @@ class ShedTwillTestCase( TwillTestCase ):
         #                           version=section_version )
         # This dict is appended to tool_panel_section_metadata[ tool_guid ]
         tool_panel_section = tool_panel_section_metadata[ tool_guid ][ 0 ][ 'name' ]
-        assert tool_panel_section == expected_tool_panel_section, 'Expected tool panel section %s, found %s\nMetadata: %s\n' % \
+        assert tool_panel_section == expected_tool_panel_section, 'Expected to find tool panel section *%s*, but instead found *%s*\nMetadata: %s\n' % \
             ( expected_tool_panel_section, tool_panel_section, metadata )
         
     def check_installed_repository_tool_dependencies( self, 
@@ -135,6 +156,24 @@ class ShedTwillTestCase( TwillTestCase ):
         self.visit_galaxy_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
         
+    def check_manifest( self, manifest_filepath, owner=None ):
+        root, error_message = xml_util.parse_xml( manifest_filepath )
+        for elem in root.findall( 'repository' ):
+            repository_name = elem.get( 'name' )
+            manifest_owner = elem.get( 'username' )
+            if owner is not None:
+                assert manifest_owner == owner, 'Expected repository %s to be owned by %s, but found %s' % \
+                    ( elem.get( 'name' ), owner, manifest_owner )
+            toolshed = elem.get( 'toolshed' )
+            changeset_revision = elem.get( 'changeset_revision' )
+            assert toolshed is None, 'Repository definition %s has a tool shed attribute %s.' % ( repository_name, toolshed )
+            assert changeset_revision is None, 'Repository definition %s specifies a changeset revision %s.' % \
+                ( repository_name, changeset_revision )
+            repository_archive = elem.find( 'archive' ).text
+            filepath, filename = os.path.split( manifest_filepath )
+            repository_path = os.path.join( filepath, repository_archive )
+            self.verify_repository_in_capsule( repository_path, repository_name, owner )
+
     def check_repository_changelog( self, repository, strings_displayed=[], strings_not_displayed=[] ):
         url = '/repository/view_changelog?id=%s' % self.security.encode_id( repository.id )
         self.visit_url( url )
@@ -348,7 +387,7 @@ class ShedTwillTestCase( TwillTestCase ):
         # Twill sets hidden form fields to read-only by default. We need to write to this field.
         form = tc.browser.get_form( 'select_files_to_delete' )
         form.find_control( "selected_files_to_delete" ).readonly = False
-        tc.fv( "1", "selected_files_to_delete", ','.join( files_to_delete ) )
+        tc.fv( "2", "selected_files_to_delete", ','.join( files_to_delete ) )
         tc.submit( 'select_files_to_delete_button' )
         self.check_for_strings( strings_displayed, strings_not_displayed )
         
@@ -374,7 +413,7 @@ class ShedTwillTestCase( TwillTestCase ):
     def display_installed_repository_manage_page( self, installed_repository, strings_displayed=[], strings_not_displayed=[] ):
         url = '/admin_toolshed/manage_repository?id=%s' % self.security.encode_id( installed_repository.id )
         self.visit_galaxy_url( url )
-        strings_displayed.append( installed_repository.installed_changeset_revision )
+        strings_displayed.append( str( installed_repository.installed_changeset_revision ) )
         self.check_for_strings( strings_displayed, strings_not_displayed )
         
     def display_installed_workflow_image( self, repository, workflow_name, strings_displayed=[], strings_not_displayed=[] ):
@@ -453,15 +492,15 @@ class ShedTwillTestCase( TwillTestCase ):
         original_information = dict( repo_name=repository.name, description=repository.description, long_description=repository.long_description )
         strings_displayed = []
         strings_not_displayed = []
-        for input_elem_name in [ 'repo_name', 'description', 'long_description' ]:
+        for input_elem_name in [ 'repo_name', 'description', 'long_description', 'repository_type' ]:
             if input_elem_name in kwd:
-                tc.fv( "1", input_elem_name, kwd[ input_elem_name ] )
+                tc.fv( "edit_repository", input_elem_name, kwd[ input_elem_name ] )
                 strings_displayed.append( self.escape_html( kwd[ input_elem_name ] ) )
         tc.submit( "edit_repository_button" )
         self.check_for_strings( strings_displayed )
         strings_displayed = []
         for input_elem_name in [ 'repo_name', 'description', 'long_description' ]:
-            tc.fv( "1", input_elem_name, original_information[ input_elem_name ] )
+            tc.fv( "edit_repository", input_elem_name, original_information[ input_elem_name ] )
             strings_displayed.append( self.escape_html( original_information[ input_elem_name ] ) )
         tc.submit( "edit_repository_button" )
         self.check_for_strings( strings_displayed )
@@ -479,7 +518,17 @@ class ShedTwillTestCase( TwillTestCase ):
             else:
                 string = string.replace( character, replacement )
         return string
-        
+
+    def export_capsule( self, repository ):
+        url = '/repository/export?repository_id=%s&changeset_revision=%s' % \
+            ( self.security.encode_id( repository.id ), self.get_repository_tip( repository ) )
+        self.visit_url( url )
+        self.submit_form( 'export_repository', 'export_repository_button' )
+        fd, capsule_filename = tempfile.mkstemp()
+        os.close( fd )
+        file( capsule_filename, 'w' ).write( self.last_page() )
+        return capsule_filename
+
     def fill_review_form( self, review_contents_dict, strings_displayed=[], strings_not_displayed=[] ):
         kwd = dict()
         changed = False
@@ -567,16 +616,20 @@ class ShedTwillTestCase( TwillTestCase ):
         if not os.path.exists( temp_path ):
             os.makedirs( temp_path )
         return temp_path
-        
+
     def get_datatypes_count( self ):
-        url = '/admin/view_datatypes_registry'
+        url = '/api/datatypes?upload_only=false'
         self.visit_galaxy_url( url )
         html = self.last_page()
-        datatypes_count = re.search( 'registry contains (\d+) data types', html )
-        if datatypes_count:
-            return datatypes_count.group( 1 )
-        return None
+        datatypes = from_json_string( html )
+        return len( datatypes )
         
+    def get_env_sh_path( self, tool_dependency_name, tool_dependency_version, repository ):
+        '''Return the absolute path to an installed repository's env.sh file.'''
+        env_sh_path = os.path.join( self.get_tool_dependency_path( tool_dependency_name, tool_dependency_version, repository ),
+                                    'env.sh' )
+        return env_sh_path
+    
     def get_filename( self, filename, filepath=None ):
         if filepath is not None:
             return os.path.abspath( os.path.join( filepath, filename ) )
@@ -594,6 +647,15 @@ class ShedTwillTestCase( TwillTestCase ):
         else:
             last_review = None
         return last_review
+    
+    def get_tool_dependency_path( self, tool_dependency_name, tool_dependency_version, repository ):
+        '''Return the absolute path for an installed tool dependency.'''
+        return os.path.join( self.galaxy_tool_dependency_dir,
+                             tool_dependency_name,
+                             tool_dependency_version,
+                             repository.owner,
+                             repository.name,
+                             repository.installed_changeset_revision )
         
     def get_or_create_repository( self, owner=None, strings_displayed=[], strings_not_displayed=[], **kwd ):
         repository = test_db_util.get_repository_by_name_and_owner( kwd[ 'name' ], owner )
@@ -671,6 +733,13 @@ class ShedTwillTestCase( TwillTestCase ):
         repo = self.get_hg_repo( self.get_repo_path( repository ) )
         return str( repo.changectx( repo.changelog.tip() ) )
         
+    def get_sniffers_count( self ):
+        url = '/api/datatypes/sniffers'
+        self.visit_galaxy_url( url )
+        html = self.last_page()
+        sniffers = from_json_string( html )
+        return len( sniffers )
+
     def get_tools_from_repository_metadata( self, repository, include_invalid=False ):
         '''Get a list of valid and (optionally) invalid tool dicts from the repository metadata.'''
         valid_tools = []
@@ -708,12 +777,21 @@ class ShedTwillTestCase( TwillTestCase ):
                             post_submit_strings_not_displayed=[] ):
         self.display_manage_repository_page( repository )
         self.check_for_strings( strings_displayed, strings_not_displayed )
-        tc.fv( "user_access", "allow_push", '-Select one' )
         for username in usernames:
             tc.fv( "user_access", "allow_push", '+%s' % username )
         tc.submit( 'user_access_button' )
         self.check_for_strings( post_submit_strings_displayed, post_submit_strings_not_displayed )
-        
+
+    def import_capsule( self, filename, strings_displayed=[], strings_not_displayed=[],
+                        strings_displayed_after_submit=[], strings_not_displayed_after_submit=[] ):
+        url = '/repository/upload_capsule'
+        self.visit_url( url )
+        tc.formfile( 'upload_capsule', 'file_data', filename )
+        tc.submit( 'upload_capsule_button' )
+        self.check_for_strings( strings_displayed, strings_not_displayed )
+        self.submit_form( 'import_capsule', 'import_capsule_button' )
+        self.check_for_strings( strings_displayed_after_submit, strings_not_displayed_after_submit )
+
     def import_workflow( self, repository, workflow_name, strings_displayed=[], strings_not_displayed=[] ):
         url = '/admin_toolshed/import_workflow?repository_id=%s&workflow_name=%s' % \
             ( self.security.encode_id( repository.id ), tool_shed_encode( workflow_name ) )
@@ -790,35 +868,25 @@ class ShedTwillTestCase( TwillTestCase ):
               ( changeset_revision, repository_id, self.galaxy_url )
         self.visit_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
-        # This section is tricky, due to the way twill handles form submission. The tool dependency checkbox needs to 
+        # This section is tricky, due to the way twill handles form submission. The tool dependency checkbox needs to
         # be hacked in through tc.browser, putting the form field in kwd doesn't work.
         form = tc.browser.get_form( 'select_tool_panel_section' )
-        submit_button = 'select_tool_panel_section_button'
         if form is None:
             form = tc.browser.get_form( 'select_shed_tool_panel_config' )
-            submit_button = 'select_shed_tool_panel_config_button'
-        if 'install_tool_dependencies' in self.last_page():
-            checkbox = form.find_control( id="install_tool_dependencies" )
-            checkbox.disabled = False
-            if install_tool_dependencies:
-                checkbox.selected = True
-                kwd[ 'install_tool_dependencies' ] = 'True'
-            else:
-                checkbox.selected = False
-                kwd[ 'install_tool_dependencies' ] = 'False'
-        if 'install_repository_dependencies' in self.last_page():
-            kwd[ 'install_repository_dependencies' ] = str( install_repository_dependencies ).lower()
-        if 'shed_tool_conf' not in kwd:
-            kwd[ 'shed_tool_conf' ] = self.shed_tool_conf
-        if new_tool_panel_section:
-            kwd[ 'new_tool_panel_section' ] =  new_tool_panel_section
-        if not includes_tools_for_display_in_tool_panel:
-            self.check_for_strings( strings_displayed=[ 'Choose the configuration file' ] )
-        self.submit_form( 1, submit_button, **kwd )
+        assert form is not None, 'Could not find form select_shed_tool_panel_config or select_tool_panel_section.'
+        kwd = self.set_form_value( form, kwd, 'install_tool_dependencies', install_tool_dependencies )
+        kwd = self.set_form_value( form, kwd, 'install_repository_dependencies', install_repository_dependencies )
+        kwd = self.set_form_value( form, kwd, 'shed_tool_conf', self.shed_tool_conf )
+        if new_tool_panel_section is not None:
+            kwd = self.set_form_value( form, kwd, 'new_tool_panel_section', new_tool_panel_section )
+        submit_button_control = form.find_control( type='submit' )
+        assert submit_button_control is not None, 'No submit button found for form %s.' % form.attrs.get( 'id' )
+        self.submit_form( form.attrs.get( 'id' ), str( submit_button_control.name ), **kwd )
         self.check_for_strings( post_submit_strings_displayed, strings_not_displayed )
         repository_ids = self.initiate_installation_process( new_tool_panel_section=new_tool_panel_section )
+        log.debug( 'Waiting for the installation of repository IDs: %s' % str( repository_ids ) )
         self.wait_for_repository_installation( repository_ids )
-        
+
     def load_citable_url( self, 
                           username, 
                           repository_name, 
@@ -856,6 +924,17 @@ class ShedTwillTestCase( TwillTestCase ):
         self.visit_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
         
+    def load_checkable_revisions( self, strings_displayed=[], strings_not_displayed=[] ):
+        params = urllib.urlencode( dict( do_not_test='false',
+                                         downloadable='true',
+                                         includes_tools='true',
+                                         malicious='false',
+                                         missing_test_components='false',
+                                         skip_tool_test='false' ) )
+        api_url = '%s?%s' % ( '/'.join( [ self.url, 'api', 'repository_revisions' ] ), params )
+        self.visit_url( api_url )
+        self.check_for_strings( strings_displayed, strings_not_displayed )
+
     def load_display_tool_page( self, repository, tool_xml_path, changeset_revision, strings_displayed=[], strings_not_displayed=[] ):
         url = '/repository/display_tool?repository_id=%s&tool_config=%s&changeset_revision=%s' % \
               ( self.security.encode_id( repository.id ), tool_xml_path, changeset_revision )
@@ -969,6 +1048,12 @@ class ShedTwillTestCase( TwillTestCase ):
         self.visit_url( url )
         self.check_for_strings( [ 'All repository metadata has been reset.' ] )
         
+    def repair_installed_repository( self, repository ):
+        repository_id = self.security.encode_id( repository.id )
+        url = '/admin_toolshed/repair_repository?id=%s' % repository_id
+        self.visit_galaxy_url( url )
+        self.submit_form( 'repair_repository', 'repair_repository_button' )
+    
     def review_repository( self, repository, review_contents_dict, user=None, changeset_revision=None ):
         strings_displayed = []
         strings_not_displayed = []
@@ -1013,6 +1098,23 @@ class ShedTwillTestCase( TwillTestCase ):
         tc.submit()
         self.check_for_strings( post_submit_strings_displayed, post_submit_strings_not_displayed ) 
         
+    def set_form_value( self, form, kwd, field_name, field_value ):
+        '''
+        Set the form field field_name to field_value if it exists, and return the provided dict containing that value. If
+        the field does not exist in the provided form, return a dict without that index.
+        '''
+        form_id = form.attrs.get( 'id' )
+        controls = [ control for control in form.controls if str( control.name ) == field_name ]
+        if len( controls ) > 0:
+            log.debug( 'Setting field %s of form %s to %s.' % ( field_name, form_id, str( field_value ) ) )
+            tc.formvalue( form_id, field_name, str( field_value ) )
+            kwd[ field_name ] = str( field_value )
+        else:
+            if field_name in kwd:
+                log.debug( 'No field %s in form %s, discarding from return value.' % ( str( control ), str( form_id ) ) )
+                del( kwd[ field_name ] )
+        return kwd
+
     def set_repository_deprecated( self, repository, set_deprecated=True, strings_displayed=[], strings_not_displayed=[] ):
         url = '/repository/deprecate?id=%s&mark_deprecated=%s' % ( self.security.encode_id( repository.id ), set_deprecated )
         self.visit_url( url )
@@ -1025,21 +1127,25 @@ class ShedTwillTestCase( TwillTestCase ):
         self.check_for_strings( strings_displayed, strings_not_displayed )
         
     def set_skip_tool_tsts_flag( self, repository, flag_value, reason, changeset_revision=None ):
-        '''
-        NOTE: As with certain other methods in this test suite, the form can't easily be filled out, so we're emulating the
-        form's expected behavior with url parameters, in particular the checkbox behavior.
-        '''
         if changeset_revision is None:
             changeset_revision = self.get_repository_tip( repository )
         self.display_manage_repository_page( repository, changeset_revision=changeset_revision )
-        params = 'skip_tool_tests=true&%s' % ( urllib.urlencode( dict( changeset_revision=changeset_revision,
-                                                                       id=self.security.encode_id( repository.id ),
-                                                                       skip_tool_tests=str( flag_value ), 
-                                                                       skip_tool_tests_comment=reason, 
-                                                                       skip_tool_tests_button='Save' ) ) )
-        url = '/repository/manage_repository?%s' % params
-        self.visit_url( url )
-        self.check_for_strings( strings_displayed=[ 'Tools in this revision', 'automated test framework' ] )
+        form = tc.browser.get_form( 'skip_tool_tests' )
+        assert form is not None, 'Could not find form skip_tool_tests.'
+        for control in form.controls:
+            control_name = str( control.name )
+            if control_name == 'skip_tool_tests' and control.type == 'checkbox':
+                checkbox = control.get()
+                checkbox.selected = flag_value
+            elif control_name == 'skip_tool_tests_comment':
+                tc.browser.clicked( form, control )
+                tc.formvalue( 'skip_tool_tests', control_name, reason )
+        kwd = dict()
+        self.submit_form( 'skip_tool_tests', 'skip_tool_tests_button', **kwd )
+        if flag_value is True:
+            self.check_for_strings( strings_displayed=[ 'Tools in this revision will not be tested by the automated test framework' ] )
+        else:
+            self.check_for_strings( strings_displayed=[ 'Tools in this revision will be tested by the automated test framework' ] )
         
     def tip_has_metadata( self, repository ):
         tip = self.get_repository_tip( repository )
@@ -1073,6 +1179,10 @@ class ShedTwillTestCase( TwillTestCase ):
         self.visit_galaxy_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
         
+    def update_tool_shed_status( self ):
+        url = '/admin_toolshed/update_tool_shed_status_for_installed_repository?all_installed_repositories=True'
+        self.visit_galaxy_url( url )
+    
     def upload_file( self, 
                      repository, 
                      filename, 
@@ -1154,6 +1264,15 @@ class ShedTwillTestCase( TwillTestCase ):
         tc.submit( "upload_button" )
         self.check_for_strings( strings_displayed, strings_not_displayed )
 
+    def verify_capsule_contents( self, capsule_filepath, owner ):
+        tar_object = tarfile.open( capsule_filepath, 'r:*' )
+        extraction_path = tempfile.mkdtemp()
+        tar_object.extractall( extraction_path )
+        for root, dirs, files in os.walk( extraction_path ):
+            if 'manifest.xml' in files:
+                self.check_manifest( os.path.join( root, 'manifest.xml' ), owner=owner )
+        shutil.rmtree( extraction_path )
+
     def verify_installed_repositories( self, installed_repositories=[], uninstalled_repositories=[] ):
         for repository_name, repository_owner in installed_repositories:
             galaxy_repository = test_db_util.get_installed_repository_by_name_owner( repository_name, repository_owner )
@@ -1226,6 +1345,17 @@ class ShedTwillTestCase( TwillTestCase ):
         # or we know that the repository was not correctly installed!
         assert found, 'No entry for %s in %s.' % ( required_data_table_entry, self.shed_tool_data_table_conf )
         
+    def verify_repository_in_capsule( self, repository_archive, repository_name, repository_owner ):
+        repository_extraction_dir = tempfile.mkdtemp()
+        repository_tar_object = tarfile.open( repository_archive, 'r:*' )
+        repository_tar_object.extractall( repository_extraction_dir )
+        for root, dirs, files in os.walk( repository_extraction_dir ):
+            for filename in files:
+                if filename in [ 'tool_dependencies.xml', 'repository_dependencies.xml' ]:
+                    dependency_filepath = os.path.join( root, filename )
+                    self.check_exported_repository_dependency( dependency_filepath, repository_name, repository_owner )
+        shutil.rmtree( repository_extraction_dir )
+
     def verify_repository_reviews( self, repository, reviewer=None, strings_displayed=[], strings_not_displayed=[] ):
         changeset_revision = self.get_repository_tip( repository )
         # Verify that the currently logged in user has a repository review for the specified repository, reviewer, and changeset revision.
@@ -1284,6 +1414,6 @@ class ShedTwillTestCase( TwillTestCase ):
                     # This timeout currently defaults to 180 seconds, or 3 minutes.
                     if timeout_counter > common.repository_installation_timeout:
                         raise AssertionError( 'Repository installation timed out, %d seconds elapsed, repository state is %s.' % \
-                                              ( timeout_counter, repository.status ) )
+                                              ( timeout_counter, galaxy_repository.status ) )
                         break
                     time.sleep( 1 )

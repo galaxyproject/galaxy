@@ -11,7 +11,8 @@ import time
 from Queue import Empty, Queue
 
 from galaxy import model
-from galaxy.jobs import handler, JobWrapper, NoopQueue, Sleeper
+from galaxy.util.sleeper import Sleeper
+from galaxy.jobs import handler, JobWrapper, NoopQueue
 from galaxy.util.json import from_json_string
 
 log = logging.getLogger( __name__ )

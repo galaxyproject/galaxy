@@ -46,7 +46,7 @@ class GenomeIndexToolAction( ToolAction ):
 
         job_wrapper = GenomeIndexToolWrapper( job )
         cmd_line = job_wrapper.setup_job( assoc )
-        
+
         #
         # Add parameters to job_parameter table.
         #
@@ -64,4 +64,4 @@ class GenomeIndexToolAction( ToolAction ):
         log.info( "Added genome index job to the job queue, id: %s" % str( job.id ) )
 
         return job, odict()
-        
+

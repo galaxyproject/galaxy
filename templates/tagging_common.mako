@@ -77,7 +77,7 @@
                 %endif
                 ## Add "add tag" button.
                 %if render_add_tag_button:
-                    <img src='${h.url_for('/static/images/fugue/tag--plus.png')}' class="add-tag-button tooltip" title="Add tags"/>
+                    <img src='${h.url_for('/static/images/fugue/tag--plus.png')}' class="add-tag-button" title="Add tags"/>
                 %endif
             %endif
         </div>

@@ -21,7 +21,7 @@
 
 <%def name="stylesheets()">
     ${parent.stylesheets()}
-    ${h.css('base','panel_layout','jquery.rating')}
+    ${h.css('base','jquery.rating')}
 </%def>
 
 <%def name="javascripts()">
@@ -33,7 +33,7 @@
     ${render_msg( message, status )}
 %endif
 
-${render_tool_shed_repository_actions( repository, repo=None, metadata=None, changeset_revision=None )}
+${render_tool_shed_repository_actions( repository, metadata=None, changeset_revision=None )}
 
 %if repository.user != trans.user:
     <div class="toolForm">
@@ -44,6 +44,7 @@ ${render_tool_shed_repository_actions( repository, repo=None, metadata=None, cha
                 ${render_clone_str( repository )}
             </div>
         %endif
+        ${render_repository_type_select_field( repository_type_select_field, render_help=False )}
         <div class="toolFormBody">
             <div class="form-row">
                 <label>Description:</label>

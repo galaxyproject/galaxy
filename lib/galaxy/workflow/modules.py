@@ -250,7 +250,6 @@ class ToolModule( WorkflowModule ):
                 module.version_changes.append("%s: using version '%s' instead of version '%s' indicated in this workflow." % (tool_id, module.tool.version, step.tool_version))
             module.state.inputs = module.tool.params_from_strings( step.tool_inputs, trans.app, ignore_errors=True )
             module.errors = step.tool_errors
-            # module.post_job_actions = step.post_job_actions
             module.workflow_outputs = step.workflow_outputs
             pjadict = {}
             for pja in step.post_job_actions:
@@ -262,8 +261,8 @@ class ToolModule( WorkflowModule ):
     @classmethod
     def __get_tool_version( cls, trans, tool_id ):
         # Return a ToolVersion if one exists for tool_id.
-        return trans.sa_session.query( trans.app.model.ToolVersion ) \
-                               .filter( trans.app.model.ToolVersion.table.c.tool_id == tool_id ) \
+        return trans.install_model.context.query( trans.install_model.ToolVersion ) \
+                               .filter( trans.install_model.ToolVersion.table.c.tool_id == tool_id ) \
                                .first()
 
     def save_to_step( self, step ):

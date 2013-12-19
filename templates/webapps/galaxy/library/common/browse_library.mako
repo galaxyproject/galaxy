@@ -300,7 +300,7 @@
                 <td id="libraryItemInfo">${render_library_item_info( ldda )}</td>
                 <td>${ldda.extension}</td>
             % endif
-            <td>${ldda.create_time.strftime( "%Y-%m-%d" )}</td>
+            <td>${ldda.create_time.strftime( trans.app.config.pretty_datetime_format )}</td>
             <td>${ldda.get_size( nice_size=True )}</td>
         </tr>
         <%

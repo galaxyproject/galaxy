@@ -39,6 +39,7 @@ class Grid( object ):
     cur_filter_pref_name = ".filter"
     cur_sort_key_pref_name = ".sort_key"
     pass_through_operations = {}
+    legend = None
     def __init__( self ):
         # Determine if any multiple row operations are defined
         self.has_multiple_item_operations = False
@@ -197,7 +198,10 @@ class Grid( object ):
             if page_num == 0:
                 # Show all rows in page.
                 total_num_rows = query.count()
+                # persistent page='all'
                 page_num = 1
+                #page_num = 'all'
+                #extra_url_args['page'] = page_num
                 num_pages = 1
             else:
                 # Show a limited number of rows. Before modifying query, get the total number of rows that query
@@ -225,7 +229,13 @@ class Grid( object ):
         params = cur_filter_dict.copy()
         params['sort'] = sort_key
         params['async'] = ( 'async' in kwargs )
-        trans.log_action( trans.get_user(), unicode( "grid.view" ), context, params )
+
+        #TODO:??
+        # commenting this out; when this fn calls session.add( action ) and session.flush the query from this fn
+        # is effectively 'wiped' out. Nate believes it has something to do with our use of session( autocommit=True )
+        # in mapping.py. If you change that to False, the log_action doesn't affect the query
+        # Below, I'm rendering the template first (that uses query), then calling log_action, then returning the page
+        #trans.log_action( trans.get_user(), unicode( "grid.view" ), context, params )
 
         # Render grid.
         def url( *args, **kwargs ):
@@ -254,13 +264,14 @@ class Grid( object ):
             return url_for( **new_kwargs)
 
         self.use_panels = ( kwargs.get( 'use_panels', False ) in [ True, 'True', 'true' ] )
+        self.advanced_search = ( kwargs.get( 'advanced_search', False ) in [ True, 'True', 'true' ] )
         async_request = ( ( self.use_async ) and ( kwargs.get( 'async', False ) in [ True, 'True', 'true'] ) )
         # Currently, filling the template returns a str object; this requires decoding the string into a
         # unicode object within mako templates. What probably should be done is to return the template as
         # utf-8 unicode; however, this would require encoding the object as utf-8 before returning the grid
         # results via a controller method, which is require substantial changes. Hence, for now, return grid
         # as str.
-        return trans.fill_template( iff( async_request, self.async_template, self.template ),
+        page = trans.fill_template( iff( async_request, self.async_template, self.template ),
                                     grid=self,
                                     query=query,
                                     cur_page_num = page_num,
@@ -275,11 +286,15 @@ class Grid( object ):
                                     status = status,
                                     message = message,
                                     use_panels=self.use_panels,
-                                    show_item_checkboxes = ( self.show_item_checkboxes or 
+                                    advanced_search=self.advanced_search,
+                                    show_item_checkboxes = ( self.show_item_checkboxes or
                                                              kwargs.get( 'show_item_checkboxes', '' ) in [ 'True', 'true' ] ),
                                     # Pass back kwargs so that grid template can set and use args without
                                     # grid explicitly having to pass them.
                                     kwargs=kwargs )
+        trans.log_action( trans.get_user(), unicode( "grid.view" ), context, params )
+        return page
+
     def get_ids( self, **kwargs ):
         id = []
         if 'id' in kwargs:
@@ -308,9 +323,9 @@ class Grid( object ):
 
 class GridColumn( object ):
     def __init__( self, label, key=None, model_class=None, method=None, format=None, \
-                  link=None, attach_popup=False, visible=True, ncells=1, nowrap=False, \
+                  link=None, attach_popup=False, visible=True, nowrap=False, \
                   # Valid values for filterable are ['standard', 'advanced', None]
-                  filterable=None, sortable=True, label_id_prefix=None ):
+                  filterable=None, sortable=True, label_id_prefix=None, inbound=False ):
         """Create a grid column."""
         self.label = label
         self.key = key
@@ -318,10 +333,10 @@ class GridColumn( object ):
         self.method = method
         self.format = format
         self.link = link
+        self.inbound = inbound
         self.nowrap = nowrap
         self.attach_popup = attach_popup
         self.visible = visible
-        self.ncells = ncells
         self.filterable = filterable
         # Column must have a key to be sortable.
         self.sortable = ( self.key is not None and sortable )
@@ -722,7 +737,7 @@ class SharingStatusColumn( GridColumn ):
 class GridOperation( object ):
     def __init__( self, label, key=None, condition=None, allow_multiple=True, allow_popup=True,
                   target=None, url_args=None, async_compatible=False, confirm=None,
-                  global_operation=None ):
+                  global_operation=None, inbound=False ):
         self.label = label
         self.key = key
         self.allow_multiple = allow_multiple
@@ -731,6 +746,7 @@ class GridOperation( object ):
         self.target = target
         self.url_args = url_args
         self.async_compatible = async_compatible
+        self.inbound = inbound
         # if 'confirm' is set, then ask before completing the operation
         self.confirm = confirm
         # specify a general operation that acts on the full grid
@@ -760,9 +776,10 @@ class DisplayByUsernameAndSlugGridOperation( GridOperation ):
         return { 'action' : 'display_by_username_and_slug', 'username' : item.user.username, 'slug' : item.slug }
 
 class GridAction( object ):
-    def __init__( self, label=None, url_args=None ):
+    def __init__( self, label=None, url_args=None, inbound=False ):
         self.label = label
         self.url_args = url_args
+        self.inbound = inbound
 
 class GridColumnFilter( object ):
     def __init__( self, label, args=None ):

@@ -3,27 +3,20 @@
 ## can be easily subclassed. Importing methods like this template does
 ## not make it possible to easily subclass templates.
 ##
-<%namespace file="../grid_base.mako" import="*" />
-
-${stylesheets()}
-${grid_javascripts()}
+<%namespace name="grid_base" file="../grid_base.mako" import="*" />
 
 <%def name="select_header()">
     <script type="text/javascript">
         // Load all grid URLs into modal-body element so that
         // grid + links stays embedded.
-        var load_urls_into_modal_body = function() {
-            $(".addtracktab, #grid-table a").click(function() {
-                var modal_body = $(".modal-body");
+        $(document).ready(function() {
+            $(".addtracktab").click(function() {
+                var modal_body = $(this).closest('.inbound');
                 if (modal_body.length !== 0) {
                     modal_body.load($(this).attr("href"));
                     return false;
                 }
             });
-        };
-        // Need to process label URLs when document loaded and when grid changes. 
-        $(document).ready(function() {
-            load_urls_into_modal_body();
         });
     </script>
     <style>
@@ -81,12 +74,11 @@ ${grid_javascripts()}
     <div class="divider"></div>
 </%def>
 
-${select_header()}
 ## Need to define title so that it can be overridden by child templates.
 <%def name="title()"></%def>
 
-${self.title()}
-
-${render_grid_header( grid, False )}
-${render_grid_table( grid, show_item_checkboxes=show_item_checkboxes )}
-
+<div class='inbound'>
+    ${select_header()}
+    ${self.title()}
+    ${grid_base.load(True)}
+</div>

@@ -120,7 +120,7 @@ class QuotaAgent( NoQuotaAgent ):
             dqa = self.model.DefaultQuotaAssociation( default_type, quota )
         self.sa_session.add( dqa )
         self.sa_session.flush()
-        
+
     def get_percent( self, trans=None, user=False, history=False, usage=False, quota=False ):
         """
         Return the percentage of any storage quota applicable to the user/transaction.

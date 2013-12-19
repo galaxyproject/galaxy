@@ -2,6 +2,11 @@
 Custom exceptions for Galaxy
 """
 
+from galaxy import eggs
+eggs.require( "Paste" )
+
+from paste import httpexceptions
+
 class MessageException( Exception ):
     """
     Exception to make throwing errors from deep in controllers easier
@@ -20,6 +25,10 @@ class ItemAccessibilityException( MessageException ):
 
 class ItemOwnershipException( MessageException ):
     pass
+
+class ActionInputError( MessageException ):
+    def __init__( self, err_msg, type="error" ):
+        super( ActionInputError, self ).__init__( err_msg, type )
 
 class ObjectNotFound( Exception ):
     """ Accessed object was not found """

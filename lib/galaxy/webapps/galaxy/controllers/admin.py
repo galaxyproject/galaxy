@@ -4,6 +4,7 @@ import os
 
 import galaxy.util
 from galaxy import model
+from galaxy.model import tool_shed_install as install_model
 from galaxy import web
 from galaxy.actions.admin import AdminActions
 from galaxy.exceptions import MessageException
@@ -81,8 +82,8 @@ class UserListGrid( grids.Grid ):
         # Columns that are valid for filtering but are not visible.
         grids.DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" )
     ]
-    columns.append( grids.MulticolFilterColumn( "Search", 
-                                                cols_to_filter=[ columns[0], columns[1] ], 
+    columns.append( grids.MulticolFilterColumn( "Search",
+                                                cols_to_filter=[ columns[0], columns[1] ],
                                                 key="free-text-search",
                                                 visible=False,
                                                 filterable="standard" ) )
@@ -168,8 +169,8 @@ class RoleListGrid( grids.Grid ):
         # Columns that are valid for filtering but are not visible.
         grids.DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" )
     ]
-    columns.append( grids.MulticolFilterColumn( "Search", 
-                                                cols_to_filter=[ columns[0], columns[1], columns[2] ], 
+    columns.append( grids.MulticolFilterColumn( "Search",
+                                                cols_to_filter=[ columns[0], columns[1], columns[2] ],
                                                 key="free-text-search",
                                                 visible=False,
                                                 filterable="standard" ) )
@@ -241,8 +242,8 @@ class GroupListGrid( grids.Grid ):
         # Columns that are valid for filtering but are not visible.
         grids.DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" )
     ]
-    columns.append( grids.MulticolFilterColumn( "Search", 
-                                                cols_to_filter=[ columns[0], columns[1], columns[2] ], 
+    columns.append( grids.MulticolFilterColumn( "Search",
+                                                cols_to_filter=[ columns[0], columns[1], columns[2] ],
                                                 key="free-text-search",
                                                 visible=False,
                                                 filterable="standard" ) )
@@ -332,8 +333,8 @@ class QuotaListGrid( grids.Grid ):
         # Columns that are valid for filtering but are not visible.
         grids.DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" )
     ]
-    columns.append( grids.MulticolFilterColumn( "Search", 
-                                                cols_to_filter=[ columns[0], columns[1], columns[2] ], 
+    columns.append( grids.MulticolFilterColumn( "Search",
+                                                cols_to_filter=[ columns[0], columns[1], columns[2] ],
                                                 key="free-text-search",
                                                 visible=False,
                                                 filterable="standard" ) )
@@ -406,7 +407,7 @@ class ToolVersionListGrid( grids.Grid ):
             return tool_ids_str
     # Grid definition
     title = "Tool versions"
-    model_class = model.ToolVersion
+    model_class = install_model.ToolVersion
     template='/admin/tool_version/grid.mako'
     default_sort_key = "tool_id"
     columns = [
@@ -415,7 +416,7 @@ class ToolVersionListGrid( grids.Grid ):
                       attach_popup=False ),
         ToolVersionsColumn( "Version lineage by tool id (parent/child ordered)" )
     ]
-    columns.append( grids.MulticolFilterColumn( "Search tool id", 
+    columns.append( grids.MulticolFilterColumn( "Search tool id",
                                                 cols_to_filter=[ columns[0] ],
                                                 key="free-text-search",
                                                 visible=False,
@@ -427,11 +428,12 @@ class ToolVersionListGrid( grids.Grid ):
     num_rows_per_page = 50
     preserve_state = False
     use_paging = True
+    
     def build_initial_query( self, trans, **kwd ):
-        return trans.sa_session.query( self.model_class )
+        return trans.install_model.context.query( self.model_class )
 
 class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaParamParser ):
-    
+
     user_list_grid = UserListGrid()
     role_list_grid = RoleListGrid()
     group_list_grid = GroupListGrid()
@@ -661,7 +663,7 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
                                                                         status='error' ) )
         if do_op == True or ( do_op != False and params.get( do_op, False ) ):
             try:
-                message = op_method( quota, params ) 
+                message = op_method( quota, params )
                 return None, trans.response.send_redirect( web.url_for( controller='admin',
                                                                         action='quotas',
                                                                         webapp=params.webapp,

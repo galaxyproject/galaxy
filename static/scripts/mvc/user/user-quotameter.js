@@ -57,31 +57,33 @@ var UserQuotaMeter = Backbone.View.extend( LoggableMixin ).extend(
         var modelJson = this.model.toJSON(),
             //prevPercent = this.model.previous( 'quota_percent' ),
             percent = modelJson.quota_percent,
-            meter = $( UserQuotaMeter.templates.quota( modelJson ) );
+            //meter = $( UserQuotaMeter.templates.quota( modelJson ) );
+            $meter = $( this._templateQuotaMeter( modelJson ) ),
+            $bar = $meter.find( '.progress-bar' );
         //this.log( this + '.rendering quota, percent:', percent, 'meter:', meter );
 
         // OVER QUOTA: color the quota bar and show the quota error message
         if( this.isOverQuota() ){
             //this.log( '\t over quota' );
-            meter.addClass( 'progress-danger' );
-            meter.find( '#quota-meter-text' ).css( 'color', 'white' );
+            $bar.attr( 'class', 'progress-bar progress-bar-danger' );
+            $meter.find( '.quota-meter-text' ).css( 'color', 'white' );
             //TODO: only trigger event if state has changed
             this.trigger( 'quota:over', modelJson );
 
         // APPROACHING QUOTA: color the quota bar
         } else if( percent >= this.options.warnAtPercent ){
             //this.log( '\t approaching quota' );
-            meter.addClass( 'progress-warning' );
+            $bar.attr( 'class', 'progress-bar progress-bar-warning' );
             //TODO: only trigger event if state has changed
             this.trigger( 'quota:under quota:under:approaching', modelJson );
 
         // otherwise, hide/don't use the msg box
         } else {
-            meter.addClass( 'progress-success' );
+            $bar.attr( 'class', 'progress-bar progress-bar-success' );
             //TODO: only trigger event if state has changed
             this.trigger( 'quota:under quota:under:ok', modelJson );
         }
-        return meter;
+        return $meter;
     },
 
     /** Render the meter when the user has NO applicable quota. Will render as text
@@ -89,7 +91,8 @@ var UserQuotaMeter = Backbone.View.extend( LoggableMixin ).extend(
      *  @returns {jQuery} the rendered text
      */
     _render_usage : function(){
-        var usage = $( UserQuotaMeter.templates.usage( this.model.toJSON() ) );
+        //var usage = $( UserQuotaMeter.templates.usage( this.model.toJSON() ) );
+        var usage = $( this._templateUsage( this.model.toJSON() ) );
         this.log( this + '.rendering usage:', usage );
         return usage;
     },
@@ -120,14 +123,29 @@ var UserQuotaMeter = Backbone.View.extend( LoggableMixin ).extend(
         return this;
     },
 
+    _templateQuotaMeter : function( data ){
+        return [
+            '<div id="quota-meter" class="quota-meter progress">',
+                '<div class="progress-bar" style="width: ', data.quota_percent, '%"></div>',
+                '<div class="quota-meter-text" style="top: 6px"',
+                    (( data.nice_total_disk_usage )?( ' title="Using ' + data.nice_total_disk_usage + '">' ):( '>' )),
+                    _l( 'Using' ), ' ', data.quota_percent, '%',
+                '</div>',
+            '</div>'
+        ].join( '' );
+    },
+
+    _templateUsage : function( data ){
+        return [
+            '<div id="quota-meter" class="quota-meter" style="background-color: transparent">',
+                '<div class="quota-meter-text" style="top: 6px; color: white">',
+                    (( data.nice_total_disk_usage )?( _l( 'Using ' ) + data.nice_total_disk_usage ):( '' )),
+                '</div>',
+            '</div>'
+        ].join( '' );
+    },
+
     toString : function(){
         return 'UserQuotaMeter(' + this.model + ')';
     }
 });
-
-
-//------------------------------------------------------------------------------ TEMPLATES
-UserQuotaMeter.templates = {
-    quota : Handlebars.templates[ 'template-user-quotaMeter-quota' ],
-    usage : Handlebars.templates[ 'template-user-quotaMeter-usage' ]
-};

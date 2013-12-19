@@ -22,13 +22,13 @@ class ToolAction( object ):
     """
     def execute( self, tool, trans, incoming={}, set_output_hid=True ):
         raise TypeError("Abstract method")
-    
+
 class DefaultToolAction( object ):
     """Default tool action is to run an external command"""
-    
+
     def collect_input_datasets( self, tool, param_values, trans ):
         """
-        Collect any dataset inputs from incoming. Returns a mapping from 
+        Collect any dataset inputs from incoming. Returns a mapping from
         parameter name to Dataset instance for each tool parameter that is
         of the DataToolParameter type.
         """
@@ -117,9 +117,9 @@ class DefaultToolAction( object ):
         def make_dict_copy( from_dict ):
             """
             Makes a copy of input dictionary from_dict such that all values that are dictionaries
-            result in creation of a new dictionary ( a sort of deepcopy ).  We may need to handle 
-            other complex types ( e.g., lists, etc ), but not sure... 
-            Yes, we need to handle lists (and now are)... 
+            result in creation of a new dictionary ( a sort of deepcopy ).  We may need to handle
+            other complex types ( e.g., lists, etc ), but not sure...
+            Yes, we need to handle lists (and now are)...
             """
             copy_from_dict = {}
             for key, value in from_dict.items():
@@ -168,11 +168,11 @@ class DefaultToolAction( object ):
                     input_values[ input.name ] = galaxy.tools.SelectToolParameterWrapper( input, input_values[ input.name ], tool.app, other_values = incoming )
                 else:
                     input_values[ input.name ] = galaxy.tools.InputValueWrapper( input, input_values[ input.name ], incoming )
-        
+
         # Set history.
         if not history:
             history = tool.get_default_history_by_trans( trans, create=True )
-        
+
         out_data = odict()
         # Collect any input datasets from the incoming parameters
         inp_data = self.collect_input_datasets( tool, incoming, trans )
@@ -185,17 +185,17 @@ class DefaultToolAction( object ):
             if not data:
                 data = NoneDataset( datatypes_registry = trans.app.datatypes_registry )
                 continue
-                
+
             # Convert LDDA to an HDA.
             if isinstance(data, LibraryDatasetDatasetAssociation):
                 data = data.to_history_dataset_association( None )
                 inp_data[name] = data
-            
+
             else: # HDA
                 if data.hid:
                     input_names.append( 'data %s' % data.hid )
             input_ext = data.ext
-            
+
             if data.dbkey not in [None, '?']:
                 input_dbkey = data.dbkey
 
@@ -206,21 +206,28 @@ class DefaultToolAction( object ):
             db_datasets[ "chromInfo" ] = db_dataset
             incoming[ "chromInfo" ] = db_dataset.file_name
         else:
-            # For custom builds, chrom info resides in converted dataset; for built-in builds, chrom info resides in tool-data/shared.
+            # -- Get chrom_info from either a custom or built-in build. --
+
             chrom_info = None
             if trans.user and ( 'dbkeys' in trans.user.preferences ) and ( input_dbkey in from_json_string( trans.user.preferences[ 'dbkeys' ] ) ):
                 # Custom build.
                 custom_build_dict = from_json_string( trans.user.preferences[ 'dbkeys' ] )[ input_dbkey ]
-                if 'fasta' in custom_build_dict:
+                # HACK: the attempt to get chrom_info below will trigger the 
+                # fasta-to-len converter if the dataset is not available or,
+                # which will in turn create a recursive loop when 
+                # running the fasta-to-len tool. So, use a hack in the second
+                # condition below to avoid getting chrom_info when running the
+                # fasta-to-len converter.
+                if 'fasta' in custom_build_dict and tool.id != 'CONVERTER_fasta_to_len':
                     build_fasta_dataset = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( custom_build_dict[ 'fasta' ] )
                     chrom_info = build_fasta_dataset.get_converted_dataset( trans, 'len' ).file_name
-            
+
             if not chrom_info:
                 # Default to built-in build.
                 chrom_info = os.path.join( trans.app.config.len_file_path, "%s.len" % input_dbkey )
             incoming[ "chromInfo" ] = chrom_info
         inp_data.update( db_datasets )
-        
+
         # Determine output dataset permission/roles list
         existing_datasets = [ inp for inp in inp_data.values() if inp ]
         if existing_datasets:
@@ -242,7 +249,7 @@ class DefaultToolAction( object ):
         # Add the dbkey to the incoming parameters
         incoming[ "dbkey" ] = input_dbkey
         params = None #wrapped params are used by change_format action and by output.label; only perform this wrapping once, as needed
-        # Keep track of parent / child relationships, we'll create all the 
+        # Keep track of parent / child relationships, we'll create all the
         # datasets first, then create the associations
         parent_to_child_pairs = []
         child_dataset_names = set()
@@ -258,7 +265,7 @@ class DefaultToolAction( object ):
                 if output.parent:
                     parent_to_child_pairs.append( ( output.parent, name ) )
                     child_dataset_names.add( name )
-                ## What is the following hack for? Need to document under what 
+                ## What is the following hack for? Need to document under what
                 ## conditions can the following occur? (james@bx.psu.edu)
                 # HACK: the output data has already been created
                 #      this happens i.e. as a result of the async controller
@@ -279,7 +286,7 @@ class DefaultToolAction( object ):
                             ext = input_extension
                         except Exception, e:
                             pass
-                    
+
                     #process change_format tags
                     if output.change_format:
                         if params is None:
@@ -322,14 +329,14 @@ class DefaultToolAction( object ):
                 object_store_id = data.dataset.object_store_id      # these will be the same thing after the first output
                 # This may not be neccesary with the new parent/child associations
                 data.designation = name
-                # Copy metadata from one of the inputs if requested. 
+                # Copy metadata from one of the inputs if requested.
                 if output.metadata_source:
                     data.init_meta( copy_from=inp_data[output.metadata_source] )
                 else:
                     data.init_meta()
                 # Take dbkey from LAST input
                 data.dbkey = str(input_dbkey)
-                # Set state 
+                # Set state
                 # FIXME: shouldn't this be NEW until the job runner changes it?
                 data.state = data.states.QUEUED
                 data.blurb = "queued"
@@ -351,7 +358,7 @@ class DefaultToolAction( object ):
                         params = make_dict_copy( incoming )
                         wrap_values( tool.inputs, params, skip_missing_values = not tool.check_values )
                     data.name = self._get_default_data_name( data, tool, on_text=on_text, trans=trans, incoming=incoming, history=history, params=params, job_params=job_params )
-                # Store output 
+                # Store output
                 out_data[ name ] = data
                 if output.actions:
                     #Apply pre-job tool-output-dataset actions; e.g. setting metadata, changing format
@@ -373,7 +380,7 @@ class DefaultToolAction( object ):
             parent_dataset = out_data[ parent_name ]
             child_dataset = out_data[ child_name ]
             parent_dataset.children.append( child_dataset )
-        # Store data after custom code runs 
+        # Store data after custom code runs
         trans.sa_session.flush()
         # Create the job object
         job = trans.app.model.Job()
@@ -454,7 +461,7 @@ class DefaultToolAction( object ):
             for name in inp_data.keys():
                 dataset = inp_data[ name ]
             redirect_url = tool.parse_redirect_url( dataset, incoming )
-            # GALAXY_URL should be include in the tool params to enable the external application 
+            # GALAXY_URL should be include in the tool params to enable the external application
             # to send back to the current Galaxy instance
             GALAXY_URL = incoming.get( 'GALAXY_URL', None )
             assert GALAXY_URL is not None, "GALAXY_URL parameter missing in tool config."

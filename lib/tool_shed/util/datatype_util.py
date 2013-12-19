@@ -58,7 +58,7 @@ def alter_config_and_load_prorietary_datatypes( app, datatypes_config, relative_
             for relative_path_to_datatype_file_name in datatype_class_modules:
                 datatype_file_name_path, datatype_file_name = os.path.split( relative_path_to_datatype_file_name )
                 for elem in registration.findall( 'datatype' ):
-                    # Handle 'type' attribute which should be something like one of the following: 
+                    # Handle 'type' attribute which should be something like one of the following:
                     # type="gmap:GmapDB"
                     # type="galaxy.datatypes.gmap:GmapDB"
                     dtype = elem.get( 'type', None )
@@ -166,7 +166,7 @@ def load_installed_datatypes( app, repository, relative_install_dir, deactivate=
     # Load proprietary datatypes and return information needed for loading proprietary datatypes converters and display applications later.
     metadata = repository.metadata
     repository_dict = None
-    datatypes_config = suc.get_config_from_disk( 'datatypes_conf.xml', relative_install_dir )
+    datatypes_config = suc.get_config_from_disk( suc.DATATYPES_CONFIG_FILENAME, relative_install_dir )
     if datatypes_config:
         converter_path, display_path = alter_config_and_load_prorietary_datatypes( app, datatypes_config, relative_install_dir, deactivate=deactivate )
         if converter_path or display_path:

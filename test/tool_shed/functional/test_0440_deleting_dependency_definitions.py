@@ -30,14 +30,14 @@ Simple repository dependencies:
 5. Delete repository_dependencies.xml from convert_chars_0440, and make sure convert_chars_0440 now has two installable revisions: 1 and 2
 
 Complex repository dependencies:
-1. Create and populate bwa_package_0440 so that it has a valid orphan tool dependency definition and an installable revision 0.
+1. Create and populate bwa_package_0440 so that it has a valid tool dependency definition and an installable revision 0.
 2. Create and populate bwa_base_0440 so that it has an installable revision 0.
 3. Add a valid complex repository dependency tool_dependencies.xml to bwa_base_0440 that points to the installable revision 0 of bwa_package_0440.
 4. Make sure that bwa_base_0440 installable revision is now revision 1 instead of revision 0.
 5. Delete tool_dependencies.xml from bwa_base_0440, and make sure bwa_base_0440 now has two installable revisions: 1 and 2
 
 Tool dependencies:
-1. Create and populate bwa_tool_dependency_0440 so that it has a valid orphan tool dependency definition and an installable revision 0.
+1. Create and populate bwa_tool_dependency_0440 so that it has a valid tool dependency definition and an installable revision 0.
 2. Delete tool_dependencies.xml from bwa_tool_dependency_0440, and make sure that bwa_tool_dependency_0440 still has
    a single installable revision 0.
 3. Add the same tool_dependencies.xml file to bwa_tool_dependency_0440, and make sure that bwa_tool_dependency_0440 
@@ -74,7 +74,7 @@ class TestDeletedDependencies( ShedTwillTestCase ):
                                          description='Description of Deleted Dependency Definitions category for test 0440' )
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        strings_displayed = [ "Repository 'column_maker_0440' has been created"  ]
+        strings_displayed = [ "Repository <b>column_maker_0440</b> has been created"  ]
         repository = self.get_or_create_repository( name=column_repository_name, 
                                                     description=column_repository_description, 
                                                     long_description=column_repository_long_description, 
@@ -99,7 +99,7 @@ class TestDeletedDependencies( ShedTwillTestCase ):
         category = test_db_util.get_category_by_name( 'Test 0440 Deleted Dependency Definitions' )
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        strings_displayed = [ "Repository 'convert_chars_0440' has been created"  ]
+        strings_displayed = [ "Repository <b>convert_chars_0440</b> has been created"  ]
         repository = self.get_or_create_repository( name=convert_repository_name, 
                                                     description=convert_repository_description, 
                                                     long_description=convert_repository_long_description, 
@@ -176,13 +176,13 @@ class TestDeletedDependencies( ShedTwillTestCase ):
     def test_0030_create_bwa_package_repository( self ):
         '''Create and populate the bwa_package_0440 repository.'''
         '''
-        We are at complex repository dependencies, step 1 - Create and populate bwa_package_0440 so that it has a valid orphan
+        We are at complex repository dependencies, step 1 - Create and populate bwa_package_0440 so that it has a valid
         tool dependency definition and an installable revision 0.
         '''
         category = test_db_util.get_category_by_name( 'Test 0440 Deleted Dependency Definitions' )
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        strings_displayed = [ "Repository 'bwa_package_0440' has been created"  ]
+        strings_displayed = [ "Repository <b>bwa_package_0440</b> has been created"  ]
         repository = self.get_or_create_repository( name=bwa_package_repository_name, 
                                                     description=bwa_package_repository_description, 
                                                     long_description=bwa_package_repository_long_description, 
@@ -208,7 +208,7 @@ class TestDeletedDependencies( ShedTwillTestCase ):
         category = test_db_util.get_category_by_name( 'Test 0440 Deleted Dependency Definitions' )
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        strings_displayed = [ "Repository 'bwa_base_0440' has been created"  ]
+        strings_displayed = [ "Repository <b>bwa_base_0440</b> has been created"  ]
         repository = self.get_or_create_repository( name=bwa_base_repository_name, 
                                                     description=bwa_base_repository_description, 
                                                     long_description=bwa_base_repository_long_description, 
@@ -285,13 +285,13 @@ class TestDeletedDependencies( ShedTwillTestCase ):
     def test_0055_create_bwa_tool_dependency_repository( self ):
         '''Create and populate the bwa_tool_dependency_0440 repository.'''
         '''
-        We are at tool dependencies, step 1 - Create and populate bwa_tool_dependency_0440 so that it has a valid orphan tool 
+        We are at tool dependencies, step 1 - Create and populate bwa_tool_dependency_0440 so that it has a valid tool 
         dependency definition and an installable revision 0.
         '''
         category = test_db_util.get_category_by_name( 'Test 0440 Deleted Dependency Definitions' )
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        strings_displayed = [ "Repository 'bwa_tool_dependency_0440' has been created"  ]
+        strings_displayed = [ "Repository <b>bwa_tool_dependency_0440</b> has been created"  ]
         repository = self.get_or_create_repository( name=bwa_tool_dependency_repository_name, 
                                                     description=bwa_tool_dependency_repository_description, 
                                                     long_description=bwa_tool_dependency_repository_long_description, 

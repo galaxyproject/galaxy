@@ -1,5 +1,8 @@
 import os, gzip, re, gzip, zipfile, binascii, bz2, imghdr
 from galaxy import util
+from StringIO import StringIO
+
+HTML_CHECK_LINES = 100
 
 try:
     import Image as PIL
@@ -31,9 +34,11 @@ def check_html( file_path, chunk=None ):
     regexp1 = re.compile( "<A\s+[^>]*HREF[^>]+>", re.I )
     regexp2 = re.compile( "<IFRAME[^>]*>", re.I )
     regexp3 = re.compile( "<FRAMESET[^>]*>", re.I )
-    regexp4 = re.compile( "<META[^>]*>", re.I )
+    regexp4 = re.compile( "<META[\W][^>]*>", re.I )
     regexp5 = re.compile( "<SCRIPT[^>]*>", re.I )
     lineno = 0
+    # TODO: Potentially reading huge lines into string here, this should be
+    # reworked.
     for line in temp:
         lineno += 1
         matches = regexp1.search( line ) or regexp2.search( line ) or regexp3.search( line ) or regexp4.search( line ) or regexp5.search( line )
@@ -41,7 +46,7 @@ def check_html( file_path, chunk=None ):
             if chunk is None:
                 temp.close()
             return True
-        if lineno > 100:
+        if HTML_CHECK_LINES and (lineno > HTML_CHECK_LINES):
             break
     if chunk is None:
         temp.close()
@@ -53,20 +58,15 @@ def check_binary( name, file_path=True ):
     if file_path:
         temp = open( name, "U" )
     else:
-        temp = name
+        temp = StringIO( name )
     chars_read = 0
-    for chars in temp:
-        for char in chars:
-            chars_read += 1
+    try:
+        for char in temp.read( 100 ):
             if util.is_binary( char ):
                 is_binary = True
                 break
-            if chars_read > 100:
-                break
-        if chars_read > 100:
-            break
-    if file_path:
-        temp.close()
+    finally:
+        temp.close( )
     return is_binary
 
 def check_gzip( file_path ):

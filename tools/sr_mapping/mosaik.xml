@@ -3,7 +3,7 @@
   <description/>
   <requirements><requirement type="package">mosaik</requirement></requirements>
   <command>
-    #set $processors = '-p 4'
+    #set $processors = '-p ${GALAXY_SLOTS:-4}'
     #set $lm = ''
     #if $paired.kind == 'single':
         #set $mfl = ''

@@ -3,7 +3,6 @@ define(["libs/underscore", "libs/d3", "viz/visualization"], function(_, d3, visu
 /**
  * Utility class for working with SVG.
  */
-// TODO: make into a mixin.
 var SVGUtils = Backbone.Model.extend({
 
     /**
@@ -85,10 +84,14 @@ var UsesTicks = {
      */
     formatNum: function(num, sigDigits) {
         // Use default of 2 sig. digits.
-        if (sigDigits === undefined) {
+        if (sigDigits === undefined)
             sigDigits = 2;
-        }
-
+       
+        // Verify input number
+        if (num === null)
+            return null;
+       
+        // Calculate return value
         var rval = null;
         if (num < 1) {
             rval = num.toPrecision(sigDigits);
@@ -236,7 +239,7 @@ var CircsterView = Backbone.View.extend({
                 
         // -- Render circular tracks. --
 
-        // Create a view for each track in the visualiation and render.
+        // Create a view for each track in the visualization and render.
         this.circular_views = circular_tracks.map(function(track, index) {
             var view = new CircsterBigWigTrackView({
                     el: svg.append('g')[0],
@@ -250,7 +253,7 @@ var CircsterView = Backbone.View.extend({
             
             return view;
         });
-
+        
         // -- Render chords tracks. --
 
         this.chords_views = chords_tracks.map(function(track) {
@@ -950,9 +953,97 @@ var CircsterChromInteractionsTrackView = CircsterTrackView.extend({
 
 });
 
+// circster app loader
+var Circster = Backbone.View.extend(
+{
+    initialize: function ()
+    {
+        // configure visualization
+        var genome = new visualization.Genome(galaxy_config.app.genome),
+        vis = new visualization.GenomeVisualization(galaxy_config.app.viz_config),
+        viz_view = new CircsterView(
+        {
+            // view pane
+            el                  : $('#center .unified-panel-body'),
+            
+            // gaps are difficult to set because it very dependent on chromosome size and organization.
+            total_gap           : 2 * Math.PI * 0.1,
+            genome              : genome,
+            model               : vis,
+            dataset_arc_height  : 25
+        });
+        
+        // render vizualization
+        viz_view.render();
+        
+        // setup title
+        $('#center .unified-panel-header-inner').append(galaxy_config.app.viz_config.title + " " + galaxy_config.app.viz_config.dbkey);
+    
+        // setup menu
+        var menu = create_icon_buttons_menu([
+        {   icon_class: 'plus-button', title: 'Add tracks', on_click: function()
+            {
+                visualization.select_datasets(galaxy_config.root + "visualization/list_current_history_datasets", galaxy_config.root + "api/datasets", vis.get('dbkey'), function(tracks)
+                {
+                    vis.add_tracks(tracks);
+                });
+            }
+        },{
+            icon_class: 'disk--arrow', title: 'Save', on_click: function()
+            {
+                // show saving dialog box
+                Galaxy.modal.show({title: "Saving...", body: "progress" });
+     
+                // link configuration
+                var view = galaxy_config.app.viz_config;
+                
+                // send to server
+                $.ajax({
+                    url: galaxy_config.root + "visualization/save",
+                    type: "POST",
+                    dataType: "json",
+                    data: {
+                        'id'        : view.vis_id,
+                        'title'     : view.title,
+                        'dbkey'     : view.dbkey,
+                        'type'      : 'trackster',
+                        'vis_json'  : JSON.stringify(view)
+                    }
+                }).success(function(vis_info) {
+                    Galaxy.modal.hide();
+                    view.vis_id = vis_info.vis_id;
+                    view.has_changes = false;
+            
+                    // needed to set URL when first saving a visualization
+                    window.history.pushState({}, "", vis_info.url + window.location.hash);
+                }).error(function() {
+                    // show dialog
+                    Galaxy.modal.show({
+                        title   : "Could Not Save",
+                        body    : "Could not save visualization. Please try again later.",
+                        buttons : { "Cancel": function() { Galaxy.modal.hide() } }
+                    });
+                });
+            }
+        },{
+            icon_class: 'cross-circle', title: 'Close', on_click: function()
+            {
+                window.location = galaxy_config.root + "visualization/list";
+            }
+        }], { tooltip_config: { placement: 'bottom' } });
+            
+        // add menu
+        menu.$el.attr("style", "float: right");
+        $("#center .unified-panel-header-inner").append(menu.$el);
+            
+        // manual tooltip config because default gravity is S and cannot be changed
+        $(".menu-button").tooltip( { placement: 'bottom' } );
+    }
+});
+
 // Module exports.
 return {
-    CircsterView: CircsterView
+    GalaxyApp: Circster
 };
 
 });

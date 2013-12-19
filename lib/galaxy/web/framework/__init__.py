@@ -9,6 +9,7 @@ import random
 import socket
 import string
 import time
+import hashlib
 from Cookie import CookieError
 
 
@@ -21,6 +22,7 @@ from galaxy.exceptions import MessageException
 from galaxy.util.json import to_json_string, from_json_string
 from galaxy.util.backports.importlib import import_module
 from galaxy.util.sanitize_html import sanitize_html
+from galaxy.util import safe_str_cmp
 
 pkg_resources.require( "simplejson" )
 import simplejson
@@ -110,6 +112,14 @@ def expose_api_raw( func ):
     """
     return expose_api( func, to_json=False )
 
+#DBTODO refactor these post-dist.
+def expose_api_raw_anonymous( func ):
+    """
+    Expose this function via the API but don't dump the results
+    to JSON.
+    """
+    return expose_api( func, to_json=False, user_required=False )
+
 def expose_api_anonymous( func, to_json=True ):
     """
     Expose this function via the API but don't require a set user.
@@ -128,7 +138,7 @@ def expose_api( func, to_json=True, user_required=True ):
         error_status = '403 Forbidden'
         if trans.error_message:
             return trans.error_message
-        if user_required and trans.user is None:
+        if user_required and trans.anonymous:
             error_message = "API Authentication Required for this request"
             return error
         if trans.request.body:
@@ -270,7 +280,7 @@ class WebApplication( base.WebApplication ):
 
     def add_ui_controllers( self, package_name, app ):
         """
-        Search for UI controllers in `package_name` and add 
+        Search for UI controllers in `package_name` and add
         them to the webapp.
         """
         from galaxy.web.base.controller import BaseUIController
@@ -294,7 +304,7 @@ class WebApplication( base.WebApplication ):
 
     def add_api_controllers( self, package_name, app ):
         """
-        Search for UI controllers in `package_name` and add 
+        Search for UI controllers in `package_name` and add
         them to the webapp.
         """
         from galaxy.web.base.controller import BaseAPIController
@@ -324,13 +334,14 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
     Encapsulates web transaction specific state for the Galaxy application
     (specifically the user's "cookie" session and history)
     """
-    def __init__( self, environ, app, webapp, session_cookie = None):
+
+    def __init__( self, environ, app, webapp, session_cookie=None):
         self.app = app
         self.webapp = webapp
         self.security = webapp.security
         base.DefaultWebTransaction.__init__( self, environ )
         self.setup_i18n()
-        self.sa_session.expunge_all()
+        self.expunge_all()
         self.debug = asbool( self.app.config.get( 'debug', False ) )
         # Flag indicating whether we are in workflow building mode (means
         # that the current history should not be used for parameter values
@@ -341,6 +352,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         self.__user = None
         self.galaxy_session = None
         self.error_message = None
+
         if self.environ.get('is_api_request', False):
             # With API requests, if there's a key, use it and associate the
             # user with the transaction.
@@ -348,6 +360,8 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
             # If an error message is set here, it's sent back using
             # trans.show_error in the response -- in expose_api.
             self.error_message = self._authenticate_api( session_cookie )
+        elif self.app.name == "reports":
+            self.galaxy_session = None
         else:
             #This is a web request, get or create session.
             self._ensure_valid_session( session_cookie )
@@ -367,14 +381,18 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
             client_locales = self.environ['HTTP_ACCEPT_LANGUAGE'].split( ',' )
             for locale in client_locales:
                 try:
-                    locales.append( Locale.parse( locale.split( ';' )[0], sep='-' ).language )
-                except UnknownLocaleError:
-                    pass
+                    locales.append( Locale.parse( locale.split( ';' )[0].strip(), sep='-' ).language )
+                except Exception, e:
+                    log.debug( "Error parsing locale '%s'. %s: %s", locale, type( e ), e )
         if not locales:
             # Default to English
             locales = 'en'
         t = Translations.load( dirname='locale', locales=locales, domain='ginga' )
         self.template_context.update ( dict( _=t.ugettext, n_=t.ugettext, N_=t.ungettext ) )
+
+    @property
+    def anonymous( self ):
+        return self.user is None and not self.api_inherit_admin
 
     @property
     def sa_session( self ):
@@ -385,6 +403,15 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         """
         return self.app.model.context.current
 
+    def expunge_all( self ):
+        app = self.app
+        context = app.model.context
+        context.expunge_all()
+        # This is a bit hacky, should refctor this. Maybe refactor to app -> expunge_all()
+        if hasattr(app, 'install_model'):
+            install_model = app.install_model
+            if install_model != app.model:
+                install_model.context.expunge_all()
 
     def get_user( self ):
         """Return the current user if logged in or None."""
@@ -486,7 +513,13 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         """
         api_key = self.request.params.get('key', None)
         secure_id = self.get_cookie( name=session_cookie )
-        if self.environ.get('is_api_request', False) and api_key:
+        api_key_supplied = self.environ.get('is_api_request', False) and api_key
+        if api_key_supplied and self._check_master_api_key( api_key ):
+            self.api_inherit_admin = True
+            log.info( "Session authenticated using Galaxy master api key" )
+            self.user = None
+            self.galaxy_session = None
+        elif api_key_supplied:
             # Sessionless API transaction, we just need to associate a user.
             try:
                 provided_key = self.sa_session.query( self.app.model.APIKeys ).filter( self.app.model.APIKeys.table.c.key == api_key ).one()
@@ -506,6 +539,15 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
             # Anonymous API interaction -- anything but @expose_api_anonymous will fail past here.
             self.user = None
             self.galaxy_session = None
+
+    def _check_master_api_key( self, api_key ):
+        master_api_key = getattr( self.app.config, 'master_api_key', None )
+        if not master_api_key:
+            return False
+        # Hash keys to make them the same size, so we can do safe comparison.
+        master_hash = hashlib.sha256( master_api_key ).hexdigest()
+        provided_hash = hashlib.sha256( api_key ).hexdigest()
+        return safe_str_cmp( master_hash, provided_hash )
 
     def _ensure_valid_session( self, session_cookie, create=True):
         """
@@ -832,6 +874,39 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
 
     history = property( get_history, set_history )
 
+    def get_or_create_default_history( self ):
+        """
+        Gets or creates a default history and associates it with the current
+        session.
+        """
+
+        # There must be a user to fetch a default history.
+        if not self.galaxy_session.user:
+            return self.new_history()
+
+        # Look for default history that (a) has default name + is not deleted and
+        # (b) has no datasets. If suitable history found, use it; otherwise, create
+        # new history.
+        unnamed_histories = self.sa_session.query( self.app.model.History ).filter_by(
+                                user=self.galaxy_session.user,
+                                name=self.app.model.History.default_name,
+                                deleted=False )
+        default_history = None
+        for history in unnamed_histories:
+            if len( history.datasets ) == 0:
+                # Found suitable default history.
+                default_history = history
+                break
+
+        # Set or create hsitory.
+        if default_history:
+            history = default_history
+            self.set_history( history )
+        else:
+            history = self.new_history()
+
+        return history
+
     def new_history( self, name=None ):
         """
         Create a new history and associate it with the current session and
@@ -886,6 +961,10 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
     @property
     def model( self ):
         return self.app.model
+
+    @property
+    def install_model( self ):
+        return self.app.install_model
 
     def make_form_data( self, name, **kwargs ):
         rval = self.template_context[name] = FormData()
@@ -960,10 +1039,13 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
                                  searchList=[kwargs, self.template_context, dict(caller=self, t=self, h=helpers, util=util, request=self.request, response=self.response, app=self.app)] )
             return str( template )
 
-    def fill_template_mako( self, filename, **kwargs ):
-        template = self.webapp.mako_template_lookup.get_template( filename )
+    def fill_template_mako( self, filename, template_lookup=None, **kwargs ):
+        template_lookup = template_lookup or self.webapp.mako_template_lookup
+        template = template_lookup.get_template( filename )
         template.output_encoding = 'utf-8'
-        data = dict( caller=self, t=self, trans=self, h=helpers, util=util, request=self.request, response=self.response, app=self.app )
+
+        data = dict( caller=self, t=self, trans=self, h=helpers, util=util,
+                     request=self.request, response=self.response, app=self.app )
         data.update( self.template_context )
         data.update( kwargs )
         return template.render( **data )
@@ -1001,10 +1083,11 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         the user (chromInfo in history).
         """
         dbnames = list()
-        datasets = self.sa_session.query( self.app.model.HistoryDatasetAssociation ) \
-                                  .filter_by( deleted=False, history_id=self.history.id, extension="len" )
-        for dataset in datasets:
-            dbnames.append( (dataset.dbkey, dataset.name) )
+        if self.history:
+            datasets = self.sa_session.query( self.app.model.HistoryDatasetAssociation ) \
+                                      .filter_by( deleted=False, history_id=self.history.id, extension="len" )
+            for dataset in datasets:
+                dbnames.append( (dataset.dbkey, dataset.name) )
         user = self.get_user()
         if user and 'dbkeys' in user.preferences:
             user_keys = from_json_string( user.preferences['dbkeys'] )

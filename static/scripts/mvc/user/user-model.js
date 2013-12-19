@@ -14,7 +14,7 @@ var User = Backbone.Model.extend( LoggableMixin ).extend(
     //logger              : console,
     
     /** API location for this resource */
-    urlRoot : 'api/users',
+    urlRoot : galaxy_config.root + 'api/users',
 
     /** Model defaults
      *  Note: don't check for anon-users with the username as the default is '(anonymous user)'
@@ -70,6 +70,17 @@ var User = Backbone.Model.extend( LoggableMixin ).extend(
         return BaseModel.prototype.fetch.call( this, options );
     },
 
+    /** Clears all data from the sessionStorage.
+     */
+    clearSessionStorage : function(){
+        for( var key in sessionStorage ){
+            //TODO: currently only history
+            if( key.indexOf( 'HistoryView.' ) === 0 ){
+                sessionStorage.removeItem( key );
+            }
+        }
+    },
+
     /** string representation */
     toString : function(){
         var userInfo = [ this.get( 'username' ) ];
@@ -94,6 +105,6 @@ User.getCurrentUserFromApi = function( options ){
 // (stub) collection for users (shouldn't be common unless admin UI)
 var UserCollection = Backbone.Collection.extend( LoggableMixin ).extend({
     model   : User,
-    urlRoot : 'api/users'
+    urlRoot : galaxy_config.root + 'api/users'
     //logger  : console,
 });

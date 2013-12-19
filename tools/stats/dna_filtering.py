@@ -19,13 +19,143 @@ from galaxy import eggs
 import pkg_resources; pkg_resources.require( "bx-python" )
 from bx.cookbook import doc_optparse
 
+from ast import parse, Module, walk
+
 # Older py compatibility
 try:
     set()
 except:
     from sets import Set as set
 
-#assert sys.version_info[:2] >= ( 2, 4 )
+AST_NODE_TYPE_WHITELIST = [
+    'Expr',    'Load',
+    'Str',     'Num',    'BoolOp',
+    'Compare', 'And',    'Eq',
+    'NotEq',   'Or',     'GtE',
+    'LtE',     'Lt',     'Gt',
+    'BinOp',   'Add',    'Div',
+    'Sub',     'Mult',   'Mod',
+    'Pow',     'LShift', 'GShift',
+    'BitAnd',  'BitOr',  'BitXor',
+    'UnaryOp', 'Invert', 'Not',
+    'NotIn',   'In',     'Is',
+    'IsNot',   'List',
+    'Index',   'Subscript',
+    # Further checks
+    'Name',    'Call',    'Attribute',
+]
+
+
+BUILTIN_AND_MATH_FUNCTIONS = 'abs|all|any|bin|chr|cmp|complex|divmod|float|hex|int|len|long|max|min|oct|ord|pow|range|reversed|round|sorted|str|sum|type|unichr|unicode|log|exp|sqrt|ceil|floor'.split('|')
+STRING_AND_LIST_METHODS = [ name for name in dir('') + dir([]) if not name.startswith('_') ]
+VALID_FUNCTIONS = BUILTIN_AND_MATH_FUNCTIONS + STRING_AND_LIST_METHODS
+
+
+def __check_name( ast_node ):
+    name = ast_node.id
+    if re.match(r'^c\d+$', name):
+        return True
+    elif name == "codes":
+        return True
+    else:
+        return name in VALID_FUNCTIONS
+
+
+def __check_attribute( ast_node ):
+    attribute_name = ast_node.attr
+    if attribute_name not in STRING_AND_LIST_METHODS:
+        return False
+    return True
+
+
+def __check_call( ast_node ):
+    # If we are calling a function or method, it better be a math,
+    # string or list function.
+    ast_func = ast_node.func
+    ast_func_class = ast_func.__class__.__name__
+    if ast_func_class == 'Name':
+        if ast_func.id not in BUILTIN_AND_MATH_FUNCTIONS:
+            return False
+    elif ast_func_class == 'Attribute':
+        if not __check_attribute( ast_func ):
+            return False
+    else:
+        return False
+
+    return True
+
+
+def check_expression( text ):
+    """
+
+    >>> check_expression("c1=='chr1' and c3-c2>=2000 and c6=='+'")
+    True
+    >>> check_expression("eval('1+1')")
+    False
+    >>> check_expression("import sys")
+    False
+    >>> check_expression("[].__str__")
+    False
+    >>> check_expression("__builtins__")
+    False
+    >>> check_expression("'x' in globals")
+    False
+    >>> check_expression("'x' in [1,2,3]")
+    True
+    >>> check_expression("c3=='chr1' and c5>5")
+    True
+    >>> check_expression("c3=='chr1' and d5>5")  # Invalid d5 reference
+    False
+    >>> check_expression("c3=='chr1' and c5>5 or exec")
+    False
+    >>> check_expression("type(c1) != type(1)")
+    True
+    >>> check_expression("c1.split(',')[1] == '1'")
+    True
+    >>> check_expression("exec 1")
+    False
+    >>> check_expression("str(c2) in [\\\"a\\\",\\\"b\\\"]")
+    True
+    """
+    try:
+        module = parse( text )
+    except SyntaxError:
+        return False
+
+    if not isinstance(module, Module):
+        return False
+    statements = module.body
+    if not len( statements ) == 1:
+        return False
+    expression = statements[0]
+    if expression.__class__.__name__ != 'Expr':
+        return False
+
+    for ast_node in walk( expression ):
+        ast_node_class = ast_node.__class__.__name__
+
+        # Toss out everything that is not a "simple" expression,
+        # imports, error handling, etc...
+        if ast_node_class not in AST_NODE_TYPE_WHITELIST:
+            return False
+
+        # White-list more potentially dangerous types AST elements.
+        if ast_node_class == 'Name':
+            # In order to prevent loading 'exec', 'eval', etc...
+            # put string restriction on names allowed.
+            if not __check_name( ast_node ):
+                return False
+        # Check only valid, white-listed functions are called.
+        elif ast_node_class == 'Call':
+            if not __check_call( ast_node ):
+                return False
+        # Check only valid, white-listed attributes are accessed
+        elif ast_node_class == 'Attribute':
+            if not __check_attribute( ast_node ):
+                return False
+
+    return True
+
 
 def get_operands( filter_condition ):
     # Note that the order of all_operators is important
@@ -147,6 +277,9 @@ def __main__():
         except:
             if operand in secured:
                 stop_err( "Illegal value '%s' in condition '%s'" % ( operand, cond_text ) )
+
+    if not check_expression( cond_text ):
+        stop_err( "Illegal/invalid in condition '%s'" % ( cond_text ) )
 
     # Prepare the column variable names and wrappers for column data types
     cols, type_casts = [], []

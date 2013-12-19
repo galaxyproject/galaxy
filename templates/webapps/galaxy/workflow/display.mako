@@ -67,11 +67,11 @@
     %if workflow.importable:
     <a
         href="${h.url_for( controller='/workflow', action='imp', id=trans.security.encode_id(workflow.id) )}"
-        class="icon-button import tooltip"
+        class="icon-button import"
         title="Import workflow"></a>
     <a
         href="${h.url_for( controller='/workflow', action='export_to_file', id=trans.security.encode_id(workflow.id) )}"
-        class="icon-button disk tooltip"
+        class="icon-button disk"
         title="Save workflow"></a>
     %endif
 </%def>

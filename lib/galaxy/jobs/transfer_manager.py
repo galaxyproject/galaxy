@@ -90,7 +90,7 @@ class TransferManager( object ):
                         raise Exception( dict( code=128, message='Did not receive valid response from transfer daemon for state' ) )
                     if 'error' in response:
                         # Response was valid but Request resulted in an error
-                        raise Exception( error )
+                        raise Exception( response['error'])
                     else:
                         # Request was valid
                         response['result']['transfer_job_id'] = tj.id

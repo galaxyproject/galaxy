@@ -25,7 +25,7 @@ def create_or_verify_database( url, galaxy_config_file, engine_options={}, app=N
     Check that the database is use-able, possibly creating it if empty (this is
     the only time we automatically create tables, otherwise we force the
     user to do it using the management script so they can create backups).
-    
+
     1) Empty database --> initialize with latest version and return
     2) Database older than migration support --> fail and require manual update
     3) Database at state where migrate support introduced --> add version control information but make no changes (might still require manual update)
@@ -45,7 +45,22 @@ def create_or_verify_database( url, galaxy_config_file, engine_options={}, app=N
         log.error( "database_connection contains an unknown SQLAlchemy database dialect: %s" % dialect )
     # Create engine and metadata
     engine = create_engine( url, **engine_options )
+
+    def migrate():
+        try:
+            # Declare the database to be under a repository's version control
+            db_schema = schema.ControlledSchema.create( engine, migrate_repository )
+        except:
+            # The database is already under version control
+            db_schema = schema.ControlledSchema( engine, migrate_repository )
+        # Apply all scripts to get to current version
+        migrate_to_current_version( engine, db_schema )
+
     meta = MetaData( bind=engine )
+    if app and getattr( app.config, 'database_auto_migrate', False ):
+        migrate()
+        return
+
     # Try to load dataset table
     try:
         dataset_table = Table( "dataset", meta, autoload=True )
@@ -55,15 +70,7 @@ def create_or_verify_database( url, galaxy_config_file, engine_options={}, app=N
         if app:
             app.new_installation = True
         log.info( "No database, initializing" )
-        # Database might or might not be versioned
-        try:
-            # Declare the database to be under a repository's version control
-            db_schema = schema.ControlledSchema.create( engine, migrate_repository )
-        except:
-            # The database is already under version control
-            db_schema = schema.ControlledSchema( engine, migrate_repository )
-        # Apply all scripts to get to current version
-        migrate_to_current_version( engine, db_schema )
+        migrate()
         return
     try:
         hda_table = Table( "history_dataset_association", meta, autoload=True )
@@ -104,7 +111,7 @@ def create_or_verify_database( url, galaxy_config_file, engine_options={}, app=N
                             % ( db_schema.version, migrate_repository.versions.latest, config_arg ) )
     else:
         log.info( "At database version %d" % db_schema.version )
-        
+
 def migrate_to_current_version( engine, schema ):
     # Changes to get to current version
     changeset = schema.changeset( None )

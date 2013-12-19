@@ -49,7 +49,7 @@ class RequestsGrid( grids.Grid ):
                             .filter( model.RequestEvent.table.c.id.in_( select( columns=[ func.max( model.RequestEvent.table.c.id ) ],
                                                                                 from_obj=model.RequestEvent.table,
                                                                                 group_by=model.RequestEvent.table.c.request_id ) ) )
-        
+
     # Grid definition
     title = "Sequencing Requests"
     template = "requests/grid.mako"
@@ -59,31 +59,31 @@ class RequestsGrid( grids.Grid ):
     use_paging = True
     default_filter = dict( state="All", deleted="False" )
     columns = [
-        NameColumn( "Name", 
-                    key="name", 
+        NameColumn( "Name",
+                    key="name",
                     link=( lambda item: dict( operation="view_request", id=item.id ) ),
-                    attach_popup=True, 
+                    attach_popup=True,
                     filterable="advanced" ),
         DescriptionColumn( "Description",
                            key='desc',
                            filterable="advanced" ),
-        SamplesColumn( "Samples", 
+        SamplesColumn( "Samples",
                        link=( lambda item: iff( item.deleted, None, dict( operation="edit_samples", id=item.id ) ) ) ),
         TypeColumn( "Type",
                     link=( lambda item: iff( item.deleted, None, dict( operation="view_type", id=item.type.id ) ) ) ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
-        grids.DeletedColumn( "Deleted", 
-                             key="deleted", 
-                             visible=False, 
+        grids.DeletedColumn( "Deleted",
+                             key="deleted",
+                             visible=False,
                              filterable="advanced" ),
-        StateColumn( "State", 
+        StateColumn( "State",
                      key='state',
                      filterable="advanced",
                      link=( lambda item: iff( item.deleted, None, dict( operation="view_request_history", id=item.id ) ) )
                    )
     ]
-    columns.append( grids.MulticolFilterColumn( "Search", 
-                                                cols_to_filter=[ columns[0], columns[1] ], 
+    columns.append( grids.MulticolFilterColumn( "Search",
+                                                cols_to_filter=[ columns[0], columns[1] ],
                                                 key="free-text-search",
                                                 visible=False,
                                                 filterable="standard" ) )
@@ -176,13 +176,13 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
                 user = trans.sa_session.query( trans.model.User ).get( trans.security.decode_id( user_id ) )
             except TypeError, e:
                 # We must have an email address rather than an encoded user id
-                # This is because the galaxy.base.js creates a search+select box 
+                # This is because the galaxy.base.js creates a search+select box
                 # when there are more than 20 items in a SelectField.
                 user = trans.sa_session.query( trans.model.User ) \
                                        .filter( trans.model.User.table.c.email==util.restore_text( user_id ) ) \
                                        .first()
                 user_id_encoded = False
-                
+
         elif not is_admin:
             user = trans.user
         else:
@@ -195,8 +195,8 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
             elif user is None:
                 message = 'Invalid user ID (%s)' % str(user_id)
                 status = 'error'
-            # when creating a request from the user perspective, check if the 
-            # user has access permission to this request_type 
+            # when creating a request from the user perspective, check if the
+            # user has access permission to this request_type
             elif cntrller == 'requests' and not trans.app.security_agent.can_access_request_type( user.all_roles(), request_type ):
                 message = '%s does not have access permission to the "%s" request type.' % ( user.email, request_type.name )
                 status = 'error'
@@ -219,11 +219,11 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
         widgets = []
         if request_type is not None or status == 'error':
             # Either the user selected a request_type or an error exists on the form.
-            widgets.append( dict( label='Name of the Experiment', 
-                                  widget=TextField( 'name', 40, util.restore_text( params.get( 'name', ''  ) ) ), 
+            widgets.append( dict( label='Name of the Experiment',
+                                  widget=TextField( 'name', 40, util.restore_text( params.get( 'name', ''  ) ) ),
                                   helptext='(Required)') )
-            widgets.append( dict( label='Description', 
-                                  widget=TextField( 'desc', 40, util.restore_text( params.get( 'desc', ''  ) )), 
+            widgets.append( dict( label='Description',
+                                  widget=TextField( 'desc', 40, util.restore_text( params.get( 'desc', ''  ) )),
                                   helptext='(Optional)') )
             if request_type is not None:
                 widgets += request_type.request_form.get_widgets( user, **kwd )
@@ -244,7 +244,7 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
         return trans.fill_template( '/requests/common/create_request.mako',
                                     cntrller=cntrller,
                                     request_type_select_field=request_type_select_field,
-                                    request_type_select_field_selected=request_type_id,                               
+                                    request_type_select_field_selected=request_type_id,
                                     widgets=widgets,
                                     message=message,
                                     status=status )
@@ -265,7 +265,7 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
         displayable_sample_widgets = self.__get_sample_widgets( trans, request, request.samples, **kwd )
         request_widgets = self.__get_request_widgets( trans, request.id )
         return trans.fill_template( '/requests/common/view_request.mako',
-                                    cntrller=cntrller, 
+                                    cntrller=cntrller,
                                     request=request,
                                     request_widgets=request_widgets,
                                     displayable_sample_widgets=displayable_sample_widgets,
@@ -293,11 +293,11 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
                 message = 'The changes made to request (%s) have been saved.' % request.name
         # Widgets to be rendered on the request form
         widgets = []
-        widgets.append( dict( label='Name', 
-                              widget=TextField( 'name', 40, request.name ), 
+        widgets.append( dict( label='Name',
+                              widget=TextField( 'name', 40, request.name ),
                               helptext='(Required)' ) )
-        widgets.append( dict( label='Description', 
-                              widget=TextField( 'desc', 40, request.desc ), 
+        widgets.append( dict( label='Description',
+                              widget=TextField( 'desc', 40, request.desc ),
                               helptext='(Optional)' ) )
         widgets = widgets + request.type.request_form.get_widgets( request.user, request.values.content, **kwd )
         # In case there is an error on the form, make sure to populate widget fields with anything the user
@@ -312,7 +312,7 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
                                     status=status )
     def __save_request( self, trans, cntrller, request=None, **kwd ):
         """
-        Saves changes to an existing request, or creates a new 
+        Saves changes to an existing request, or creates a new
         request if received request is None.
         """
         params = util.Params( kwd )
@@ -411,7 +411,7 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
         trans.sa_session.flush()
         request.send_email_notification( trans, initial_sample_state_after_request_submitted )
         message = 'The sequencing request has been submitted.'
-        # show the request page after submitting the request 
+        # show the request page after submitting the request
         return trans.response.send_redirect( web.url_for( controller='requests_common',
                                                           action='view_request',
                                                           cntrller=cntrller,
@@ -473,7 +473,7 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
                         samples.append( None )
                 # The __save_samples method requires sample_widgets, not sample objects, so we'll get what we
                 # need by calling __get_sample_widgets().  However, we need to take care here because __get_sample_widgets()
-                # is used to populate the sample widget dicts from kwd, and the method assumes that a None object in the 
+                # is used to populate the sample widget dicts from kwd, and the method assumes that a None object in the
                 # received list of samples should be populated from the db.  Since we're just re-using the method here to
                 # change our list of samples into a list of sample widgets, we'll need to make sure to keep track of our
                 # None objects.
@@ -498,12 +498,12 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
         sample_state_id = params.get( 'sample_state_id', None )
         sample_state_id_select_field = self.__build_sample_state_id_select_field( trans, request, sample_state_id )
         return trans.fill_template( '/requests/common/edit_samples.mako',
-                                    cntrller=cntrller, 
+                                    cntrller=cntrller,
                                     request=request,
                                     encoded_selected_sample_ids=encoded_selected_sample_ids,
                                     request_widgets=request_widgets,
                                     displayable_sample_widgets=displayable_sample_widgets,
-                                    sample_copy_select_field=sample_copy_select_field, 
+                                    sample_copy_select_field=sample_copy_select_field,
                                     libraries=libraries,
                                     sample_operation_select_field=sample_operation_select_field,
                                     libraries_select_field=libraries_select_field,
@@ -528,7 +528,7 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
             trans.sa_session.add( event )
             trans.sa_session.flush()
         if cntrller == 'api':
-            return 200, 'Done'        
+            return 200, 'Done'
     @web.expose
     @web.require_login( "delete sequencing requests" )
     def delete_request( self, trans, cntrller, **kwd ):
@@ -614,7 +614,7 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
             request = trans.sa_session.query( trans.model.Request ).get( trans.security.decode_id( request_id ) )
         except:
             return invalid_id_redirect( trans, cntrller, request_id )
-        return trans.fill_template( '/requests/common/view_request_history.mako', 
+        return trans.fill_template( '/requests/common/view_request_history.mako',
                                     cntrller=cntrller,
                                     request=request )
     @web.expose
@@ -657,7 +657,7 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
                 message += err_msg
             else:
                 request.notification = dict( email=email_addresses,
-                                             sample_states=checked_sample_states, 
+                                             sample_states=checked_sample_states,
                                              body='',
                                              subject='' )
         else:
@@ -796,7 +796,7 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
         search_type = build_select_field( trans, types, 'self', 'search_type', selected_value=selected_value, refresh_on_change=False )
         # Build the search_box TextField
         search_box = TextField( 'search_box', 50, kwd.get('search_box', '' ) )
-        return trans.fill_template( '/requests/common/find_samples.mako', 
+        return trans.fill_template( '/requests/common/find_samples.mako',
                                     cntrller=cntrller,
                                     request_states=request_states,
                                     samples=samples_list,
@@ -814,7 +814,7 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
             sample = trans.sa_session.query( trans.model.Sample ).get( trans.security.decode_id( sample_id ) )
         except:
             return invalid_id_redirect( trans, cntrller, sample_id, 'sample' )
-        return trans.fill_template( '/requests/common/view_sample_history.mako', 
+        return trans.fill_template( '/requests/common/view_sample_history.mako',
                                     cntrller=cntrller,
                                     sample=sample )
     @web.expose
@@ -850,11 +850,11 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
                                                                                                       None,
                                                                                                       **kwd )
         return trans.fill_template( '/requests/common/add_samples.mako',
-                                    cntrller=cntrller, 
+                                    cntrller=cntrller,
                                     request=request,
                                     request_widgets=request_widgets,
                                     displayable_sample_widgets=displayable_sample_widgets,
-                                    sample_copy_select_field=sample_copy_select_field, 
+                                    sample_copy_select_field=sample_copy_select_field,
                                     libraries=libraries,
                                     libraries_select_field=libraries_select_field,
                                     folders_select_field=folders_select_field,
@@ -907,10 +907,10 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
                         field_values[ field[ 'name' ] ] = ''
                 # Build the library_select_field and folder_select_field for the new sample being added.
                 library_select_field, folder_select_field = self.__build_library_and_folder_select_fields( trans,
-                                                                                                           user=request.user, 
-                                                                                                           sample_index=len( displayable_sample_widgets ), 
+                                                                                                           user=request.user,
+                                                                                                           sample_index=len( displayable_sample_widgets ),
                                                                                                            libraries=libraries,
-                                                                                                           sample=None, 
+                                                                                                           sample=None,
                                                                                                            library_id=library_id,
                                                                                                            folder_id=folder_id,
                                                                                                            **kwd )
@@ -947,7 +947,7 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
                                     request=request,
                                     request_widgets=request_widgets,
                                     displayable_sample_widgets=displayable_sample_widgets,
-                                    sample_copy_select_field=sample_copy_select_field, 
+                                    sample_copy_select_field=sample_copy_select_field,
                                     message=message,
                                     status=status )
     @web.expose
@@ -970,7 +970,7 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
         else:
             external_services = None
         return trans.fill_template( '/requests/common/view_sample.mako',
-                                    cntrller=cntrller, 
+                                    cntrller=cntrller,
                                     sample=sample,
                                     widgets=widgets,
                                     widget_fields_have_contents=widget_fields_have_contents,
@@ -1049,7 +1049,7 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
         elif transfer_status == trans.model.SampleDataset.transfer_status.ERROR:
             title = 'Datasets of "%s" that resulted in a transfer error' % sample.name
             sample_datasets = sample.transfer_error_dataset_files
-        return trans.fill_template( '/requests/common/view_sample_datasets.mako', 
+        return trans.fill_template( '/requests/common/view_sample_datasets.mako',
                                     cntrller=cntrller,
                                     title=title,
                                     external_service=external_service,
@@ -1229,7 +1229,7 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
                 for sample_index in range( len( sample_widgets ) ):
                     current_sample = sample_widgets[ sample_index ]
                     if current_sample is None:
-                        # We have a None value because the user did not select this sample 
+                        # We have a None value because the user did not select this sample
                         # on which to perform the action.
                         continue
                     request_sample = request.samples[ sample_index ]
@@ -1289,7 +1289,7 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
                 trans.sa_session.add( sample )
                 trans.sa_session.flush()
                 new_samples.append( sample )
-            # If this sample is added when the request is already submitted then these new samples 
+            # If this sample is added when the request is already submitted then these new samples
             # should be in the first sample state when saved
             if request.is_submitted:
                 initial_sample_state_after_request_submitted = request.type.states[0]
@@ -1348,20 +1348,20 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
                             # If the sample's associated SampleState is still the initial state
                             # configured by the admin for the request's RequestType, this must be
                             # the first time a bar code was added to the sample, so change it's state
-                            # to the next associated SampleState. 
+                            # to the next associated SampleState.
                             if sample.state.id == request.type.states[0].id:
-                                # Change the sample state only if its request_type 
+                                # Change the sample state only if its request_type
                                 # has at least 2 states
                                 if len( request.type.states ) >= 2:
                                     next_sample_state = request.type.states[1]
                                 else:
                                     next_sample_state = request.type.states[0]
-                                event = trans.model.SampleEvent( sample, 
-                                                                 next_sample_state, 
+                                event = trans.model.SampleEvent( sample,
+                                                                 next_sample_state,
                                                                  'Bar code associated with the sample' )
                                 trans.sa_session.add( event )
                                 trans.sa_session.flush()
-                                # Next step is to update the request event history if bar codes 
+                                # Next step is to update the request event history if bar codes
                                 # have been assigned to all the samples of this request
                                 common_state = request.samples_have_common_state
                                 if request.is_submitted and common_state and len( request.type.states ) >= 2:
@@ -1378,7 +1378,7 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
                     sample.workflow = sample_widget[ 'workflow_dict' ]
                     form_values.content = sample_widget[ 'field_values' ]
                     trans.sa_session.add_all( ( sample, form_values ) )
-                    trans.sa_session.flush()           
+                    trans.sa_session.flush()
     def __get_library_and_folder( self, trans, library_id, folder_id ):
         try:
             library = trans.sa_session.query( trans.model.Library ).get( trans.security.decode_id( library_id ) )
@@ -1413,7 +1413,7 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
         """Return all of the active folders for the received library"""
         active_folders_list.extend( folder.active_folders )
         for sub_folder in folder.active_folders:
-            self.__get_active_folders( sub_folder, active_folders_list ) 
+            self.__get_active_folders( sub_folder, active_folders_list )
         return active_folders_list
     # ===== Methods for handling form definition widgets =====
     def __get_request_widgets( self, trans, id ):
@@ -1436,7 +1436,7 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
                     request_widgets.append( dict( label=field[ 'label' ],
                                                   value=None,
                                                   helptext=field[ 'helptext' ] + ' (' + required_label + ')' ) )
-            else: 
+            else:
                 request_widgets.append( dict( label=field[ 'label' ],
                                               value=field_value,
                                               helptext=field[ 'helptext' ] + ' (' + required_label + ')' ) )
@@ -1523,7 +1523,7 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
                     input_value = params.get( 'sample_%i_field_%i' % ( index, field_index ), sample.values.content[ field_name ] )
                     if field['type'] == CheckboxField.__name__:
                         field_value = CheckboxField.is_checked( input_value )
-                    else: 
+                    else:
                         field_value = util.restore_text( input_value )
                     field_values[ field_name ] = field_value
             library_select_field, folder_select_field = self.__build_library_and_folder_select_fields( trans=trans,
@@ -1600,7 +1600,7 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
                     input_value = params.get( 'sample_%i_field_%i' % ( index, field_index ), '' )
                     if field['type'] == CheckboxField.__name__:
                         field_value = CheckboxField.is_checked( input_value )
-                    else: 
+                    else:
                         field_value = util.restore_text( input_value )
                     field_values[ field_name ] = field_value
             library_select_field, folder_select_field = self.__build_library_and_folder_select_fields( trans=trans,
@@ -1640,14 +1640,14 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
                                          library_select_field=library_select_field,
                                          folder_select_field=folder_select_field ) )
             index += 1
-        return sample_widgets   
+        return sample_widgets
     # ===== Methods for building SelectFields used on various request forms =====
     def __build_copy_sample_select_field( self, trans, displayable_sample_widgets ):
         copy_sample_index_select_field = SelectField( 'copy_sample_index' )
-        copy_sample_index_select_field.add_option( 'None', -1, selected=True )  
+        copy_sample_index_select_field.add_option( 'None', -1, selected=True )
         for index, sample_dict in enumerate( displayable_sample_widgets ):
             copy_sample_index_select_field.add_option( sample_dict[ 'name' ], index )
-        return copy_sample_index_select_field  
+        return copy_sample_index_select_field
     def __build_request_type_id_select_field( self, trans, selected_value='none' ):
         accessible_request_types = trans.app.security_agent.get_accessible_request_types( trans, trans.user )
         return build_select_field( trans, accessible_request_types, 'name', 'request_type_id', selected_value=selected_value, refresh_on_change=True )
@@ -1707,7 +1707,7 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
         # Build the sample_%i_library_id SelectField with refresh on change enabled
         library_select_field = build_select_field( trans,
                                                    libraries,
-                                                   'name', 
+                                                   'name',
                                                    library_select_field_name,
                                                    initial_value='none',
                                                    selected_value=str( library_id ).lower(),
@@ -1731,12 +1731,12 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
                 break
         folder_select_field = build_select_field( trans,
                                                   folders,
-                                                  'name', 
+                                                  'name',
                                                   folder_select_field_name,
                                                   initial_value='none',
                                                   selected_value=selected_folder_id )
         return library_select_field, folder_select_field
-    
+
     def __build_history_select_field(self, trans, user, sample_index, sample = None, history_id=None, **kwd):
         params = util.Params( kwd )
         history_select_field_name= "sample_%i_history_id" % sample_index
@@ -1902,8 +1902,8 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
             for sample_with_bar_code in trans.sa_session.query( trans.model.Sample ) \
                                                        .filter( trans.model.Sample.table.c.bar_code == bar_code ):
                 if sample_with_bar_code and sample_with_bar_code.id != sample.id:
-                    message = '''The bar code (%s) associated with the sample (%s) belongs to another sample.  
-                                 Bar codes must be unique across all samples, so use a different bar code 
+                    message = '''The bar code (%s) associated with the sample (%s) belongs to another sample.
+                                 Bar codes must be unique across all samples, so use a different bar code
                                  for this sample.''' % ( bar_code, sample.name )
                     unique = False
                     break

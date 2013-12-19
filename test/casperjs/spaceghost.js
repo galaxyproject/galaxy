@@ -635,13 +635,6 @@ SpaceGhost.prototype.withHistoryPanel = function withHistoryPanel( then ){
     return this.withFrame( this.data.selectors.frames.history, then );
 };
 
-/** Version of Casper#withFrame for the tool iframe.
- *  @param {Function} then  function called when in the frame
- */
-SpaceGhost.prototype.withToolPanel = function withToolPanel( then ){
-    return this.withFrame( this.data.selectors.frames.tools, then );
-};
-
 /** Version of Casper#withFrame for the main iframe.
  *  @param {Function} then  function called when in the frame
  */
@@ -685,15 +678,6 @@ SpaceGhost.prototype.jumpToFrame = function jumpToFrame( frame, fn ){
  */
 SpaceGhost.prototype.jumpToHistory = function jumpToHistory( fn ){
     return this.jumpToFrame( this.data.selectors.frames.history, fn );
-};
-
-/** Jumps into tools frame, exectutes fn, and jumps back to original frame.
- *  @param {Selector} frame the selector for the frame to jump to
- *  @param {Function} fn    function called when in the frame
- *  @returns {Any} the return value of fn
- */
-SpaceGhost.prototype.jumpToTools = function jumpToTools( fn ){
-    return this.jumpToFrame( this.data.selectors.frames.tools, fn );
 };
 
 /** Jumps into main frame, exectutes fn, and jumps back to original frame.
@@ -1125,7 +1109,7 @@ SpaceGhost.prototype.getUniverseSetting = function getUniverseSetting( iniKey ){
  */
 SpaceGhost.prototype.data = {
     selectors : {
-        tooltipBalloon          : '.bs-tooltip',
+        tooltipBalloon          : '.tooltip',
 
         editableText            : '.editable-text',
         editableTextInput       : 'input#renaming-active',
@@ -1141,7 +1125,6 @@ SpaceGhost.prototype.data = {
 
         frames : {
             main    : 'galaxy_main',
-            tools   : 'galaxy_tools',
             history : 'galaxy_history'
         },
 

@@ -20,7 +20,7 @@ var ToolInputsSettings = Backbone.Model.extend({
 /**
  * Tree for a tool's parameters.
  */
-var ToolParameterTree = Backbone.RelationalModel.extend({
+var ToolParameterTree = Backbone.Model.extend({
     defaults: {
         tool: null,
         tree_data: null
@@ -30,8 +30,6 @@ var ToolParameterTree = Backbone.RelationalModel.extend({
         // Set up tool parameters to work with tree.
         var self = this;
         this.get('tool').get('inputs').each(function(input) {
-            if (!input.get_samples()) { return; }
-
             // Listen for changes to input's attributes.
             input.on('change:min change:max change:num_samples', function(input) {
                 if (input.get('in_ptree')) {
@@ -250,28 +248,21 @@ var ToolParameterTree = Backbone.RelationalModel.extend({
     }
 });
 
-var SweepsterTrack = Backbone.RelationalModel.extend({
+var SweepsterTrack = Backbone.Model.extend({
     defaults: {
         track: null,
         mode: 'Pack',
         settings: null,
         regions: null
     },
-
-    relations: [
-        {
-            type: Backbone.HasMany,
-            key: 'regions',
-            relatedModel: visualization.GenomeRegion
-        }
-    ],
-
+    
     initialize: function(options) {
+        this.set('regions', new visualization.GenomeRegionCollection(options.regions));
         if (options.track) {
             // FIXME: find a better way to deal with needed URLs:
             var track_config = _.extend({
-                                    data_url: galaxy_paths.get('raw_data_url'),
-                                    converted_datasets_state_url: galaxy_paths.get('dataset_state_url')
+                                    data_url: galaxy_config.root + 'dummy1',
+                                    converted_datasets_state_url: galaxy_config.root + 'dummy2'
                                 }, options.track);
             this.set('track', tracks.object_from_template(track_config, {}, null));
         }
@@ -315,33 +306,16 @@ var SweepsterVisualization = visualization.Visualization.extend({
         default_mode: 'Pack'
     }),
 
-    relations: [
-        {
-            type: Backbone.HasOne,
-            key: 'dataset',
-            relatedModel: data.Dataset
-        },
-        {
-            type: Backbone.HasOne,
-            key: 'tool',
-            relatedModel: tools.Tool
-        },
-        {
-            type: Backbone.HasMany,
-            key: 'regions',
-            relatedModel: visualization.GenomeRegion
-        },
-        {
-            type: Backbone.HasMany,
-            key: 'tracks',
-            relatedModel: SweepsterTrack
-        }
-        // NOTE: cannot use relationship for parameter tree because creating tree is complex.
-    ],
-    
     initialize: function(options) {
-        var tool_with_samplable_inputs = this.get('tool').copy(true);
+        this.set('dataset', new data.Dataset(options.dataset));
+        this.set('tool', new tools.Tool(options.tool));
+        this.set('regions', new visualization.GenomeRegionCollection(options.regions));
+        this.set('tracks', new SweepsterTrackCollection(options.tracks));
+
+        var tool_with_samplable_inputs = this.get('tool');
         this.set('tool_with_samplable_inputs', tool_with_samplable_inputs);
+        // Remove complex parameters for now.
+        tool_with_samplable_inputs.remove_inputs( [ 'data', 'hidden_data', 'conditional' ] );
         
         this.set('parameter_tree', new ToolParameterTree({ 
             tool: tool_with_samplable_inputs,
@@ -354,7 +328,6 @@ var SweepsterVisualization = visualization.Visualization.extend({
     },
 
     toJSON: function() {
-        // TODO: could this be easier by using relational models?
         return {
             id: this.get('id'),
             title: 'Parameter exploration for dataset \''  + this.get('dataset').get('name') + '\'',
@@ -415,7 +388,7 @@ var SweepsterTrackView = Backbone.View.extend({
                 icon_class: 'cross-circle',
                 on_click: function() {
                     self.$el.remove();
-                    $('.bs-tooltip').remove();
+                    $('.tooltip').remove();
                     // TODO: remove track from viz collection.
                 }
             }
@@ -425,7 +398,7 @@ var SweepsterTrackView = Backbone.View.extend({
         // Render tile placeholders.
         this.model.get('regions').each(function() {
             self.$el.append($('<td/>').addClass('tile').html(
-                $('<img/>').attr('src', galaxy_paths.get('image_path') + '/loading_large_white_bg.gif')
+                $('<img/>').attr('src', galaxy_config.root + 'images/loading_large_white_bg.gif')
             ));
         });
 
@@ -497,10 +470,10 @@ var ToolInputValOrSweepView = Backbone.View.extend({
         });
 
         // Add row for parameter sweep inputs.
-        if (type === 'number') {
+        if (input instanceof tools.IntegerToolParameter) {
             sweep_inputs_row = $(_.template(this.number_input_template, this.model.toJSON()));
         }
-        else if (type === 'select') {
+        else if (input instanceof tools.SelectToolParameter) {
             var options = _.map(this.$el.find('select option'), function(option) {
                     return $(option).val();
                 }),
@@ -745,7 +718,7 @@ var SweepsterVisualizationView = Backbone.View.extend({
                 title: 'Close',
                 icon_class: 'cross-circle',
                 on_click: function() {
-                    $('.bs-tooltip').remove();
+                    $('.tooltip').remove();
                     help_div.remove();
                 }
             }
@@ -918,19 +891,23 @@ var SweepsterVisualizationView = Backbone.View.extend({
                 _.each(new_tracks, function(pm_track, index) {
                     setTimeout(function() {
                         // Set inputs and run tool.
-                        // console.log('running with settings', pm_track.get('settings'));
                         tool.set_input_values(pm_track.get('settings').get('values'));
                         $.when(tool.rerun(dataset, regions)).then(function(output) {
+                            // HACKish: output is an HDA with track config attribute. To create a track
+                            // that works correctly with Backbone relational, it is necessary to
+                            // use a modified version of the track config.
+                            var dataset = output.first(),
+                                track_config = dataset.get('track_config');
+                            // Set dataset to be the tool's output.
+                            track_config.dataset = dataset;
+                            // Set tool to null so that it is not unpacked; unpacking it messes with 
+                            // the tool parameters and parameter tree.
+                            track_config.tool = null;
+
                             // Create and add track for output dataset.
-                            var track_config = _.extend({
-                                    data_url: galaxy_paths.get('raw_data_url'),
-                                    converted_datasets_state_url: galaxy_paths.get('dataset_state_url')
-                                }, output.first().get('track_config')),
-                                track_obj = tracks.object_from_template(track_config, self, null);
-
-                            // Track uses raw data.
-                            track_obj.data_manager.set('data_type', 'raw_data');
-
+                            var track_obj = tracks.object_from_template(track_config, self, null);
+                            track_obj.init_for_tool_data();
+                            
                             // Set track block colors.
                             track_obj.prefs.block_color = self.block_color;
                             track_obj.prefs.reverse_strand_color = self.reverse_strand_color;
