@@ -322,7 +322,6 @@ var GridView = Backbone.View.extend({
             var button = $('#grid-' + i + '-popup');
             button.off();
             var popup = new PopupMenu(button);
-            
             // load details
             var item = options['items'][i];
             for (var j in options['operations'])
@@ -654,9 +653,6 @@ var GridView = Backbone.View.extend({
             success: function(response_text) {
                 // Initialize new grid config
                 self.init_grid($.parseJSON(response_text));
-               
-                // Trigger custom event to indicate grid body has changed.
-                $('#grid-table-body').trigger('update');
                
                 // Hide loading overlay.
                 $('.loading-elt-overlay').hide();
