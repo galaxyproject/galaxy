@@ -38,9 +38,9 @@
                     %>
                     <li class="${cls}" style="${style}">
                         %if href:
-                            <a class="${a_cls}" data-toggle="dropdown" target="${target}" href="${href}">${display}${extra}</a>
+                            <a class="${a_cls}"  target="${target}" href="${href}">${display}${extra}</a>
                         %else:
-                            <a class="${a_cls}" data-toggle="dropdown">${display}${extra}</a>
+                            <a class="${a_cls}" >${display}${extra}</a>
                         %endif
                         %if menu_options:
                             <ul class="dropdown-menu">
