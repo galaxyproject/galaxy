@@ -79,6 +79,8 @@ class RepositoryRevisionsController( BaseAPIController ):
         :param id: the encoded id of the `RepositoryMetadata` object
         """
         # Example URL: http://localhost:9009/api/repository_revisions/repository_dependencies/bb125606ff9ea620
+        value_mapper = { 'id' : trans.security.encode_id,
+                         'user_id' : trans.security.encode_id }
         repository_dependencies_dicts = []
         try:
             repository_metadata = metadata_util.get_repository_metadata_by_id( trans, id )
@@ -87,22 +89,12 @@ class RepositoryRevisionsController( BaseAPIController ):
                 rd_tups = metadata[ 'repository_dependencies' ][ 'repository_dependencies' ]
                 for rd_tup in rd_tups:
                     tool_shed, name, owner, changeset_revision = rd_tup[ 0:4 ]
-                    repository_dependencies_dict = dict( tool_shed=str( tool_shed ),
-                                                         name=str( name ),
-                                                         owner=str( owner ),
-                                                         changeset_revision=str( changeset_revision ) )
-                    rd = suc.get_repository_by_name_and_owner( trans.app, name, owner )
-                    encoded_rd_id = trans.security.encode_id( rd.id )
-                    rd_repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans,
-                                                                                                encoded_rd_id,
-                                                                                                changeset_revision )
-                    if rd_repository_metadata is None:
-                        repo = hg.repository( suc.get_configured_ui(), repository.repo_path( trans.app ) )
-                        rd_repository_metadata = suc.get_next_downloadable_changeset_revision( repository, repo, changeset_revision )
-                    repository_dependencies_dict[ 'url' ] = web.url_for( controller='repository_revisions',
-                                                                         action='show',
-                                                                         id=trans.security.encode_id( rd_repository_metadata.id ) )
-                    repository_dependencies_dicts.append( repository_dependencies_dict )
+                    repository_dependency = suc.get_repository_by_name_and_owner( trans.app, name, owner )
+                    repository_dependency_dict = repository_dependency.to_dict( view='element', value_mapper=value_mapper )
+                    repository_dependency_dict[ 'url' ] = web.url_for( controller='repositories',
+                                                                       action='show',
+                                                                       id=trans.security.encode_id( repository_dependency.id ) )
+                    repository_dependencies_dicts.append( repository_dependency_dict )
             return repository_dependencies_dicts
         except Exception, e:
             message = "Error in the Tool Shed repository_revisions API in repository_dependencies: %s" % str( e )
