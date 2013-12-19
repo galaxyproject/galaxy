@@ -244,21 +244,20 @@ class InstallManager( object ):
 
     def get_guid( self, repository_clone_url, relative_install_dir, tool_config ):
         if self.shed_config_dict.get( 'tool_path' ):
-            relative_install_dir = os.path.join( self.shed_config_dict['tool_path'], relative_install_dir )
-        found = False
+            relative_install_dir = os.path.join( self.shed_config_dict[ 'tool_path' ], relative_install_dir )
+        tool_config_filename = suc.strip_path( tool_config )
         for root, dirs, files in os.walk( relative_install_dir ):
             if root.find( '.hg' ) < 0 and root.find( 'hgrc' ) < 0:
                 if '.hg' in dirs:
                     dirs.remove( '.hg' )
                 for name in files:
-                    if name == tool_config:
-                        found = True
-                        break
-            if found:
-                break
-        full_path = str( os.path.abspath( os.path.join( root, name ) ) )
-        tool = self.toolbox.load_tool( full_path )
-        return suc.generate_tool_guid( repository_clone_url, tool )
+                    filename = suc.strip_path( name )
+                    if filename == tool_config_filename:
+                        full_path = str( os.path.abspath( os.path.join( root, name ) ) )
+                        tool = self.toolbox.load_tool( full_path )
+                        return suc.generate_tool_guid( repository_clone_url, tool )
+        # Not quite sure what should happen here, throw an exception or what?
+        return None
 
     def get_prior_install_required_dict( self, tool_shed_repositories, repository_dependencies_dict ):
         """
