@@ -591,6 +591,41 @@ def install_repository( app, repository_dict ):
         log.exception( error_message )
     return repository, error_message
 
+def is_excluded( exclude_list_dicts, name, owner, changeset_revision ):
+    """
+    Return True if the repository defined by the received name, owner, changeset_revision should
+    be excluded from testing for any reason.
+    """
+    for exclude_dict in exclude_list_dicts:
+        reason = exclude_dict[ 'reason' ]
+        exclude_repositories = exclude_dict[ 'repositories' ]
+        # 'repositories':
+        #    [( name, owner, changeset_revision if changeset_revision else None ),
+        #     ( name, owner, changeset_revision if changeset_revision else None )]
+        if ( name, owner, changeset_revision ) in exclude_repositories or ( name, owner, None ) in exclude_repositories:
+            return True, reason
+        # Skip this repository if it has a repository dependency that is in the exclude list.
+        repository_dependency_dicts, error_message = \
+            get_repository_dependencies_for_changeset_revision( install_and_test_base_util.galaxy_tool_shed_url,
+                                                                encoded_repository_metadata_id )
+        if error_message:
+            log.debug( 'Error getting repository dependencies for revision %s of repository %s owned by %s:' % \
+                ( changeset_revision, name, owner ) )
+            log.debug( error_message )
+        else:
+            for repository_dependency_dict in repository_dependency_dicts:
+                rd_name = repository_dependency_dict[ 'name' ]
+                rd_owner = repository_dependency_dict[ 'owner' ]
+                rd_changeset_revision = repository_dependency_dict[ 'changeset_revision' ]
+                if ( rd_name, rd_owner, rd_changeset_revision ) in exclude_repositories or \
+                    ( rd_name, rd_owner, None ) in exclude_repositories:
+                    reason = 'This repository requires revision %s of repository %s owned by %s which is excluded from testing.' % \
+                        ( rd_changeset_revision, rd_name, rd_owner )
+                    return True, reason
+                    break
+    return False, None
+
+
 def is_latest_downloadable_revision( url, repository_dict ):
     name = str( repository_dict[ 'name' ] )
     owner = str( repository_dict[ 'owner' ] )
