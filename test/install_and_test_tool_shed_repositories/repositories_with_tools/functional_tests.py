@@ -155,10 +155,6 @@ def install_and_test_repositories( app, galaxy_shed_tools_dict, galaxy_shed_tool
         #          ( name, owner, changeset revision if changeset revision else None )] }
         # If changeset revision is None, that means the entire repository is excluded from testing, otherwise only the specified
         # revision should be skipped.
-        # We are testing deprecated repositories because it is possible that a deprecated repository contains valid tools that
-        # someone has previously installed. Deleted repositories have never been installed, so should not be tested. If they are
-        # undeleted, this script will then test them the next time it runs. We don't need to check if a repository has been deleted
-        # here because our call to the Tool Shed API filters by downloadable='true', in which case deleted will always be False.
         log.debug( 'Loading the list of repositories excluded from testing from the file %s...' % \
             str( exclude_list_file ) )
         exclude_list = install_and_test_base_util.parse_exclude_list( exclude_list_file )
@@ -739,7 +735,9 @@ def test_repository_tools( app, repository, repository_dict, tool_test_results_d
         tool_test_results_dict[ 'failed_tests' ] = failed_test_dicts
         failed_repository_dict = repository_identifier_dict
         install_and_test_statistics_dict[ 'at_least_one_test_failed' ].append( failed_repository_dict )
-        set_do_not_test = not is_latest_downloadable_revision( install_and_test_base_util.galaxy_tool_shed_url, repository_dict )
+        set_do_not_test = \
+            not install_and_test_base_util.is_latest_downloadable_revision( install_and_test_base_util.galaxy_tool_shed_url,
+                                                                            repository_dict )
         params = dict( tools_functionally_correct=False,
                        test_install_error=False,
                        do_not_test=str( set_do_not_test ) )
