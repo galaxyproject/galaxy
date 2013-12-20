@@ -63,12 +63,11 @@ test_toolbox = None
 # Here's the directory where everything happens.  Temporary directories are created within this directory to contain
 # the database, new repositories, etc.
 galaxy_test_tmp_dir = os.path.join( test_home_directory, 'tmp' )
+# File containing information about problematic repositories to exclude from test runs.
+exclude_list_file = os.path.join( test_home_directory, 'exclude.xml' )
 default_galaxy_locales = 'en'
 default_galaxy_test_file_dir = "test-data"
 os.environ[ 'GALAXY_INSTALL_TEST_TMP_DIR' ] = galaxy_test_tmp_dir
-# This file is copied to the Galaxy root directory by buildbot. 
-# It is managed by cfengine and is not locally available.
-exclude_list_file = os.environ.get( 'GALAXY_INSTALL_TEST_EXCLUDE_REPOSITORIES', 'repositories_with_tools_exclude.xml' )
 
 # This script can be run in such a way that no Tool Shed database records should be changed.
 if '-info_only' in sys.argv or 'GALAXY_INSTALL_TEST_INFO_ONLY' in os.environ:
@@ -138,25 +137,20 @@ def get_tool_info_from_test_id( test_id ):
     return tool_id, tool_version
 
 def install_and_test_repositories( app, galaxy_shed_tools_dict, galaxy_shed_tool_conf_file ):
+    # Initialize a dictionary for the summary that will be printed to stdout.
     install_and_test_statistics_dict = install_and_test_base_util.initialize_install_and_test_statistics_dict( test_framework )
     error_message = ''
-    # Initialize a dictionary for the summary that will be printed to stdout.
-    total_repositories_processed = install_and_test_statistics_dict[ 'total_repositories_processed' ]
     repositories_to_install, error_message = \
         install_and_test_base_util.get_repositories_to_install( install_and_test_base_util.galaxy_tool_shed_url, test_framework )
     if error_message:
         return None, error_message
     # Handle repositories not to be tested.
     if os.path.exists( exclude_list_file ):
-        # Entries in the exclude_list look something like this.
-        # { 'reason': The default reason or the reason specified in this section,
-        #   'repositories':
-        #         [( name, owner, changeset revision if changeset revision else None ),
-        #          ( name, owner, changeset revision if changeset revision else None )] }
-        # If changeset revision is None, that means the entire repository is excluded from testing, otherwise only the specified
-        # revision should be skipped.
-        log.debug( 'Loading the list of repositories excluded from testing from the file %s...' % \
-            str( exclude_list_file ) )
+        log.debug( 'Loading the list of repositories excluded from testing from the file %s...' % str( exclude_list_file ) )
+        # The following exclude_list will look something like this:
+        # [{ 'reason': The default reason or the reason specified in this section,
+        #    'repositories': [( name, owner, changeset_revision if changeset_revision else None ),
+        #                     ( name, owner, changeset_revision if changeset_revision else None )]}]
         exclude_list = install_and_test_base_util.parse_exclude_list( exclude_list_file )
     else:
         exclude_list = []

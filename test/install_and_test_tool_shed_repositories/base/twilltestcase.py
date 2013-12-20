@@ -41,16 +41,6 @@ class InstallTestRepository( TwillTestCase ):
         self.shed_tools_dict = {}
         self.home()
 
-    def deactivate_repository( self, repository ):
-        """Deactivate a repository."""
-        url = '/admin_toolshed/deactivate_or_uninstall_repository?id=%s' % self.security.encode_id( repository.id )
-        self.visit_url( url )
-        tc.fv ( 1, "remove_from_disk", 'false' )
-        tc.submit( 'deactivate_or_uninstall_repository_button' )
-        strings_displayed = [ 'The repository named' ]
-        strings_displayed.append( 'has been deactivated' )
-        self.check_for_strings( strings_displayed, strings_not_displayed=[] )
-
     def initiate_installation_process( self,
                                        install_tool_dependencies=False,
                                        install_repository_dependencies=True,

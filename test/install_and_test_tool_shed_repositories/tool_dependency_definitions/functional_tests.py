@@ -61,12 +61,11 @@ test_home_directory = os.path.join( cwd, 'test', 'install_and_test_tool_shed_rep
 # Here's the directory where everything happens.  Temporary directories are created within this directory to contain
 # the database, new repositories, etc.
 galaxy_test_tmp_dir = os.path.join( test_home_directory, 'tmp' )
+# File containing information about problematic repositories to exclude from test runs.
+exclude_list_file = os.path.join( test_home_directory, 'exclude.xml' )
 default_galaxy_locales = 'en'
 default_galaxy_test_file_dir = "test-data"
 os.environ[ 'GALAXY_INSTALL_TEST_TMP_DIR' ] = galaxy_test_tmp_dir
-# This file is copied to the Galaxy root directory by buildbot. 
-# It is managed by cfengine and is not locally available.
-exclude_list_file = os.environ.get( 'GALAXY_INSTALL_TEST_EXCLUDE_REPOSITORIES', 'tool_dependency_definition_exclude.xml' )
 
 # This script can be run in such a way that no Tool Shed database records should be changed.
 if '-info_only' in sys.argv or 'GALAXY_INSTALL_TEST_INFO_ONLY' in os.environ:
@@ -77,29 +76,15 @@ else:
 test_framework = install_and_test_base_util.TOOL_DEPENDENCY_DEFINITIONS
 
 def install_and_test_repositories( app, galaxy_shed_tools_dict, galaxy_shed_tool_conf_file ):
+    # Initialize a dictionary for the summary that will be printed to stdout.
     install_and_test_statistics_dict = install_and_test_base_util.initialize_install_and_test_statistics_dict( test_framework )
     error_message = ''
-    # Initialize a dictionary for the summary that will be printed to stdout.
-    total_repositories_processed = install_and_test_statistics_dict[ 'total_repositories_processed' ]
     repositories_to_install, error_message = \
         install_and_test_base_util.get_repositories_to_install( install_and_test_base_util.galaxy_tool_shed_url, test_framework )
     if error_message:
         return None, error_message
-    # Handle repositories not to be tested.
     if os.path.exists( exclude_list_file ):
-        # Entries in the exclude_list look something like this.
-        # { 'reason': The default reason or the reason specified in this section,
-        #   'repositories':
-        #         [( name, owner, changeset revision if changeset revision else None ),
-        #          ( name, owner, changeset revision if changeset revision else None )] }
-        # If changeset revision is None, that means the entire repository is excluded from testing, otherwise only the specified
-        # revision should be skipped.
-        # We are testing deprecated repositories because it is possible that a deprecated repository contains valid tools that
-        # someone has previously installed. Deleted repositories have never been installed, so should not be tested. If they are
-        # undeleted, this script will then test them the next time it runs. We don't need to check if a repository has been deleted
-        # here because our call to the Tool Shed API filters by downloadable='true', in which case deleted will always be False.
-        log.debug( 'Loading the list of repositories excluded from testing from the file %s...' % \
-            str( exclude_list_file ) )
+        log.debug( 'Loading the list of repositories excluded from testing from the file %s...' % str( exclude_list_file ) )
         # The following exclude_list will look something like this:
         # [{ 'reason': The default reason or the reason specified in this section,
         #    'repositories': [( name, owner, changeset_revision if changeset_revision else None ),
@@ -201,19 +186,9 @@ def install_and_test_repositories( app, galaxy_shed_tools_dict, galaxy_shed_tool
                 install_and_test_statistics_dict[ 'total_repositories_processed' ] += 1
                 if error_message:
                     # The repository installation failed.
-                    log.debug( 'Installation failed for revision %s of repository %s owned by %s.' % \
-                        ( changeset_revision, name, owner ) )
+                    log.debug( 'Installation failed for revision %s of repository %s owned by %s.' % ( changeset_revision, name, owner ) )
                     install_and_test_statistics_dict[ 'repositories_with_installation_error' ].append( repository_identifier_dict )
                     tool_test_results_dict[ 'installation_errors' ][ 'current_repository' ] = error_message
-                    # Even if the repository failed to install, execute the uninstall method, in case a dependency did succeed.
-                    log.debug( 'Attempting to uninstall revision %s of repository %s owned by %s.' % ( changeset_revision, name, owner ) )
-                    try:
-                        repository = \
-                            test_db_util.get_installed_repository_by_name_owner_changeset_revision( name, owner, changeset_revision )
-                    except Exception, e:
-                        error_message = 'Unable to find revision %s of repository %s owned by %s: %s.' % \
-                            ( changeset_revision, name, owner, str( e ) )
-                        log.exception( error_message )
                     params = dict( test_install_error=True,
                                    do_not_test=False )
                     # TODO: do something useful with response_dict
@@ -223,14 +198,6 @@ def install_and_test_repositories( app, galaxy_shed_tools_dict, galaxy_shed_tool
                                                                                      repository_dict,
                                                                                      params,
                                                                                      can_update_tool_shed )
-                    try:
-                        # We are uninstalling this repository and all of its repository dependencies.
-                        install_and_test_base_util.uninstall_repository_and_repository_dependencies( app, repository_dict )
-                    except Exception, e:
-                        log.exception( 'Error attempting to uninstall revision %s of repository %s owned by %s: %s' % \
-                            ( changeset_revision, name, owner, str( e ) ) )
-                    log.debug( 'Installation failed for revision %s of repository %s owned by %s.' % \
-                        ( changeset_revision, name, owner ) )
                 else:
                     # The repository was successfully installed.
                     params, install_and_test_statistics_dict, tool_test_results_dict = \
