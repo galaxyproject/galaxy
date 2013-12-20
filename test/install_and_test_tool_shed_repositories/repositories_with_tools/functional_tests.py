@@ -300,15 +300,14 @@ def install_and_test_repositories( app, galaxy_shed_tools_dict, galaxy_shed_tool
                         tool_test_results_dict[ 'missing_test_components' ] = []
                     missing_tool_dependencies = install_and_test_base_util.get_missing_tool_dependencies( repository )
                     if missing_tool_dependencies or repository.missing_repository_dependencies:                        
-                        install_and_test_statistics_dict = \
-                            install_and_test_base_util.handle_missing_dependencies( app=app,
-                                                                                    repository=repository,
-                                                                                    missing_tool_dependencies=missing_tool_dependencies,
-                                                                                    repository_dict=repository_dict,
-                                                                                    tool_test_results_dicts=tool_test_results_dicts,
-                                                                                    tool_test_results_dict=tool_test_results_dict,
-                                                                                    params=params,
-                                                                                    can_update_tool_shed=can_update_tool_shed )
+                        install_and_test_base_util.handle_missing_dependencies( app=app,
+                                                                                repository=repository,
+                                                                                missing_tool_dependencies=missing_tool_dependencies,
+                                                                                repository_dict=repository_dict,
+                                                                                tool_test_results_dicts=tool_test_results_dicts,
+                                                                                tool_test_results_dict=tool_test_results_dict,
+                                                                                params=params,
+                                                                                can_update_tool_shed=can_update_tool_shed )
                         # Set the test_toolbox.toolbox module-level variable to the new app.toolbox.
                         test_toolbox.toolbox = app.toolbox
                     else:
