@@ -1,23 +1,3 @@
-/**
- * Base view that handles visibility based on model's hidden attribute.
- */
-var BaseView = Backbone.View.extend({
-
-    initialize: function() {
-        this.model.on("change:hidden", this.update_visible, this);
-        this.update_visible();
-    },
-
-    update_visible: function() {
-        if( this.model.attributes.hidden ){
-            this.$el.hide();
-        } else {
-            this.$el.show();
-        }
-    }
-});
-
-
 //==============================================================================
 /** @class Mixin to add logging capabilities to an object.
  *      Designed to allow switching an objects log output off/on at one central

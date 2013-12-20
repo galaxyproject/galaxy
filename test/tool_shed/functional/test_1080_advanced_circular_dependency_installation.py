@@ -285,6 +285,7 @@ class TestRepositoryDependencies( ShedTwillTestCase ):
                               'Uninstalled' ]
         self.display_installed_repository_manage_page( installed_convert_repository, 
                                                        strings_displayed=strings_displayed )
+        self.test_db_util.install_session.refresh( installed_column_repository )
         self.check_galaxy_repository_tool_panel_section( installed_column_repository, 'column_maker' )
   
     def test_0065_reinstall_column_repository( self ):
@@ -330,6 +331,7 @@ class TestRepositoryDependencies( ShedTwillTestCase ):
                               'Deactivated' ]
         self.display_installed_repository_manage_page( installed_column_repository, 
                                                        strings_displayed=strings_displayed )
+        self.test_db_util.install_session.refresh( installed_convert_repository )
         self.check_galaxy_repository_tool_panel_section( installed_convert_repository, 'convert_chars' )
   
     def test_0075_uninstall_column_repository( self ):
@@ -387,8 +389,8 @@ class TestRepositoryDependencies( ShedTwillTestCase ):
                                                                                             common.test_user_1_name )
         self.uninstall_repository( installed_column_repository, remove_from_disk=False )
         self.uninstall_repository( installed_convert_repository, remove_from_disk=False )
-        self.test_db_util.ga_refresh( installed_column_repository )
-        self.test_db_util.ga_refresh( installed_convert_repository )
+        self.test_db_util.install_session.refresh( installed_column_repository )
+        self.test_db_util.install_session.refresh( installed_convert_repository )
         self.check_galaxy_repository_tool_panel_section( installed_column_repository, '' )
         self.check_galaxy_repository_tool_panel_section( installed_convert_repository, 'convert_chars' )
     

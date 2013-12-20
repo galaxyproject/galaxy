@@ -255,7 +255,7 @@ class AdminToolshed( AdminGalaxy ):
                     tool_shed_repository.uninstalled = True
                     # Remove all installed tool dependencies and tool dependencies stuck in the INSTALLING state, but don't touch any
                     # repository dependencies.
-                    tool_dependencies_to_uninstall = tool_shed_repository.installed_tool_dependencies
+                    tool_dependencies_to_uninstall = tool_shed_repository.tool_dependencies_installed_or_in_error
                     tool_dependencies_to_uninstall.extend( tool_shed_repository.tool_dependencies_being_installed )
                     for tool_dependency in tool_dependencies_to_uninstall:
                         uninstalled, error_message = tool_dependency_util.remove_tool_dependency( trans.app, tool_dependency )

@@ -41,16 +41,6 @@ class InstallTestRepository( TwillTestCase ):
         self.shed_tools_dict = {}
         self.home()
 
-    def deactivate_repository( self, repository ):
-        """Deactivate a repository."""
-        url = '/admin_toolshed/deactivate_or_uninstall_repository?id=%s' % self.security.encode_id( repository.id )
-        self.visit_url( url )
-        tc.fv ( 1, "remove_from_disk", 'false' )
-        tc.submit( 'deactivate_or_uninstall_repository_button' )
-        strings_displayed = [ 'The repository named' ]
-        strings_displayed.append( 'has been deactivated' )
-        self.check_for_strings( strings_displayed, strings_not_displayed=[] )
-
     def initiate_installation_process( self,
                                        install_tool_dependencies=False,
                                        install_repository_dependencies=True,
@@ -137,17 +127,6 @@ class InstallTestRepository( TwillTestCase ):
                 log.debug( 'No field %s in form %s, discarding from return value.' % ( str( control ), str( form_id ) ) )
                 del( kwd[ field_name ] )
         return kwd
-
-    def uninstall_repository( self, repository ):
-        """Uninstall a repository."""
-        # A repository can be uninstalled only if no dependent repositories are installed.
-        url = '/admin_toolshed/deactivate_or_uninstall_repository?id=%s' % self.security.encode_id( repository.id )
-        self.visit_url( url )
-        tc.fv ( 1, "remove_from_disk", 'true' )
-        tc.submit( 'deactivate_or_uninstall_repository_button' )
-        strings_displayed = [ 'The repository named' ]
-        strings_displayed.append( 'has been uninstalled' )
-        self.check_for_strings( strings_displayed, strings_not_displayed=[] )
 
     def visit_url( self, url, allowed_codes=[ 200 ] ):
         new_url = tc.go( url )

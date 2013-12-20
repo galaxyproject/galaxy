@@ -1,6 +1,7 @@
 <%!
     from galaxy.web.framework.helpers.grids import TextColumn, StateColumn, GridColumnFilter
     from galaxy.web.framework.helpers import iff
+    import urllib
 
     import galaxy.util
     def inherit(context):
@@ -14,7 +15,6 @@
             return '/base.mako'
 %>
 <%inherit file="${inherit(context)}"/>
-<%namespace file="/refresh_frames.mako" import="handle_refresh_frames" />
 <%namespace file="/display_common.mako" import="get_class_plural" />
 
 <%def name="load(embedded = False, insert = None)">
@@ -24,7 +24,7 @@
     self.grid_javascripts()
     if embedded:
         self.render_grid_header( grid, False )
-        self.render_grid_table( grid, show_item_checkboxes=show_item_checkboxes )
+        self.render_grid_table( grid )
     else:
         self.make_grid( grid )
     endif
@@ -50,6 +50,7 @@
         'show_item_checkboxes'          : context.get('show_item_checkboxes', False),
         'cur_page_num'                  : cur_page_num,
         'num_pages'                     : num_pages,
+        'num_page_links'                : num_page_links,
         'history_tag_autocomplete_url'  : url( controller='tag', action='tag_autocomplete_data', item_class='History' ),
         'history_name_autocomplete_url' : url( controller='history', action='name_autocomplete_data' ),
         'status'                        : status,
@@ -58,7 +59,6 @@
         'operations'                    : [],
         'items'                         : [],
         'columns'                       : [],
-        'multiple_item_ops_exist'       : None,
         'get_class_plural'              : get_class_plural( grid.model_class ).lower(),
         'use_paging'                    : grid.use_paging,
         'legend'                        : grid.legend,
@@ -66,9 +66,14 @@
         'use_panels'                    : context.get('use_panels'),
         'insert'                        : insert,
         'default_filter_dict'           : default_filter_dict,
-        'advanced_search'               : advanced_search
+        'advanced_search'               : advanced_search,
+        'refresh_frames'                : []
     }
-    
+
+    # add refresh frames
+    if refresh_frames:
+        self.grid_config['refresh_frames'] = refresh_frames
+
     ## add current item if exists
     if current_item:
         self.grid_config['current_item_id'] = current_item.id
@@ -119,7 +124,7 @@
             'global_operation'      : False
         })
         if operation.allow_multiple:
-            self.grid_config['multiple_item_ops_exist'] = True
+            self.grid_config['show_item_checkboxes'] = True
             
         if operation.global_operation:
             self.grid_config['global_operation'] = url( ** (operation.global_operation()) )
@@ -176,8 +181,6 @@
                 # Handle non-ascii chars.
                 if isinstance(value, str):
                     value = unicode(value, 'utf-8')
-
-                    # escape string
                     value = value.replace('/', '//')
                 endif
 
@@ -208,18 +211,11 @@
 ##
 
 <%def name="center_panel()">
-    ${self.grid_body()}
+    ${self.load()}
 </%def>
 
 ## Render the grid's basic elements. Each of these elements can be subclassed.
 <%def name="body()">
-    ${self.grid_body()}
-</%def>
-
-## Because body() is special and always exists even if not explicitly defined,
-## it's not possible to override body() in the topmost template in the chain.
-## Because of this, override grid_body() instead.
-<%def name="grid_body()">
     ${self.load()}
 </%def>
 
@@ -242,7 +238,15 @@
             }
             gridView.add_filter_condition("tags", tag);
         };
+
+        ## load grid viewer
+        $(function() {
+            require(['galaxy.grids'], function(mod_grids) {
+                gridView = new mod_grids.GridView(${h.to_json_string(self.grid_config)});
+            });
+        });
     </script>
+
 </%def>
 
 <%def name="stylesheets()">
@@ -268,20 +272,13 @@
             <td></td>
         </tr>
         <tr>
-            <td width="100%" id="grid-message" valign="top">
-                %if message:
-                    <p>
-                        <div class="${self.grid_config['status']}message transient-message">${self.grid_config['message']}</div>
-                        <div style="clear: both"></div>
-                    </p>
-                %endif
-            </td>
+            <td width="100%" id="grid-message" valign="top"></td>
             <td></td>
             <td></td>
         </tr>
     </table>
 
-    ${self.render_grid_table( grid, show_item_checkboxes )}
+    ${self.render_grid_table( grid )}
 </%def>
 
 <%def name="grid_title()">
@@ -328,16 +325,11 @@
 </%def>
 
 ## Render grid.
-<%def name="render_grid_table( grid, show_item_checkboxes=False)">
+<%def name="render_grid_table( grid )">
     <%
         # get configuration
         show_item_checkboxes = self.grid_config['show_item_checkboxes']
-        multiple_item_ops_exist = self.grid_config['multiple_item_ops_exist']
         sort_key = self.grid_config['sort_key']
-
-        # Show checkboxes if flag is set or if multiple item ops exist.
-        if show_item_checkboxes or multiple_item_ops_exist:
-            show_item_checkboxes = True
     %>
     <form method="post" onsubmit="return false;">
         <table id="grid-table" class="grid">
@@ -364,236 +356,12 @@
                             </th>
                         %endif
                     %endfor
-                    <th></th>
                 </tr>
             </thead>
-            <tbody id="grid-table-body">
-                ${render_grid_table_body_contents( grid, show_item_checkboxes )}
-            </tbody>
-            <tfoot id="grid-table-footer">
-                ${render_grid_table_footer_contents( grid, show_item_checkboxes )}
-            </tfoot>
+            <tbody id="grid-table-body"></tbody>
+            <tfoot id="grid-table-footer"></tfoot>
         </table>
     </form>
-</%def>
-
-## Render grid table body contents.
-<%def name="render_grid_table_body_contents(grid, show_item_checkboxes=False)">
-        <% num_rows_rendered = 0 %>
-        %if len(self.grid_config['items']) == 0:
-            ## No results.
-            <tr><td colspan="100"><em>No Items</em></td></tr>
-            <% num_rows_rendered = 1 %>
-        %endif
-        %for i, item in enumerate( self.grid_config['items'] ):
-            <% encoded_id = item['encode_id'] %>
-            <% popupmenu_id = "grid-" + str(i) + "-popup" %>
-            <tr \
-            %if self.grid_config['current_item_id'] == item['id']:
-                class="current" \
-            %endif
-            > 
-                ## Item selection column
-                %if show_item_checkboxes:
-                    <td style="width: 1.5em;">
-                        <input type="checkbox" name="id" value="${encoded_id}" id="${encoded_id}" class="grid-row-select-checkbox" />
-                    </td>
-                %endif
-                ## Data columns
-                %for column in self.grid_config['columns']:
-                    %if column['visible']:
-                        <%
-                            ## Nowrap
-                            nowrap = ""
-                            if column['nowrap']:
-                                nowrap = 'style="white-space:nowrap;"'
-
-                            # get column settings
-                            column_settings = item['column_config'][column['label']]
-                            
-                            # load attributes
-                            link = column_settings['link']
-                            value = column_settings['value']
-                            inbound = column_settings['inbound']
-                            
-                            # unescape value
-                            if isinstance(value, unicode):
-                                value = value.replace('//', '/')
-
-                            # Attach popup menu?
-                            id = ""
-                            cls = ""
-                            if column['attach_popup']:
-                                id = 'grid-%d-popup' % i
-                                cls = "menubutton"
-                                if link:
-                                    cls += " split"
-                                endif
-                                cls += " popup"
-                            endif
-                        %>
-                        <td ${nowrap}>
-                        %if link:
-                            %if len(self.grid_config['operations']) != 0:
-                                <div id="${id}" class="${cls}" style="float: left;">
-                            %endif
-
-                            <%
-                                label_class = ""
-                                if inbound:
-                                    label_class = "use-inbound"
-                                else:
-                                    label_class = "use-outbound"
-                                endif
-                            %>
-                            <a class="label ${label_class}" href="${link}" onclick="return false;">${value}</a>
-                            %if len(self.grid_config['operations']) != 0:
-                                </div>
-                            %endif
-                        %else:
-                            <div id="${id}" class="${cls}"><label id="${column['label_id_prefix']}${encoded_id}" for="${encoded_id}">${value}</label></div>
-                        %endif
-                        </td>
-                    %endif
-                %endfor
-            </tr>
-            <% num_rows_rendered += 1 %>
-        %endfor
-
-        ## update configuration
-        <script type="text/javascript">
-        $(function() {
-            require(['galaxy.grids'], function(mod_grids) {
-                ## get configuration
-                var grid_config = ${ h.to_json_string( self.grid_config ) };
-                
-                // Create grid.
-                var grid = new mod_grids.Grid(grid_config);
-                
-                // strip protocol and domain
-                var url = grid.get('url_base');
-                url = url.replace(/^.*\/\/[^\/]+/, '');
-                grid.set('url_base', url);
-
-                // Create view.
-                if (!gridView)
-                    gridView = new mod_grids.GridView(grid);
-                else
-                    gridView.init_grid(grid);
-            });
-        });
-        </script>
-        
-        ${handle_refresh_frames()}
-</%def>
-
-## Render grid table footer contents.
-<%def name="render_grid_table_footer_contents(grid, show_item_checkboxes=False)">
-    <%
-        items_plural = self.grid_config['get_class_plural']
-        num_pages = self.grid_config['num_pages']
-        cur_page_num = self.grid_config['cur_page_num']
-    %>
-    %if self.grid_config['use_paging'] and num_pages > 1:
-        <tr id="page-links-row">
-            %if show_item_checkboxes:
-                <td></td>
-            %endif
-            <td colspan="100">
-                <span id='page-link-container'>
-                    ## Page links. Show 10 pages around current page.
-                    <%
-                        #
-                        # Set minimum & maximum page.
-                        # 
-                        page_link_range = num_page_links/2
-                        
-                        # First pass on min page.
-                        min_page = cur_page_num - page_link_range
-                        if min_page >= 1:
-                            # Min page is fine.
-                            min_offset = 0
-                        else:
-                            # Min page is too low.
-                            min_page = 1
-                            min_offset = page_link_range - ( cur_page_num - min_page )
-                        
-                        # Set max page.
-                        max_range = page_link_range + min_offset
-                        max_page = cur_page_num + max_range
-                        if max_page <= num_pages:
-                            # Max page is fine.
-                            max_offset = 0
-                        else:
-                            # Max page is too high.
-                            max_page = num_pages
-                            # +1 to account for the +1 in the loop below.
-                            max_offset = max_range - ( max_page + 1 - cur_page_num )
-                        
-                        # Second and final pass on min page to add any unused 
-                        # offset from max to min.
-                        if max_offset != 0:
-                            min_page -= max_offset
-                            if min_page < 1:
-                                min_page = 1
-                    %>
-                    Page:
-                    % if min_page > 1:
-                        <span class='page-link' id="page-link-1"><a href="${url( page=1 )}" page_num="1" onclick="return false;">1</a></span> ...
-                    % endif
-                    %for page_index in range(min_page, max_page + 1):
-                        %if page_index == cur_page_num:
-                            <span class='page-link inactive-link' id="page-link-${page_index}">${page_index}</span>
-                        %else:
-                            <% args = { 'page' : page_index } %>
-                            <span class='page-link' id="page-link-${page_index}"><a href="${url( args )}" onclick="return false;" page_num='${page_index}'>${page_index}</a></span>
-                        %endif
-                    %endfor
-                    %if max_page < num_pages:
-                        ...
-                        <span class='page-link' id="page-link-${num_pages}"><a href="${url( page=num_pages )}" onclick="return false;" page_num="${num_pages}">${num_pages}</a></span>
-                    %endif
-                </span>
-                
-                ## Show all link
-                <span class='page-link' id='show-all-link-span'> | <a href="${url( page='all' )}" onclick="return false;" page_num="all">Show All</a></span>
-            </td>
-        </tr>    
-    %endif
-    ## Grid operations for multiple items.
-    %if show_item_checkboxes:
-        <tr>
-            ## place holder for multiple operation commands
-            <input type="hidden" id="operation" name="operation" value="">
-            <td></td>
-            <td colspan="100">
-                For <span class="grid-selected-count"></span> selected ${items_plural}:
-                %for operation in self.grid_config['operations']:
-                    %if operation['allow_multiple']:
-                        <input type="button" value="${operation['label']}" class="action-button" onclick="gridView.submit_operation(this, '${operation['confirm']}')">
-                    %endif
-                %endfor
-            </td>
-        </tr>
-    %endif
-    %if len([o for o in self.grid_config['operations'] if o['global_operation']]) > 0:
-    <tr>
-        <td colspan="100">
-            %for operation in self.grid_config['operations']:
-                %if operation['global_operation']:
-                    <a class="action-button" href="${operation['global_operation']}">${operation['label']}</a>
-                %endif
-            %endfor
-        </td>
-    </tr>
-    %endif
-    %if self.grid_config['legend']:
-        <tr>
-            <td colspan="100">
-                ${self.grid_config['legend']}
-            </td>
-         </tr>
-    %endif
 </%def>
 
 ## Print grid search/filtering UI.

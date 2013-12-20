@@ -396,17 +396,27 @@
         %for tool_dependency_installation_error in folder.tool_dependency_installation_errors:
             ${render_tool_dependency_installation_error( tool_dependency_installation_error, pad, my_row, row_counter )}
         %endfor
-    %endif 
+    %endif
+    %if folder.tool_dependency_successful_installations:
+        %for tool_dependency_successful_installation in folder.tool_dependency_successful_installations:
+            ${render_tool_dependency_successful_installation( tool_dependency_successful_installation, pad, my_row, row_counter )}
+        %endfor
+    %endif
     %if folder.repository_installation_errors:
         %for repository_installation_error in folder.repository_installation_errors:
             ${render_repository_installation_error( repository_installation_error, pad, my_row, row_counter, is_current_repository=False )}
         %endfor
-    %endif 
+    %endif
     %if folder.current_repository_installation_errors:
         %for repository_installation_error in folder.current_repository_installation_errors:
             ${render_repository_installation_error( repository_installation_error, pad, my_row, row_counter, is_current_repository=True )}
         %endfor
-    %endif 
+    %endif
+    %if folder.repository_successful_installations:
+        %for repository_successful_installation in folder.repository_successful_installations:
+            ${render_repository_successful_installation( repository_successful_installation, pad, my_row, row_counter )}
+        %endfor
+    %endif
 </%def>
 
 <%def name="render_datatype( datatype, pad, parent, row_counter, row_is_header=False )">
@@ -714,6 +724,36 @@
     %>
 </%def>
 
+<%def name="render_tool_dependency_successful_installation( successful_installation, pad, parent, row_counter, row_is_header=False )">
+    <%
+        encoded_id = trans.security.encode_id( successful_installation.id )
+    %>
+    <tr class="datasetRow"
+        %if parent is not None:
+            parent="${parent}"
+        %endif
+        id="libraryItem-rtdsi-${encoded_id}">
+        <td style="padding-left: ${pad+20}px;">
+            <table id="test_environment">
+                <tr bgcolor="#FFFFCC">
+                    <th>Type</th><th>Name</th><th>Version</th>
+                </tr>
+                <tr>
+                    <td>${successful_installation.name | h}</td>
+                    <td>${successful_installation.type | h}</td>
+                    <td>${successful_installation.version | h}</td>
+                </tr>
+                <tr><th>Installation directory</th></tr>
+                <tr><td colspan="3">${successful_installation.installation_directory | h}</td></tr>
+            </table>
+        </td>
+    </tr>
+    <%
+        my_row = row_counter.count
+        row_counter.increment()
+    %>
+</%def>
+
 <%def name="render_repository_installation_error( installation_error, pad, parent, row_counter, row_is_header=False, is_current_repository=False )">
     <%
         from galaxy.util import unicodify
@@ -739,6 +779,37 @@
                 %endif
                 <tr><th>Error</th></tr>
                 <tr><td colspan="4">${unicodify( installation_error.error_message ) | h}</td></tr>
+            </table>
+        </td>
+    </tr>
+    <%
+        my_row = row_counter.count
+        row_counter.increment()
+    %>
+</%def>
+
+<%def name="render_repository_successful_installation( successful_installation, pad, parent, row_counter, row_is_header=False, is_current_repository=False )">
+    <%
+        encoded_id = trans.security.encode_id( successful_installation.id )
+    %>
+    <tr class="datasetRow"
+        %if parent is not None:
+            parent="${parent}"
+        %endif
+        id="libraryItem-rrsi-${encoded_id}">
+        <td style="padding-left: ${pad+20}px;">
+            <table id="test_environment">
+                %if not is_current_repository:
+                    <tr bgcolor="#FFFFCC">
+                        <th>Tool shed</th><th>Name</th><th>Owner</th><th>Changeset revision</th>
+                    </tr>
+                    <tr>
+                        <td>${successful_installation.tool_shed | h}</td>
+                        <td>${successful_installation.name | h}</td>
+                        <td>${successful_installation.owner | h}</td>
+                        <td>${successful_installation.changeset_revision | h}</td>
+                    </tr>
+                %endif
             </table>
         </td>
     </tr>

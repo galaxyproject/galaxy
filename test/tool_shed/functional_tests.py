@@ -391,7 +391,7 @@ def main():
                        use_heartbeat = False )
     
         # ---- Build Galaxy Application -------------------------------------------------- 
-        if not galaxy_database_connection.startswith( 'sqlite://' ):
+        if not galaxy_database_connection.startswith( 'sqlite://' ) and not install_galaxy_database_connection.startswith( 'sqlite://' ):
             kwargs[ 'database_engine_option_pool_size' ] = '10'
             kwargs[ 'database_engine_option_max_overflow' ] = '20'
         galaxyapp = GalaxyUniverseApplication( **kwargs )

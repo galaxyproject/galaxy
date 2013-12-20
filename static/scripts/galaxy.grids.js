@@ -130,7 +130,13 @@ var Grid = Backbone.Model.extend({
         });
 
         return url_data;
+    },
+    
+    // Return URL for obtaining a new grid
+    get_url: function (args) {
+        return this.get('url_base') + "?" + $.param(this.get_url_data()) + '&' + $.param(args);
     }
+    
 });
 
 // grid view
@@ -140,9 +146,10 @@ var GridView = Backbone.View.extend({
     grid: null,
     
     // Initialize
-    initialize: function(grid)
+    initialize: function(grid_config)
     {
-        this.init_grid(grid);
+        // initialize controls
+        this.init_grid(grid_config);
         this.init_grid_controls();
         
         // Initialize text filters to select text on click and use normal font when user is typing.
@@ -151,11 +158,46 @@ var GridView = Backbone.View.extend({
                    .keyup(function () { $(this).css("font-style", "normal"); });
         });
     },
-    
+  
+    // refresh frames
+    handle_refresh: function (refresh_frames) {
+        if (refresh_frames) {
+            if ($.inArray('history', refresh_frames) > -1) {
+                if( top.Galaxy && top.Galaxy.currHistoryPanel ){
+                    top.Galaxy.currHistoryPanel.loadCurrentHistory();
+                }
+            }
+        }
+    },
+
     // Initialize
-    init_grid: function(grid)
+    init_grid: function(grid_config)
     {
-        this.grid = grid;
+        // link grid model
+        this.grid = new Grid(grid_config);
+        
+        // get options
+        var options = this.grid.attributes;
+        
+        // handle refresh requests
+        this.handle_refresh(options.refresh_frames);
+        
+        // strip protocol and domain
+        var url = this.grid.get('url_base');
+        url = url.replace(/^.*\/\/[^\/]+/, '');
+        this.grid.set('url_base', url);
+        
+        // update div contents
+        $('#grid-table-body').html(this.template_body(options));
+        $('#grid-table-footer').html(this.template_footer(options));
+        
+        // update message
+        if (options.message) {
+            $('#grid-message').html(this.template_message(options));
+            setTimeout( function() { $('#grid-message').html(''); }, 5000);
+        }
+        
+        // configure elements
         this.init_grid_elements();
     },
     
@@ -285,18 +327,26 @@ var GridView = Backbone.View.extend({
             });
         });
         
+        // empty grid?
+        var items_length = options.items.length;
+        if (items_length == 0) {
+            return;
+        }
+        
         //
         // add operation popup menus
         //
-        for (var i in options['items'])
+        for (var i in options.items)
         {
+            // get items
+            var item = options.items[i];
+            
             // get identifiers
             var button = $('#grid-' + i + '-popup');
             button.off();
             var popup = new PopupMenu(button);
             
             // load details
-            var item = options['items'][i];
             for (var j in options['operations'])
             {
                 // get operation details
@@ -537,7 +587,7 @@ var GridView = Backbone.View.extend({
         // check for operation details
         if (operation && id) {
             // show confirmation box
-            if (confirmation_text && confirmation_text != '' && confirmation_text != 'None')
+            if (confirmation_text && confirmation_text != '' && confirmation_text != 'None' && confirmation_text != 'null')
                 if(!confirm(confirmation_text))
                     return false;
 
@@ -622,30 +672,13 @@ var GridView = Backbone.View.extend({
             type: method,
             url: self.grid.get('url_base'),
             data: self.grid.get_url_data(),
-            error: function(response) { alert( "Grid refresh failed" );},
+            error: function(response) { alert( 'Grid refresh failed' );},
             success: function(response_text) {
-                // HACK: use a simple string to separate the elements in the
-                // response: (1) table body; (2) number of pages in table; and (3) message.
-                var parsed_response_text = response_text.split("*****");
-                
-                // Update grid body and footer.
-                $('#grid-table-body').html(parsed_response_text[0]);
-                // FIXME: this does not work at all; what's needed is a function
-                // that updates page links when number of pages changes.
-                $('#grid-table-footer').html(parsed_response_text[1]);
-                
-                // Trigger custom event to indicate grid body has changed.
-                $('#grid-table-body').trigger('update');
+                // Initialize new grid config
+                self.init_grid($.parseJSON(response_text));
                
                 // Hide loading overlay.
                 $('.loading-elt-overlay').hide();
-                
-                // Show message if there is one.
-                var message = $.trim( parsed_response_text[2] );
-                if (message !== "") {
-                    $('#grid-message').html( message ).show();
-                    setTimeout( function() { $('#grid-message').hide(); }, 5000);
-                }
             },
             complete: function() {
                 // Clear grid of transient request attributes.
@@ -688,6 +721,253 @@ var GridView = Backbone.View.extend({
         if (cur_page !== null && cur_page !== undefined && cur_page !== 'all') {
             this.grid.set('cur_page', 1);
         }               
+    },
+    
+    // template
+    template_body: function(options) {
+        // initialize
+        var tmpl = '';
+        var num_rows_rendered = 0;
+        var items_length = options.items.length;
+        
+        // empty grid?
+        if (items_length == 0) {
+            // No results.
+            tmpl += '<tr><td colspan="100"><em>No Items</em></td></tr>';
+            num_rows_rendered = 1;
+        }
+        
+        // create rows
+        for (var i in options.items) {
+        
+            // encode ids
+            var item = options.items[i];
+            var encoded_id = item.encode_id;
+            var popupmenu_id = 'grid-' + i + '-popup';
+            
+            // Tag current
+            tmpl += '<tr ';
+            if (options.current_item_id == item.id) {
+                tmpl += 'class="current"';
+            }
+            tmpl += '>';
+            
+            // Item selection column
+            if (options.show_item_checkboxes) {
+                tmpl += '<td style="width: 1.5em;">' +
+                            '<input type="checkbox" name="id" value="' + encoded_id + '" id="' + encoded_id + '" class="grid-row-select-checkbox" />' +
+                        '</td>';
+            }
+            
+            // Data columns
+            for (j in options.columns) {
+                var column = options.columns[j];
+                if (column.visible) {
+                    // Nowrap
+                    var nowrap = '';
+                    if (column.nowrap) {
+                        nowrap = 'style="white-space:nowrap;"';
+                    }
+                    
+                    // get column settings
+                    var column_settings = item.column_config[column.label];
+                    
+                    // load attributes
+                    var link = column_settings.link;
+                    var value = column_settings.value;
+                    var inbound = column_settings.inbound;
+                        
+                    // unescape value
+                    if (jQuery.type( value ) === 'string') {
+                        value = value.replace(/\/\//g, '/');
+                    }
+                    
+                    // Attach popup menu?
+                    var id = "";
+                    var cls = "";
+                    if (column.attach_popup) {
+                        id = 'grid-' + i + '-popup';
+                        cls = "menubutton"
+                        if (link != '') {
+                            cls += " split";
+                        }
+                        cls += " popup";
+                    }
+                    
+                    // Check for row wrapping
+                    tmpl += '<td ' + nowrap + '>';
+                
+                    // Link
+                    if (link) {
+                        if (options.operations.length != 0) {
+                            tmpl += '<div id="' + id + '" class="' + cls + '" style="float: left;">';
+                        }
+
+                        var label_class = "";
+                        if (inbound) {
+                            label_class = "use-inbound"
+                        } else {
+                            label_class = "use-outbound"
+                        }
+                        tmpl += '<a class="label ' + label_class + '" href="' + link + '" onclick="return false;">' + value + '</a>';
+                        if (options.operations.length != 0) {
+                            tmpl += '</div>';
+                        }
+                    } else {
+                        tmpl += '<div id="' + id + '" class="' + cls + '"><label id="' + column.label_id_prefix + encoded_id + '" for="' + encoded_id + '">' + value + '</label></div>';
+                    }
+                    tmpl += '</td>';
+                }
+            }
+            tmpl += '</tr>';
+            num_rows_rendered++;
+        }
+        return tmpl;
+    },
+    
+    // template
+    template_footer: function(options) {
+    
+        // create template string
+        var tmpl = '';
+        
+        // paging
+        if (options.use_paging && options.num_pages > 1) {
+            // get configuration
+            var num_page_links      = options.num_page_links;
+            var cur_page_num        = options.cur_page_num;
+            var num_pages           = options.num_pages;
+            
+            // First pass on min page.
+            var page_link_range     = num_page_links / 2;
+            var min_page            = cur_page_num - page_link_range
+            var min_offset          = 0;
+            if (min_page == 0) {
+                // Min page is too low.
+                min_page = 1;
+                min_offset = page_link_range - ( cur_page_num - min_page );
+            }
+            
+            // Set max page.
+            var max_range = page_link_range + min_offset;
+            var max_page = cur_page_num + max_range;
+            if (max_page <= num_pages) {
+                // Max page is fine.
+                max_offset = 0;
+            } else {
+                // Max page is too high.
+                max_page = num_pages;
+                // +1 to account for the +1 in the loop below.
+                max_offset = max_range - ( max_page + 1 - cur_page_num );
+            }
+            
+            // Second and final pass on min page to add any unused
+            // offset from max to min.
+            if (max_offset != 0) {
+                min_page -= max_offset
+                if (min_page < 1) {
+                    min_page = 1
+                }
+            }
+            
+            // template header
+            tmpl += '<tr id="page-links-row">';
+            if (options.show_item_checkboxes) {
+                tmpl += '<td></td>';
+            }
+            tmpl +=     '<td colspan="100">' +
+                            '<span id="page-link-container">' +
+                                'Page:';
+            
+            if (min_page > 1) {
+                tmpl +=         '<span class="page-link" id="page-link-1"><a href="' + this.grid.get_url({page : page_index}) + '" page_num="1" onclick="return false;">1</a></span> ...';
+            }
+            
+            // create page urls
+            for (var page_index = min_page; page_index < max_page + 1; page_index++) {
+                
+                if (page_index == options.cur_page_num) {
+                    tmpl +=     '<span class="page-link inactive-link" id="page-link-' + page_index + '">' + page_index + '</span>';
+                } else {
+                    tmpl +=     '<span class="page-link" id="page-link-' + page_index + '"><a href="' + this.grid.get_url({page : page_index}) + '" onclick="return false;" page_num="' + page_index + '">' + page_index + '</a></span>';
+                }
+            }
+            
+            // show last page
+            if (max_page < num_pages) {
+                    tmpl +=     '...' +
+                                '<span class="page-link" id="page-link-' + num_pages + '"><a href="' + this.grid.get_url({page : num_pages}) + '" onclick="return false;" page_num="' + num_pages + '">' + num_pages + '</a></span>';
+            }
+            tmpl +=         '</span>';
+            
+            // Show all link
+            tmpl +=         '<span class="page-link" id="show-all-link-span"> | <a href="' + this.grid.get_url({page : 'all'}) + '" onclick="return false;" page_num="all">Show All</a></span>' +
+                        '</td>' +
+                    '</tr>';
+        }
+        
+        // Grid operations for multiple items.
+        if (options.show_item_checkboxes) {
+            // start template
+            tmpl += '<tr>' +
+                        '<input type="hidden" id="operation" name="operation" value="">' +
+                        '<td></td>' +
+                        '<td colspan="100">' +
+                            'For <span class="grid-selected-count"></span> selected ' + options.get_class_plural + ': ';
+            
+            // configure buttons for operations
+            for (i in options.operations) {
+                var operation = options.operations[i];
+                if (operation.allow_multiple) {
+                    tmpl += '<input type="button" value="' + operation.label + '" class="action-button" onclick="gridView.submit_operation(this, \'' + operation.confirm + '\')"> ';
+                }
+            }
+            
+            // finalize template
+            tmpl +=     '</td>' +
+                    '</tr>';
+        }
+    
+        // count global operations
+        var found_global = false;
+        for (i in options.operations) {
+            if (options.operations[i].global_operation) {
+                found_global = true;
+                break;
+            }
+        }
+    
+        // add global operations
+        if (found_global) {
+            tmpl += '<tr>' +
+                        '<td colspan="100">';
+            for (i in options.operations) {
+                var operation = options.operations[i];
+                if (operation.global_operation) {
+                    tmpl += '<a class="action-button" href="' + operation.global_operation + '">' + operation.label + '</a>';
+                }
+            }
+            tmpl +=     '</td>' +
+                    '</tr>';
+        }
+        
+        // add legend
+        if (options.legend) {
+            tmpl += '<tr>' +
+                        '<td colspan="100">' + options.legend + '</td>' +
+                    '</tr>';
+        }
+    
+        // return
+        return tmpl;
+    },
+        
+    // template
+    template_message: function(options) {
+        return  '<p>' +
+                    '<div class="' + options.status + 'message transient-message">' + options.message + '</div>' +
+                    '<div style="clear: both"></div>' +
+                '</p>';
     }
 });
 

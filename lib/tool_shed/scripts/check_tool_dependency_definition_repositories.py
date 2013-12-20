@@ -89,8 +89,9 @@ def main():
 
     now = strftime( "%Y-%m-%d %H:%M:%S" )
     print "#############################################################################"
-    print "# %s - Validating repositories of type %s on %s..." % ( now, TOOL_DEPENDENCY_DEFINITION, config_parser.get( config_section, 'host' ) )
-    print "# This tool shed is configured to listen on %s:%s" % ( config_parser.get( config_section, 'host' ), config_parser.get( config_section, 'port' ) )
+    print "# %s - Validating repositories of type %s" % ( now, TOOL_DEPENDENCY_DEFINITION )
+    print "# This tool shed is configured to listen on %s:%s" % ( config_parser.get( config_section, 'host' ),
+                                                                  config_parser.get( config_section, 'port' ) )
     
     app = RepositoriesApplication( config )
 
@@ -196,7 +197,16 @@ def validate_repositories( app, info_only=False, verbosity=1 ):
                 test_environment_dict[ 'tool_shed_mercurial_version' ] = __version__.version
                 test_environment_dict[ 'tool_shed_revision' ] = get_repository_current_revision( os.getcwd() )
                 tool_test_results_dict[ 'test_environment' ] = test_environment_dict
-                repository_metadata.tool_test_results = tool_test_results_dict
+                # Store only the configured number of test runs.
+                num_tool_test_results_saved = int( app.config.num_tool_test_results_saved )
+                if len( tool_test_results_dicts ) >= num_tool_test_results_saved:
+                    test_results_index = num_tool_test_results_saved - 1
+                    new_tool_test_results_dicts = tool_test_results_dicts[ :test_results_index ]
+                else:
+                    new_tool_test_results_dicts = [ d for d in tool_test_results_dicts ]
+                # Insert the new element into the first position in the list.
+                new_tool_test_results_dicts.insert( 0, tool_test_results_dict )
+                repository_metadata.tool_test_results = new_tool_test_results_dicts
                 app.sa_session.add( repository_metadata )
                 app.sa_session.flush()
     stop = time.time()

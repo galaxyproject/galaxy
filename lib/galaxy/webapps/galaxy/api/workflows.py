@@ -112,8 +112,6 @@ class WorkflowsAPIController(BaseAPIController, UsesAnnotations):
         # ------------------------------------------------------------------------------- #
 
 
-
-
         if 'workflow_id' not in payload:
             # create new
             if 'installed_repository_file' in payload:
@@ -241,11 +239,15 @@ class WorkflowsAPIController(BaseAPIController, UsesAnnotations):
                 visit_input_values( tool.inputs, step.state.inputs, callback )
                 job, out_data = tool.execute( trans, step.state.inputs, history=history)
                 outputs[ step.id ] = out_data
+
+                # Do post-job actions.
+                replacement_params = payload.get('replacement_params', {})
                 for pja in step.post_job_actions:
                     if pja.action_type in ActionBox.immediate_actions:
-                        ActionBox.execute(self.app, trans.sa_session, pja, job, replacement_dict=None)
+                        ActionBox.execute(trans.app, trans.sa_session, pja, job, replacement_dict=replacement_params)
                     else:
                         job.add_post_job_action(pja)
+
                 for v in out_data.itervalues():
                     rval['outputs'].append(trans.security.encode_id(v.id))
             else:
@@ -278,6 +280,10 @@ class WorkflowsAPIController(BaseAPIController, UsesAnnotations):
                 return("Workflow is not owned by or shared with current user")
 
         ret_dict = self._workflow_to_dict( trans, stored_workflow );
+        if not ret_dict:
+            #This workflow has a tool that's missing from the distribution
+            trans.response.status = 400
+            return "Workflow cannot be exported due to missing tools."
         return ret_dict
 
     @web.expose_api
@@ -453,6 +459,8 @@ class WorkflowsAPIController(BaseAPIController, UsesAnnotations):
         for step in workflow.steps:
             # Load from database representation
             module = module_factory.from_workflow_step( trans, step )
+            if not module:
+                return None
 
             ### ----------------------------------- ###
             ## RPARK EDIT ##

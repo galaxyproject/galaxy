@@ -1,7 +1,7 @@
 import urllib
 
 from galaxy import web, util
-from galaxy.web.base.controller import BaseAPIController, UsesHistoryDatasetAssociationMixin, UsesVisualizationMixin
+from galaxy.web.base.controller import BaseAPIController, UsesHistoryDatasetAssociationMixin, UsesVisualizationMixin, UsesHistoryMixin
 from galaxy.visualization.genomes import GenomeRegion
 from galaxy.util.json import to_json_string, from_json_string
 from galaxy.visualization.data_providers.genome import *
@@ -10,7 +10,7 @@ import logging
 log = logging.getLogger( __name__ )
 
 
-class ToolsController( BaseAPIController, UsesVisualizationMixin ):
+class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMixin ):
     """
     RESTful controller for interactions with tools.
     """
@@ -86,8 +86,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         # dataset upload.
         history_id = payload.get("history_id", None)
         if history_id:
-            target_history = trans.sa_session.query(trans.app.model.History).get(
-                trans.security.decode_id(history_id))
+            target_history = self.get_history( trans, history_id )
         else:
             target_history = None
 

@@ -19,7 +19,6 @@ import simplejson
 import socket
 import time
 from string import Template
-from itertools import ifilter
 
 import galaxy.datatypes
 import galaxy.datatypes.registry
@@ -44,11 +43,6 @@ datatypes_registry = galaxy.datatypes.registry.Registry()
 # Default Value Required for unit tests
 datatypes_registry.load_datatypes()
 
-# When constructing filters with in for a fixed set of ids, maximum
-# number of items to place in the IN statement. Different databases
-# are going to have different limits so it is likely best to not let
-# this be unlimited - filter in Python if over this limit.
-MAX_IN_FILTER_LENGTH = 100
 
 class NoConverterException(Exception):
     def __init__(self, value):
@@ -898,32 +892,6 @@ class History( object, Dictifiable, UsesAnnotations ):
         if nice_size:
             rval = galaxy.datatypes.data.nice_size( rval )
         return rval
-
-    def contents_iter( self, **kwds ):
-        """
-        Fetch filtered list of contents of history.
-        """
-        python_filter = None
-        db_session = object_session( self )
-        assert db_session != None
-        query = db_session.query( HistoryDatasetAssociation ).filter( HistoryDatasetAssociation.table.c.history_id == self.id )
-        deleted = galaxy.util.string_as_bool_or_none( kwds.get( 'deleted', None ) )
-        if deleted is not None:
-            query = query.filter( HistoryDatasetAssociation.deleted == bool( kwds['deleted'] ) )
-        visible = galaxy.util.string_as_bool_or_none( kwds.get( 'visible', None ) )
-        if visible is not None:
-            query = query.filter( HistoryDatasetAssociation.visible == bool( kwds['visible'] ) )
-        if 'ids' in kwds:
-            ids = kwds['ids']
-            max_in_filter_length = kwds.get('max_in_filter_length', MAX_IN_FILTER_LENGTH)
-            if len(ids) < max_in_filter_length:
-                query = query.filter( HistoryDatasetAssociation.id.in_(ids) )
-            else:
-                python_filter = lambda hda: hda.id in ids
-        if python_filter:
-            return ifilter(python_filter, query)
-        else:
-            return query
 
     def copy_tags_from(self,target_user,source_history):
         for src_shta in source_history.tags:
@@ -1859,7 +1827,7 @@ class HistoryDatasetAssociationSubset( object ):
 class Library( object, Dictifiable ):
     permitted_actions = get_permitted_actions( filter='LIBRARY' )
     dict_collection_visible_keys = ( 'id', 'name' )
-    dict_element_visible_keys = ( 'id', 'deleted', 'name', 'description', 'synopsis' )
+    dict_element_visible_keys = ( 'id', 'deleted', 'name', 'description', 'synopsis', 'root_folder_id' )
     def __init__( self, name=None, description=None, synopsis=None, root_folder=None ):
         self.name = name or "Unnamed library"
         self.description = description
@@ -1926,7 +1894,7 @@ class Library( object, Dictifiable ):
         return name
 
 class LibraryFolder( object, Dictifiable ):
-    dict_element_visible_keys = ( 'id', 'parent_id', 'name', 'description', 'item_count', 'genome_build' )
+    dict_element_visible_keys = ( 'id', 'parent_id', 'name', 'description', 'item_count', 'genome_build', 'update_time' )
     def __init__( self, name=None, description=None, item_count=0, order_id=None ):
         self.name = name or "Unnamed folder"
         self.description = description
@@ -2092,6 +2060,7 @@ class LibraryDataset( object ):
                      genome_build = ldda.dbkey,
                      misc_info = ldda.info,
                      misc_blurb = ldda.blurb,
+                     peek = ( lambda ldda: ldda.display_peek() if ldda.peek and ldda.peek != 'no peek' else None )( ldda ),
                      template_data = template_data )
         if ldda.dataset.uuid is None:
             rval['uuid'] = None

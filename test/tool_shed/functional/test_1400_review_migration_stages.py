@@ -34,8 +34,8 @@ class TestToolMigrationStages( ShedTwillTestCase ):
         migrated_tool_dependencies = [ 'emboss', '5.0.0', 'freebayes', '0.9.4_9696d0ce8a962f7bb61c4791be5ce44312b81cf8', 
                                        'samtools', '0.1.18', 'blast+', '2.2.26+', 'bwa', '0.5.9', 'picard', '1.56.0', 
                                        'lastz', '1.02.00', 'bowtie', '0.12.7', 'FreeBayes requires g++', 'ncurses', 'zlib',
-                                       'zlib and libpthread', 'blast.ncbi.nlm.nih.gov', 'fastx_toolkit', '0.0.13',
-                                       'samtools', '0.1.16', 'cufflinks', '2.1.1', 'R', '2.11.0' ]
+                                       'blast.ncbi.nlm.nih.gov', 'fastx_toolkit', '0.0.13', 'samtools', '0.1.16', 'cufflinks',
+                                       '2.1.1', 'R', '2.11.0' ]
         migration_scripts = [ '0002_tools.sh', '0003_tools.sh', '0004_tools.sh', '0005_tools.sh', '0006_tools.sh', 
                               '0007_tools.sh', '0008_tools.sh' ]
         stages.extend( migration_scripts + migrated_tool_dependencies + migrated_repository_names )

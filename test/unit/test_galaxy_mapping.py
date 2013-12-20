@@ -180,39 +180,6 @@ class MappingTests( unittest.TestCase ):
         assert hist1.name == "History 2b"
         # gvk TODO need to ad test for GalaxySessions, but not yet sure what they should look like.
 
-    def test_history_contents( self ):
-        model = self.model
-        u = model.User( email="contents@foo.bar.baz", password="password" )
-        # gs = model.GalaxySession()
-        h1 = model.History( name="HistoryContentsHistory1", user=u)
-
-        self.persist( u, h1, expunge=True )
-
-        d1 = self.new_hda( h1, name="1" )
-        d2 = self.new_hda( h1, name="2", visible=False )
-        d3 = self.new_hda( h1, name="3", deleted=True )
-        d4 = self.new_hda( h1, name="4", visible=False, deleted=True )
-
-        def contents_iter_names(**kwds):
-            history = model.context.query( model.History ).filter(
-                model.History.name == "HistoryContentsHistory1"
-            ).first()
-            return set( map( lambda hda: hda.name, history.contents_iter( **kwds ) ) )
-
-        assert contents_iter_names() == set( [ "1", "2", "3", "4" ] )
-        assert contents_iter_names( deleted=False ) == set( [ "1", "2" ] )
-        assert contents_iter_names( visible=True ) == set( [ "1", "3" ] )
-        assert contents_iter_names( visible=False ) == set( [ "2", "4" ] )
-        assert contents_iter_names( deleted=True, visible=False ) == set( [ "4" ] )
-
-        assert contents_iter_names( ids=[ d1.id, d2.id, d3.id, d4.id ] ) == set( [ "1", "2", "3", "4" ] )
-        assert contents_iter_names( ids=[ d1.id, d2.id, d3.id, d4.id ], max_in_filter_length=1 ) == set( [ "1", "2", "3", "4" ] )
-
-        assert contents_iter_names( ids=[ d1.id, d3.id ] ) == set( [ "1", "3" ] )
-
-    def new_hda( self, history, **kwds ):
-        return self.persist( self.model.HistoryDatasetAssociation( history=history, create_dataset=True, sa_session=self.model.session, **kwds ), flush=True )
-
     @classmethod
     def setUpClass(cls):
         # Start the database and connect the mapping
@@ -224,16 +191,10 @@ class MappingTests( unittest.TestCase ):
         return cls.model.session.query( type )
 
     @classmethod
-    def persist(cls, *args, **kwargs):
-        session = cls.model.session
-        flush = kwargs.get('flush', True)
+    def persist(cls, *args):
         for arg in args:
-            session.add( arg )
-            if flush:
-                session.flush()
-        if kwargs.get('expunge', not flush):
-            cls.expunge()
-        return arg  # Return last or only arg.
+            cls.model.session.add( arg )
+        cls.expunge()
 
     @classmethod
     def expunge(cls):

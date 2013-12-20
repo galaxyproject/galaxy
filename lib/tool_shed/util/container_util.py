@@ -21,26 +21,29 @@ class Folder( object ):
         self.key = key
         self.label = label
         self.parent = parent
+        self.current_repository_installation_errors = []
+        self.current_repository_successful_installations = []
         self.description = None
         self.datatypes = []
+        self.failed_tests = []
         self.folders = []
+        self.invalid_data_managers = []
         self.invalid_repository_dependencies = []
         self.invalid_tool_dependencies = []
         self.invalid_tools = []
-        self.current_repository_installation_errors = []
-        self.repository_installation_errors = []
-        self.tool_dependency_installation_errors = []
-        self.valid_tools = []
-        self.valid_data_managers = []
-        self.invalid_data_managers = []
-        self.tool_dependencies = []
-        self.failed_tests = []
         self.missing_test_components = []
         self.not_tested = []
         self.passed_tests = []
-        self.test_environments = []
-        self.repository_dependencies = []
         self.readme_files = []
+        self.repository_dependencies = []
+        self.repository_installation_errors = []
+        self.repository_successful_installations = []
+        self.test_environments = []
+        self.tool_dependencies = []
+        self.tool_dependency_installation_errors = []
+        self.tool_dependency_successful_installations = []
+        self.valid_tools = []
+        self.valid_data_managers = []
         self.workflows = []
 
     def contains_folder( self, folder ):
@@ -230,6 +233,17 @@ class RepositoryInstallationError( object ):
         self.error_message = error_message
 
 
+class RepositorySuccessfulInstallation( object ):
+    """Repository installation object"""
+
+    def __init__( self, id=None, tool_shed=None, name=None, owner=None, changeset_revision=None ):
+        self.id = id
+        self.tool_shed = tool_shed
+        self.name = name
+        self.owner = owner
+        self.changeset_revision = changeset_revision
+
+
 class TestEnvironment( object ):
     """Tool test environment object"""
 
@@ -293,6 +307,16 @@ class ToolDependencyInstallationError( object ):
         self.version = version
         self.error_message = error_message
 
+
+class ToolDependencySuccessfulInstallation( object ):
+    """Tool dependency installation object"""
+
+    def __init__( self, id=None, type=None, name=None, version=None, installation_directory=None ):
+        self.id = id
+        self.type = type
+        self.name = name
+        self.version = version
+        self.installation_directory = installation_directory
 
 class Workflow( object ):
     """Workflow object."""
@@ -1097,7 +1121,8 @@ def build_tool_test_results_folder( trans, folder_id, tool_test_results_dicts, l
             #    {'python_version': '2.7.4', 'tool_shed_mercurial_version': '2.2.3', 'system': 'Linux 3.8.0-30-generic', 
             #     'tool_shed_database_version': 21, 'architecture': 'x86_64', 'galaxy_revision': '11573:a62c54ddbe2a', 
             #     'galaxy_database_version': 117, 'time_tested': '2013-12-03 09:11:48', 'tool_shed_revision': '11556:228156daa575'}, 
-            # 'installation_errors': {'current_repository': [], 'repository_dependencies': [], 'tool_dependencies': []}
+            # 'installation_errors': {'current_repository': [], 'repository_dependencies': [], 'tool_dependencies': []},
+            # 'successful_installations': {'current_repository': [], 'repository_dependencies': [], 'tool_dependencies': []}
             # }
             test_environment_dict = tool_test_results_dict.get( 'test_environment', None )
             if test_environment_dict is None:
@@ -1335,6 +1360,82 @@ def build_tool_test_results_folder( trans, folder_id, tool_test_results_dicts, l
                                                                                                   version=td_version,
                                                                                                   error_message=td_error_message )
                             tool_dependencies_folder.tool_dependency_installation_errors.append( tool_dependency_installation_error )
+            successful_installation_dict = tool_test_results_dict.get( 'successful_installations', {} )
+            if len( successful_installation_dict ) > 0:
+                # 'successful_installation':
+                #    {'current_repository': [], 
+                #     'repository_dependencies': [], 
+                #     'tool_dependencies': 
+                #        [{'installation_directory': 'some path' 'type': 'package', 'name': 'MIRA', 'version': '4.0'}]
+                #    }
+                current_repository_successful_installation_dicts = successful_installation_dict.get( 'current_repository', [] )
+                repository_dependency_successful_installation_dicts = successful_installation_dict.get( 'repository_dependencies', [] )
+                tool_dependency_successful_installation_dicts = successful_installation_dict.get( 'tool_dependencies', [] )
+                if len( current_repository_successful_installation_dicts ) > 0 or \
+                    len( repository_dependency_successful_installation_dicts ) > 0 or \
+                    len( tool_dependency_successful_installation_dicts ) > 0:
+                    repository_installation_success_id = 0
+                    folder_id += 1
+                    successful_installation_base_folder = Folder( id=folder_id,
+                                                                  key='successful_installations',
+                                                                  label='Successful installations',
+                                                                  parent=containing_folder )
+                    containing_folder.folders.append( successful_installation_base_folder )
+                    # Displaying the successful installation of the current repository is not really necessary, so we'll skip it.
+                    if len( repository_dependency_successful_installation_dicts ) > 0:
+                        folder_id += 1
+                        repository_dependencies_folder = Folder( id=folder_id,
+                                                                 key='repository_dependency_successful_installations',
+                                                                 label='Repository dependencies',
+                                                                 parent=successful_installation_base_folder )
+                        successful_installation_base_folder.folders.append( repository_dependencies_folder )
+                        for repository_dependency_successful_installation_dict in repository_dependency_successful_installation_dicts:
+                            repository_installation_success_id += 1
+                            try:
+                                rd_tool_shed = str( repository_dependency_successful_installation_dict.get( 'tool_shed', '' ) )
+                                rd_name = str( repository_dependency_successful_installation_dict.get( 'name', '' ) )
+                                rd_owner = str( repository_dependency_successful_installation_dict.get( 'owner', '' ) )
+                                rd_changeset_revision = str( repository_dependency_successful_installation_dict.get( 'changeset_revision', '' ) )
+                            except Exception, e:
+                                rd_tool_shed = 'unknown'
+                                rd_name = 'unknown'
+                                rd_owner = 'unknown'
+                                rd_changeset_revision = 'unknown'
+                            repository_installation_success = \
+                                RepositoryInstallationSuccess( id=repository_installation_success_id,
+                                                               tool_shed=rd_tool_shed,
+                                                               name=rd_name,
+                                                               owner=rd_owner,
+                                                               changeset_revision=rd_changeset_revision )
+                            repository_dependencies_folder.repository_successful_installations.append( repository_installation_success )
+                    if len( tool_dependency_successful_installation_dicts ) > 0:
+                        # [{'installation_directory': 'some path' 'type': 'package', 'name': 'MIRA', 'version': '4.0'}]
+                        folder_id += 1
+                        tool_dependencies_folder = Folder( id=folder_id,
+                                                           key='tool_dependency_successful_installations',
+                                                           label='Tool dependencies',
+                                                           parent=successful_installation_base_folder )
+                        successful_installation_base_folder.folders.append( tool_dependencies_folder )
+                        tool_dependency_error_id = 0
+                        for tool_dependency_successful_installation_dict in tool_dependency_successful_installation_dicts:
+                            tool_dependency_error_id += 1
+                            try:
+                                td_type = str( tool_dependency_successful_installation_dict.get( 'type', '' ) )
+                                td_name = str( tool_dependency_successful_installation_dict.get( 'name', '' ) )
+                                td_version = str( tool_dependency_successful_installation_dict.get( 'version', '' ) )
+                                td_installation_directory = tool_dependency_successful_installation_dict.get( 'installation_directory', '' )
+                            except Exception, e:
+                                td_type = 'unknown'
+                                td_name = 'unknown'
+                                td_version = 'unknown'
+                                td_installation_directory = str( e )
+                            tool_dependency_successful_installation = \
+                                ToolDependencySuccessfulInstallation( id=tool_dependency_error_id,
+                                                                      type=td_type,
+                                                                      name=td_name,
+                                                                      version=td_version,
+                                                                      installation_directory=td_installation_directory )
+                            tool_dependencies_folder.tool_dependency_successful_installations.append( tool_dependency_successful_installation )
     else:
         tool_test_results_root_folder = None
     return folder_id, tool_test_results_root_folder
