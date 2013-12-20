@@ -63,7 +63,7 @@ todo:
  *
  *  initialize attributes REQUIRES a dataset and an apiDatasetsURL
  */
-var ScatterplotControlForm = BaseView.extend( LoggableMixin ).extend({
+var ScatterplotControlForm = Backbone.View.extend( LoggableMixin ).extend({
     //logger      : console,
     className   : 'scatterplot-control-form',
     
