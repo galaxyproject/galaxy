@@ -247,12 +247,16 @@ def generate_message_for_invalid_tools( trans, invalid_file_tups, repository, me
         bold_start = ''
         bold_end = ''
     message = ''
+    if trans.webapp.name == 'galaxy':
+        tip_rev = str( repository.changeset_revision )
+    else:
+        tip_rev = str( repository.tip( trans.app ) )
     if not displaying_invalid_tool:
         if metadata_dict:
-            message += "Metadata may have been defined for some items in revision '%s'.  " % str( repository.tip( trans.app ) )
+            message += "Metadata may have been defined for some items in revision '%s'.  " % tip_rev
             message += "Correct the following problems if necessary and reset metadata.%s" % new_line
         else:
-            message += "Metadata cannot be defined for revision '%s' so this revision cannot be automatically " % str( repository.tip( trans.app ) )
+            message += "Metadata cannot be defined for revision '%s' so this revision cannot be automatically " % tip_rev
             message += "installed into a local Galaxy instance.  Correct the following problems and reset metadata.%s" % new_line
     for itc_tup in invalid_file_tups:
         tool_file, exception_msg = itc_tup
