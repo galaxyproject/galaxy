@@ -64,7 +64,6 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin ):
 
     @web.expose_api_anonymous
     def show( self, trans, id, deleted='False', **kwd ):
-        # oh, sphinx - you bastard
         """
         show( trans, id, deleted='False' )
         * GET /api/histories/{id}:

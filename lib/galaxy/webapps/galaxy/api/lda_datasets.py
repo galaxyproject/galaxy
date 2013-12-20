@@ -30,15 +30,14 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         """
         show( self, trans, id, **kwd )
         * GET /api/libraries/datasets/{encoded_dataset_id}:
-            Displays information about the dataset identified by the encoded id.
+            Displays information about the dataset identified by the encoded ID.
 
-
-        :type   id:      an encoded id string
         :param  id:      the encoded id of the dataset to query
+        :type   id:      an encoded id string
 
         :rtype:     dictionary
-        :returns:   detailed dataset information from
-            :func:`galaxy.web.base.controller.UsesVisualizationMixin.get_library_dataset.to_dict()`
+        :returns:   detailed dataset information from base controller
+        .. seealso:: :attr:`galaxy.web.base.controller.UsesLibraryMixinItems.get_library_dataset`
         """
         # Get dataset.
         try:
@@ -66,18 +65,16 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         """
         download( self, trans, format, **kwd )
         * GET /api/libraries/datasets/download/{format}
+            Downloads requested datasets (identified by encoded IDs) in requested format.
 
-        .. code-block::
-            example:
-            GET localhost:8080/api/libraries/datasets/download/tbz?ldda_ids%255B%255D=a0d84b45643a2678&ldda_ids%255B%255D=fe38c84dcd46c828
+        example: ``GET localhost:8080/api/libraries/datasets/download/tbz?ldda_ids%255B%255D=a0d84b45643a2678&ldda_ids%255B%255D=fe38c84dcd46c828``
 
-        :type   format:      string
+        .. note:: supported format values are: 'zip', 'tgz', 'tbz', 'uncompressed'
+
         :param  format:      string representing requested archive format
-
-        .. note:: supported formats are: zip, tgz, tbz, uncompressed
-
-        :type   lddas[]:      an array
+        :type   format:      string
         :param  lddas[]:      an array of encoded ids
+        :type   lddas[]:      an array
 
         :rtype:   file
         :returns: either archive with the requested datasets packed inside or a single uncompressed dataset
