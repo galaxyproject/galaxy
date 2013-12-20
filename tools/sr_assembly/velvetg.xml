@@ -1,5 +1,6 @@
 <tool id="velvetg" name="velvetg" version="1.0.0">
   <description>Velvet sequence assembler for very short reads</description>
+  <version_command>velvetg 2&gt;&amp;1 | grep "Version" | sed -e 's/Version //'</version_command>
   <command interpreter="python">
     velvetg_wrapper.py 
            '$input.extra_files_path'
