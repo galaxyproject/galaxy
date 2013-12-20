@@ -115,7 +115,11 @@ def install_and_test_repositories( app, galaxy_shed_tools_dict, galaxy_shed_tool
             log.debug( error_message )
         else:
             tool_test_results_dict = install_and_test_base_util.get_tool_test_results_dict( tool_test_results_dicts )
-            is_excluded, reason = install_and_test_base_util.is_excluded( exclude_list_dicts, name, owner, changeset_revision )
+            is_excluded, reason = install_and_test_base_util.is_excluded( exclude_list_dicts,
+                                                                          name,
+                                                                          owner,
+                                                                          changeset_revision,
+                                                                          encoded_repository_metadata_id )
             if this_repository_is_in_the_exclude_list or requires_excluded:
                 # If this repository is being skipped, register the reason.
                 tool_test_results_dict[ 'not_tested' ] = dict( reason=reason )

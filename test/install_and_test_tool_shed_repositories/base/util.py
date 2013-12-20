@@ -518,8 +518,6 @@ def handle_missing_dependencies( app, repository, missing_tool_dependencies, rep
                                           repository_dict,
                                           params,
                                           can_update_tool_shed )
-    # Uninstall this repository since it is missing dependencies.
-    uninstall_repository_and_repository_dependencies( app, repository_dict )
 
 def initialize_install_and_test_statistics_dict( test_framework ):
     # Initialize a dictionary for the summary that will be printed to stdout.
@@ -591,7 +589,7 @@ def install_repository( app, repository_dict ):
         log.exception( error_message )
     return repository, error_message
 
-def is_excluded( exclude_list_dicts, name, owner, changeset_revision ):
+def is_excluded( exclude_list_dicts, name, owner, changeset_revision, encoded_repository_metadata_id ):
     """
     Return True if the repository defined by the received name, owner, changeset_revision should
     be excluded from testing for any reason.
@@ -606,7 +604,7 @@ def is_excluded( exclude_list_dicts, name, owner, changeset_revision ):
             return True, reason
         # Skip this repository if it has a repository dependency that is in the exclude list.
         repository_dependency_dicts, error_message = \
-            get_repository_dependencies_for_changeset_revision( install_and_test_base_util.galaxy_tool_shed_url,
+            get_repository_dependencies_for_changeset_revision( galaxy_tool_shed_url,
                                                                 encoded_repository_metadata_id )
         if error_message:
             log.debug( 'Error getting repository dependencies for revision %s of repository %s owned by %s:' % \
@@ -800,96 +798,3 @@ def run_tests( test_config ):
         test_runner = plug_runner
     result = test_runner.run( tests )
     return result, test_config.plugins._plugins
-
-def uninstall_repository_and_repository_dependencies( app, repository_dict ):
-    """Uninstall a repository and all of its repository dependencies."""
-    # This method assumes that the repositor defined by the received repository_dict is not a repository
-    # dependency of another repository.
-    sa_session = app.install_model.context
-    # The dict contains the only repository the app should have installed at this point.
-    name = str( repository_dict[ 'name' ] )
-    owner = str( repository_dict[ 'owner' ] )
-    changeset_revision = str( repository_dict[ 'changeset_revision' ] )
-    # Since this install and test framework uninstalls repositories immediately after installing and testing
-    # them, the values of repository.installed_changeset_revision and repository.changeset_revision should be
-    # the same.
-    repository = test_db_util.get_installed_repository_by_name_owner_changeset_revision( name, owner, changeset_revision )
-    if repository.can_uninstall( app ):
-        # A repository can be uninstalled only if no dependent repositories are installed.  So uninstallation order
-        # id critical.  A repository is always uninstalled first, and the each of its dependencies is checked to see
-        # if it can be uninstalled.
-        uninstall_repository_dict = dict( name=name,
-                                          owner=owner,
-                                          changeset_revision=changeset_revision )
-        log.debug( 'Revision %s of repository %s owned by %s selected for uninstallation.' % ( changeset_revision, name, owner ) )
-        try:
-            test_install_repositories.generate_uninstall_method( uninstall_repository_dict )
-            # Set up nose to run the generated uninstall method as a functional test.
-            test_config = nose.config.Config( env=os.environ, plugins=nose.plugins.manager.DefaultPluginManager() )
-            test_config.configure( sys.argv )
-            # Run the uninstall method. This method uses the Galaxy web interface to uninstall the previously installed
-            # repository and all of its repository dependencies, deleting each of them from disk.
-            result, _ = run_tests( test_config )
-            repository_uninstall_successful = result.wasSuccessful()
-        except Exception, e:
-            repository_uninstall_successful = False
-            log.exception( 'Uninstallation of revision %s of repository %s owned by %s failed: %s.' % \
-                ( rd_changeset_revision, rd_name, rd_owner, str( e ) ) )
-        if repository_uninstall_successful:
-            # Now that the repository is uninstalled we can attempt to uninstall each of its repository dependencies.
-            # We have to do this through Twill in order to maintain app.toolbox and shed_tool_conf.xml in a state that
-            # is valid for future tests.  Since some of the repository's repository dependencies may require other of
-            # the repository's repository dependencies, we'll keep track of the repositories we've been able to unistall.
-            processed_repository_dependency_ids = []
-            while len( processed_repository_dependency_ids ) < len( repository.repository_dependencies ):
-                for repository_dependency in repository.repository_dependencies:
-                    if repository_dependency.id not in processed_repository_dependency_ids and repository_dependency.can_uninstall( app ):
-                        processed_repository_dependency_ids.append( repository_dependency.id )
-                        rd_name = str( repository_dependency.name )
-                        rd_owner = str( repository_dependency.owner )
-                        rd_changeset_revision = str( repository_dependency.changeset_revision )
-                        uninstall_repository_dict = dict( name=rd_name,
-                                                          owner=rd_owner,
-                                                          changeset_revision=rd_changeset_revision )
-                        log.debug( 'Revision %s of repository dependency %s owned by %s selected for uninstallation.' % \
-                            ( rd_changeset_revision, rd_name, rd_owner ) )
-                        # Generate a test method to uninstall the repository dependency through the embedded Galaxy application's
-                        # web interface.
-                        try:
-                            test_install_repositories.generate_uninstall_method( uninstall_repository_dict )
-                            # Set up nose to run the generated uninstall method as a functional test.
-                            test_config = nose.config.Config( env=os.environ, plugins=nose.plugins.manager.DefaultPluginManager() )
-                            test_config.configure( sys.argv )
-                            # Run the uninstall method.
-                            result, _ = run_tests( test_config )
-                            if not result.wasSuccessful():
-                                # We won't set ok here because we'll continue to uninstall whatever we can.
-                                log.debug( 'Uninstallation of revision %s of repository %s owned by %s failed.' % \
-                                    ( rd_changeset_revision, rd_name, rd_owner ) )
-                        except Exception, e:
-                            log.exception( 'Uninstallation of revision %s of repository %s owned by %s failed: %s.' % \
-                                ( rd_changeset_revision, rd_name, rd_owner, str( e ) ) )
-        else:
-            log.debug( 'Uninstallation of revision %s of repository %s owned by %s failed.' % ( changeset_revision, name, owner ) )
-    else:
-        log_reason_repository_cannot_be_uninstalled( app, repository )
-
-def uninstall_tool_dependency( app, tool_dependency ):
-    """Attempt to uninstall a tool dependency."""
-    sa_session = app.install_model.context
-    # Clean out any generated tests. This is necessary for Twill.
-    tool_dependency_install_path = tool_dependency.installation_directory( app )
-    uninstalled, error_message = tool_dependency_util.remove_tool_dependency( app, tool_dependency )
-    if error_message:
-        log.debug( 'Error attempting to remove directory: %s' % str( tool_dependency_install_path ) )
-        log.debug( error_message )
-    else:
-        log.debug( 'Successfully removed tool dependency installation directory: %s' % str( tool_dependency_install_path ) )
-    if not uninstalled or tool_dependency.status != app.model.ToolDependency.installation_status.UNINSTALLED:
-        tool_dependency.status = app.model.ToolDependency.installation_status.UNINSTALLED
-        sa_session.add( tool_dependency )
-        sa_session.flush()
-    if os.path.exists( tool_dependency_install_path ):
-       log.debug( 'Uninstallation of tool dependency succeeded, but the installation path still exists on the filesystem. It is now being explicitly deleted.') 
-       suc.remove_dir( tool_dependency_install_path )
-
