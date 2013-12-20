@@ -155,7 +155,7 @@ class RepositoryRevisionsController( BaseAPIController ):
         try:
             query = trans.sa_session.query( trans.app.model.RepositoryMetadata ) \
                                     .filter( and_( *clause_list ) ) \
-                                    .order_by( trans.app.model.RepositoryMetadata.table.c.repository_id ) \
+                                    .order_by( trans.app.model.RepositoryMetadata.table.c.repository_id.desc() ) \
                                     .all()
             for repository_metadata in query:
                 repository_metadata_dict = repository_metadata.to_dict( view='collection',
