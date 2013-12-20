@@ -87,7 +87,7 @@
                         %endif                
                     </div>
                     <div style="clear: both"></div>
-                    <div class="toolParamHelp">Add an annotation or notes to a dataset; annotations are available when a history is viewed.</div>
+                    <div class="toolParamHelp">Add custom structured meta-data to a record. Data should be inputed in JSON format.</div>
                 </div>
             %endif
             %for name, spec in data.metadata.spec.items():
