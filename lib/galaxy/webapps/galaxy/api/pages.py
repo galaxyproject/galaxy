@@ -14,9 +14,9 @@ log = logging.getLogger( __name__ )
 class PagesController( BaseAPIController, SharableItemSecurityMixin, UsesAnnotations, SharableMixin ):
 
     @web.expose_api
-    def index( self, trans, deleted='False', **kwd ):
+    def index( self, trans, deleted=False, **kwd ):
         """
-        index( self, trans, deleted='False', **kwd )
+        index( self, trans, deleted=False, **kwd )
         * GET /api/pages
             return a list of Pages viewable by the user
 
@@ -25,12 +25,27 @@ class PagesController( BaseAPIController, SharableItemSecurityMixin, UsesAnnotat
         :rtype:     list
         :returns:   dictionaries containing summary or detailed Page information
         """
-        r = trans.sa_session.query( trans.app.model.Page )
-        if not deleted:
-            r = r.filter_by(deleted=False)
         out = []
-        for row in r:
-            out.append( self.encode_all_ids( trans, row.to_dict(), True) )
+        
+        if trans.user_is_admin():
+            r = trans.sa_session.query( trans.app.model.Page )
+            if not deleted:
+                r = r.filter_by(deleted=False)
+            for row in r:
+                out.append( self.encode_all_ids( trans, row.to_dict(), True) )
+        else:
+            user = trans.get_user()
+            r = trans.sa_session.query( trans.app.model.Page ).filter_by( user=user )
+            if not deleted:
+                r = r.filter_by(deleted=False)
+            for row in r:
+                out.append( self.encode_all_ids( trans, row.to_dict(), True) )
+            r = trans.sa_session.query( trans.app.model.Page ).filter( trans.app.model.Page.user != user ).filter_by(published=True)
+            if not deleted:
+                r = r.filter_by(deleted=False)
+            for row in r:
+                out.append( self.encode_all_ids( trans, row.to_dict(), True) )
+
         return out
 
 
@@ -126,6 +141,7 @@ class PagesController( BaseAPIController, SharableItemSecurityMixin, UsesAnnotat
         :returns:   Dictionary return of the Page.to_dict call with the 'content' field populated by the most recent revision
         """
         page = trans.sa_session.query( trans.app.model.Page ).get( trans.security.decode_id( id ) )
+        self.security_check( trans, page, check_ownership=False, check_accessible=True)
         rval = self.encode_all_ids( trans, page.to_dict(), True) 
         rval['content'] = page.latest_revision.content
         return rval
