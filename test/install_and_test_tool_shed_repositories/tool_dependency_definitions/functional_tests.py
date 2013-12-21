@@ -120,7 +120,7 @@ def install_and_test_repositories( app, galaxy_shed_tools_dict, galaxy_shed_tool
                                                                           owner,
                                                                           changeset_revision,
                                                                           encoded_repository_metadata_id )
-            if this_repository_is_in_the_exclude_list or requires_excluded:
+            if is_excluded:
                 # If this repository is being skipped, register the reason.
                 tool_test_results_dict[ 'not_tested' ] = dict( reason=reason )
                 params = dict( do_not_test=False )
@@ -142,8 +142,7 @@ def install_and_test_repositories( app, galaxy_shed_tools_dict, galaxy_shed_tool
                     log.debug( 'Installation failed for revision %s of repository %s owned by %s.' % ( changeset_revision, name, owner ) )
                     install_and_test_statistics_dict[ 'repositories_with_installation_error' ].append( repository_identifier_dict )
                     tool_test_results_dict[ 'installation_errors' ][ 'current_repository' ] = error_message
-                    params = dict( test_install_error=True,
-                                   do_not_test=False )
+                    params = dict( test_install_error=True )
                     # TODO: do something useful with response_dict
                     response_dict = install_and_test_base_util.register_test_result( install_and_test_base_util.galaxy_tool_shed_url,
                                                                                      tool_test_results_dicts,
@@ -153,6 +152,8 @@ def install_and_test_repositories( app, galaxy_shed_tools_dict, galaxy_shed_tool
                                                                                      can_update_tool_shed )
                 else:
                     # The repository was successfully installed.
+                    log.debug( 'Installation succeeded for revision %s of repository %s owned by %s.' % \
+                        ( changeset_revision, name, owner ) )
                     params, install_and_test_statistics_dict, tool_test_results_dict = \
                         install_and_test_base_util.register_installed_and_missing_dependencies( app,
                                                                                                 repository,

@@ -197,7 +197,6 @@ def install_and_test_repositories( app, galaxy_shed_tools_dict, galaxy_shed_tool
                     ( changeset_revision, name, owner ) )
             else:
                 tool_test_results_dict = install_and_test_base_util.initialize_tool_tests_results_dict( app, tool_test_results_dict )
-                # Proceed with installing repositories and testing contained tools.
                 repository, error_message = install_and_test_base_util.install_repository( app, repository_dict )
                 install_and_test_statistics_dict[ 'total_repositories_processed' ] += 1
                 if error_message:
