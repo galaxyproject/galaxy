@@ -23,6 +23,7 @@ import time
 
 from install_and_test_tool_shed_repositories.base.util import get_database_version
 from install_and_test_tool_shed_repositories.base.util import get_repository_current_revision
+from install_and_test_tool_shed_repositories.base.util import RepositoryMetadataApplication
 from galaxy.model.orm import and_
 from galaxy.model.orm import not_
 from galaxy.model.orm import select
@@ -35,32 +36,6 @@ from time import strftime
 
 log = logging.getLogger( 'check_repositories_for_functional_tests' )
 assert sys.version_info[ :2 ] >= ( 2, 6 )
-
-
-class RepositoryMetadataApplication( object ):
-    """Application that enables updating repository_metadata table records in the Tool Shed."""
-
-    def __init__( self, config ):
-        self.config = config
-        if self.config.database_connection is False:
-            self.config.database_connection = "sqlite:///%s?isolation_level=IMMEDIATE" % str( config.database )
-        log.debug( 'Using database connection: %s' % str( self.config.database_connection ) )
-        # Setup the database engine and ORM
-        self.model = galaxy.webapps.tool_shed.model.mapping.init( self.config.file_path,
-                                                                  self.config.database_connection,
-                                                                  engine_options={},
-                                                                  create_tables=False )
-        self.hgweb_config_manager = self.model.hgweb_config_manager
-        self.hgweb_config_manager.hgweb_config_dir = self.config.hgweb_config_dir
-        log.debug( 'Using hgweb.config file: %s' % str( self.hgweb_config_manager.hgweb_config ) )
-
-    @property
-    def sa_session( self ):
-        """Returns a SQLAlchemy session."""
-        return self.model.context.current
-
-    def shutdown( self ):
-        pass
 
 def check_and_update_repository_metadata( app, info_only=False, verbosity=1 ):
     """

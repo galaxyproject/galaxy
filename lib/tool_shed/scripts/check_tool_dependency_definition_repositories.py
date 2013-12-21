@@ -27,6 +27,7 @@ import galaxy.webapps.tool_shed.model.mapping
 
 from install_and_test_tool_shed_repositories.base.util import get_database_version
 from install_and_test_tool_shed_repositories.base.util import get_repository_current_revision
+from install_and_test_tool_shed_repositories.base.util import RepositoryMetadataApplication
 from galaxy.model.orm import and_
 from galaxy.model.orm import not_
 from galaxy.model.orm import select
@@ -39,30 +40,6 @@ log.setLevel( 10 )
 log.addHandler( logging.StreamHandler( sys.stdout ) )
 
 assert sys.version_info[ :2 ] >= ( 2, 6 )
-
-class RepositoriesApplication( object ):
-    """Encapsulates the state of a Universe application"""
-
-    def __init__( self, config ):
-        if config.database_connection is False:
-            config.database_connection = "sqlite:///%s?isolation_level=IMMEDIATE" % config.database
-        # Setup the database engine and ORM
-        self.model = galaxy.webapps.tool_shed.model.mapping.init( config.file_path, config.database_connection, engine_options={}, create_tables=False )
-        self.hgweb_config_manager = self.model.hgweb_config_manager
-        self.hgweb_config_manager.hgweb_config_dir = config.hgweb_config_dir
-        print "# Using configured hgweb.config file: ", self.hgweb_config_manager.hgweb_config
-
-    @property
-    def sa_session( self ):
-        """
-        Returns a SQLAlchemy session -- currently just gets the current
-        session from the threadlocal session context, but this is provided
-        to allow migration toward a more SQLAlchemy 0.4 style of use.
-        """
-        return self.model.context.current
-
-    def shutdown( self ):
-        pass
 
 def main():
     '''Script that validates all repositories of type tool_dependency_definition.'''
@@ -93,8 +70,7 @@ def main():
     print "# This tool shed is configured to listen on %s:%s" % ( config_parser.get( config_section, 'host' ),
                                                                   config_parser.get( config_section, 'port' ) )
     
-    app = RepositoriesApplication( config )
-
+    app = RepositoryMetadataApplication( config )
     if options.info_only:
         print "# Displaying info only ( --info_only )"
     if options.verbosity:

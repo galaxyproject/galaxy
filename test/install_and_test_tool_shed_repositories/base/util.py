@@ -181,6 +181,32 @@ class ReportResults( Plugin ):
             return passed_tests
         return []
 
+
+class RepositoryMetadataApplication( object ):
+    """Application that enables updating repository_metadata table records in the Tool Shed."""
+
+    def __init__( self, config ):
+        self.config = config
+        if self.config.database_connection is False:
+            self.config.database_connection = "sqlite:///%s?isolation_level=IMMEDIATE" % str( config.database )
+        log.debug( 'Using database connection: %s' % str( self.config.database_connection ) )
+        # Setup the database engine and ORM
+        self.model = galaxy.webapps.tool_shed.model.mapping.init( self.config.file_path,
+                                                                  self.config.database_connection,
+                                                                  engine_options={},
+                                                                  create_tables=False )
+        self.hgweb_config_manager = self.model.hgweb_config_manager
+        self.hgweb_config_manager.hgweb_config_dir = self.config.hgweb_config_dir
+        log.debug( 'Using hgweb.config file: %s' % str( self.hgweb_config_manager.hgweb_config ) )
+
+    @property
+    def sa_session( self ):
+        """Returns a SQLAlchemy session."""
+        return self.model.context.current
+
+    def shutdown( self ):
+        pass
+
 def display_repositories_by_owner( repository_dicts ):
     # Group summary display by repository owner.
     repository_dicts_by_owner = {}
