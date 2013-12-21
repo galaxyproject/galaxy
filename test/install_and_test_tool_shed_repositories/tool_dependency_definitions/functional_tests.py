@@ -134,39 +134,47 @@ def install_and_test_repositories( app, galaxy_shed_tools_dict, galaxy_shed_tool
                 log.debug( "Not testing revision %s of repository %s owned by %s because it is in the exclude list for this test run." % \
                     ( changeset_revision, name, owner ) )
             else:
-                tool_test_results_dict = install_and_test_base_util.initialize_tool_tests_results_dict( app, tool_test_results_dict )
-                repository, error_message = install_and_test_base_util.install_repository( app, repository_dict )
-                install_and_test_statistics_dict[ 'total_repositories_processed' ] += 1
-                if error_message:
-                    # The repository installation failed.
-                    log.debug( 'Installation failed for revision %s of repository %s owned by %s.' % ( changeset_revision, name, owner ) )
-                    install_and_test_statistics_dict[ 'repositories_with_installation_error' ].append( repository_identifier_dict )
-                    tool_test_results_dict[ 'installation_errors' ][ 'current_repository' ] = error_message
-                    params = dict( test_install_error=True )
-                    # TODO: do something useful with response_dict
-                    response_dict = install_and_test_base_util.register_test_result( install_and_test_base_util.galaxy_tool_shed_url,
-                                                                                     tool_test_results_dicts,
-                                                                                     tool_test_results_dict,
-                                                                                     repository_dict,
-                                                                                     params,
-                                                                                     can_update_tool_shed )
+                # See if the repository was installed in a previous test.
+                repository = get_repository( name, owner, changeset_revision )
+                if repository is None:
+                    # The repository was not previously installed, so install it now.
+                    tool_test_results_dict = install_and_test_base_util.initialize_tool_tests_results_dict( app, tool_test_results_dict )
+                    repository, error_message = install_and_test_base_util.install_repository( app, repository_dict )
+                    install_and_test_statistics_dict[ 'total_repositories_processed' ] += 1
+                    if error_message:
+                        # The repository installation failed.
+                        log.debug( 'Installation failed for revision %s of repository %s owned by %s.' % ( changeset_revision, name, owner ) )
+                        install_and_test_statistics_dict[ 'repositories_with_installation_error' ].append( repository_identifier_dict )
+                        tool_test_results_dict[ 'installation_errors' ][ 'current_repository' ] = error_message
+                        params = dict( test_install_error=True )
+                        # TODO: do something useful with response_dict
+                        response_dict = install_and_test_base_util.register_test_result( install_and_test_base_util.galaxy_tool_shed_url,
+                                                                                         tool_test_results_dicts,
+                                                                                         tool_test_results_dict,
+                                                                                         repository_dict,
+                                                                                         params,
+                                                                                         can_update_tool_shed )
+                    else:
+                        # The repository was successfully installed.
+                        log.debug( 'Installation succeeded for revision %s of repository %s owned by %s.' % \
+                            ( changeset_revision, name, owner ) )
+                        params, install_and_test_statistics_dict, tool_test_results_dict = \
+                            install_and_test_base_util.register_installed_and_missing_dependencies( app,
+                                                                                                    repository,
+                                                                                                    repository_identifier_dict,
+                                                                                                    install_and_test_statistics_dict,
+                                                                                                    tool_test_results_dict )
+                        # TODO: do something useful with response_dict
+                        response_dict = install_and_test_base_util.register_test_result( install_and_test_base_util.galaxy_tool_shed_url,
+                                                                                         tool_test_results_dicts,
+                                                                                         tool_test_results_dict,
+                                                                                         repository_dict,
+                                                                                         params,
+                                                                                         can_update_tool_shed )
                 else:
-                    # The repository was successfully installed.
-                    log.debug( 'Installation succeeded for revision %s of repository %s owned by %s.' % \
+                    log.debug( 'Skipped attempt to install revision %s of repository %s owned by %s because ' % \
                         ( changeset_revision, name, owner ) )
-                    params, install_and_test_statistics_dict, tool_test_results_dict = \
-                        install_and_test_base_util.register_installed_and_missing_dependencies( app,
-                                                                                                repository,
-                                                                                                repository_identifier_dict,
-                                                                                                install_and_test_statistics_dict,
-                                                                                                tool_test_results_dict )
-                    # TODO: do something useful with response_dict
-                    response_dict = install_and_test_base_util.register_test_result( install_and_test_base_util.galaxy_tool_shed_url,
-                                                                                     tool_test_results_dicts,
-                                                                                     tool_test_results_dict,
-                                                                                     repository_dict,
-                                                                                     params,
-                                                                                     can_update_tool_shed )
+                    log.debug( 'it was previously installed and currently has status %s' % str( repository.status ) )
     return install_and_test_statistics_dict, error_message
 
 def main():

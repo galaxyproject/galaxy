@@ -24,8 +24,6 @@ import tool_shed.repository_types.util as rt_util
 import tool_shed.util.shed_util_common as suc
 import urllib
 
-from base.tool_shed_util import log_reason_repository_cannot_be_uninstalled
-
 from common import update
 
 from galaxy.util import asbool
@@ -387,6 +385,16 @@ def get_repositories_to_install( tool_shed_url, test_framework ):
         log.debug( "Revision %s of repository %s owned by %s" % ( changeset_revision, name, owner ) )
     return repository_dicts, error_message
 
+def get_repository( name, owner, changeset_revision ):
+    """Return a repository record associated with the received name, owner, changeset_revision if one exists."""
+    repository = None
+    try:
+        repository = test_db_util.get_installed_repository_by_name_owner_changeset_revision( name, owner, changeset_revision )
+    except:
+        # The repository may not have been installed in a previous test.
+        pass
+    return repository
+
 def get_repository_current_revision( repo_path ):
     """This method uses the python mercurial API to get the current working directory's mercurial changeset hash."""
     # Initialize a mercurial repo object from the provided path.
@@ -608,9 +616,9 @@ def install_repository( app, repository_dict ):
     # Run the configured install method as a test. This method uses the embedded Galaxy application's web interface to
     # install the specified repository with tool and repository dependencies also selected for installation.
     result, _ = run_tests( test_config )
-    try:
-        repository = test_db_util.get_installed_repository_by_name_owner_changeset_revision( name, owner, changeset_revision )
-    except Exception, e:
+    # Get the repository record now that the tests that install it have completed.
+    repository = get_repository( name, owner, changeset_revision )
+    if repository is None:
         error_message = 'Error getting revision %s of repository %s owned by %s: %s' % ( changeset_revision, name, owner, str( e ) )
         log.exception( error_message )
     return repository, error_message

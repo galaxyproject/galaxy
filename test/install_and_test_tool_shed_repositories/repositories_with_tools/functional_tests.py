@@ -196,85 +196,93 @@ def install_and_test_repositories( app, galaxy_shed_tools_dict, galaxy_shed_tool
                 log.debug( "Not testing revision %s of repository %s owned by %s because it is in the exclude list for this test run." % \
                     ( changeset_revision, name, owner ) )
             else:
-                tool_test_results_dict = install_and_test_base_util.initialize_tool_tests_results_dict( app, tool_test_results_dict )
-                repository, error_message = install_and_test_base_util.install_repository( app, repository_dict )
-                install_and_test_statistics_dict[ 'total_repositories_processed' ] += 1
-                if error_message:
-                    # The repository installation failed.
-                    log.debug( 'Installation failed for revision %s of repository %s owned by %s.' % ( changeset_revision, name, owner ) )
-                    install_and_test_statistics_dict[ 'repositories_with_installation_error' ].append( repository_identifier_dict )
-                    tool_test_results_dict[ 'installation_errors' ][ 'current_repository' ] = error_message
-                    params = dict( test_install_error=True )
-                    # TODO: do something useful with response_dict
-                    response_dict = install_and_test_base_util.register_test_result( install_and_test_base_util.galaxy_tool_shed_url,
+                # See if the repository was installed in a previous test.
+                repository = get_repository( name, owner, changeset_revision )
+                if repository is None:
+                    # The repository was not previously installed, so install it now.
+                    tool_test_results_dict = install_and_test_base_util.initialize_tool_tests_results_dict( app, tool_test_results_dict )
+                    repository, error_message = install_and_test_base_util.install_repository( app, repository_dict )
+                    install_and_test_statistics_dict[ 'total_repositories_processed' ] += 1
+                    if error_message:
+                        # The repository installation failed.
+                        log.debug( 'Installation failed for revision %s of repository %s owned by %s.' % ( changeset_revision, name, owner ) )
+                        install_and_test_statistics_dict[ 'repositories_with_installation_error' ].append( repository_identifier_dict )
+                        tool_test_results_dict[ 'installation_errors' ][ 'current_repository' ] = error_message
+                        params = dict( test_install_error=True )
+                        # TODO: do something useful with response_dict
+                        response_dict = install_and_test_base_util.register_test_result( install_and_test_base_util.galaxy_tool_shed_url,
+                                                                                         tool_test_results_dicts,
+                                                                                         tool_test_results_dict,
+                                                                                         repository_dict,
+                                                                                         params,
+                                                                                         can_update_tool_shed )
+                    else:
+                        # The repository was successfully installed.
+                        log.debug( 'Installation succeeded for revision %s of repository %s owned by %s.' % \
+                            ( changeset_revision, name, owner ) )
+                        params, install_and_test_statistics_dict, tool_test_results_dict = \
+                            install_and_test_base_util.register_installed_and_missing_dependencies( app,
+                                                                                                    repository,
+                                                                                                    repository_identifier_dict,
+                                                                                                    install_and_test_statistics_dict,
+                                                                                                    tool_test_results_dict )
+                        # Add an empty 'missing_test_results' entry if it is missing from the tool_test_results_dict.  The 
+                        # ~/tool_shed/scripts/check_repositories_for_functional_tests.py will have entered information in the
+                        # 'missing_test_components' entry of the tool_test_results_dict dictionary for repositories that are
+                        # missing test components.
+                        if 'missing_test_components' not in tool_test_results_dict:
+                            tool_test_results_dict[ 'missing_test_components' ] = []
+                        missing_tool_dependencies = install_and_test_base_util.get_missing_tool_dependencies( repository )
+                        if missing_tool_dependencies or repository.missing_repository_dependencies:                        
+                            install_and_test_base_util.handle_missing_dependencies( app=app,
+                                                                                    repository=repository,
+                                                                                    missing_tool_dependencies=missing_tool_dependencies,
+                                                                                    repository_dict=repository_dict,
+                                                                                    tool_test_results_dicts=tool_test_results_dicts,
+                                                                                    tool_test_results_dict=tool_test_results_dict,
+                                                                                    params=params,
+                                                                                    can_update_tool_shed=can_update_tool_shed )
+                        else:
+                            log.debug( 'Installation of %s succeeded, running all defined functional tests.' % str( repository.name ) )
+                            # Generate the shed_tools_dict that specifies the location of test data contained within this repository.
+                            # and configure and run functional tests for this repository. This is equivalent to
+                            # sh run_functional_tests.sh -installed
+                            file( galaxy_shed_tools_dict, 'w' ).write( to_json_string( {} ) )
+                            # Find the path to the test-data directory within the installed repository.
+                            has_test_data, shed_tools_dict = \
+                                parse_tool_panel_config( galaxy_shed_tool_conf_file,
+                                                         from_json_string( file( galaxy_shed_tools_dict, 'r' ).read() ) )
+                            # If the repository has a test-data directory we write the generated shed_tools_dict to a temporary
+                            # file so the functional test framework can find it.
+                            file( galaxy_shed_tools_dict, 'w' ).write( to_json_string( shed_tools_dict ) )
+                            log.debug( 'Saved generated shed_tools_dict to %s\nContents: %s' % ( str( galaxy_shed_tools_dict ),
+                                                                                                 str( shed_tools_dict ) ) )
+                            try:
+                                install_and_test_statistics_dict = test_repository_tools( app,
+                                                                                          repository,
+                                                                                          repository_dict,
+                                                                                          tool_test_results_dicts,
+                                                                                          tool_test_results_dict,
+                                                                                          install_and_test_statistics_dict )
+                            except Exception, e:
+                                exception_message = 'Error executing tests for repository %s: %s' % ( name, str( e ) )
+                                log.exception( exception_message )
+                                tool_test_results_dict[ 'failed_tests' ].append( exception_message )
+                                install_and_test_statistics_dict[ 'at_least_one_test_failed' ].append( repository_identifier_dict )
+                                # Record the status of this repository in the tool shed.
+                                params[ 'tools_functionally_correct' ] = False
+                                # TODO: do something useful with response_dict
+                                response_dict = \
+                                    install_and_test_base_util.register_test_result( install_and_test_base_util.galaxy_tool_shed_url,
                                                                                      tool_test_results_dicts,
                                                                                      tool_test_results_dict,
                                                                                      repository_dict,
                                                                                      params,
                                                                                      can_update_tool_shed )
                 else:
-                    # The repository was successfully installed.
-                    log.debug( 'Installation succeeded for revision %s of repository %s owned by %s.' % \
+                    log.debug( 'Skipped attempt to install revision %s of repository %s owned by %s because ' % \
                         ( changeset_revision, name, owner ) )
-                    params, install_and_test_statistics_dict, tool_test_results_dict = \
-                        install_and_test_base_util.register_installed_and_missing_dependencies( app,
-                                                                                                repository,
-                                                                                                repository_identifier_dict,
-                                                                                                install_and_test_statistics_dict,
-                                                                                                tool_test_results_dict )
-                    # Add an empty 'missing_test_results' entry if it is missing from the tool_test_results_dict.  The 
-                    # ~/tool_shed/scripts/check_repositories_for_functional_tests.py will have entered information in the
-                    # 'missing_test_components' entry of the tool_test_results_dict dictionary for repositories that are
-                    # missing test components.
-                    if 'missing_test_components' not in tool_test_results_dict:
-                        tool_test_results_dict[ 'missing_test_components' ] = []
-                    missing_tool_dependencies = install_and_test_base_util.get_missing_tool_dependencies( repository )
-                    if missing_tool_dependencies or repository.missing_repository_dependencies:                        
-                        install_and_test_base_util.handle_missing_dependencies( app=app,
-                                                                                repository=repository,
-                                                                                missing_tool_dependencies=missing_tool_dependencies,
-                                                                                repository_dict=repository_dict,
-                                                                                tool_test_results_dicts=tool_test_results_dicts,
-                                                                                tool_test_results_dict=tool_test_results_dict,
-                                                                                params=params,
-                                                                                can_update_tool_shed=can_update_tool_shed )
-                    else:
-                        log.debug( 'Installation of %s succeeded, running all defined functional tests.' % str( repository.name ) )
-                        # Generate the shed_tools_dict that specifies the location of test data contained within this repository.
-                        # and configure and run functional tests for this repository. This is equivalent to
-                        # sh run_functional_tests.sh -installed
-                        file( galaxy_shed_tools_dict, 'w' ).write( to_json_string( {} ) )
-                        # Find the path to the test-data directory within the installed repository.
-                        has_test_data, shed_tools_dict = \
-                            parse_tool_panel_config( galaxy_shed_tool_conf_file,
-                                                     from_json_string( file( galaxy_shed_tools_dict, 'r' ).read() ) )
-                        # If the repository has a test-data directory we write the generated shed_tools_dict to a temporary
-                        # file so the functional test framework can find it.
-                        file( galaxy_shed_tools_dict, 'w' ).write( to_json_string( shed_tools_dict ) )
-                        log.debug( 'Saved generated shed_tools_dict to %s\nContents: %s' % ( str( galaxy_shed_tools_dict ),
-                                                                                             str( shed_tools_dict ) ) )
-                        try:
-                            install_and_test_statistics_dict = test_repository_tools( app,
-                                                                                      repository,
-                                                                                      repository_dict,
-                                                                                      tool_test_results_dicts,
-                                                                                      tool_test_results_dict,
-                                                                                      install_and_test_statistics_dict )
-                        except Exception, e:
-                            exception_message = 'Error executing tests for repository %s: %s' % ( name, str( e ) )
-                            log.exception( exception_message )
-                            tool_test_results_dict[ 'failed_tests' ].append( exception_message )
-                            install_and_test_statistics_dict[ 'at_least_one_test_failed' ].append( repository_identifier_dict )
-                            # Record the status of this repository in the tool shed.
-                            params[ 'tools_functionally_correct' ] = False
-                            # TODO: do something useful with response_dict
-                            response_dict = \
-                                install_and_test_base_util.register_test_result( install_and_test_base_util.galaxy_tool_shed_url,
-                                                                                 tool_test_results_dicts,
-                                                                                 tool_test_results_dict,
-                                                                                 repository_dict,
-                                                                                 params,
-                                                                                 can_update_tool_shed )
+                    log.debug( 'it was previously installed and currently has status %s' % str( repository.status ) )
     return install_and_test_statistics_dict, error_message
 
 def main():
