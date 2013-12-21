@@ -627,11 +627,12 @@ def is_excluded( exclude_list_dicts, name, owner, changeset_revision, encoded_re
         #    [( name, owner, changeset_revision if changeset_revision else None ),
         #     ( name, owner, changeset_revision if changeset_revision else None )]
         if ( name, owner, changeset_revision ) in exclude_repositories or ( name, owner, None ) in exclude_repositories:
+            log.debug( 'Revision %s of repository %s owned by %s is excluded from testing because:\n%s' % \
+                ( str( changeset_revision ), str( name ), str( owner ), str( reason ) ) )
             return True, reason
         # Skip this repository if it has a repository dependency that is in the exclude list.
         repository_dependency_dicts, error_message = \
-            get_repository_dependencies_for_changeset_revision( galaxy_tool_shed_url,
-                                                                encoded_repository_metadata_id )
+            get_repository_dependencies_for_changeset_revision( galaxy_tool_shed_url, encoded_repository_metadata_id )
         if error_message:
             log.debug( 'Error getting repository dependencies for revision %s of repository %s owned by %s:' % \
                 ( changeset_revision, name, owner ) )
@@ -643,12 +644,16 @@ def is_excluded( exclude_list_dicts, name, owner, changeset_revision, encoded_re
                 rd_changeset_revision = repository_dependency_dict[ 'changeset_revision' ]
                 if ( rd_name, rd_owner, rd_changeset_revision ) in exclude_repositories or \
                     ( rd_name, rd_owner, None ) in exclude_repositories:
+                    log_msg = 'Revision %s of repository %s owned by %s is excluded from testing because ' % \
+                        ( str( changeset_revision ), str( name ), str( owner ), str( reason ) )
+                    log_msg += 'it requires revision %s of repository %s owned by %s (which is excluded from testing).' % \
+                        ( rd_changeset_revision, rd_name, rd_owner )
+                    log.debug( log_msg )
                     reason = 'This repository requires revision %s of repository %s owned by %s which is excluded from testing.' % \
                         ( rd_changeset_revision, rd_name, rd_owner )
                     return True, reason
                     break
     return False, None
-
 
 def is_latest_downloadable_revision( url, repository_dict ):
     name = str( repository_dict[ 'name' ] )
@@ -686,10 +691,10 @@ def parse_exclude_list( xml_filename ):
     #    'repositories': [( name, owner, changeset_revision if changeset_revision else None ),
     #                     ( name, owner, changeset_revision if changeset_revision else None )]}]
     exclude_list = []
-    exclude_verbose = []
+    exclude_tups = []
     xml_tree, error_message = parse_xml( xml_filename )
     if error_message:
-        log.debug( 'The xml document %s defining the exclude list is invalid, so no repositories will be excluded from testing: %s' % \
+        log.debug( 'The exclude file %s is invalid, so no repositories will be excluded from testing: %s' % \
             ( str( xml_filename ), str( error_message ) ) )
         return exclude_list
     tool_sheds = xml_tree.findall( 'repositories' )
@@ -701,23 +706,30 @@ def parse_exclude_list( xml_filename ):
         else:
             xml_element = tool_shed
     for reason_section in xml_element:
-        reason_text = reason_section.find( 'text' ).text
+        reason_text = reason_section.find( 'text' )
+        if reason_text:
+            reason = str( reason_text.text )
+        else:
+            reason = 'No reason provided.'
         repositories = reason_section.findall( 'repository' )
-        exclude_dict = dict( reason=reason_text, repositories=[] )
+        exclude_dict = dict( reason=reason, repositories=[] )
         for repository in repositories:
             repository_tuple = get_repository_tuple_from_elem( repository )
             if repository_tuple not in exclude_dict[ 'repositories' ]:
-                exclude_verbose.append( repository_tuple )
+                exclude_tups.append( repository_tuple )
                 exclude_count += 1
                 exclude_dict[ 'repositories' ].append( repository_tuple )
         exclude_list.append( exclude_dict )
-    log.debug( 'The xml document %s containing the exclude list defines the following %s repositories to be excluded from testing...' % \
-        ( str( xml_filename ), str( exclude_count ) ) )
-    for name, owner, changeset_revision in exclude_verbose:
-        if changeset_revision:
-            log.debug( 'Repository %s owned by %s, changeset revision %s.' % ( str( name ), str( owner ), str( changeset_revision ) ) )
-        else:
-            log.debug( 'Repository %s owned by %s, all revisions.' % ( str( name ), str( owner ) ) )
+    if exclude_tups:
+        log.debug( 'The exclude file %s defines the following %d repositories to be excluded from testing:' % \
+            ( str( xml_filename ), exclude_count ) )
+        for name, owner, changeset_revision in exclude_tups:
+            if changeset_revision:
+                log.debug( 'Revision %s of repository %s owned by %s.' % ( str( changeset_revision ), str( name ), str( owner ) ) )
+            else:
+                log.debug( 'All revisions of repository %s owned by %s.' % ( str( name ), str( owner ) ) )
+    else:
+        log.debug( 'The exclude file %s defines no repositories to be excluded from testing.' % str( xml_filename ) )
     return exclude_list
 
 def register_installed_and_missing_dependencies( app, repository, repository_identifier_dict, install_and_test_statistics_dict,
