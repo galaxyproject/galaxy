@@ -1402,11 +1402,11 @@ def build_tool_test_results_folder( trans, folder_id, tool_test_results_dicts, l
                                 rd_owner = 'unknown'
                                 rd_changeset_revision = 'unknown'
                             repository_installation_success = \
-                                RepositoryInstallationSuccess( id=repository_installation_success_id,
-                                                               tool_shed=rd_tool_shed,
-                                                               name=rd_name,
-                                                               owner=rd_owner,
-                                                               changeset_revision=rd_changeset_revision )
+                                RepositorySuccessfulInstallation( id=repository_installation_success_id,
+                                                                  tool_shed=rd_tool_shed,
+                                                                  name=rd_name,
+                                                                  owner=rd_owner,
+                                                                  changeset_revision=rd_changeset_revision )
                             repository_dependencies_folder.repository_successful_installations.append( repository_installation_success )
                     if len( tool_dependency_successful_installation_dicts ) > 0:
                         # [{'installation_directory': 'some path' 'type': 'package', 'name': 'MIRA', 'version': '4.0'}]
