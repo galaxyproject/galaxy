@@ -51,18 +51,25 @@ def create_or_update_tool_dependency( app, tool_shed_repository, name, version, 
     else:
         tool_dependency = get_tool_dependency_by_name_type_repository( app, tool_shed_repository, name, type )
     if tool_dependency:
-        log.debug( 'Updating an existing record for tool dependency %s version %s for tool shed repository %s with changeset revision %s.' % 
-                   ( str( name ), str( version ), str( tool_shed_repository.name ), str( tool_shed_repository.changeset_revision ) ) )
         # In some cases we should not override the current status of an existing tool_dependency, so do so only if set_status is True.
         if set_status:
+            if str( tool_dependency.status ) != str( status ):
+                debug_msg = 'Updating an existing record for version %s of tool dependency %s for revision %s of repository %s ' % \
+                    ( str( version ), str( name ), str( tool_shed_repository.changeset_revision ), str( tool_shed_repository.name ) )
+                debug_msg += 'by updating the status from %s to %s.' % str( tool_dependency.status ), str( status )
+                log.debug( debug_msg )
             tool_dependency.status = status
+            context.add( tool_dependency )
+            context.flush()
     else:
         # Create a new tool_dependency record for the tool_shed_repository.
-        log.debug( 'Creating a new record for tool dependency %s version %s for tool shed repository %s with changeset revision %s.' % 
-                   ( str( name ), str( version ), str( tool_shed_repository.name ), str( tool_shed_repository.changeset_revision ) ) )
+        debug_msg = 'Creating a new record for version %s of tool dependency %s for revision %s of repository %s.  ' % \
+             ( str( version ), str( name ), str( tool_shed_repository.changeset_revision ), str( tool_shed_repository.name ) )
+        debug_msg += 'The statis is being set to %s.' % str( status )
+        log.debug( debug_msg )
         tool_dependency = app.install_model.ToolDependency( tool_shed_repository.id, name, version, type, status )
-    context.add( tool_dependency )
-    context.flush()
+        context.add( tool_dependency )
+        context.flush()
     return tool_dependency
 
 def create_tool_dependency_objects( app, tool_shed_repository, relative_install_dir, set_status=True ):

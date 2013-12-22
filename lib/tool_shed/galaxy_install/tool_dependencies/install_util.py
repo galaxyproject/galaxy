@@ -88,23 +88,29 @@ def create_tool_dependency_with_initialized_env_sh_file( app, dependent_install_
                         # the path defined by required_tool_dependency_env_file_path.  It doesn't matter if the required env.sh
                         # file currently exists..
                         required_tool_dependency_env_file_path = \
-                            tool_dependency_util.get_required_repository_package_env_sh_path( app, package_name, package_version, required_repository )
+                            tool_dependency_util.get_required_repository_package_env_sh_path( app,
+                                                                                              package_name,
+                                                                                              package_version,
+                                                                                              required_repository )
                         env_file_builder = fabric_util.EnvFileBuilder( tool_dependency.installation_directory( app ) )
                         env_file_builder.append_line( action="source", value=required_tool_dependency_env_file_path )
                         return_code = env_file_builder.return_code
                         if return_code:
-                            error_message = 'Error defining env.sh file for package %s, return_code: %s' % ( str( package_name ), str( return_code ) )
-                            tool_dependency = tool_dependency_util.handle_tool_dependency_installation_error( app,
-                                                                                                              tool_dependency,
-                                                                                                              error_message,
-                                                                                                              remove_installation_path=False )
+                            error_message = 'Error defining env.sh file for package %s, return_code: %s' % \
+                                ( str( package_name ), str( return_code ) )
+                            tool_dependency = \
+                                tool_dependency_util.handle_tool_dependency_installation_error( app,
+                                                                                                tool_dependency,
+                                                                                                error_message,
+                                                                                                remove_installation_path=False )
                         elif required_tool_dependency is not None and required_tool_dependency.in_error_state:
                             error_message = "This tool dependency's required tool dependency %s version %s has status %s." % \
                                 ( str( required_tool_dependency.name ), str( required_tool_dependency.version ), str( required_tool_dependency.status ) )
-                            tool_dependency = tool_dependency_util.handle_tool_dependency_installation_error( app,
-                                                                                                              tool_dependency,
-                                                                                                              error_message,
-                                                                                                              remove_installation_path=False )
+                            tool_dependency = \
+                                tool_dependency_util.handle_tool_dependency_installation_error( app,
+                                                                                                tool_dependency,
+                                                                                                error_message,
+                                                                                                remove_installation_path=False )
                         else:
                             tool_dependency = \
                                 tool_dependency_util.set_tool_dependency_attributes( app,
