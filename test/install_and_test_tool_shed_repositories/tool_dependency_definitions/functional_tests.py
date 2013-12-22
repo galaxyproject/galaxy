@@ -62,7 +62,7 @@ test_home_directory = os.path.join( cwd, 'test', 'install_and_test_tool_shed_rep
 # the database, new repositories, etc.
 galaxy_test_tmp_dir = os.path.join( test_home_directory, 'tmp' )
 # File containing information about problematic repositories to exclude from test runs.
-exclude_list_file = os.path.join( test_home_directory, 'exclude.xml' )
+exclude_list_file = os.path.abspath( os.path.join( test_home_directory, 'exclude.xml' ) )
 default_galaxy_locales = 'en'
 default_galaxy_test_file_dir = "test-data"
 os.environ[ 'GALAXY_INSTALL_TEST_TMP_DIR' ] = galaxy_test_tmp_dir
@@ -83,6 +83,7 @@ def install_and_test_repositories( app, galaxy_shed_tools_dict, galaxy_shed_tool
         install_and_test_base_util.get_repositories_to_install( install_and_test_base_util.galaxy_tool_shed_url, test_framework )
     if error_message:
         return None, error_message
+    log.debug( 'The exclude list file is defined as %s' % str( exclude_list_file ) )
     if os.path.exists( exclude_list_file ):
         log.debug( 'Loading the list of repositories excluded from testing from the file %s...' % str( exclude_list_file ) )
         # The following exclude_list will look something like this:
@@ -91,6 +92,7 @@ def install_and_test_repositories( app, galaxy_shed_tools_dict, galaxy_shed_tool
         #                     ( name, owner, changeset_revision if changeset_revision else None )]}]
         exclude_list_dicts = install_and_test_base_util.parse_exclude_list( exclude_list_file )
     else:
+        log.debug( 'The exclude list file %s does not exist, so no repositories will be excluded from testing.' % str( exclude_list_file ) )
         exclude_list_dicts = []
     # Generate a test method that will use Twill to install each repository into the embedded Galaxy application that was
     # started up, installing repository and tool dependencies. Upon successful installation, generate a test case for each
