@@ -14,7 +14,6 @@ eggs.require( 'mercurial' )
 
 import ConfigParser
 import galaxy.webapps.tool_shed.config as tool_shed_config
-import galaxy.webapps.tool_shed.model.mapping
 import tool_shed.util.shed_util_common as suc
 import logging
 import shutil

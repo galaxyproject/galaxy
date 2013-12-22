@@ -30,6 +30,8 @@ from galaxy.util import asbool
 from galaxy.util import listify
 from galaxy.util import unicodify
 from galaxy.util.json import from_json_string
+import galaxy.webapps.tool_shed.model.mapping
+
 from nose.plugins import Plugin
 from tool_shed.util import tool_dependency_util
 

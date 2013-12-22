@@ -23,7 +23,6 @@ eggs.require( 'mercurial' )
 from mercurial import __version__
 
 import galaxy.webapps.tool_shed.config as tool_shed_config
-import galaxy.webapps.tool_shed.model.mapping
 
 from install_and_test_tool_shed_repositories.base.util import get_database_version
 from install_and_test_tool_shed_repositories.base.util import get_repository_current_revision
