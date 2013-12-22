@@ -135,7 +135,7 @@ def install_and_test_repositories( app, galaxy_shed_tools_dict, galaxy_shed_tool
                     ( changeset_revision, name, owner ) )
             else:
                 # See if the repository was installed in a previous test.
-                repository = get_repository( name, owner, changeset_revision )
+                repository = install_and_test_base_util.get_repository( name, owner, changeset_revision )
                 if repository is None:
                     # The repository was not previously installed, so install it now.
                     tool_test_results_dict = install_and_test_base_util.initialize_tool_tests_results_dict( app, tool_test_results_dict )
