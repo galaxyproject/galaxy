@@ -207,15 +207,18 @@ class WorkflowsAPIController(BaseAPIController, UsesAnnotations):
 
                 # Update step parameters as directed by payload's parameter mapping.
                 if step.tool_id in param_map:
-                    # Get parameter settings.
-                    change_param = param_map[step.tool_id]['param'];
-                    change_value = param_map[step.tool_id]['value'];
-                    step_id = param_map[step.tool_id].get('step_id', '')
+                    param_dict = param_map[ step.tool_id ]
+                    step_id = param_dict.get( 'step_id', '' )
+
+                    # Backward compatibility: convert param/value dict to new 'name': 'value' format.
+                    if 'param' in param_dict and 'value' in param_dict:
+                        param_dict[ param_dict['param'] ] = param_dict['value']
 
                     # Update step if there's no step id (i.e. all steps with tool are 
                     # updated) or update if step ids match.
                     if not step_id or ( step_id and int( step_id ) == step.id ):
-                        step.state.inputs[change_param] = change_value
+                        for name, value in param_dict.items():
+                            step.state.inputs[ name ] = value
                 
                 if step.tool_errors:
                     trans.response.status = 400
