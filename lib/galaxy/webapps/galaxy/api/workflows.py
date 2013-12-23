@@ -104,15 +104,15 @@ class WorkflowsAPIController(BaseAPIController, UsesAnnotations):
         However, we will import them if installed_repository_file is specified
         """
 
-        # ------------------------------------------------------------------------------- #
-        ### RPARK: dictionary containing which workflows to change and edit ###
-        param_map = {};
-        if (payload.has_key('parameters') ):
-            param_map = payload['parameters'];
-        # ------------------------------------------------------------------------------- #
+        # Pull parameters out of payload.
+        workflow_id = payload['workflow_id']
+        param_map = payload.get('parameters', {})
+        ds_map = payload['ds_map']
+        add_to_history = 'no_add_to_history' not in payload
+        history_param = payload['history']
 
-
-        if 'workflow_id' not in payload:
+        # Get/create workflow.
+        if not workflow_id:
             # create new
             if 'installed_repository_file' in payload:
                 workflow_controller = trans.webapp.controllers[ 'workflow' ]
@@ -125,26 +125,31 @@ class WorkflowsAPIController(BaseAPIController, UsesAnnotations):
         if 'installed_repository_file' in payload:
             trans.response.status = 403
             return "installed_repository_file may not be specified with workflow_id"
+
+        # Get workflow + accessibility check.
         stored_workflow = trans.sa_session.query(self.app.model.StoredWorkflow).get(
-                        trans.security.decode_id(payload['workflow_id']))
+                        trans.security.decode_id(workflow_id))
         if stored_workflow.user != trans.user and not trans.user_is_admin():
             if trans.sa_session.query(trans.app.model.StoredWorkflowUserShareAssociation).filter_by(user=trans.user, stored_workflow=stored_workflow).count() == 0:
                 trans.response.status = 400
                 return("Workflow is not owned by or shared with current user")
         workflow = stored_workflow.latest_workflow
-        if payload['history'].startswith('hist_id='):
+
+        # Get target history.
+        if history_param.startswith('hist_id='):
             #Passing an existing history to use.
             history = trans.sa_session.query(self.app.model.History).get(
-                    trans.security.decode_id(payload['history'][8:]))
+                    trans.security.decode_id(history_param[8:]))
             if history.user != trans.user and not trans.user_is_admin():
                 trans.response.status = 400
                 return "Invalid History specified."
         else:
-            history = self.app.model.History(name=payload['history'], user=trans.user)
+            # Send workflow outputs to new history.
+            history = self.app.model.History(name=history_param, user=trans.user)
             trans.sa_session.add(history)
             trans.sa_session.flush()
-        ds_map = payload['ds_map']
-        add_to_history = 'no_add_to_history' not in payload
+
+        # Set workflow inputs.
         for k in ds_map:
             try:
                 if ds_map[k]['src'] == 'ldda':
@@ -172,6 +177,8 @@ class WorkflowsAPIController(BaseAPIController, UsesAnnotations):
             except AssertionError:
                 trans.response.status = 400
                 return "Invalid Dataset '%s' Specified" % ds_map[k]['id']
+
+        # Sanity checks.
         if not workflow:
             trans.response.status = 400
             return "Workflow not found."
@@ -184,6 +191,7 @@ class WorkflowsAPIController(BaseAPIController, UsesAnnotations):
         if workflow.has_errors:
             trans.response.status = 400
             return "Workflow cannot be run because of validation errors in some steps"
+
         # Build the state for each step
         rval = {}
         for step in workflow.steps:
@@ -197,16 +205,18 @@ class WorkflowsAPIController(BaseAPIController, UsesAnnotations):
                 step.module.add_dummy_datasets( connections=step.input_connections )
                 step.state = step.module.state
 
-                ####################################################
-                ####################################################
-                # RPARK: IF TOOL_NAME IN PARAMETER MAP #
+                # Update step parameters as directed by payload's parameter mapping.
                 if step.tool_id in param_map:
+                    # Get parameter settings.
                     change_param = param_map[step.tool_id]['param'];
                     change_value = param_map[step.tool_id]['value'];
-                    step.state.inputs[change_param] = change_value;
-                ####################################################
-                ####################################################
+                    step_id = param_map[step.tool_id].get('step_id', '')
 
+                    # Update step if there's no step id (i.e. all steps with tool are 
+                    # updated) or update if step ids match.
+                    if not step_id or ( step_id and int( step_id ) == step.id ):
+                        step.state.inputs[change_param] = change_value
+                
                 if step.tool_errors:
                     trans.response.status = 400
                     return "Workflow cannot be run because of validation errors in some steps: %s" % step_errors
@@ -221,6 +231,7 @@ class WorkflowsAPIController(BaseAPIController, UsesAnnotations):
                 step.module = module_factory.from_workflow_step( trans, step )
                 step.state = step.module.get_runtime_state()
             step.input_connections_by_name = dict( ( conn.input_name, conn ) for conn in step.input_connections )
+
         # Run each step, connecting outputs to inputs
         workflow_invocation = self.app.model.WorkflowInvocation()
         workflow_invocation.workflow = workflow
