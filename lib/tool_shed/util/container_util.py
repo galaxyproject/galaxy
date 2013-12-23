@@ -1368,11 +1368,11 @@ def build_tool_test_results_folder( trans, folder_id, tool_test_results_dicts, l
                 #     'tool_dependencies': 
                 #        [{'installation_directory': 'some path' 'type': 'package', 'name': 'MIRA', 'version': '4.0'}]
                 #    }
-                current_repository_successful_installation_dicts = successful_installation_dict.get( 'current_repository', [] )
+                # We won't display the current repository in this container.  I fit is not displaying installation errors,
+                # then it must be a successful installation.
                 repository_dependency_successful_installation_dicts = successful_installation_dict.get( 'repository_dependencies', [] )
                 tool_dependency_successful_installation_dicts = successful_installation_dict.get( 'tool_dependencies', [] )
-                if len( current_repository_successful_installation_dicts ) > 0 or \
-                    len( repository_dependency_successful_installation_dicts ) > 0 or \
+                if len( repository_dependency_successful_installation_dicts ) > 0 or \
                     len( tool_dependency_successful_installation_dicts ) > 0:
                     repository_installation_success_id = 0
                     folder_id += 1

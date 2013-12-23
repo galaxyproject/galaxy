@@ -56,7 +56,7 @@ def create_or_update_tool_dependency( app, tool_shed_repository, name, version, 
             if str( tool_dependency.status ) != str( status ):
                 debug_msg = 'Updating an existing record for version %s of tool dependency %s for revision %s of repository %s ' % \
                     ( str( version ), str( name ), str( tool_shed_repository.changeset_revision ), str( tool_shed_repository.name ) )
-                debug_msg += 'by updating the status from %s to %s.' % str( tool_dependency.status ), str( status )
+                debug_msg += 'by updating the status from %s to %s.' % ( str( tool_dependency.status ), str( status ) )
                 log.debug( debug_msg )
             tool_dependency.status = status
             context.add( tool_dependency )
@@ -65,7 +65,7 @@ def create_or_update_tool_dependency( app, tool_shed_repository, name, version, 
         # Create a new tool_dependency record for the tool_shed_repository.
         debug_msg = 'Creating a new record for version %s of tool dependency %s for revision %s of repository %s.  ' % \
              ( str( version ), str( name ), str( tool_shed_repository.changeset_revision ), str( tool_shed_repository.name ) )
-        debug_msg += 'The statis is being set to %s.' % str( status )
+        debug_msg += 'The status is being set to %s.' % str( status )
         log.debug( debug_msg )
         tool_dependency = app.install_model.ToolDependency( tool_shed_repository.id, name, version, type, status )
         context.add( tool_dependency )
