@@ -1,5 +1,6 @@
 <tool id="velveth" name="velveth" version="1.0.0">
   <description>Prepare a dataset for the Velvet velvetg Assembler</description>
+  <version_command>velveth 2&gt;&amp;1 | grep "Version" | sed -e 's/Version //'</version_command>
   <command interpreter="python">
     velveth_wrapper.py 
            '$out_file1' '$out_file1.extra_files_path'
