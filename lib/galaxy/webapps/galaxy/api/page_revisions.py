@@ -70,11 +70,14 @@ class PageRevisionsController( BaseAPIController, SharableItemSecurityMixin, Use
             else:
                 title = page.title
 
+            content = payload.get("content", "")
+            content = sanitize_html( content, 'utf-8', 'text/html' )
+
             page_revision = trans.app.model.PageRevision()
             page_revision.title = title
             page_revision.page = page
             page.latest_revision = page_revision
-            page_revision.content = payload.get("content", "")
+            page_revision.content = content
             # Persist
             session = trans.sa_session
             session.flush()

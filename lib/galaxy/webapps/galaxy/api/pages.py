@@ -77,6 +77,10 @@ class PagesController( BaseAPIController, SharableItemSecurityMixin, UsesAnnotat
         elif trans.sa_session.query( trans.app.model.Page ).filter_by( user=user, slug=payload["slug"], deleted=False ).first():
             error_str = "Page id must be unique"
         else:
+
+            content = payload.get("content", "")
+            content = sanitize_html( content, 'utf-8', 'text/html' )
+
             # Create the new stored page
             page = trans.app.model.Page()
             page.title = payload['title']
@@ -89,7 +93,7 @@ class PagesController( BaseAPIController, SharableItemSecurityMixin, UsesAnnotat
             page_revision.title = payload['title']
             page_revision.page = page
             page.latest_revision = page_revision
-            page_revision.content = payload.get("content", "")
+            page_revision.content = content
             # Persist
             session = trans.sa_session
             session.add( page )
