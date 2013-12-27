@@ -403,6 +403,8 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
                     if params.annotation:
                         annotation = sanitize_html( params.annotation, 'utf-8', 'text/html' )
                         self.add_item_annotation( trans.sa_session, trans.get_user(), data, annotation )
+                    """
+                    # This block on controller code is inactive until the 'extended_metadata' edit box is added back into the UI
                     # Add or delete extended metadata
                     if params.extended_metadata:
                         em_string = params.extended_metadata
@@ -434,6 +436,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
                                 self.delete_extended_metadata(trans, ex_obj)
                         message = "Deleted Extended metadata '%s'." % data.name
                         status = 'done'
+                    """
 
                     # If setting metadata previously failed and all required elements have now been set, clear the failed state.
                     if data._state == trans.model.Dataset.states.FAILED_METADATA and not data.missing_meta():
