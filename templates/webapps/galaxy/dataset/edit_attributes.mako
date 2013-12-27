@@ -75,20 +75,6 @@
                     <div style="clear: both"></div>
                     <div class="toolParamHelp">Add an annotation or notes to a dataset; annotations are available when a history is viewed.</div>
                 </div>
-                <div class="form-row">     
-                    <label>
-                        Extended Metadata:
-                    </label>
-                    <div style="float: left; width: 250px; margin-right: 10px;">
-                        %if data.extended_metadata:
-                            <textarea name="extended_metadata" rows="8" cols="40">${util.pretty_print_json(data.extended_metadata.data)}</textarea>
-                        %else:
-                            <textarea name="extended_metadata" rows="8" cols="40"></textarea>
-                        %endif                
-                    </div>
-                    <div style="clear: both"></div>
-                    <div class="toolParamHelp">Add custom structured meta-data to a record. Data should be inputed in JSON format.</div>
-                </div>
             %endif
             %for name, spec in data.metadata.spec.items():
                 %if spec.visible:
