@@ -698,6 +698,8 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                             for target_file, mode in action_dict[ 'change_modes' ]:
                                 if os.path.exists( target_file ):
                                     os.chmod( target_file, mode )
+                                else:
+                                    log.error( 'Invalid file %s specified, ignoring %s action.', target_file, action_type )
                         elif action_type == 'download_binary':
                             url = action_dict[ 'url' ]
                             target_directory = action_dict.get( 'target_directory', None )
