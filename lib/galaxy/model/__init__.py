@@ -1767,6 +1767,9 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations )
         if hda.history is not None:
             rval['history_id'] = hda.history.id
 
+        if hda.extended_metadata is not None:
+            rval['extended_metadata'] = hda.extended_metadata.data
+
         rval[ 'peek' ] = to_unicode( hda.display_peek() )
         for name, spec in hda.metadata.spec.items():
             val = hda.metadata.get( name )

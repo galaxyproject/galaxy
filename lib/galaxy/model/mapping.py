@@ -110,7 +110,10 @@ model.HistoryDatasetAssociation.table = Table( "history_dataset_association", me
     Column( "designation", TrimmedString( 255 ) ),
     Column( "deleted", Boolean, index=True, default=False ),
     Column( "purged", Boolean, index=True, default=False ),
-    Column( "visible", Boolean ) )
+    Column( "visible", Boolean ),
+    Column( "extended_metadata_id", Integer,
+        ForeignKey( "extended_metadata.id" ), index=True )
+    )
 
 model.Dataset.table = Table( "dataset", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -1238,7 +1241,11 @@ simple_mapping( model.HistoryDatasetAssociation,
         primaryjoin=( ( model.HistoryDatasetAssociation.table.c.parent_id == model.HistoryDatasetAssociation.table.c.id ) & ( model.HistoryDatasetAssociation.table.c.visible == True ) ) ),
     tags=relation( model.HistoryDatasetAssociationTagAssociation, order_by=model.HistoryDatasetAssociationTagAssociation.table.c.id, backref='history_tag_associations' ),
     annotations=relation( model.HistoryDatasetAssociationAnnotationAssociation, order_by=model.HistoryDatasetAssociationAnnotationAssociation.table.c.id, backref="hdas" ),
-    ratings=relation( model.HistoryDatasetAssociationRatingAssociation, order_by=model.HistoryDatasetAssociationRatingAssociation.table.c.id, backref="hdas" )
+    ratings=relation( model.HistoryDatasetAssociationRatingAssociation, order_by=model.HistoryDatasetAssociationRatingAssociation.table.c.id, backref="hdas" ),
+    extended_metadata=relation(
+            model.ExtendedMetadata,
+            primaryjoin=( ( model.HistoryDatasetAssociation.table.c.extended_metadata_id == model.ExtendedMetadata.table.c.id ) )
+        )
 )
 
 simple_mapping( model.Dataset,
