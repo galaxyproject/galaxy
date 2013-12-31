@@ -144,7 +144,11 @@ def app_factory( global_conf, **kwargs ):
                             parent_resources=dict( member_name='datatype', collection_name='datatypes' ) )
     #webapp.mapper.connect( 'run_workflow', '/api/workflow/{workflow_id}/library/{library_id}', controller='workflows', action='run', workflow_id=None, library_id=None, conditions=dict(method=["GET"]) )
     webapp.mapper.resource( 'search', 'search', path_prefix='/api' )
-    
+    webapp.mapper.resource( 'page', 'pages', path_prefix="/api")
+    webapp.mapper.resource( 'revision', 'revisions',
+                                path_prefix='/api/pages/:page_id',
+                                controller='page_revisions',
+                                parent_resources=dict( member_name='page', collection_name='pages' ) )
 
     # add as a non-ATOM API call to support the notion of a 'current/working' history unique to the history resource
     webapp.mapper.connect( "set_as_current", "/api/histories/{id}/set_as_current",
