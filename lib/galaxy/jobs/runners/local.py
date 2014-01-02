@@ -54,9 +54,9 @@ class LocalJobRunner( BaseJobRunner ):
         slots = job_wrapper.job_destination.params.get( "local_slots", None )
         command_line = command_line.lstrip( " ;" )
         if slots:
-            command_line = 'export GALAXY_SLOTS="%d"; export GALAXY_SLOTS_CONFIGURED="1"; %s' % ( int( slots ), command_line )
+            command_line = 'GALAXY_SLOTS="%d"; export GALAXY_SLOTS; GALAXY_SLOTS_CONFIGURED="1"; export GALAXY_SLOTS_CONFIGURED; %s' % ( int( slots ), command_line )
         else:
-            command_line = 'export GALAXY_SLOTS="1"; %s' % command_line
+            command_line = 'GALAXY_SLOTS="1"; export GALAXY_SLOTS; %s' % command_line
         return command_line
 
     def queue_job( self, job_wrapper ):
