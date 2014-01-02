@@ -173,6 +173,7 @@ class LwrJobRunner( AsynchronousJobRunner ):
             run_results = client.raw_check_complete()
             stdout = run_results.get('stdout', '')
             stderr = run_results.get('stderr', '')
+            exit_code = run_results.get('returncode', None)
             working_directory_contents = run_results.get('working_directory_contents', [])
             # Use LWR client code to transfer/copy files back
             # and cleanup job if needed.
@@ -207,7 +208,7 @@ class LwrJobRunner( AsynchronousJobRunner ):
             self._handle_metadata_externally( job_wrapper, resolve_requirements=True )
         # Finish the job
         try:
-            job_wrapper.finish( stdout, stderr )
+            job_wrapper.finish( stdout, stderr, exit_code )
         except Exception:
             log.exception("Job wrapper finish method failed")
             job_wrapper.fail("Unable to finish job", exception=True)
