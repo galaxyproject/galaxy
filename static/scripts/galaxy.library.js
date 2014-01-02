@@ -415,7 +415,7 @@ var FolderContentView = Backbone.View.extend({
                     'Close'  : function() { self.modal.hide(); $('.modal').remove(); self.modal = null; } // TODO refill nicely modal with data
                 }
             });
-            this.modal.bindEvents(event, this);
+            this.modal.bindEvents(event);
             
             $(".peek").html(item.get("peek"));
             var history_footer_tmpl = _.template(this.templateHistorySelectInModal(), {histories : histories.models});
