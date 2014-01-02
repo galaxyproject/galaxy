@@ -15,6 +15,7 @@ import galaxy.jobs
 from galaxy.jobs.command_factory import build_command
 from galaxy import model
 from galaxy.util import DATABASE_MAX_STRING_SIZE, shrink_stream_by_size
+from galaxy.util import in_directory
 from galaxy.jobs.runners.util.job_script import job_script
 
 log = logging.getLogger( __name__ )
@@ -153,18 +154,6 @@ class BaseJobRunner( object ):
         """
         if not job_working_directory:
             job_working_directory = os.path.abspath( job_wrapper.working_directory )
-
-        def in_directory( file, directory ):
-            """
-            Return true, if the common prefix of both is equal to directory
-            e.g. /a/b/c/d.rst and directory is /a/b, the common prefix is /a/b
-            """
-
-            # Make both absolute.
-            directory = os.path.abspath( directory )
-            file = os.path.abspath( file )
-
-            return os.path.commonprefix( [ file, directory ] ) == directory
 
         # Set up dict of dataset id --> output path; output path can be real or
         # false depending on outputs_to_working_directory

@@ -374,6 +374,20 @@ def sanitize_for_filename( text, default=None ):
         return default
     return out
 
+
+def in_directory( file, directory ):
+    """
+    Return true, if the common prefix of both is equal to directory
+    e.g. /a/b/c/d.rst and directory is /a/b, the common prefix is /a/b
+    """
+
+    # Make both absolute.
+    directory = os.path.abspath( directory )
+    file = os.path.abspath( file )
+
+    return os.path.commonprefix( [ file, directory ] ) == directory
+
+
 class Params( object ):
     """
     Stores and 'sanitizes' parameters. Alphanumeric characters and the
