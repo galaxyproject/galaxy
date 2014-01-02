@@ -209,6 +209,11 @@ class RepositoryRevisionsController( BaseAPIController ):
                     repository_metadata.time_last_tested = datetime.datetime.utcnow()
                     flush_needed = True
                 elif hasattr( repository_metadata, key ):
+                    # log information when setting attributes associated with the Tool Shed's install and test framework.
+                    if key in [ 'do_not_test', 'includes_tools', 'missing_test_components', 'test_install_error',
+                                'tools_functionally_correct' ]:
+                        log.debug( 'Setting repository_metadata table column %s to value %s for changeset_revision %s via the Tool Shed API.' % \
+                            ( str( key ), str( new_value ), str( repository_metadata.changeset_revision ) ) )
                     setattr( repository_metadata, key, new_value )
                     flush_needed = True
             if flush_needed:

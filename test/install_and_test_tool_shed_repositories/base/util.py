@@ -811,7 +811,7 @@ def register_installed_and_missing_dependencies( app, repository, repository_ide
 
 def register_test_result( url, tool_test_results_dicts, tool_test_results_dict, repository_dict, params, can_update_tool_shed ):
     """
-    Update the repository metadata tool_test_results and appropriate flags using the Tool SHed API.  This method
+    Update the repository metadata tool_test_results and appropriate flags using the Tool Shed API.  This method
     updates tool_test_results with the relevant data, sets the do_not_test and tools_functionally correct flags
     to the appropriate values and updates the time_last_tested field to the value of the received time_tested.
     """
