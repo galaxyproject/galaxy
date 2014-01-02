@@ -635,7 +635,7 @@ var FolderContentView = Backbone.View.extend({
         },
         updateProgress: function(){
             this.progress += this.progressStep;
-            $('.progress-bar').width(Math.round(this.progress) + '%');
+            $('.progress-bar-import').width(Math.round(this.progress) + '%');
             txt_representation = Math.round(this.progress) + '% Complete';
             $('.completion_span').text(txt_representation);
         },
@@ -648,7 +648,7 @@ var FolderContentView = Backbone.View.extend({
         tmpl_array.push('Importing selected datasets to history <b><%= _.escape(history_name) %></b>');
         tmpl_array.push('</div>');
         tmpl_array.push('<div class="progress">');
-        tmpl_array.push('   <div class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 00%;">');
+        tmpl_array.push('   <div class="progress-bar progress-bar-import" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 00%;">');
         tmpl_array.push('       <span class="completion_span">0% Complete</span>');
         tmpl_array.push('   </div>');
         tmpl_array.push('</div>');
