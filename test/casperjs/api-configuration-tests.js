@@ -102,18 +102,19 @@ spaceghost.tryStepsCatch( function tryAdminLogin(){
 //}, function failedLoginRegister(){
 //    this.info( 'Admin level configuration API tests not run: no admin account available' );
 spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
+    spaceghost.waitForMasthead( function() {
+        if( spaceghost.user.userIsAdmin() ){
+            this.test.comment( 'index should get a (full) list of configuration settings '
+                             + 'when requested by an admin user' );
+            configIndex = this.api.configuration.index();
+            this.debug( this.jsonStr( configIndex ) );
+            this.test.assert( utils.isObject( configIndex ), "index returned an object" );
+            this.test.assert( hasKeys( configIndex, adminKeys ), 'Has the proper keys' );
 
-    if( spaceghost.user.userIsAdmin() ){
-        this.test.comment( 'index should get a (full) list of configuration settings '
-                         + 'when requested by an admin user' );
-        configIndex = this.api.configuration.index();
-        this.debug( this.jsonStr( configIndex ) );
-        this.test.assert( utils.isObject( configIndex ), "index returned an object" );
-        this.test.assert( hasKeys( configIndex, adminKeys ), 'Has the proper keys' );
-
-    } else {
-        this.info( 'Admin level configuration API tests not run: no admin account available' );
-    }
+        } else {
+            this.info( 'Admin level configuration API tests not run: no admin account available' );
+        }
+    });
 });
 
 // ===================================================================

@@ -11,7 +11,8 @@ from Queue import Queue, Empty
 from sqlalchemy.sql.expression import and_, or_, select, func
 
 from galaxy import model
-from galaxy.jobs import Sleeper, JobWrapper, TaskWrapper, JobDestination
+from galaxy.util.sleeper import Sleeper
+from galaxy.jobs import JobWrapper, TaskWrapper, JobDestination
 
 log = logging.getLogger( __name__ )
 

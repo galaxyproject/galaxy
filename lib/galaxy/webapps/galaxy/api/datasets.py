@@ -1,5 +1,5 @@
 """
-API operations on the contents of a dataset.
+API operations on the contents of a history dataset.
 """
 from galaxy import web
 from galaxy.visualization.data_providers.genome import FeatureLocationIndexDataProvider
@@ -255,24 +255,9 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
         datatype prior to display (the defult if raw is unspecified or explicitly false.
         """
         raw = string_as_bool_or_none( raw )
-        # Huge amount of code overlap with lib/galaxy/webapps/galaxy/api/history_content:show here.
         rval = ''
         try:
-            # for anon users:
-            #TODO: check login_required?
-            #TODO: this isn't actually most_recently_used (as defined in histories)
-            if( ( trans.user == None )
-            and ( history_id == trans.security.encode_id( trans.history.id ) ) ):
-                history = trans.history
-                #TODO: dataset/hda by id (from history) OR check_ownership for anon user
-                hda = self.get_history_dataset_association( trans, history, history_content_id,
-                    check_ownership=False, check_accessible=True )
-
-            else:
-                history = self.get_history( trans, history_id,
-                    check_ownership=True, check_accessible=True, deleted=False )
-                hda = self.get_history_dataset_association( trans, history, history_content_id,
-                    check_ownership=True, check_accessible=True )
+            hda = self.get_history_dataset_association_from_ids( trans, history_content_id, history_id )
 
             display_kwd = kwd.copy()
             try:
@@ -280,7 +265,12 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
             except KeyError:
                 pass
             if raw:
-                rval = open( hda.file_name )
+                if filename and filename != 'index':
+                    file_path = trans.app.object_store.get_filename(hda.dataset, extra_dir='dataset_%s_files' % hda.dataset.id, alt_name=filename)
+                else:
+                    file_path = hda.file_name
+                rval = open( file_path )
+
             else:
                 rval = hda.datatype.display_data( trans, hda, preview, filename, to_ext, chunk, **display_kwd )
 

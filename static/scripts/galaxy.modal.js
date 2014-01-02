@@ -1,9 +1,6 @@
-/*
-    galaxy modal
-*/
 
 // dependencies
-define(["libs/backbone/backbone-relational"], function() {
+define([], function() {
 
 // frame manager
 var GalaxyModal = Backbone.View.extend(
@@ -25,8 +22,50 @@ var GalaxyModal = Backbone.View.extend(
     
     // initialize
     initialize : function(options) {
+        self = this;
         if (options)
             this.create(options);
+
+        // Bind the hiding events
+        // this.bindEvents(event, self);
+    },
+
+    // bind the click-to-hide function
+    bindEvents: function(event, that) {
+        // bind the ESC key to hide() function
+        $(document).on('keyup', function(event){
+            if (event.keyCode == 27) { self.hide(); }
+        })
+        // bind the 'click anywhere' to hide() function...
+        $('html').on('click', function(event){
+            self.hide();
+        })
+        // ...but don't hide if the click is on modal content
+        $('.modal-content').on('click', function(event){
+            event.stopPropagation();
+        })
+    },
+
+    // unbind the click-to-hide function
+    unbindEvents: function(event){
+        // bind the ESC key to hide() function
+        $(document).off('keyup', function(event){
+            if (event.keyCode == 27) { self.hide(); }
+        })
+        // unbind the 'click anywhere' to hide() function...
+        $('html').off('click', function(event){
+            self.hide();
+        })
+        $('.modal-content').off('click', function(event){
+            event.stopPropagation();
+        })
+    },
+
+    // destroy
+    destroy : function(){
+        this.hide();
+        this.unbindEvents();
+        $('.modal').remove();
     },
 
     // adds and displays a new frame/window
@@ -63,6 +102,7 @@ var GalaxyModal = Backbone.View.extend(
         
         // set flag
         this.visible = false;
+        this.unbindEvents();
     },
     
     // create
@@ -120,6 +160,15 @@ var GalaxyModal = Backbone.View.extend(
         this.$buttons.find('#' + String(name).toLowerCase()).prop('disabled', true);
     },
     
+    // hide buttons
+    hideButton: function(name) {
+        this.$buttons.find('#' + String(name).toLowerCase()).hide();
+    },
+    // show buttons
+    showButton: function(name) {
+        this.$buttons.find('#' + String(name).toLowerCase()).show();
+    },
+
     // returns scroll top for body element
     scrollTop: function()
     {
@@ -139,7 +188,7 @@ var GalaxyModal = Backbone.View.extend(
                             '<div class="modal-header">' +
                                 '<button type="button" class="close" style="display: none;">&times;</button>' +
                                 '<h4 class="title">' + title + '</h4>' +
-                            '</div>' +
+                                '</div>' +
                             '<div class="modal-body"></div>' +
                             '<div class="modal-footer">' +
                                 '<div class="buttons" style="float: right;"></div>' +

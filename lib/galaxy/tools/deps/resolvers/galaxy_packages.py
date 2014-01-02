@@ -1,7 +1,6 @@
 from os.path import join, islink, realpath, basename, exists, abspath
 
 from ..resolvers import DependencyResolver, INDETERMINATE_DEPENDENCY, Dependency
-from galaxy.util import string_as_bool
 
 import logging
 log = logging.getLogger( __name__ )
@@ -16,7 +15,7 @@ class GalaxyPackageDependencyResolver(DependencyResolver):
         ## the tool shed so allow a fallback version of the Galaxy package
         ## resolver that will just grab 'default' version of exact version
         ## unavailable.
-        self.versionless = string_as_bool(kwds.get('versionless', "false"))
+        self.versionless = str(kwds.get('versionless', "false")).lower() == "true"
         self.base_path = abspath( kwds.get('base_path', dependency_manager.default_base_path) )
 
     def resolve( self, name, version, type, **kwds ):

@@ -9,6 +9,11 @@ from galaxy.web.base.controller import BaseAPIController, HTTPBadRequest
 from tool_shed.util import export_util
 import tool_shed.util.shed_util_common as suc
 
+from galaxy import eggs
+eggs.require( 'mercurial' )
+
+from mercurial import hg
+
 log = logging.getLogger( __name__ )
 
 
@@ -65,7 +70,41 @@ class RepositoryRevisionsController( BaseAPIController ):
             trans.response.status = 500
             return message
 
-    @web.expose_api
+    @web.expose_api_anonymous
+    def repository_dependencies( self, trans, id, **kwd ):
+        """
+        GET /api/repository_revisions/{encoded repository_metadata id}/repository_dependencies
+        Displays information about a repository_metadata record in the Tool Shed.
+
+        :param id: the encoded id of the `RepositoryMetadata` object
+        """
+        # Example URL: http://localhost:9009/api/repository_revisions/repository_dependencies/bb125606ff9ea620
+        value_mapper = { 'id' : trans.security.encode_id,
+                         'user_id' : trans.security.encode_id }
+        repository_dependencies_dicts = []
+        try:
+            repository_metadata = metadata_util.get_repository_metadata_by_id( trans, id )
+            metadata = repository_metadata.metadata
+            if metadata and 'repository_dependencies' in metadata:
+                rd_tups = metadata[ 'repository_dependencies' ][ 'repository_dependencies' ]
+                for rd_tup in rd_tups:
+                    tool_shed, name, owner, changeset_revision = rd_tup[ 0:4 ]
+                    repository_dependency = suc.get_repository_by_name_and_owner( trans.app, name, owner )
+                    repository_dependency_dict = repository_dependency.to_dict( view='element', value_mapper=value_mapper )
+                    # We have to add the changeset_revision of of the repository dependency.
+                    repository_dependency_dict[ 'changeset_revision' ] = changeset_revision
+                    repository_dependency_dict[ 'url' ] = web.url_for( controller='repositories',
+                                                                       action='show',
+                                                                       id=trans.security.encode_id( repository_dependency.id ) )
+                    repository_dependencies_dicts.append( repository_dependency_dict )
+            return repository_dependencies_dicts
+        except Exception, e:
+            message = "Error in the Tool Shed repository_revisions API in repository_dependencies: %s" % str( e )
+            log.error( message, exc_info=True )
+            trans.response.status = 500
+            return message
+
+    @web.expose_api_anonymous
     def index( self, trans, **kwd ):
         """
         GET /api/repository_revisions
@@ -116,7 +155,7 @@ class RepositoryRevisionsController( BaseAPIController ):
         try:
             query = trans.sa_session.query( trans.app.model.RepositoryMetadata ) \
                                     .filter( and_( *clause_list ) ) \
-                                    .order_by( trans.app.model.RepositoryMetadata.table.c.repository_id ) \
+                                    .order_by( trans.app.model.RepositoryMetadata.table.c.repository_id.desc() ) \
                                     .all()
             for repository_metadata in query:
                 repository_metadata_dict = repository_metadata.to_dict( view='collection',
@@ -132,7 +171,7 @@ class RepositoryRevisionsController( BaseAPIController ):
             trans.response.status = 500
             return message
 
-    @web.expose_api
+    @web.expose_api_anonymous
     def show( self, trans, id, **kwd ):
         """
         GET /api/repository_revisions/{encoded_repository_metadata_id}
@@ -143,7 +182,8 @@ class RepositoryRevisionsController( BaseAPIController ):
         # Example URL: http://localhost:9009/api/repository_revisions/bb125606ff9ea620
         try:
             repository_metadata = metadata_util.get_repository_metadata_by_id( trans, id )
-            repository_metadata_dict = repository_metadata.to_dict( value_mapper=self.__get_value_mapper( trans, repository_metadata ) )
+            repository_metadata_dict = repository_metadata.to_dict( view='element',
+                                                                    value_mapper=self.__get_value_mapper( trans, repository_metadata ) )
             repository_metadata_dict[ 'url' ] = web.url_for( controller='repository_revisions',
                                                              action='show',
                                                              id=trans.security.encode_id( repository_metadata.id ) )
@@ -165,11 +205,11 @@ class RepositoryRevisionsController( BaseAPIController ):
             repository_metadata = metadata_util.get_repository_metadata_by_id( trans, repository_metadata_id )
             flush_needed = False
             for key, new_value in payload.items():
-                if hasattr( repository_metadata, key ):
+                if key == 'time_last_tested':
+                    repository_metadata.time_last_tested = datetime.datetime.utcnow()
+                    flush_needed = True
+                elif hasattr( repository_metadata, key ):
                     setattr( repository_metadata, key, new_value )
-                    if key in [ 'tools_functionally_correct', 'time_last_tested' ]:
-                        # Automatically update repository_metadata.time_last_tested.
-                        repository_metadata.time_last_tested = datetime.datetime.utcnow()
                     flush_needed = True
             if flush_needed:
                 trans.sa_session.add( repository_metadata )
@@ -179,7 +219,8 @@ class RepositoryRevisionsController( BaseAPIController ):
             log.error( message, exc_info=True )
             trans.response.status = 500
             return message
-        repository_metadata_dict = repository_metadata.to_dict( value_mapper=self.__get_value_mapper( trans, repository_metadata ) )
+        repository_metadata_dict = repository_metadata.to_dict( view='element',
+                                                                value_mapper=self.__get_value_mapper( trans, repository_metadata ) )
         repository_metadata_dict[ 'url' ] = web.url_for( controller='repository_revisions',
                                                          action='show',
                                                          id=trans.security.encode_id( repository_metadata.id ) )
@@ -189,5 +230,7 @@ class RepositoryRevisionsController( BaseAPIController ):
         value_mapper = { 'id' : trans.security.encode_id,
                          'repository_id' : trans.security.encode_id }
         if repository_metadata.time_last_tested is not None:
+            # For some reason the Dictifiable.to_dict() method in ~/galaxy/model/item_attrs.py requires
+            # a function rather than a mapped value, so just pass the time_ago function here.
             value_mapper[ 'time_last_tested' ] = time_ago
         return value_mapper

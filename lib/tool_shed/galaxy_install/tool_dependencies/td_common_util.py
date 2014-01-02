@@ -145,25 +145,6 @@ def create_env_var_dict( elem, tool_dependency_install_dir=None, tool_shed_repos
         return dict( name=env_var_name, action=env_var_action, value=elem.text)
     return None
 
-def create_or_update_env_shell_file( install_dir, env_var_dict ):
-    env_var_action = env_var_dict[ 'action' ]
-    env_var_value = env_var_dict[ 'value' ]
-    if env_var_action in ['prepend_to', 'set_to', 'append_to']:
-        env_var_name = env_var_dict[ 'name' ]
-        if env_var_action == 'prepend_to':
-            changed_value = '%s:$%s' % ( env_var_value, env_var_name )
-        elif env_var_action == 'set_to':
-            changed_value = '%s' % env_var_value
-        elif env_var_action == 'append_to':
-            changed_value = '$%s:%s' % ( env_var_name, env_var_value )
-        line = "%s=%s; export %s" % ( env_var_name, changed_value, env_var_name )
-    elif env_var_action == "source":
-        line = ". %s" % env_var_value
-    else:
-        raise Exception( "Unknown shell file action %s" % env_var_action )
-    env_shell_file_path = os.path.join( install_dir, 'env.sh' )
-    return line, env_shell_file_path
-
 def download_binary( url, work_dir ):
     '''
     Download a pre-compiled binary from the specified URL.
@@ -256,6 +237,33 @@ def get_env_shell_file_paths( app, elem ):
             ( str( toolshed ), str( repository_name ), str( repository_owner ), str( changeset_revision ) )
         log.debug( error_message )
     return env_shell_file_paths
+
+def get_env_shell_file_paths_from_setup_environment_elem( app, all_env_shell_file_paths, elem, action_dict ):
+    """
+    Parse an XML tag set to discover all child repository dependency tags and define the path to an env.sh file associated
+    with the repository (this requires the repository dependency to be in an installed state).  The received action_dict
+    will be updated with these discovered paths and returned to the caller.  This method handles tool dependency definition
+    tag sets <setup_r_environment>, <setup_ruby_environment> and <setup_perl_environment>.
+    """
+    # An example elem is:
+    # <action type="setup_perl_environment">
+    #     <repository name="package_perl_5_18" owner="iuc">
+    #         <package name="perl" version="5.18.1" />
+    #     </repository>
+    #     <repository name="package_expat_2_1" owner="iuc" prior_installation_required="True">
+    #         <package name="expat" version="2.1.0" />
+    #     </repository>
+    #     <package>http://search.cpan.org/CPAN/authors/id/T/TO/TODDR/XML-Parser-2.41.tar.gz</package>
+    #     <package>http://search.cpan.org/CPAN/authors/id/L/LD/LDS/CGI.pm-3.43.tar.gz</package>
+    # </action>
+    for action_elem in elem:
+        if action_elem.tag == 'repository':
+            env_shell_file_paths = get_env_shell_file_paths( app, action_elem )
+            all_env_shell_file_paths.extend( env_shell_file_paths )
+    if all_env_shell_file_paths:
+        action_dict[ 'env_shell_file_paths' ] = all_env_shell_file_paths
+        action_dict[ 'action_shell_file_paths' ] = env_shell_file_paths
+    return action_dict
 
 def get_env_var_values( install_dir ):
     env_var_dict = {}
@@ -414,16 +422,6 @@ def parse_package_elem( package_elem, platform_info_dict=None, include_after_ins
             in_actions_group = False
             continue
     return actions_elem_tuples
-
-
-def parse_setup_environment_repositories( app, all_env_shell_file_paths, action_elem, action_dict ):
-    env_shell_file_paths = get_env_shell_file_paths( app, action_elem.find('repository') )
-
-    all_env_shell_file_paths.extend( env_shell_file_paths )
-    if all_env_shell_file_paths:
-        action_dict[ 'env_shell_file_paths' ] = all_env_shell_file_paths
-        action_dict[ 'action_shell_file_paths' ] = env_shell_file_paths
-
 
 def url_download( install_dir, downloaded_file_name, download_url, extract=True ):
     file_path = os.path.join( install_dir, downloaded_file_name )

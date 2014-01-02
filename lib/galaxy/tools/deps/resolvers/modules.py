@@ -12,7 +12,6 @@ from StringIO import StringIO
 from subprocess import Popen, PIPE
 
 from ..resolvers import DependencyResolver, INDETERMINATE_DEPENDENCY, Dependency
-from galaxy.util import string_as_bool
 
 import logging
 log = logging.getLogger( __name__ )
@@ -28,9 +27,9 @@ class ModuleDependencyResolver(DependencyResolver):
     resolver_type = "modules"
 
     def __init__(self, dependency_manager, **kwds):
-        self.versionless = string_as_bool(kwds.get('versionless', 'false'))
+        self.versionless = _string_as_bool(kwds.get('versionless', 'false'))
         find_by = kwds.get('find_by', 'avail')
-        prefetch = string_as_bool(kwds.get('prefetch', DEFAULT_MODULE_PREFETCH))
+        prefetch = _string_as_bool(kwds.get('prefetch', DEFAULT_MODULE_PREFETCH))
         self.modulecmd = kwds.get('modulecmd', DEFAULT_MODULECMD_PATH)
         if find_by == 'directory':
             modulepath = kwds.get('modulepath', self.__default_modulespath())
@@ -149,5 +148,9 @@ class ModuleDependency(Dependency):
             module_to_load = '%s/%s' % (self.module_name, self.module_version)
         command = 'eval `%s sh load %s`' % (self.module_dependency_resolver.modulecmd, module_to_load)
         return command
+
+
+def _string_as_bool( value ):
+    return str( value ).lower() == "true"
 
 __all__ = [ModuleDependencyResolver]

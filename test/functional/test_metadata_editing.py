@@ -1,6 +1,6 @@
 import galaxy.model
 from galaxy.model.orm import *
-from galaxy.model.mapping import context as sa_session
+from base.test_db_util import sa_session
 from base.twilltestcase import TwillTestCase
 
 class TestMetadataEdit( TwillTestCase ):

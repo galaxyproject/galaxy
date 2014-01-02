@@ -927,10 +927,13 @@ def generate_tool_metadata( tool_config, tool, repository_clone_url, metadata_di
     guid = suc.generate_tool_guid( repository_clone_url, tool )
     # Handle tool.requirements.
     tool_requirements = []
-    for tr in tool.requirements:
-        requirement_dict = dict( name=tr.name,
-                                 type=tr.type,
-                                 version=tr.version )
+    for tool_requirement in tool.requirements:
+        name = str( tool_requirement.name )
+        type = str( tool_requirement.type )
+        version = str( tool_requirement.version ) if tool_requirement.version else None
+        requirement_dict = dict( name=name,
+                                 type=type,
+                                 version=version )
         tool_requirements.append( requirement_dict )
     # Handle tool.tests.
     tool_tests = []
@@ -941,16 +944,31 @@ def generate_tool_metadata( tool_config, tool, repository_clone_url, metadata_di
                 value, extra = required_file
                 required_files.append( ( value ) )
             inputs = []
-            for input in ttb.inputs:
-                name, value, extra = input
-                inputs.append( ( name, value ) )
+            for param_name, values in ttb.inputs.iteritems():
+                # Handle improperly defined or strange test parameters and values.
+                if param_name is not None:
+                    if values is None:
+                        # An example is the 3rd test in http://testtoolshed.g2.bx.psu.edu/view/devteam/samtools_rmdup
+                        # which is defined as:
+                        # <test>
+                        #    <param name="input1" value="1.bam" ftype="bam" />
+                        #    <param name="bam_paired_end_type_selector" value="PE" />
+                        #    <param name="force_se" />
+                        #    <output name="output1" file="1.bam" ftype="bam" sort="True" />
+                        # </test>
+                        inputs.append( ( param_name, values ) )
+                    else:
+                        if len( values ) == 1:
+                            inputs.append( ( param_name, values[ 0 ] ) )
+                        else:
+                            inputs.append( ( param_name, values ) )
             outputs = []
             for output in ttb.outputs:
                 name, file_name, extra = output
                 outputs.append( ( name, suc.strip_path( file_name ) if file_name else None ) )
                 if file_name not in required_files and file_name is not None:
                     required_files.append( file_name )
-            test_dict = dict( name=ttb.name,
+            test_dict = dict( name=str( ttb.name ),
                               required_files=required_files,
                               inputs=inputs,
                               outputs=outputs )
@@ -1490,8 +1508,8 @@ def populate_containers_dict_from_repository_metadata( trans, tool_shed_url, too
         invalid_tools = metadata.get( 'invalid_tools', None )
         # Handle README files.
         if repository.has_readme_files:
-            if reinstalling or repository.status not in [ trans.model.ToolShedRepository.installation_status.DEACTIVATED,
-                                                          trans.model.ToolShedRepository.installation_status.INSTALLED ]:
+            if reinstalling or repository.status not in [ trans.install_model.ToolShedRepository.installation_status.DEACTIVATED,
+                                                          trans.install_model.ToolShedRepository.installation_status.INSTALLED ]:
                 # Since we're reinstalling, we need to send a request to the tool shed to get the README files.
                 url = suc.url_join( tool_shed_url,
                                     'repository/get_readme_files?name=%s&owner=%s&changeset_revision=%s' % \
@@ -1507,8 +1525,14 @@ def populate_containers_dict_from_repository_metadata( trans, tool_shed_url, too
             common_install_util.get_installed_and_missing_repository_dependencies( trans, repository )
         # Handle the current repository's tool dependencies.
         repository_tool_dependencies = metadata.get( 'tool_dependencies', None )
+        # Make sure to display missing tool dependencies as well.
+        repository_invalid_tool_dependencies = metadata.get( 'invalid_tool_dependencies', None )
+        if repository_invalid_tool_dependencies is not None:
+            if repository_tool_dependencies is None:
+                repository_tool_dependencies = {}
+            repository_tool_dependencies.update( repository_invalid_tool_dependencies )
         repository_installed_tool_dependencies, repository_missing_tool_dependencies = \
-            tool_dependency_util.get_installed_and_missing_tool_dependencies( trans, repository, repository_tool_dependencies )
+            tool_dependency_util.get_installed_and_missing_tool_dependencies_for_installed_repository( trans, repository, repository_tool_dependencies )
         if reinstalling:
             installed_tool_dependencies, missing_tool_dependencies = \
                 tool_dependency_util.populate_tool_dependencies_dicts( trans=trans,
@@ -1579,8 +1603,8 @@ def reset_all_metadata_on_installed_repository( trans, id ):
         repository.metadata = metadata_dict
         if metadata_dict != original_metadata_dict:
             suc.update_in_shed_tool_config( trans.app, repository )
-            trans.sa_session.add( repository )
-            trans.sa_session.flush()
+            trans.install_model.context.add( repository )
+            trans.install_model.context.flush()
             log.debug( 'Metadata has been reset on repository %s.' % repository.name )
         else:
             log.debug( 'Metadata did not need to be reset on repository %s.' % repository.name )
@@ -1913,7 +1937,7 @@ def update_existing_tool_dependency( app, repository, original_dependency_dict, 
         dependency_install_dir = tool_dependency.installation_directory( app )
         removed_from_disk, error_message = tool_dependency_util.remove_tool_dependency_installation_directory( dependency_install_dir )
         if removed_from_disk:
-            sa_session = app.model.context.current
+            context = app.install_model.context
             new_dependency_name = None
             new_dependency_type = None
             new_dependency_version = None
@@ -1930,17 +1954,17 @@ def update_existing_tool_dependency( app, repository, original_dependency_dict, 
                            ( str( tool_dependency.name ), str( tool_dependency.type ), str( tool_dependency.version ), str( new_dependency_type ), str( new_dependency_version ) ) )
                 tool_dependency.type = new_dependency_type
                 tool_dependency.version = new_dependency_version
-                tool_dependency.status = app.model.ToolDependency.installation_status.UNINSTALLED
+                tool_dependency.status = app.install_model.ToolDependency.installation_status.UNINSTALLED
                 tool_dependency.error_message = None
-                sa_session.add( tool_dependency )
-                sa_session.flush()
+                context.add( tool_dependency )
+                context.flush()
                 new_tool_dependency = tool_dependency
             else:
                 # We have no new tool dependency definition based on a matching dependency name, so remove the existing tool dependency record from the database.
                 log.debug( "Deleting tool dependency with name '%s', type '%s' and version '%s' from the database since it is no longer defined." % \
                            ( str( tool_dependency.name ), str( tool_dependency.type ), str( tool_dependency.version ) ) )
-                sa_session.delete( tool_dependency )
-                sa_session.flush()
+                context.delete( tool_dependency )
+                context.flush()
     return new_tool_dependency
 
 def update_repository_dependencies_metadata( metadata, repository_dependency_tups, is_valid, description ):

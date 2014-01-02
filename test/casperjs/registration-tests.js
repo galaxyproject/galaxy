@@ -62,18 +62,24 @@ spaceghost.then( function(){
     this.user._submitRegistration( email, password, username, confirm );
 });
 spaceghost.thenOpen( spaceghost.baseUrl, function(){
-    this.clickLabel( 'User' );
-    this.test.assertSelectorHasText( 'a #user-email', email, '#user-email === ' + email );
+    this.waitForMasthead( function() {
+        this.clickLabel( 'User' );
+        this.test.assertSelectorHasText( 'a #user-email', email, '#user-email === ' + email );
+    });
 });
 
 // ------------------------------------------------------------------- log out that user
 spaceghost.then( function(){
-    this.test.comment( 'logging out user: ' + email );
-    this.user.logout();
+    this.waitForMasthead( function() {
+        this.test.comment( 'logging out user: ' + email );
+        this.user.logout();
+    });
 });
 spaceghost.then( function(){
-    this.debug( 'email:' + this.getElementInfo( 'a #user-email' ).html );
-    this.test.assert( !this.getElementInfo( 'a #user-email' ).html, '#user-email is empty' );
+    this.waitForMasthead( function() {
+        this.debug( 'email:' + this.getElementInfo( 'a #user-email' ).html );
+        this.test.assert( !this.getElementInfo( 'a #user-email' ).html, '#user-email is empty' );
+    });
 });
 
 // ------------------------------------------------------------------- bad user registrations

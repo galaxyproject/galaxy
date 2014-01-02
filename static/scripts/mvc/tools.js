@@ -2,7 +2,7 @@
  * Model, view, and controller objects for Galaxy tools and tool panel.
  */
 
- define( ["libs/underscore", "viz/trackster/util", "mvc/data", "libs/backbone/backbone-relational" ], 
+ define( ["libs/underscore", "viz/trackster/util", "mvc/data" ], 
          function(_, util, data) {
 
 /**
@@ -32,7 +32,7 @@ var VisibilityMixin = {
 /**
  * A tool parameter.
  */
-var ToolParameter = Backbone.RelationalModel.extend({
+var ToolParameter = Backbone.Model.extend({
     defaults: {
         name: null,
         label: null,
@@ -42,13 +42,6 @@ var ToolParameter = Backbone.RelationalModel.extend({
         num_samples: 5
     },
 
-    subModelTypes: {
-        'integer': 'IntegerToolParameter',
-        'float': 'FloatToolParameter',
-        'data': 'DataToolParameter',
-        'select': 'SelectToolParameter'
-    },
-    
     initialize: function() {
         this.attributes.html = unescape(this.attributes.html);
     },
@@ -62,20 +55,19 @@ var ToolParameter = Backbone.RelationalModel.extend({
     }
 });
 
-// In order to resolve subModelTypes for tool parameters, use a custom scope here rather
-// than polluting the global scope.
-var tools_scope = {};
-Backbone.Relational.store.addModelScope(tools_scope);
+var ToolParameterCollection = Backbone.Collection.extend({
+    model: ToolParameter
+});
 
 /**
  * A data tool parameter.
  */
-var DataToolParameter = tools_scope.DataToolParameter = ToolParameter.extend({});
+var DataToolParameter = ToolParameter.extend({});
 
 /**
  * An integer tool parameter.
  */
-var IntegerToolParameter = tools_scope.IntegerToolParameter = ToolParameter.extend({
+var IntegerToolParameter = ToolParameter.extend({
     set_value: function(value) {
         this.set('value', parseInt(value, 10));
     },
@@ -90,7 +82,7 @@ var IntegerToolParameter = tools_scope.IntegerToolParameter = ToolParameter.exte
     }
 });
 
-var FloatToolParameter = tools_scope.FloatToolParameter = IntegerToolParameter.extend({
+var FloatToolParameter = IntegerToolParameter.extend({
     set_value: function(value) {
         this.set('value', parseFloat(value));
     }
@@ -99,7 +91,7 @@ var FloatToolParameter = tools_scope.FloatToolParameter = IntegerToolParameter.e
 /** 
  * A select tool parameter.
  */
-var SelectToolParameter = tools_scope.SelectToolParameter = ToolParameter.extend({
+var SelectToolParameter = ToolParameter.extend({
     /**
      * Returns tool options.
      */
@@ -110,10 +102,18 @@ var SelectToolParameter = tools_scope.SelectToolParameter = ToolParameter.extend
     }
 });
 
+// Set up dictionary of parameter types.
+ToolParameter.subModelTypes = {
+    'integer': IntegerToolParameter,
+    'float': FloatToolParameter,
+    'data': DataToolParameter,
+    'select': SelectToolParameter
+};
+
 /**
  * A Galaxy tool.
  */
-var Tool = Backbone.RelationalModel.extend({
+var Tool = Backbone.Model.extend({
     // Default attributes.
     defaults: {
         id: null,
@@ -124,13 +124,14 @@ var Tool = Backbone.RelationalModel.extend({
         outputs: []
     },
 
-    relations: [
-        {
-            type: Backbone.HasMany,
-            key: 'inputs',
-            relatedModel: ToolParameter
-        }
-    ],
+    initialize: function(options) {
+
+        // Set parameters.
+        this.set('inputs', new ToolParameterCollection(_.map(options.inputs, function(p) {
+            var p_class = ToolParameter.subModelTypes[p.type] || ToolParameter;
+            return new p_class(p);
+        })));
+    },
 
     urlRoot: galaxy_config.root + 'api/tools',
 

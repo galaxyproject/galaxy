@@ -28,12 +28,13 @@
 </%def>
 
 ## masthead head generator
-<%def name="load()">
+<%def name="load(active_view = None)">
     <%
         ## get configuration
         masthead_config = {
             ## inject configuration
             'brand'                     : app.config.get("brand", ""),
+            'nginx_upload_path'         : app.config.get("nginx_upload_path", h.url_for(controller='api', action='tools')),
             'use_remote_user'           : app.config.use_remote_user,
             'remote_user_logout_href'   : app.config.remote_user_logout_href,
             'enable_cloud_launch'       : app.config.get_bool('enable_cloud_launch', False),
@@ -50,7 +51,8 @@
             'allow_user_creation'       : app.config.allow_user_creation,
             'logo_url'                  : h.url_for(app.config.get( 'logo_url', '/')),
             'is_admin_user'             : trans.user and app.config.is_admin_user(trans.user),
-            
+            'active_view'               : active_view,
+
             ## user details
             'user'          : {
                 'requests'  : bool(trans.user and (trans.user.requests or trans.app.security_agent.get_accessible_request_types(trans, trans.user))),
@@ -66,6 +68,11 @@
 
     ## load the frame manager
     <script type="text/javascript">
+        if( !window.Galaxy ){
+            window.Galaxy = {};
+        }
+        ## fetch the current user data from trans
+        Galaxy.currUser = new User(${ h.to_json_string( get_user_json(), indent=2 ) });
 
         ## load additional style sheet
         if (window != window.top)
@@ -83,9 +90,6 @@
                 ## get configuration
                 var masthead_config = ${ h.to_json_string( masthead_config ) };
 
-                ## set up the quota meter (And fetch the current user data from trans)
-                Galaxy.currUser = new User(masthead_config.user.json);
-
                 ## load global galaxy objects
                 Galaxy.masthead = new mod_masthead.GalaxyMasthead(masthead_config);
                 Galaxy.modal = new mod_modal.GalaxyModal();
@@ -98,8 +102,9 @@
                 });
                 
                 ## add upload plugin
-                ##Galaxy.upload = new mod_upload.GalaxyUpload();
+                ##Galaxy.upload = new mod_upload.GalaxyUpload(masthead_config);
 
+                ## set up the quota meter (And fetch the current user data from trans)
                 ## add quota meter to masthead
                 Galaxy.quotaMeter = new UserQuotaMeter({
                     model   : Galaxy.currUser,

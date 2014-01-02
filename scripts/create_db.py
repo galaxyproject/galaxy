@@ -16,39 +16,27 @@ sqlite database will be constructed.
 and database file
 """
 
-import sys, os.path, logging
+import sys
+import os.path
 
 new_path = [ os.path.join( os.getcwd(), "lib" ) ]
-new_path.extend( sys.path[1:] ) # remove scripts/ from the path
+new_path.extend( sys.path[1:] )  # remove scripts/ from the path
 sys.path = new_path
 
-from galaxy import eggs
+from galaxy.model.orm.scripts import get_config
 from galaxy.model.migrate.check import create_or_verify_database as create_db
+from galaxy.model.tool_shed_install.migrate.check import create_or_verify_database as create_install_db
+from galaxy.webapps.tool_shed.model.migrate.check import create_or_verify_database as create_tool_shed_db
 
-import pkg_resources
 
-from ConfigParser import SafeConfigParser
+def invoke_create():
+    config = get_config(sys.argv)
+    if config['database'] == 'galaxy':
+        create_db(config['db_url'], config['config_file'])
+    elif config['database'] == 'tool_shed':
+        create_tool_shed_db(config['db_url'])
+    elif config['database'] == 'install':
+        create_install_db(config['db_url'])
 
-log = logging.getLogger( __name__ )
-
-# Poor man's optparse
-config_file = 'universe_wsgi.ini'
-if '-c' in sys.argv:
-    pos = sys.argv.index( '-c' )
-    sys.argv.pop(pos)
-    config_file = sys.argv.pop( pos )
-if not os.path.exists( config_file ):
-    print "Galaxy config file does not exist (hint: use '-c config.ini' for non-standard locations): %s" % config_file
-    sys.exit( 1 )
-
-cp = SafeConfigParser()
-cp.read( config_file )
-
-if cp.has_option( "app:main", "database_connection" ):
-    db_url = cp.get( "app:main", "database_connection" )
-elif cp.has_option( "app:main", "database_file" ):
-    db_url = "sqlite:///%s?isolation_level=IMMEDIATE" % cp.get( "app:main", "database_file" )
-else:
-    db_url = "sqlite:///./database/universe.sqlite?isolation_level=IMMEDIATE"
-
-create_db(db_url, config_file)
+if __name__ == "__main__":
+    invoke_create()

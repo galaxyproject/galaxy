@@ -10,7 +10,8 @@ from galaxy.datatypes.display_applications.util import decode_dataset_user, enco
 from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
 from galaxy.util import inflector, smart_str
 from galaxy.util.sanitize_html import sanitize_html
-from galaxy.web.base.controller import BaseUIController, ERROR, SUCCESS, url_for, UsesHistoryDatasetAssociationMixin, UsesHistoryMixin
+from galaxy.util.json import from_json_string
+from galaxy.web.base.controller import BaseUIController, ERROR, SUCCESS, url_for, UsesHistoryDatasetAssociationMixin, UsesHistoryMixin, UsesExtendedMetadataMixin
 from galaxy.web.framework.helpers import grids, iff, time_ago
 from galaxy.web.framework.helpers import to_unicode
 
@@ -99,8 +100,8 @@ class HistoryDatasetAssociationListGrid( grids.Grid ):
     columns = [
         grids.TextColumn( "Name", key="name",
                             # Link name to dataset's history.
-                            link=( lambda item: iff( item.history.deleted, None, dict( operation="switch", id=item.id ) ) ), filterable="advanced", attach_popup=True ),
-        HistoryColumn( "History", key="history",
+                            link=( lambda item: iff( item.history.deleted, None, dict( operation="switch", id=item.id ) ) ), filterable="advanced", attach_popup=True, inbound=True ),
+        HistoryColumn( "History", key="history", sortable=False, inbound=True,
                         link=( lambda item: iff( item.history.deleted, None, dict( operation="switch_history", id=item.id ) ) ) ),
         grids.IndividualTagsColumn( "Tags", key="tags", model_tag_association_class=model.HistoryDatasetAssociationTagAssociation, filterable="advanced", grid_name="HistoryDatasetAssocationListGrid" ),
         StatusColumn( "Status", key="deleted", attach_popup=False ),
@@ -113,11 +114,12 @@ class HistoryDatasetAssociationListGrid( grids.Grid ):
         key="free-text-search", visible=False, filterable="standard" )
                 )
     operations = [
-        grids.GridOperation( "Copy to current history", condition=( lambda item: not item.deleted ), async_compatible=False ),
+        grids.GridOperation( "Copy to current history", condition=( lambda item: not item.deleted ), async_compatible=True ),
     ]
     standard_filters = []
     default_filter = dict( name="All", deleted="False", tags="All" )
     preserve_state = False
+    use_async = True
     use_paging = True
     num_rows_per_page = 50
     def build_initial_query( self, trans, **kwargs ):
@@ -131,7 +133,7 @@ class HistoryDatasetAssociationListGrid( grids.Grid ):
                 .filter( model.History.deleted==False ) \
                 .filter( self.model_class.visible==True )
 
-class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, UsesHistoryDatasetAssociationMixin, UsesItemRatings ):
+class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, UsesHistoryDatasetAssociationMixin, UsesItemRatings, UsesExtendedMetadataMixin ):
 
     stored_list_grid = HistoryDatasetAssociationListGrid()
 
@@ -401,6 +403,41 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
                     if params.annotation:
                         annotation = sanitize_html( params.annotation, 'utf-8', 'text/html' )
                         self.add_item_annotation( trans.sa_session, trans.get_user(), data, annotation )
+                    """
+                    # This block on controller code is inactive until the 'extended_metadata' edit box is added back into the UI
+                    # Add or delete extended metadata
+                    if params.extended_metadata:
+                        em_string = params.extended_metadata
+                        if len(em_string):
+                            em_payload = None
+                            try:
+                                em_payload = from_json_string(em_string)
+                            except Exception, e:
+                                message = 'Invalid JSON input'
+                                error = True
+                            if em_payload is not None:
+                                if data is not None:
+                                    ex_obj = self.get_item_extended_metadata_obj(trans, data)
+                                    if ex_obj is not None:
+                                        self.unset_item_extended_metadata_obj(trans, data)
+                                        self.delete_extended_metadata(trans, ex_obj)
+                                    ex_obj = self.create_extended_metadata(trans, em_payload)
+                                    self.set_item_extended_metadata_obj(trans, data, ex_obj)
+                                    message = "Updated Extended metadata '%s'." % data.name
+                                    status = 'done'
+                                else:
+                                    message = "data not found"
+                                    error = True
+                    else:
+                        if data is not None:
+                            ex_obj = self.get_item_extended_metadata_obj(trans, data)
+                            if ex_obj is not None:
+                                self.unset_item_extended_metadata_obj(trans, data)
+                                self.delete_extended_metadata(trans, ex_obj)
+                        message = "Deleted Extended metadata '%s'." % data.name
+                        status = 'done'
+                    """
+
                     # If setting metadata previously failed and all required elements have now been set, clear the failed state.
                     if data._state == trans.model.Dataset.states.FAILED_METADATA and not data.missing_meta():
                         data._state = None
@@ -886,8 +923,8 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
             # If the user is known, make sure the HDA is owned by the current user.
             else:
                 assert topmost_parent.history.user == trans.user, 'Invalid history dataset ID'
-            # HDA is not deleted
-            assert hda.deleted, 'History dataset is not marked as deleted'
+            # Ensure HDA is deleted
+            hda.deleted = True
             # HDA is purgeable
             # Decrease disk usage first
             if user:

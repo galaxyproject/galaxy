@@ -1,11 +1,20 @@
 from os.path import abspath, basename, join, exists
 from os import listdir, sep
 from re import findall
+from re import compile
+from io import open
+from contextlib import contextmanager
 
 from .action_mapper import FileActionMapper
 
 from logging import getLogger
 log = getLogger(__name__)
+
+# All output files marked with from_work_dir attributes will copied or downloaded
+# this pattern picks up attiditional files to copy back - such as those
+# associated with multiple outputs and metadata configuration. Set to .* to just
+# copy everything
+COPY_FROM_WORKING_DIRECTORY_PATTERN = compile(r"primary_.*|galaxy.json|metadata_.*")
 
 
 class JobInputs(object):
@@ -24,21 +33,23 @@ class JobInputs(object):
     >>> import tempfile
     >>> tf = tempfile.NamedTemporaryFile()
     >>> def setup_inputs(tf):
-    ...     open(tf.name, "w").write("world /path/to/input the rest")
-    ...     inputs = JobInputs("hello /path/to/input", [tf.name])
+    ...     open(tf.name, "w").write(u"world /path/to/input the rest")
+    ...     inputs = JobInputs(u"hello /path/to/input", [tf.name])
     ...     return inputs
     >>> inputs = setup_inputs(tf)
-    >>> inputs.rewrite_paths("/path/to/input", 'C:\\input')
-    >>> inputs.rewritten_command_line
-    'hello C:\\\\input'
-    >>> inputs.rewritten_config_files[tf.name]
-    'world C:\\\\input the rest'
+    >>> inputs.rewrite_paths(u"/path/to/input", u'C:\\input')
+    >>> inputs.rewritten_command_line == u'hello C:\\\\input'
+    True
+    >>> inputs.rewritten_config_files[tf.name] == u'world C:\\\\input the rest'
+    True
     >>> tf.close()
     >>> tf = tempfile.NamedTemporaryFile()
     >>> inputs = setup_inputs(tf)
-    >>> inputs.find_referenced_subfiles('/path/to')
-    ['/path/to/input']
+    >>> inputs.find_referenced_subfiles('/path/to') == [u'/path/to/input']
+    True
     >>> inputs.path_referenced('/path/to')
+    True
+    >>> inputs.path_referenced(u'/path/to')
     True
     >>> inputs.path_referenced('/path/to/input')
     True
@@ -92,7 +103,7 @@ class JobInputs(object):
         self.rewritten_command_line = self.rewritten_command_line.replace(local_path, remote_path)
 
     def __rewrite_config_files(self, local_path, remote_path):
-        for config_file, rewritten_contents in self.rewritten_config_files.iteritems():
+        for config_file, rewritten_contents in self.rewritten_config_files.items():
             self.rewritten_config_files[config_file] = rewritten_contents.replace(local_path, remote_path)
 
     def __items(self):
@@ -140,7 +151,7 @@ class TransferTracker(object):
         For each file that has been transferred and renamed, updated
         command_line and configfiles to reflect that rewrite.
         """
-        for local_path, remote_path in self.file_renames.iteritems():
+        for local_path, remote_path in self.file_renames.items():
             self.job_inputs.rewrite_paths(local_path, remote_path)
 
     def __action(self, path, type):
@@ -154,35 +165,24 @@ class FileStager(object):
 
     **Parameters**
 
-    client : Client
+    client : JobClient
         LWR client object.
-    command_line : str
-        The local command line to execute, this will be rewritten for the remote server.
-    config_files : list
-        List of Galaxy 'configfile's produced for this job. These will be rewritten and sent to remote server.
-    input_files :  list
-        List of input files used by job. These will be transferred and references rewritten.
-    output_files : list
-        List of output_files produced by job.
-    tool_dir : str
-        Directory containing tool to execute (if a wrapper is used, it will be transferred to remote server).
-    working_directory : str
-        Local path created by Galaxy for running this job.
-
+    client_job_description : client_job_description
+        Description of client view of job to stage and execute remotely.
     """
 
-    def __init__(self, client, tool, command_line, config_files, input_files, output_files, working_directory):
+    def __init__(self, client, client_job_description, job_config):
         """
         """
         self.client = client
-        self.command_line = command_line
-        self.config_files = config_files
-        self.input_files = input_files
-        self.output_files = output_files
-        self.tool_id = tool.id
-        self.tool_version = tool.version
-        self.tool_dir = abspath(tool.tool_dir)
-        self.working_directory = working_directory
+        self.command_line = client_job_description.command_line
+        self.config_files = client_job_description.config_files
+        self.input_files = client_job_description.input_files
+        self.output_files = client_job_description.output_files
+        self.tool_id = client_job_description.tool.id
+        self.tool_version = client_job_description.tool.version
+        self.tool_dir = abspath(client_job_description.tool.tool_dir)
+        self.working_directory = client_job_description.working_directory
 
         # Setup job inputs, these will need to be rewritten before
         # shipping off to remote LWR server.
@@ -190,7 +190,7 @@ class FileStager(object):
 
         self.transfer_tracker = TransferTracker(client, self.job_inputs)
 
-        self.__handle_setup()
+        self.__handle_setup(job_config)
         self.__initialize_referenced_tool_files()
         self.__upload_tool_files()
         self.__upload_input_files()
@@ -201,8 +201,9 @@ class FileStager(object):
         self.__handle_rewrites()
         self.__upload_rewritten_config_files()
 
-    def __handle_setup(self):
-        job_config = self.client.setup(self.tool_id, self.tool_version)
+    def __handle_setup(self, job_config):
+        if not job_config:
+            job_config = self.client.setup(self.tool_id, self.tool_version)
 
         self.new_working_directory = job_config['working_directory']
         self.new_outputs_directory = job_config['outputs_directory']
@@ -283,7 +284,7 @@ class FileStager(object):
         self.transfer_tracker.rewrite_input_paths()
 
     def __upload_rewritten_config_files(self):
-        for config_file, new_config_contents in self.job_inputs.rewritten_config_files.iteritems():
+        for config_file, new_config_contents in self.job_inputs.rewritten_config_files.items():
             self.client.put_file(config_file, input_type='config', contents=new_config_contents)
 
     def get_rewritten_command_line(self):
@@ -294,32 +295,66 @@ class FileStager(object):
         return self.job_inputs.rewritten_command_line
 
 
-def finish_job(client, cleanup_job, job_completed_normally, working_directory, work_dir_outputs, output_files):
+def finish_job(client, cleanup_job, job_completed_normally, working_directory, work_dir_outputs, output_files, working_directory_contents=[]):
     """
     """
-    action_mapper = FileActionMapper(client)
     download_failure_exceptions = []
     if job_completed_normally:
-        for source_file, output_file in work_dir_outputs:
-            try:
-                action = action_mapper.action(output_file, 'output')
-                client.fetch_work_dir_output(source_file, working_directory, output_file, action[0])
-            except Exception, e:
-                download_failure_exceptions.append(e)
-            # Remove from full output_files list so don't try to download directly.
-            output_files.remove(output_file)
-        for output_file in output_files:
-            try:
-                action = action_mapper.action(output_file, 'output')
-                client.fetch_output(output_file, working_directory=working_directory, action=action[0])
-            except Exception, e:
-                download_failure_exceptions.append(e)
+        download_failure_exceptions = __download_results(client, working_directory, work_dir_outputs, output_files, working_directory_contents)
     return __clean(download_failure_exceptions, cleanup_job, client)
+
+
+def __download_results(client, working_directory, work_dir_outputs, output_files, working_directory_contents):
+    action_mapper = FileActionMapper(client)
+    downloaded_working_directory_files = []
+    exception_tracker = DownloadExceptionTracker()
+
+    # Fetch explicit working directory outputs.
+    for source_file, output_file in work_dir_outputs:
+        name = basename(source_file)
+        with exception_tracker():
+            action = action_mapper.action(output_file, 'output')
+            client.fetch_work_dir_output(name, working_directory, output_file, action[0])
+            downloaded_working_directory_files.append(name)
+        # Remove from full output_files list so don't try to download directly.
+        output_files.remove(output_file)
+
+    # Fetch output files.
+    for output_file in output_files:
+        with exception_tracker():
+            action = action_mapper.action(output_file, 'output')
+            client.fetch_output(output_file, working_directory=working_directory, action=action[0])
+
+    # Fetch remaining working directory outputs of interest.
+    for name in working_directory_contents:
+        if name in downloaded_working_directory_files:
+            continue
+        if COPY_FROM_WORKING_DIRECTORY_PATTERN.match(name):
+            with exception_tracker():
+                output_file = join(working_directory, name)
+                action = action_mapper.action(output_file, 'output')
+                client.fetch_work_dir_output(name, working_directory, output_file, action=action[0])
+                downloaded_working_directory_files.append(name)
+
+    return exception_tracker.download_failure_exceptions
+
+
+class DownloadExceptionTracker(object):
+
+    def __init__(self):
+        self.download_failure_exceptions = []
+
+    @contextmanager
+    def __call__(self):
+        try:
+            yield
+        except Exception as e:
+            self.download_failure_exceptions.append(e)
 
 
 def __clean(download_failure_exceptions, cleanup_job, client):
     failed = (len(download_failure_exceptions) > 0)
-    if not failed or cleanup_job == "always":
+    if (not failed and cleanup_job != "never") or cleanup_job == "always":
         try:
             client.clean()
         except:
@@ -327,25 +362,56 @@ def __clean(download_failure_exceptions, cleanup_job, client):
     return failed
 
 
-def submit_job(client, tool, command_line, config_files, input_files, output_files, working_directory):
+def submit_job(client, client_job_description, job_config=None):
     """
     """
-    file_stager = FileStager(client, tool, command_line, config_files, input_files, output_files, working_directory)
+    file_stager = FileStager(client, client_job_description, job_config)
     rebuilt_command_line = file_stager.get_rewritten_command_line()
     job_id = file_stager.job_id
-    client.launch(rebuilt_command_line)
+    client.launch(rebuilt_command_line, requirements=client_job_description.requirements)
     return job_id
 
 
 def _read(path):
     """
     Utility method to quickly read small files (config files and tool
-    wrappers) into memory as strings.
+    wrappers) into memory as bytes.
     """
-    input = open(path, "r")
+    input = open(path, "r", encoding="utf-8")
     try:
         return input.read()
     finally:
         input.close()
 
-__all__ = [submit_job, finish_job]
+
+class ClientJobDescription(object):
+    """ A description of how client views job - command_line, inputs, etc..
+
+    **Parameters**
+
+    command_line : str
+        The local command line to execute, this will be rewritten for the remote server.
+    config_files : list
+        List of Galaxy 'configfile's produced for this job. These will be rewritten and sent to remote server.
+    input_files :  list
+        List of input files used by job. These will be transferred and references rewritten.
+    output_files : list
+        List of output_files produced by job.
+    tool_dir : str
+        Directory containing tool to execute (if a wrapper is used, it will be transferred to remote server).
+    working_directory : str
+        Local path created by Galaxy for running this job.
+    requirements : list
+        List of requirements for tool execution.
+    """
+
+    def __init__(self, tool, command_line, config_files, input_files, output_files, working_directory, requirements):
+        self.tool = tool
+        self.command_line = command_line
+        self.config_files = config_files
+        self.input_files = input_files
+        self.output_files = output_files
+        self.working_directory = working_directory
+        self.requirements = requirements
+
+__all__ = [submit_job, ClientJobDescription, finish_job]

@@ -1,14 +1,14 @@
 .viewport-container{overflow-x:hidden;overflow-y:auto;background:white}
 .trackster-nav-container{width:100%;height:0;text-align:center}
 .trackster-nav{padding:0 0;color:#333;font-weight:bold;background:#cccccc;position:relative;display:inline-block;top:-2em;background:transparent;border:none}
-.content{font:10px verdana}
+.chrom-nav{width:15em}
+.content{font:10px verdana;position:relative}
 .nav-controls{text-align:center;padding:1px 0}.nav-controls input{margin:0 5px}
 #zoom-in,#zoom-out{display:inline-block;height:16px;width:16px;margin-bottom:-3px;cursor:pointer}
 #zoom-out{background:transparent url(../images/fugue/magnifier-zoom-out.png) center center no-repeat}
 #zoom-in{margin-left:10px;background:transparent url(../images/fugue/magnifier-zoom.png) center center no-repeat}
 .nav-input{font-size:12px;width:30em;z-index:2}
 .location{display:inline-block;width:15em;margin:0 10px}
-.draghandle{margin-top:2px;cursor:move;float:left;background:transparent url(../images/visualization/draggable_horizontal.png) center center no-repeat;width:10px;height:12px}
 .intro{z-index:2;margin-left:auto;margin-right:auto;color:#555;text-align:center;font-size:16px}.intro .action-button{background-color:#CCC;margin-top:10px;padding:1em;text-decoration:underline}
 .overview{width:100%;margin:0px;color:white}
 .overview-viewport{position:relative;height:14px;background:white;margin:0}
@@ -20,7 +20,7 @@
 .yaxislabel{z-index:2;position:absolute;right:20px}
 .yaxislabel.bottom{bottom:2px}
 .group-handle{cursor:move;float:left;background:#eee url('../images/tracks/block.png');width:12px;height:12px}
-.group{min-height:20px;border-top:1px solid #bbb;border-bottom:1px solid #bbb}.group>.track-header{position:relative;float:left}
+.group{min-height:20px;border-top:1px solid #888;border-bottom:1px solid #888}.group>.track-header{position:relative;float:left}
 .track-header{height:16px;position:absolute;z-index:2;background-color:rgba(1,1,1,0.1);border-radius:5px;padding:0px 2px;text-align:left;margin:2px;}.track-header:hover{background-color:#DDDDDD}
 .track-header .menubutton{margin-left:0px}
 .track-name{float:left;margin-top:2px}
@@ -28,10 +28,10 @@
 .overlay{position:absolute;left:0;top:0}
 .track-tile{position:absolute;background:white}.track-tile canvas{position:relative;z-index:1}
 .tile-message{border-bottom:solid 1px red;text-align:center;color:red;background-color:white}
-.track{border-bottom:1px solid #bbb}.track.error{background-color:#ECB4AF;background-image:none}
-.track.nodata .track-content{background-color:white;background-image:none}
-.track.pending .track-content{background-color:white;background-image:none}
-.track-content{text-align:center;position:relative;min-height:20px;padding:0px 0px 1px 0px}
+.track{position:relative;border-bottom:1px solid #888}.track.error{background:#ECB4AF}
+.track.nodata{background:#EEEEEE}
+.track.pending{background:#FFFFCC}
+.track-content{text-align:center;position:relative;min-height:20px;padding:0px 0px 1px 0px}.track-content .message{position:relative;top:4px}
 .loading{min-height:100px}
 .label-track{font-size:10px;border:none;padding:0;margin:0;height:1.5em;overflow:hidden}.label-track .label-container{position:relative;height:1.3em}
 .label-track .label{position:absolute;border-left:solid #999 1px;padding:1px;padding-bottom:2px;display:inline-block}
@@ -40,7 +40,8 @@
 .right-float{float:right;margin-left:5px}
 .top-labeltrack{position:relative;border-bottom:solid #999 1px}
 .nav-labeltrack{border-top:solid #999 1px;border-bottom:solid #333 1px}
-input{font:10px verdana}input[type="submit"]{padding:0px;font-size:inherit}
+input{font:10px verdana}input[type="submit"]{padding:0px;margin-right:20px;font-size:inherit}
+input.color-input{float:left}
 .dynamic-tool,.filters{padding-top:18px;padding-bottom:0.5em;margin-left:0.25em}
 .dynamic-tool{width:410px}
 .filters{float:left;margin:1em;width:60%;position:relative}
@@ -53,6 +54,7 @@ input{font:10px verdana}input[type="submit"]{padding:0px;font-size:inherit}
 .param-label{float:left;font-weight:bold;padding-top:0.2em;width:50%}
 .menu-button{margin:0px 4px 0px 4px}
 .exclamation{background:transparent url(../images/fugue/exclamation.png) no-repeat;margin-left:5em}
+.track-icons{float:left}
 .icon-button.bookmarks{background:transparent url('../images/fugue/bookmarks-bw.png') no-repeat}.icon-button.bookmarks:hover{background:transparent url('../images/fugue/bookmarks.png') no-repeat}
 .icon-button.layers-stack{background:transparent url('../images/fugue/layers-stack-bw.png') no-repeat}.icon-button.layers-stack:hover{background:transparent url('../images/fugue/layers-stack.png') no-repeat}
 .icon-button.hammer{background:transparent url('../images/fugue/hammer-bw.png') no-repeat}.icon-button.hammer:hover{background:transparent url('../images/fugue/hammer.png') no-repeat}
@@ -77,3 +79,5 @@ input{font:10px verdana}input[type="submit"]{padding:0px;font-size:inherit}
 .feature-popup{position:absolute;z-index:2;padding:5px;font-size:10px;filter:alpha(opacity=80);background-repeat:no-repeat;background-image:url(../images/tipsy.gif);background-position:top center}
 .feature-popup-inner{padding:5px 8px 4px 8px;background-color:black;color:white}
 .zoom-area{position:absolute;top:0px;background-color:#ccf;opacity:0.5;z-index:2}
+.draghandle{margin-top:2px;cursor:move;float:left;background:transparent url(../images/visualization/draggable_horizontal.png) center center no-repeat;width:10px;height:12px}
+.dragging{border:1px solid blue}

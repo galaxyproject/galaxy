@@ -56,7 +56,7 @@ class HistorySelectionGrid( grids.Grid ):
     datasets_action = 'list_history_datasets'
     datasets_param = "f-history"
     columns = [
-        NameColumn( "History Name", key="name", filterable="standard" ),
+        NameColumn( "History Name", key="name", filterable="standard", inbound=True ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago, visible=False ),
         DbKeyPlaceholderColumn( "Dbkey", key="dbkey", model_class=model.HistoryDatasetAssociation, visible=False )
     ]
@@ -77,7 +77,7 @@ class LibrarySelectionGrid( LibraryListGrid ):
     datasets_action = 'list_library_datasets'
     datasets_param = "f-library"
     columns = [
-        NameColumn( "Library Name", key="name", filterable="standard" )
+        NameColumn( "Library Name", key="name", filterable="standard", inbound=True  )
     ]
     num_rows_per_page = 10
     use_async = True
@@ -147,11 +147,11 @@ class TracksterSelectionGrid( grids.Grid ):
     # Grid definition.
     title = "Insert into visualization"
     template = "/tracks/add_to_viz.mako"
-    async_template = "/page/select_items_grid_async.mako"
     model_class = model.Visualization
     default_sort_key = "-update_time"
     use_async = True
     use_paging = False
+    show_item_checkboxes = True
     columns = [
         grids.TextColumn( "Title", key="title", model_class=model.Visualization, filterable="standard" ),
         grids.TextColumn( "Dbkey", key="dbkey", model_class=model.Visualization ),
@@ -170,9 +170,6 @@ class VisualizationListGrid( grids.Grid ):
         """
         controller = "visualization"
         action = item.type
-        if item.type == "phyloviz":
-            controller = "phyloviz"
-            action = "visualization"
         return dict( controller=controller, action=action, id=item.id )
 
     # Grid definition
@@ -196,15 +193,15 @@ class VisualizationListGrid( grids.Grid ):
         key="free-text-search", visible=False, filterable="standard" )
                 )
     global_actions = [
-        grids.GridAction( "Create new visualization", dict( action='create' ) )
+        grids.GridAction( "Create new visualization", dict( action='create' ), inbound=True )
     ]
     operations = [
         grids.GridOperation( "Open", allow_multiple=False, url_args=get_url_args ),
         grids.GridOperation( "Open in Circster", allow_multiple=False, condition=( lambda item: item.type == 'trackster' ), url_args=dict( action='circster' ) ),
-        grids.GridOperation( "Edit Attributes", allow_multiple=False, url_args=dict( action='edit') ),
-        grids.GridOperation( "Copy", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False, url_args=dict( action='copy') ),
+        grids.GridOperation( "Edit Attributes", allow_multiple=False, url_args=dict( action='edit'), inbound=True),
+        grids.GridOperation( "Copy", allow_multiple=False, condition=( lambda item: not item.deleted )),
         grids.GridOperation( "Share or Publish", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False ),
-        grids.GridOperation( "Delete", condition=( lambda item: not item.deleted ), async_compatible=True, confirm="Are you sure you want to delete this visualization?" ),
+        grids.GridOperation( "Delete", condition=( lambda item: not item.deleted ), confirm="Are you sure you want to delete this visualization?" ),
     ]
     def apply_query_filter( self, trans, query, **kwargs ):
         return query.filter_by( user=trans.user, deleted=False )
@@ -327,6 +324,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
     @web.expose
     @web.require_login( "use Galaxy visualizations", use_panels=True )
     def list( self, trans, *args, **kwargs ):
+        
         # Handle operation
         if 'operation' in kwargs and 'id' in kwargs:
             session = trans.sa_session
@@ -338,6 +336,8 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
                     item.deleted = True
                 if operation == "share or publish":
                     return self.sharing( trans, **kwargs )
+                if operation == "copy":
+                    self.copy( trans, **kwargs )
             session.flush()
 
         # Build list of visualizations shared with user.
@@ -350,8 +350,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
             .all()
 
         return trans.fill_template( "visualization/list.mako", grid=self._user_list_grid( trans, *args, **kwargs ), shared_by_others=shared_by_others )
-
-
+    
     #
     # -- Functions for operating on visualizations. --
     #
@@ -364,7 +363,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
 
     @web.expose
     @web.require_login()
-    def copy(self, trans, id, *args, **kwargs):
+    def copy(self, trans, id, **kwargs):
         visualization = self.get_visualization( trans, id, check_ownership=False )
         user = trans.get_user()
         owner = ( visualization.user == user )
@@ -381,7 +380,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
 
         # Display the management page
         trans.set_message( 'Created new visualization with name "%s"' % copied_viz.title )
-        return self.list( trans )
+        return
 
     @web.expose
     @web.require_login( "use Galaxy visualizations" )
@@ -896,22 +895,35 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
                                          query_args=kwargs )
 
     @web.expose
-    def phyloviz( self, trans, dataset_id, tree_index=0, **kwargs ):
-        # Get HDA.
-        hda = self.get_dataset( trans, dataset_id, check_ownership=False, check_accessible=True )
+    def phyloviz( self, trans, id=None, dataset_id=None, tree_index=0, **kwargs ):
+        config = None
+        data = None
 
-        # Get data.
+        # if id, then this is a saved visualization; get it's config and the dataset_id from there
+        if id:
+            visualization = self.get_visualization( trans, id )
+            config = self.get_visualization_config( trans, visualization )
+            dataset_id = config.get( 'dataset_id', None )
+
+        # get the hda if we can, then it's data using the phyloviz parsers
+        if dataset_id:
+            hda = self.get_dataset( trans, dataset_id, check_ownership=False, check_accessible=True )
+        else:
+            return trans.show_message( "Phyloviz couldn't find a dataset_id" )
+
         pd = PhylovizDataProvider( original_dataset=hda )
-        config = pd.get_data( tree_index=tree_index )
+        data = pd.get_data( tree_index=tree_index )
 
-        config["title"] = hda.display_name()
-        config["ext"] = hda.datatype.file_ext
-        config["dataset_id"] = dataset_id
-        config["treeIndex"] = tree_index
-        config["saved_visualization"] = False
-
-        # Return viz.
-        return trans.fill_template_mako( "visualization/phyloviz.mako", data = config[ "data" ], config=config )
+        # ensure at least a default configuration (gen. an new/unsaved visualization)
+        if not config:
+            config = {
+                'dataset_id': dataset_id,
+                'title'     : hda.display_name(),
+                'ext'       : hda.datatype.file_ext,
+                'treeIndex' : tree_index,
+                'saved_visualization' : False
+            }
+        return trans.fill_template_mako( "visualization/phyloviz.mako", data=data, config=config )
 
     @web.json
     def bookmarks_from_dataset( self, trans, hda_id=None, ldda_id=None ):

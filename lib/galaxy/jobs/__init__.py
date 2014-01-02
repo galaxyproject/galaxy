@@ -14,7 +14,6 @@ import re
 import shutil
 import subprocess
 import sys
-import threading
 import traceback
 from galaxy import model, util
 from galaxy.datatypes import metadata
@@ -39,21 +38,6 @@ DATABASE_MAX_STRING_SIZE_PRETTY = util.DATABASE_MAX_STRING_SIZE_PRETTY
 # and should eventually become API'd
 TOOL_PROVIDED_JOB_METADATA_FILE = 'galaxy.json'
 
-class Sleeper( object ):
-    """
-    Provides a 'sleep' method that sleeps for a number of seconds *unless*
-    the notify method is called (from a different thread).
-    """
-    def __init__( self ):
-        self.condition = threading.Condition()
-    def sleep( self, seconds ):
-        self.condition.acquire()
-        self.condition.wait( seconds )
-        self.condition.release()
-    def wake( self ):
-        self.condition.acquire()
-        self.condition.notify()
-        self.condition.release()
 
 class JobDestination( Bunch ):
     """
@@ -704,10 +688,7 @@ class JobWrapper( object ):
         if self.command_line and self.command_line.startswith( 'python' ):
             self.galaxy_lib_dir = os.path.abspath( "lib" ) # cwd = galaxy root
         # Shell fragment to inject dependencies
-        if self.app.config.use_tool_dependencies:
-            self.dependency_shell_commands = self.tool.build_dependency_shell_commands()
-        else:
-            self.dependency_shell_commands = None
+        self.dependency_shell_commands = self.tool.build_dependency_shell_commands()
         # We need command_line persisted to the db in order for Galaxy to re-queue the job
         # if the server was stopped and restarted before the job finished
         job.command_line = self.command_line
@@ -1451,10 +1432,7 @@ class TaskWrapper(JobWrapper):
         if self.command_line and self.command_line.startswith( 'python' ):
             self.galaxy_lib_dir = os.path.abspath( "lib" ) # cwd = galaxy root
         # Shell fragment to inject dependencies
-        if self.app.config.use_tool_dependencies:
-            self.dependency_shell_commands = self.tool.build_dependency_shell_commands()
-        else:
-            self.dependency_shell_commands = None
+        self.dependency_shell_commands = self.tool.build_dependency_shell_commands()
         # We need command_line persisted to the db in order for Galaxy to re-queue the job
         # if the server was stopped and restarted before the job finished
         task.command_line = self.command_line

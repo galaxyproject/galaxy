@@ -3,7 +3,7 @@
 */
 
 // dependencies
-define(["galaxy.modal", "galaxy.masthead", "utils/galaxy.utils", "utils/galaxy.uploadbox", "libs/backbone/backbone-relational"], function(mod_modal, mod_masthead, mod_utils) {
+define(["galaxy.modal", "galaxy.masthead", "utils/galaxy.utils", "utils/galaxy.uploadbox"], function(mod_modal, mod_masthead, mod_utils) {
 
 // galaxy upload
 var GalaxyUpload = Backbone.View.extend(
@@ -16,6 +16,9 @@ var GalaxyUpload = Backbone.View.extend(
     
     // upload mod
     uploadbox: null,
+    
+    // current history
+    current_history: null,
     
     // extension types
     select_extension :[['Auto-detect', 'auto']],
@@ -47,8 +50,13 @@ var GalaxyUpload = Backbone.View.extend(
         }
     },
     
+    // options
+    options : {
+        nginx_upload_path : ''
+    },
+    
     // initialize
-    initialize : function()
+    initialize : function(options)
     {
         // wait for galaxy history panel (workaround due to the use of iframes)
         if (!Galaxy.currHistoryPanel)
@@ -108,6 +116,11 @@ var GalaxyUpload = Backbone.View.extend(
                 // insert default back to array
                 self.select_genome.unshift(def);
             });
+        
+        // read in options
+        if (options) {
+            this.options = _.defaults(options, this.options);
+        }
     },
     
     // mouse over
@@ -141,12 +154,34 @@ var GalaxyUpload = Backbone.View.extend(
         // update info
         it.find('#size').html(this.size_to_string (file.size));
         
-        // add functionality to remove button
+        // add functionality to new row elements
         var self = this;
+        
+        // handle click event
         it.find('#symbol').on('click', function() { self.event_remove (index) });
+        
+        // handle text editing event
         it.find('#text-content').on('keyup', function() {
             var count = it.find('#text-content').val().length;
             it.find('#size').html(self.size_to_string (count));
+        });
+        
+        // handle genome selection event
+        var self = this;
+        it.find('#genome').on('change', function(e) {
+            // identify selected genome
+            var selected_genome = $(e.target).val();
+            
+            // update genome
+            var items = $(self.el).find('.upload-item');
+            items.each(function()
+            {
+                var symbol = $(this).find('#symbol');
+                var genome = $(this).find('#genome');
+                if(symbol.hasClass(self.state.init) && genome.val() == '?') {
+                    genome.val(selected_genome);
+                }
+            });
         });
         
         // initialize progress
@@ -195,7 +230,6 @@ var GalaxyUpload = Backbone.View.extend(
         sy.addClass(this.state.running);
       
         // get configuration
-        var current_history = Galaxy.currHistoryPanel.model.get('id');
         var file_type = it.find('#extension').val();
         var genome = it.find('#genome').val();
         var url_paste = it.find('#text-content').val();
@@ -206,7 +240,7 @@ var GalaxyUpload = Backbone.View.extend(
             return null;
             
         // configure uploadbox
-        this.uploadbox.configure({url : galaxy_config.root + "api/tools", paramname : "files_0|file_data"});
+        this.uploadbox.configure({url : this.options.nginx_upload_path, paramname : "files_0|file_data"});
         
         // configure tool
         tool_input = {};
@@ -219,7 +253,7 @@ var GalaxyUpload = Backbone.View.extend(
         
         // setup data
         data = {};
-        data['history_id'] = current_history;
+        data['history_id'] = this.current_history;
         data['tool_id'] = 'upload1';
         data['inputs'] = JSON.stringify(tool_input);
         
@@ -342,6 +376,9 @@ var GalaxyUpload = Backbone.View.extend(
                 $(this).find('#space_to_tabs').attr('disabled', true);
             }
         });
+        
+        // backup current history
+        this.current_history = Galaxy.currHistoryPanel.model.get('id');
         
         // update running
         this.counter.running = this.counter.announce;

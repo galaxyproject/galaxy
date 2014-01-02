@@ -1,8 +1,70 @@
 define([
     "mvc/history/history-model",
+    "mvc/dataset/hda-model",
     "mvc/dataset/hda-base",
     "mvc/dataset/hda-edit"
-], function( historyModel, hdaBase, hdaEdit ){
+], function( historyModel, hdaModel, hdaBase, hdaEdit ){
+
+
+// ============================================================================
+/** session storage for history panel preferences (and to maintain state)
+ */
+var HistoryPanelPrefs = SessionStorageModel.extend({
+    defaults : {
+        /** is the panel currently showing the search/filter controls? */
+        searching       : false,
+        /** should the tags editor be shown or hidden initially? */
+        tagsEditorShown : false,
+        /** should the annotation editor be shown or hidden initially? */
+        annotationEditorShown : false
+    },
+    toString : function(){
+        return 'HistoryPanelPrefs(' + JSON.stringify( this.toJSON() ) + ')';
+    }
+});
+
+/** key string to store panel prefs (made accessible on class so you can access sessionStorage directly) */
+HistoryPanelPrefs.storageKey = function storageKey(){
+    return ( 'history-panel' );
+};
+
+
+// ============================================================================
+/** session storage for individual history preferences
+ */
+var HistoryPrefs = SessionStorageModel.extend({
+    defaults : {
+        //TODO:?? expandedHdas to array?
+        expandedHdas : {},
+        //TODO:?? move to user?
+        show_deleted : false,
+        show_hidden  : false
+        //TODO: add scroll position?
+    },
+    /** add an hda id to the hash of expanded hdas */
+    addExpandedHda : function( id ){
+        this.save( 'expandedHdas', _.extend( this.get( 'expandedHdas' ), _.object([ id ], [ true ]) ) );
+    },
+    /** remove an hda id from the hash of expanded hdas */
+    removeExpandedHda : function( id ){
+        this.save( 'expandedHdas', _.omit( this.get( 'expandedHdas' ), id ) );
+    },
+    toString : function(){
+        return 'HistoryPrefs(' + this.id + ')';
+    }
+});
+
+/** key string to store each histories settings under */
+HistoryPrefs.historyStorageKey = function historyStorageKey( historyId ){
+    // class lvl for access w/o instantiation
+    if( !historyId ){
+        throw new Error( 'HistoryPrefs.historyStorageKey needs valid id: ' + historyId );
+    }
+    // single point of change
+    return ( 'history:' + historyId );
+};
+
+
 /* =============================================================================
 Backbone.js implementation of history panel
 
@@ -40,8 +102,8 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
     //logger              : console,
 
     /** which class to use for constructing the HDA views */
-    //HDAView             : hdaBase.HDABaseView,
-    HDAView             : hdaEdit.HDAEditView,
+    //defaultHDAViewClass : hdaBase.HDABaseView,
+    defaultHDAViewClass : hdaEdit.HDAEditView,
 
     tagName             : 'div',
     className           : 'history-panel',
@@ -68,15 +130,35 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
             this.logger = attributes.logger;
         }
         this.log( this + '.initialize:', attributes );
-//TODO: pass show_del'd/hidden through
-
-        this._setUpListeners();
 
         // ---- set up instance vars
+        // control contents/behavior based on where (and in what context) the panel is being used
+        /** which backbone view class to use when displaying the hda list */
+        this.HDAViewClass = attributes.HDAViewClass || this.defaultHDAViewClass;
+        /** where should pages from links be displayed? (default to new tab/window) */
+        this.linkTarget = attributes.linkTarget || '_blank';
+
+        // ---- sub views and saved elements
         /** map of hda model ids to hda views */
         this.hdaViews = {};
         /** loading indicator */
         this.indicator = new LoadingIndicator( this.$el );
+
+        // ---- persistent state and preferences
+        /** maintain state / preferences over page loads */
+        this.preferences = new HistoryPanelPrefs( _.extend({
+            id : HistoryPanelPrefs.storageKey()
+        }, _.pick( attributes, _.keys( HistoryPanelPrefs.prototype.defaults ) )));
+
+        /** filters for displaying hdas */
+        this.filters = [];
+
+        // states/modes the panel can be in
+        /** is the panel currently showing the dataset selection controls? */
+        this.selecting = attributes.selecting || false;
+        this.annotationEditorShown  = attributes.annotationEditorShown || false;
+
+        this._setUpListeners();
 
         // ---- handle models passed on init
         if( this.model ){
@@ -213,8 +295,8 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
     //  - hdas w/o details will have summary data only (name, hid, deleted, visible, state, etc.))
 
     /** (re-)loads the user's current history & hdas w/ details */
-    // implemented as a 'fresh start' or for when there is no model (intial panel render)
     loadCurrentHistory : function( attributes ){
+        // implemented as a 'fresh start' or for when there is no model (intial panel render)
         var panel = this;
         return this.loadHistoryWithHDADetails( 'current', attributes )
             .then(function( historyData, hdaData ){
@@ -331,18 +413,7 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         return this;
     },
 
-    // alias to the model. Updates the hda list only (not the history)
-    refreshHdas : function( detailIds, options ){
-        if( this.model ){
-            return this.model.refresh( detailIds, options );
-        }
-        // may have callbacks - so return an empty promise
-        return $.when();
-    },
-
     // ------------------------------------------------------------------------ browser stored prefs
-//TODO: simplify
-
     /** Set up client side storage. Currently PersistanStorage keyed under 'HistoryPanel.<id>'
      *  @param {Object} initiallyExpanded
      *  @param {Boolean} show_deleted whether to show deleted HDAs (overrides stored)
@@ -350,53 +421,29 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
      *  @see PersistentStorage
      */
     _setUpWebStorage : function( initiallyExpanded, show_deleted, show_hidden ){
-        //this.log( '_setUpWebStorage, initiallyExpanded:', initiallyExpanded,
-        //    'show_deleted:', show_deleted, 'show_hidden', show_hidden );
-
-        //TODO: add scroll position?
-
-        // data that needs to be persistent over page refreshes
-        //  (note the key function which uses the history id as well)
-        this.storage = new PersistentStorage( this._getStorageKey( this.model.get( 'id' ) ), {
-            expandedHdas : {},
-            show_deleted : false,
-            show_hidden  : false
+        //console.debug( '_setUpWebStorage', initiallyExpanded, show_deleted, show_hidden );
+        this.storage = new HistoryPrefs({
+            id: HistoryPrefs.historyStorageKey( this.model.get( 'id' ) )
         });
-        this.log( this + ' (prev) storage:', JSON.stringify( this.storage.get(), null, 2 ) );
 
-        // expanded Hdas is a map of hda.ids -> a boolean rep'ing whether this hda's body is expanded
+        // expanded Hdas is a map of hda.ids -> a boolean repr'ing whether this hda's body is already expanded
         // store any pre-expanded ids passed in
-        if( initiallyExpanded ){
+        if( _.isObject( initiallyExpanded ) ){
             this.storage.set( 'exandedHdas', initiallyExpanded );
         }
 
-        //TODO: should be global pref? (not specific to each history)
-
-        // get the show_deleted/hidden settings giving priority to values passed in,
-        //  using web storage otherwise
+        // get the show_deleted/hidden settings giving priority to values passed in, using web storage otherwise
         // if the page has specifically requested show_deleted/hidden, these will be either true or false
         //  (as opposed to undefined, null) - and we give priority to that setting
-        if( ( show_deleted === true ) || ( show_deleted === false ) ){
-            // save them to web storage
+        if( _.isBoolean( show_deleted ) ){
             this.storage.set( 'show_deleted', show_deleted );
         }
-        if( ( show_hidden === true ) || ( show_hidden === false ) ){
+        if( _.isBoolean( show_hidden ) ){
             this.storage.set( 'show_hidden', show_hidden );
         }
-        // if the page hasn't specified whether to show_deleted/hidden, pull show_deleted/hidden from the web storage
-        this.show_deleted = this.storage.get( 'show_deleted' );
-        this.show_hidden  = this.storage.get( 'show_hidden' );
-        //this.log( 'this.show_deleted:', this.show_deleted, 'show_hidden', this.show_hidden );
+
         this.trigger( 'new-storage', this.storage, this );
         this.log( this + ' (init\'d) storage:', this.storage.get() );
-    },
-
-    /** key string to store each histories settings under */
-    _getStorageKey : function( id ){
-        if( !id ){
-            throw new Error( '_getStorageKey needs valid id: ' + id );
-        }
-        return ( 'history:' + id );
     },
 
     /** clear all stored history panel data */
@@ -414,11 +461,11 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
             return ( this.storage )?( this.storage.get() ):( {} );
         }
         //TODO: make storage engine generic
-        var item = sessionStorage.getItem( this._getStorageKey( historyId ) );
+        var item = sessionStorage.getItem( HistoryPrefs.historyStorageKey( historyId ) );
         return ( item === null )?( {} ):( JSON.parse( item ) );
     },
 
-    /** get all the map of expaneded hda ids for the given history id */
+    /** get an array of expanded hda ids for the given history id */
     getExpandedHdaIds : function( historyId ){
         var expandedHdas = this.getStoredOptions( historyId ).expandedHdas;
         return (( _.isEmpty( expandedHdas ) )?( [] ):( _.keys( expandedHdas ) ));
@@ -470,7 +517,250 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
 
     },
 
-    // ------------------------------------------------------------------------ adding/removing hda sub-views
+    // ------------------------------------------------------------------------ panel rendering
+    /** Render urls, historyPanel body, and hdas (if any are shown)
+     *  @fires: rendered    when the panel is attached and fully visible
+     *  @see Backbone.View#render
+     */
+    render : function( speed, callback ){
+        // send a speed of 0 to have no fade in/out performed
+        speed = ( speed === undefined )?( this.fxSpeed ):( speed );
+        var panel = this,
+            $newRender;
+
+        // handle the possibility of no model (can occur if fetching the model returns an error)
+        if( this.model ){
+            $newRender = this.renderModel();
+        } else {
+            $newRender = this.renderWithoutModel();
+        }
+
+        // fade out existing, swap with the new, fade in, set up behaviours
+        $( panel ).queue( 'fx', [
+            function( next ){
+                //panel.$el.fadeTo( panel.fxSpeed, 0.0001, next );
+                if( speed && panel.$el.is( ':visible' ) ){
+                    panel.$el.fadeOut( speed, next );
+                } else {
+                    next();
+                }
+            },
+            function( next ){
+                // swap over from temp div newRender
+                panel.$el.empty();
+                if( $newRender ){
+                    panel.$el.append( $newRender.children() );
+                    panel.renderBasedOnPrefs();
+                }
+                next();
+            },
+            function( next ){
+                if( speed && !panel.$el.is( ':visible' ) ){
+                    panel.$el.fadeIn( speed, next );
+                } else {
+                    next();
+                }
+            },
+            function( next ){
+                //TODO: ideally, these would be set up before the fade in (can't because of async save text)
+                if( callback ){ callback.call( this ); }
+                panel.trigger( 'rendered', this );
+                next();
+            }
+        ]);
+        return this;
+    },
+
+    /** render with no history data */
+    renderWithoutModel : function( ){
+        // we'll always need the message container
+        var $newRender = $( '<div/>' ),
+            $msgContainer = $( '<div/>' ).addClass( 'message-container' )
+                .css({ 'margin-left': '4px', 'margin-right': '4px' });
+        return $newRender.append( $msgContainer );
+    },
+
+    /** render with history data */
+    renderModel : function( ){
+        var $newRender = $( '<div/>' );
+
+        // render based on anonymity, set up behaviors
+        if( !Galaxy || !Galaxy.currUser || Galaxy.currUser.isAnonymous() ){
+            $newRender.append( HistoryPanel.templates.anonHistoryPanel( this.model.toJSON() ) );
+
+        } else {
+            $newRender.append( HistoryPanel.templates.historyPanel( this.model.toJSON() ) );
+            if( Galaxy.currUser.id && Galaxy.currUser.id === this.model.get( 'user_id' ) ){
+                this._renderTags( $newRender );
+                this._renderAnnotation( $newRender );
+            }
+        }
+        // search and select available to both anon/logged-in users
+        //$newRender.find( '.history-secondary-actions' ).prepend( this._renderSelectButton() );
+        //$newRender.find( '.history-dataset-actions' ).toggle( this.selecting );
+        $newRender.find( '.history-secondary-actions' ).prepend( this._renderSearchButton() );
+
+        this._setUpBehaviours( $newRender );
+
+        // render hda views (if any and any shown (show_deleted/hidden)
+        this.renderHdas( $newRender );
+        return $newRender;
+    },
+
+    renderBasedOnPrefs : function(){
+        if( this.preferences.get( 'searching' ) ){
+            this.showSearchControls( 0 );
+        }
+    },
+
+    _renderTags : function( $where ){
+        var panel = this;
+        this.tagsEditor = new TagsEditor({
+            model           : this.model,
+            el              : $where.find( '.history-controls .tags-display' ),
+            onshowFirstTime : function(){ this.render(); },
+            // show hide hda view tag editors when this is shown/hidden
+            onshow          : function(){
+                panel.preferences.set( 'tagsEditorShown', true );
+                panel.toggleHDATagEditors( true,  panel.fxSpeed );
+            },
+            onhide          : function(){
+                panel.preferences.set( 'tagsEditorShown', false );
+                panel.toggleHDATagEditors( false, panel.fxSpeed );
+            },
+            $activator      : faIconButton({
+                title   : _l( 'Edit history tags' ),
+                classes : 'history-tag-btn',
+                faIcon  : 'fa-tags'
+            }).appendTo( $where.find( '.history-secondary-actions' ) )
+        });
+        if( this.preferences.get( 'tagsEditorShown' ) ){
+            this.tagsEditor.toggle( true );
+        }
+    },
+    _renderAnnotation : function( $where ){
+        var panel = this;
+        this.annotationEditor = new AnnotationEditor({
+            model           : this.model,
+            el              : $where.find( '.history-controls .annotation-display' ),
+            onshowFirstTime : function(){ this.render(); },
+            // show hide hda view annotation editors when this is shown/hidden
+            onshow          : function(){
+                panel.preferences.set( 'annotationEditorShown', true );
+                panel.toggleHDAAnnotationEditors( true,  panel.fxSpeed );
+            },
+            onhide          : function(){
+                panel.preferences.set( 'annotationEditorShown', false );
+                panel.toggleHDAAnnotationEditors( false, panel.fxSpeed );
+            },
+            $activator      : faIconButton({
+                title   : _l( 'Edit history Annotation' ),
+                classes : 'history-annotate-btn',
+                faIcon  : 'fa-comment'
+            }).appendTo( $where.find( '.history-secondary-actions' ) )
+        });
+        if( this.preferences.get( 'annotationEditorShown' ) ){
+            this.annotationEditor.toggle( true );
+        }
+    },
+    /** button for opening search */
+    _renderSearchButton : function( $where ){
+        return faIconButton({
+            title   : _l( 'Search datasets' ),
+            classes : 'history-search-btn',
+            faIcon  : 'fa-search'
+        });
+    },
+    /** button for starting select mode */
+    _renderSelectButton : function( $where ){
+        return faIconButton({
+            title   : _l( 'Operations on multiple datasets' ),
+            classes : 'history-select-btn',
+            faIcon  : 'fa-check-square-o'
+        });
+    },
+
+    /** Set up HistoryPanel js/widget behaviours */
+    _setUpBehaviours : function( $where ){
+        //TODO: these should be either sub-MVs, or handled by events
+        $where = $where || this.$el;
+        $where.find( '[title]' ).tooltip({ placement: 'bottom' });
+
+        // anon users shouldn't have access to any of the following
+        if( ( !this.model )
+        ||  ( !Galaxy.currUser || Galaxy.currUser.isAnonymous() )
+        ||  ( Galaxy.currUser.id !== this.model.get( 'user_id' ) ) ){
+            return;
+        }
+
+        var panel = this;
+        $where.find( '.history-name' )
+            .attr( 'title', _l( 'Click to rename history' ) ).tooltip({ placement: 'bottom' })
+            .make_text_editable({
+                on_finish: function( newName ){
+                    var previousName = panel.model.get( 'name' );
+                    if( newName && newName !== previousName ){
+                        panel.$el.find( '.history-name' ).text( newName );
+                        panel.model.save({ name: newName })
+                            .fail( function(){
+                                panel.$el.find( '.history-name' ).text( panel.model.previous( 'name' ) );
+                            });
+                    } else {
+                        panel.$el.find( '.history-name' ).text( previousName );
+                    }
+                }
+            });
+        this._setUpDatasetActionsPopup( $where );
+    },
+
+    _setUpDatasetActionsPopup : function( $where ){
+        var panel = this;
+        ( new PopupMenu( $where.find( '.history-dataset-action-popup-btn' ), [
+            {
+                html: _l( 'Hide datasets' ), func: function(){
+                    var action = hdaModel.HistoryDatasetAssociation.prototype.hide;
+                    panel.getSelectedHdaCollection().ajaxQueue( action );
+                }
+            },
+            {
+                html: _l( 'Unhide datasets' ), func: function(){
+                    var action = hdaModel.HistoryDatasetAssociation.prototype.unhide;
+                    panel.getSelectedHdaCollection().ajaxQueue( action );
+                }
+            },
+            {
+                html: _l( 'Delete datasets' ), func: function(){
+                    var action = hdaModel.HistoryDatasetAssociation.prototype['delete'];
+                    panel.getSelectedHdaCollection().ajaxQueue( action );
+                }
+            },
+            {
+                html: _l( 'Undelete datasets' ), func: function(){
+                    var action = hdaModel.HistoryDatasetAssociation.prototype.undelete;
+                    panel.getSelectedHdaCollection().ajaxQueue( action );
+                }
+            },
+            {
+                html: _l( 'Permanently delete datasets' ), func: function(){
+                    if( confirm( _l( 'This will permanently remove the data in your datasets. Are you sure?' ) ) ){
+                        var action = hdaModel.HistoryDatasetAssociation.prototype.purge;
+                        panel.getSelectedHdaCollection().ajaxQueue( action );
+                    }
+                }
+            }
+        ]));
+    },
+
+    // ------------------------------------------------------------------------ hda sub-views
+    /** alias to the model. Updates the hda list only (not the history) */
+    refreshHdas : function( detailIds, options ){
+        if( this.model ){
+            return this.model.refresh( detailIds, options );
+        }
+        // may have callbacks - so return an empty promise
+        return $.when();
+    },
+
     /** Add an hda view to the panel for the given hda
      *  @param {HistoryDatasetAssociation} hda
      */
@@ -506,11 +796,16 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
      */
     createHdaView : function( hda ){
         var hdaId = hda.get( 'id' ),
-            expanded = this.storage.get( 'expandedHdas' ).get( hdaId ),
-            hdaView = new this.HDAView({
+            expanded = this.storage.get( 'expandedHdas' )[ hdaId ],
+            hdaView = new this.HDAViewClass({
                     model           : hda,
+                    linkTarget      : this.linkTarget,
                     expanded        : expanded,
-                    hasUser         : this.model.hasUser(),
+                    //draggable       : true,
+                    tagsEditorShown       : this.preferences.get( 'tagsEditorShown' ),
+                    annotationEditorShown : this.preferences.get( 'annotationEditorShown' ),
+                    selectable      : this.selecting,
+                    hasUser         : this.model.ownedByCurrUser(),
                     logger          : this.logger
                 });
         this._setUpHdaListeners( hdaView );
@@ -526,10 +821,10 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         var historyView = this;
         // maintain a list of hdas whose bodies are expanded
         hdaView.on( 'body-expanded', function( id ){
-            historyView.storage.get( 'expandedHdas' ).set( id, true );
+            historyView.storage.addExpandedHda( id );
         });
         hdaView.on( 'body-collapsed', function( id ){
-            historyView.storage.get( 'expandedHdas' ).deleteKey( id );
+            historyView.storage.removeExpandedHda( id );
         });
 //TODO: remove?
         hdaView.on( 'error', function( model, xhr, options, msg ){
@@ -574,148 +869,58 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         });
     },
 
-    // ------------------------------------------------------------------------ panel rendering
-    /** Render urls, historyPanel body, and hdas (if any are shown)
-     *  @fires: rendered    when the panel is attached and fully visible
-     *  @see Backbone.View#render
-     */
-    render : function( callback ){
-        var panel = this,
-            $newRender;
-
-        if( this.model ){
-            $newRender = this.renderModel();
-        } else {
-            $newRender = this.renderWithoutModel();
-        }
-        // fade out existing, swap with the new, fade in, set up behaviours
-        $( panel ).queue( 'fx', [
-            function( next ){
-                //panel.$el.fadeTo( panel.fxSpeed, 0.0001, next );
-                if( panel.$el.is( ':visible' ) ){
-                    panel.$el.fadeOut( panel.fxSpeed, next );
-                } else {
-                    next();
-                }
-            },
-            function( next ){
-                // swap over from temp div newRender
-                panel.$el.empty();
-                if( $newRender ){
-                    panel.$el.append( $newRender.children() );
-                }
-                panel.$el.fadeIn( panel.fxSpeed, next );
-            },
-            function( next ){
-                //TODO: ideally, these would be set up before the fade in (can't because of async save text)
-                if( callback ){ callback.call( this ); }
-                panel.trigger( 'rendered', this );
-            }
-        ]);
-        return this;
-    },
-
-    /** render with no history data */
-    renderWithoutModel : function( ){
-        // we'll always need the message container
-        var $newRender = $( '<div/>' ),
-            $msgContainer = $( '<div/>' ).addClass( 'message-container' )
-                .css({ 'margin-left': '4px', 'margin-right': '4px' });
-        return $newRender.append( $msgContainer );
-    },
-
-    /** render with history data */
-    renderModel : function( ){
-        var $newRender = $( '<div/>' );
-
-        // render based on anonymity, set up behaviors
-        if( !Galaxy || !Galaxy.currUser || Galaxy.currUser.isAnonymous() ){
-            $newRender.append( HistoryPanel.templates.anonHistoryPanel( this.model.toJSON() ) );
-
-        } else {
-            $newRender.append( HistoryPanel.templates.historyPanel( this.model.toJSON() ) );
-            this._renderTags( $newRender );
-            this._renderAnnotation( $newRender );
-        }
-        this._setUpBehaviours( $newRender );
-
-        // render hda views (if any and any shown (show_deleted/hidden)
-        //TODO: this seems too elaborate
-        if( !this.model.hdas.length
-        ||  !this.renderHdas( $newRender.find( this.datasetsSelector ) ) ){
-            // if history is empty or no hdas would be rendered, show the empty message
-            $newRender.find( this.emptyMsgSelector ).show();
-        }
-        return $newRender;
-    },
-
-    _renderTags : function( $where ){
-        this.tagsEditor = new TagsEditor({
-            model           : this.model,
-            el              : $where.find( '.history-controls .tags-display' ),
-            onshowFirstTime : function(){ this.render(); },
-            $activator      : faIconButton({
-                title   : _l( 'Edit history tags' ),
-                classes : 'history-tag-btn',
-                faIcon  : 'fa-tags'
-            }).appendTo( $where.find( '.history-secondary-actions' ) )
-        });
-    },
-    _renderAnnotation : function( $where ){
-        this.annotationEditor = new AnnotationEditor({
-            model           : this.model,
-            el              : $where.find( '.history-controls .annotation-display' ),
-            onshowFirstTime : function(){ this.render(); },
-            $activator      : faIconButton({
-                title   : _l( 'Edit history tags' ),
-                classes : 'history-annotate-btn',
-                faIcon  : 'fa-comment'
-            }).appendTo( $where.find( '.history-secondary-actions' ) )
-        });
-    },
-
-    /** Set up HistoryPanel js/widget behaviours
-     */
-    //TODO: these should be either sub-MVs, or handled by events
-    _setUpBehaviours : function( $where ){
-        $where = $where || this.$el;
-        $where.find( '[title]' ).tooltip({ placement: 'bottom' });
-
-        // anon users shouldn't have access to any of the following
-        if( !this.model || !Galaxy.currUser || Galaxy.currUser.isAnonymous() ){ return; }
-
-        var panel = this;//,
-        $where.find( '.history-name' ).make_text_editable({
-            on_finish: function( newName ){
-                $where.find( '.history-name' ).text( newName );
-                panel.model.save({ name: newName })
-                    .fail( function(){
-                        $where.find( '.history-name' ).text( panel.model.previous( 'name' ) );
-                    });
-            }
-        });
-    },
-
     /** Set up/render a view for each HDA to be shown, init with model and listeners.
      *      HDA views are cached to the map this.hdaViews (using the model.id as key).
      *  @param {jQuery} $whereTo what dom element to prepend the HDA views to
      *  @returns the number of visible hda views
      */
     renderHdas : function( $whereTo ){
+        $whereTo = $whereTo || this.$el;
         this.hdaViews = {};
         var historyView = this,
+            $datasetsList = $whereTo.find( this.datasetsSelector ),
             // only render the shown hdas
             //TODO: switch to more general filtered pattern
             visibleHdas  = this.model.hdas.getVisible(
                 this.storage.get( 'show_deleted' ),
-                this.storage.get( 'show_hidden' )
+                this.storage.get( 'show_hidden' ),
+                this.filters
             );
+        //console.debug( 'renderHdas, visibleHdas:', visibleHdas, $whereTo );
+        $datasetsList.empty();
 
-        _.each( visibleHdas, function( hda ){
-            // render it (NOTE: reverse order, newest on top (prepend))
-            $whereTo.prepend( historyView.createHdaView( hda ).$el );
+        if( visibleHdas.length ){
+            visibleHdas.each( function( hda ){
+                // render it (NOTE: reverse order, newest on top (prepend))
+                $datasetsList.prepend( historyView.createHdaView( hda ).$el );
+            });
+            $whereTo.find( this.emptyMsgSelector ).hide();
+            
+        } else {
+            //console.debug( 'emptyMsg:', $whereTo.find( this.emptyMsgSelector ) )
+            $whereTo.find( this.emptyMsgSelector ).show();
+        }
+        return this.hdaViews;
+    },
+
+    /** toggle the visibility of each hdaView's tagsEditor applying all the args sent to this function */
+    toggleHDATagEditors : function( showOrHide ){
+        var args = arguments;
+        _.each( this.hdaViews, function( hdaView ){
+            if( hdaView.tagsEditor ){
+                hdaView.tagsEditor.toggle.apply( hdaView.tagsEditor, args );
+            }
         });
-        return visibleHdas.length;
+    },
+
+    /** toggle the visibility of each hdaView's annotationEditor applying all the args sent to this function */
+    toggleHDAAnnotationEditors : function( showOrHide ){
+        var args = arguments;
+        _.each( this.hdaViews, function( hdaView ){
+            if( hdaView.annotationEditor ){
+                hdaView.annotationEditor.toggle.apply( hdaView.annotationEditor, args );
+            }
+        });
     },
 
     // ------------------------------------------------------------------------ panel events
@@ -723,7 +928,11 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
     events : {
         // allow (error) messages to be clicked away
         //TODO: switch to common close (X) idiom
-        'click .message-container'   : 'clearMessages'
+        'click .message-container'      : 'clearMessages',
+
+        'click .history-search-btn'     : 'toggleSearchControls',
+        'click .history-select-btn'     : function( e ){ this.toggleSelectors( this.fxSpeed ); },
+        'click .history-select-all-datasets-btn' : 'selectAllDatasets'
     },
 
     /** Update the history size display (curr. upper right of panel).
@@ -748,7 +957,7 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
      */
     toggleShowDeleted : function(){
         this.storage.set( 'show_deleted', !this.storage.get( 'show_deleted' ) );
-        this.render();
+        this.renderHdas();
         return this.storage.get( 'show_deleted' );
     },
 
@@ -759,8 +968,147 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
      */
     toggleShowHidden : function(){
         this.storage.set( 'show_hidden', !this.storage.get( 'show_hidden' ) );
-        this.render();
+        this.renderHdas();
         return this.storage.get( 'show_hidden' );
+    },
+
+    // ........................................................................ filters
+    /** render a search input for filtering datasets shown
+     *      (see the search section in the HDA model for implementation of the actual searching)
+     *      return will start the search
+     *      esc will clear the search
+     *      clicking the clear button will clear the search
+     *      uses searchInput in ui.js
+     */
+    renderSearchControls : function( $where ){
+        var panel = this;
+
+        function onSearch( searchFor ){
+            //console.debug( 'onSearch', searchFor, panel );
+            panel.searchFor = searchFor;
+            panel.filters = [ function( hda ){ return hda.matchesAll( panel.searchFor ); } ];
+            panel.trigger( 'search:searching', searchFor, panel );
+            panel.renderHdas();
+        }
+        function onFirstSearch( searchFor ){
+            //console.debug( 'onSearch', searchFor, panel );
+            if( panel.model.hdas.haveDetails() ){
+                onSearch( searchFor );
+                return;
+            }
+            panel.$el.find( '.history-search-controls' ).searchInput( 'toggle-loading' );
+            panel.model.hdas.fetchAllDetails({ silent: true })
+                .always( function(){
+                    panel.$el.find( '.history-search-controls' ).searchInput( 'toggle-loading' );
+                })
+                .done( function(){
+                    onSearch( searchFor );
+                });
+        }
+        function onSearchClear(){
+            //console.debug( 'onSearchClear', panel );
+            panel.searchFor = '';
+            panel.filters = [];
+            panel.trigger( 'search:clear', panel );
+            panel.renderHdas();
+        }
+        return $where.searchInput({
+                initialVal      : panel.searchFor,
+                name            : 'history-search',
+                placeholder     : 'search datasets',
+                classes         : 'history-search',
+                onfirstsearch   : onFirstSearch,
+                onsearch        : onSearch,
+                onclear         : onSearchClear
+            });
+    },
+//TODO: to hidden/shown plugin
+    showSearchControls : function( speed ){
+        speed = ( speed === undefined )?( this.fxSpeed ):( speed );
+        var panel = this,
+            $searchControls = this.$el.find( '.history-search-controls' );
+        // if it hasn't been rendered - do it now
+        if( !$searchControls.children().size() ){
+            $searchControls = this.renderSearchControls( $searchControls ).hide();
+        }
+        // then slide open, focusing on the input, and persisting the setting when it's done
+        $searchControls.show( speed, function(){
+            $( this ).find( 'input' ).focus();
+            panel.preferences.set( 'searching', true );
+        });
+    },
+    hideSearchControls : function(){
+        speed = ( speed === undefined )?( this.fxSpeed ):( speed );
+        var panel = this;
+        this.$el.find( '.history-search-controls' ).hide( speed, function(){
+            panel.preferences.set( 'searching', false );
+        });
+    },
+
+    /** toggle showing/hiding the search controls (rendering first on the initial show) */
+    toggleSearchControls : function( eventOrSpeed ){
+        speed = ( jQuery.type( eventOrSpeed ) === 'number' )?( eventOrSpeed ):( this.fxSpeed );
+        if( this.$el.find( '.history-search-controls' ).is( ':visible' ) ){
+            this.hideSearchControls( speed );
+        } else {
+            this.showSearchControls( speed );
+        }
+    },
+
+    // ........................................................................ multi-select of hdas
+    showSelectors : function( speed ){
+        this.selecting = true;
+        this.$el.find( '.history-dataset-actions' ).slideDown( speed );
+        _.each( this.hdaViews, function( view ){
+            view.showSelector( speed );
+        });
+    },
+
+    hideSelectors : function( speed ){
+        this.selecting = false;
+        this.$el.find( '.history-dataset-actions' ).slideUp( speed );
+        _.each( this.hdaViews, function( view ){
+            view.hideSelector( speed );
+        });
+    },
+
+    toggleSelectors : function( speed ){
+        if( !this.selecting ){
+            this.showSelectors( speed );
+        } else {
+            this.hideSelectors( speed );
+        }
+    },
+
+    selectAllDatasets : function( event ){
+        var $selectBtn = this.$el.find( '.history-select-all-datasets-btn' );
+            currMode = $selectBtn.data( 'mode' );
+        if( currMode === 'select' ){
+            _.each( this.hdaViews, function( view ){
+                view.select( event );
+            });
+            $selectBtn.data( 'mode', 'deselect' );
+            $selectBtn.text( _l( 'De-select all' ) );
+
+        } else if( currMode === 'deselect' ){
+            _.each( this.hdaViews, function( view ){
+                view.deselect( event );
+            });
+            $selectBtn.data( 'mode', 'select' );
+            $selectBtn.text( _l( 'Select all' ) );
+        }
+    },
+
+    getSelectedHdaViews : function(){
+        return _.filter( this.hdaViews, function( v ){
+            return v.selected;
+        });
+    },
+
+    getSelectedHdaCollection : function(){
+        return new hdaModel.HDACollection( _.map( this.getSelectedHdaViews(), function( hdaView ){
+            return hdaView.model;
+        }), { historyId: this.model.id });
     },
 
     // ........................................................................ loading indicator

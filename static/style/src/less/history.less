@@ -34,13 +34,14 @@
     // center the icon
     text-align: center;
     line-height: @icon-btn-size - 3;
+    font-size: 1.2em;
+
     // colors and borders
     border-radius: 3px;
     border: 1px solid @icon-btn-border;
     background-color: @icon-btn-bg;
     color           : @icon-btn-color;
 
-    font-size: 1.2em;
     cursor: pointer;
 
     // tweaks
@@ -57,6 +58,40 @@
 .icon-btn.disabled {
     background-color: transparent;
     color: @icon-btn-bg;
+}
+
+.search-input {
+    .search-query {
+        width           : 100%;
+        padding-right   : 24px;
+    }
+    .search-clear,
+    .search-loading {
+        // it places the icons on the right of the bar (and puts the lotion on its skin)
+        position    : relative;
+        float       : right;
+        left        : -4px;
+        top         : -23px;
+        font-size   : 1.4em;
+        line-height : 23px;
+        color       : grey;
+    }
+
+    .search-clear:hover {
+        color       : @link-color;
+    }
+}
+// ---------------------------------------------------------------------------- panel header buttons
+#history-refresh-button,
+#history-options-button {
+    display : inline-block;
+    height  : @icon-btn-size;
+    width   : @icon-btn-size;
+    text-align  : center;
+    line-height : @icon-btn-size - 3;
+    font-size   : 1.2em;
+
+    padding: 0px;
 }
 
 
@@ -80,11 +115,17 @@
     }
     .message-container [class$=message] {
         margin: 0px;
+        margin-bottom: 8px;
     }
 
     .history-controls {
         margin: 10px;
         padding: 0px;
+
+        .history-search-controls {
+            display: none;
+            padding: 0px 0px 8px 0px;
+        }
 
         .history-title {
             margin-bottom: 4px;
@@ -94,10 +135,10 @@
             font-weight: bold;
         }
         .history-title input {
-            font-weight: bold;
             width: 100%;
             // keep the text in position
             margin: -2px 0px -2px -4px;
+            font-weight: bold;
         }
 
         .history-subtitle {
@@ -172,6 +213,19 @@
                 width: 100%;
             }
         }
+
+        .history-dataset-actions {
+            display: none;
+            .clear;
+            .btn {
+                padding-top: 2px;
+                padding-bottom: 2px;
+                font-size: 90%;
+            }
+            .history-dataset-action-popup-btn {
+                float: right;
+            }
+        }
     }
 
     // display only a top border on all
@@ -241,17 +295,24 @@
         color: #555;
     }
 
+    .dataset-selector {
+        float: left;
+        // always initially hidden and zero width
+        display: none;
+        width: 0px;
+        //HACK: neg. on the bottom due to padding-bottom in title-bar - very tweakish
+        margin: 0px 0px -@spacing-bottom 0px;
+        padding: ( @spacing-top - 1 ) 0px 2px @spacing-left;
+        cursor: pointer;
+        //text-align: center;
+        vertical-align: middle;
+    }
+
     .dataset-title-bar {
         cursor: pointer;
         .dataset-padding;
+
         .dataset-state-icon {
-            //display: inline-block;
-            //vertical-align: middle;
-            //line-height: 16px;
-            //width: 16px;
-            //height: 16px;
-            //background-position: 0 1px;
-            //background-repeat: no-repeat;
         }
         .dataset-title {
             display: inline;

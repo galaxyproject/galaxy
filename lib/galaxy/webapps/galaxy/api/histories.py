@@ -41,11 +41,9 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin ):
         deleted = string_as_bool( deleted )
         try:
             if trans.user:
-                query = ( trans.sa_session.query( trans.app.model.History )
-                            .filter_by( user=trans.user, deleted=deleted )
-                            .order_by( desc( trans.app.model.History.table.c.update_time ) )
-                            .all() )
-                for history in query:
+                histories = self.get_user_histories( trans, user=trans.user, only_deleted=deleted )
+                #for history in query:
+                for history in histories:
                     item = history.to_dict(value_mapper={'id':trans.security.encode_id})
                     item['url'] = url_for( 'history', id=trans.security.encode_id( history.id ) )
                     rval.append( item )
@@ -58,6 +56,7 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin ):
                 rval.append(item)
 
         except Exception, e:
+            raise
             rval = "Error in history API"
             log.error( rval + ": %s" % str(e) )
             trans.response.status = 500
@@ -65,7 +64,6 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin ):
 
     @web.expose_api_anonymous
     def show( self, trans, id, deleted='False', **kwd ):
-        # oh, sphinx - you bastard
         """
         show( trans, id, deleted='False' )
         * GET /api/histories/{id}:

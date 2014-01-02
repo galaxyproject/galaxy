@@ -2,10 +2,11 @@
 <script type="text/template" class="template-history" id="template-history-historyPanel">
     
     <div class="history-controls">
+        <div class="history-search-controls"></div>
 
         <div class="history-title">
             {{#if name }}
-            <div class="history-name" title="{{#local}}Click to rename history{{/local}}">
+            <div class="history-name">
                 {{name}}
             </div>
             {{/if}}
@@ -16,8 +17,7 @@
             <div class="history-size">{{nice_size}}</div>
             {{/if}}
 
-            <div class="history-secondary-actions">
-            </div>
+            <div class="history-secondary-actions"></div>
         </div>
 
         {{#if deleted}}
@@ -41,6 +41,13 @@
         <div class="tags-display"></div>
         <div class="annotation-display"></div>
 
+        <div class="history-dataset-actions">
+            <button class="history-select-all-datasets-btn btn btn-default"
+                    data-mode="select">{{#local}}Select all{{/local}}</button>
+            <button class="history-dataset-action-popup-btn btn btn-default"
+                    >{{#local}}For all selected{{/local}}...</button>
+        </div>
+
     </div>{{! end history-controls }}
 
     {{! where the datasets/hdas are added }}
@@ -56,11 +63,12 @@
 <script type="text/template" class="template-history" id="template-history-historyPanel-anon">
 
     <div class="history-controls">
+        <div class="history-search-controls"></div>
 
         <div class="history-title">
             {{! wouldn't this always be 'unnamed history'? }}
             {{#if name }}
-                <div class="history-name" title="{{#local}}You must be logged in to edit your history name{{/local}}">
+                <div class="history-name">
                     {{name}}
                 </div>
             {{/if}}
@@ -70,6 +78,8 @@
             {{#if nice_size }}
             <div class="history-size">{{nice_size}}</div>
             {{/if}}
+
+            <div class="history-secondary-actions"></div>
         </div>
 
         <div class="message-container">

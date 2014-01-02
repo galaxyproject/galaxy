@@ -57,3 +57,12 @@ class LibraryDatasetExtendMetadataController(BaseExtendedMetadataController):
             if trans.app.security_agent.can_access_library_item( trans.get_current_user_roles(), item, trans.user ):
                 return item
         return None
+
+class HistoryDatasetExtendMetadataController(BaseExtendedMetadataController):
+    controller_name = "history_dataset_extended_metadata"
+    exmeta_item_id = "history_content_id"
+    def _get_item_from_id(self, trans, idstr, check_writable=True):
+        if check_writable:
+            return self.get_dataset( trans, idstr,  check_ownership=True, check_accessible=True, check_state=True )
+        else:
+            return self.get_dataset( trans, idstr,  check_ownership=False, check_accessible=True, check_state=True )

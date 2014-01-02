@@ -50,6 +50,7 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             # otherwise, check permissions for the history first
             else:
                 history = self.get_history( trans, history_id, check_ownership=True, check_accessible=True )
+
             # if ids, return _FULL_ data (as show) for each id passed
             if ids:
                 ids = ids.split( ',' )
@@ -58,19 +59,39 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
                     if encoded_hda_id in ids:
                         #TODO: share code with show
                         rval.append( self._detailed_hda_dict( trans, hda ) )
+
             # if no ids passed, return a _SUMMARY_ of _all_ datasets in the history
             else:
+                # details param allows a mixed set of summary and detailed hdas
+                #TODO: this is getting convoluted due to backwards compat
                 details = kwd.get( 'details', None ) or []
                 if details and details != 'all':
                     details = util.listify( details )
 
+                # by default return all datasets - even if deleted or hidden (defaulting the next switches to None)
+                #   if specified return those datasets that match the setting
+                # backwards compat
+                return_deleted = util.string_as_bool_or_none( kwd.get( 'deleted', None ) )
+                return_visible = util.string_as_bool_or_none( kwd.get( 'visible', None ) )
+
                 for hda in history.datasets:
+                    # if either return_ setting has been requested (!= None), skip hdas that don't match the request
+                    if return_deleted is not None:
+                        if( ( return_deleted and not hda.deleted )
+                        or  ( not return_deleted and hda.deleted ) ):
+                            continue
+                    if return_visible is not None:
+                        if( ( return_visible and not hda.visible )
+                        or  ( not return_visible and hda.visible ) ):
+                            continue
+
                     encoded_hda_id = trans.security.encode_id( hda.id )
                     if( ( encoded_hda_id in details )
                     or  ( details == 'all' ) ):
                         rval.append( self._detailed_hda_dict( trans, hda ) )
                     else:
                         rval.append( self._summary_hda_dict( trans, history_id, hda ) )
+
         except Exception, e:
             # for errors that are not specific to one hda (history lookup or summary list)
             rval = "Error in history API at listing contents: " + str( e )
@@ -99,6 +120,7 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             'state'  : hda.state,
             'deleted': hda.deleted,
             'visible': hda.visible,
+            'purged': hda.purged,
             'hid'   : hda.hid,
             'url'   : url_for( 'history_content', history_id=encoded_history_id, id=encoded_id, ),
         }
@@ -135,32 +157,17 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         :returns:   dictionary containing detailed HDA information
         .. seealso:: :func:`galaxy.web.base.controller.UsesHistoryDatasetAssociationMixin.get_hda_dict`
         """
-        hda_dict = {}
         try:
-            # for anon users:
-            #TODO: check login_required?
-            #TODO: this isn't actually most_recently_used (as defined in histories)
-            if( ( trans.user == None )
-            and ( history_id == trans.security.encode_id( trans.history.id ) ) ):
-                history = trans.history
-                #TODO: dataset/hda by id (from history) OR check_ownership for anon user
-                hda = self.get_history_dataset_association( trans, history, id,
-                    check_ownership=False, check_accessible=True )
-            else:
-                #TODO: do we really need the history?
-                history = self.get_history( trans, history_id,
-                    check_ownership=True, check_accessible=True, deleted=False )
-                hda = self.get_history_dataset_association( trans, history, id,
-                    check_ownership=True, check_accessible=True )
+            hda = self.get_history_dataset_association_from_ids( trans, id, history_id )
             hda_dict = self.get_hda_dict( trans, hda )
             hda_dict[ 'display_types' ] = self.get_old_display_applications( trans, hda )
             hda_dict[ 'display_apps' ] = self.get_display_apps( trans, hda )
+            return hda_dict
         except Exception, e:
             msg = "Error in history API at listing dataset: %s" % ( str(e) )
             log.error( msg, exc_info=True )
             trans.response.status = 500
             return msg
-        return hda_dict
 
     @web.expose_api
     def create( self, trans, history_id, payload, **kwd ):
@@ -303,8 +310,9 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             return { 'error': str( exception ) }
         return changed
 
+    #TODO: allow anonymous del/purge and test security on this
     @web.expose_api
-    def delete( self, trans, history_id, id, **kwd ):
+    def delete( self, trans, history_id, id, purge=False, **kwd ):
         """
         delete( self, trans, history_id, id, **kwd )
         * DELETE /api/histories/{history_id}/contents/{id}
@@ -313,11 +321,16 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
 
         :type   id:     str
         :param  id:     the encoded id of the history to delete
+        :type   purge:  bool
+        :param  purge:  if True, purge the HDA
         :type   kwd:    dict
         :param  kwd:    (optional) dictionary structure containing:
 
             * payload:     a dictionary itself containing:
                 * purge:   if True, purge the HDA
+
+        .. note:: that payload optionally can be placed in the query string of the request.
+            This allows clients that strip the request body to still purge the dataset.
 
         :rtype:     dict
         :returns:   an error object if an error occurred or a dictionary containing:
@@ -325,10 +338,12 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             * deleted:    if the history was marked as deleted,
             * purged:     if the history was purged
         """
-        # a request body is optional here
-        purge = False
+        # get purge from the query or from the request body payload (a request body is optional here)
+        purge = util.string_as_bool( purge )
         if kwd.get( 'payload', None ):
-            purge = util.string_as_bool( kwd['payload'].get( 'purge', False ) )
+            # payload takes priority
+            purge = util.string_as_bool( kwd['payload'].get( 'purge', purge ) )
+
         rval = { 'id' : id }
         try:
             hda = self.get_dataset( trans, id,
@@ -350,8 +365,10 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
                     # flush now to preserve deleted state in case of later interruption
                     trans.sa_session.flush()
                 rval[ 'purged' ] = True
+
             trans.sa_session.flush()
             rval[ 'deleted' ] = True
+
         except exceptions.httpexceptions.HTTPInternalServerError, http_server_err:
             log.exception( 'HDA API, delete: uncaught HTTPInternalServerError: %s, %s\n%s',
                            id, str( kwd ), str( http_server_err ) )

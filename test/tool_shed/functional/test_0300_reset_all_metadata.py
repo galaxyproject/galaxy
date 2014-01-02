@@ -1,6 +1,4 @@
 from tool_shed.base.twilltestcase import ShedTwillTestCase, common, os
-import tool_shed.base.test_db_util as test_db_util
-
 datatypes_repository_name = 'emboss_datatypes_0020'
 datatypes_repository_description = "Galaxy applicable data formats used by Emboss tools."
 datatypes_repository_long_description = "Galaxy applicable data formats used by Emboss tools.  This repository contains no tools."
@@ -41,6 +39,7 @@ category_0050_description = 'Test circular dependency features'
 
 running_standalone = False
 
+
 class TestResetAllRepositoryMetadata( ShedTwillTestCase ):
     '''Verify that the "Reset selected metadata" feature works.'''
  
@@ -48,14 +47,14 @@ class TestResetAllRepositoryMetadata( ShedTwillTestCase ):
         """Create necessary user accounts."""
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        test_user_1 = test_db_util.get_user( common.test_user_1_email )
+        test_user_1 = self.test_db_util.get_user( common.test_user_1_email )
         assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % test_user_1_email
-        test_user_1_private_role = test_db_util.get_private_role( test_user_1 )
+        test_user_1_private_role = self.test_db_util.get_private_role( test_user_1 )
         self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
-        admin_user = test_db_util.get_user( common.admin_email )
+        admin_user = self.test_db_util.get_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % admin_email
-        admin_user_private_role = test_db_util.get_private_role( admin_user )
+        admin_user_private_role = self.test_db_util.get_private_role( admin_user )
  
     def test_0005_create_filtering_repository( self ):
         '''Create and populate the filtering_0000 repository.'''
@@ -298,10 +297,10 @@ class TestResetAllRepositoryMetadata( ShedTwillTestCase ):
         '''Create the dependency structure for test 0030.'''
         global running_standalone
         if running_standalone:
-            datatypes_repository = test_db_util.get_repository_by_name_and_owner( 'emboss_datatypes_0030', common.test_user_1_name )
-            emboss_repository = test_db_util.get_repository_by_name_and_owner( 'emboss_0030', common.test_user_1_name )
-            emboss_5_repository = test_db_util.get_repository_by_name_and_owner( 'emboss_5_0030', common.test_user_1_name )
-            emboss_6_repository = test_db_util.get_repository_by_name_and_owner( 'emboss_6_0030', common.test_user_1_name )
+            datatypes_repository = self.test_db_util.get_repository_by_name_and_owner( 'emboss_datatypes_0030', common.test_user_1_name )
+            emboss_repository = self.test_db_util.get_repository_by_name_and_owner( 'emboss_0030', common.test_user_1_name )
+            emboss_5_repository = self.test_db_util.get_repository_by_name_and_owner( 'emboss_5_0030', common.test_user_1_name )
+            emboss_6_repository = self.test_db_util.get_repository_by_name_and_owner( 'emboss_6_0030', common.test_user_1_name )
             repository_dependencies_path = self.generate_temp_path( 'test_0330', additional_paths=[ 'emboss' ] )
             datatypes_tuple = ( self.url, datatypes_repository.name, datatypes_repository.user.username, self.get_repository_tip( datatypes_repository ) )
             emboss_5_tuple = ( self.url, emboss_5_repository.name, emboss_5_repository.user.username, self.get_repository_tip( emboss_5_repository ) )
@@ -365,8 +364,8 @@ class TestResetAllRepositoryMetadata( ShedTwillTestCase ):
         '''Create the dependency structure for test 0040.'''
         global running_standalone
         if running_standalone:
-            freebayes_repository = test_db_util.get_repository_by_name_and_owner( 'freebayes_0040', common.test_user_1_name )
-            filtering_repository = test_db_util.get_repository_by_name_and_owner( 'filtering_0040', common.test_user_1_name )
+            freebayes_repository = self.test_db_util.get_repository_by_name_and_owner( 'freebayes_0040', common.test_user_1_name )
+            filtering_repository = self.test_db_util.get_repository_by_name_and_owner( 'filtering_0040', common.test_user_1_name )
             repository_dependencies_path = self.generate_temp_path( 'test_0340', additional_paths=[ 'dependencies' ] )
             freebayes_tuple = ( self.url, freebayes_repository.name, freebayes_repository.user.username, self.get_repository_tip( freebayes_repository ) )
             filtering_tuple = ( self.url, filtering_repository.name, filtering_repository.user.username, self.get_repository_tip( filtering_repository ) )
@@ -554,13 +553,13 @@ class TestResetAllRepositoryMetadata( ShedTwillTestCase ):
         if running_standalone:
             self.logout()
             self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-            column_repository = test_db_util.get_repository_by_name_and_owner( column_repository_name, common.test_user_1_name )
-            convert_repository = test_db_util.get_repository_by_name_and_owner( convert_repository_name, common.test_user_1_name )
-            datatypes_repository = test_db_util.get_repository_by_name_and_owner( emboss_datatypes_repository_name, common.test_user_1_name )
-            emboss_repository = test_db_util.get_repository_by_name_and_owner( emboss_repository_name, common.test_user_1_name )
-            filtering_repository = test_db_util.get_repository_by_name_and_owner( filtering_repository_name, common.test_user_1_name )
-            freebayes_repository = test_db_util.get_repository_by_name_and_owner( freebayes_repository_name, common.test_user_1_name )
-            bismark_repository = test_db_util.get_repository_by_name_and_owner( bismark_repository_name, common.test_user_1_name )
+            column_repository = self.test_db_util.get_repository_by_name_and_owner( column_repository_name, common.test_user_1_name )
+            convert_repository = self.test_db_util.get_repository_by_name_and_owner( convert_repository_name, common.test_user_1_name )
+            datatypes_repository = self.test_db_util.get_repository_by_name_and_owner( emboss_datatypes_repository_name, common.test_user_1_name )
+            emboss_repository = self.test_db_util.get_repository_by_name_and_owner( emboss_repository_name, common.test_user_1_name )
+            filtering_repository = self.test_db_util.get_repository_by_name_and_owner( filtering_repository_name, common.test_user_1_name )
+            freebayes_repository = self.test_db_util.get_repository_by_name_and_owner( freebayes_repository_name, common.test_user_1_name )
+            bismark_repository = self.test_db_util.get_repository_by_name_and_owner( bismark_repository_name, common.test_user_1_name )
             dependency_xml_path = self.generate_temp_path( 'test_0050', additional_paths=[ 'freebayes' ] )
             # convert_chars depends on column_maker
             # column_maker depends on convert_chars
@@ -629,7 +628,7 @@ class TestResetAllRepositoryMetadata( ShedTwillTestCase ):
         self.login( email=common.admin_email, username=common.admin_username )
         old_metadata = dict()
         new_metadata = dict()
-        repositories = test_db_util.get_all_repositories()
+        repositories = self.test_db_util.get_all_repositories()
         for repository in repositories:
             old_metadata[ self.security.encode_id( repository.id ) ] = dict()
             for metadata in self.get_repository_metadata( repository ):

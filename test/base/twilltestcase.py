@@ -1,39 +1,38 @@
-import pkg_resources
-pkg_resources.require( "twill==0.9" )
-
-import StringIO
-import os
+import difflib
 import filecmp
+import logging
+import os
+import re
+import pprint
+import shutil
+import StringIO
+import subprocess
+import tarfile
+import tempfile
 import time
 import unittest
 import urllib
-import logging
-import difflib
-import tarfile
 import zipfile
-import tempfile
-import re
-import shutil
-import subprocess
-import pprint
 
-import twill
-import twill.commands as tc
-from twill.other_packages._mechanize_dist import ClientForm
-pkg_resources.require( "elementtree" )
-pkg_resources.require( "MarkupSafe" )
-from markupsafe import escape
-from elementtree import ElementTree
 from galaxy.web import security
 from galaxy.web.framework.helpers import iff
 from galaxy.util.json import from_json_string
 from base.asserts import verify_assertions
 
-buffer = StringIO.StringIO()
+from galaxy import eggs
+eggs.require( "elementtree" )
+eggs.require( 'twill' )
+
+from elementtree import ElementTree
+
+import twill
+import twill.commands as tc
+from twill.other_packages._mechanize_dist import ClientForm
 
 #Force twill to log to a buffer -- FIXME: Should this go to stdout and be captured by nose?
-twill.set_output(buffer)
-tc.config('use_tidy', 0)
+buffer = StringIO.StringIO()
+twill.set_output( buffer )
+tc.config( 'use_tidy', 0 )
 
 # Dial ClientCookie logging down (very noisy)
 logging.getLogger( "ClientCookie.cookies" ).setLevel( logging.WARNING )
@@ -197,7 +196,7 @@ class TwillTestCase( unittest.TestCase ):
         filename = os.path.join( *path )
         file(filename, 'wt').write(buffer.getvalue())
 
-    def upload_file( self, filename, ftype='auto', dbkey='unspecified (?)', space_to_tab=False, metadata=None, composite_data=None, shed_tool_id=None ):
+    def upload_file( self, filename, ftype='auto', dbkey='unspecified (?)', space_to_tab=False, metadata=None, composite_data=None, name=None, shed_tool_id=None, wait=True ):
         """
         Uploads a file.  If shed_tool_id has a value, we're testing tools migrated from the distribution to the tool shed,
         so the tool-data directory of test data files is contained in the installed tool shed repository.
@@ -218,12 +217,19 @@ class TwillTestCase( unittest.TestCase ):
                 filename = self.get_filename( filename, shed_tool_id=shed_tool_id )
                 tc.formfile( "tool_form", "file_data", filename )
                 tc.fv( "tool_form", "space_to_tab", space_to_tab )
+                if name:
+                    # NAME is a hidden form element, so the following prop must
+                    # set to use it.
+                    tc.config("readonly_controls_writeable", 1)
+                    tc.fv( "tool_form", "NAME", name )
             tc.submit( "runtool_btn" )
             self.home()
         except AssertionError, err:
             errmsg = "Uploading file resulted in the following exception.  Make sure the file (%s) exists.  " % filename
             errmsg += str( err )
             raise AssertionError( errmsg )
+        if not wait:
+            return
         # Make sure every history item has a valid hid
         hids = self.get_hids_in_history()
         for hid in hids:
@@ -609,6 +615,9 @@ class TwillTestCase( unittest.TestCase ):
         self.visit_page( "datasets/%s/%s" % ( self.security.encode_id( hda_id ), stream ) )
 
         output = self.last_page()
+        return self._format_stream( output, stream, format )
+
+    def _format_stream( self, output, stream, format ):
         if format:
             msg = "---------------------- >> begin tool %s << -----------------------\n" % stream
             msg += output + "\n"
@@ -826,111 +835,45 @@ class TwillTestCase( unittest.TestCase ):
                 if ext != test_ext:
                     raise AssertionError( errmsg )
         else:
-            self.home()
-            self.visit_page( "display?hid=" + hid )
-            data = self.last_page()
-            if attributes is not None and attributes.get( "assert_list", None ) is not None:
+            # See not in controllers/root.py about encoded_id.
+            hda_id = self.security.encode_id( elem.get( 'id' ) )
+            self.verify_hid( filename, hid=hid, hda_id=hda_id, attributes=attributes, shed_tool_id=shed_tool_id)
+
+    def verify_hid( self, filename, hda_id, attributes, shed_tool_id, hid="", dataset_fetcher=None):
+        dataset_fetcher = dataset_fetcher or self.__default_dataset_fetcher()
+        data = dataset_fetcher( hda_id )
+        if attributes is not None and attributes.get( "assert_list", None ) is not None:
+            try:
+                verify_assertions(data, attributes["assert_list"])
+            except AssertionError, err:
+                errmsg = 'History item %s different than expected\n' % (hid)
+                errmsg += str( err )
+                raise AssertionError( errmsg )
+        if filename is not None:
+            local_name = self.get_filename( filename, shed_tool_id=shed_tool_id )
+            temp_name = self.makeTfname(fname=filename)
+            file( temp_name, 'wb' ).write( data )
+
+            # if the server's env has GALAXY_TEST_SAVE, save the output file to that dir
+            if self.keepOutdir:
+                ofn = os.path.join( self.keepOutdir, os.path.basename( local_name ) )
+                log.debug( 'keepoutdir: %s, ofn: %s', self.keepOutdir, ofn )
                 try:
-                    verify_assertions(data, attributes["assert_list"])
-                except AssertionError, err:
-                    errmsg = 'History item %s different than expected\n' % (hid)
-                    errmsg += str( err )
-                    raise AssertionError( errmsg )
-            if filename is not None:
-                local_name = self.get_filename( filename, shed_tool_id=shed_tool_id )
-                temp_name = self.makeTfname(fname=filename)
-                file( temp_name, 'wb' ).write( data )
-
-                # if the server's env has GALAXY_TEST_SAVE, save the output file to that dir
-                if self.keepOutdir:
-                    ofn = os.path.join( self.keepOutdir, os.path.basename( local_name ) )
-                    log.debug( 'keepoutdir: %s, ofn: %s', self.keepOutdir, ofn )
-                    try:
-                        shutil.copy( temp_name, ofn )
-                    except Exception, exc:
-                        error_log_msg = ( 'TwillTestCase could not save output file %s to %s: ' % ( temp_name, ofn ) )
-                        error_log_msg += str( exc )
-                        log.error( error_log_msg, exc_info=True )
-                    else:
-                        log.debug('## GALAXY_TEST_SAVE=%s. saved %s' % ( self.keepOutdir, ofn ) )
-                try:
-                    # have to nest try-except in try-finally to handle 2.4
-                    try:
-                        if attributes is None:
-                            attributes = {}
-                        compare = attributes.get( 'compare', 'diff' )
-                        if attributes.get( 'ftype', None ) == 'bam':
-                            local_fh, temp_name = self._bam_to_sam( local_name, temp_name )
-                            local_name = local_fh.name
-                        extra_files = attributes.get( 'extra_files', None )
-                        if compare == 'diff':
-                            self.files_diff( local_name, temp_name, attributes=attributes )
-                        elif compare == 're_match':
-                            self.files_re_match( local_name, temp_name, attributes=attributes )
-                        elif compare == 're_match_multiline':
-                            self.files_re_match_multiline( local_name, temp_name, attributes=attributes )
-                        elif compare == 'sim_size':
-                            delta = attributes.get('delta', '100')
-                            s1 = len(data)
-                            s2 = os.path.getsize(local_name)
-                            if abs(s1 - s2) > int(delta):
-                                raise Exception( 'Files %s=%db but %s=%db - compare (delta=%s) failed' % (temp_name, s1, local_name, s2, delta) )
-                        elif compare == "contains":
-                            self.files_contains( local_name, temp_name, attributes=attributes )
-                        else:
-                            raise Exception( 'Unimplemented Compare type: %s' % compare )
-                        if extra_files:
-                            self.verify_extra_files_content( extra_files, elem.get( 'id' ), shed_tool_id=shed_tool_id )
-                    except AssertionError, err:
-                        errmsg = 'History item %s different than expected, difference (using %s):\n' % ( hid, compare )
-                        errmsg += "( %s v. %s )\n" % ( local_name, temp_name )
-                        errmsg += str( err )
-                        raise AssertionError( errmsg )
-                finally:
-                    os.remove( temp_name )
-
-    def _bam_to_sam( self, local_name, temp_name ):
-        temp_local = tempfile.NamedTemporaryFile( suffix='.sam', prefix='local_bam_converted_to_sam_' )
-        fd, temp_temp = tempfile.mkstemp( suffix='.sam', prefix='history_bam_converted_to_sam_' )
-        os.close( fd )
-        p = subprocess.Popen( args='samtools view -h -o "%s" "%s"' % ( temp_local.name, local_name  ), shell=True )
-        assert not p.wait(), 'Converting local (test-data) bam to sam failed'
-        p = subprocess.Popen( args='samtools view -h -o "%s" "%s"' % ( temp_temp, temp_name  ), shell=True )
-        assert not p.wait(), 'Converting history bam to sam failed'
-        os.remove( temp_name )
-        return temp_local, temp_temp
-
-    def verify_extra_files_content( self, extra_files, hda_id, shed_tool_id=None ):
-        files_list = []
-        for extra_type, extra_value, extra_name, extra_attributes in extra_files:
-            if extra_type == 'file':
-                files_list.append( ( extra_name, extra_value, extra_attributes ) )
-            elif extra_type == 'directory':
-                for filename in os.listdir( self.get_filename( extra_value, shed_tool_id=shed_tool_id ) ):
-                    files_list.append( ( filename, os.path.join( extra_value, filename ), extra_attributes ) )
-            else:
-                raise ValueError( 'unknown extra_files type: %s' % extra_type )
-        for filename, filepath, attributes in files_list:
-            self.verify_composite_datatype_file_content( filepath, hda_id, base_name=filename, attributes=attributes, shed_tool_id=shed_tool_id )
-
-    def verify_composite_datatype_file_content( self, file_name, hda_id, base_name=None, attributes=None, shed_tool_id=None ):
-        local_name = self.get_filename( file_name, shed_tool_id=shed_tool_id )
-        if base_name is None:
-            base_name = os.path.split(file_name)[-1]
-        temp_name = self.makeTfname(fname=base_name)
-        self.visit_url( "%s/datasets/%s/display/%s" % ( self.url, self.security.encode_id( hda_id ), base_name ) )
-        data = self.last_page()
-        file( temp_name, 'wb' ).write( data )
-        if self.keepOutdir > '':
-            ofn = os.path.join(self.keepOutdir, base_name)
-            shutil.copy(temp_name, ofn)
-            log.debug('## GALAXY_TEST_SAVE=%s. saved %s' % (self.keepOutdir, ofn))
-        try:
-            # have to nest try-except in try-finally to handle 2.4
+                    shutil.copy( temp_name, ofn )
+                except Exception, exc:
+                    error_log_msg = ( 'TwillTestCase could not save output file %s to %s: ' % ( temp_name, ofn ) )
+                    error_log_msg += str( exc )
+                    log.error( error_log_msg, exc_info=True )
+                else:
+                    log.debug('## GALAXY_TEST_SAVE=%s. saved %s' % ( self.keepOutdir, ofn ) )
             try:
                 if attributes is None:
                     attributes = {}
                 compare = attributes.get( 'compare', 'diff' )
+                if attributes.get( 'ftype', None ) == 'bam':
+                    local_fh, temp_name = self._bam_to_sam( local_name, temp_name )
+                    local_name = local_fh.name
+                extra_files = attributes.get( 'extra_files', None )
                 if compare == 'diff':
                     self.files_diff( local_name, temp_name, attributes=attributes )
                 elif compare == 're_match':
@@ -943,12 +886,91 @@ class TwillTestCase( unittest.TestCase ):
                     s2 = os.path.getsize(local_name)
                     if abs(s1 - s2) > int(delta):
                         raise Exception( 'Files %s=%db but %s=%db - compare (delta=%s) failed' % (temp_name, s1, local_name, s2, delta) )
+                elif compare == "contains":
+                    self.files_contains( local_name, temp_name, attributes=attributes )
                 else:
                     raise Exception( 'Unimplemented Compare type: %s' % compare )
+                if extra_files:
+                    self.verify_extra_files_content( extra_files, hda_id, shed_tool_id=shed_tool_id, dataset_fetcher=dataset_fetcher )
             except AssertionError, err:
-                errmsg = 'Composite file (%s) of History item %s different than expected, difference (using %s):\n' % ( base_name, hda_id, compare )
+                errmsg = 'History item %s different than expected, difference (using %s):\n' % ( hid, compare )
+                errmsg += "( %s v. %s )\n" % ( local_name, temp_name )
                 errmsg += str( err )
                 raise AssertionError( errmsg )
+            finally:
+                os.remove( temp_name )
+
+    def __default_dataset_fetcher( self ):
+        def fetcher( hda_id, filename=None ):
+            if filename is None:
+                page_url = "display?encoded_id=%s" % hda_id
+                self.home()  # I assume this is not needed.
+            else:
+                page_url = "datasets/%s/display/%s" % ( hda_id, filename )
+            self.visit_page( page_url )
+            data = self.last_page()
+            return data
+
+        return fetcher
+
+    def _bam_to_sam( self, local_name, temp_name ):
+        temp_local = tempfile.NamedTemporaryFile( suffix='.sam', prefix='local_bam_converted_to_sam_' )
+        fd, temp_temp = tempfile.mkstemp( suffix='.sam', prefix='history_bam_converted_to_sam_' )
+        os.close( fd )
+        p = subprocess.Popen( args='samtools view -h -o "%s" "%s"' % ( temp_local.name, local_name  ), shell=True )
+        assert not p.wait(), 'Converting local (test-data) bam to sam failed'
+        p = subprocess.Popen( args='samtools view -h -o "%s" "%s"' % ( temp_temp, temp_name  ), shell=True )
+        assert not p.wait(), 'Converting history bam to sam failed'
+        os.remove( temp_name )
+        return temp_local, temp_temp
+
+    def verify_extra_files_content( self, extra_files, hda_id, dataset_fetcher, shed_tool_id=None ):
+        files_list = []
+        for extra_type, extra_value, extra_name, extra_attributes in extra_files:
+            if extra_type == 'file':
+                files_list.append( ( extra_name, extra_value, extra_attributes ) )
+            elif extra_type == 'directory':
+                for filename in os.listdir( self.get_filename( extra_value, shed_tool_id=shed_tool_id ) ):
+                    files_list.append( ( filename, os.path.join( extra_value, filename ), extra_attributes ) )
+            else:
+                raise ValueError( 'unknown extra_files type: %s' % extra_type )
+        for filename, filepath, attributes in files_list:
+            self.verify_composite_datatype_file_content( filepath, hda_id, base_name=filename, attributes=attributes, dataset_fetcher=dataset_fetcher, shed_tool_id=shed_tool_id )
+
+    def verify_composite_datatype_file_content( self, file_name, hda_id, base_name=None, attributes=None, dataset_fetcher=None, shed_tool_id=None ):
+        dataset_fetcher = dataset_fetcher or self.__default_dataset_fetcher()
+        local_name = self.get_filename( file_name, shed_tool_id=shed_tool_id )
+        if base_name is None:
+            base_name = os.path.split(file_name)[-1]
+        temp_name = self.makeTfname(fname=base_name)
+        data = dataset_fetcher( hda_id, base_name )
+        file( temp_name, 'wb' ).write( data )
+        if self.keepOutdir > '':
+            ofn = os.path.join(self.keepOutdir, base_name)
+            shutil.copy(temp_name, ofn)
+            log.debug('## GALAXY_TEST_SAVE=%s. saved %s' % (self.keepOutdir, ofn))
+        try:
+            if attributes is None:
+                attributes = {}
+            compare = attributes.get( 'compare', 'diff' )
+            if compare == 'diff':
+                self.files_diff( local_name, temp_name, attributes=attributes )
+            elif compare == 're_match':
+                self.files_re_match( local_name, temp_name, attributes=attributes )
+            elif compare == 're_match_multiline':
+                self.files_re_match_multiline( local_name, temp_name, attributes=attributes )
+            elif compare == 'sim_size':
+                delta = attributes.get('delta', '100')
+                s1 = len(data)
+                s2 = os.path.getsize(local_name)
+                if abs(s1 - s2) > int(delta):
+                    raise Exception( 'Files %s=%db but %s=%db - compare (delta=%s) failed' % (temp_name, s1, local_name, s2, delta) )
+            else:
+                raise Exception( 'Unimplemented Compare type: %s' % compare )
+        except AssertionError, err:
+            errmsg = 'Composite file (%s) of History item %s different than expected, difference (using %s):\n' % ( base_name, hda_id, compare )
+            errmsg += str( err )
+            raise AssertionError( errmsg )
         finally:
             os.remove( temp_name )
 
@@ -1282,7 +1304,15 @@ class TwillTestCase( unittest.TestCase ):
                                     control.get( name=elem ).selected = True
                         else:
                             for elem in control_value:
-                                control.get( name=elem ).selected = True
+                                try:
+                                    # Doubt this case would ever work, but want
+                                    # to preserve backward compat.
+                                    control.get( name=elem ).selected = True
+                                except Exception:
+                                    # ... anyway this is really what we want to
+                                    # do, probably even want to try the len(
+                                    # elem ) > 30 check below.
+                                    control.get( label=elem ).selected = True
                     else:  # control.is_of_kind( "singlelist" )
                         for elem in control_value:
                             try:
@@ -1356,11 +1386,11 @@ class TwillTestCase( unittest.TestCase ):
         tool_id = tool_id.replace(" ", "+")
         """Runs the tool 'tool_id' and passes it the key/values from the *kwd"""
         self.visit_url( "%s/tool_runner/index?tool_id=%s" % (self.url, tool_id) )
+        # Must click somewhere in tool_form, to disambiguate what form
+        # is being targetted.
+        tc.browser.clicked( tc.browser.get_form( 'tool_form' ), None )
         if repeat_name is not None:
             repeat_button = '%s_add' % repeat_name
-            # Must click somewhere in tool_form, to disambiguate what form
-            # is being targetted.
-            tc.browser.clicked( tc.browser.get_form( 'tool_form' ), None )
             # Submit the "repeat" form button to add an input)
             tc.submit( repeat_button )
         tc.find( 'runtool_btn' )
@@ -1389,21 +1419,25 @@ class TwillTestCase( unittest.TestCase ):
                 return True
         return False
 
-    def wait( self, maxseconds=120 ):
+    def wait( self, **kwds ):
         """Waits for the tools to finish"""
+        return self.wait_for(lambda: self.get_running_datasets(), **kwds)
+
+    def wait_for( self, func, **kwd ):
         sleep_amount = 0.1
         slept = 0
-        self.home()
-        while slept <= maxseconds:
-            if self.get_running_datasets():
+        walltime_exceeded = 86400
+        while slept <= walltime_exceeded:
+            result = func()
+            if result:
                 time.sleep( sleep_amount )
                 slept += sleep_amount
                 sleep_amount *= 2
-                if slept + sleep_amount > maxseconds:
-                    sleep_amount = maxseconds - slept  # don't overshoot maxseconds
+                if slept + sleep_amount > walltime_exceeded:
+                    sleep_amount = walltime_exceeded - slept  # don't overshoot maxseconds
             else:
                 break
-        assert slept < maxseconds
+        assert slept < walltime_exceeded, 'Tool run exceeded reasonable walltime of 24 hours, terminating.'
 
     # Dataset Security stuff
     # Tests associated with users

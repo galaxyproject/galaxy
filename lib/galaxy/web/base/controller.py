@@ -30,7 +30,7 @@ from galaxy.web import error, url_for
 from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, TextArea, TextField
 from galaxy.web.form_builder import build_select_field, HistoryField, PasswordField, WorkflowField, WorkflowMappingField
 from galaxy.workflow.modules import module_factory
-from galaxy.model.orm import eagerload, eagerload_all
+from galaxy.model.orm import eagerload, eagerload_all, desc
 from galaxy.security.validate_user_input import validate_publicname
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.model.item_attrs import Dictifiable
@@ -38,7 +38,7 @@ from galaxy.model.item_attrs import Dictifiable
 from galaxy.datatypes.interval import ChromatinInteractions
 from galaxy.datatypes.data import Text
 
-from galaxy.model import ExtendedMetadata, ExtendedMetadataIndex, LibraryDatasetDatasetAssociation
+from galaxy.model import ExtendedMetadata, ExtendedMetadataIndex, LibraryDatasetDatasetAssociation, HistoryDatasetAssociation
 
 from galaxy.datatypes.display_applications import util as da_util
 from galaxy.datatypes.metadata import FileParameter
@@ -103,7 +103,7 @@ class BaseController( object ):
         elif class_name == 'LibraryDataset':
             item_class = self.app.model.LibraryDataset
         elif class_name == 'ToolShedRepository':
-            item_class = self.app.model.ToolShedRepository
+            item_class = self.app.install_model.ToolShedRepository
         else:
             item_class = None
         return item_class
@@ -166,6 +166,14 @@ class BaseController( object ):
                     rval[k] = trans.security.encode_id( v )
                 except:
                     pass # probably already encoded
+            if (k.endswith("_ids") and type(v) == list):
+                try:
+                    o = []
+                    for i in v:
+                        o.append(trans.security.encode_id( i ))
+                    rval[k] = o
+                except:
+                    pass
             else:
                 if recursive and type(v) == dict:
                     rval[k] = self.encode_all_ids(trans, v, recursive)
@@ -333,6 +341,28 @@ class UsesHistoryMixin( SharableItemSecurityMixin ):
         history = self.security_check( trans, history, check_ownership, check_accessible )
         return history
 
+    def get_user_histories( self, trans, user=None, include_deleted=False, only_deleted=False ):
+        """
+        Get all the histories for a given user (defaulting to `trans.user`)
+        ordered by update time and filtered on whether they've been deleted.
+        """
+        # handle default and/or anonymous user (which still may not have a history yet)
+        user = user or trans.user
+        if not user:
+            current_history = trans.get_history()
+            return [ current_history ] if current_history else []
+
+        history_model = trans.model.History
+        query = ( trans.sa_session.query( history_model )
+            .filter( history_model.user == user )
+            .order_by( desc( history_model.table.c.update_time ) ) )
+        if only_deleted:
+            query = query.filter( history_model.deleted == True )
+        elif not include_deleted:
+            query = query.filter( history_model.deleted == False )
+
+        return query.all()
+
     def get_history_datasets( self, trans, history, show_deleted=False, show_hidden=False, show_purged=False ):
         """ Returns history's datasets. """
         query = trans.sa_session.query( trans.model.HistoryDatasetAssociation ) \
@@ -466,6 +496,9 @@ class UsesHistoryMixin( SharableItemSecurityMixin ):
         """Returns history data in the form of a dictionary.
         """
         history_dict = history.to_dict( view='element', value_mapper={ 'id':trans.security.encode_id })
+        history_dict[ 'user_id' ] = None
+        if history.user_id:
+            history_dict[ 'user_id' ] = trans.security.encode_id( history.user_id )
 
         history_dict[ 'nice_size' ] = history.get_disk_size( nice_size=True )
         history_dict[ 'annotation' ] = history.get_item_annotation_str( trans.sa_session, trans.user, history )
@@ -567,6 +600,31 @@ class UsesHistoryDatasetAssociationMixin:
                 if check_state and hda.state == trans.model.Dataset.states.UPLOAD:
                     error( "Please wait until this dataset finishes uploading before attempting to view it." )
         return hda
+
+    def get_history_dataset_association_from_ids( self, trans, id, history_id ):
+        # Just to echo other TODOs, there seems to be some overlap here, still
+        # this block appears multiple places (dataset show, history_contents
+        # show, upcoming history job show) so I am consolodating it here.
+        # Someone smarter than me should determine if there is some redundancy here.
+
+        # for anon users:
+        #TODO: check login_required?
+        #TODO: this isn't actually most_recently_used (as defined in histories)
+        if( ( trans.user == None )
+        and ( history_id == trans.security.encode_id( trans.history.id ) ) ):
+            history = trans.history
+            #TODO: dataset/hda by id (from history) OR check_ownership for anon user
+            hda = self.get_history_dataset_association( trans, history, id,
+                check_ownership=False, check_accessible=True )
+        else:
+            #TODO: do we really need the history?
+            history = self.get_history( trans, history_id,
+                check_ownership=True, check_accessible=True, deleted=False )
+            hda = self.get_history_dataset_association( trans, history, id,
+                check_ownership=True, check_accessible=True )
+        return hda
+
+
 
     def get_hda_list( self, trans, hda_ids, check_ownership=True, check_accessible=False, check_state=True ):
         """
@@ -2438,15 +2496,32 @@ class UsesExtendedMetadataMixin( SharableItemSecurityMixin ):
         return None
 
     def set_item_extended_metadata_obj( self, trans, item, extmeta_obj, check_writable=False):
-        print "setting", extmeta_obj.data
         if item.__class__ == LibraryDatasetDatasetAssociation:
             if not check_writable or trans.app.security_agent.can_modify_library_item( trans.get_current_user_roles(), item, trans.user ):
+                item.extended_metadata = extmeta_obj
+                trans.sa_session.flush()
+        if item.__class__ == HistoryDatasetAssociation:
+            history = None
+            if check_writable:
+                history = self.security_check( trans, item, check_ownership=True, check_accessible=True )
+            else:
+                history = self.security_check( trans, item, check_ownership=False, check_accessible=True )
+            if history:
                 item.extended_metadata = extmeta_obj
                 trans.sa_session.flush()
 
     def unset_item_extended_metadata_obj( self, trans, item, check_writable=False):
         if item.__class__ == LibraryDatasetDatasetAssociation:
             if not check_writable or trans.app.security_agent.can_modify_library_item( trans.get_current_user_roles(), item, trans.user ):
+                item.extended_metadata = None
+                trans.sa_session.flush()
+        if item.__class__ == HistoryDatasetAssociation:
+            history = None
+            if check_writable:
+                history = self.security_check( trans, item, check_ownership=True, check_accessible=True )
+            else:
+                history = self.security_check( trans, item, check_ownership=False, check_accessible=True )
+            if history:
                 item.extended_metadata = None
                 trans.sa_session.flush()
 

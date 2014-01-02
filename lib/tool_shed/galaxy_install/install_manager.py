@@ -145,7 +145,7 @@ class InstallManager( object ):
                                                                               ctx_rev=ctx_rev,
                                                                               repository_clone_url=repository_clone_url,
                                                                               metadata_dict={},
-                                                                              status=self.app.model.ToolShedRepository.installation_status.NEW,
+                                                                              status=self.app.install_model.ToolShedRepository.installation_status.NEW,
                                                                               current_changeset_revision=None,
                                                                               owner=self.repository_owner,
                                                                               dist_to_shed=True )
@@ -244,21 +244,20 @@ class InstallManager( object ):
 
     def get_guid( self, repository_clone_url, relative_install_dir, tool_config ):
         if self.shed_config_dict.get( 'tool_path' ):
-            relative_install_dir = os.path.join( self.shed_config_dict['tool_path'], relative_install_dir )
-        found = False
+            relative_install_dir = os.path.join( self.shed_config_dict[ 'tool_path' ], relative_install_dir )
+        tool_config_filename = suc.strip_path( tool_config )
         for root, dirs, files in os.walk( relative_install_dir ):
             if root.find( '.hg' ) < 0 and root.find( 'hgrc' ) < 0:
                 if '.hg' in dirs:
                     dirs.remove( '.hg' )
                 for name in files:
-                    if name == tool_config:
-                        found = True
-                        break
-            if found:
-                break
-        full_path = str( os.path.abspath( os.path.join( root, name ) ) )
-        tool = self.toolbox.load_tool( full_path )
-        return suc.generate_tool_guid( repository_clone_url, tool )
+                    filename = suc.strip_path( name )
+                    if filename == tool_config_filename:
+                        full_path = str( os.path.abspath( os.path.join( root, name ) ) )
+                        tool = self.toolbox.load_tool( full_path )
+                        return suc.generate_tool_guid( repository_clone_url, tool )
+        # Not quite sure what should happen here, throw an exception or what?
+        return None
 
     def get_prior_install_required_dict( self, tool_shed_repositories, repository_dependencies_dict ):
         """
@@ -387,8 +386,8 @@ class InstallManager( object ):
                                                                                                    updating_installed_repository=False,
                                                                                                    persist=True )
         tool_shed_repository.metadata = metadata_dict
-        self.app.sa_session.add( tool_shed_repository )
-        self.app.sa_session.flush()
+        self.app.install_model.context.add( tool_shed_repository )
+        self.app.install_model.context.flush()
         has_tool_dependencies = self.__has_tool_dependencies( metadata_dict )
         if has_tool_dependencies:
             # All tool_dependency objects must be created before the tools are processed even if no tool dependencies will be installed.
@@ -427,7 +426,7 @@ class InstallManager( object ):
             # Install tool dependencies.
             suc.update_tool_shed_repository_status( self.app,
                                                     tool_shed_repository,
-                                                    self.app.model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES )
+                                                    self.app.install_model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES )
             # Get the tool_dependencies.xml file from disk.
             tool_dependencies_config = suc.get_config_from_disk( 'tool_dependencies.xml', repo_install_dir )
             installed_tool_dependencies = common_install_util.handle_tool_dependencies( app=self.app,
@@ -435,15 +434,15 @@ class InstallManager( object ):
                                                                                         tool_dependencies_config=tool_dependencies_config,
                                                                                         tool_dependencies=tool_dependencies )
             for installed_tool_dependency in installed_tool_dependencies:
-                if installed_tool_dependency.status == self.app.model.ToolDependency.installation_status.ERROR:
+                if installed_tool_dependency.status == self.app.install_model.ToolDependency.installation_status.ERROR:
                     print '\nThe following error occurred from the InstallManager while installing tool dependency ', installed_tool_dependency.name, ':'
                     print installed_tool_dependency.error_message, '\n\n'
         if 'datatypes' in metadata_dict:
-            tool_shed_repository.status = self.app.model.ToolShedRepository.installation_status.LOADING_PROPRIETARY_DATATYPES
+            tool_shed_repository.status = self.app.install_model.ToolShedRepository.installation_status.LOADING_PROPRIETARY_DATATYPES
             if not tool_shed_repository.includes_datatypes:
                 tool_shed_repository.includes_datatypes = True
-            self.app.sa_session.add( tool_shed_repository )
-            self.app.sa_session.flush()
+            self.app.install_model.context.add( tool_shed_repository )
+            self.app.install_model.context.flush()
             work_dir = tempfile.mkdtemp( prefix="tmp-toolshed-hrc" )
             datatypes_config = suc.get_config_from_disk( suc.DATATYPES_CONFIG_FILENAME, repo_install_dir )
             # Load proprietary data types required by tools.  The value of override is not important here since the Galaxy server will be started
@@ -478,10 +477,10 @@ class InstallManager( object ):
         cloned_ok = self.__iscloned( clone_dir )
         is_installed = False
         # Any of the following states should count as installed in this context.
-        if tool_shed_repository.status in [ self.app.model.ToolShedRepository.installation_status.INSTALLED,
-                                            self.app.model.ToolShedRepository.installation_status.ERROR,
-                                            self.app.model.ToolShedRepository.installation_status.UNINSTALLED,
-                                            self.app.model.ToolShedRepository.installation_status.DEACTIVATED ]:
+        if tool_shed_repository.status in [ self.app.install_model.ToolShedRepository.installation_status.INSTALLED,
+                                            self.app.install_model.ToolShedRepository.installation_status.ERROR,
+                                            self.app.install_model.ToolShedRepository.installation_status.UNINSTALLED,
+                                            self.app.install_model.ToolShedRepository.installation_status.DEACTIVATED ]:
             is_installed = True
         if cloned_ok and is_installed:
             print "Skipping automatic install of repository '", tool_shed_repository.name, "' because it has already been installed in location ", clone_dir
@@ -495,7 +494,7 @@ class InstallManager( object ):
                                        tool_shed_repository.owner,
                                        tool_shed_repository.installed_changeset_revision )
             if not cloned_ok:
-                suc.update_tool_shed_repository_status( self.app, tool_shed_repository, self.app.model.ToolShedRepository.installation_status.CLONING )
+                suc.update_tool_shed_repository_status( self.app, tool_shed_repository, self.app.install_model.ToolShedRepository.installation_status.CLONING )
                 cloned_ok, error_message = suc.clone_repository( repository_clone_url, os.path.abspath( install_dir ), ctx_rev )
             if cloned_ok and not is_installed:
                 self.handle_repository_contents( tool_shed_repository=tool_shed_repository,
@@ -504,12 +503,12 @@ class InstallManager( object ):
                                                  repository_elem=repository_elem,
                                                  install_dependencies=install_dependencies,
                                                  is_repository_dependency=is_repository_dependency )
-                self.app.sa_session.refresh( tool_shed_repository )
+                self.app.install_model.context.refresh( tool_shed_repository )
                 metadata_dict = tool_shed_repository.metadata
                 if 'tools' in metadata_dict:
                     suc.update_tool_shed_repository_status( self.app,
                                                             tool_shed_repository,
-                                                            self.app.model.ToolShedRepository.installation_status.SETTING_TOOL_VERSIONS )
+                                                            self.app.install_model.ToolShedRepository.installation_status.SETTING_TOOL_VERSIONS )
                     # Get the tool_versions from the tool shed for each tool in the installed change set.
                     url = '%s/repository/get_tool_versions?name=%s&owner=%s&changeset_revision=%s' % \
                         ( self.tool_shed_url, tool_shed_repository.name, self.repository_owner, tool_shed_repository.installed_changeset_revision )
@@ -528,30 +527,30 @@ class InstallManager( object ):
                             tool_version_using_old_id = tool_util.get_tool_version( self.app, old_tool_id )
                             tool_version_using_guid = tool_util.get_tool_version( self.app, tool_id )
                             if not tool_version_using_old_id:
-                                tool_version_using_old_id = self.app.model.ToolVersion( tool_id=old_tool_id,
+                                tool_version_using_old_id = self.app.install_model.ToolVersion( tool_id=old_tool_id,
                                                                                         tool_shed_repository=tool_shed_repository )
-                                self.app.sa_session.add( tool_version_using_old_id )
-                                self.app.sa_session.flush()
+                                self.app.install_model.context.add( tool_version_using_old_id )
+                                self.app.install_model.context.flush()
                             if not tool_version_using_guid:
-                                tool_version_using_guid = self.app.model.ToolVersion( tool_id=tool_id,
+                                tool_version_using_guid = self.app.install_model.ToolVersion( tool_id=tool_id,
                                                                                       tool_shed_repository=tool_shed_repository )
-                                self.app.sa_session.add( tool_version_using_guid )
-                                self.app.sa_session.flush()
+                                self.app.install_model.context.add( tool_version_using_guid )
+                                self.app.install_model.context.flush()
                             # Associate the two versions as parent / child.
                             tool_version_association = tool_util.get_tool_version_association( self.app,
                                                                                                tool_version_using_old_id,
                                                                                                tool_version_using_guid )
                             if not tool_version_association:
-                                tool_version_association = self.app.model.ToolVersionAssociation( tool_id=tool_version_using_guid.id,
+                                tool_version_association = self.app.install_model.ToolVersionAssociation( tool_id=tool_version_using_guid.id,
                                                                                                   parent_id=tool_version_using_old_id.id )
-                                self.app.sa_session.add( tool_version_association )
-                                self.app.sa_session.flush()
-                suc.update_tool_shed_repository_status( self.app, tool_shed_repository, self.app.model.ToolShedRepository.installation_status.INSTALLED )
+                                self.app.install_model.context.add( tool_version_association )
+                                self.app.install_model.context.flush()
+                suc.update_tool_shed_repository_status( self.app, tool_shed_repository, self.app.install_model.ToolShedRepository.installation_status.INSTALLED )
             else:
                 print 'Error attempting to clone repository %s: %s' % ( str( tool_shed_repository.name ), str( error_message ) )
                 suc.update_tool_shed_repository_status( self.app,
                                                         tool_shed_repository,
-                                                        self.app.model.ToolShedRepository.installation_status.ERROR,
+                                                        self.app.install_model.ToolShedRepository.installation_status.ERROR,
                                                         error_message=error_message )
 
     @property

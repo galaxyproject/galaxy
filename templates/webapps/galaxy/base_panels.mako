@@ -14,5 +14,7 @@ ${parent.late_javascripts()}
 
 ## Masthead
 <%def name="masthead()">
-    <% mod_masthead.load(); %>
+    <%
+        mod_masthead.load(self.active_view);
+    %>
 </%def>

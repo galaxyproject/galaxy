@@ -1,6 +1,4 @@
 from tool_shed.base.twilltestcase import ShedTwillTestCase, common, os
-import tool_shed.base.test_db_util as test_db_util
-
 repository_name = 'freebayes_0010'
 repository_description = "Galaxy's freebayes tool"
 repository_long_description = "Long description of Galaxy's freebayes tool"
@@ -15,7 +13,6 @@ repository_long_description = "Long description of Galaxy's freebayes tool"
 7. Check for the appropriate strings on the manage repository page.
 '''
 
-
 class TestFreebayesRepository( ShedTwillTestCase ):
     '''Testing freebayes with tool data table entries, .loc files, and tool dependencies.'''
     
@@ -23,14 +20,14 @@ class TestFreebayesRepository( ShedTwillTestCase ):
         """Create necessary user accounts and login as an admin user."""
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        test_user_1 = test_db_util.get_user( common.test_user_1_email )
+        test_user_1 = self.test_db_util.get_user( common.test_user_1_email )
         assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % test_user_1_email
-        test_user_1_private_role = test_db_util.get_private_role( test_user_1 )
+        test_user_1_private_role = self.test_db_util.get_private_role( test_user_1 )
         self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
-        admin_user = test_db_util.get_user( common.admin_email )
+        admin_user = self.test_db_util.get_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % admin_email
-        admin_user_private_role = test_db_util.get_private_role( admin_user )
+        admin_user_private_role = self.test_db_util.get_private_role( admin_user )
         
     def test_0005_create_category( self ):
         """Create a category for this test suite"""
@@ -45,7 +42,7 @@ class TestFreebayesRepository( ShedTwillTestCase ):
         '''
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        category = test_db_util.get_category_by_name( 'Test 0010 Repository With Tool Dependencies' )
+        category = self.test_db_util.get_category_by_name( 'Test 0010 Repository With Tool Dependencies' )
         repository = self.get_or_create_repository( name=repository_name, 
                                                     description=repository_description, 
                                                     long_description=repository_long_description, 
@@ -72,7 +69,7 @@ class TestFreebayesRepository( ShedTwillTestCase ):
         We are at step 2 - Upload the tool_data_table_conf.xml.sample file.
         Uploading the tool_data_table_conf.xml.sample alone should not make the tool valid, but the error message should change.
         '''
-        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         self.upload_file( repository, 
                           filename='freebayes/tool_data_table_conf.xml.sample', 
                           filepath=None,
@@ -93,7 +90,7 @@ class TestFreebayesRepository( ShedTwillTestCase ):
         We are at step 3 - Upload the tool_data_table_conf.xml.sample file.
         Uploading the tool_data_table_conf.xml.sample alone should not make the tool valid, but the error message should change.
         '''
-        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         self.upload_file( repository, 
                           filename='freebayes/sam_fa_indices.loc.sample', 
                           filepath=None,
@@ -110,7 +107,7 @@ class TestFreebayesRepository( ShedTwillTestCase ):
         We are at step 4 - Upload a tool_dependencies.xml file that should not parse correctly.
         Upload a tool_dependencies.xml file that contains <> in the text of the readme tag. This should show an error message about malformed xml.
         '''
-        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         self.upload_file( repository, 
                           filename=os.path.join( 'freebayes', 'malformed_tool_dependencies', 'tool_dependencies.xml' ), 
                           filepath=None,
@@ -127,7 +124,7 @@ class TestFreebayesRepository( ShedTwillTestCase ):
         We are at step 5 - Upload a tool_dependencies.xml file that specifies a version that does not match the tool's requirements.
         This should result in a message about the tool dependency configuration not matching the tool's requirements.
         '''
-        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         self.upload_file( repository, 
                           filename=os.path.join( 'freebayes', 'invalid_tool_dependencies', 'tool_dependencies.xml' ), 
                           filepath=None,
@@ -144,7 +141,7 @@ class TestFreebayesRepository( ShedTwillTestCase ):
         We are at step 6 - Upload a valid tool_dependencies.xml file.
         At this stage, there should be no errors on the upload page, as every missing or invalid file has been corrected.
         '''
-        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         self.upload_file( repository, 
                           filename=os.path.join( 'freebayes', 'tool_dependencies.xml' ), 
                           filepath=None,
@@ -161,7 +158,7 @@ class TestFreebayesRepository( ShedTwillTestCase ):
         We are at step 7 - Check for the appropriate strings on the manage repository page.
         Verify that the manage repository page now displays the valid tool dependencies, and that there are no invalid tools shown on the manage page.
         '''
-        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         strings_displayed = [ 'freebayes', '0.9.4_9696d0ce8a9', 'samtools', '0.1.18', 'Valid tools', 'package' ]
         strings_not_displayed = [ 'Invalid tools' ] 
         self.display_manage_repository_page( repository, strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed )

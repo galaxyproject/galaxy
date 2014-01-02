@@ -40,7 +40,7 @@ from galaxy.jobs import ParallelismInfo
 from galaxy.tools.actions import DefaultToolAction
 from galaxy.tools.actions.data_source import DataSourceToolAction
 from galaxy.tools.actions.data_manager import DataManagerToolAction
-from galaxy.tools.deps import DependencyManager, INDETERMINATE_DEPENDENCY
+from galaxy.tools.deps import build_dependency_manager
 from galaxy.tools.deps.requirements import parse_requirements_from_xml
 from galaxy.tools.parameters import check_param, params_from_strings, params_to_strings
 from galaxy.tools.parameters.basic import (BaseURLToolParameter,
@@ -52,7 +52,7 @@ from galaxy.tools.parameters.input_translation import ToolInputTranslator
 from galaxy.tools.parameters.output import ToolOutputActionGroup
 from galaxy.tools.parameters.validation import LateValidationError
 from galaxy.tools.filters import FilterFactory
-from galaxy.tools.test import ToolTestBuilder
+from galaxy.tools.test import parse_tests_elem
 from galaxy.util import listify, parse_xml, rst_to_html, string_as_bool, string_to_object, xml_text, xml_to_string
 from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
@@ -394,6 +394,10 @@ class ToolBox( object, Dictifiable ):
                             return tool
                 #No tool matches by version, simply return the first available tool found
                 return rval[0]
+        #We now likely have a Toolshed guid passed in, but no supporting database entries
+        #If the tool exists by exact id and is loaded then provide exact match within a list
+        if tool_id in self.tools_by_id:
+            return[ self.tools_by_id[ tool_id ] ]
         return None
 
     def get_loaded_tools_by_lineage( self, tool_id ):
@@ -414,15 +418,15 @@ class ToolBox( object, Dictifiable ):
 
     def __get_tool_version( self, tool_id ):
         """Return a ToolVersion if one exists for the tool_id"""
-        return self.sa_session.query( self.app.model.ToolVersion ) \
-                              .filter( self.app.model.ToolVersion.table.c.tool_id == tool_id ) \
+        return self.app.install_model.context.query( self.app.install_model.ToolVersion ) \
+                              .filter( self.app.install_model.ToolVersion.table.c.tool_id == tool_id ) \
                               .first()
     def __get_tool_shed_repository( self, tool_shed, name, owner, installed_changeset_revision ):
-        return self.sa_session.query( self.app.model.ToolShedRepository ) \
-                              .filter( and_( self.app.model.ToolShedRepository.table.c.tool_shed == tool_shed,
-                                             self.app.model.ToolShedRepository.table.c.name == name,
-                                             self.app.model.ToolShedRepository.table.c.owner == owner,
-                                             self.app.model.ToolShedRepository.table.c.installed_changeset_revision == installed_changeset_revision ) ) \
+        return self.app.install_model.context.query( self.app.install_model.ToolShedRepository ) \
+                              .filter( and_( self.app.install_model.ToolShedRepository.table.c.tool_shed == tool_shed,
+                                             self.app.install_model.ToolShedRepository.table.c.name == name,
+                                             self.app.install_model.ToolShedRepository.table.c.owner == owner,
+                                             self.app.install_model.ToolShedRepository.table.c.installed_changeset_revision == installed_changeset_revision ) ) \
                               .first()
 
     def get_tool_components( self, tool_id, tool_version=None, get_loaded_tools_by_lineage=False, set_selected=False ):
@@ -503,9 +507,9 @@ class ToolBox( object, Dictifiable ):
                     tool.version = elem.find( "version" ).text
                 # Make sure the tool has a tool_version.
                 if not self.__get_tool_version( tool.id ):
-                    tool_version = self.app.model.ToolVersion( tool_id=tool.id, tool_shed_repository=tool_shed_repository )
-                    self.sa_session.add( tool_version )
-                    self.sa_session.flush()
+                    tool_version = self.app.install_model.ToolVersion( tool_id=tool.id, tool_shed_repository=tool_shed_repository )
+                    self.app.install_model.context.add( tool_version )
+                    self.app.install_model.context.flush()
                 # Load the tool's lineage ids.
                 tool.lineage_ids = tool.tool_version.get_version_ids( self.app )
                 if self.app.config.get_bool( 'enable_tool_tags', False ):
@@ -696,14 +700,7 @@ class ToolBox( object, Dictifiable ):
         return stored.latest_workflow
 
     def init_dependency_manager( self ):
-        if self.app.config.use_tool_dependencies:
-            dependency_manager_kwds = {
-                'default_base_path': self.app.config.tool_dependency_dir,
-                'conf_file': self.app.config.dependency_resolvers_config_file,
-            }
-            self.dependency_manager = DependencyManager( **dependency_manager_kwds )
-        else:
-            self.dependency_manager = None
+        self.dependency_manager = build_dependency_manager( self.app.config )
 
     @property
     def sa_session( self ):
@@ -1003,8 +1000,8 @@ class Tool( object, Dictifiable ):
     @property
     def tool_version( self ):
         """Return a ToolVersion if one exists for our id"""
-        return self.sa_session.query( self.app.model.ToolVersion ) \
-                              .filter( self.app.model.ToolVersion.table.c.tool_id == self.id ) \
+        return self.app.install_model.context.query( self.app.install_model.ToolVersion ) \
+                              .filter( self.app.install_model.ToolVersion.table.c.tool_id == self.id ) \
                               .first()
     @property
     def tool_versions( self ):
@@ -1078,6 +1075,22 @@ class Tool( object, Dictifiable ):
         :returns: galaxy.jobs.JobDestination -- The destination definition and runner parameters.
         """
         return self.app.job_config.get_destination(self.__get_job_tool_configuration(job_params=job_params).destination)
+    
+    def get_panel_section( self ):
+        for key, item in self.app.toolbox.integrated_tool_panel.items():
+            if item:
+                if key.startswith( 'tool_' ):
+                    if item.id == self.id:
+                        return '', ''
+                if key.startswith( 'section_' ):
+                    section_id = item.id or ''
+                    section_name = item.name or ''
+                    for section_key, section_item in item.elems.items():
+                        if section_key.startswith( 'tool_' ):
+                            if section_item:
+                                if section_item.id == self.id:
+                                    return section_id, section_name
+        return None, None
 
     def parse( self, root, guid=None ):
         """
@@ -1219,14 +1232,9 @@ class Tool( object, Dictifiable ):
             for key, value in uihints_elem.attrib.iteritems():
                 self.uihints[ key ] = value
         # Tests
-        tests_elem = root.find( "tests" )
-        if tests_elem:
-            try:
-                self.parse_tests( tests_elem )
-            except:
-                log.exception( "Failed to parse tool tests" )
-        else:
-            self.tests = None
+        self.__tests_elem = root.find( "tests" )
+        self.__tests_populated = False
+
         # Requirements (dependencies)
         self.requirements = parse_requirements_from_xml( root )
         # Determine if this tool can be used in workflows
@@ -1237,6 +1245,21 @@ class Tool( object, Dictifiable ):
             self.trackster_conf = TracksterConfig.parse( trackster_conf )
         else:
             self.trackster_conf = None
+
+    @property
+    def tests( self ):
+        if not self.__tests_populated:
+            tests_elem = self.__tests_elem
+            if tests_elem:
+                try:
+                    self.__tests = parse_tests_elem( self, tests_elem )
+                except:
+                    log.exception( "Failed to parse tool tests" )
+            else:
+                self.__tests = None
+            self.__tests_populated = True
+        return self.__tests
+
     def parse_inputs( self, root ):
         """
         Parse the "<inputs>" element and create appropriate `ToolParameter`s.
@@ -1564,119 +1587,6 @@ class Tool( object, Dictifiable ):
                 log.error( "Traceback: %s" % trace_msg )
         return return_level
 
-    def parse_tests( self, tests_elem ):
-        """
-        Parse any "<test>" elements, create a `ToolTestBuilder` for each and
-        store in `self.tests`.
-        """
-        self.tests = []
-        # Composite datasets need a unique name: each test occurs in a fresh
-        # history, but we'll keep it unique per set of tests
-        composite_data_names_counter = 0
-        for i, test_elem in enumerate( tests_elem.findall( 'test' ) ):
-            name = test_elem.get( 'name', 'Test-%d' % (i+1) )
-            maxseconds = int( test_elem.get( 'maxseconds', '120' ) )
-            test = ToolTestBuilder( self, name, maxseconds )
-            try:
-                for param_elem in test_elem.findall( "param" ):
-                    attrib = dict( param_elem.attrib )
-                    if 'values' in attrib:
-                        value = attrib[ 'values' ].split( ',' )
-                    elif 'value' in attrib:
-                        value = attrib['value']
-                    else:
-                        value = None
-                    attrib['children'] = list( param_elem.getchildren() )
-                    if attrib['children']:
-                        # At this time, we can assume having children only
-                        # occurs on DataToolParameter test items but this could
-                        # change and would cause the below parsing to change
-                        # based upon differences in children items
-                        attrib['metadata'] = []
-                        attrib['composite_data'] = []
-                        attrib['edit_attributes'] = []
-                        # Composite datasets need to be renamed uniquely
-                        composite_data_name = None
-                        for child in attrib['children']:
-                            if child.tag == 'composite_data':
-                                attrib['composite_data'].append( child )
-                                if composite_data_name is None:
-                                    # Generate a unique name; each test uses a
-                                    # fresh history
-                                    composite_data_name = '_COMPOSITE_RENAMED_%i_' \
-                                        % ( composite_data_names_counter )
-                                    composite_data_names_counter += 1
-                            elif child.tag == 'metadata':
-                                attrib['metadata'].append( child )
-                            elif child.tag == 'metadata':
-                                attrib['metadata'].append( child )
-                            elif child.tag == 'edit_attributes':
-                                attrib['edit_attributes'].append( child )
-                        if composite_data_name:
-                            # Composite datasets need implicit renaming;
-                            # inserted at front of list so explicit declarations
-                            # take precedence
-                            attrib['edit_attributes'].insert( 0, { 'type': 'name', 'value': composite_data_name } )
-                    test.add_param( attrib.pop( 'name' ), value, attrib )
-                for output_elem in test_elem.findall( "output" ):
-                    attrib = dict( output_elem.attrib )
-                    name = attrib.pop( 'name', None )
-                    if name is None:
-                        raise Exception( "Test output does not have a 'name'" )
-                    assert_elem = output_elem.find("assert_contents")
-                    assert_list = None
-                    # Trying to keep testing patch as localized as
-                    # possible, this function should be relocated
-                    # somewhere more conventional.
-                    def convert_elem(elem):
-                        """ Converts and XML element to a dictionary format, used by assertion checking code. """
-                        tag = elem.tag
-                        attributes = dict( elem.attrib )
-                        child_elems = list( elem.getchildren() )
-                        converted_children = []
-                        for child_elem in child_elems:
-                            converted_children.append( convert_elem(child_elem) )
-                        return {"tag" : tag, "attributes" : attributes, "children" : converted_children}
-                    if assert_elem is not None:
-                        assert_list = []
-                        for assert_child in list(assert_elem):
-                            assert_list.append(convert_elem(assert_child))
-                    file = attrib.pop( 'file', None )
-                    # File no longer required if an list of assertions was present.
-                    if assert_list is None and file is None:
-                        raise Exception( "Test output does not have a 'file'")
-                    attributes = {}
-                    # Method of comparison
-                    attributes['compare'] = attrib.pop( 'compare', 'diff' ).lower()
-                    # Number of lines to allow to vary in logs (for dates, etc)
-                    attributes['lines_diff'] = int( attrib.pop( 'lines_diff', '0' ) )
-                    # Allow a file size to vary if sim_size compare
-                    attributes['delta'] = int( attrib.pop( 'delta', '10000' ) )
-                    attributes['sort'] = string_as_bool( attrib.pop( 'sort', False ) )
-                    attributes['extra_files'] = []
-                    attributes['assert_list'] = assert_list
-                    if 'ftype' in attrib:
-                        attributes['ftype'] = attrib['ftype']
-                    for extra in output_elem.findall( 'extra_files' ):
-                        # File or directory, when directory, compare basename
-                        # by basename
-                        extra_type = extra.get( 'type', 'file' )
-                        extra_name = extra.get( 'name', None )
-                        assert extra_type == 'directory' or extra_name is not None, \
-                            'extra_files type (%s) requires a name attribute' % extra_type
-                        extra_value = extra.get( 'value', None )
-                        assert extra_value is not None, 'extra_files requires a value attribute'
-                        extra_attributes = {}
-                        extra_attributes['compare'] = extra.get( 'compare', 'diff' ).lower()
-                        extra_attributes['delta'] = extra.get( 'delta', '0' )
-                        extra_attributes['lines_diff'] = int( extra.get( 'lines_diff', '0' ) )
-                        extra_attributes['sort'] = string_as_bool( extra.get( 'sort', False ) )
-                        attributes['extra_files'].append( ( extra_type, extra_value, extra_name, extra_attributes ) )
-                    test.add_output( name, file, attributes )
-            except Exception, e:
-                test.error = True
-                test.exception = e
-            self.tests.append( test )
     def parse_input_page( self, input_elem, enctypes ):
         """
         Parse a page of inputs. This basically just calls 'parse_input_elem',
@@ -1801,9 +1711,9 @@ class Tool( object, Dictifiable ):
         return param
 
     def populate_tool_shed_info( self ):
-        if self.repository_id is not None and 'ToolShedRepository' in self.app.model:
+        if self.repository_id is not None and self.app.name == 'galaxy':
             repository_id = self.app.security.decode_id( self.repository_id )
-            tool_shed_repository = self.sa_session.query( self.app.model.ToolShedRepository ).get( repository_id )
+            tool_shed_repository = self.app.install_model.context.query( self.app.install_model.ToolShedRepository ).get( repository_id )
             if tool_shed_repository:
                 self.tool_shed = tool_shed_repository.tool_shed
                 self.repository_name = tool_shed_repository.name
@@ -1914,7 +1824,8 @@ class Tool( object, Dictifiable ):
         from API). May want an incremental version of the API also at some point,
         that is why this is not just called for_api.
         """
-        state, state_new = self.__fetch_state( trans, incoming, history )
+        all_pages = ( process_state == "populate" )  # If process_state = update, handle all pages at once.
+        state, state_new = self.__fetch_state( trans, incoming, history, all_pages=all_pages )
         if state_new:
             # This feels a bit like a hack. It allows forcing full processing
             # of inputs even when there is no state in the incoming dictionary
@@ -1940,7 +1851,7 @@ class Tool( object, Dictifiable ):
                 error_message = "One or more errors were found in the input you provided. The specific errors are marked below."
                 return "tool_form.mako", dict( errors=errors, tool_state=state, incoming=incoming, error_message=error_message )
             # If we've completed the last page we can execute the tool
-            elif state.page == self.last_page:
+            elif all_pages or state.page == self.last_page:
                 return self.__handle_tool_execute( trans, incoming, params, history )
             # Otherwise move on to the next page
             else:
@@ -1994,7 +1905,7 @@ class Tool( object, Dictifiable ):
             return 'message.mako', dict( status='info', message="The interface for this tool cannot be displayed", refresh_frames=['everything'] )
         return 'tool_form.mako', dict( errors=errors, tool_state=state )
 
-    def __fetch_state( self, trans, incoming, history ):
+    def __fetch_state( self, trans, incoming, history, all_pages ):
         # Get the state or create if not found
         if "tool_state" in incoming:
             encoded_state = string_to_object( incoming["tool_state"] )
@@ -2002,7 +1913,7 @@ class Tool( object, Dictifiable ):
             state.decode( encoded_state, self, trans.app )
             new = False
         else:
-            state = self.new_state( trans, history=history )
+            state = self.new_state( trans, history=history, all_pages=all_pages )
             new = True
         return state, new
 
@@ -2020,15 +1931,17 @@ class Tool( object, Dictifiable ):
             # Update state for all inputs on the current page taking new
             # values from `incoming`.
             if process_state == "update":
-                errors = self.update_state( trans, self.inputs_by_page[state.page], state.inputs, incoming, old_errors=old_errors or {}, source=source )
+                inputs = self.inputs_by_page[state.page]
+                errors = self.update_state( trans, inputs, state.inputs, incoming, old_errors=old_errors or {}, source=source )
             elif process_state == "populate":
-                errors = self.populate_state( trans, self.inputs_by_page[state.page], state.inputs, incoming, history, source=source )
+                inputs = self.inputs
+                errors = self.populate_state( trans, inputs, state.inputs, incoming, history, source=source )
             else:
                 raise Exception("Unknown process_state type %s" % process_state)
             # If the tool provides a `validate_input` hook, call it.
             validate_input = self.get_hook( 'validate_input' )
             if validate_input:
-                validate_input( trans, errors, state.inputs, self.inputs_by_page[state.page] )
+                validate_input( trans, errors, state.inputs, inputs )
             params = state.inputs
         return errors, params
 
@@ -2082,6 +1995,7 @@ class Tool( object, Dictifiable ):
                 group_errors = [ ]
                 any_group_errors = False
                 rep_index = 0
+                del group_state[:]  # Clear prepopulated defaults if repeat.min set.
                 while True:
                     rep_name = "%s_%d" % ( key, rep_index )
                     if not any( [ incoming_key.startswith(rep_name) for incoming_key in incoming.keys() ] ):
@@ -2118,12 +2032,15 @@ class Tool( object, Dictifiable ):
                     test_param_key = prefix + input.test_param.name
                 else:
                     test_param_key = group_prefix + input.test_param.name
-                test_param_error = None
-                test_incoming = get_incoming_value( incoming, test_param_key, None )
-
                 # Get value of test param and determine current case
-                value, test_param_error = \
-                    check_param( trans, input.test_param, test_incoming, context, source=source )
+                value, test_param_error = check_param_from_incoming( trans,
+                                                                     group_state,
+                                                                     input.test_param,
+                                                                     incoming,
+                                                                     test_param_key,
+                                                                     context,
+                                                                     source )
+
                 current_case = input.get_current_case( value, trans )
                 # Current case has changed, throw away old state
                 group_state = state[input.name] = {}
@@ -2155,11 +2072,19 @@ class Tool( object, Dictifiable ):
                 #remove extra files
                 while len( group_state ) > len( writable_files ):
                     del group_state[-1]
+
+                # Add new fileupload as needed
+                while len( writable_files ) > len( group_state ):
+                    new_state = {}
+                    new_state['__index__'] = len( group_state )
+                    self.fill_in_new_state( trans, input.inputs, new_state, context )
+                    group_state.append( new_state )
+                    if any_group_errors:
+                        group_errors.append( {} )
+
                 # Update state
-                max_index = -1
                 for i, rep_state in enumerate( group_state ):
                     rep_index = rep_state['__index__']
-                    max_index = max( max_index, rep_index )
                     rep_prefix = "%s_%d|" % ( key, rep_index )
                     rep_errors = self.populate_state( trans,
                                                     input.inputs,
@@ -2174,33 +2099,14 @@ class Tool( object, Dictifiable ):
                         group_errors.append( rep_errors )
                     else:
                         group_errors.append( {} )
-                # Add new fileupload as needed
-                offset = 1
-                while len( writable_files ) > len( group_state ):
-                    new_state = {}
-                    new_state['__index__'] = max_index + offset
-                    offset += 1
-                    self.fill_in_new_state( trans, input.inputs, new_state, context )
-                    group_state.append( new_state )
-                    if any_group_errors:
-                        group_errors.append( {} )
                 # Were there *any* errors for any repetition?
                 if any_group_errors:
                     errors[input.name] = group_errors
             else:
-                if key not in incoming \
-                   and "__force_update__" + key not in incoming:
-                    # No new value provided, and we are only updating, so keep
-                    # the old value (which should already be in the state) and
-                    # preserve the old error message.
-                    pass
-                else:
-                    incoming_value = get_incoming_value( incoming, key, None )
-                    value, error = check_param( trans, input, incoming_value, context, source=source )
-                    # If a callback was provided, allow it to process the value
-                    if error:
-                        errors[ input.name ] = error
-                    state[ input.name ] = value
+                value, error = check_param_from_incoming( trans, state, input, incoming, key, context, source )
+                if error:
+                    errors[ input.name ] = error
+                state[ input.name ] = value
         return errors
 
     def update_state( self, trans, inputs, state, incoming, source='html', prefix="", context=None,
@@ -2827,7 +2733,7 @@ class Tool( object, Dictifiable ):
     def build_dependency_shell_commands( self ):
         """Return a list of commands to be run to populate the current environment to include this tools requirements."""
         if self.tool_shed_repository:
-            installed_tool_dependencies = self.tool_shed_repository.installed_tool_dependencies
+            installed_tool_dependencies = self.tool_shed_repository.tool_dependencies_installed_or_in_error
         else:
             installed_tool_dependencies = None
         return self.app.toolbox.dependency_manager.dependency_shell_commands( self.requirements,
@@ -3106,10 +3012,10 @@ class Tool( object, Dictifiable ):
         # Add link details.
         if link_details:
             # Add details for creating a hyperlink to the tool.
-            if not self.tool_type.startswith( 'data_source' ):
-                link = url_for( '/tool_runner', tool_id=self.id )
+            if not isinstance( self, DataSourceTool ):
+                link = url_for( controller='tool_runner', tool_id=self.id )
             else:
-                link = url_for( self.action, **self.get_static_param_values( trans ) )
+                link = url_for( controller='tool_runner', action='data_source_redirect', tool_id=self.id )
 
             # Basic information
             tool_dict.update( { 'link': link,
@@ -3120,6 +3026,8 @@ class Tool( object, Dictifiable ):
         if io_details:
             tool_dict[ 'inputs' ] = [ input.to_dict( trans ) for input in self.inputs.values() ]
             tool_dict[ 'outputs' ] = [ output.to_dict() for output in self.outputs.values() ]
+            
+        tool_dict[ 'panel_section_id' ], tool_dict[ 'panel_section_name' ] = self.get_panel_section()
 
         return tool_dict
 
@@ -3594,7 +3502,24 @@ def json_fix( val ):
     else:
         return val
 
+
+def check_param_from_incoming( trans, state, input, incoming, key, context, source ):
+    """
+    Unlike "update" state, this preserves default if no incoming value found.
+    This lets API user specify just a subset of params and allow defaults to be
+    used when available.
+    """
+    default_input_value = state.get( input.name, None )
+    incoming_value = get_incoming_value( incoming, key, default_input_value )
+    value, error = check_param( trans, input, incoming_value, context, source=source )
+    return value, error
+
+
 def get_incoming_value( incoming, key, default ):
+    """
+    Fetch value from incoming dict directly or check special nginx upload
+    created variants of this key.
+    """
     if "__" + key + "__is_composite" in incoming:
         composite_keys = incoming["__" + key + "__keys"].split()
         value = dict()
