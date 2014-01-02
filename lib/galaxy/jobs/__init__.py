@@ -58,6 +58,7 @@ class JobDestination( Bunch ):
         if self.tags is not None:
             self['tags'] = [ x.strip() for x in self.tags.split(',') ]
 
+
 class JobToolConfiguration( Bunch ):
     """
     Provides details on what handler and destination a tool should use
@@ -71,12 +72,14 @@ class JobToolConfiguration( Bunch ):
         self['params'] = dict()
         super(JobToolConfiguration, self).__init__(**kwds)
 
+
 class JobConfiguration( object ):
     """A parser and interface to advanced job management features.
 
     These features are configured in the job configuration, by default, ``job_conf.xml``
     """
     DEFAULT_NWORKERS = 4
+
     def __init__(self, app):
         """Parse the job configuration XML.
         """
@@ -172,17 +175,17 @@ class JobConfiguration( object ):
                 self.tools[id].append(JobToolConfiguration(**dict(tool.items())))
                 self.tools[id][-1]['params'] = self.__get_params(tool)
 
-        types = dict(registered_user_concurrent_jobs = int,
-                     anonymous_user_concurrent_jobs = int,
-                     walltime = str,
-                     output_size = int)
+        types = dict(registered_user_concurrent_jobs=int,
+                     anonymous_user_concurrent_jobs=int,
+                     walltime=str,
+                     output_size=int)
 
-        self.limits = Bunch(registered_user_concurrent_jobs = None,
-                            anonymous_user_concurrent_jobs = None,
-                            walltime = None,
-                            walltime_delta = None,
-                            output_size = None,
-                            concurrent_jobs = {})
+        self.limits = Bunch(registered_user_concurrent_jobs=None,
+                            anonymous_user_concurrent_jobs=None,
+                            walltime=None,
+                            walltime_delta=None,
+                            output_size=None,
+                            concurrent_jobs={})
 
         # Parse job limits
         limits = root.find('limits')
@@ -253,12 +256,12 @@ class JobConfiguration( object ):
         self.default_destination_id = self.app.config.default_cluster_job_runner
 
         # Set the job limits
-        self.limits = Bunch(registered_user_concurrent_jobs = self.app.config.registered_user_job_limit,
-                            anonymous_user_concurrent_jobs = self.app.config.anonymous_user_job_limit,
-                            walltime = self.app.config.job_walltime,
-                            walltime_delta = self.app.config.job_walltime_delta,
-                            output_size = self.app.config.output_size_limit,
-                            concurrent_jobs = {})
+        self.limits = Bunch(registered_user_concurrent_jobs=self.app.config.registered_user_job_limit,
+                            anonymous_user_concurrent_jobs=self.app.config.anonymous_user_job_limit,
+                            walltime=self.app.config.job_walltime,
+                            walltime_delta=self.app.config.job_walltime_delta,
+                            output_size=self.app.config.output_size_limit,
+                            concurrent_jobs={})
 
         log.debug('Done loading job configuration')
 
@@ -533,6 +536,7 @@ class JobConfiguration( object ):
                 else:
                     log.warning("Legacy destination with id '%s' could not be converted: Unknown runner plugin: %s" % (id, destination.runner))
 
+
 class JobWrapper( object ):
     """
     Wraps a 'model.Job' with convenience methods for running processes and
@@ -627,7 +631,7 @@ class JobWrapper( object ):
         Prepare the job to run by creating the working directory and the
         config files.
         """
-        self.sa_session.expunge_all() #this prevents the metadata reverting that has been seen in conjunction with the PBS job runner
+        self.sa_session.expunge_all()  # this prevents the metadata reverting that has been seen in conjunction with the PBS job runner
 
         if not os.path.exists( self.working_directory ):
             os.mkdir( self.working_directory )
@@ -686,7 +690,7 @@ class JobWrapper( object ):
         self.command_line = self.tool.build_command_line( param_dict )
         # FIXME: for now, tools get Galaxy's lib dir in their path
         if self.command_line and self.command_line.startswith( 'python' ):
-            self.galaxy_lib_dir = os.path.abspath( "lib" ) # cwd = galaxy root
+            self.galaxy_lib_dir = os.path.abspath( "lib" )  # cwd = galaxy root
         # Shell fragment to inject dependencies
         self.dependency_shell_commands = self.tool.build_dependency_shell_commands()
         # We need command_line persisted to the db in order for Galaxy to re-queue the job
@@ -719,7 +723,7 @@ class JobWrapper( object ):
                 job.traceback = traceback.format_exc()
                 # Get the exception and let the tool attempt to generate
                 # a better message
-                etype, evalue, tb =  sys.exc_info()
+                etype, evalue, tb = sys.exc_info()
                 m = self.tool.handle_job_failure_exception( evalue )
                 if m:
                     message = m
@@ -790,7 +794,7 @@ class JobWrapper( object ):
             job.state = job.states.PAUSED
             self.sa_session.add( job )
 
-    def change_state( self, state, info = False ):
+    def change_state( self, state, info=False ):
         job = self.get_job()
         self.sa_session.refresh( job )
         for dataset_assoc in job.output_datasets + job.output_library_datasets:
@@ -816,7 +820,7 @@ class JobWrapper( object ):
         log.warning('set_runner() is deprecated, use set_job_destination()')
         self.set_job_destination(self.job_destination, external_id)
 
-    def set_job_destination(self, job_destination, external_id=None ):
+    def set_job_destination( self, job_destination, external_id=None ):
         """
         Persist job destination params in the database for recovery.
 
@@ -896,11 +900,11 @@ class JobWrapper( object ):
                         job.state = final_job_state
                         return self.fail( "Job %s's output dataset(s) could not be read" % job.id )
 
-        job_context = ExpressionContext( dict( stdout = job.stdout, stderr = job.stderr ) )
+        job_context = ExpressionContext( dict( stdout=job.stdout, stderr=job.stderr ) )
         for dataset_assoc in job.output_datasets + job.output_library_datasets:
             context = self.get_dataset_finish_context( job_context, dataset_assoc.dataset.dataset )
             #should this also be checking library associations? - can a library item be added from a history before the job has ended? - lets not allow this to occur
-            for dataset in dataset_assoc.dataset.dataset.history_associations + dataset_assoc.dataset.dataset.library_associations: #need to update all associated output hdas, i.e. history was shared with job running
+            for dataset in dataset_assoc.dataset.dataset.history_associations + dataset_assoc.dataset.dataset.library_associations:  # need to update all associated output hdas, i.e. history was shared with job running
                 trynum = 0
                 while trynum < self.app.config.retry_job_output_collection:
                     try:
@@ -911,9 +915,9 @@ class JobWrapper( object ):
                     except ( OSError, ObjectNotFound ), e:
                         trynum += 1
                         log.warning( 'Error accessing %s, will retry: %s', dataset.dataset.file_name, e )
-                        time.sleep( 2 ) 
+                        time.sleep( 2 )
                 dataset.blurb = 'done'
-                dataset.peek  = 'no peek'
+                dataset.peek = 'no peek'
                 dataset.info = (dataset.info or '')
                 if context['stdout'].strip():
                     #Ensure white space between entries
@@ -941,7 +945,7 @@ class JobWrapper( object ):
                     #it would be quicker to just copy the metadata from the originating output dataset,
                     #but somewhat trickier (need to recurse up the copied_from tree), for now we'll call set_meta()
                     if ( not self.external_output_metadata.external_metadata_set_successfully( dataset, self.sa_session ) and self.app.config.retry_metadata_internally ):
-                        dataset.datatype.set_meta( dataset, overwrite = False ) #call datatype.set_meta directly for the initial set_meta call during dataset creation
+                        dataset.datatype.set_meta( dataset, overwrite=False )  # call datatype.set_meta directly for the initial set_meta call during dataset creation
                     elif not self.external_output_metadata.external_metadata_set_successfully( dataset, self.sa_session ) and job.states.ERROR != final_job_state:
                         dataset._state = model.Dataset.states.FAILED_METADATA
                     else:
@@ -1011,19 +1015,22 @@ class JobWrapper( object ):
         out_data = dict( [ ( da.name, da.dataset ) for da in job.output_datasets ] )
         inp_data.update( [ ( da.name, da.dataset ) for da in job.input_library_datasets ] )
         out_data.update( [ ( da.name, da.dataset ) for da in job.output_library_datasets ] )
-        param_dict = dict( [ ( p.name, p.value ) for p in job.parameters ] ) # why not re-use self.param_dict here? ##dunno...probably should, this causes tools.parameters.basic.UnvalidatedValue to be used in following methods instead of validated and transformed values during i.e. running workflows
+        param_dict = dict( [ ( p.name, p.value ) for p in job.parameters ] )  # why not re-use self.param_dict here? ##dunno...probably should, this causes tools.parameters.basic.UnvalidatedValue to be used in following methods instead of validated and transformed values during i.e. running workflows
         param_dict = self.tool.params_from_strings( param_dict, self.app )
         # Check for and move associated_files
         self.tool.collect_associated_files(out_data, self.working_directory)
         gitd = self.sa_session.query( model.GenomeIndexToolData ).filter_by( job=job ).first()
         if gitd:
-            self.tool.collect_associated_files({'' : gitd}, self.working_directory)
+            self.tool.collect_associated_files({'': gitd}, self.working_directory)
         # Create generated output children and primary datasets and add to param_dict
-        collected_datasets = {'children':self.tool.collect_child_datasets(out_data, self.working_directory),'primary':self.tool.collect_primary_datasets(out_data, self.working_directory)}
-        param_dict.update({'__collected_datasets__':collected_datasets})
+        collected_datasets = {
+            'children': self.tool.collect_child_datasets(out_data, self.working_directory),
+            'primary': self.tool.collect_primary_datasets(out_data, self.working_directory)
+        }
+        param_dict.update({'__collected_datasets__': collected_datasets})
         # Certain tools require tasks to be completed after job execution
         # ( this used to be performed in the "exec_after_process" hook, but hooks are deprecated ).
-        self.tool.exec_after_process( self.queue.app, inp_data, out_data, param_dict, job = job )
+        self.tool.exec_after_process( self.queue.app, inp_data, out_data, param_dict, job=job )
         # Call 'exec_after_process' hook
         self.tool.call_hook( 'exec_after_process', self.queue.app, inp_data=inp_data,
                              out_data=out_data, param_dict=param_dict,
@@ -1114,7 +1121,7 @@ class JobWrapper( object ):
     def get_input_fnames( self ):
         job = self.get_job()
         filenames = []
-        for da in job.input_datasets + job.input_library_datasets: #da is JobToInputDatasetAssociation object
+        for da in job.input_datasets + job.input_library_datasets:  # da is JobToInputDatasetAssociation object
             if da.dataset:
                 filenames.extend(self.get_input_dataset_fnames(da.dataset))
         return filenames
@@ -1136,11 +1143,12 @@ class JobWrapper( object ):
 
     def compute_outputs( self ) :
         class DatasetPath( object ):
-            def __init__( self, dataset_id, real_path, false_path = None, mutable = True ):
+            def __init__( self, dataset_id, real_path, false_path=None, mutable=True ):
                 self.dataset_id = dataset_id
                 self.real_path = real_path
                 self.false_path = false_path
                 self.mutable = mutable
+
             def __str__( self ):
                 if self.false_path is None:
                     return self.real_path
@@ -1157,13 +1165,13 @@ class JobWrapper( object ):
             self.output_hdas_and_paths = {}
             for name, hda in [ ( da.name, da.dataset ) for da in job.output_datasets + job.output_library_datasets ]:
                 false_path = os.path.abspath( os.path.join( self.working_directory, "galaxy_dataset_%d.dat" % hda.dataset.id ) )
-                dsp = DatasetPath( hda.dataset.id, hda.dataset.file_name, false_path, mutable = hda.dataset.external_filename is None  )
+                dsp = DatasetPath( hda.dataset.id, hda.dataset.file_name, false_path, mutable=hda.dataset.external_filename is None  )
                 self.output_paths.append( dsp )
                 self.output_hdas_and_paths[name] = hda, dsp
             if special:
                 false_path = os.path.abspath( os.path.join( self.working_directory, "galaxy_dataset_%d.dat" % special.dataset.id ) )
         else:
-            results = [ ( da.name, da.dataset, DatasetPath( da.dataset.dataset.id, da.dataset.file_name, mutable = da.dataset.dataset.external_filename is None ) ) for da in job.output_datasets + job.output_library_datasets ]
+            results = [ ( da.name, da.dataset, DatasetPath( da.dataset.dataset.id, da.dataset.file_name, mutable=da.dataset.dataset.external_filename is None ) ) for da in job.output_datasets + job.output_library_datasets ]
             self.output_paths = [t[2] for t in results]
             self.output_hdas_and_paths = dict([(t[0],  t[1:]) for t in results])
         if special:
@@ -1238,13 +1246,13 @@ class JobWrapper( object ):
             datatypes_config = self.app.datatypes_registry.integrated_datatypes_configs
         return self.external_output_metadata.setup_external_metadata( [ output_dataset_assoc.dataset for output_dataset_assoc in job.output_datasets ],
                                                                       self.sa_session,
-                                                                      exec_dir = exec_dir,
-                                                                      tmp_dir = tmp_dir,
-                                                                      dataset_files_path = dataset_files_path,
-                                                                      config_root = config_root,
-                                                                      config_file = config_file,
-                                                                      datatypes_config = datatypes_config,
-                                                                      job_metadata = os.path.join( self.working_directory, TOOL_PROVIDED_JOB_METADATA_FILE ),
+                                                                      exec_dir=exec_dir,
+                                                                      tmp_dir=tmp_dir,
+                                                                      dataset_files_path=dataset_files_path,
+                                                                      config_root=config_root,
+                                                                      config_file=config_file,
+                                                                      datatypes_config=datatypes_config,
+                                                                      job_metadata=os.path.join( self.working_directory, TOOL_PROVIDED_JOB_METADATA_FILE ),
                                                                       **kwds )
 
     @property
@@ -1318,7 +1326,7 @@ class JobWrapper( object ):
         just copy these files directly to the ulimate destination.
         """
         return output_path
-    
+
     @property
     def requires_setting_metadata( self ):
         if self.tool:
@@ -1391,7 +1399,7 @@ class TaskWrapper(JobWrapper):
         out_data.update( [ ( da.name, da.dataset ) for da in job.output_library_datasets ] )
         # DBTODO New method for generating command line for a task?
         # These can be passed on the command line if wanted as $userId $userEmail
-        if job.history and job.history.user: # check for anonymous user!
+        if job.history and job.history.user:  # check for anonymous user!
             userId = '%d' % job.history.user.id
             userEmail = str(job.history.user.email)
         else:
@@ -1430,7 +1438,7 @@ class TaskWrapper(JobWrapper):
             self.command_line = self.command_line.replace(k, v)
         # FIXME: for now, tools get Galaxy's lib dir in their path
         if self.command_line and self.command_line.startswith( 'python' ):
-            self.galaxy_lib_dir = os.path.abspath( "lib" ) # cwd = galaxy root
+            self.galaxy_lib_dir = os.path.abspath( "lib" )  # cwd = galaxy root
         # Shell fragment to inject dependencies
         self.dependency_shell_commands = self.tool.build_dependency_shell_commands()
         # We need command_line persisted to the db in order for Galaxy to re-queue the job
@@ -1452,7 +1460,7 @@ class TaskWrapper(JobWrapper):
         self.status = 'error'
         # How do we want to handle task failure?  Fail the job and let it clean up?
 
-    def change_state( self, state, info = False ):
+    def change_state( self, state, info=False ):
         task = self.get_task()
         self.sa_session.refresh( task )
         if info:
@@ -1568,10 +1576,13 @@ class NoopQueue( object ):
     """
     def put( self, *args, **kwargs ):
         return
+
     def put_stop( self, *args ):
         return
+
     def shutdown( self ):
         return
+
 
 class ParallelismInfo(object):
     """
@@ -1584,7 +1595,7 @@ class ParallelismInfo(object):
             items = tag.iteritems()
         else:
             items = tag.attrib.items()
-        self.attributes = dict([item for item in items if item[0] != 'method' ])
+        self.attributes = dict( [ item for item in items if item[ 0 ] != 'method' ])
         if len(self.attributes) == 0:
             # legacy basic mode - provide compatible defaults
             self.attributes['split_size'] = 20
