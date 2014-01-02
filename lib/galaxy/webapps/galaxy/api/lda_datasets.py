@@ -57,7 +57,6 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         rval['id'] = trans.security.encode_id(rval['id']);
         rval['ldda_id'] = trans.security.encode_id(rval['ldda_id']);
         rval['folder_id'] = 'f' + trans.security.encode_id(rval['folder_id'])
-        trans.response.status = 200
         return rval
 
     @web.expose
@@ -225,14 +224,12 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
                     archive = util.streamball.ZipBall(tmpf, tmpd)
                     archive.wsgi_status = trans.response.wsgi_status()
                     archive.wsgi_headeritems = trans.response.wsgi_headeritems()
-                    trans.response.status = 200
                     return archive.stream
                 else:
                     trans.response.set_content_type( "application/x-tar" )
                     trans.response.headers[ "Content-Disposition" ] = 'attachment; filename="%s.%s"' % (fname,outext)
                     archive.wsgi_status = trans.response.wsgi_status()
                     archive.wsgi_headeritems = trans.response.wsgi_headeritems()
-                    trans.response.status = 200
                     return archive.stream
         elif format == 'uncompressed':
             if len(lddas) != 1:
@@ -248,7 +245,6 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
                 fname = ''.join( c in valid_chars and c or '_' for c in fname )[ 0:150 ]
                 trans.response.headers[ "Content-Disposition" ] = 'attachment; filename="%s"' % fname
                 try:
-                    trans.response.status = 200
                     return open( single_dataset.file_name )
                 except:
                     trans.response.status = 500
