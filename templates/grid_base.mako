@@ -56,6 +56,14 @@
     ${h.js("libs/jquery/jquery.autocomplete", "galaxy.autocom_tagging", "libs/jquery/jquery.rating", "galaxy.grids" )}
     ${handle_refresh_frames()}
     
+    <%
+        self.grid_options = {
+            'sort_key' : sort_key,
+            'use_async' : grid.use_async,
+            'cur_page_num' : cur_page_num,
+            'num_pages' : num_pages
+        }
+    %>
     <script type="text/javascript">
         
         // Needed URLs for grid history searching.
@@ -65,6 +73,7 @@
         //
         // Create grid object.
         //
+        var grid_options = ${ h.to_json_string(self.grid_options) };
 
         // Operations that are async (AJAX) compatible.
         var async_ops = [];
@@ -83,20 +92,20 @@
 
         /** Returns true if string denotes true. */
         var is_true = function(s) { return _.indexOf(['True', 'true', 't'], s) !== -1; };
-
+        
         // Create grid.
         var grid = new Grid({
             url_base: '${trans.request.path_url}',
-            async: is_true('${grid.use_async}'),
+            async: is_true(grid_options.use_async),
             async_ops: async_ops,
             categorical_filters: categorical_filters,
             filters: ${h.to_json_string( cur_filter_dict )},
-            sort_key: '${sort_key}',
+            sort_key: grid_options.sort_key,
             show_item_checkboxes: is_true('${context.get('show_item_checkboxes', False)}'),
-            cur_page: ${cur_page_num},
+            cur_page: grid_options.cur_page_num,
             // persistent page="all"
             //cur_page: ('${cur_page_num}' === 'all')?('all'):(Number('${cur_page_num}')),
-            num_pages: ${num_pages}
+            num_pages: grid_options.num_pages
         });
 
         // Initialize grid objects on load.
