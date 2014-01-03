@@ -485,9 +485,14 @@ def main():
                     master_api_key=master_api_key,
                     user_api_key=os.environ.get( "GALAXY_TEST_USER_API_KEY", default_galaxy_user_key ),
                 )
-            else: #when testing data managers, do not test toolbox
+            else:
+                # We must make sure that functional.test_toolbox is always imported after
+                # database_contexts.galaxy_content is set (which occurs in this method above).
+                # If functional.test_toolbox is imported before database_contexts.galaxy_content
+                # is set, sa_session will be None in all methods that use it.
                 import functional.test_toolbox
                 functional.test_toolbox.toolbox = app.toolbox
+                # When testing data managers, do not test toolbox.
                 functional.test_toolbox.build_tests(
                     testing_shed_tools=testing_shed_tools,
                     master_api_key=master_api_key,

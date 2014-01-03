@@ -52,7 +52,6 @@ from nose.plugins import Plugin
 from paste import httpserver
 
 from functional import database_contexts
-import functional.test_toolbox as imported_test_toolbox
 
 log = logging.getLogger( 'install_and_test_repositories_with_tools' )
 
@@ -136,6 +135,10 @@ def get_tool_info_from_test_id( test_id ):
     return tool_id, tool_version
 
 def install_and_test_repositories( app, galaxy_shed_tools_dict, galaxy_shed_tool_conf_file ):
+    # We must make sure that functional.test_toolbox is always imported after database_contexts.galaxy_content
+    # is set (which occurs in the main method before this method is called).  If functional.test_toolbox is
+    # imported before database_contexts.galaxy_content is set, sa_session will be None in all methods that use it.
+    import functional.test_toolbox as imported_test_toolbox
     global test_toolbox
     test_toolbox = imported_test_toolbox
     # Initialize a dictionary for the summary that will be printed to stdout.
@@ -442,7 +445,6 @@ def main():
     app = UniverseApplication( **kwargs )
     database_contexts.galaxy_context = app.model.context
     database_contexts.install_context = app.install_model.context
-
     log.debug( "Embedded Galaxy application started..." )
     # ---- Run galaxy webserver ------------------------------------------------------
     server = None
