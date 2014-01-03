@@ -506,6 +506,7 @@ var FolderContentView = Backbone.View.extend({
                 source = 'td';
             }
             if (checkbox === '') {event.stopPropagation(); return;} // button in row was clicked
+            if (checkbox === undefined) {event.stopPropagation(); return;} // folder row was clicked
 
                 if (checkbox.checked){
                     if (source==='td'){
@@ -578,7 +579,7 @@ var FolderContentView = Backbone.View.extend({
 
         // import all selected datasets into history
         importAllIntoHistory : function (){
-            //disable the button to rprevent multiple submission
+            //disable the button to prevent multiple submission
             this.modal.disableButton('Import');
 
             var history_id = $("select[name=dataset_import_bulk] option:selected").val();
