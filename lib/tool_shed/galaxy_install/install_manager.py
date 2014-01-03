@@ -330,12 +330,13 @@ class InstallManager( object ):
                                         tool_panel_elems.append( elem )
         return tool_panel_elems
 
-    def handle_repository_contents( self, tool_shed_repository, repository_clone_url, relative_install_dir, repository_elem, install_dependencies, is_repository_dependency=False ):
+    def handle_repository_contents( self, tool_shed_repository, repository_clone_url, relative_install_dir, repository_elem,
+                                    install_dependencies, is_repository_dependency=False ):
         """
-        Generate the metadata for the installed tool shed repository, among other things.  If the installed tool_shed_repository contains tools
-        that are loaded into the Galaxy tool panel, this method will automatically eliminate all entries for each of the tools defined in the
-        received repository_elem from all non-shed-related tool panel configuration files since the entries are automatically added to the reserved
-        migrated_tools_conf.xml file as part of the migration process.
+        Generate the metadata for the installed tool shed repository, among other things.  If the installed tool_shed_repository
+        contains tools that are loaded into the Galaxy tool panel, this method will automatically eliminate all entries for each
+        of the tools defined in the received repository_elem from all non-shed-related tool panel configuration files since the
+        entries are automatically added to the reserved migrated_tools_conf.xml file as part of the migration process.
         """
         tool_configs_to_filter = []
         tool_panel_dict_for_display = odict()
@@ -351,14 +352,16 @@ class InstallManager( object ):
                 # See if tool_config is defined inside of a section in self.proprietary_tool_panel_elems.
                 is_displayed, tool_sections = self.get_containing_tool_sections( tool_config )
                 if is_displayed:
-                    tool_panel_dict_for_tool_config = tool_util.generate_tool_panel_dict_for_tool_config( guid, tool_config, tool_sections=tool_sections )
+                    tool_panel_dict_for_tool_config = \
+                        tool_util.generate_tool_panel_dict_for_tool_config( guid, tool_config, tool_sections=tool_sections )
                     # The tool-panel_dict has the following structure.
-                    # {<Tool guid> : [{ tool_config : <tool_config_file>, id: <ToolSection id>, version : <ToolSection version>, name : <TooSection name>}]}
+                    # {<Tool guid> : [{ tool_config : <tool_config_file>, id: <ToolSection id>, version : <ToolSection version>,
+                    #                   name : <TooSection name>}]}
                     for k, v in tool_panel_dict_for_tool_config.items():
                         tool_panel_dict_for_display[ k ] = v
                         for tool_panel_dict in v:
-                            # Keep track of tool config file names associated with entries that have been made to the migrated_tools_conf.xml file so
-                            # they can be eliminated from all non-shed-related tool panel configs.
+                            # Keep track of tool config file names associated with entries that have been made to the
+                            # migrated_tools_conf.xml file so they can be eliminated from all non-shed-related tool panel configs.
                             tool_config_file = tool_panel_dict.get( 'tool_config', None )
                             if tool_config_file:
                                 if tool_config_file not in tool_configs_to_filter:
@@ -375,23 +378,28 @@ class InstallManager( object ):
                     log.exception( "Exception attempting to filter and persist non-shed-related tool panel configs:\n%s" % str( e ) )
                 finally:
                     lock.release()
-        metadata_dict, invalid_file_tups = metadata_util.generate_metadata_for_changeset_revision( app=self.app,
-                                                                                                   repository=tool_shed_repository,
-                                                                                                   changeset_revision=tool_shed_repository.changeset_revision,
-                                                                                                   repository_clone_url=repository_clone_url,
-                                                                                                   shed_config_dict = self.shed_config_dict,
-                                                                                                   relative_install_dir=relative_install_dir,
-                                                                                                   repository_files_dir=None,
-                                                                                                   resetting_all_metadata_on_repository=False,
-                                                                                                   updating_installed_repository=False,
-                                                                                                   persist=True )
+        metadata_dict, invalid_file_tups = \
+            metadata_util.generate_metadata_for_changeset_revision( app=self.app,
+                                                                    repository=tool_shed_repository,
+                                                                    changeset_revision=tool_shed_repository.changeset_revision,
+                                                                    repository_clone_url=repository_clone_url,
+                                                                    shed_config_dict = self.shed_config_dict,
+                                                                    relative_install_dir=relative_install_dir,
+                                                                    repository_files_dir=None,
+                                                                    resetting_all_metadata_on_repository=False,
+                                                                    updating_installed_repository=False,
+                                                                    persist=True )
         tool_shed_repository.metadata = metadata_dict
         self.app.install_model.context.add( tool_shed_repository )
         self.app.install_model.context.flush()
         has_tool_dependencies = self.__has_tool_dependencies( metadata_dict )
         if has_tool_dependencies:
-            # All tool_dependency objects must be created before the tools are processed even if no tool dependencies will be installed.
-            tool_dependencies = tool_dependency_util.create_tool_dependency_objects( self.app, tool_shed_repository, relative_install_dir, set_status=True )
+            # All tool_dependency objects must be created before the tools are processed even if no
+            # tool dependencies will be installed.
+            tool_dependencies = tool_dependency_util.create_tool_dependency_objects( self.app,
+                                                                                     tool_shed_repository,
+                                                                                     relative_install_dir,
+                                                                                     set_status=True )
         else:
             tool_dependencies = None
         if 'tools' in metadata_dict:

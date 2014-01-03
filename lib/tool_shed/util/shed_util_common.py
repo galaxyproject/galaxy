@@ -945,7 +945,10 @@ def get_repository_dependency_types( repository_dependencies ):
     return has_repository_dependencies, has_repository_dependencies_only_if_compiling_contained_td
 
 def get_repository_for_dependency_relationship( app, tool_shed, name, owner, changeset_revision ):
-    """Return an installed tool_shed_repository database record that is defined by either the current changeset revision or the installed_changeset_revision."""
+    """
+    Return an installed tool_shed_repository database record that is defined by either the current changeset
+    revision or the installed_changeset_revision.
+    """
     # This method is used only in Galaxy, not the tool shed.
     if tool_shed.endswith( '/' ):
         tool_shed = tool_shed.rstrip( '/' )
@@ -1330,8 +1333,8 @@ def get_tool_shed_repository_status_label( trans, tool_shed_repository=None, nam
 
 def get_updated_changeset_revisions( trans, name, owner, changeset_revision ):
     """
-    Return a string of comma-separated changeset revision hashes for all available updates to the received changeset revision for the repository
-    defined by the received name and owner.
+    Return a string of comma-separated changeset revision hashes for all available updates to the received changeset
+    revision for the repository defined by the received name and owner.
     """
     repository = get_repository_by_name_and_owner( trans.app, name, owner )
     repo_dir = repository.repo_path( trans.app )
@@ -1351,8 +1354,8 @@ def get_updated_changeset_revisions( trans, name, owner, changeset_revision ):
 
 def get_url_from_tool_shed( app, tool_shed ):
     """
-    The value of tool_shed is something like: toolshed.g2.bx.psu.edu.  We need the URL to this tool shed, which is something like:
-    http://toolshed.g2.bx.psu.edu/
+    The value of tool_shed is something like: toolshed.g2.bx.psu.edu.  We need the URL to this tool shed, which is
+    something like: http://toolshed.g2.bx.psu.edu/
     """
     for shed_name, shed_url in app.tool_shed_registry.tool_sheds.items():
         if shed_url.find( tool_shed ) >= 0:
