@@ -569,6 +569,7 @@ var FolderContentView = Backbone.View.extend({
                                 'Close'  : function() {self.modal.hide(); $('.modal').remove(); self.modal = null;}
                             }
                         });
+                        self.modal.bindEvents(event);
                         // show the prepared modal
                         self.modal.show();
                     }
@@ -577,7 +578,7 @@ var FolderContentView = Backbone.View.extend({
 
         // import all selected datasets into history
         importAllIntoHistory : function (){
-            //disable the button
+            //disable the button to rprevent multiple submission
             this.modal.disableButton('Import');
 
             var history_id = $("select[name=dataset_import_bulk] option:selected").val();
@@ -617,9 +618,9 @@ var FolderContentView = Backbone.View.extend({
             var popped_item = history_item_set.pop();
             if (typeof popped_item === "undefined") {
                 mod_toastr.success('All datasets imported');
-                this.modal.hide();
-                // enable button again
-                self.modal.enableButton('Import');
+
+                //this will destroy other modals too - including those hidden!!!
+                this.modal.destroy();
                 return
             }
                 var promise = $.when(popped_item.save({content: popped_item.content, source: popped_item.source})).done(function(a1){

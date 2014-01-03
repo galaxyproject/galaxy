@@ -25,20 +25,18 @@ var GalaxyModal = Backbone.View.extend(
         self = this;
         if (options)
             this.create(options);
-
-        // Bind the hiding events
-        // this.bindEvents(event, self);
     },
 
     // bind the click-to-hide function
-    bindEvents: function(event, that) {
+    bindEvents: function(event) {
         // bind the ESC key to hide() function
         $(document).on('keyup', function(event){
-            if (event.keyCode == 27) { self.hide(); }
+            if (event.keyCode == 27) { self.hide(); $('.modal').remove();}
         })
         // bind the 'click anywhere' to hide() function...
         $('html').on('click', function(event){
             self.hide();
+            $('.modal').remove();
         })
         // ...but don't hide if the click is on modal content
         $('.modal-content').on('click', function(event){
@@ -50,11 +48,12 @@ var GalaxyModal = Backbone.View.extend(
     unbindEvents: function(event){
         // bind the ESC key to hide() function
         $(document).off('keyup', function(event){
-            if (event.keyCode == 27) { self.hide(); }
+            if (event.keyCode == 27) { self.hide(); $('.modal').remove();}
         })
         // unbind the 'click anywhere' to hide() function...
         $('html').off('click', function(event){
             self.hide();
+            $('.modal').remove();
         })
         $('.modal-content').off('click', function(event){
             event.stopPropagation();
