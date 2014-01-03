@@ -586,6 +586,13 @@ use_interactive = True
 # to usernames, to become your Galaxy usernames (email addresses).
 #remote_user_maildomain = None
 
+# If use_remote_user is enabled, the header that the upstream proxy provides
+# the remote username in defaults to HTTP_REMOTE_USER (the 'HTTP_' is prepended
+# by WSGI).  This option allows you to change the header.  Note, you still need
+# to prepend 'HTTP_' to the header in this option, but your proxy server should
+# *not* include 'HTTP_' at the beginning of the header name.
+#remote_user_header = 'HTTP_REMOTE_USER'
+
 # If use_remote_user is enabled, you can set this to a URL that will log your
 # users out.
 #remote_user_logout_href = None
