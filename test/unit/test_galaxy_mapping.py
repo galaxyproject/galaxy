@@ -186,32 +186,34 @@ class MappingTests( unittest.TestCase ):
         # gs = model.GalaxySession()
         h1 = model.History( name="HistoryContentsHistory1", user=u)
 
-        self.persist( u, h1, expunge=True )
+        self.persist( u, h1, expunge=False )
 
         d1 = self.new_hda( h1, name="1" )
         d2 = self.new_hda( h1, name="2", visible=False )
         d3 = self.new_hda( h1, name="3", deleted=True )
         d4 = self.new_hda( h1, name="4", visible=False, deleted=True )
 
+        self.session().flush()
+
         def contents_iter_names(**kwds):
             history = model.context.query( model.History ).filter(
                 model.History.name == "HistoryContentsHistory1"
             ).first()
-            return set( map( lambda hda: hda.name, history.contents_iter( **kwds ) ) )
+            return list( map( lambda hda: hda.name, history.contents_iter( **kwds ) ) )
 
-        assert contents_iter_names() == set( [ "1", "2", "3", "4" ] )
-        assert contents_iter_names( deleted=False ) == set( [ "1", "2" ] )
-        assert contents_iter_names( visible=True ) == set( [ "1", "3" ] )
-        assert contents_iter_names( visible=False ) == set( [ "2", "4" ] )
-        assert contents_iter_names( deleted=True, visible=False ) == set( [ "4" ] )
+        self.assertEquals(contents_iter_names(), [ "1", "2", "3", "4" ])
+        assert contents_iter_names( deleted=False ) == [ "1", "2" ]
+        assert contents_iter_names( visible=True ) == [ "1", "3" ]
+        assert contents_iter_names( visible=False ) == [ "2", "4" ]
+        assert contents_iter_names( deleted=True, visible=False ) == [ "4" ]
 
-        assert contents_iter_names( ids=[ d1.id, d2.id, d3.id, d4.id ] ) == set( [ "1", "2", "3", "4" ] )
-        assert contents_iter_names( ids=[ d1.id, d2.id, d3.id, d4.id ], max_in_filter_length=1 ) == set( [ "1", "2", "3", "4" ] )
+        assert contents_iter_names( ids=[ d1.id, d2.id, d3.id, d4.id ] ) == [ "1", "2", "3", "4" ]
+        assert contents_iter_names( ids=[ d1.id, d2.id, d3.id, d4.id ], max_in_filter_length=1 ) == [ "1", "2", "3", "4" ]
 
-        assert contents_iter_names( ids=[ d1.id, d3.id ] ) == set( [ "1", "3" ] )
+        assert contents_iter_names( ids=[ d1.id, d3.id ] ) == [ "1", "3" ]
 
     def new_hda( self, history, **kwds ):
-        return self.persist( self.model.HistoryDatasetAssociation( history=history, create_dataset=True, sa_session=self.model.session, **kwds ), flush=True )
+        return history.add_dataset( self.model.HistoryDatasetAssociation( create_dataset=True, sa_session=self.model.session, **kwds ) )
 
     @classmethod
     def setUpClass(cls):
@@ -225,7 +227,7 @@ class MappingTests( unittest.TestCase ):
 
     @classmethod
     def persist(cls, *args, **kwargs):
-        session = cls.model.session
+        session = cls.session()
         flush = kwargs.get('flush', True)
         for arg in args:
             session.add( arg )
@@ -234,6 +236,10 @@ class MappingTests( unittest.TestCase ):
         if kwargs.get('expunge', not flush):
             cls.expunge()
         return arg  # Return last or only arg.
+
+    @classmethod
+    def session(cls):
+        return cls.model.session
 
     @classmethod
     def expunge(cls):
