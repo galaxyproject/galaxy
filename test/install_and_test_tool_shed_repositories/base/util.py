@@ -547,13 +547,18 @@ def handle_missing_dependencies( app, repository, missing_tool_dependencies, rep
         tool_test_results_dict[ 'installation_errors' ][ 'repository_dependencies' ]\
             .append( missing_repository_dependency_info_dict )
     # Record the status of this repository in the tool shed.
-    # TODO: do something useful with response_dict
+    log.debug('=============================================================' )
+    log.debug( 'Inserting the following into tool_test_results for revision %s of repository %s owned by %s:\n%s' % \
+        ( str( repository.changeset_revision ), str( repository.name ), str( repository.owner ), str( tool_test_results_dict ) ) )
     response_dict = register_test_result( galaxy_tool_shed_url,
                                           tool_test_results_dicts,
                                           tool_test_results_dict,
                                           repository_dict,
                                           params,
                                           can_update_tool_shed )
+    log.debug( 'Result of inserting tool_test_results for revision %s of repository %s owned by %s:\n%s' % \
+        ( str( repository.changeset_revision ), str( repository.name ), str( repository.owner ), str( response_dict ) ) )
+    log.debug('=============================================================' )
 
 def initialize_install_and_test_statistics_dict( test_framework ):
     # Initialize a dictionary for the summary that will be printed to stdout.
@@ -818,6 +823,7 @@ def register_test_result( url, tool_test_results_dicts, tool_test_results_dict, 
     if can_update_tool_shed:
         metadata_revision_id = repository_dict.get( 'id', None )
         if metadata_revision_id is not None:
+            log.debug( 'Updating tool_test_results for repository_metadata id %s.' % str( metadata_revision_id ) )
             tool_test_results_dicts.insert( 0, tool_test_results_dict )
             params[ 'tool_test_results' ] = tool_test_results_dicts
             # Set the time_last_tested entry so that the repository_metadata.time_last_tested will be set in the tool shed.
@@ -826,7 +832,8 @@ def register_test_result( url, tool_test_results_dicts, tool_test_results_dict, 
             try:
                 return update( tool_shed_api_key, url, params, return_formatted=False )
             except Exception, e:
-                log.exception( 'Error attempting to register test results: %s' % str( e ) )
+                log.exception( 'Error updating tool_test_results for repository_metadata id %s:\n%s' % \
+                    ( str( metadata_revision_id ), str( e ) ) )
                 return {}
     else:
         return {}
