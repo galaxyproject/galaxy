@@ -219,11 +219,12 @@ class RepositoriesController( BaseAPIController ):
             import_results_tups = repository_maintenance_util.create_repository_and_import_archive( trans,
                                                                                                     repository_status_info_dict,
                                                                                                     import_results_tups )
+        import_util.check_status_and_reset_downloadable( trans, import_results_tups )
         suc.remove_dir( file_path )
         # NOTE: the order of installation is defined in import_results_tups, but order will be lost when transferred to return_dict.
         return_dict = {}
         for import_results_tup in import_results_tups:
-            name_owner, message = import_results_tup
+            ok, name_owner, message = import_results_tup
             name, owner = name_owner
             key = 'Archive of repository "%s" owned by "%s"' % ( str( name ), str( owner ) )
             val = message.replace( '<b>', '"' ).replace( '</b>', '"' )

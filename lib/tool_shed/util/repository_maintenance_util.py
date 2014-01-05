@@ -102,15 +102,17 @@ def create_repository( trans, name, type, description, long_description, user_id
 
 def create_repository_and_import_archive( trans, repository_archive_dict, import_results_tups ):
     """
-    Create a new repository in the tool shed and populate it with the contents of a gzip compressed tar archive that was exported
-    as part or all of the contents of a capsule.
+    Create a new repository in the tool shed and populate it with the contents of a gzip compressed tar archive
+    that was exported as part or all of the contents of a capsule.
     """
     results_message = ''
     name = repository_archive_dict.get( 'name', None )
     username = repository_archive_dict.get( 'owner', None )
     if name is None or username is None:
-        results_message += 'Import failed: required repository name <b>%s</b> or owner <b>%s</b> is missing.' % ( str( name ), str( username ))
-        import_results_tups.append( ( ( str( name ), str( username ) ), results_message ) )
+        ok = False
+        results_message += 'Import failed: required repository name <b>%s</b> or owner <b>%s</b> is missing.' % \
+            ( str( name ), str( username ))
+        import_results_tups.append( ( ok, ( str( name ), str( username ) ), results_message ) )
     else:
         if repository_archive_dict[ 'status' ] is None:
             # The repository does not yet exist in this Tool Shed and the current user is authorized to import
@@ -122,8 +124,9 @@ def create_repository_and_import_archive( trans, repository_archive_dict, import
             # the exported repository archive.
             user = suc.get_user_by_username( trans.app, username )
             if user is None:
+                ok = False
                 results_message += 'Import failed: repository owner <b>%s</b> does not have an account in this Tool Shed.' % str( username )
-                import_results_tups.append( ( ( str( name ), str( username ) ), results_message ) )
+                import_results_tups.append( ( ok, ( str( name ), str( username ) ), results_message ) )
             else:
                 user_id = user.id
                 # The categories entry in the repository_archive_dict is a list of category names.  If a name does not
@@ -134,8 +137,8 @@ def create_repository_and_import_archive( trans, repository_archive_dict, import
                 for category_name in category_names:
                     category = suc.get_category_by_name( trans, category_name )
                     if category is None:
-                        results_message += 'This Tool Shed does not have the category <b>%s</b> so it will not be associated with this repository.' % \
-                            str( category_name )
+                        results_message += 'This Tool Shed does not have the category <b>%s</b> so it ' % str( category_name )
+                        results_message += 'will not be associated with this repository.'
                     else:
                         category_ids.append( trans.security.encode_id( category.id ) )
                 # Create the repository record in the database.
@@ -150,11 +153,14 @@ def create_repository_and_import_archive( trans, repository_archive_dict, import
                     results_message += create_message
                 # Populate the new repository with the contents of exported repository archive.
                 results_dict = import_util.import_repository_archive( trans, repository, repository_archive_dict )
-                import_results_tups.append( ( ( str( name ), str( username ) ), results_message ) )
+                ok = results_dict.get( 'ok', False )
+                import_results_tups.append( ( ok, ( str( name ), str( username ) ), results_message ) )
         else:
             # The repository either already exists in this Tool Shed or the current user is not authorized to create it.
-            results_message += 'Import not necessary: repository status for this Tool Shed is: %s.' % str( repository_archive_dict[ 'status' ] )
-            import_results_tups.append( ( ( str( name ), str( username ) ), results_message ) )
+            ok = True
+            results_message += 'Import not necessary: repository status for this Tool Shed is: %s.' % \
+                str( repository_archive_dict[ 'status' ] )
+            import_results_tups.append( ( ok, ( str( name ), str( username ) ), results_message ) )
     return import_results_tups
 
 def validate_repository_name( app, name, user ):

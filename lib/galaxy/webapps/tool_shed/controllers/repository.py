@@ -1883,9 +1883,11 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                 # Add the capsule_file_name and encoded_file_path to the repository_status_info_dict.
                 repository_status_info_dict[ 'capsule_file_name' ] = capsule_file_name
                 repository_status_info_dict[ 'encoded_file_path' ] = encoded_file_path
-                import_results_tups = repository_maintenance_util.create_repository_and_import_archive( trans,
-                                                                                                        repository_status_info_dict,
-                                                                                                        import_results_tups )
+                import_results_tups = \
+                    repository_maintenance_util.create_repository_and_import_archive( trans,
+                                                                                      repository_status_info_dict,
+                                                                                      import_results_tups )
+            import_util.check_status_and_reset_downloadable( trans, import_results_tups )
             suc.remove_dir( file_path )
             return trans.fill_template( '/webapps/tool_shed/repository/import_capsule_results.mako',
                                         export_info_dict=export_info_dict,

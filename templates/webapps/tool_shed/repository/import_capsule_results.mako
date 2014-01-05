@@ -70,7 +70,7 @@
             <table class="grid">
                 %for import_results_tup in import_results_tups:
                     <%
-                        name_owner_tup, results_message = import_results_tup
+                        ok, name_owner_tup, results_message = import_results_tup
                         name, owner = name_owner_tup
                     %>
                     <tr><td>Archive of repository <b>${name}</b> owned by <b>${owner}</b><br/>${results_message}</td></tr>

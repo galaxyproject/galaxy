@@ -296,14 +296,19 @@ def create_or_update_repository_metadata( trans, id, repository, changeset_revis
             includes_tool_dependencies = True
         if 'workflows' in metadata_dict:
             includes_workflows = True
-    if has_repository_dependencies or has_repository_dependencies_only_if_compiling_contained_td or includes_datatypes or \
-        includes_tools or includes_tool_dependencies or includes_workflows:
+    if has_repository_dependencies or \
+        has_repository_dependencies_only_if_compiling_contained_td or \
+        includes_datatypes or \
+        includes_tools or \
+        includes_tool_dependencies or \
+        includes_workflows:
         downloadable = True
     else:
         downloadable = False
     repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
     if repository_metadata:
-        # A repository metadata record already exists with the received changeset_revision, so we don't need to check the skip_tool_test table.
+        # A repository metadata record already exists with the received changeset_revision, so we don't need to
+        # check the skip_tool_test table.
         check_skip_tool_test = False
         repository_metadata.metadata = metadata_dict
         repository_metadata.downloadable = downloadable
@@ -313,7 +318,8 @@ def create_or_update_repository_metadata( trans, id, repository, changeset_revis
         repository_metadata.includes_tool_dependencies = includes_tool_dependencies
         repository_metadata.includes_workflows = includes_workflows
     else:
-        # No repository_metadata record exists for the received changeset_revision, so we may need to update the skip_tool_test table.
+        # No repository_metadata record exists for the received changeset_revision, so we may need to update the
+        # skip_tool_test table.
         check_skip_tool_test = True
         repository_metadata = trans.model.RepositoryMetadata( repository_id=repository.id,
                                                               changeset_revision=changeset_revision,
@@ -324,7 +330,8 @@ def create_or_update_repository_metadata( trans, id, repository, changeset_revis
                                                               includes_tools=includes_tools,
                                                               includes_tool_dependencies=includes_tool_dependencies,
                                                               includes_workflows=includes_workflows )
-    # Always set the default values for the following columns.  When resetting all metadata on a repository, this will reset the values.
+    # Always set the default values for the following columns.  When resetting all metadata on a repository
+    # this will reset the values.
     repository_metadata.tools_functionally_correct = False
     repository_metadata.missing_test_components = False
     repository_metadata.test_install_error = False
@@ -1738,7 +1745,8 @@ def reset_all_metadata_on_repository_in_tool_shed( trans, id ):
                     # NO_METADATA - no metadata for either ancestor or current, so continue from current
                     # EQUAL - ancestor metadata is equivalent to current metadata, so continue from current
                     # SUBSET - ancestor metadata is a subset of current metadata, so continue from current
-                    # NOT_EQUAL_AND_NOT_SUBSET - ancestor metadata is neither equal to nor a subset of current metadata, so persist ancestor metadata.
+                    # NOT_EQUAL_AND_NOT_SUBSET - ancestor metadata is neither equal to nor a subset of current
+                    # metadata, so persist ancestor metadata.
                     comparison = compare_changeset_revisions( trans,
                                                               ancestor_changeset_revision,
                                                               ancestor_metadata_dict,
@@ -1750,7 +1758,11 @@ def reset_all_metadata_on_repository_in_tool_shed( trans, id ):
                     elif comparison == NOT_EQUAL_AND_NOT_SUBSET:
                         metadata_changeset_revision = ancestor_changeset_revision
                         metadata_dict = ancestor_metadata_dict
-                        repository_metadata = create_or_update_repository_metadata( trans, id, repository, metadata_changeset_revision, metadata_dict )
+                        repository_metadata = create_or_update_repository_metadata( trans,
+                                                                                    id,
+                                                                                    repository,
+                                                                                    metadata_changeset_revision,
+                                                                                    metadata_dict )
                         changeset_revisions.append( metadata_changeset_revision )
                         ancestor_changeset_revision = current_changeset_revision
                         ancestor_metadata_dict = current_metadata_dict
@@ -1762,7 +1774,11 @@ def reset_all_metadata_on_repository_in_tool_shed( trans, id ):
                     metadata_changeset_revision = current_changeset_revision
                     metadata_dict = current_metadata_dict
                     # We're at the end of the change log.
-                    repository_metadata = create_or_update_repository_metadata( trans, id, repository, metadata_changeset_revision, metadata_dict )
+                    repository_metadata = create_or_update_repository_metadata( trans,
+                                                                                id,
+                                                                                repository,
+                                                                                metadata_changeset_revision,
+                                                                                metadata_dict )
                     changeset_revisions.append( metadata_changeset_revision )
                     ancestor_changeset_revision = None
                     ancestor_metadata_dict = None
@@ -1770,14 +1786,20 @@ def reset_all_metadata_on_repository_in_tool_shed( trans, id ):
                 # We reach here only if current_metadata_dict is empty and ancestor_metadata_dict is not.
                 if not ctx.children():
                     # We're at the end of the change log.
-                    repository_metadata = create_or_update_repository_metadata( trans, id, repository, metadata_changeset_revision, metadata_dict )
+                    repository_metadata = create_or_update_repository_metadata( trans,
+                                                                                id,
+                                                                                repository,
+                                                                                metadata_changeset_revision,
+                                                                                metadata_dict )
                     changeset_revisions.append( metadata_changeset_revision )
                     ancestor_changeset_revision = None
                     ancestor_metadata_dict = None
         suc.remove_dir( work_dir )
-    # Delete all repository_metadata records for this repository that do not have a changeset_revision value in changeset_revisions.
+    # Delete all repository_metadata records for this repository that do not have a changeset_revision
+    # value in changeset_revisions.
     clean_repository_metadata( trans, id, changeset_revisions )
-    # Set tool version information for all downloadable changeset revisions.  Get the list of changeset revisions from the changelog.
+    # Set tool version information for all downloadable changeset revisions.  Get the list of changeset
+    # revisions from the changelog.
     reset_all_tool_versions( trans, id, repo )
     # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
     tool_util.reset_tool_data_tables( trans.app )
@@ -1785,8 +1807,8 @@ def reset_all_metadata_on_repository_in_tool_shed( trans, id ):
 
 def reset_metadata_on_selected_repositories( trans, **kwd ):
     """
-    Inspect the repository changelog to reset metadata for all appropriate changeset revisions.  This method is called from both Galaxy and the
-    Tool Shed.
+    Inspect the repository changelog to reset metadata for all appropriate changeset revisions.
+    This method is called from both Galaxy and the Tool Shed.
     """
     repository_ids = util.listify( kwd.get( 'repository_ids', None ) )
     message = ''
@@ -1879,7 +1901,11 @@ def set_repository_metadata( trans, repository, content_alert_str='', **kwd ):
         tip_only = isinstance( repository_type_class, TipOnly )
         if not tip_only and new_metadata_required_for_utilities( trans, repository, metadata_dict ):
             # Create a new repository_metadata table row.
-            repository_metadata = create_or_update_repository_metadata( trans, encoded_id, repository, repository.tip( trans.app ), metadata_dict )
+            repository_metadata = create_or_update_repository_metadata( trans,
+                                                                        encoded_id,
+                                                                        repository,
+                                                                        repository.tip( trans.app ),
+                                                                        metadata_dict )
             # If this is the first record stored for this repository, see if we need to send any email alerts.
             if len( repository.downloadable_revisions ) == 1:
                 suc.handle_email_alerts( trans, repository, content_alert_str='', new_repo_alert=True, admin_only=False )
@@ -1896,8 +1922,8 @@ def set_repository_metadata( trans, repository, content_alert_str='', **kwd ):
                     repository_metadata.includes_datatypes = True
                 else:
                     repository_metadata.includes_datatypes = False
-                # We don't store information about the special type of repository dependency that is needed only for compiling a tool dependency
-                # defined for the dependent repository.
+                # We don't store information about the special type of repository dependency that is needed only for
+                # compiling a tool dependency defined for the dependent repository.
                 repository_dependencies_dict = metadata_dict.get( 'repository_dependencies', {} )
                 repository_dependencies = repository_dependencies_dict.get( 'repository_dependencies', [] )
                 has_repository_dependencies, has_repository_dependencies_only_if_compiling_contained_td = \
@@ -1924,9 +1950,14 @@ def set_repository_metadata( trans, repository, content_alert_str='', **kwd ):
                 trans.sa_session.flush()
             else:
                 # There are no metadata records associated with the repository.
-                repository_metadata = create_or_update_repository_metadata( trans, encoded_id, repository, repository.tip( trans.app ), metadata_dict )
+                repository_metadata = create_or_update_repository_metadata( trans,
+                                                                            encoded_id,
+                                                                            repository,
+                                                                            repository.tip( trans.app ),
+                                                                            metadata_dict )
         if 'tools' in metadata_dict and repository_metadata and status != 'error':
-            # Set tool versions on the new downloadable change set.  The order of the list of changesets is critical, so we use the repo's changelog.
+            # Set tool versions on the new downloadable change set.  The order of the list of changesets is
+            # critical, so we use the repo's changelog.
             changeset_revisions = []
             for changeset in repo.changelog:
                 changeset_revision = str( repo.changectx( changeset ) )
@@ -1945,8 +1976,12 @@ def set_repository_metadata( trans, repository, content_alert_str='', **kwd ):
     return message, status
 
 def set_repository_metadata_due_to_new_tip( trans, repository, content_alert_str=None, **kwd ):
-    """Set metadata on the repository tip in the tool shed - this method is not called from Galaxy."""
-    error_message, status = set_repository_metadata( trans, repository, content_alert_str=content_alert_str, **kwd )
+    """Set metadata on the repository tip in the tool shed."""
+    # This method is not called from Galaxy.
+    error_message, status = set_repository_metadata( trans,
+                                                     repository,
+                                                     content_alert_str=content_alert_str,
+                                                     **kwd )
     if error_message:
         # FIXME: This probably should not redirect since this method is called from the upload controller as well as the repository controller.
         # If there is an error, display it.
@@ -1994,8 +2029,12 @@ def update_existing_tool_dependency( app, repository, original_dependency_dict, 
                     break
             if new_dependency_name and new_dependency_type and new_dependency_version:
                 # Update all attributes of the tool_dependency record in the database.
-                log.debug( "Updating tool dependency '%s' with type '%s' and version '%s' to have new type '%s' and version '%s'." % \
-                           ( str( tool_dependency.name ), str( tool_dependency.type ), str( tool_dependency.version ), str( new_dependency_type ), str( new_dependency_version ) ) )
+                log.debug( "Updating version %s of tool dependency %s %s to have new version %s and type %s." % \
+                    ( str( tool_dependency.version ),
+                      str( tool_dependency.type ),
+                      str( tool_dependency.name ),
+                      str( new_dependency_version ),
+                      str( new_dependency_type ) ) )
                 tool_dependency.type = new_dependency_type
                 tool_dependency.version = new_dependency_version
                 tool_dependency.status = app.install_model.ToolDependency.installation_status.UNINSTALLED
@@ -2004,9 +2043,10 @@ def update_existing_tool_dependency( app, repository, original_dependency_dict, 
                 context.flush()
                 new_tool_dependency = tool_dependency
             else:
-                # We have no new tool dependency definition based on a matching dependency name, so remove the existing tool dependency record from the database.
-                log.debug( "Deleting tool dependency with name '%s', type '%s' and version '%s' from the database since it is no longer defined." % \
-                           ( str( tool_dependency.name ), str( tool_dependency.type ), str( tool_dependency.version ) ) )
+                # We have no new tool dependency definition based on a matching dependency name, so remove
+                # the existing tool dependency record from the database.
+                log.debug( "Deleting version %s of tool dependency %s %s from the database since it is no longer defined." % \
+                    ( str( tool_dependency.version ), str( tool_dependency.type ), str( tool_dependency.name ) ) )
                 context.delete( tool_dependency )
                 context.flush()
     return new_tool_dependency

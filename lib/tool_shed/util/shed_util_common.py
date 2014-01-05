@@ -559,12 +559,65 @@ def get_current_repository_metadata_for_changeset_revision( trans, repository, c
             return repository_metadata
     return None
 
+def get_dependent_downloadable_revisions( trans, repository_metadata ):
+    """
+    Return all repository_metadata records that are downloadable and that depend upon the received
+    repository_metadata record.
+    """
+    # This method is called only from the tool shed.
+    rm_changeset_revision = repository_metadata.changeset_revision
+    rm_repository = repository_metadata.repository
+    rm_repository_name = str( rm_repository.name )
+    rm_repository_owner = str( rm_repository.user.username )
+    dependent_downloadable_revisions = []
+    for repository in trans.sa_session.query( trans.model.Repository ) \
+                                      .filter( and_( trans.model.Repository.table.c.id != rm_repository.id,
+                                                     trans.model.Repository.table.c.deleted == False,
+                                                     trans.model.Repository.table.c.deprecated == False ) ):
+        downloadable_revisions = repository.downloadable_revisions
+        if downloadable_revisions:
+            for downloadable_revision in downloadable_revisions:
+                if downloadable_revision.has_repository_dependencies:
+                    metadata = downloadable_revision.metadata
+                    if metadata:
+                        repository_dependencies_dict = metadata.get( 'repository_dependencies', {} )
+                        repository_dependencies_tups = repository_dependencies_dict.get( 'repository_dependencies', [] )
+                        for repository_dependencies_tup in repository_dependencies_tups:
+                            tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
+                                common_util.parse_repository_dependency_tuple( repository_dependencies_tup )
+                            if name == rm_repository_name and owner == rm_repository_owner:
+                                # We've discovered a repository revision that depends upon the repository associated
+                                # with the received repository_metadata record, but we need to make sure it depends
+                                # upon the revision.
+                                if changeset_revision == rm_changeset_revision:
+                                    dependent_downloadable_revisions.append( downloadable_revision )
+                                else:
+                                    # Make sure the defined changeset_revision is current.
+                                    defined_repository_metadata = \
+                                        trans.sa_session.query( trans.model.RepositoryMetadata ) \
+                                                        .filter( trans.model.RepositoryMetadata.table.c.changeset_revision == changeset_revision ) \
+                                                        .first()
+                                    if defined_repository_metadata is None:
+                                        # The defined changeset_revision is not associated with a repository_metadata
+                                        # record, so updates must be necessary.
+                                        defined_repository = get_repository_by_name_and_owner( trans.app, name, owner )
+                                        defined_repo_dir = defined_repository.repo_path( trans.app )
+                                        defined_repo = hg.repository( get_configured_ui(), defined_repo_dir )
+                                        updated_changeset_revision = \
+                                            get_next_downloadable_changeset_revision( defined_repository,
+                                                                                      defined_repo,
+                                                                                      changeset_revision )
+                                        if updated_changeset_revision == rm_changeset_revision:
+                                            dependent_downloadable_revisions.append( downloadable_revision )
+    return dependent_downloadable_revisions
+
 def get_file_context_from_ctx( ctx, filename ):
     """Return the mercurial file context for a specified file."""
-    # We have to be careful in determining if we found the correct file because multiple files with the same name may be in different directories
-    # within ctx if the files were moved within the change set.  For example, in the following ctx.files() list, the former may have been moved to
-    # the latter: ['tmap_wrapper_0.0.19/tool_data_table_conf.xml.sample', 'tmap_wrapper_0.3.3/tool_data_table_conf.xml.sample'].  Another scenario
-    # is that the file has been deleted.
+    # We have to be careful in determining if we found the correct file because multiple files with
+    # the same name may be in different directories within ctx if the files were moved within the change
+    # set.  For example, in the following ctx.files() list, the former may have been moved to the latter: 
+    # ['tmap_wrapper_0.0.19/tool_data_table_conf.xml.sample', 'tmap_wrapper_0.3.3/tool_data_table_conf.xml.sample'].
+    # Another scenario is that the file has been deleted.
     deleted = False
     filename = strip_path( filename )
     for ctx_file in ctx.files():
