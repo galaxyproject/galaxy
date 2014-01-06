@@ -710,7 +710,7 @@ var faIconButton = function( options ){
 	ModeButton.prototype.init = function _init( element, options ){
 		options = options || {};
 		this.$element = $( element );
-		this.options = jQuery.extend( true, this.defaults, options );
+		this.options = jQuery.extend( true, {}, this.defaults, options );
 
 		var modeButton = this;
 		this.$element.click( function _ModeButtonClick( event ){
@@ -774,20 +774,23 @@ var faIconButton = function( options ){
     jQuery.fn.extend({
         modeButton : function $modeButton( options ){
 			var nonOptionsArgs = jQuery.makeArray( arguments ).slice( 1 );
-            return this.each( function(){
+            //TODO: does map still work with jq multi selection (i.e. $( '.class-for-many-btns' ).modeButton)?
+            return this.map( function(){
 				var $this = $( this ),
 					data = $this.data( 'mode-button' );
 
 				if( jQuery.type( options ) === 'object' ){
 					data = new ModeButton( $this, options );
 					$this.data( 'mode-button', data );
-				}
-				if( data && jQuery.type( options ) === 'string' ){
+
+                } else if( data && jQuery.type( options ) === 'string' ){
 					var fn = data[ options ];
 					if( jQuery.type( fn ) === 'function' ){
 						return fn.apply( data, nonOptionsArgs );
 					}
-				}
+				} else if ( data ){
+                    return data;
+                }
 				return this;
             });
         }

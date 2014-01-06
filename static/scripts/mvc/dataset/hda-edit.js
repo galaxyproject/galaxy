@@ -261,6 +261,21 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
         }
         return $icon;
     },
+
+    // ......................................................................... render main
+    _buildNewRender : function(){
+        var $newRender = hdaBase.HDABaseView.prototype._buildNewRender.call( this );
+
+        //TODO: this won't localize easily
+        $newRender.find( '.dataset-deleted-msg' ).append(
+            _l( 'Click <a href="javascript:void(0);" class="dataset-undelete">here</a> to undelete it' +
+            ' or <a href="javascript:void(0);" class="dataset-purge">here</a> to immediately remove it from disk' ));
+
+        $newRender.find( '.dataset-hidden-msg' ).append(
+            _l( 'Click <a href="javascript:void(0);" class="dataset-unhide">here</a> to unhide it' ));
+
+        return $newRender;
+    },
     
     // ......................................................................... state body renderers
     /** Render an HDA where the metadata wasn't produced correctly.

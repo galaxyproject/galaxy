@@ -92,12 +92,14 @@ onhistoryready.done( function( historyPanel ){
 ${h.js(
     "utils/localization",
     "mvc/base-mvc",
-    "mvc/tags", "mvc/annotations"
+    "mvc/tags",
+    "mvc/annotations"
 )}
 
 ##TODO: concat these
 ${h.templates(
-    "history-templates"
+    "history-templates",
+    "helpers-common-templates"
 )}
 
 ${localize_js_strings([
@@ -148,9 +150,9 @@ require.config({
 //require([ "/static/scripts/history-panel.min.js" ], function( historyPanel ){
 
 require([ "mvc/history/history-panel" ], function( historyPanel ){
-    onhistoryready.resolve( historyPanel )
+    $(function(){
+        onhistoryready.resolve( historyPanel )
+    });
 });
 </script>
 </%def>
-
-
