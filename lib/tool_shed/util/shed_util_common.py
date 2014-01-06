@@ -1273,8 +1273,8 @@ def get_tool_shed_repository_by_id( trans, repository_id ):
     """Return a tool shed repository database record defined by the id."""
     # This method is used only in Galaxy, not the tool shed.
     return trans.install_model.context.query( trans.install_model.ToolShedRepository ) \
-                           .filter( trans.install_model.ToolShedRepository.table.c.id == trans.security.decode_id( repository_id ) ) \
-                           .first()
+                                      .filter( trans.install_model.ToolShedRepository.table.c.id == trans.security.decode_id( repository_id ) ) \
+                                      .first()
 
 def get_tool_shed_repository_by_shed_name_owner_changeset_revision( app, tool_shed, name, owner, changeset_revision ):
     """Return a tool shed repository database record defined by the combination of a tool_shed, repository name, repository owner and current changeet_revision."""

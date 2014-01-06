@@ -171,7 +171,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
         :param tool_shed_url (required): the base URL of the Tool Shed from which to install the Repository
         :param name (required): the name of the Repository
         :param owner (required): the owner of the Repository
-        :param changset_revision (required): the changset_revision of the RepositoryMetadata object associated with the Repository
+        :param changeset_revision (required): the changeset_revision of the RepositoryMetadata object associated with the Repository
         :param new_tool_panel_section_label (optional): label of a new section to be added to the Galaxy tool panel in which to load
                                                         tools contained in the Repository.  Either this parameter must be an empty string or
                                                         the tool_panel_section_id parameter must be an empty string or both must be an empty
@@ -372,7 +372,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
         :param tool_shed_urls: the base URLs of the Tool Sheds from which to install a specified Repository
         :param names: the names of the Repositories to be installed
         :param owners: the owners of the Repositories to be installed
-        :param changset_revisions: the changset_revisions of each RepositoryMetadata object associated with each Repository to be installed
+        :param changeset_revisions: the changeset_revisions of each RepositoryMetadata object associated with each Repository to be installed
         :param new_tool_panel_section_label: optional label of a new section to be added to the Galaxy tool panel in which to load
                                              tools contained in the Repository.  Either this parameter must be an empty string or
                                              the tool_panel_section_id parameter must be an empty string, as both cannot be used.
@@ -454,7 +454,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
         :param tool_shed_url (required): the base URL of the Tool Shed from which the Repository was installed
         :param name (required): the name of the Repository
         :param owner (required): the owner of the Repository
-        :param changset_revision (required): the changset_revision of the RepositoryMetadata object associated with the Repository
+        :param changeset_revision (required): the changeset_revision of the RepositoryMetadata object associated with the Repository
         """
         # Get the information about the repository to be installed from the payload.
         tool_shed_url = payload.get( 'tool_shed_url', '' )

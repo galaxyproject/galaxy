@@ -180,7 +180,8 @@ def install_and_test_repositories( app, galaxy_shed_tools_dict, galaxy_shed_tool
             install_and_test_base_util.get_tool_test_results_dicts( install_and_test_base_util.galaxy_tool_shed_url,
                                                                     encoded_repository_metadata_id )
         if error_message:
-            log.debug( error_message )
+            log.debug( 'Cannot install version %s of repository %s owned by %s due to the following error getting tool_test_results:\n%s' % \
+                ( changeset_revision, name, owner, str( error_message ) ) )
         else:
             tool_test_results_dict = install_and_test_base_util.get_tool_test_results_dict( tool_test_results_dicts )
             is_excluded, reason = install_and_test_base_util.is_excluded( exclude_list_dicts,
@@ -194,18 +195,16 @@ def install_and_test_repositories( app, galaxy_shed_tools_dict, galaxy_shed_tool
                 # If this repository is being skipped, register the reason.
                 tool_test_results_dict[ 'not_tested' ] = dict( reason=reason )
                 params = dict( do_not_test=False )
-                log.debug('=============================================================' )
-                log.debug( 'Inserting the following into tool_test_results for revision %s of repository %s owned by %s:\n%s' % \
-                    ( changeset_revision, name, owner, str( tool_test_results_dict ) ) )
-                response_dict = install_and_test_base_util.register_test_result( install_and_test_base_util.galaxy_tool_shed_url,
-                                                                                 tool_test_results_dicts,
-                                                                                 tool_test_results_dict,
-                                                                                 repository_dict,
-                                                                                 params,
-                                                                                 can_update_tool_shed )
+                response_dict = \
+                    install_and_test_base_util.save_test_results_for_changeset_revision( install_and_test_base_util.galaxy_tool_shed_url,
+                                                                                         tool_test_results_dicts,
+                                                                                         tool_test_results_dict,
+                                                                                         repository_dict,
+                                                                                         params,
+                                                                                         can_update_tool_shed )
                 log.debug( 'Result of inserting tool_test_results for revision %s of repository %s owned by %s:\n%s' % \
                     ( changeset_revision, name, owner, str( response_dict ) ) )
-                log.debug('=============================================================' )
+                log.debug('\n=============================================================\n' )
             else:
                 # See if the repository was installed in a previous test.
                 repository = install_and_test_base_util.get_repository( name, owner, changeset_revision )
@@ -219,47 +218,54 @@ def install_and_test_repositories( app, galaxy_shed_tools_dict, galaxy_shed_tool
                         log.debug( 'Installation failed for revision %s of repository %s owned by %s.' % ( changeset_revision, name, owner ) )
                         install_and_test_statistics_dict[ 'repositories_with_installation_error' ].append( repository_identifier_dict )
                         tool_test_results_dict[ 'installation_errors' ][ 'current_repository' ] = error_message
-                        params = dict( test_install_error=True )
-                        log.debug('=============================================================' )
-                        log.debug( 'Inserting the following into tool_test_results for revision %s of repository %s owned by %s:\n%s' % \
-                            ( changeset_revision, name, owner, str( tool_test_results_dict ) ) )
-                        response_dict = install_and_test_base_util.register_test_result( install_and_test_base_util.galaxy_tool_shed_url,
-                                                                                         tool_test_results_dicts,
-                                                                                         tool_test_results_dict,
-                                                                                         repository_dict,
-                                                                                         params,
-                                                                                         can_update_tool_shed )
+                        params = dict( test_install_error=True,
+                                       do_not_test=False )
+                        response_dict = \
+                            install_and_test_base_util.save_test_results_for_changeset_revision( install_and_test_base_util.galaxy_tool_shed_url,
+                                                                                                 tool_test_results_dicts,
+                                                                                                 tool_test_results_dict,
+                                                                                                 repository_dict,
+                                                                                                 params,
+                                                                                                 can_update_tool_shed )
                         log.debug( 'Result of inserting tool_test_results for revision %s of repository %s owned by %s:\n%s' % \
                             ( changeset_revision, name, owner, str( response_dict ) ) )
-                        log.debug('=============================================================' )
+                        log.debug('\n=============================================================\n' )
                     else:
                         # The repository was successfully installed.
                         log.debug( 'Installation succeeded for revision %s of repository %s owned by %s.' % \
                             ( changeset_revision, name, owner ) )
-                        params, install_and_test_statistics_dict, tool_test_results_dict = \
-                            install_and_test_base_util.register_installed_and_missing_dependencies( app,
-                                                                                                    repository,
-                                                                                                    repository_identifier_dict,
-                                                                                                    install_and_test_statistics_dict,
-                                                                                                    tool_test_results_dict )
                         # Add an empty 'missing_test_results' entry if it is missing from the tool_test_results_dict.  The 
                         # ~/tool_shed/scripts/check_repositories_for_functional_tests.py will have entered information in the
                         # 'missing_test_components' entry of the tool_test_results_dict dictionary for repositories that are
                         # missing test components.
                         if 'missing_test_components' not in tool_test_results_dict:
                             tool_test_results_dict[ 'missing_test_components' ] = []
+                        # Populate the installation containers (success and error) for the repository's immediate dependencies
+                        # (the entire dependency tree is not handled here).
+                        params, install_and_test_statistics_dict, tool_test_results_dict = \
+                            install_and_test_base_util.populate_dependency_install_containers( app,
+                                                                                               repository,
+                                                                                               repository_identifier_dict,
+                                                                                               install_and_test_statistics_dict,
+                                                                                               tool_test_results_dict )
+                        # Populate the installation containers (success or error) for the repository's immediate repository
+                        # dependencies whose containers are not yet populated.
+                        install_and_test_base_util.populate_install_containers_for_repository_dependencies( app,
+                                                                                                            repository,
+                                                                                                            encoded_repository_metadata_id,
+                                                                                                            install_and_test_statistics_dict,
+                                                                                                            can_update_tool_shed )
+                        # Execute the contained tool's functional tests only if the repository's entire dependency
+                        # tree is successfully installed.
+                        missing_repository_dependencies = install_and_test_base_util.get_missing_repository_dependencies( repository )
                         missing_tool_dependencies = install_and_test_base_util.get_missing_tool_dependencies( repository )
-                        if missing_tool_dependencies or repository.missing_repository_dependencies:                        
-                            install_and_test_base_util.handle_missing_dependencies( app=app,
-                                                                                    repository=repository,
-                                                                                    missing_tool_dependencies=missing_tool_dependencies,
-                                                                                    repository_dict=repository_dict,
-                                                                                    tool_test_results_dicts=tool_test_results_dicts,
-                                                                                    tool_test_results_dict=tool_test_results_dict,
-                                                                                    params=params,
-                                                                                    can_update_tool_shed=can_update_tool_shed )
+                        if missing_repository_dependencies or missing_tool_dependencies:                        
+                            log.debug( 'Cannot execute tests for tools in revision %s of repository %s owned by %s ' % \
+                                ( changeset_revision, name, owner ) )
+                            log.debug( 'because one or more dependencies has installation errors.' )
                         else:
-                            log.debug( 'Installation of %s succeeded, running all defined functional tests.' % str( repository.name ) )
+                            log.debug( 'Revision %s of repository %s owned by %s installed successfully, so running tool tests.' % \
+                                ( changeset_revision, name, owner ) )
                             # Generate the shed_tools_dict that specifies the location of test data contained within this repository.
                             # and configure and run functional tests for this repository. This is equivalent to
                             # sh run_functional_tests.sh -installed
@@ -287,19 +293,16 @@ def install_and_test_repositories( app, galaxy_shed_tools_dict, galaxy_shed_tool
                                 install_and_test_statistics_dict[ 'at_least_one_test_failed' ].append( repository_identifier_dict )
                                 # Record the status of this repository in the tool shed.
                                 params[ 'tools_functionally_correct' ] = False
-                                log.debug('=============================================================' )
-                                log.debug( 'Inserting the following into tool_test_results for revision %s of repository %s owned by %s:\n%s' % \
-                                    ( changeset_revision, name, owner, str( tool_test_results_dict ) ) )
                                 response_dict = \
-                                    install_and_test_base_util.register_test_result( install_and_test_base_util.galaxy_tool_shed_url,
-                                                                                     tool_test_results_dicts,
-                                                                                     tool_test_results_dict,
-                                                                                     repository_dict,
-                                                                                     params,
-                                                                                     can_update_tool_shed )
+                                    install_and_test_base_util.save_test_results_for_changeset_revision( install_and_test_base_util.galaxy_tool_shed_url,
+                                                                                                         tool_test_results_dicts,
+                                                                                                         tool_test_results_dict,
+                                                                                                         repository_dict,
+                                                                                                         params,
+                                                                                                         can_update_tool_shed )
                                 log.debug( 'Result of inserting tool_test_results for revision %s of repository %s owned by %s:\n%s' % \
                                     ( changeset_revision, name, owner, str( response_dict ) ) )
-                                log.debug('=============================================================' )
+                                log.debug('\n=============================================================\n' )
                 else:
                     log.debug( 'Skipped attempt to install revision %s of repository %s owned by %s because ' % \
                         ( changeset_revision, name, owner ) )
@@ -661,21 +664,19 @@ def test_repository_tools( app, repository, repository_dict, tool_test_results_d
         params = dict( tools_functionally_correct=True,
                        do_not_test=False,
                        test_install_error=False )
-        # Call the register_test_result() method to execute a PUT request to the repository_revisions API
-        # controller with the status of the test. This also sets the do_not_test and tools_functionally
-        # correct flags and updates the time_last_tested field to today's date.
-        log.debug('=============================================================' )
-        log.debug( 'Inserting the following into tool_test_results for revision %s of repository %s owned by %s:\n%s' % \
-            ( changeset_revision, name, owner, str( tool_test_results_dict ) ) )
-        response_dict = install_and_test_base_util.register_test_result( install_and_test_base_util.galaxy_tool_shed_url,
-                                                                         tool_test_results_dicts,
-                                                                         tool_test_results_dict,
-                                                                         repository_dict,
-                                                                         params,
-                                                                         can_update_tool_shed )
+        # Call the save_test_results_for_changeset_revision() method to execute a PUT request to the
+        # repository_revisions API controller with the status of the test. This also sets the do_not_test
+        # and tools_functionally correct flags and updates the time_last_tested field to today's date.
+        response_dict = \
+            install_and_test_base_util.save_test_results_for_changeset_revision( install_and_test_base_util.galaxy_tool_shed_url,
+                                                                                 tool_test_results_dicts,
+                                                                                 tool_test_results_dict,
+                                                                                 repository_dict,
+                                                                                 params,
+                                                                                 can_update_tool_shed )
         log.debug( 'Result of inserting tool_test_results for revision %s of repository %s owned by %s:\n%s' % \
             ( changeset_revision, name, owner, str( response_dict ) ) )
-        log.debug('=============================================================' )
+        log.debug('\n=============================================================\n' )
     else:
         # The get_failed_test_dicts() method returns a list.
         log.debug( 'Revision %s of repository %s owned by %s installed successfully but did not pass functional tests.' % \
@@ -690,18 +691,16 @@ def test_repository_tools( app, repository, repository_dict, tool_test_results_d
         params = dict( tools_functionally_correct=False,
                        test_install_error=False,
                        do_not_test=str( set_do_not_test ) )
-        log.debug('=============================================================' )
-        log.debug( 'Inserting the following into tool_test_results for revision %s of repository %s owned by %s:\n%s' % \
-            ( changeset_revision, name, owner, str( tool_test_results_dict ) ) )
-        response_dict = install_and_test_base_util.register_test_result( install_and_test_base_util.galaxy_tool_shed_url,
-                                                                         tool_test_results_dicts,
-                                                                         tool_test_results_dict,
-                                                                         repository_dict,
-                                                                         params,
-                                                                         can_update_tool_shed )
+        response_dict = \
+            install_and_test_base_util.save_test_results_for_changeset_revision( install_and_test_base_util.galaxy_tool_shed_url,
+                                                                                 tool_test_results_dicts,
+                                                                                 tool_test_results_dict,
+                                                                                 repository_dict,
+                                                                                 params,
+                                                                                 can_update_tool_shed )
         log.debug( 'Result of inserting tool_test_results for revision %s of repository %s owned by %s:\n%s' % \
             ( changeset_revision, name, owner, str( response_dict ) ) )
-        log.debug('=============================================================' )
+        log.debug('\n=============================================================\n' )
     # Remove the just-executed tests so twill will not find and re-test them along with the tools
     # contained in the next repository.
     remove_tests( app )

@@ -60,7 +60,7 @@ class RepositoriesController( BaseAPIController ):
 
         :param name: the name of the Repository
         :param owner: the owner of the Repository
-        :param changset_revision: the changset_revision of the RepositoryMetadata object associated with the Repository
+        :param changeset_revision: the changeset_revision of the RepositoryMetadata object associated with the Repository
 
         Returns a list of the following dictionaries::
         - a dictionary defining the Repository.  For example:

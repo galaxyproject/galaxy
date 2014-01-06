@@ -30,7 +30,7 @@ class RepositoryRevisionsController( BaseAPIController ):
         :param tool_shed_url (required): the base URL of the Tool Shed from which the Repository was installed
         :param name (required): the name of the Repository
         :param owner (required): the owner of the Repository
-        :param changset_revision (required): the changset_revision of the RepositoryMetadata object associated with the Repository
+        :param changeset_revision (required): the changeset_revision of the RepositoryMetadata object associated with the Repository
         :param export_repository_dependencies (optional): whether to export repository dependencies - defaults to False
         :param download_dir (optional): the local directory to which to download the archive - defaults to /tmp
         """
