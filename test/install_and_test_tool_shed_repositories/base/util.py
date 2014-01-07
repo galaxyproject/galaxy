@@ -883,39 +883,44 @@ def populate_install_containers_for_repository_dependencies( app, repository, re
                                                                                             name,
                                                                                             owner,
                                                                                             changeset_revision )
-                    repository_identifier_dict = dict( name=name, owner=owner, changeset_revision=changeset_revision )
-                    if required_repository.is_installed:
-                        # The required_repository was successfully installed, so populate the installation
-                        # containers (success and error) for the repository's immediate dependencies.
-                        params, install_and_test_statistics_dict, tool_test_results_dict = \
-                            populate_dependency_install_containers( app,
-                                                                    required_repository,
-                                                                    repository_identifier_dict,
-                                                                    install_and_test_statistics_dict,
-                                                                    tool_test_results_dict )
-                        response_dict = save_test_results_for_changeset_revision( galaxy_tool_shed_url,
-                                                                                  tool_test_results_dicts,
-                                                                                  tool_test_results_dict,
-                                                                                  repository_dependencies_dict,
-                                                                                  params,
-                                                                                  can_update_tool_shed )
-                        log.debug( 'Result of inserting tool_test_results for revision %s of repository %s owned by %s:\n%s' % \
-                            ( changeset_revision, name, owner, str( response_dict ) ) )
-                        log.debug('\n=============================================================\n' )
+                    if required_repository is not None:
+                        repository_identifier_dict = dict( name=name, owner=owner, changeset_revision=changeset_revision )
+                        if required_repository.is_installed:
+                            # The required_repository was successfully installed, so populate the installation
+                            # containers (success and error) for the repository's immediate dependencies.
+                            params, install_and_test_statistics_dict, tool_test_results_dict = \
+                                populate_dependency_install_containers( app,
+                                                                        required_repository,
+                                                                        repository_identifier_dict,
+                                                                        install_and_test_statistics_dict,
+                                                                        tool_test_results_dict )
+                            response_dict = save_test_results_for_changeset_revision( galaxy_tool_shed_url,
+                                                                                      tool_test_results_dicts,
+                                                                                      tool_test_results_dict,
+                                                                                      repository_dependencies_dict,
+                                                                                      params,
+                                                                                      can_update_tool_shed )
+                            log.debug( 'Result of inserting tool_test_results for revision %s of repository %s owned by %s:\n%s' % \
+                                ( changeset_revision, name, owner, str( response_dict ) ) )
+                            log.debug('\n=============================================================\n' )
+                        else:
+                            # The required repository's installation failed.
+                            tool_test_results_dict[ 'installation_errors' ][ 'current_repository' ] = str( required_repository.error_message )
+                            params = dict( test_install_error=True,
+                                           do_not_test=False )
+                            response_dict = save_test_results_for_changeset_revision( galaxy_tool_shed_url,
+                                                                                      tool_test_results_dicts,
+                                                                                      tool_test_results_dict,
+                                                                                      repository_dependencies_dict,
+                                                                                      params,
+                                                                                      can_update_tool_shed )
+                            log.debug( 'Result of inserting tool_test_results for revision %s of repository %s owned by %s:\n%s' % \
+                                ( changeset_revision, name, owner, str( response_dict ) ) )
+                            log.debug('\n=============================================================\n' )
                     else:
-                        # The required repository's installation failed.
-                        tool_test_results_dict[ 'installation_errors' ][ 'current_repository' ] = str( required_repository.error_message )
-                        params = dict( test_install_error=True,
-                                       do_not_test=False )
-                        response_dict = save_test_results_for_changeset_revision( galaxy_tool_shed_url,
-                                                                                  tool_test_results_dicts,
-                                                                                  tool_test_results_dict,
-                                                                                  repository_dependencies_dict,
-                                                                                  params,
-                                                                                  can_update_tool_shed )
-                        log.debug( 'Result of inserting tool_test_results for revision %s of repository %s owned by %s:\n%s' % \
+                        log.debug( 'Cannot retrieve revision %s of required repository %s owned by %s from the database ' % \
                             ( changeset_revision, name, owner, str( response_dict ) ) )
-                        log.debug('\n=============================================================\n' )
+                        log.debug( 'so tool_test_results cannot be saved.' )
 
 def run_tests( test_config ):
     loader = nose.loader.TestLoader( config=test_config )
