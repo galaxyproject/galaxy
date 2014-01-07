@@ -856,7 +856,7 @@ def populate_install_containers_for_repository_dependencies( app, repository, re
                 # Inspect the tool_test_results_dict for the last test run to see if it has not yet been populated
                 if len( tool_test_results_dicts ) == 0:
                     populated = False
-                    tool_test_results_dict = initialize_tool_tests_results_dict( app, {} )
+                    tool_test_results_dict = {}
                 else:
                     tool_test_results_dict = tool_test_results_dicts[ 0 ]
                     if len( tool_test_results_dict ) <= 1:
@@ -870,6 +870,8 @@ def populate_install_containers_for_repository_dependencies( app, repository, re
                     else:
                         populated = True
                 if not populated:
+                    # Make sure all expected entries are available in the tool_test_results_dict.
+                    tool_test_results_dict = initialize_tool_tests_results_dict( app, tool_test_results_dict )
                     # Get the installed repository record from the Galaxy database.
                     required_repository = \
                         suc.get_tool_shed_repository_by_shed_name_owner_changeset_revision( app,
