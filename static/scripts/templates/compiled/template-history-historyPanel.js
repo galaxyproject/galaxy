@@ -91,7 +91,7 @@ function program18(depth0,data) {
   return "Your history is empty. Click 'Get Data' on the left pane to start";
   }
 
-  buffer += "<div class=\"history-controls\">\n        <div class=\"history-search-controls\"></div>\n\n        <div class=\"history-title\">\n            ";
+  buffer += "<div class=\"history-controls\">\n        <div class=\"history-search-controls\">\n            <div class=\"history-search-input\"></div>\n        </div>\n\n        <div class=\"history-title\">\n            ";
   stack1 = helpers['if'].call(depth0, depth0.name, {hash:{},inverse:self.noop,fn:self.program(1, program1, data),data:data});
   if(stack1 || stack1 === 0) { buffer += stack1; }
   buffer += "\n        </div>\n\n        <div class=\"history-subtitle clear\">\n            ";

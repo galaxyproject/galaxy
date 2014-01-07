@@ -69,9 +69,12 @@
     .search-loading {
         // it places the icons on the right of the bar (and puts the lotion on its skin)
         position    : relative;
+        display     : inline-block;
+
         float       : right;
-        left        : -4px;
-        top         : -23px;
+        margin-top  : -23px;
+        margin-right : 4px;
+
         font-size   : 1.4em;
         line-height : 23px;
         color       : grey;
@@ -123,6 +126,13 @@
         padding: 0px;
 
         .history-search-controls {
+            .history-search-input {
+                //margin-right: 22px;
+            }
+            //.history-search-advanced {
+            //    margin-top  : -21px;
+            //    float       : right;
+            //}
             display: none;
             padding: 0px 0px 8px 0px;
         }
