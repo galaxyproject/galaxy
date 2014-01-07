@@ -532,13 +532,17 @@ def get_tool_test_results_dicts( tool_shed_url, encoded_repository_metadata_id )
     error_message = ''
     parts = [ 'api', 'repository_revisions', encoded_repository_metadata_id ]
     api_url = get_api_url( base=tool_shed_url, parts=parts )
-    repository_metadata, error_message = json_from_url( api_url )
+    repository_metadata_dict, error_message = json_from_url( api_url )
     if error_message:
         return None, error_message
-    # The tool_test_results used to be stored as a single dictionary rather than a list, but we currently
-    # return a list.
-    tool_test_results = listify( repository_metadata.get( 'tool_test_results', [] ) )
-    return tool_test_results, error_message
+    if isinstance( repository_metadata_dict, dict ):
+        # The tool_test_results used to be stored as a single dictionary rather than a list, but we currently
+        # return a list.
+        tool_test_results = listify( repository_metadata_dict.get( 'tool_test_results', [] ) )
+        return tool_test_results, error_message
+    else:
+        error_message = 'The url %s returned the invalid repository_metadata_dict %s' % ( str( api_url ), str( repository_metadata_dict ) )
+        return None, error_message
 
 def get_webapp_global_conf():
     """Return the global_conf dictionary sent as the first argument to app_factory."""
