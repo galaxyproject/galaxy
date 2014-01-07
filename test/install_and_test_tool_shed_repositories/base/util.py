@@ -207,6 +207,23 @@ class RepositoryMetadataApplication( object ):
     def shutdown( self ):
         pass
 
+def clean_tool_shed_url( base_url ):
+    """Eliminate the protocol from the received base_url and return the possibly altered url."""
+    # The tool_shed value stored in the tool_shed_repository record does not include the protocol, but does
+    # include the port if one exists.
+    if base_url:
+        if base_url.find( '://' ) > -1:
+            try:
+                protocol, base = base_url.split( '://' )
+            except ValueError, e:
+                # The received base_url must be an invalid url.
+                log.debug( "Returning unchanged invalid base_url from clean_tool_shed_url: %s" % str( base_url ) )
+                return base_url
+            return base.rstrip( '/' )
+        return base_url.rstrip( '/' )
+    log.debug( "Returning base_url from clean_tool_shed_url: %s" % str( base_url ) )
+    return base_url
+
 def display_repositories_by_owner( repository_dicts ):
     # Group summary display by repository owner.
     repository_dicts_by_owner = {}
@@ -877,9 +894,10 @@ def populate_install_containers_for_repository_dependencies( app, repository, re
                     # Make sure all expected entries are available in the tool_test_results_dict.
                     tool_test_results_dict = initialize_tool_tests_results_dict( app, tool_test_results_dict )
                     # Get the installed repository record from the Galaxy database.
+                    cleaned_tool_shed_url = clean_tool_shed_url( galaxy_tool_shed_url )
                     required_repository = \
                         suc.get_tool_shed_repository_by_shed_name_owner_changeset_revision( app,
-                                                                                            galaxy_tool_shed_url,
+                                                                                            cleaned_tool_shed_url,
                                                                                             name,
                                                                                             owner,
                                                                                             changeset_revision )
@@ -919,8 +937,11 @@ def populate_install_containers_for_repository_dependencies( app, repository, re
                             log.debug('\n=============================================================\n' )
                     else:
                         log.debug( 'Cannot retrieve revision %s of required repository %s owned by %s from the database ' % \
-                            ( changeset_revision, name, owner, str( response_dict ) ) )
+                            ( changeset_revision, name, owner ) )
                         log.debug( 'so tool_test_results cannot be saved.' )
+                        log.debug( 'The attributes used to retrieve the record are:' )
+                        log.debug( '\ntool_shed: %s name: %s owner: %s changeset_revision: %s' % \
+                            ( cleaned_tool_shed_url, name, owner, changeset_revision ) )
 
 def run_tests( test_config ):
     loader = nose.loader.TestLoader( config=test_config )
