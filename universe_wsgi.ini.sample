@@ -419,7 +419,7 @@ static_robots_txt = %(here)s/static/robots.txt
 # Cloud Launch
 
 #enable_cloud_launch = False
-#cloudlaunch_default_ami = ami-118bfc78
+#cloudlaunch_default_ami = ami-a7dbf6ce
 
 # -- Advanced proxy features
 
