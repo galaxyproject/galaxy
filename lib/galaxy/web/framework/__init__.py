@@ -950,7 +950,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         run_as_users = [ user for user in self.app.config.get( "api_allow_run_as", "" ).split( "," ) if user ]
         if not run_as_users:
             return False
-        user_in_run_as_users = self.user and run_as_users and self.user.email in run_as_users
+        user_in_run_as_users = self.user and self.user.email in run_as_users
         # Can do if explicitly in list or master_api_key supplied.
         can_do_run_as = user_in_run_as_users or self.api_inherit_admin
         return can_do_run_as
