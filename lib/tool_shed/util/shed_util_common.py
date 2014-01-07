@@ -745,10 +745,11 @@ def get_next_downloadable_changeset_revision( repository, repo, after_changeset_
 
 def get_next_prior_import_or_install_required_dict_entry( prior_required_dict, processed_tsr_ids ):
     """
-    This method is used in the Tool Shed when exporting a repository and it's dependencies, and in Galaxy when a repository and it's dependencies
-    are being installed.  The order in which the prior_required_dict is processed is critical in order to ensure that the ultimate repository import
-    or installation order is correctly defined.  This method determines the next key / value pair from the received prior_required_dict that should
-    be processed.
+    This method is used in the Tool Shed when exporting a repository and it's dependencies, and in Galaxy
+    when a repository and it's dependencies are being installed.  The order in which the prior_required_dict
+    is processed is critical in order to ensure that the ultimate repository import or installation order is
+    correctly defined.  This method determines the next key / value pair from the received prior_required_dict
+    that should be processed.
     """
     # Return the first key / value pair that is not yet processed and whose value is an empty list.
     for key, value in prior_required_dict.items():
@@ -756,7 +757,8 @@ def get_next_prior_import_or_install_required_dict_entry( prior_required_dict, p
             continue
         if not value:
             return key
-    # Return the first key / value pair that is not yet processed and whose ids in value are all included in processed_tsr_ids.
+    # Return the first key / value pair that is not yet processed and whose ids in value are all included
+    # in processed_tsr_ids.
     for key, value in prior_required_dict.items():
         if key in processed_tsr_ids:
             continue
@@ -767,7 +769,8 @@ def get_next_prior_import_or_install_required_dict_entry( prior_required_dict, p
                 break
         if all_contained:
             return key
-    # Return the first key / value pair that is not yet processed.  Hopefully this is all that is necessary at this point.
+    # Return the first key / value pair that is not yet processed.  Hopefully this is all that is necessary
+    # at this point.
     for key, value in prior_required_dict.items():
         if key in processed_tsr_ids:
             continue
