@@ -408,7 +408,6 @@ var FolderContentView = Backbone.View.extend({
       renderModalAfterFetch : function(item, histories){
         var size = this.size_to_string(item.get('file_size'));
         var template = _.template(this.templateDatasetModal(), { item : item, size : size });
-        this.modal = null;
             // make modal
             var self = this;
             this.modal = new mod_modal.GalaxyModal({
@@ -418,7 +417,7 @@ var FolderContentView = Backbone.View.extend({
                 buttons : {
                     'Import' : function() { self.importCurrentIntoHistory() },
                     'Download' : function() { self.downloadCurrent() },
-                    'Close'  : function() { self.modal.hideOrDestroy; self.modal = null; }
+                    'Close'  : function() { self.modal.hideOrDestroy() }
                 }
             });
             
@@ -574,7 +573,7 @@ var FolderContentView = Backbone.View.extend({
                             body    : history_modal_tmpl,
                             buttons : {
                                 'Import' : function() {self.importAllIntoHistory()},
-                                'Close'  : function() {self.modal.hideOrDestroy; self.modal = null;}
+                                'Close'  : function() {self.modal.hideOrDestroy();}
                             }
                         });
                         self.modal.bindEvents();
@@ -626,9 +625,7 @@ var FolderContentView = Backbone.View.extend({
             var popped_item = history_item_set.pop();
             if (typeof popped_item === "undefined") {
                 mod_toastr.success('All datasets imported');
-
-                //this will destroy other modals too - including those hidden!!!
-                this.modal.destroy();
+                this.modal.hideOrDestroy();
                 return
             }
                 var promise = $.when(popped_item.save({content: popped_item.content, source: popped_item.source})).done(function(a1){
@@ -712,7 +709,7 @@ var FolderContentView = Backbone.View.extend({
                 body    : this.template_new_folder(),
                 buttons : {
                     'Create' : function() {self.create_new_folder_event()},
-                    'Close'  : function() {self.modal.destroy(); self.modal = null;}
+                    'Close'  : function() {self.modal.hideOrDestroy(); self.modal = null;}
                 }
             });
         this.modal.bindEvents();
@@ -725,13 +722,17 @@ var FolderContentView = Backbone.View.extend({
         var folderDetails = this.serialize_new_folder();
         if (this.validate_new_folder(folderDetails)){
             var folder = new FolderAsModel();
-            folder.url = folder.urlRoot + '/F2fdbd5c5858e78fb' //load real ID
+
+            url_items = Backbone.history.fragment.split('/');
+            current_folder_id = url_items[url_items.length-1];
+            folder.url = folder.urlRoot + '/' + current_folder_id ;
+            
             var self = this;
             folder.save(folderDetails, {
               success: function (folder) {
-                self.modal.destroy();
+                self.modal.hideOrDestroy();
                 mod_toastr.success('Folder created');
-                self.render({id: 'F2fdbd5c5858e78fb'}); //put real id
+                self.render({id: current_folder_id});
               },
               error: function(){
                 mod_toastr.error('An error occured :(');
@@ -865,7 +866,7 @@ var GalaxyLibraryview = Backbone.View.extend({
                 body    : this.template_new_library(),
                 buttons : {
                     'Create' : function() {self.create_new_library_event()},
-                    'Close'  : function() {self.modal.hideOrDestroy(); self.modal = null;}
+                    'Close'  : function() {self.modal.hideOrDestroy();}
                 }
             });
         this.modal.bindEvents();
@@ -881,7 +882,7 @@ var GalaxyLibraryview = Backbone.View.extend({
             var self = this;
             library.save(libraryDetails, {
               success: function (library) {
-                self.modal.destroy();
+                self.modal.hideOrDestroy();
                 self.clear_library_modal();
                 self.render();
                 mod_toastr.success('Library created');

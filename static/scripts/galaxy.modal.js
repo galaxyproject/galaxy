@@ -95,7 +95,7 @@ var GalaxyModal = Backbone.View.extend(
         this.visible = true;
     },
     
-    // hide modal
+    // hide modal, shouldn't be called directly but through hideOrDestroy()
     hide: function(){
         // fade out
         this.$el.fadeOut('fast');
@@ -105,7 +105,7 @@ var GalaxyModal = Backbone.View.extend(
         this.unbindEvents();
     },    
 
-    // destroy modal
+    // destroy modal, shouldn't be called directly but through hideOrDestroy()
     destroy: function(){
         // set flag
         this.visible = false;
