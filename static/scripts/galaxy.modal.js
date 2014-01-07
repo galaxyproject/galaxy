@@ -18,7 +18,9 @@ var GalaxyModal = Backbone.View.extend(
     },
     
     // options
-    options : {},
+    options : {
+        destructible: false // by default the modal cannot be removed by theself.destroy() method
+    },
     
     // initialize
     initialize : function(options) {
@@ -27,16 +29,23 @@ var GalaxyModal = Backbone.View.extend(
             this.create(options);
     },
 
-    // bind the click-to-hide function
-    bindEvents: function(event) {
-        // bind the ESC key to hide() function
-        $(document).on('keyup', function(event){
-            if (event.keyCode == 27) { self.hide(); $('.modal').remove();}
-        })
-        // bind the 'click anywhere' to hide() function...
-        $('html').on('click', function(event){
+    hideOrDestroy: function(){
+        if (this.options.destructible){
+            self.destroy();
+        } else {
             self.hide();
-            $('.modal').remove();
+        }
+    },
+
+    // bind the click-to-hide function
+    bindEvents: function() {
+        // bind the ESC key to hideOrDestroy() function
+        $(document).on('keyup', function(event){
+            if (event.keyCode == 27) { self.hideOrDestroy() }
+        })
+        // bind the 'click anywhere' to hideOrDestroy() function...
+        $('html').on('click', function(event){ 
+            self.hideOrDestroy()
         })
         // ...but don't hide if the click is on modal content
         $('.modal-content').on('click', function(event){
@@ -45,26 +54,18 @@ var GalaxyModal = Backbone.View.extend(
     },
 
     // unbind the click-to-hide function
-    unbindEvents: function(event){
-        // bind the ESC key to hide() function
+    unbindEvents: function(){
+        // unbind the ESC key to hideOrDestroy() function
         $(document).off('keyup', function(event){
-            if (event.keyCode == 27) { self.hide(); $('.modal').remove();}
+            if (event.keyCode == 27) { self.hideOrDestroy() }
         })
-        // unbind the 'click anywhere' to hide() function...
+        // unbind the 'click anywhere' to hideOrDestroy() function...
         $('html').off('click', function(event){
-            self.hide();
-            $('.modal').remove();
+            self.hideOrDestroy()
         })
         $('.modal-content').off('click', function(event){
             event.stopPropagation();
         })
-    },
-
-    // destroy
-    destroy : function(){
-        this.hide();
-        this.unbindEvents();
-        $('.modal').remove();
     },
 
     // adds and displays a new frame/window
@@ -102,6 +103,16 @@ var GalaxyModal = Backbone.View.extend(
         // set flag
         this.visible = false;
         this.unbindEvents();
+    },    
+
+    // destroy modal
+    destroy: function(){
+        // set flag
+        this.visible = false;
+        this.unbindEvents();
+
+        // remove
+        this.$el.remove();
     },
     
     // create
