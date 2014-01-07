@@ -565,7 +565,7 @@ class JobHandlerStopQueue( object ):
 class DefaultJobDispatcher( object ):
     def __init__( self, app ):
         self.app = app
-        self.job_runners = self.app.job_config.get_job_runner_plugins()
+        self.job_runners = self.app.job_config.get_job_runner_plugins( self.app.config.server_name )
         # Once plugins are loaded, all job destinations that were created from
         # URLs can have their URL params converted to the destination's param
         # dict by the plugin.
