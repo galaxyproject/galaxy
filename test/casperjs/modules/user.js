@@ -160,11 +160,13 @@ User.prototype.loggedInAs = function loggedInAs(){
     var spaceghost = this.spaceghost,
         userEmail = '';
     try {
-        var loggedInInfo = spaceghost.getElementInfo(
-            xpath( spaceghost.data.selectors.masthead.userMenu.userEmail_xpath ) );
-        userEmail = loggedInInfo.text;
+        var emailSelector = xpath( spaceghost.data.selectors.masthead.userMenu.userEmail_xpath ),
+            loggedInInfo = spaceghost.elementInfoOrNull( emailSelector );
+        if( loggedInInfo ){
+            userEmail = loggedInInfo.text.replace( 'Logged in as ', '' );
+        }
     } catch( err ){
-        spaceghost.error( err );
+        spaceghost.warn( err );
     }
     //console.debug( 'loggedInInfo:', spaceghost.jsonStr( loggedInInfo ) );
     return userEmail;
@@ -175,6 +177,7 @@ User.prototype.loggedInAs = function loggedInAs(){
  */
 User.prototype.logout = function logout(){
     var spaceghost = this.spaceghost;
+    if( !this.loggedInAs() ){ return spaceghost; }
     spaceghost.thenOpen( spaceghost.baseUrl, function(){
         this.info( 'user logging out' );
         //TODO: handle already logged out

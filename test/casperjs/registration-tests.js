@@ -64,7 +64,8 @@ spaceghost.then( function(){
 spaceghost.thenOpen( spaceghost.baseUrl, function(){
     this.waitForMasthead( function() {
         this.clickLabel( 'User' );
-        this.test.assertSelectorHasText( 'a #user-email', email, '#user-email === ' + email );
+        this.test.assertSelectorHasText( xpath( spaceghost.data.selectors.masthead.userMenu.userEmail_xpath ),
+                                         email, '#user-email === ' + email );
     });
 });
 
@@ -77,8 +78,9 @@ spaceghost.then( function(){
 });
 spaceghost.then( function(){
     this.waitForMasthead( function() {
-        this.debug( 'email:' + this.getElementInfo( 'a #user-email' ).html );
-        this.test.assert( !this.getElementInfo( 'a #user-email' ).html, '#user-email is empty' );
+        var emailSelector = xpath( this.data.selectors.masthead.userMenu.userEmail_xpath );
+        this.debug( 'email:' + this.elementInfoOrNull( emailSelector ) );
+        this.test.assert( !this.elementInfoOrNull( emailSelector ), 'user email not found' );
     });
 });
 
@@ -99,7 +101,7 @@ spaceghost.each( badEmails, function( self, badEmail ){
         this.user._submitRegistration( badEmail, password, username, confirm );
     });
     self.then(function(){
-        this.assertErrorMessage( 'Enter a real email address' );
+        this.assertErrorMessage( 'Please enter your valid email address' );
     });
 });
 
@@ -108,10 +110,10 @@ var badPasswords = [ '1234' ];
 spaceghost.each( badPasswords, function( self, badPassword ){
     self.then( function(){
         this.test.comment( 'attempting bad password: ' + badPassword );
-        this.user._submitRegistration( spaceghost.user.getRandomEmail(), badPassword, username, confirm );
+        this.user._submitRegistration( spaceghost.user.getRandomEmail(), badPassword, username, badPassword );
     });
     self.then(function(){
-        this.assertErrorMessage( 'Use a password of at least 6 characters' );
+        this.assertErrorMessage( 'Please use a password of at least 6 characters' );
     });
 });
 
@@ -123,7 +125,7 @@ spaceghost.each( badConfirms, function( self, badConfirm ){
         this.user._submitRegistration( spaceghost.user.getRandomEmail(), password, username, badConfirm );
     });
     self.then(function(){
-        this.assertErrorMessage( 'Passwords do not match' );
+        this.assertErrorMessage( 'Passwords don\'t match' );
     });
 });
 
@@ -149,7 +151,7 @@ spaceghost.each( badUsernames, function( self, badUsername ){
         this.user._submitRegistration( newEmail, password, badUsername, confirm );
     });
     self.then(function(){
-        this.assertErrorMessage( "Public name must contain only lower-case letters, numbers and '-'" );
+        this.assertErrorMessage( 'Public name must contain only lowercase letters, numbers and "-"' );
     });
 });
 

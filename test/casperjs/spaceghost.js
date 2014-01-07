@@ -793,7 +793,7 @@ SpaceGhost.prototype.assertVisibleWithText = function assertVisibleWithText( sel
  *  @param {CasperJS selector} messageSelector what element in which to search for the text
  *      (defaults to '.errormessage')
  */
-SpaceGhost.prototype.assertErrorMessage = function assertSelectorAndTextInFrame( message, frame, messageSelector ){
+SpaceGhost.prototype.assertErrorMessage = function assertErrorMessage( message, frame, messageSelector ){
     messageSelector = messageSelector || this.data.selectors.messages.error;
     frame = frame || this.data.selectors.frames.main;
     this.assertSelectorAndTextInFrame( messageSelector, message, frame );
@@ -1135,8 +1135,7 @@ SpaceGhost.prototype.data = {
         masthead : {
             adminLink : '#masthead a[href="/admin/index"]',
             userMenu : {
-                userEmail       : 'a #user-email',
-                userEmail_xpath : '//a[contains(text(),"Logged in as")]/span["id=#user-email"]'
+                userEmail_xpath : '//a[contains(text(),"Logged in as")]'
             }
         },
         loginPage : {
