@@ -252,6 +252,10 @@ class BaseJobRunner( object ):
         options.update(**kwds)
         return job_script(**options)
 
+    def _complete_terminal_job( self, ajs, **kwargs ):
+        if ajs.job_wrapper.get_state() != model.Job.states.DELETED:
+            self.work_queue.put( ( self.finish_job, ajs ) )
+
 
 class AsynchronousJobState( object ):
     """
