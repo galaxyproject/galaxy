@@ -56,7 +56,7 @@ var utils = require( 'utils' ),
     filepathToUpload = '../../test-data/1.txt',
     testUploadInfo = {},
     //TODO: get from the api module - that doesn't exist yet
-    summaryShouldBeArray = [ '10 lines', 'format: txt' ],
+    summaryShouldBeArray = [ '10 lines', 'format', 'txt' ],
     infoShouldBe = 'uploaded txt file',
     metadataFiles = null,
     peekShouldBeArray = [];
@@ -104,13 +104,14 @@ function testIconButton( hdaDbId, containerSelector, buttonName, expectedButtonD
 
     if( expectedButtonData.hrefTpl ){
         var href = buttonElement.attributes.href,
-            hrefShouldBe = utils.format( expectedButtonData.hrefTpl, hdaDbId );
+            hrefShouldBe = ( expectedButtonData.hrefTpl.indexOf( '%s' ) !== -1 )?
+                ( utils.format( expectedButtonData.hrefTpl, hdaDbId ) ):( expectedButtonData.hrefTpl );
         this.assertTextContains( href, hrefShouldBe,
             buttonName + ' has proper href (' + hrefShouldBe + '): ' + href );
     }
 
     if( expectedButtonData.tooltip ){
-        this.historypanel.hoverOver( btnSelector );
+        this.hoverOver( btnSelector );
         var tooltipText = expectedButtonData.tooltip;
         this.test.assertVisible( tooltipSelector, buttonName + ' button tooltip is visible when hovering' );
         this.test.assertSelectorHasText( tooltipSelector, tooltipText,
@@ -159,7 +160,7 @@ function testDbkey( hdaSelector, dbkeySetTo ){
         this.test.assertSelectorHasText( dbkeySelector, dbkeySetTo,
             'dbkey is specified: ' + dbkey.text );
         this.test.assert( dbkey.nodeName === specifiedDbkeyNodeName,
-            'dbkey has proper nodeName (' + specifiedDbkeyNodeName + '):' + dbkey.nodeName );
+            'dbkey has proper nodeName (' + specifiedDbkeyNodeName + '): ' + dbkey.nodeName );
 
     // dbkey expected to be not set
     } else {
@@ -305,7 +306,7 @@ function testExpandedBody( hdaSelector, expectedSummaryTextArray, expectedInfoTe
 
 // =================================================================== TESTS
 // ------------------------------------------------------------------- ok state
-spaceghost.withHistoryPanel( function(){
+spaceghost.then( function(){
     this.test.comment( 'HDAs in the "ok" state should be well formed' );
 
     var uploadSelector = '#' + testUploadInfo.hdaElement.attributes.id;
@@ -329,13 +330,10 @@ spaceghost.withHistoryPanel( function(){
 
     this.test.comment( 'clicking the hda title should expand its body' );
     this.historypanel.thenExpandHda( uploadSelector, function(){
-        // ugh.
-        this.jumpToHistory( function(){
-            testExpandedBody.call( spaceghost, uploadSelector,
-                summaryShouldBeArray, infoShouldBe, false, metadataFiles );
-            //testExpandedBody.call( spaceghost, uploadSelector,
-            //    summaryShouldBeArray, infoShouldBe, false );
-        });
+        testExpandedBody.call( spaceghost, uploadSelector,
+            summaryShouldBeArray, infoShouldBe, false, metadataFiles );
+        //testExpandedBody.call( spaceghost, uploadSelector,
+        //    summaryShouldBeArray, infoShouldBe, false );
     });
 });
 // restore to collapsed
@@ -350,7 +348,7 @@ spaceghost.then( function(){
 });
 
 // ------------------------------------------------------------------- new state
-spaceghost.withHistoryPanel( function(){
+spaceghost.then( function(){
     // set state directly through model, wait for re-render
     //TODO: not ideal to test this
     this.evaluate( function(){
@@ -385,7 +383,7 @@ spaceghost.withHistoryPanel( function(){
                 'HDA body has text: ' + expectedBodyText );
         });
 
-        this.historypanel.then( function(){
+        this.then( function(){
             this.test.comment( 'a simulated error on a new dataset should appear in a message box' );
             // datasets that error on fetching their data appear as 'new', so do this here
             // more of a unit test, but ok
@@ -410,7 +408,7 @@ spaceghost.withHistoryPanel( function(){
     });
 });
 // restore state, collapse
-spaceghost.withHistoryPanel( function revertStateAndCollapse(){
+spaceghost.then( function revertStateAndCollapse(){
     var uploadSelector = '#' + testUploadInfo.hdaElement.attributes.id;
 
     this.historypanel.thenCollapseHda( uploadSelector, function(){

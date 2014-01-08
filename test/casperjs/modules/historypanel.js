@@ -136,7 +136,7 @@ HistoryPanel.prototype.waitForHdas = function waitForHdas( then, timeout, maxWai
  */
 HistoryPanel.prototype._thenExpandOrCollapseHda = function _thenExpandOrCollapseHda( hdaSelector, then, desiredClosed ){
     // using a step here (instead of a jump) bc we need the wait for function
-    this.then( function checkingHda(){
+    this.spaceghost.then( function checkingHda(){
         this.info( (( desiredClosed )?( 'collapsing' ):( 'expanding' )) + ' hda: ' + hdaSelector );
 
         // click to open if the body isn't visible and call wait to account for opening animation
@@ -241,7 +241,7 @@ HistoryPanel.prototype.waitForHdaState = function waitForHdaState( hdaSelector, 
  *  @param {Function} timeoutFn     function to be called if/when the deleted attempted times out (optional)
  */
 HistoryPanel.prototype.deleteHda = function deleteHda( hdaSelector, whenDeletedFn, timeoutFn ){
-    this.then( function deletingHda(){
+    this.spaceghost.then( function deletingHda(){
         var hdaId = this.getElementInfo( hdaSelector ).attributes.id,
             deleteIconSelector = '#' + hdaId + ' ' + this.historypanel.data.hdaTitleButtons['delete'].selector;
         this.click( deleteIconSelector );
@@ -286,39 +286,39 @@ HistoryPanel.prototype.data = {
     hdaTitleButtons : {
         // mixing text and selectors here
         display : {
-            selector : '.icon-button.display',
+            selector : '.icon-btn.dataset-display',
             tooltip  : 'View data',
             hrefTpl  : '/datasets/%s/display',
             nodeName : 'a'
         },
         edit : {
-            selector : '.icon-button.edit',
-            tooltip  : 'Edit Attributes',
+            selector : '.icon-btn.dataset-edit',
+            tooltip  : 'Edit attributes',
             hrefTpl  : '/datasets/%s/edit',
             nodeName : 'a'
         },
         'delete' : {
-            selector : '.icon-button.delete',
+            selector : '.icon-btn.dataset-delete',
             tooltip  : 'Delete',
-            hrefTpl  : '/datasets/%s/delete_async',
+            hrefTpl  : 'javascript:void(0);',
             nodeName : 'a'
         }
     },
     hdaPrimaryActionButtons : {
         download : {
-            selector : '.icon-button.disk',
+            selector : '.icon-btn.dataset-download-btn',
             tooltip  : 'Download',
             hrefTpl  : '/datasets/%s/display?to_ext=',
             nodeName : 'a'
         },
         info : {
-            selector : '.icon-button.information',
+            selector : '.icon-btn.dataset-params-btn',
             tooltip  : 'View details',
             hrefTpl  : '/datasets/%s/show_params',
             nodeName : 'a'
         },
         rerun : {
-            selector : '.icon-button.arrow-circle',
+            selector : '.icon-btn.dataset-rerun-btn',
             tooltip  : 'Run this job again',
             hrefTpl  : '/tool_runner/rerun?id=%s',
             nodeName : 'a'
@@ -354,12 +354,12 @@ HistoryPanel.prototype.data = {
             title           : '.dataset-title',
             titleButtonArea : '.dataset-primary-actions',
             summary         : '.dataset-summary',
-            dbkey           : '.dataset-dbkey',
+            dbkey           : '.dataset-dbkey .value',
             info            : '.dataset-info',
             body            : '.dataset-body',
             
-            primaryActionButtons    : 'div[id^="primary-actions"]',
-            secondaryActionButtons  : 'div[id^="secondary-actions"]',
+            primaryActionButtons    : '.dataset-actions .left',
+            secondaryActionButtons  : '.dataset-actions .right',
 
             peek            : '.dataset-peek'
         }
