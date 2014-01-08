@@ -89,12 +89,16 @@ class RepositoryRevisionsController( BaseAPIController ):
                 for rd_tup in rd_tups:
                     tool_shed, name, owner, changeset_revision = rd_tup[ 0:4 ]
                     repository_dependency = suc.get_repository_by_name_and_owner( trans.app, name, owner )
+                    repository_dependency_id = trans.security.encode_id( repository_dependency.id )
+                    repository_dependency_repository_metadata = \
+                        suc.get_repository_metadata_by_changeset_revision( trans, repository_dependency_id, changeset_revision )
+                    repository_dependency_repository_metadata_id = trans.security.encode_id( repository_dependency_repository_metadata.id )
                     repository_dependency_dict = repository_dependency.to_dict( view='element', value_mapper=value_mapper )
                     # We have to add the changeset_revision of of the repository dependency.
                     repository_dependency_dict[ 'changeset_revision' ] = changeset_revision
                     repository_dependency_dict[ 'url' ] = web.url_for( controller='repositories',
                                                                        action='show',
-                                                                       id=trans.security.encode_id( repository_dependency.id ) )
+                                                                       id=repository_dependency_repository_metadata_id )
                     repository_dependencies_dicts.append( repository_dependency_dict )
             return repository_dependencies_dicts
         except Exception, e:
