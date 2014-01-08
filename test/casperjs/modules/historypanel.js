@@ -330,6 +330,7 @@ HistoryPanel.prototype.data = {
         history : {
             title       : '.history-title',
             name        : '.history-title .history-name',
+            nameEditableTextInput : '.history-name input',
             subtitle    : '.history-subtitle',
             tagIcon     : '.history-secondary-actions .history-tag-btn',
             tagArea     : '.history-controls .tags-display',

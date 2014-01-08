@@ -559,7 +559,7 @@ SpaceGhost.prototype.tryStepsCatch = function tryStepsCatch( stepsFn, catchFn ){
 SpaceGhost.prototype.hoverOver = function hoverOver( selector, whenHovering ){
     var elementInfo = this.getElementInfo( selector );
     this.page.sendEvent( 'mousemove', elementInfo.x + 1, elementInfo.y + 1 );
-    whenHovering.call( this );
+    if( whenHovering ){ whenHovering.call( this ); }
     return this;
 };
 
@@ -1107,7 +1107,6 @@ SpaceGhost.prototype.data = {
         tooltipBalloon          : '.tooltip',
 
         editableText            : '.editable-text',
-        editableTextInput       : 'input#renaming-active',
 
         messages : {
             all         : '[class*="message"]',

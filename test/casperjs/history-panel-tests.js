@@ -40,7 +40,7 @@ if( spaceghost.fixtureData.testUser ){
 // selectors and labels
 var tooltipSelector     = spaceghost.data.selectors.tooltipBalloon,
     editableTextClass   = spaceghost.data.selectors.editableText,
-    editableTextInput   = spaceghost.data.selectors.editableTextInput,
+    editableTextInput   = spaceghost.historypanel.data.selectors.history.nameEditableTextInput,
 
     nameSelector     = spaceghost.historypanel.data.selectors.history.name,
     subtitleSelector = spaceghost.historypanel.data.selectors.history.subtitle,
@@ -56,8 +56,7 @@ var tooltipSelector     = spaceghost.data.selectors.tooltipBalloon,
     nameTooltip      = spaceghost.historypanel.data.text.history.tooltips.name,
 
     refreshButtonSelector       = 'a#history-refresh-button',
-    refreshButtonIconSelector   = 'span.fa-icon-refresh',
-    refreshButtonHref           = '/history',
+    refreshButtonIconSelector   = 'span.fa-refresh',
 
     includeDeletedOptionsLabel = spaceghost.historyoptions.data.labels.options.includeDeleted;
 
@@ -76,9 +75,6 @@ spaceghost.user.loginOrRegisterUser( email, password );
 // ------------------------------------------------------------------- check structure of empty history
 spaceghost.thenOpen( spaceghost.baseUrl ).historypanel.waitForHdas( function(){
     this.test.comment( 'history panel with a new, empty history should be well formed' );
-    this.test.comment( "frame should have proper url and title: 'History'" );
-    this.test.assertMatch( this.getCurrentUrl(), /\/history/, 'Found history frame url' );
-    this.test.assertTitle( this.getTitle(), 'History', 'Found history frame title' );
 
     this.test.comment( "history name should exist, be visible, and have text " + unnamedName );
     this.test.assertExists( nameSelector, nameSelector + ' exists' );
@@ -103,11 +99,11 @@ spaceghost.thenOpen( spaceghost.baseUrl ).historypanel.waitForHdas( function(){
 });
 
 // ------------------------------------------------------------------- name editing
-spaceghost.withHistoryPanel( function(){
+spaceghost.then( function(){
     this.test.comment( 'history panel, editing the history name' );
 
     this.test.comment( 'name should have a tooltip with proper info on name editing' );
-    this.historypanel.hoverOver( nameSelector );
+    this.hoverOver( nameSelector );
     this.test.assertExists( tooltipSelector, "Found tooltip after name hover" );
     this.test.assertSelectorHasText( tooltipSelector, nameTooltip );
     // clear the tooltip
@@ -116,6 +112,7 @@ spaceghost.withHistoryPanel( function(){
     this.test.comment( 'name should be create an input when clicked' );
     this.assertHasClass( nameSelector, editableTextClass, "Name field classed for editable text" );
     this.click( nameSelector );
+    spaceghost.debug( editableTextInput );
     this.test.assertExists( editableTextInput, "Clicking on name creates an input" );
 
     this.test.comment( 'name should be editable by entering keys and pressing enter' );
@@ -129,7 +126,7 @@ spaceghost.withHistoryPanel( function(){
     });
 });
 
-spaceghost.withHistoryPanel( function(){
+spaceghost.then( function(){
     this.test.comment( 'name should revert if user clicks away while editing' );
 
     this.click( nameSelector );
@@ -142,7 +139,7 @@ spaceghost.withHistoryPanel( function(){
     });
 });
 
-spaceghost.withHistoryPanel( function(){
+spaceghost.then( function(){
     this.test.comment( 'name should revert if user hits ESC while editing' );
 
     this.click( nameSelector );
@@ -168,7 +165,7 @@ spaceghost.tools.uploadFile( filepathToUpload, function uploadCallback( _uploadI
     testUploadInfo = _uploadInfo;
 });
 
-spaceghost.withHistoryPanel( function checkPanelStructure(){
+spaceghost.then( function checkPanelStructure(){
     this.test.comment( 'checking structure of non-empty panel' );
 
     this.test.comment( "history name should exist, be visible, and have text " + unnamedName );
@@ -196,7 +193,7 @@ spaceghost.withHistoryPanel( function checkPanelStructure(){
 // ------------------------------------------------------------------- tags
 // keeping this light here - better for it's own test file
 //TODO: check tooltips
-spaceghost.withHistoryPanel( function openTags(){
+spaceghost.then( function openTags(){
     this.test.comment( 'tag area should open when the history panel tag icon is clicked' );
 
     this.click( tagIconSelector );
@@ -204,7 +201,7 @@ spaceghost.withHistoryPanel( function openTags(){
         this.test.assertVisible( tagAreaSelector, 'Tag area is now displayed' );
     });
 });
-spaceghost.withHistoryPanel( function closeAnnotation(){
+spaceghost.then( function closeAnnotation(){
     this.test.comment( 'annotation area should close when the history panel tag icon is clicked again' );
 
     this.click( tagIconSelector );
@@ -216,7 +213,7 @@ spaceghost.withHistoryPanel( function closeAnnotation(){
 // ------------------------------------------------------------------- annotation
 // keeping this light here - better for it's own test file
 //TODO: check tooltips
-spaceghost.withHistoryPanel( function openAnnotation(){
+spaceghost.then( function openAnnotation(){
     this.test.comment( 'annotation area should open when the history panel annotation icon is clicked' );
 
     this.click( annoIconSelector );
@@ -224,7 +221,7 @@ spaceghost.withHistoryPanel( function openAnnotation(){
         this.test.assertVisible( annoAreaSelector, 'Annotation area is now displayed' );
     });
 });
-spaceghost.withHistoryPanel( function closeAnnotation(){
+spaceghost.then( function closeAnnotation(){
     this.test.comment( 'annotation area should close when the history panel tag icon is clicked again' );
 
     this.click( annoIconSelector );
@@ -240,12 +237,10 @@ spaceghost.then( function refreshButton(){
     this.test.assertExists(  refreshButtonSelector, "Found refresh button" );
     this.test.assertVisible( refreshButtonSelector, "Refresh button is visible" );
     this.test.assertVisible( refreshButtonSelector + ' ' + refreshButtonIconSelector, "Refresh icon is visible" );
-    this.test.assert( this.getElementAttribute( refreshButtonSelector, 'href' ) === refreshButtonHref,
-        "Refresh button has href: " + refreshButtonHref );
 
-    this.assertNavigationRequested( refreshButtonHref, "History refreshed when clicking refresh icon", function(){
-        this.click( refreshButtonSelector );
-    });
+    //this.assertNavigationRequested( refreshButtonHref, "History refreshed when clicking refresh icon", function(){
+    //    this.click( refreshButtonSelector );
+    //});
 });
 
 // ------------------------------------------------------------------- hdas can be expanded by clicking on the hda name
@@ -275,7 +270,7 @@ spaceghost.then( function(){
 });
 
 // ------------------------------------------------------------------- expanded hdas collapse by clicking name again
-spaceghost.withHistoryPanel( function(){
+spaceghost.then( function(){
     this.test.comment( 'Expanded hdas collapse by clicking name again' );
     var uploadedSelector = '#' + testUploadInfo.hdaElement.attributes.id;
 
