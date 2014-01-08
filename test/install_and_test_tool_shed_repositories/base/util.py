@@ -899,6 +899,7 @@ def populate_install_containers_for_repository_dependencies( app, repository, re
             else:
                 # Check the required repository's time_last_tested value to see if its tool_test_results column
                 # has been updated within the past 12 hours.
+                """
                 twelve_hours_ago = datetime.utcnow() - timedelta( hours=12 )
                 time_last_tested, error_message = get_time_last_tested( galaxy_tool_shed_url, repository_metadata_id )
                 if time_last_tested is not None and time_last_tested < twelve_hours_ago:
@@ -915,6 +916,7 @@ def populate_install_containers_for_repository_dependencies( app, repository, re
                 else:
                     log.debug( 'Version %s of repository dependency %s owned by %s was last tested more than 12 hours ago.' % \
                         ( changeset_revision, name, owner ) )
+                """
                 # Inspect the tool_test_results_dict for the last test run to see if it has not yet been populated.
                 if len( tool_test_results_dicts ) == 0:
                     tool_test_results_dict = {}
