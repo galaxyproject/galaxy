@@ -271,7 +271,7 @@ HistoryPanel.prototype.deleteHda = function deleteHda( hdaSelector, whenDeletedF
  */
 HistoryPanel.prototype.undeleteHda = function undeleteHda( hdaSelector, whenUndeletedFn ){
     this.spaceghost.historyoptions.includeDeleted( function(){
-        this.click( hdaSelector + ' ' + this.historypanel.data.selectors.history.undeleteLink );
+        this.click( hdaSelector + ' ' + this.historypanel.data.selectors.hda.undeleteLink );
         this.historyoptions.excludeDeleted( function(){
             this.info( 'hda undeleted: ' + hdaSelector );
             if( utils.isFunction( whenUndeletedFn ) ){ whenUndeletedFn.call( this ); }
@@ -338,7 +338,6 @@ HistoryPanel.prototype.data = {
             annoArea    : '.history-controls .annotation-display',
             emptyMsg    : '.empty-history-message',
             hdaContainer: '.datasets-list'
-            //undeleteLink : '.historyItemUndelete',
         },
         hda : {
             wrapper : {
@@ -360,6 +359,9 @@ HistoryPanel.prototype.data = {
             
             primaryActionButtons    : '.dataset-actions .left',
             secondaryActionButtons  : '.dataset-actions .right',
+
+            undeleteLink    : '.dataset-undelete',
+            purgeLink       : '.dataset-purge',
 
             peek            : '.dataset-peek'
         }
