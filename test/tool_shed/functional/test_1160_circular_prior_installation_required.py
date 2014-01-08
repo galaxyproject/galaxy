@@ -222,14 +222,16 @@ class TestSimplePriorInstallation( ShedTwillTestCase ):
         filter_repository = self.test_db_util.get_installed_repository_by_name_owner( filter_repository_name, common.test_user_1_name )
         column_repository = self.test_db_util.get_installed_repository_by_name_owner( column_repository_name, common.test_user_1_name )
         convert_repository = self.test_db_util.get_installed_repository_by_name_owner( convert_repository_name, common.test_user_1_name )
+        # TODO: Tweak the uninstall_repository method by pulling out the stuff that deactivates a repository
+        # instead of uninstalling it and create a new deactivate_repository method.
         self.uninstall_repository( filter_repository, remove_from_disk=False )
         self.uninstall_repository( column_repository, remove_from_disk=False )
         self.uninstall_repository( convert_repository, remove_from_disk=False )
         
-    def test_0045_reinstall_filter_repository( self ):
+    def test_0045_reactivatel_filter_repository( self ):
         '''Reinstall the filtering_0160 repository.'''
         filter_repository = self.test_db_util.get_installed_repository_by_name_owner( filter_repository_name, common.test_user_1_name )
-        self.reinstall_repository( filter_repository )
+        self.reactivate_repository( filter_repository )
         strings_displayed = [ 'filtering_0160',
                               "Galaxy's filtering tool for test 0160",
                               'user1', 
@@ -242,6 +244,7 @@ class TestSimplePriorInstallation( ShedTwillTestCase ):
         
     def test_0050_verify_reinstallation_order( self ):
         '''Verify that convert_chars_0160 and column_maker_0160 were reinstalled before filtering_0160.'''
+        # Fixme: this test is not covering any important behavior since repositories were only deactivated and not uninstalled.
         filter_repository = self.test_db_util.get_installed_repository_by_name_owner( filter_repository_name, common.test_user_1_name )
         column_repository = self.test_db_util.get_installed_repository_by_name_owner( column_repository_name, common.test_user_1_name )
         convert_repository = self.test_db_util.get_installed_repository_by_name_owner( convert_repository_name, common.test_user_1_name )
