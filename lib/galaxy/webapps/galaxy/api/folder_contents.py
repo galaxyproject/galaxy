@@ -108,8 +108,6 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
                 return_item.update ( dict ( item_count = content_item.item_count ) )
 
             if content_item.api_type == 'file':
-                log.debug( 'FolderContentsController, method index(), dataset name: ' + content_item.name )
-                log.debug( 'vars: ' + str(vars( content_item )) )
                 library_dataset_dict = content_item.to_dict()
                 library_dataset_dict['data_type']
                 library_dataset_dict['file_size']

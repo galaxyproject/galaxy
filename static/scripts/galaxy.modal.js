@@ -19,7 +19,9 @@ var GalaxyModal = Backbone.View.extend(
     
     // options
     options : {
-        destructible: false // by default the modal cannot be removed by theself.destroy() method
+        // by default the modal cannot be removed by the self.destroy() method 
+        // but only hidden through self.hide()
+        destructible: false 
     },
     
     // initialize
@@ -99,9 +101,9 @@ var GalaxyModal = Backbone.View.extend(
     hide: function(){
         // fade out
         this.$el.fadeOut('fast');
-        
         // set flag
         this.visible = false;
+        // unbind events
         this.unbindEvents();
     },    
 
@@ -109,8 +111,8 @@ var GalaxyModal = Backbone.View.extend(
     destroy: function(){
         // set flag
         this.visible = false;
+        // unbind events
         this.unbindEvents();
-
         // remove
         this.$el.remove();
     },
