@@ -33,32 +33,15 @@ var xpath = require( 'casper' ).selectXPath;
 
 // =================================================================== API (external)
 // ------------------------------------------------------------------- frame control
-///** Is casper currently 'in' the history frame?
-// *  @returns {Boolean}
+///** Hover over an element in the history panel.
+// *  @param {String} selector        a css or xpath selector for an historyItemWrapper
 // */
-//HistoryPanel.prototype.inFrame = function inFrame(){
-//    return ( ( this.spaceghost.page.frameName === this.spaceghost.data.selectors.frames.history )
-//          && ( this.spaceghost.page.frameTitle === this.data.text.frameTitle ) );
+//HistoryPanel.prototype.hoverOver = function hoverOver( selector ){
+//    var spaceghost = this.spaceghost,
+//        elementInfo = spaceghost.getElementInfo( selector );
+//    spaceghost.page.sendEvent( 'mousemove', elementInfo.x + 1, elementInfo.y + 1 );
+//    return spaceghost;
 //};
-
-/** Hover over an element in the history panel.
- *  @param {String} selector        a css or xpath selector for an historyItemWrapper
- */
-HistoryPanel.prototype.hoverOver = function hoverOver( selector ){
-    var spaceghost = this.spaceghost,
-        historyFrameInfo = spaceghost.jumpToTop( function(){
-            return spaceghost.getElementInfo( 'iframe[name="galaxy_history"]' );
-        });
-    //spaceghost.debug( 'historyFrameInfo:\n' + spaceghost.jsonStr( historyFrameInfo ) );
-
-    spaceghost.jumpToHistory( function(){
-        var elementInfo = spaceghost.getElementInfo( selector ),
-            newCoords = { x: ( historyFrameInfo.x + elementInfo.x ),
-                          y: ( historyFrameInfo.y + elementInfo.y ) };
-        spaceghost.page.sendEvent( 'mousemove', newCoords.x + 1, newCoords.y + 1 );
-    });
-    return spaceghost;
-};
 
 // ------------------------------------------------------------------- hdas
 ///** Parse the hid and name from an HDA title.

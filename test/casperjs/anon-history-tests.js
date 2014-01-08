@@ -54,7 +54,8 @@ var tooltipSelector     = spaceghost.data.selectors.tooltipBalloon,
     anonNameTooltip     = spaceghost.historypanel.data.text.anonymous.tooltips.name;
 
 var historyFrameInfo = {},
-    filepathToUpload = '../../test-data/1.txt',
+    filenameToUpload = '1.txt',
+    filepathToUpload = '../../test-data/' + filenameToUpload,
     testUploadInfo = {};
 
 
@@ -70,10 +71,6 @@ spaceghost.thenOpen( spaceghost.baseUrl, function(){
 // ------------------------------------------------------------------- check the empty history for well formedness
 spaceghost.historypanel.waitForHdas( function testPanelStructure(){
     this.test.comment( 'history panel for anonymous user, new history' );
-
-    this.test.comment( "frame should have proper url and title: 'History'" );
-    this.test.assertMatch( this.getCurrentUrl(), /\/history/, 'Found history frame url' );
-    this.test.assertTitle( this.getTitle(), 'History', 'Found history frame title' );
 
     this.test.comment( "history name should exist, be visible, and have text " + unnamedName );
     this.test.assertExists( nameSelector, nameSelector + ' exists' );
@@ -96,11 +93,6 @@ spaceghost.historypanel.waitForHdas( function testPanelStructure(){
     this.test.assertSelectorHasText( emptyMsgSelector, emptyMsgStr,
         'Message contains "' + emptyMsgStr + '"' );
 
-    this.test.comment( 'name should have a tooltip with info on anon-user name editing' );
-    this.historypanel.hoverOver( nameSelector );
-    this.test.assertExists( tooltipSelector, "Found tooltip after name hover" );
-    this.test.assertSelectorHasText( tooltipSelector, anonNameTooltip );
-
     this.test.comment( 'name should NOT be editable when clicked by anon-user' );
     this.assertDoesntHaveClass( nameSelector, editableTextClass, "Name field is not classed as editable text" );
     this.click( nameSelector );
@@ -115,10 +107,11 @@ spaceghost.then( function testAnonUpload(){
         this.debug( 'uploaded HDA info: ' + this.jsonStr( this.quickInfo( _uploadInfo.hdaElement ) ) );
         var hasHda = _uploadInfo.hdaElement,
             hasClass = _uploadInfo.hdaElement.attributes[ 'class' ],
-            hasOkClass = _uploadInfo.hdaElement.attributes[ 'class' ].indexOf( 'historyItem-ok' ) !== -1;
+            hasOkClass = _uploadInfo.hdaElement.attributes[ 'class' ].indexOf( 'state-ok' ) !== -1;
         this.test.assert( ( hasHda && hasClass && hasOkClass ), "Uploaded file: " + _uploadInfo.hdaElement.text );
         testUploadInfo = _uploadInfo;
     });
+
 });
 spaceghost.then( function testAnonUpload(){
     this.test.comment( "empty should be NO LONGER be displayed" );
@@ -136,7 +129,7 @@ spaceghost.thenOpen( spaceghost.baseUrl, function(){
     this.test.assert( loggedInAs === email, 'loggedInAs() matches email: "' + loggedInAs + '"' );
 
     this.historypanel.waitForHdas( function(){
-        var hdaInfo = this.historypanel.hdaElementInfoByTitle( testUploadInfo.hdaElement.text );
+        var hdaInfo = this.historypanel.hdaElementInfoByTitle( filenameToUpload );
         this.test.assert( hdaInfo !== null, "After logging in - found a matching hda by name and hid" );
         if( hdaInfo ){
             this.test.assert( testUploadInfo.hdaElement.attributes.id === hdaInfo.attributes.id,

@@ -89,9 +89,11 @@ Tools.prototype._uploadFile = function _uploadFile( filepath ){
     // click the upload tool
     spaceghost.thenOpen( spaceghost.baseUrl, function(){
         // we can apprently click a tool label without expanding the tool container for it
-        this.click( xpath( '//a[contains(text(),"Upload File")]' ) );
-        this.jumpToMain( function(){
-            this.waitForSelector( 'body' );
+        this.waitForSelector( '.toolMenu',  function(){
+            this.click( xpath( '//a[contains(text(),"Upload File")]' ) );
+            this.jumpToMain( function(){
+                this.waitForSelector( 'body' );
+            });
         });
     });
 
