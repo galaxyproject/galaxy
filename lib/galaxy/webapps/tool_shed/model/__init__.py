@@ -275,7 +275,8 @@ class RepositoryMetadata( object, Dictifiable ):
         rval = super( RepositoryMetadata, self ).to_dict( view=view, value_mapper=value_mapper )
         if 'time_last_tested' in rval:
             time_last_tested = rval[ 'time_last_tested' ]
-            rval[ 'time_last_tested' ] = time_last_tested.isoformat()
+            if time_last_tested is not None:
+                rval[ 'time_last_tested' ] = time_last_tested.isoformat()
         return rval
 
 
