@@ -81,7 +81,6 @@ User.prototype._submitLogin = function _submitLogin( email, password ){
 
     spaceghost.thenOpen( spaceghost.baseUrl, function(){
         spaceghost.waitForMasthead( function() {
-            spaceghost.clickLabel( spaceghost.data.labels.masthead.menus.user );
             spaceghost.clickLabel( spaceghost.data.labels.masthead.userMenu.login );
 
             spaceghost.withMainPanel( function mainBeforeLogin(){
@@ -162,7 +161,7 @@ User.prototype.loggedInAs = function loggedInAs(){
     try {
         var emailSelector = xpath( spaceghost.data.selectors.masthead.userMenu.userEmail_xpath ),
             loggedInInfo = spaceghost.elementInfoOrNull( emailSelector );
-        if( loggedInInfo ){
+        if( loggedInInfo !== null ){
             userEmail = loggedInInfo.text.replace( 'Logged in as ', '' );
         }
     } catch( err ){
@@ -177,13 +176,13 @@ User.prototype.loggedInAs = function loggedInAs(){
  */
 User.prototype.logout = function logout(){
     var spaceghost = this.spaceghost;
-    if( !this.loggedInAs() ){ return spaceghost; }
     spaceghost.thenOpen( spaceghost.baseUrl, function(){
         this.info( 'user logging out' );
-        //TODO: handle already logged out
         spaceghost.waitForMasthead( function _logout() {
-            spaceghost.clickLabel( spaceghost.data.labels.masthead.menus.user );
-            spaceghost.clickLabel( spaceghost.data.labels.masthead.userMenu.logout );
+            if( spaceghost.user.loggedInAs() ){
+                spaceghost.clickLabel( spaceghost.data.labels.masthead.menus.user );
+                spaceghost.clickLabel( spaceghost.data.labels.masthead.userMenu.logout );
+            }
         });
     });
     return spaceghost;

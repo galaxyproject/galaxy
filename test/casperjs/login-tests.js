@@ -39,7 +39,7 @@ if( spaceghost.fixtureData.testUser ){
     password = spaceghost.fixtureData.testUser.password;
 }
 
-var userEmailSelector = '//a[contains(text(),"Logged in as")]/span["id=#user-email"]';
+var userEmailSelector = '//a[contains(text(),"Logged in as")]';
 
 // =================================================================== TESTS
 // register a user (again...)
@@ -53,9 +53,11 @@ spaceghost.then( function(){
     this.test.comment( 'logging out: ' + email );
     spaceghost.user.logout();
 });
-spaceghost.then( function(){
-    this.test.assertSelectorDoesntHaveText( xpath( userEmailSelector ), /\w/ );
-    this.test.assert( spaceghost.user.loggedInAs() === '', 'loggedInAs() is empty string' );
+spaceghost.thenOpen( spaceghost.baseUrl, function(){
+    spaceghost.waitForMasthead( function() {
+        this.test.assertDoesntExist( xpath( userEmailSelector ) );
+        this.test.assert( spaceghost.user.loggedInAs() === '', 'loggedInAs() is empty string' );
+    });
 });
 
 // log them back in - check for email in logged in text
