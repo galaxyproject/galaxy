@@ -898,16 +898,16 @@ def populate_install_containers_for_repository_dependencies( app, repository, re
                 log.debug( 'due to the following error getting tool_test_results:\n%s' % str( error_message ) )
             else:
                 # Check the required repository's time_last_tested value to see if its tool_test_results column
-                # has been updated within the past 12 hours.
-                """
-                twelve_hours_ago = datetime.utcnow() - timedelta( hours=12 )
+                # has been updated within the past 12 hours.  The RepositoryMetadata class's to_dict() method
+                # returns the value of time_last_tested in datetime.isoformat().
+                twelve_hours_ago = ( datetime.utcnow() - timedelta( hours=12 ) ).isoformat()
                 time_last_tested, error_message = get_time_last_tested( galaxy_tool_shed_url, repository_metadata_id )
                 if time_last_tested is not None and time_last_tested < twelve_hours_ago:
                     log.debug( 'The install containers for version %s of repository dependency %s owned by %s have been ' % \
                         ( changeset_revision, name, owner ) )
                     log.debug( 'populated within the past 12 hours (likely in this test run), so skipping this check.' )
                     continue
-                if time_last_tested is None:
+                elif time_last_tested is None:
                     log.debug( 'The time_last_tested column value is None for version %s of repository dependency %s owned by %s.' % \
                         ( changeset_revision, name, owner ) )
                 elif time_last_tested < twelve_hours_ago:
@@ -916,7 +916,6 @@ def populate_install_containers_for_repository_dependencies( app, repository, re
                 else:
                     log.debug( 'Version %s of repository dependency %s owned by %s was last tested more than 12 hours ago.' % \
                         ( changeset_revision, name, owner ) )
-                """
                 # Inspect the tool_test_results_dict for the last test run to see if it has not yet been populated.
                 if len( tool_test_results_dicts ) == 0:
                     tool_test_results_dict = {}
@@ -977,8 +976,8 @@ def populate_install_containers_for_repository_dependencies( app, repository, re
                 else:
                     log.debug( 'Cannot retrieve revision %s of required repository %s owned by %s from the database ' % \
                         ( changeset_revision, name, owner ) )
-                    log.debug( 'so tool_test_results cannot be saved.' )
-                    log.debug( 'The attributes used to retrieve the record are:\n' )
+                    log.debug( 'so tool_test_results cannot be saved at this time.' )
+                    log.debug( 'The attributes used to retrieve the record are:' )
                     log.debug( 'tool_shed: %s name: %s owner: %s changeset_revision: %s' % \
                         ( cleaned_tool_shed_url, name, owner, changeset_revision ) )
 
