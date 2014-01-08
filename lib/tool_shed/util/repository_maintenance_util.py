@@ -154,6 +154,9 @@ def create_repository_and_import_archive( trans, repository_archive_dict, import
                 # Populate the new repository with the contents of exported repository archive.
                 results_dict = import_util.import_repository_archive( trans, repository, repository_archive_dict )
                 ok = results_dict.get( 'ok', False )
+                error_message = results_dict.get( 'error_message', '' )
+                if error_message:
+                    results_message += error_message
                 import_results_tups.append( ( ok, ( str( name ), str( username ) ), results_message ) )
         else:
             # The repository either already exists in this Tool Shed or the current user is not authorized to create it.
