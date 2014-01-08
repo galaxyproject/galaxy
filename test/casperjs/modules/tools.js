@@ -89,7 +89,7 @@ Tools.prototype._uploadFile = function _uploadFile( filepath ){
     // click the upload tool
     spaceghost.thenOpen( spaceghost.baseUrl, function(){
         // we can apprently click a tool label without expanding the tool container for it
-        this.clickLabel( spaceghost.data.labels.tools.upload.panelLabel );
+        this.click( xpath( '//a[contains(text(),"Upload File")]' ) );
         this.jumpToMain( function(){
             this.waitForSelector( 'body' );
         });
@@ -108,7 +108,7 @@ Tools.prototype._uploadFile = function _uploadFile( filepath ){
 
         // wait for main panel, history reload
         ////NOTE!: assumes tool execution reloads the history panel
-        this.waitForMultipleNavigation( [ 'tool_runner/upload_async_message', 'history' ],
+        this.waitForMultipleNavigation( [ 'tool_runner/upload_async_message' ],
             function thenAfterUploadRefreshes(){
                 // debugging
                 this.jumpToMain( function(){

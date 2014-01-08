@@ -33,13 +33,13 @@ var xpath = require( 'casper' ).selectXPath;
 
 // =================================================================== API (external)
 // ------------------------------------------------------------------- frame control
-/** Is casper currently 'in' the history frame?
- *  @returns {Boolean}
- */
-HistoryPanel.prototype.inFrame = function inFrame(){
-    return ( ( this.spaceghost.page.frameName === this.spaceghost.data.selectors.frames.history )
-          && ( this.spaceghost.page.frameTitle === this.data.text.frameTitle ) );
-};
+///** Is casper currently 'in' the history frame?
+// *  @returns {Boolean}
+// */
+//HistoryPanel.prototype.inFrame = function inFrame(){
+//    return ( ( this.spaceghost.page.frameName === this.spaceghost.data.selectors.frames.history )
+//          && ( this.spaceghost.page.frameTitle === this.data.text.frameTitle ) );
+//};
 
 /** Hover over an element in the history panel.
  *  @param {String} selector        a css or xpath selector for an historyItemWrapper
@@ -61,36 +61,27 @@ HistoryPanel.prototype.hoverOver = function hoverOver( selector ){
 };
 
 // ------------------------------------------------------------------- hdas
-/** Parse the hid and name from an HDA title.
- *      NOTE: if more than one is found, will return the first found.
- *  @param {String} title   the title of the hda
- *  @returns {Object}       of the form { hid: <hid>, name: <name> }
- */
-HistoryPanel.prototype.hdaHidAndNameFromTitle = function hdaHidAndNameFromTitle( title ){
-    var sep = ': ', split = title.split( sep, 1 );
-    return {
-        name : (( split.length >= 2 )?( split[1] ):( split[0] )),
-        hid  : (( split.length >= 2 )?( parseInt( split[0], 10 ) ):( undefined ))
-    };
-};
+///** Parse the hid and name from an HDA title.
+// *      NOTE: if more than one is found, will return the first found.
+// *  @param {String} title   the title of the hda
+// *  @returns {Object}       of the form { hid: <hid>, name: <name> }
+// */
+//HistoryPanel.prototype.hdaHidAndNameFromTitle = function hdaHidAndNameFromTitle( title ){
+//    var sep = ': ', split = title.split( sep, 1 );
+//    return {
+//        name : (( split.length >= 2 )?( split[1] ):( split[0] )),
+//        hid  : (( split.length >= 2 )?( parseInt( split[0], 10 ) ):( undefined ))
+//    };
+//};
 
-/** Find the casper element info of the hda wrapper given the hda title and hid.
+/** Find the casper element info of the hda wrapper given the hda title.
  *      NOTE: if more than one is found, will return the first found.
  *  @param {String} title   the title of the hda
- *  @param {Int} hid        (optional) the hid of the hda to look for
  *  @returns {Object|null} ElementInfo of the historyItemWrapper found, null if not found
  */
-HistoryPanel.prototype.hdaElementInfoByTitle = function hdaElementInfoByTitle( title, hid ){
-    var spaceghost = this.spaceghost,
-        titleContains = ( hid !== undefined )?( hid + ': ' + title ):( title );
-    //TODO: this would fail if we named/uploaded a file that has quotations -
-    //  we can use underscore.un/escape to solve that
-
-    return spaceghost.jumpToHistory( function getWrapperInfo(){
-        var wrapperXpath = xpath( '//span[@class="historyItemTitle" ' +
-                                  'and contains(text(),"' + titleContains + '")]/../..' );
-        return spaceghost.elementInfoOrNull( wrapperXpath );
-    });
+HistoryPanel.prototype.hdaElementInfoByTitle = function hdaElementInfoByTitle( title ){
+    var wrapperXpath = xpath( '//span[@class="dataset-name" and contains(text(),"' + title + '")]/../../..' );
+    return this.spaceghost.elementInfoOrNull( wrapperXpath );
 };
 
 /** Get the state string of the given hda.
@@ -99,12 +90,10 @@ HistoryPanel.prototype.hdaElementInfoByTitle = function hdaElementInfoByTitle( t
  *  @returns {String|undefined}  class string of the historyItemWrapper found, undefined if not found or set
  */
 HistoryPanel.prototype.getHdaState = function getHdaState( hdaSelector ){
-    return this.spaceghost.jumpToHistory( function(){
-        var found = null,
-            hdaInfo = this.elementInfoOrNull( hdaSelector );
-        if( !hdaInfo ){ return undefined; }
-        return (( found = hdaInfo.attributes[ 'class' ].match( /historyItem\-(\w+)/ ) )?( found[1] ):( undefined ));
-    });
+    var found = null,
+        hdaInfo = this.spaceghost.elementInfoOrNull( hdaSelector );
+    if( !hdaInfo ){ return undefined; }
+    return (( found = hdaInfo.attributes[ 'class' ].match( /state\-(\w+)/ ) )?( found[1] ):( undefined ));
 };
 
 /** Get the encoded database/API id of the given hda.
@@ -119,20 +108,20 @@ HistoryPanel.prototype.getHdaEncodedId = function getHdaEncodedId( hdaSelector )
 };
 
 // ------------------------------------------------------------------- step functions
-/** Version of Casper#withFrame for the history iframe.
- *      Hopefully will allow easier test transition if/when frames are removed
- *      (i.e. -> just call the function).
- *      NOTE: is more than one Casper step.
- *  @param {Function} then  function called when in the history frame
- */
-HistoryPanel.prototype.then = function then( thenFn ){
-    if( this.inFrame() ){
-        thenFn.call( this.spaceghost );
-    } else {
-        this.spaceghost.withHistoryPanel( thenFn );
-    }
-};
-
+///** Version of Casper#withFrame for the history iframe.
+// *      Hopefully will allow easier test transition if/when frames are removed
+// *      (i.e. -> just call the function).
+// *      NOTE: is more than one Casper step.
+// *  @param {Function} then  function called when in the history frame
+// */
+//HistoryPanel.prototype.then = function then( thenFn ){
+//    if( this.inFrame() ){
+//        thenFn.call( this.spaceghost );
+//    } else {
+//        this.spaceghost.withHistoryPanel( thenFn );
+//    }
+//};
+//
 /** Moves into history iframe and waits until hdas are visible or empty message is.
  *      NOTE: is more than one Casper step.
  *  @see Casper@waitFor
@@ -140,13 +129,13 @@ HistoryPanel.prototype.then = function then( thenFn ){
 HistoryPanel.prototype.waitForHdas = function waitForHdas( then, timeout, maxWait ){
     //TODO:?? should this wait until the seletors are in AND they are opaque?
     var spaceghost = this.spaceghost;
-    this.then( function waitingForHdas(){
+    spaceghost.then( function waitingForHdas(){
         this.waitFor(
             function checkHpanel(){
-                // trying a subtitle opacity test for page.isloaded
                 var subtitleOpacity = this.evaluate( function( selector ){
                     return $( selector ).css( 'opacity' );
                 }, this.historypanel.data.selectors.history.subtitle );
+                // wait until the subtitle is faded in and either the hdas or the empty history msg is displayed
                 return ( subtitleOpacity !== 1
                        && ( ( this.visible( this.historypanel.data.selectors.hda.wrapper.itemClass ) )
                           ||( this.visible( this.historypanel.data.selectors.history.emptyMsg ) ) ) );
@@ -218,7 +207,7 @@ HistoryPanel.prototype.waitForHdaState = function waitForHdaState( hdaSelector, 
     var hpanel = this,
         spaceghost = this.spaceghost;
 
-    this.then( function(){
+    this.spaceghost.then( function(){
         // get initial state, cache old timeout, set new timeout
         var prevState = hpanel.getHdaState( hdaSelector ),
             oldWaitTimeout = spaceghost.options.waitTimeout;
@@ -356,39 +345,39 @@ HistoryPanel.prototype.data = {
     },
     selectors : {
         history : {
-            name        : 'div#history-name',
-            subtitle    : 'div#history-subtitle-area',
-            tagIcon     : '#history-tag.icon-button',
-            tagArea     : '#history-tag-area',
-            annoIcon    : '#history-annotate.icon-button',
-            annoArea    : '#history-annotation-area',
-            // weak
-            emptyMsg    : '.infomessagesmall',
-            undeleteLink : '.historyItemUndelete',
-            hdaContainer : '.history-datasets-list'
+            title       : '.history-title',
+            name        : '.history-title .history-name',
+            subtitle    : '.history-subtitle',
+            tagIcon     : '.history-secondary-actions .history-tag-btn',
+            tagArea     : '.history-controls .tags-display',
+            annoIcon    : '.history-secondary-actions .history-annotate-btn',
+            annoArea    : '.history-controls .annotation-display',
+            emptyMsg    : '.empty-history-message',
+            hdaContainer: '.datasets-list'
+            //undeleteLink : '.historyItemUndelete',
         },
         hda : {
             wrapper : {
-                itemClass   : '.historyItem',
+                itemClass   : '.hda',
                 stateClasses : {
-                    prefix  : 'historyItem-',
-                    ok      : 'historyItem-ok',
-                    'new'   : 'historyItem-new'
+                    prefix  : 'state-',
+                    ok      : 'state-ok',
+                    'new'   : 'state-new'
                 }
             },
             errorMessage    : '.errormessagesmall',
 
-            title           : '.historyItemTitle',
-            titleButtonArea : '.historyItemButtons',
-            body            : '.historyItemBody',
-            summary         : '.hda-summary',
-            dbkey           : '.metadata-dbkey',
-            info            : '.hda-info',
+            title           : '.dataset-title',
+            titleButtonArea : '.dataset-primary-actions',
+            summary         : '.dataset-summary',
+            dbkey           : '.dataset-dbkey',
+            info            : '.dataset-info',
+            body            : '.dataset-body',
             
             primaryActionButtons    : 'div[id^="primary-actions"]',
             secondaryActionButtons  : 'div[id^="secondary-actions"]',
 
-            peek            : 'pre.peek'
+            peek            : '.dataset-peek'
         }
     },
     labels : {
@@ -399,7 +388,7 @@ HistoryPanel.prototype.data = {
     },
     text : {
         windowTitle : 'History',
-        frameTitle : 'Galaxy History',
+        //frameTitle : 'Galaxy History',
         anonymous : {
             tooltips : {
                 name    : 'You must be logged in to edit your history name'

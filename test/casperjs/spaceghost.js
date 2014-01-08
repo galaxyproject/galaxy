@@ -626,15 +626,6 @@ SpaceGhost.prototype.waitForMultipleNavigation = function waitForMultipleNavigat
 
 
 // ------------------------------------------------------------------- iframes, damnable iframes
-/** Version of Casper#withFrame for the history iframe.
- *      Hopefully will allow easier test transition if/when frames are removed
- *      (i.e. -> just call the function).
- *  @param {Function} then  function called when in the history frame
- */
-SpaceGhost.prototype.withHistoryPanel = function withHistoryPanel( then ){
-    return this.withFrame( this.data.selectors.frames.history, then );
-};
-
 /** Version of Casper#withFrame for the main iframe.
  *  @param {Function} then  function called when in the frame
  */
@@ -671,14 +662,14 @@ SpaceGhost.prototype.jumpToFrame = function jumpToFrame( frame, fn ){
     return returned;
 };
 
-/** Jumps into history frame, exectutes fn, and jumps back to original frame.
- *  @param {Selector} frame the selector for the frame to jump to
- *  @param {Function} fn    function called when in the frame
- *  @returns {Any} the return value of fn
- */
-SpaceGhost.prototype.jumpToHistory = function jumpToHistory( fn ){
-    return this.jumpToFrame( this.data.selectors.frames.history, fn );
-};
+///** Jumps into history frame, exectutes fn, and jumps back to original frame.
+// *  @param {Selector} frame the selector for the frame to jump to
+// *  @param {Function} fn    function called when in the frame
+// *  @returns {Any} the return value of fn
+// */
+//SpaceGhost.prototype.jumpToHistory = function jumpToHistory( fn ){
+//    return this.jumpToFrame( this.data.selectors.frames.history, fn );
+//};
 
 /** Jumps into main frame, exectutes fn, and jumps back to original frame.
  *  @param {Selector} frame the selector for the frame to jump to

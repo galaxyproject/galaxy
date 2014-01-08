@@ -59,7 +59,6 @@ spaceghost.then( function(){
 
     var filename = '1.txt',
         filepath = this.options.scriptDir + '/../../test-data/' + filename;
-
     this.tools._uploadFile( filepath );
 
     // when an upload begins successfully main should reload with a infomessagelarge
@@ -83,6 +82,7 @@ spaceghost.historypanel.waitForHdas( function(){
         this.test.fail( 'Could not locate new hda: ' + testUploadInfo.name );
 
     } else {
+        spaceghost.debugElement( spaceghost.jsonStr( hdaInfo ) );
         this.historypanel.waitForHdaState( '#' + hdaInfo.attributes.id, 'ok',
             function whenInStateFn( newHdaInfo ){
                 //this.debug( 'newHdaInfo:\n' + this.jsonStr( newHdaInfo ) );
