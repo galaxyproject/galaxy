@@ -1,7 +1,9 @@
 from tool_shed.base.twilltestcase import ShedTwillTestCase, common, os
 
+
 class UninstallingAndReinstallingRepositories( ShedTwillTestCase ):
     '''Test uninstalling and reinstalling a basic repository.'''
+
     def test_0000_initiate_users( self ):
         """Create necessary user accounts."""
         self.logout()
@@ -19,6 +21,7 @@ class UninstallingAndReinstallingRepositories( ShedTwillTestCase ):
         galaxy_admin_user = self.test_db_util.get_galaxy_user( common.admin_email )
         assert galaxy_admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
         galaxy_admin_user_private_role = self.test_db_util.get_galaxy_private_role( galaxy_admin_user )
+
     def test_0005_ensure_repositories_and_categories_exist( self ):
         '''Create the 0000 category and upload the filtering repository to the tool shed, if necessary.'''
         category = self.create_category( name='Test 0000 Basic Repository Features 1', description='Test 0000 Basic Repository Features 1' )
@@ -67,6 +70,7 @@ class UninstallingAndReinstallingRepositories( ShedTwillTestCase ):
                               commit_message='Uploaded readme for 2.2.0',
                               strings_displayed=[], 
                               strings_not_displayed=[] )
+
     def test_0010_install_filtering_repository( self ):
         '''Install the filtering repository into the Galaxy instance.'''
         self.galaxy_logout()
@@ -82,14 +86,16 @@ class UninstallingAndReinstallingRepositories( ShedTwillTestCase ):
                               self.url.replace( 'http://', '' ), 
                               installed_repository.installed_changeset_revision ]
         self.display_galaxy_browse_repositories_page( strings_displayed=strings_displayed )
+
     def test_0015_uninstall_filtering_repository( self ):
         '''Uninstall the filtering repository.'''
         installed_repository = self.test_db_util.get_installed_repository_by_name_owner( 'filtering_0000', common.test_user_1_name )
-        self.uninstall_repository( installed_repository, remove_from_disk=True )
+        self.uninstall_repository( installed_repository )
         strings_not_displayed = [ 'filtering_0000',
                                   "Galaxy's filtering tool for test 0000",
                                   installed_repository.installed_changeset_revision ]
         self.display_galaxy_browse_repositories_page( strings_not_displayed=strings_not_displayed )
+
     def test_0020_reinstall_filtering_repository( self ):
         '''Reinstall the filtering repository.'''
         installed_repository = self.test_db_util.get_installed_repository_by_name_owner( 'filtering_0000', common.test_user_1_name )
@@ -103,14 +109,16 @@ class UninstallingAndReinstallingRepositories( ShedTwillTestCase ):
         strings_displayed.extend( [ 'Installed tool shed repository', 'Valid tools', 'Filter1' ] )
         self.display_installed_repository_manage_page( installed_repository, strings_displayed=strings_displayed )
         self.verify_tool_metadata_for_installed_repository( installed_repository )
+
     def test_0025_deactivate_filtering_repository( self ):
         '''Deactivate the filtering repository without removing it from disk.'''
         installed_repository = self.test_db_util.get_installed_repository_by_name_owner( 'filtering_0000', common.test_user_1_name )
-        self.uninstall_repository( installed_repository, remove_from_disk=False )
+        self.deactivate_repository( installed_repository )
         strings_not_displayed = [ 'filtering_0000',
                                   "Galaxy's filtering tool for test 0000",
                                   installed_repository.installed_changeset_revision ]
         self.display_galaxy_browse_repositories_page( strings_not_displayed=strings_not_displayed )
+
     def test_0030_reactivate_filtering_repository( self ):
         '''Reactivate the filtering repository and verify that it now shows up in the list of installed repositories.'''
         installed_repository = self.test_db_util.get_installed_repository_by_name_owner( 'filtering_0000', common.test_user_1_name )
