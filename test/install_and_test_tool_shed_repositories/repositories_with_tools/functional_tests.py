@@ -685,9 +685,16 @@ def test_repository_tools( app, repository, repository_dict, tool_test_results_d
         tool_test_results_dict[ 'failed_tests' ] = failed_test_dicts
         failed_repository_dict = repository_identifier_dict
         install_and_test_statistics_dict[ 'at_least_one_test_failed' ].append( failed_repository_dict )
-        set_do_not_test = \
-            not install_and_test_base_util.is_latest_downloadable_revision( install_and_test_base_util.galaxy_tool_shed_url,
-                                                                            repository_dict )
+        is_latest_downloadable_revision, error_message = \
+            install_and_test_base_util.is_latest_downloadable_revision( install_and_test_base_util.galaxy_tool_shed_url,
+                                                                        repository_dict )
+        if is_latest_downloadable_revision is None or error_message:
+            log.debug( 'Error attempting to determine if revision %s of repository %s owned by %s ' % \
+                ( changeset_revision, name, owner ) )
+            log.debug( 'is the latest downloadable revision: %s' % str( error_message ) )
+            set_do_not_test = False
+        else:
+            set_do_not_test = not is_latest_downloadable_revision
         params = dict( tools_functionally_correct=False,
                        test_install_error=False,
                        do_not_test=str( set_do_not_test ) )
