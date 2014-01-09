@@ -271,14 +271,6 @@ class RepositoryMetadata( object, Dictifiable ):
                     return True
         return False
 
-    def to_dict( self, view='collection', value_mapper=None ):
-        rval = super( RepositoryMetadata, self ).to_dict( view=view, value_mapper=value_mapper )
-        if 'time_last_tested' in rval:
-            time_last_tested = rval[ 'time_last_tested' ]
-            if time_last_tested is not None:
-                rval[ 'time_last_tested' ] = time_last_tested.isoformat()
-        return rval
-
 
 class SkipToolTest( object, Dictifiable ):
     dict_collection_visible_keys = ( 'id', 'repository_metadata_id', 'initial_changeset_revision' )
