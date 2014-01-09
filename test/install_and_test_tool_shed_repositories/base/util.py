@@ -889,9 +889,19 @@ def populate_install_containers_for_repository_dependencies( app, repository, re
         log.debug( 'due to the following error getting repository_dependencies_dicts:\n%s' % str( error_message ) )
     else:
         for repository_dependencies_dict in repository_dependencies_dicts:
-            name = str( repository_dependencies_dict[ 'name' ] )
-            owner = str( repository_dependencies_dict[ 'owner' ] )
-            changeset_revision = str( repository_dependencies_dict[ 'changeset_revision' ] )
+            if not isinstance( repository_dependencies_dict, dict ):
+                log.debug( 'Skipping invalid repository_dependencies_dict: %s' % str( repository_dependencies_dict ) )
+                continue
+            name = repository_dependencies_dict.get( 'name', None )
+            owner = repository_dependencies_dict.get( 'owner', None )
+            changeset_revision = repository_dependencies_dict.get( 'changeset_revision', None )
+            if name is None or owner is None or changeset_revision is None:
+                log.debug( 'Skipping invalid repository_dependencies_dict due to missing name,owner or changeset_revision: %s' % \
+                    str( repository_dependencies_dict ) )
+                continue
+            name = str( name )
+            owner = str( owner )
+            changeset_revision = str( changeset_revision )
             log.debug( 'Checking installation containers for revision %s of repository dependency %s owned by %s' % \
                 ( changeset_revision, name, owner ) )
             required_repository_metadata_id = repository_dependencies_dict[ 'id' ]
@@ -907,21 +917,21 @@ def populate_install_containers_for_repository_dependencies( app, repository, re
                 # Check the required repository's time_last_tested value to see if its tool_test_results column
                 # has been updated within the past 12 hours.  The RepositoryMetadata class's to_dict() method
                 # returns the value of time_last_tested in datetime.isoformat().
-                twelve_hours_ago = ( datetime.utcnow() - timedelta( hours=12 ) ).isoformat()
+                twenty_hours_ago = ( datetime.utcnow() - timedelta( hours=20 ) ).isoformat()
                 time_last_tested, error_message = get_time_last_tested( galaxy_tool_shed_url, repository_metadata_id )
-                if time_last_tested is not None and time_last_tested < twelve_hours_ago:
+                if time_last_tested is not None and time_last_tested < twenty_hours_ago:
                     log.debug( 'The install containers for version %s of repository dependency %s owned by %s have been ' % \
                         ( changeset_revision, name, owner ) )
-                    log.debug( 'populated within the past 12 hours (likely in this test run), so skipping this check.' )
+                    log.debug( 'populated within the past 20 hours (likely in this test run), so skipping this check.' )
                     continue
                 elif time_last_tested is None:
                     log.debug( 'The time_last_tested column value is None for version %s of repository dependency %s owned by %s.' % \
                         ( changeset_revision, name, owner ) )
-                elif time_last_tested < twelve_hours_ago:
-                    log.debug( 'Version %s of repository dependency %s owned by %s was last tested less than 12 hours ago.' % \
+                elif time_last_tested < twenty_hours_ago:
+                    log.debug( 'Version %s of repository dependency %s owned by %s was last tested less than 20 hours ago.' % \
                         ( changeset_revision, name, owner ) )
                 else:
-                    log.debug( 'Version %s of repository dependency %s owned by %s was last tested more than 12 hours ago.' % \
+                    log.debug( 'Version %s of repository dependency %s owned by %s was last tested more than 20 hours ago.' % \
                         ( changeset_revision, name, owner ) )
                 # Inspect the tool_test_results_dict for the last test run to see if it has not yet been populated.
                 if len( tool_test_results_dicts ) == 0:
