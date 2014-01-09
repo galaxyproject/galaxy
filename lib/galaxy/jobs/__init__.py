@@ -86,6 +86,7 @@ class JobConfiguration( object ):
         self.app = app
         self.runner_plugins = []
         self.handlers = {}
+        self.handler_runner_plugins = {}
         self.default_handler_id = None
         self.destinations = {}
         self.destination_tags = {}
@@ -138,6 +139,10 @@ class JobConfiguration( object ):
                 else:
                     log.debug("Read definition for handler '%s'" % id)
                     self.handlers[id] = (id,)
+                    for plugin in handler.findall('plugin'):
+                        if id not in self.handler_runner_plugins:
+                            self.handler_runner_plugins[id] = []
+                        self.handler_runner_plugins[id].append( plugin.get('id') )
                     if handler.get('tags', None) is not None:
                         for tag in [ x.strip() for x in handler.get('tags').split(',') ]:
                             if tag in self.handlers:
@@ -420,13 +425,19 @@ class JobConfiguration( object ):
         """
         return self.destinations.get(id_or_tag, None)
 
-    def get_job_runner_plugins(self):
+    def get_job_runner_plugins(self, handler_id):
         """Load all configured job runner plugins
 
         :returns: list of job runner plugins
         """
         rval = {}
-        for runner in self.runner_plugins:
+        if handler_id in self.handler_runner_plugins:
+            plugins_to_load = [ rp for rp in self.runner_plugins if rp['id'] in self.handler_runner_plugins[handler_id] ]
+            log.info( "Handler '%s' will load specified runner plugins: %s", handler_id, ', '.join( [ rp['id'] for rp in plugins_to_load ] ) )
+        else:
+            plugins_to_load = self.runner_plugins
+            log.info( "Handler '%s' will load all configured runner plugins", handler_id )
+        for runner in plugins_to_load:
             class_names = []
             module = None
             id = runner['id']
@@ -477,7 +488,7 @@ class JobConfiguration( object ):
                 try:
                     rval[id] = runner_class( self.app, runner[ 'workers' ], **runner.get( 'kwds', {} ) )
                 except TypeError:
-                    log.warning( "Job runner '%s:%s' has not been converted to a new-style runner" % ( module_name, class_name ) )
+                    log.exception( "Job runner '%s:%s' has not been converted to a new-style runner or encountered TypeError on load" % ( module_name, class_name ) )
                     rval[id] = runner_class( self.app )
                 log.debug( "Loaded job runner '%s:%s' as '%s'" % ( module_name, class_name, id ) )
         return rval
