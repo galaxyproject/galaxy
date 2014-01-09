@@ -38,13 +38,16 @@ var GalaxyMenu = Backbone.Model.extend(
         //
         // Workflow tab.
         //
-        var tab_workflow = new mod_masthead.GalaxyMastheadTab({
-            id      : "workflow",
-            title   : "Workflow",
-            content : "workflow"
+        if (this.options.user.valid)
+        {
+            var tab_workflow = new mod_masthead.GalaxyMastheadTab({
+                id      : "workflow",
+                title   : "Workflow",
+                content : "workflow"
 
-        });
-        this.masthead.append(tab_workflow);
+            });
+            this.masthead.append(tab_workflow);
+        }
 
         //
         // 'Shared Items' or Libraries tab.
@@ -116,22 +119,25 @@ var GalaxyMenu = Backbone.Model.extend(
         //
         // Visualization tab.
         //
-        var tab_visualization = new mod_masthead.GalaxyMastheadTab({
-            id          : "visualization",
-            title       : "Visualization",
-            content     : "visualization/list"
-        });
-        tab_visualization.add({
-            title       : "New Track Browser",
-            content     : "visualization/trackster",
-            target      : "_frame"
-        });
-        tab_visualization.add({
-            title       : "Saved Visualizations",
-            content     : "visualization/list",
-            target      : "_frame"
-        });
-        this.masthead.append(tab_visualization);
+        if (this.options.user.valid)
+        {
+            var tab_visualization = new mod_masthead.GalaxyMastheadTab({
+                id          : "visualization",
+                title       : "Visualization",
+                content     : "visualization/list"
+            });
+            tab_visualization.add({
+                title       : "New Track Browser",
+                content     : "visualization/trackster",
+                target      : "_frame"
+            });
+            tab_visualization.add({
+                title       : "Saved Visualizations",
+                content     : "visualization/list",
+                target      : "_frame"
+            });
+            this.masthead.append(tab_visualization);
+        }
 
         //
         // Cloud menu.
