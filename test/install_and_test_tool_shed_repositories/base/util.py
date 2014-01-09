@@ -469,7 +469,14 @@ def get_repository_dependencies_for_changeset_revision( tool_shed_url, encoded_r
 
 def get_repository_dict( url, repository_dict ):
     error_message = ''
-    parts = [ 'api', 'repositories', repository_dict[ 'repository_id' ] ]
+    if not isinstance( repository_dict, dict ):
+        error_message = 'Invalid repository_dict received: %s' % str( repository_dict )
+        return None, error_message
+    repository_id = repository_dict.get( 'repository_id', None )
+    if repository_id is None:
+        error_message = 'Invalid repository_dict does not contain a repository_id entry: %s' % str( repository_dict )
+        return None, error_message
+    parts = [ 'api', 'repositories', repository_id ]
     api_url = get_api_url( base=url, parts=parts )
     extended_dict, error_message = json_from_url( api_url )
     if error_message:
