@@ -62,16 +62,13 @@ var utils = require( 'utils' ),
     peekShouldBeArray = [];
 
 // ------------------------------------------------------------------- set up
-// start a new user
+// start a new user and upload a file
 spaceghost.user.loginOrRegisterUser( email, password );
-
-// upload a file
 spaceghost.then( function upload(){
     spaceghost.tools.uploadFile( filepathToUpload, function uploadCallback( _uploadInfo ){
         testUploadInfo = _uploadInfo;
     });
 });
-
 
 // =================================================================== TEST HELPERS
 //NOTE: to be called with fn.call( spaceghost, ... )

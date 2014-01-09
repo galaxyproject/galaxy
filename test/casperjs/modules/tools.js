@@ -86,14 +86,12 @@ Tools.prototype._uploadFile = function _uploadFile( filepath ){
         uploadInfo = {};
     uploadInfo[ spaceghost.data.selectors.tools.upload.fileInput ] = filepath;
 
-    // click the upload tool
-    spaceghost.thenOpen( spaceghost.baseUrl, function(){
-        // we can apprently click a tool label without expanding the tool container for it
-        this.waitForSelector( '.toolMenu',  function(){
-            this.click( xpath( '//a[contains(text(),"Upload File")]' ) );
-            this.jumpToMain( function(){
-                this.waitForSelector( 'body' );
-            });
+    spaceghost.openHomePage( function(){
+        // load the upload tool form
+        // (we can apprently click a tool label without expanding the tool container for it)
+        this.click( xpath( '//a[contains(text(),"Upload File")]' ) );
+        this.jumpToMain( function(){
+            this.waitForSelector( 'body' );
         });
     });
 

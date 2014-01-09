@@ -1,5 +1,3 @@
-// have to handle errors here - or phantom/casper won't bail but _HANG_
-//TODO: global error handler?
 try {
     var utils = require( 'utils' ),
         xpath = require( 'casper' ).selectXPath,
@@ -25,12 +23,6 @@ try {
     phantom.exit( 1 );
 }
 
-// ===================================================================
-/* TODO:
-    move selectors and assertText strings into global object for easier editing
-
-
-*/
 // =================================================================== globals and helpers
 var email = spaceghost.user.getRandomEmail(),
     password = '123456';
@@ -43,21 +35,14 @@ var userEmailSelector = '//a[contains(text(),"Logged in as")]';
 
 // =================================================================== TESTS
 // register a user (again...)
-spaceghost.thenOpen( spaceghost.baseUrl, function(){
-    this.test.comment( 'registering: ' + email );
-    spaceghost.user.registerUser( email, password );
-});
+spaceghost.openHomePage()
+    .user.registerUser( email, password )
+    .user.logout();
 
-// log them out - check for empty logged in text
-spaceghost.then( function(){
-    this.test.comment( 'logging out: ' + email );
-    spaceghost.user.logout();
-});
-spaceghost.thenOpen( spaceghost.baseUrl, function(){
-    spaceghost.waitForMasthead( function() {
-        this.test.assertDoesntExist( xpath( userEmailSelector ) );
-        this.test.assert( spaceghost.user.loggedInAs() === '', 'loggedInAs() is empty string' );
-    });
+spaceghost.openHomePage( function(){
+    this.test.comment( 'log out should be reflected in user menu' );
+    this.test.assertDoesntExist( xpath( userEmailSelector ) );
+    this.test.assert( spaceghost.user.loggedInAs() === '', 'loggedInAs() is empty string' );
 });
 
 // log them back in - check for email in logged in text
@@ -65,16 +50,13 @@ spaceghost.then( function(){
     this.test.comment( 'logging back in: ' + email );
     spaceghost.user._submitLogin( email, password ); //No such user
 });
-spaceghost.thenOpen( spaceghost.baseUrl, function(){
+spaceghost.openHomePage( function(){
     this.test.assertSelectorHasText( xpath( userEmailSelector ), email );
     this.test.assert( spaceghost.user.loggedInAs() === email, 'loggedInAs() matches email' );
 });
 
 // finally log back out for next tests
-spaceghost.then( function(){
-    this.test.comment( 'logging out: ' + email );
-    spaceghost.user.logout();
-});
+spaceghost.user.logout();
 
 // ------------------------------------------------------------------- shouldn't work
 // can't log in: users that don't exist, bad emails, sql injection (hurhur)
@@ -119,10 +101,6 @@ spaceghost.then( function(){
             this.user.login( email, '1234' );
         });
     });
-});
-
-spaceghost.then( function(){
-    this.user.logout();
 });
 /*
 */

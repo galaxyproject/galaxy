@@ -1,4 +1,3 @@
-// have to handle errors here - or phantom/casper won't bail but _HANG_
 try {
     var utils = require( 'utils' ),
         xpath = require( 'casper' ).selectXPath,
@@ -24,13 +23,6 @@ try {
     phantom.exit( 1 );
 }
 
-// ===================================================================
-/* TODO:
-    move selectors and assertText strings into global object for easier editing
-    pass email, etc. for first (successful) registration (for use with other tests)
-
-
-*/
 // =================================================================== globals and helpers
 var email = spaceghost.user.getRandomEmail(),
     password = '123456',
@@ -38,50 +30,27 @@ var email = spaceghost.user.getRandomEmail(),
     username = 'test' + Date.now();
 
 // =================================================================== TESTS
-spaceghost.thenOpen( spaceghost.baseUrl, function(){
+spaceghost.openHomePage( function(){
     this.test.comment( 'loading galaxy homepage' );
-    // can we load galaxy?
     this.test.assertTitle( 'Galaxy' );
-    // xpath selector use:
     this.test.assertExists( xpath( "//div[@id='masthead']" ), 'found masthead' );
 });
-
-// failing tests for...testing...the tests
-//spaceghost.thenOpen( spaceghost.baseUrl, function(){
-//    this.test.comment( 'loading galaxy homepage' );
-//    // can we load galaxy?
-//    this.test.assertTitle( 'Blorgo' );
-//    // xpath selector use:
-//    this.test.assertExists( xpath( "//div[@id='facebook']" ), 'found facebook' );
-//});
-
 
 // ------------------------------------------------------------------- register a new user
 spaceghost.then( function(){
     this.test.comment( 'registering user: ' + email );
     this.user._submitRegistration( email, password, username, confirm );
 });
-spaceghost.thenOpen( spaceghost.baseUrl, function(){
-    this.waitForMasthead( function() {
-        this.clickLabel( 'User' );
-        this.test.assertSelectorHasText( xpath( spaceghost.data.selectors.masthead.userMenu.userEmail_xpath ),
-                                         email, '#user-email === ' + email );
-    });
+spaceghost.openHomePage( function(){
+    this.clickLabel( 'User' );
+    var loggedInAs = this.fetchText( xpath( spaceghost.data.selectors.masthead.userMenu.userEmail_xpath ) );
+    this.test.assert( loggedInAs.indexOf( email ) !== -1, 'found proper email in user menu: ' + loggedInAs );
 });
 
 // ------------------------------------------------------------------- log out that user
-spaceghost.then( function(){
-    this.waitForMasthead( function() {
-        this.test.comment( 'logging out user: ' + email );
-        this.user.logout();
-    });
-});
-spaceghost.then( function(){
-    this.waitForMasthead( function() {
-        var emailSelector = xpath( this.data.selectors.masthead.userMenu.userEmail_xpath );
-        this.debug( 'email:' + this.elementInfoOrNull( emailSelector ) );
-        this.test.assert( !this.elementInfoOrNull( emailSelector ), 'user email not found' );
-    });
+spaceghost.user.logout().openHomePage( function(){
+    var emailSelector = xpath( this.data.selectors.masthead.userMenu.userEmail_xpath );
+    this.test.assert( !this.elementInfoOrNull( emailSelector ), 'user email not found' );
 });
 
 // ------------------------------------------------------------------- bad user registrations
@@ -165,7 +134,6 @@ spaceghost.then(function(){
     this.assertErrorMessage( 'Public name is taken; please choose another' );
 });
 
-
 // ------------------------------------------------------------------- test the convenience fns
 // these versions are for conv. use in other tests, they should throw errors if used improperly
 spaceghost.then( function(){
@@ -175,11 +143,6 @@ spaceghost.then( function(){
             this.user.registerUser( '@internet', '123456', 'ignobel' );
         });
     });
-});
-
-spaceghost.then( function(){
-    //??: necessary?
-    this.user.logout();
 });
 
 // ===================================================================

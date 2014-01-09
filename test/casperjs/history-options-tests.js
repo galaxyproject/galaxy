@@ -47,9 +47,8 @@ var filepathToUpload = '../../test-data/1.txt',
 
 // =================================================================== TESTS
 // ------------------------------------------------------------------- set up
-// start a new user
+// start a new user and upload a file
 spaceghost.user.loginOrRegisterUser( email, password );
-
 spaceghost.tools.uploadFile( filepathToUpload, function uploadCallback( _uploadInfo ){
     testUploadInfo = _uploadInfo;
 });

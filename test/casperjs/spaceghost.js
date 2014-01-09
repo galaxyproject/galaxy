@@ -507,6 +507,38 @@ SpaceGhost.prototype.run = function run( onComplete, time ){
     Casper.prototype.run.call( this, new_onComplete, time );
 };
 
+// ------------------------------------------------------------------- home page
+/** Wait for the homepage/index/Analyze Data to load fully.
+ */
+SpaceGhost.prototype.openHomePage = function openHomePage( then, delay ){
+//TODO: delay doesn't seem to work
+    this.thenOpen( this.baseUrl, function _openHomePage(){
+        this.waitFor(
+            function waitForCheck(){
+                return this.homePageIsLoaded();
+            },
+            then,
+            function openHomePageTimeout(){
+                throw new GalaxyError( 'Homepage timed out' );
+            },
+            delay
+        );
+    });
+    return this;
+};
+
+/** Check for visibility of main home page elements: masthead, tool menu, history panel.
+ */
+SpaceGhost.prototype.homePageIsLoaded = function homePageIsLoaded(){
+    //this.debug( 'homePageIsLoaded: ' + [
+    //    this.visible( '#masthead' ),
+    //    this.visible( this.data.selectors.toolMenu.container ),
+    //    this.visible( '#current-history-panel' )].join( ', ' ) );
+    return ( this.visible( '#masthead' )
+          && this.visible( this.data.selectors.toolMenu.container )
+          && this.visible( '#current-history-panel' ) );
+};
+
 // ------------------------------------------------------------------- try step
 /** Install a function as an error handler temporarily, run a function with steps, then remove the handler.
  *      A rough stand-in for try catch with steps.
@@ -548,6 +580,7 @@ SpaceGhost.prototype.tryStepsCatch = function tryStepsCatch( stepsFn, catchFn ){
         this.options.exitOnError = originalExitOnError;
     });
 };
+
 
 // ------------------------------------------------------------------- misc
 /** Hover over an element.
@@ -661,15 +694,6 @@ SpaceGhost.prototype.jumpToFrame = function jumpToFrame( frame, fn ){
     }
     return returned;
 };
-
-///** Jumps into history frame, exectutes fn, and jumps back to original frame.
-// *  @param {Selector} frame the selector for the frame to jump to
-// *  @param {Function} fn    function called when in the frame
-// *  @returns {Any} the return value of fn
-// */
-//SpaceGhost.prototype.jumpToHistory = function jumpToHistory( fn ){
-//    return this.jumpToFrame( this.data.selectors.frames.history, fn );
-//};
 
 /** Jumps into main frame, exectutes fn, and jumps back to original frame.
  *  @param {Selector} frame the selector for the frame to jump to
@@ -861,6 +885,7 @@ SpaceGhost.prototype.assertDoesntHaveClass = function assertDoesntHaveClass( sel
     var classes = this.getElementAttribute( selector, 'class' );
     this.test.assert( classes.indexOf( className ) === -1, msg );
 };
+
 
 // =================================================================== CONVENIENCE
 /** Wraps casper.getElementInfo in try, returning null if element not found instead of erroring.
@@ -1096,7 +1121,7 @@ SpaceGhost.prototype.getUniverseSetting = function getUniverseSetting( iniKey ){
 
 SpaceGhost.prototype.waitForMasthead = function wait( then ) {
     return this.waitForText( this.data.labels.masthead.menus.user, then );
-}
+};
 
 
 // =================================================================== TEST DATA
@@ -1118,16 +1143,23 @@ SpaceGhost.prototype.data = {
         },
 
         frames : {
-            main    : 'galaxy_main',
-            history : 'galaxy_history'
+            main    : 'galaxy_main'
         },
 
         masthead : {
-            adminLink : '#masthead a[href="/admin/index"]',
-            userMenu : {
+            id          : '#masthead',
+            adminLink   : '#masthead a[href="/admin/index"]',
+            userMenu    : {
                 userEmail_xpath : '//a[contains(text(),"Logged in as")]'
             }
         },
+        toolMenu : {
+            container   : '.toolMenuContainer'
+        },
+        historyPanel : {
+            current     : '#current-history-panel'
+        },
+
         loginPage : {
             form            : 'form#login',
             submit_xpath    : "//input[@value='Login']",
@@ -1135,7 +1167,8 @@ SpaceGhost.prototype.data = {
         },
         registrationPage : {
             form            : 'form#registration',
-            submit_xpath    : "//input[@value='Submit']"
+            submit_xpath    : "//input[@value='Submit']",
+            returnLink      : '//a[contains(text(),"Return to the home page")]'
         },
         tools : {
             general : {

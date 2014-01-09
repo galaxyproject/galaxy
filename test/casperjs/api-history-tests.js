@@ -304,13 +304,15 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
         //this.debug( 'returned:\n' + this.jsonStr( returned ) );
         historyShow = this.api.histories.show( newFirstHistory.id );
         this.test.assert( historyShow.genome_build === unicodeBuild,
-            "Update accepted unicode genome_build: " + historyShow.name );
+            "Update accepted unicode genome_build: " + historyShow.genome_build );
     } catch( err ){
         //this.debug( this.jsonStr( err ) );
         if( ( err instanceof this.api.APIError )
         &&  ( err.status === 500 )
         &&  ( err.message.indexOf( '(ProgrammingError) You must not use 8-bit bytestrings' ) !== -1 ) ){
             this.skipTest( 'Unicode update failed. Are you using sqlite3 as the db?' );
+        } else {
+            throw err;
         }
     }
 

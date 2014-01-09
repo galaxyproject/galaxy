@@ -73,7 +73,7 @@ var newHistoryName = "Test History",
 spaceghost.user.loginOrRegisterUser( email, password );
 
 // ------------------------------------------------------------------- check structure of empty history
-spaceghost.thenOpen( spaceghost.baseUrl ).historypanel.waitForHdas( function(){
+spaceghost.openHomePage().historypanel.waitForHdas( function(){
     this.test.comment( 'history panel with a new, empty history should be well formed' );
 
     this.test.comment( "history name should exist, be visible, and have text " + unnamedName );
@@ -173,9 +173,9 @@ spaceghost.then( function checkPanelStructure(){
     this.test.assertVisible( nameSelector, 'History name is visible' );
     this.test.assertSelectorHasText( nameSelector, newHistoryName, 'History name is ' + newHistoryName );
 
-    this.test.comment( "history subtitle should display size and size should be " + onetxtFilesize + " bytes" );
     var onetxtFilesize = require( 'fs' ).size( this.options.scriptDir + filepathToUpload ),
         expectedSubtitle = onetxtFilesize + ' bytes';
+    this.test.comment( "history subtitle should display size and size should be " + onetxtFilesize + " bytes" );
     this.test.assertExists( subtitleSelector, 'Found ' + subtitleSelector );
     this.test.assertVisible( subtitleSelector, 'History subtitle is visible' );
     this.test.assertSelectorHasText( subtitleSelector, expectedSubtitle,

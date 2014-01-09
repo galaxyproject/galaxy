@@ -60,16 +60,8 @@ var historyFrameInfo = {},
 
 
 // =================================================================== TESTS
-// ------------------------------------------------------------------- anonymous new, history
-// open galaxy - ensure not logged in
-spaceghost.thenOpen( spaceghost.baseUrl, function(){
-    var loggedInAs = spaceghost.user.loggedInAs();
-    this.debug( 'loggedInAs: ' + loggedInAs );
-    if( loggedInAs ){ this.logout(); }
-});
-
-// ------------------------------------------------------------------- check the empty history for well formedness
-spaceghost.historypanel.waitForHdas( function testPanelStructure(){
+// ------------------------------------------------------------------- check the anonymous new, history for form
+spaceghost.openHomePage().historypanel.waitForHdas( function testPanelStructure(){
     this.test.comment( 'history panel for anonymous user, new history' );
 
     this.test.comment( "history name should exist, be visible, and have text " + unnamedName );
@@ -121,8 +113,7 @@ spaceghost.then( function testAnonUpload(){
 // ------------------------------------------------------------------- anon user can run tool on file
 
 // ------------------------------------------------------------------- anon user registers/logs in -> same history
-spaceghost.user.loginOrRegisterUser( email, password );
-spaceghost.thenOpen( spaceghost.baseUrl, function(){
+spaceghost.user.loginOrRegisterUser( email, password ).openHomePage( function(){
     this.test.comment( 'anon-user should login and be associated with previous history' );
 
     var loggedInAs = spaceghost.user.loggedInAs();
@@ -139,8 +130,7 @@ spaceghost.thenOpen( spaceghost.baseUrl, function(){
 });
 
 // ------------------------------------------------------------------- logs out -> new history
-spaceghost.user.logout();
-spaceghost.thenOpen( spaceghost.baseUrl, function(){
+spaceghost.user.logout().openHomePage( function(){
     this.test.comment( 'logging out should create a new, anonymous history' );
 
     this.historypanel.waitForHdas( function(){

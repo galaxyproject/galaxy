@@ -43,16 +43,12 @@ var testUploadInfo = {};
 
 // =================================================================== TESTS
 // ------------------------------------------------------------------- start a new user
-spaceghost.user.loginOrRegisterUser( email, password );
-//??: why is a reload needed here? If we don't, loggedInAs === '' ...
-spaceghost.thenOpen( spaceghost.baseUrl, function(){
+spaceghost.user.loginOrRegisterUser( email, password ).openHomePage( function(){
     var loggedInAs = spaceghost.user.loggedInAs();
     this.test.assert( loggedInAs === email, 'loggedInAs() matches email: "' + loggedInAs + '"' );
 });
 
-
 // ------------------------------------------------------------------- long form
-
 // upload a file...
 spaceghost.then( function(){
     this.test.comment( 'Test uploading a file' );
