@@ -163,8 +163,10 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
                 job_wrapper.cleanup()
             return
 
-        log.debug( "(%s) submitting file %s" % ( galaxy_id_tag, ajs.job_file ) )
-        log.debug( "(%s) command is: %s" % ( galaxy_id_tag, command_line ) )
+        log.debug( "(%s) submitting file %s", galaxy_id_tag, ajs.job_file )
+        log.debug( "(%s) command is: %s", galaxy_id_tag, command_line )
+        if native_spec:
+            log.debug( "(%s) native specification is: %s", galaxy_id_tag, native_spec )
 
         # runJob will raise if there's a submit problem
         if self.external_runJob_script is None:
