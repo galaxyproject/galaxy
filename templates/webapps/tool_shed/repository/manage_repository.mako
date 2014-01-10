@@ -181,9 +181,9 @@ ${render_tool_shed_repository_actions( repository, metadata=metadata, changeset_
             <div class="form-row">
                 <label>Revision:</label>
                 %if can_view_change_log:
-                    <a href="${h.url_for( controller='repository', action='view_changelog', id=trans.app.security.encode_id( repository.id ) )}">${revision_label | h}</a>
+                    <a href="${h.url_for( controller='repository', action='view_changelog', id=trans.app.security.encode_id( repository.id ) )}">${revision_label}</a>
                 %else:
-                    ${revision_label | h}
+                    ${revision_label}
                 %endif
             </div>
             <div class="form-row">

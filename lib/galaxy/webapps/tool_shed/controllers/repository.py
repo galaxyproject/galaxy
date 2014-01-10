@@ -2432,6 +2432,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                                               message='Select a repository to rate',
                                                               status='error' ) )
         repository = suc.get_repository_in_tool_shed( trans, id )
+        changeset_revision = repository.tip( trans.app )
         repo = hg.repository( suc.get_configured_ui(), repository.repo_path( trans.app ) )
         if repository.user == trans.user:
             return trans.response.send_redirect( web.url_for( controller='repository',
@@ -2447,12 +2448,14 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         rra = self.get_user_item_rating( trans.sa_session, trans.user, repository, webapp_model=trans.model )
         metadata = metadata_util.get_repository_metadata_by_repository_id_changeset_revision( trans,
                                                                                               id,
-                                                                                              repository.tip( trans.app ),
+                                                                                              changeset_revision,
                                                                                               metadata_only=True )
         repository_type_select_field = rt_util.build_repository_type_select_field( trans, repository=repository )
+        revision_label = suc.get_revision_label( trans, repository, changeset_revision )
         return trans.fill_template( '/webapps/tool_shed/repository/rate_repository.mako',
                                     repository=repository,
                                     metadata=metadata,
+                                    revision_label=revision_label,
                                     avg_rating=avg_rating,
                                     display_reviews=display_reviews,
                                     num_ratings=num_ratings,
@@ -2862,13 +2865,10 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                 has_metadata = True
             else:
                 has_metadata = False
-            t, tz = ctx.date()
-            date = datetime( *gmtime( float( t ) - tz )[:6] )
-            display_date = date.strftime( "%Y-%m-%d" )
             change_dict = { 'ctx' : ctx,
                             'rev' : str( ctx.rev() ),
                             'date' : date,
-                            'display_date' : display_date,
+                            'display_date' : suc.get_readable_ctx_date( ctx ),
                             'description' : ctx.description(),
                             'files' : ctx.files(),
                             'user' : ctx.user(),
@@ -2923,16 +2923,18 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         metadata = metadata_util.get_repository_metadata_by_repository_id_changeset_revision( trans, id, ctx_str, metadata_only=True )
         # For rendering the prev button.
         if ctx_parent:
+            ctx_parent_date = suc.get_readable_ctx_date( ctx_parent )
             ctx_parent_rev = ctx_parent.rev()
             if ctx_parent_rev < 0:
                  prev = None
             else:
-                prev = "%s:%s" % ( ctx_parent_rev, ctx_parent )
+                prev = "<b>%s:%s</b> <i>(%s)</i>" % ( ctx_parent_rev, ctx_parent, ctx_parent_date )
         else:
            prev = None
         if ctx_child:
+            ctx_child_date = suc.get_readable_ctx_date( ctx_child )
             ctx_child_rev = ctx_child.rev()
-            next = "%s:%s" % ( ctx_child_rev, ctx_child )
+            next = "<b>%s:%s</b> <i>(%s)</i>" % ( ctx_child_rev, ctx_child, ctx_child_date )
         else:
             next = None
         return trans.fill_template( '/webapps/tool_shed/repository/view_changeset.mako',

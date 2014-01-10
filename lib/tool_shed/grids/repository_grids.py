@@ -101,6 +101,10 @@ class RepositoryGrid( grids.Grid ):
             if len( select_field.options ) > 1:
                 return select_field.get_html()
             elif len( select_field.options ) == 1:
+                option_items = select_field.options[ 0 ][ 0 ]
+                rev_label, rev_date = option_items.split( ' ' )
+                rev_date = '<i><font color="#666666">%s</font></i>' % rev_date
+                return '%s %s' % ( rev_label, rev_date )
                 return select_field.options[ 0 ][ 0 ]
             return ''
 
@@ -1134,7 +1138,7 @@ class RepositoryMetadataGrid( grids.Grid ):
             repository = repository_metadata.repository
             changeset_revision = repository_metadata.changeset_revision
             changeset_revision_label = suc.get_revision_label( trans, repository, changeset_revision )
-            return escape_html( changeset_revision_label )
+            return changeset_revision_label
 
 
     class MaliciousColumn( grids.BooleanColumn ):

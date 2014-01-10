@@ -100,7 +100,11 @@
                 ${repository.name | h}
             %endif
         </div>
-        ${render_repository_type_select_field( repository_type_select_field, render_help=False )}
+        <div class="form-row">
+            <label>Type:</label>
+            ${repository.type | h}
+            <div style="clear: both"></div>
+        </div>
         <div class="form-row">
             <label>Synopsis:</label>
             ${repository.description | h}
@@ -113,7 +117,7 @@
             %if can_view_change_log:
                 <a href="${h.url_for( controller='repository', action='view_changelog', id=trans.app.security.encode_id( repository.id ) )}">${revision_label}</a>
             %else:
-                ${revision_label | h}
+                ${revision_label}
             %endif
         </div>
         <div class="form-row">

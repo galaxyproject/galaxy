@@ -1108,16 +1108,19 @@ def get_rev_label_changeset_revision_from_repository_metadata( trans, repository
     changeset_revision = repository_metadata.changeset_revision
     ctx = suc.get_changectx_for_changeset( repo, changeset_revision )
     if ctx:
+        changeset_revision_date = suc.get_readable_ctx_date( ctx )
         rev = '%04d' % ctx.rev()
-        label = "%s:%s" % ( str( ctx.rev() ), changeset_revision )
+        label = "%s:%s (%s)" % ( str( ctx.rev() ), changeset_revision, changeset_revision_date )
     else:
         rev = '-1'
         label = "-1:%s" % changeset_revision
     return rev, label, changeset_revision
 
-def get_sample_files_from_disk( repository_files_dir, tool_path=None, relative_install_dir=None, resetting_all_metadata_on_repository=False ):
+def get_sample_files_from_disk( repository_files_dir, tool_path=None, relative_install_dir=None,
+                                resetting_all_metadata_on_repository=False ):
     if resetting_all_metadata_on_repository:
-        # Keep track of the location where the repository is temporarily cloned so that we can strip it when setting metadata.
+        # Keep track of the location where the repository is temporarily cloned so that we can strip
+        # it when setting metadata.
         work_dir = repository_files_dir
     sample_file_metadata_paths = []
     sample_file_copy_paths = []

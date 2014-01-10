@@ -924,6 +924,13 @@ def get_query_for_setting_metadata_on_repositories( trans, my_writable=False, or
             return trans.install_model.context.query( trans.install_model.ToolShedRepository ) \
                                    .filter( trans.install_model.ToolShedRepository.table.c.uninstalled == False )
 
+def get_readable_ctx_date( ctx ):
+    """Convert the date of the changeset (the received ctx) to a human-readable date."""
+    t, tz = ctx.date()
+    date = datetime( *gmtime( float( t ) - tz )[ :6 ] )
+    ctx_date = date.strftime( "%Y-%m-%d" )
+    return ctx_date
+
 def get_repo_info_tuple_contents( repo_info_tuple ):
     """Take care in handling the repo_info_tuple as it evolves over time as new tool shed features are introduced."""
     if len( repo_info_tuple ) == 6:
@@ -1206,7 +1213,8 @@ def get_revision_label( trans, repository, changeset_revision ):
     repo = hg.repository( get_configured_ui(), repository.repo_path( trans.app ) )
     ctx = get_changectx_for_changeset( repo, changeset_revision )
     if ctx:
-        return "%s:%s" % ( str( ctx.rev() ), changeset_revision )
+        return '%s:%s <i><font color="#666666">(%s)</font></i>' % \
+            ( str( ctx.rev() ), changeset_revision, str( get_readable_ctx_date( ctx ) ) )
     else:
         return "-1:%s" % changeset_revision
 
@@ -1215,7 +1223,8 @@ def get_rev_label_from_changeset_revision( repo, changeset_revision ):
     ctx = get_changectx_for_changeset( repo, changeset_revision )
     if ctx:
         rev = '%04d' % ctx.rev()
-        label = "%s:%s" % ( str( ctx.rev() ), changeset_revision )
+        label = '%s:%s <i><font color="#666666">(%s)</font></i>' % \
+            ( str( ctx.rev() ), changeset_revision, str( get_readable_ctx_date( ctx ) ) )
     else:
         rev = '-1'
         label = "-1:%s" % changeset_revision
@@ -1477,9 +1486,6 @@ def handle_email_alerts( trans, repository, content_alert_str='', new_repo_alert
             email_from = 'galaxy-no-reply@' + trans.request.host.split( ':' )[0]
         tip_changeset = repo.changelog.tip()
         ctx = repo.changectx( tip_changeset )
-        t, tz = ctx.date()
-        date = datetime( *gmtime( float( t ) - tz )[:6] )
-        display_date = date.strftime( "%Y-%m-%d" )
         try:
             username = ctx.user().split()[0]
         except:
@@ -1490,6 +1496,7 @@ def handle_email_alerts( trans, repository, content_alert_str='', new_repo_alert
             template = new_repo_email_alert_template
         else:
             template = email_alert_template
+        display_date = get_readable_ctx_date( ctx )
         admin_body = string.Template( template ).safe_substitute( host=trans.request.host,
                                                                   sharable_link=sharable_link,
                                                                   repository_name=repository.name,

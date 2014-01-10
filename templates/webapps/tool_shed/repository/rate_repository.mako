@@ -44,16 +44,20 @@ ${render_tool_shed_repository_actions( repository, metadata=None, changeset_revi
                 ${render_clone_str( repository )}
             </div>
         %endif
-        ${render_repository_type_select_field( repository_type_select_field, render_help=False )}
         <div class="toolFormBody">
+            <div class="form-row">
+                <label>Type:</label>
+                ${repository.type | h}
+                <div style="clear: both"></div>
+            </div>
             <div class="form-row">
                 <label>Description:</label>
                 ${repository.description | h}
                 <div style="clear: both"></div>
             </div>
             <div class="form-row">
-                <label>Version:</label>
-                ${repository.revision( trans.app ) | h}
+                <label>Revision:</label>
+                ${revision_label}
                 <div style="clear: both"></div>
             </div>
             <div class="form-row">
