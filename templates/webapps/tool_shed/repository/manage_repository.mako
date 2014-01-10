@@ -83,6 +83,10 @@
                 can_render_skip_tool_test_section = True
             else:
                 can_render_skip_tool_test_section = False
+    if heads:
+        multiple_heads = len( heads ) > 1
+    else:
+        multiple_heads = False
 %>
 
 <%!
@@ -114,6 +118,18 @@ ${render_tool_shed_repository_actions( repository, metadata=metadata, changeset_
 %if repository.deprecated:
     <div class="warningmessage">
         This repository has been marked as deprecated, so some tool shed features may be restricted.
+    </div>
+%elif multiple_heads:
+    <div class="warningmessage">
+        <%
+            from tool_shed.util.shed_util_common import get_revision_label_from_ctx
+            heads_str = ''
+            for ctx in heads:
+                heads_str += get_revision_label_from_ctx( ctx )
+        %>
+        Contact the administrator of this Tool Shed as soon as possible and let them know that
+        this repository has the following multiple heads which must be merged.<br/>
+        ${heads_str}
     </div>
 %endif
 

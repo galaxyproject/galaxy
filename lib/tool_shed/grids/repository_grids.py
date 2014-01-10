@@ -89,6 +89,29 @@ class RepositoryGrid( grids.Grid ):
             return escape_html( type_class.label )
 
 
+    class HeadsColumn( grids.GridColumn ):
+        
+        def __init__( self, col_name ):
+            grids.GridColumn.__init__( self, col_name )
+
+        def get_value( self, trans, grid, repository ):
+            """Display the current repository heads."""
+            repo_dir = repository.repo_path( trans.app )
+            repo = hg.repository( suc.get_configured_ui(), repo_dir )
+            heads = suc.get_repository_heads( repo )
+            multiple_heads = len( heads ) > 1
+            if multiple_heads:
+                heads_str = '<font color="red">'
+            else:
+                heads_str = ''
+            for ctx in heads:
+                heads_str += '%s<br/>' % suc.get_revision_label_from_ctx( ctx )
+            heads_str.rstrip( '<br/>' )
+            if multiple_heads:
+                heads_str += '</font>'
+            return heads_str
+
+
     class MetadataRevisionColumn( grids.GridColumn ):
 
         def __init__( self, col_name ):

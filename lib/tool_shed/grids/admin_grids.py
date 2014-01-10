@@ -365,6 +365,7 @@ class AdminRepositoryGrid( RepositoryGrid ):
                                            key="name",
                                            link=( lambda item: dict( operation="view_or_manage_repository", id=item.id ) ),
                                            attach_popup=True ),
+                RepositoryGrid.HeadsColumn( "Heads" ),
                 RepositoryGrid.UserColumn( "Owner",
                                            model_class=model.User,
                                            link=( lambda item: dict( operation="repositories_by_user", id=item.id ) ),

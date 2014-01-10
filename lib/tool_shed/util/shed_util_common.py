@@ -1108,6 +1108,11 @@ def get_repository_from_refresh_on_change( trans, **kwd ):
     # This should never be reached - raise an exception?
     return v, None
 
+def get_repository_heads( repo ):
+    """Return current repository heads, which are changesets with no child changesets."""
+    heads = [ repo[ h ] for h in repo.heads( None ) ]
+    return heads
+
 def get_repository_ids_requiring_prior_import_or_install( trans, tsr_ids, repository_dependencies ):
     """
     This method is used in the Tool Shed when exporting a repository and it's dependencies, and in Galaxy when a repository and it's dependencies
@@ -1213,18 +1218,20 @@ def get_revision_label( trans, repository, changeset_revision ):
     repo = hg.repository( get_configured_ui(), repository.repo_path( trans.app ) )
     ctx = get_changectx_for_changeset( repo, changeset_revision )
     if ctx:
-        return '%s:%s <i><font color="#666666">(%s)</font></i>' % \
-            ( str( ctx.rev() ), changeset_revision, str( get_readable_ctx_date( ctx ) ) )
+        return get_revision_label_from_ctx( ctx )
     else:
         return "-1:%s" % changeset_revision
+
+def get_revision_label_from_ctx( ctx ):
+    return '%s:%s <i><font color="#666666">(%s)</font></i>' % \
+        ( str( ctx.rev() ), str( ctx ), str( get_readable_ctx_date( ctx ) ) )
 
 def get_rev_label_from_changeset_revision( repo, changeset_revision ):
     """Given a changeset revision hash, return two strings, the changeset rev and the changeset revision hash."""
     ctx = get_changectx_for_changeset( repo, changeset_revision )
     if ctx:
         rev = '%04d' % ctx.rev()
-        label = '%s:%s <i><font color="#666666">(%s)</font></i>' % \
-            ( str( ctx.rev() ), changeset_revision, str( get_readable_ctx_date( ctx ) ) )
+        label = get_revision_label_from_ctx( ctx )
     else:
         rev = '-1'
         label = "-1:%s" % changeset_revision

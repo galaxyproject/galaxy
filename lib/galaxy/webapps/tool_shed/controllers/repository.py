@@ -2255,6 +2255,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         categories = suc.get_categories( trans )
         selected_categories = [ rca.category_id for rca in repository.categories ]
         containers_dict = container_util.build_repository_containers_for_tool_shed( trans, repository, changeset_revision, repository_dependencies, repository_metadata )
+        heads = suc.get_repository_heads( repo )
         return trans.fill_template( '/webapps/tool_shed/repository/manage_repository.mako',
                                     repo_name=repo_name,
                                     description=description,
@@ -2262,6 +2263,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                     current_allow_push_list=current_allow_push_list,
                                     allow_push_select_field=allow_push_select_field,
                                     repo=repo,
+                                    heads=heads,
                                     repository=repository,
                                     containers_dict=containers_dict,
                                     repository_metadata=repository_metadata,
@@ -3043,8 +3045,10 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             status = 'error'
         containers_dict = container_util.build_repository_containers_for_tool_shed( trans, repository, changeset_revision, repository_dependencies, repository_metadata )
         repository_type_select_field = rt_util.build_repository_type_select_field( trans, repository=repository )
+        heads = suc.get_repository_heads( repo )
         return trans.fill_template( '/webapps/tool_shed/repository/view_repository.mako',
                                     repo=repo,
+                                    heads=heads,
                                     repository=repository,
                                     repository_metadata=repository_metadata,
                                     metadata=metadata,
