@@ -179,6 +179,29 @@ class BaseController( object ):
                     rval[k] = self.encode_all_ids(trans, v, recursive)
         return rval
 
+    # incoming param validation
+    # should probably be in sep. serializer class/object _used_ by controller
+    def validate_and_sanitize_basestring( self, key, val ):
+        if not isinstance( val, basestring ):
+            raise ValueError( '%s must be a string or unicode: %s' %( key, str( type( val ) ) ) )
+        return unicode( sanitize_html( val, 'utf-8', 'text/html' ), 'utf-8' )
+
+    def validate_and_sanitize_basestring_list( self, key, val ):
+        if not isinstance( val, list ):
+            raise ValueError( '%s must be a list: %s' %( key, str( type( val ) ) ) )
+        return [ unicode( sanitize_html( t, 'utf-8', 'text/html' ), 'utf-8' ) for t in val ]
+
+    def validate_boolean( self, key, val ):
+        if not isinstance( val, bool ):
+            raise ValueError( '%s must be a boolean: %s' %( key, str( type( val ) ) ) )
+        return val
+
+    #TODO:
+    #def validate_integer( self, key, val, min, max ):
+    #def validate_float( self, key, val, min, max ):
+    #def validate_number( self, key, val, min, max ):
+    #def validate_genome_build( self, key, val ):
+
 Root = BaseController
 
 

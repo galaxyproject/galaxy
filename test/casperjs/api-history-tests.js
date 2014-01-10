@@ -218,23 +218,14 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
     this.test.assert( historyShow.name === 'New name', "Update sanitized name: " + historyShow.name );
 
     //NOTE!: this fails on sqlite3 (with default setup)
-    try {
-        this.test.comment( 'update should allow unicode in names' );
-        var unicodeName = '桜ゲノム';
-        returned = this.api.histories.update( newFirstHistory.id, {
-            name : unicodeName
-        });
-        //this.debug( 'returned:\n' + this.jsonStr( returned ) );
-        historyShow = this.api.histories.show( newFirstHistory.id );
-        this.test.assert( historyShow.name === unicodeName, "Update accepted unicode name: " + historyShow.name );
-    } catch( err ){
-        //this.debug( this.jsonStr( err ) );
-        if( ( err instanceof this.api.APIError )
-        &&  ( err.status === 500 )
-        &&  ( err.message.indexOf( '(ProgrammingError) You must not use 8-bit bytestrings' ) !== -1 ) ){
-            this.skipTest( 'Unicode update failed. Are you using sqlite3 as the db?' );
-        }
-    }
+    this.test.comment( 'update should allow unicode in names' );
+    var unicodeName = '桜ゲノム';
+    returned = this.api.histories.update( newFirstHistory.id, {
+        name : unicodeName
+    });
+    //this.debug( 'returned:\n' + this.jsonStr( returned ) );
+    historyShow = this.api.histories.show( newFirstHistory.id );
+    this.test.assert( historyShow.name === unicodeName, "Update accepted unicode name: " + historyShow.name );
 
     this.test.comment( 'update should allow escaped quotations in names' );
     var quotedName = '"Bler"';
@@ -294,27 +285,16 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
     this.test.assert( historyShow.genome_build === 'hg18',
         "Update sanitized genome_build: " + historyShow.genome_build );
 
+    // removing for now until I can determine the relationship between unicode and genome_builds
     this.test.comment( 'update should allow unicode in genome builds' );
     var unicodeBuild = '桜12';
-    //NOTE!: this fails on sqlite3 (with default setup)
-    try {
-        returned = this.api.histories.update( newFirstHistory.id, {
-            name : unicodeBuild
-        });
-        //this.debug( 'returned:\n' + this.jsonStr( returned ) );
-        historyShow = this.api.histories.show( newFirstHistory.id );
-        this.test.assert( historyShow.genome_build === unicodeBuild,
-            "Update accepted unicode genome_build: " + historyShow.genome_build );
-    } catch( err ){
-        //this.debug( this.jsonStr( err ) );
-        if( ( err instanceof this.api.APIError )
-        &&  ( err.status === 500 )
-        &&  ( err.message.indexOf( '(ProgrammingError) You must not use 8-bit bytestrings' ) !== -1 ) ){
-            this.skipTest( 'Unicode update failed. Are you using sqlite3 as the db?' );
-        } else {
-            throw err;
-        }
-    }
+    returned = this.api.histories.update( newFirstHistory.id, {
+        genome_build : unicodeBuild
+    });
+    //this.debug( 'returned:\n' + this.jsonStr( returned ) );
+    historyShow = this.api.histories.show( newFirstHistory.id );
+    this.test.assert( historyShow.genome_build === unicodeBuild,
+        "Update accepted unicode genome_build: " + historyShow.genome_build );
 
 
     // ........................................................................................... annotation
@@ -337,25 +317,15 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
     this.test.assert( historyShow.annotation === 'New annotation',
         "Update sanitized annotation: " + historyShow.annotation );
 
-    //NOTE!: this fails on sqlite3 (with default setup)
-    try {
-        this.test.comment( 'update should allow unicode in annotations' );
-        var unicodeAnnotation = 'お願いは、それが落下させない';
-        returned = this.api.histories.update( newFirstHistory.id, {
-            annotation : unicodeAnnotation
-        });
-        //this.debug( 'returned:\n' + this.jsonStr( returned ) );
-        historyShow = this.api.histories.show( newFirstHistory.id );
-        this.test.assert( historyShow.annotation === unicodeAnnotation,
-            "Update accepted unicode annotation: " + historyShow.annotation );
-    } catch( err ){
-        //this.debug( this.jsonStr( err ) );
-        if( ( err instanceof this.api.APIError )
-        &&  ( err.status === 500 )
-        &&  ( err.message.indexOf( '(ProgrammingError) You must not use 8-bit bytestrings' ) !== -1 ) ){
-            this.skipTest( 'Unicode update failed. Are you using sqlite3 as the db?' );
-        }
-    }
+    this.test.comment( 'update should allow unicode in annotations' );
+    var unicodeAnnotation = 'お願いは、それが落下させない';
+    returned = this.api.histories.update( newFirstHistory.id, {
+        annotation : unicodeAnnotation
+    });
+    //this.debug( 'returned:\n' + this.jsonStr( returned ) );
+    historyShow = this.api.histories.show( newFirstHistory.id );
+    this.test.assert( historyShow.annotation === unicodeAnnotation,
+        "Update accepted unicode annotation: " + historyShow.annotation );
 
     this.test.comment( 'update should allow escaped quotations in annotations' );
     var quotedAnnotation = '"Bler"';
@@ -371,7 +341,6 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
     // ------------------------------------------------------------------------------------------- ERRORS
     //TODO: make sure expected errors are being passed back (but no permissions checks here - different suite)
     // bad ids: index, show, update, delete, undelete
-
 /*
 */
     //this.debug( this.jsonStr( historyShow ) );

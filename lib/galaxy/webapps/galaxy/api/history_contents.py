@@ -385,38 +385,17 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         )
         validated_payload = {}
         for key, val in payload.items():
-            # TODO: lots of boilerplate here, but overhead on abstraction is equally onerous
-            # typecheck, parse, remap key
-            if   key == 'name':
-                if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
-                    raise ValueError( 'name must be a string or unicode: %s' %( str( type( val ) ) ) )
-                validated_payload[ 'name' ] = util.sanitize_html.sanitize_html( val, 'utf-8' )
-                #TODO:?? if sanitized != val: log.warn( 'script kiddie' )
-            elif key == 'deleted':
-                if not isinstance( val, bool ):
-                    raise ValueError( 'deleted must be a boolean: %s' %( str( type( val ) ) ) )
-                validated_payload[ 'deleted' ] = val
-            elif key == 'visible':
-                if not isinstance( val, bool ):
-                    raise ValueError( 'visible must be a boolean: %s' %( str( type( val ) ) ) )
-                validated_payload[ 'visible' ] = val
-            elif key == 'genome_build':
-                if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
-                    raise ValueError( 'genome_build must be a string: %s' %( str( type( val ) ) ) )
-                validated_payload[ 'dbkey' ] = util.sanitize_html.sanitize_html( val, 'utf-8' )
-            elif key == 'annotation' and val is not None:
-                if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
-                    raise ValueError( 'annotation must be a string or unicode: %s' %( str( type( val ) ) ) )
-                validated_payload[ 'annotation' ] = util.sanitize_html.sanitize_html( val, 'utf-8' )
-            elif key == 'misc_info':
-                if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
-                    raise ValueError( 'misc_info must be a string or unicode: %s' %( str( type( val ) ) ) )
-                validated_payload[ 'info' ] = util.sanitize_html.sanitize_html( val, 'utf-8' )
+            if key in ( 'name', 'genome_build', 'misc_info', 'annotation' ):
+                val = self.validate_and_sanitize_basestring( key, val )
+                #TODO: need better remap system or eliminate the need altogether
+                key = 'dbkey' if key == 'genome_build' else key
+                key = 'info'  if key == 'misc_info' else key
+                validated_payload[ key ] = val
+            if key in ( 'deleted', 'visible' ):
+                validated_payload[ key ] = self.validate_boolean( key, val )
             elif key == 'tags':
-                if isinstance( val, list ):
-                    validated_payload[ 'tags' ] = [ sanitize_html( t, 'utf-8' ) for t in val ]
+                validated_payload[ key ] = self.validate_and_sanitize_basestring_list( key, val )
             elif key not in valid_but_uneditable_keys:
                 pass
                 #log.warn( 'unknown key: %s', str( key ) )
         return validated_payload
-
