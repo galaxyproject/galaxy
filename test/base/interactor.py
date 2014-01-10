@@ -4,7 +4,7 @@ from galaxy.tools.parameters import grouping
 from galaxy.util.odict import odict
 import galaxy.model
 from galaxy.model.orm import and_, desc
-from base.test_db_util import sa_session
+from functional import database_contexts
 from json import dumps, loads
 
 from logging import getLogger
@@ -391,9 +391,9 @@ class GalaxyInteractorTwill( object ):
         # Start with a new history
         self.twill_test_case.logout()
         self.twill_test_case.login( email='test@bx.psu.edu' )
-        admin_user = sa_session.query( galaxy.model.User ).filter( galaxy.model.User.table.c.email == 'test@bx.psu.edu' ).one()
+        admin_user = database_contexts.galaxy_context.query( galaxy.model.User ).filter( galaxy.model.User.table.c.email == 'test@bx.psu.edu' ).one()
         self.twill_test_case.new_history()
-        latest_history = sa_session.query( galaxy.model.History ) \
+        latest_history = database_contexts.galaxy_context.query( galaxy.model.History ) \
                                    .filter( and_( galaxy.model.History.table.c.deleted == False,
                                                   galaxy.model.History.table.c.user_id == admin_user.id ) ) \
                                    .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
@@ -417,7 +417,7 @@ GALAXY_INTERACTORS = {
 
 
 # Lets just try to use requests if it is available, but if not provide fallback
-# on custom implementations of limited requests get/post functionality.
+# on custom implementations of limited requests get, put, etc... functionality.
 try:
     from requests import get as get_request
     from requests import post as post_request
@@ -463,7 +463,6 @@ except ImportError:
             return RequestsLikeResponse( response.read(), status_code=response.getcode() )
         except urllib2.HTTPError as e:
             return RequestsLikeResponse( e.read(), status_code=e.code )
-
 
     def __multipart_request( url, data, files={}, verb="POST" ):
         parsed_url = urllib2.urlparse.urlparse( url )
