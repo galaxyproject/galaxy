@@ -51,6 +51,8 @@ from galaxy import util
 from galaxy.util.json import to_json_string
 
 from functional import database_contexts
+from base.api_util import get_master_api_key
+from base.api_util import get_user_api_key
 
 import nose.core
 import nose.config
@@ -64,8 +66,6 @@ default_galaxy_test_port_min = 8000
 default_galaxy_test_port_max = 9999
 default_galaxy_locales = 'en'
 default_galaxy_test_file_dir = "test-data"
-default_galaxy_master_key = "TEST123"
-default_galaxy_user_key = None
 migrated_tool_panel_config = 'migrated_tools_conf.xml'
 installed_tool_panel_configs = [ 'shed_tool_conf.xml' ]
 
@@ -342,7 +342,7 @@ def main():
     galaxy_data_manager_data_path = tempfile.mkdtemp( prefix='data_manager_tool-data', dir=data_manager_test_tmp_path )
     
     # ---- Build Application --------------------------------------------------
-    master_api_key = os.environ.get( "GALAXY_TEST_MASTER_API_KEY", default_galaxy_master_key )
+    master_api_key = get_master_api_key()
     app = None
     if start_server:
         kwargs = dict( admin_users='test@bx.psu.edu',
@@ -477,7 +477,7 @@ def main():
                 import functional.test_workflow
                 functional.test_workflow.WorkflowTestCase.workflow_test_file = workflow_test
                 functional.test_workflow.WorkflowTestCase.master_api_key = master_api_key
-                functional.test_workflow.WorkflowTestCase.user_api_key = os.environ.get( "GALAXY_TEST_USER_API_KEY", default_galaxy_user_key )
+                functional.test_workflow.WorkflowTestCase.user_api_key = get_user_api_key()
             data_manager_test = __check_arg( '-data_managers', param=False )
             if data_manager_test:
                 import functional.test_data_managers
@@ -486,7 +486,7 @@ def main():
                     tmp_dir=data_manager_test_tmp_path,
                     testing_shed_tools=testing_shed_tools,
                     master_api_key=master_api_key,
-                    user_api_key=os.environ.get( "GALAXY_TEST_USER_API_KEY", default_galaxy_user_key ),
+                    user_api_key=get_user_api_key(),
                 )
             else:
                 # We must make sure that functional.test_toolbox is always imported after
@@ -499,7 +499,7 @@ def main():
                 functional.test_toolbox.build_tests(
                     testing_shed_tools=testing_shed_tools,
                     master_api_key=master_api_key,
-                    user_api_key=os.environ.get( "GALAXY_TEST_USER_API_KEY", default_galaxy_user_key ),
+                    user_api_key=get_user_api_key(),
                 )
             test_config = nose.config.Config( env=os.environ, ignoreFiles=ignore_files, plugins=nose.plugins.manager.DefaultPluginManager() )
             test_config.configure( sys.argv )
