@@ -346,6 +346,7 @@ def main():
     app = None
     if start_server:
         kwargs = dict( admin_users='test@bx.psu.edu',
+                       api_allow_run_as='test@bx.psu.edu',
                        allow_library_path_paste=True,
                        allow_user_creation=True,
                        allow_user_deletion=True,
