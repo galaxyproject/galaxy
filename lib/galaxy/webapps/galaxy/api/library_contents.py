@@ -324,8 +324,7 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         """
         delete( self, trans, library_id, id, **kwd )
         * DELETE /api/libraries/{library_id}/contents/{id}
-            delete the HDA with the given ``id``
-
+            delete the LibraryDataset with the given ``id``
 
         :type   id:     str
         :param  id:     the encoded id of the library dataset to delete
@@ -333,7 +332,7 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         :param  kwd:    (optional) dictionary structure containing:
 
             * payload:     a dictionary itself containing:
-                * purge:   if True, purge the HDA
+                * purge:   if True, purge the LD
 
         :rtype:     dict
         :returns:   an error object if an error occurred or a dictionary containing:
@@ -345,21 +344,34 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         purge = False
         if kwd.get( 'payload', None ):
             purge = util.string_as_bool( kwd['payload'].get( 'purge', False ) )
+
         rval = { 'id' : id }
         try:
-            hda = self.get_library_dataset( trans, id, check_ownership=False, check_accessible=True )
-            hda.deleted = True
+            ld = self.get_library_dataset( trans, id, check_ownership=False, check_accessible=True )
+            user_is_admin = trans.user_is_admin()
+            can_modify = trans.app.security_agent.can_modify_library_item( trans.user.all_roles(), ld )
+            print 'is_admin: %s, can_modify: %s' % ( user_is_admin, can_modify )
+            if not ( user_is_admin or can_modify ):
+                trans.response.status = 403
+                rval.update({ 'error': 'Unauthorized to delete or purge this library dataset' })
+                return rval
+
+            ld.deleted = True
             if purge:
-                if not trans.app.config.allow_user_dataset_purge:
-                    raise exceptions.httpexceptions.HTTPForbidden(
-                        detail='This instance does not allow user dataset purging' )
-                hda.purged = True
-                trans.sa_session.add( hda )
+                ld.purged = True
+                trans.sa_session.add( ld )
                 trans.sa_session.flush()
-                if hda.dataset.user_can_purge:
+
+                #TODO: had to change this up a bit from Dataset.user_can_purge
+                dataset = ld.library_dataset_dataset_association.dataset
+                no_history_assoc = len( dataset.history_associations ) == len( dataset.purged_history_associations )
+                no_library_assoc = dataset.library_associations == [ ld.library_dataset_dataset_association ]
+                can_purge_dataset = not dataset.purged and no_history_assoc and no_library_assoc
+
+                if can_purge_dataset:
                     try:
-                        hda.dataset.full_delete()
-                        trans.sa_session.add( hda.dataset )
+                        ld.library_dataset_dataset_association.dataset.full_delete()
+                        trans.sa_session.add( ld.dataset )
                     except:
                         pass
                     # flush now to preserve deleted state in case of later interruption
@@ -367,8 +379,9 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
                 rval[ 'purged' ] = True
             trans.sa_session.flush()
             rval[ 'deleted' ] = True
+
         except exceptions.httpexceptions.HTTPInternalServerError, http_server_err:
-            log.exception( 'HDA API, delete: uncaught HTTPInternalServerError: %s, %s\n%s',
+            log.exception( 'Library_contents API, delete: uncaught HTTPInternalServerError: %s, %s\n%s',
                            id, str( kwd ), str( http_server_err ) )
             raise
         except exceptions.httpexceptions.HTTPException:
