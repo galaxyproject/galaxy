@@ -62,6 +62,7 @@ from galaxy.util.template import fill_template
 from galaxy.web import url_for
 from galaxy.web.form_builder import SelectField
 from galaxy.model.item_attrs import Dictifiable
+from galaxy.model import Workflow
 from tool_shed.util import shed_util_common
 from .loader import load_tool, template_macro_params
 
@@ -142,13 +143,13 @@ class ToolBox( object, Dictifiable ):
         #  1) adjusting init_tools() and called methods to get this right
         #  2) redesigning the code and/or data structure used to read/write integrated_tool_panel.xml
         for key, value in self.integrated_tool_panel.iteritems():
-            if key.startswith( 'section_' ):
+            if isinstance( value, ToolSection ):
                 for section_key, section_value in value.elems.iteritems():
                     if section_value is None:
-                        if section_key.startswith( 'tool_' ):
+                        if isinstance( section_value, Tool ):
                             tool_id = section_key[5:]
                             value.elems[section_key] = self.tools_by_id.get( tool_id )
-                        elif section_key.startswith( 'workflow_' ):
+                        elif isinstance( section_value, Workflow ):
                             workflow_id = section_key[9:]
                             value.elems[section_key] = self.workflows_by_id.get( workflow_id )
 
@@ -252,19 +253,19 @@ class ToolBox( object, Dictifiable ):
 
     def load_tool_panel( self ):
         for key, val in self.integrated_tool_panel.items():
-            if key.startswith( 'tool_' ):
+            if isinstance( val, Tool ):
                 tool_id = key.replace( 'tool_', '', 1 )
                 if tool_id in self.tools_by_id:
                     self.__add_tool_to_tool_panel( tool_id, self.tool_panel, section=False )
-            elif key.startswith( 'workflow_' ):
+            elif isinstance( val, Workflow ):
                 workflow_id = key.replace( 'workflow_', '', 1 )
                 if workflow_id in self.workflows_by_id:
                     workflow = self.workflows_by_id[ workflow_id ]
                     self.tool_panel[ key ] = workflow
                     log.debug( "Loaded workflow: %s %s" % ( workflow_id, workflow.name ) )
-            elif key.startswith( 'label_' ):
+            elif isinstance( val, ToolSectionLabel ):
                 self.tool_panel[ key ] = val
-            elif key.startswith( 'section_' ):
+            elif isinstance( val, ToolSection ):
                 elem = ElementTree.Element( 'section' )
                 elem.attrib[ 'id' ] = val.id or ''
                 elem.attrib[ 'name' ] = val.name or ''
@@ -276,13 +277,13 @@ class ToolBox( object, Dictifiable ):
                         tool_id = section_key.replace( 'tool_', '', 1 )
                         if tool_id in self.tools_by_id:
                             self.__add_tool_to_tool_panel( tool_id, section, section=True )
-                    elif section_key.startswith( 'workflow_' ):
+                    elif isinstance( section_val, Workflow ):
                         workflow_id = section_key.replace( 'workflow_', '', 1 )
                         if workflow_id in self.workflows_by_id:
                             workflow = self.workflows_by_id[ workflow_id ]
                             section.elems[ section_key ] = workflow
                             log.debug( "Loaded workflow: %s %s" % ( workflow_id, workflow.name ) )
-                    elif section_key.startswith( 'label_' ):
+                    elif isinstance( val, ToolSectionLabel ):
                         if section_val:
                             section.elems[ section_key ] = section_val
                             log.debug( "Loaded label: %s" % ( section_val.text ) )
@@ -315,7 +316,7 @@ class ToolBox( object, Dictifiable ):
                     elif section_elem.tag == 'label':
                         key = 'label_%s' % section_elem.get( 'id' )
                         section.elems[ key ] = None
-                key = 'section_%s' % elem.get( 'id' )
+                key = elem.get( 'id' )
                 self.integrated_tool_panel[ key ] = section
             elif elem.tag == 'label':
                 key = 'label_%s' % elem.get( 'id' )
@@ -331,28 +332,28 @@ class ToolBox( object, Dictifiable ):
         os.write( fd, '<toolbox>\n' )
         for key, item in self.integrated_tool_panel.items():
             if item:
-                if key.startswith( 'tool_' ):
+                if isinstance( item, Tool ):
                     os.write( fd, '    <tool id="%s" />\n' % item.id )
-                elif key.startswith( 'workflow_' ):
+                elif isinstance( item, Workflow ):
                     os.write( fd, '    <workflow id="%s" />\n' % item.id )
-                elif key.startswith( 'label_' ):
+                elif isinstance( item, ToolSectionLabel ):
                     label_id = item.id or ''
                     label_text = item.text or ''
                     label_version = item.version or ''
                     os.write( fd, '    <label id="%s" text="%s" version="%s" />\n' % ( label_id, label_text, label_version ) )
-                elif key.startswith( 'section_' ):
+                elif isinstance( item, ToolSection ):
                     section_id = item.id or ''
                     section_name = item.name or ''
                     section_version = item.version or ''
                     os.write( fd, '    <section id="%s" name="%s" version="%s">\n' % ( section_id, section_name, section_version ) )
                     for section_key, section_item in item.elems.items():
-                        if section_key.startswith( 'tool_' ):
+                        if isinstance( section_item, Tool ):
                             if section_item:
                                 os.write( fd, '        <tool id="%s" />\n' % section_item.id )
-                        elif section_key.startswith( 'workflow_' ):
+                        elif isinstance( section_item, Workflow ):
                             if section_item:
                                 os.write( fd, '        <workflow id="%s" />\n' % section_item.id )
-                        elif section_key.startswith( 'label_' ):
+                        elif isinstance( section_item, ToolSectionLabel ):
                             if section_item:
                                 label_id = section_item.id or ''
                                 label_text = section_item.text or ''
@@ -576,7 +577,7 @@ class ToolBox( object, Dictifiable ):
             integrated_panel_dict.insert( index, key, label )
 
     def load_section_tag_set( self, elem, tool_path, load_panel_dict, index=None ):
-        key = 'section_' + elem.get( "id" )
+        key = elem.get( "id" )
         if key in self.tool_panel:
             section = self.tool_panel[ key ]
             elems = section.elems
@@ -1078,14 +1079,14 @@ class Tool( object, Dictifiable ):
     def get_panel_section( self ):
         for key, item in self.app.toolbox.integrated_tool_panel.items():
             if item:
-                if key.startswith( 'tool_' ):
+                if isinstance( item, Tool ):
                     if item.id == self.id:
                         return '', ''
-                if key.startswith( 'section_' ):
+                if isinstance( item, ToolSection ):
                     section_id = item.id or ''
                     section_name = item.name or ''
                     for section_key, section_item in item.elems.items():
-                        if section_key.startswith( 'tool_' ):
+                        if isinstance( section_item, Tool ):
                             if section_item:
                                 if section_item.id == self.id:
                                     return section_id, section_name
