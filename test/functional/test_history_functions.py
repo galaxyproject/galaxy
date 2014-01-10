@@ -82,6 +82,7 @@ class TestHistory( TwillTestCase ):
                              .first()
         assert historyB is not None, "Problem retrieving historyB from database"
         assert historyA.id == historyB.id, "After the same user logged out and back in, their last used history was not associated with their new session"
+
     def test_005_deleting_histories( self ):
         """Testing deleting histories"""
         # Logged in as admin_user
@@ -144,6 +145,7 @@ class TestHistory( TwillTestCase ):
             raise AssertionError, "Default permissions were incorrectly deleted from the db for history id %d when it was deleted" % history2.id
         # Current history is empty
         self.history_options( user=True )
+
     def test_010_history_rename( self ):
         """Testing renaming a history"""
         # Logged in as admin_user
@@ -157,10 +159,12 @@ class TestHistory( TwillTestCase ):
             raise AssertionError, "History id %d deleted when it should not be" % latest_history.id
         self.rename_history( self.security.encode_id( history3.id ), history3.name, new_name=urllib.quote( 'history 3' ) )
         sa_session.refresh( history3 )
+
     def test_015_history_list( self ):
         """Testing viewing previously stored active histories"""
         # Logged in as admin_user
         self.view_stored_active_histories()
+
     def test_020_share_current_history( self ):
         """Testing sharing the current history which contains only public datasets"""
         # Logged in as admin_user
@@ -210,10 +214,13 @@ class TestHistory( TwillTestCase ):
         # Test sharing history3 with an invalid user
         self.share_current_history( 'jack@jill.com',
                                     strings_displayed_after_submit=[ 'jack@jill.com is not a valid Galaxy user.' ] )
+
     def test_025_delete_shared_current_history( self ):
         """Testing deleting the current history after it was shared"""
         # Logged in as admin_user
-        self.delete_current_history( strings_displayed=[ "History (%s) has been shared with others, unshare it before deleting it." % history3.name ] )
+        self.delete_current_history(
+            strings_displayed=[ "History (%s) has been shared with others, unshare it before deleting it." % history3.name ] )
+
     def test_030_clone_shared_history( self ):
         """Testing copying a shared history"""
         # logged in as admin user
@@ -656,7 +663,7 @@ class TestHistory( TwillTestCase ):
                 if hda[ 'id' ] == self.security.encode_id( hda_2_bed.id ):
                     return ( not hda[ 'accessible' ] )
             return False
-        self.check_history_json( r'\bhdaJson\s*=\s*(.*);', hda_2_bed_is_inaccessible )
+        self.check_history_json( r'\bhdaJSON\s*=\s*(.*);', hda_2_bed_is_inaccessible )
 
         # Admin users can view all datasets ( using the history/view feature ), so make sure 2.bed is accessible to the admin
         self.logout()
@@ -734,7 +741,7 @@ class TestHistory( TwillTestCase ):
         log.info( 'deleting last hda' )
         self.delete_history_item( str( latest_hda.id ) )
         # check the historyPanel settings.show_deleted for a null json value (no show_deleted in query string)
-        self.check_history_json( r'\bpage_show_deleted\s*=\s*(.*),', lambda x: x == None )
+        self.check_history_json( r'\bshow_deleted\s*:\s*(.*),', lambda x: x == None )
 
         # reload this history with the show_deleted flag set in the query string
         #   the deleted dataset should be there with the proper 'deleted' text
@@ -742,7 +749,7 @@ class TestHistory( TwillTestCase ):
         log.info( 'turning show_deleted on' )
         #self.visit_url( "%s/history/?show_deleted=True" % self.url )
         # check the historyPanel settings.show_deleted for a true json value
-        self.check_history_json( r'\bpage_show_deleted\s*=\s*(.*),', lambda x: x == True, show_deleted=True )
+        self.check_history_json( r'\bshow_deleted\s*:\s*(.*),', lambda x: x == True, show_deleted=True )
 
         # reload this history again with the show_deleted flag set TO FALSE in the query string
         #   make sure the 'history empty' message shows
@@ -750,7 +757,7 @@ class TestHistory( TwillTestCase ):
         log.info( 'turning show_deleted off' )
         #self.visit_url( "%s/history/?show_deleted=False" % self.url )
         # check the historyPanel settings.show_deleted for a false json value
-        self.check_history_json( r'\bpage_show_deleted\s*=\s*(.*),', lambda x: x == False, show_deleted=False )
+        self.check_history_json( r'\bshow_deleted\s*:\s*(.*),', lambda x: x == False, show_deleted=False )
 
         # delete this history
         self.delete_history( self.security.encode_id( latest_history.id ) )

@@ -335,6 +335,7 @@ class TwillTestCase( unittest.TestCase ):
             self.visit_page( "history?show_deleted=False" )
         else:
             self.visit_page( "history" )
+        json_data = {}
         try:
             tc.find( pattern, flags=( 'm' if multiline else '' ) )
             # twill stores the regex match in a special stack variable
@@ -541,7 +542,6 @@ class TwillTestCase( unittest.TestCase ):
         self.home()
         self.visit_page( "history/list" )
         self.check_page_for_string( 'Saved Histories' )
-        self.check_page_for_string( '<input type="checkbox" name="id" value=' )
         self.check_page_for_string( 'operation=Rename' )
         self.check_page_for_string( 'operation=Switch' )
         self.check_page_for_string( 'operation=Delete' )
@@ -553,7 +553,6 @@ class TwillTestCase( unittest.TestCase ):
         self.home()
         self.visit_page( "history/list?f-deleted=True" )
         self.check_page_for_string( 'Saved Histories' )
-        self.check_page_for_string( '<input type="checkbox" name="id" value=' )
         self.check_page_for_string( 'operation=Undelete' )
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )

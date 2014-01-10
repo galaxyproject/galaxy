@@ -119,7 +119,7 @@ class TestInstallDatatypesSniffers( ShedTwillTestCase ):
         global repository_datatypes_count
         global base_datatypes_count
         global base_sniffers_count
-        self.uninstall_repository( repository, remove_from_disk=False )
+        self.deactivate_repository( repository )
         new_datatypes_count = self.get_datatypes_count()
         assert new_datatypes_count == base_datatypes_count, 'Expected %d datatypes, got %d' % ( base_datatypes_count, new_datatypes_count )
         current_sniffers = self.get_sniffers_count()
@@ -157,7 +157,7 @@ class TestInstallDatatypesSniffers( ShedTwillTestCase ):
         repository = self.test_db_util.get_installed_repository_by_name_owner( repository_name, common.test_user_1_name )
         global repository_datatypes_count
         global base_datatypes_count
-        self.uninstall_repository( repository, remove_from_disk=True )
+        self.uninstall_repository( repository )
         new_datatypes_count = self.get_datatypes_count()
         assert new_datatypes_count == base_datatypes_count, 'Expected %d datatypes, got %d' % ( base_datatypes_count, new_datatypes_count )
         current_sniffers = self.get_sniffers_count()

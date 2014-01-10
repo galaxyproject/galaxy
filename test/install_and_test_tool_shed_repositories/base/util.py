@@ -3,10 +3,9 @@ import sys
 
 cwd = os.getcwd()
 sys.path.append( cwd )
-new_path = [ os.path.join( cwd, "scripts" ),
-             os.path.join( cwd, "lib" ),
+new_path = [ os.path.join( cwd, "lib" ),
              os.path.join( cwd, 'test' ),
-             os.path.join( cwd, 'scripts', 'api' ) ]
+             os.path.join( cwd, 'lib', 'tool_shed', 'scripts', 'api' ) ]
 new_path.extend( sys.path )
 sys.path = new_path
 
@@ -27,6 +26,10 @@ import urllib
 from datetime import datetime
 from datetime import timedelta
 
+from common import get_api_url
+from common import get_latest_downloadable_changeset_revision_via_api
+from common import get_repository_dict
+from common import json_from_url
 from common import update
 
 from galaxy.util import asbool
@@ -267,18 +270,6 @@ def display_tool_dependencies_by_name( tool_dependency_dicts ):
             version = str( tool_dependency_dict[ 'version' ] )
             print "# %s %s version %s" % ( type, name, version )
 
-def get_api_url( base, parts=[], params=None ):
-    if 'api' in parts and parts.index( 'api' ) != 0:
-        parts.pop( parts.index( 'api' ) )
-        parts.insert( 0, 'api' )
-    elif 'api' not in parts:
-        parts.insert( 0, 'api' )
-    url = suc.url_join( base, *parts )
-    if params is not None:
-        query_string = urllib.urlencode( params )
-        url += '?%s' % query_string
-    return url
-
 def get_database_version( app ):
     '''
     This method returns the value of the version column from the migrate_version table, using the provided app's SQLAlchemy session to determine
@@ -295,19 +286,6 @@ def get_database_version( app ):
         version = row[ 0 ]
         break
     return version
-
-def get_latest_downloadable_changeset_revision( url, name, owner ):
-    error_message = ''
-    parts = [ 'api', 'repositories', 'get_ordered_installable_revisions' ]
-    params = dict( name=name, owner=owner )
-    api_url = get_api_url( base=url, parts=parts, params=params )
-    changeset_revisions, error_message = json_from_url( api_url )
-    if error_message:
-        return None, error_message
-    if changeset_revisions:
-        return changeset_revisions[ -1 ], error_message
-    else:
-        return suc.INITIAL_CHANGELOG_HASH, error_message
 
 def get_missing_repository_dependencies( repository ):
     """
@@ -466,21 +444,6 @@ def get_repository_dependencies_for_changeset_revision( tool_shed_url, encoded_r
     if error_message:
         return None, error_message
     return repository_dependency_dicts, error_message
-
-def get_repository_dict( url, repository_dict ):
-    error_message = ''
-    parts = [ 'api', 'repositories', repository_dict[ 'repository_id' ] ]
-    api_url = get_api_url( base=url, parts=parts )
-    extended_dict, error_message = json_from_url( api_url )
-    if error_message:
-        return None, error_message
-    name = str( extended_dict[ 'name' ] )
-    owner = str( extended_dict[ 'owner' ] )
-    latest_changeset_revision, error_message = get_latest_downloadable_changeset_revision( url, name, owner )
-    if error_message:
-        return None, error_message
-    extended_dict[ 'latest_revision' ] = str( latest_changeset_revision )
-    return extended_dict, error_message
 
 def get_repository_dependencies_dicts( url, encoded_repository_metadata_id ):
     """
@@ -702,23 +665,23 @@ def is_excluded( exclude_list_dicts, name, owner, changeset_revision, encoded_re
     return False, None
 
 def is_latest_downloadable_revision( url, repository_dict ):
-    name = str( repository_dict[ 'name' ] )
-    owner = str( repository_dict[ 'owner' ] )
-    changeset_revision = str( repository_dict[ 'changeset_revision' ] )
-    latest_revision = get_latest_downloadable_changeset_revision( url, name=name, owner=owner )
-    return changeset_revision == str( latest_revision )
-
-def json_from_url( url ):
+    """
+    Return True if the changeset_revision defined in the received repository_dict is the latest
+    installable revision for the repository.
+    """
     error_message = ''
-    url_handle = urllib.urlopen( url )
-    url_contents = url_handle.read()
-    try:
-        parsed_json = from_json_string( url_contents )
-    except Exception, e:
-        error_message = str( url_contents )
-        log.exception( 'Error parsing JSON data in json_from_url(): %s.' % str( e ) )
-        return None, error_message
-    return parsed_json, error_message
+    name = repository_dict.get( 'name', None )
+    owner = repository_dict.get( 'owner', None )
+    changeset_revision = repository_dict.get( 'changeset_revision', None )
+    if name is not None and owner is not None and changeset_revision is not None:
+        name = str( name )
+        owner = str( owner )
+        changeset_revision = str( changeset_revision )
+        latest_revision, error_message = get_latest_downloadable_changeset_revision_via_api( url, name=name, owner=owner )
+        if latest_revision is None or error_message:
+            return None, error_message
+    is_latest_downloadable = changeset_revision == str( latest_revision )
+    return is_latest_downloadable, error_message
 
 def parse_exclude_list( xml_filename ):
     """Return a list of repositories to exclude from testing."""
@@ -882,9 +845,19 @@ def populate_install_containers_for_repository_dependencies( app, repository, re
         log.debug( 'due to the following error getting repository_dependencies_dicts:\n%s' % str( error_message ) )
     else:
         for repository_dependencies_dict in repository_dependencies_dicts:
-            name = str( repository_dependencies_dict[ 'name' ] )
-            owner = str( repository_dependencies_dict[ 'owner' ] )
-            changeset_revision = str( repository_dependencies_dict[ 'changeset_revision' ] )
+            if not isinstance( repository_dependencies_dict, dict ):
+                log.debug( 'Skipping invalid repository_dependencies_dict: %s' % str( repository_dependencies_dict ) )
+                continue
+            name = repository_dependencies_dict.get( 'name', None )
+            owner = repository_dependencies_dict.get( 'owner', None )
+            changeset_revision = repository_dependencies_dict.get( 'changeset_revision', None )
+            if name is None or owner is None or changeset_revision is None:
+                log.debug( 'Skipping invalid repository_dependencies_dict due to missing name,owner or changeset_revision: %s' % \
+                    str( repository_dependencies_dict ) )
+                continue
+            name = str( name )
+            owner = str( owner )
+            changeset_revision = str( changeset_revision )
             log.debug( 'Checking installation containers for revision %s of repository dependency %s owned by %s' % \
                 ( changeset_revision, name, owner ) )
             required_repository_metadata_id = repository_dependencies_dict[ 'id' ]
@@ -898,22 +871,23 @@ def populate_install_containers_for_repository_dependencies( app, repository, re
                 log.debug( 'due to the following error getting tool_test_results:\n%s' % str( error_message ) )
             else:
                 # Check the required repository's time_last_tested value to see if its tool_test_results column
-                # has been updated within the past 12 hours.
-                twelve_hours_ago = datetime.utcnow() - timedelta( hours=12 )
+                # has been updated within the past 12 hours.  The RepositoryMetadata class's to_dict() method
+                # returns the value of time_last_tested in datetime.isoformat().
+                twenty_hours_ago = ( datetime.utcnow() - timedelta( hours=20 ) ).isoformat()
                 time_last_tested, error_message = get_time_last_tested( galaxy_tool_shed_url, repository_metadata_id )
-                if time_last_tested is not None and time_last_tested < twelve_hours_ago:
+                if time_last_tested is not None and time_last_tested < twenty_hours_ago:
                     log.debug( 'The install containers for version %s of repository dependency %s owned by %s have been ' % \
                         ( changeset_revision, name, owner ) )
-                    log.debug( 'populated within the past 12 hours (likely in this test run), so skipping this check.' )
+                    log.debug( 'populated within the past 20 hours (likely in this test run), so skipping this check.' )
                     continue
-                if time_last_tested is None:
+                elif time_last_tested is None:
                     log.debug( 'The time_last_tested column value is None for version %s of repository dependency %s owned by %s.' % \
                         ( changeset_revision, name, owner ) )
-                elif time_last_tested < twelve_hours_ago:
-                    log.debug( 'Version %s of repository dependency %s owned by %s was last tested less than 12 hours ago.' % \
+                elif time_last_tested < twenty_hours_ago:
+                    log.debug( 'Version %s of repository dependency %s owned by %s was last tested less than 20 hours ago.' % \
                         ( changeset_revision, name, owner ) )
                 else:
-                    log.debug( 'Version %s of repository dependency %s owned by %s was last tested more than 12 hours ago.' % \
+                    log.debug( 'Version %s of repository dependency %s owned by %s was last tested more than 20 hours ago.' % \
                         ( changeset_revision, name, owner ) )
                 # Inspect the tool_test_results_dict for the last test run to see if it has not yet been populated.
                 if len( tool_test_results_dicts ) == 0:
@@ -975,8 +949,8 @@ def populate_install_containers_for_repository_dependencies( app, repository, re
                 else:
                     log.debug( 'Cannot retrieve revision %s of required repository %s owned by %s from the database ' % \
                         ( changeset_revision, name, owner ) )
-                    log.debug( 'so tool_test_results cannot be saved.' )
-                    log.debug( 'The attributes used to retrieve the record are:\n' )
+                    log.debug( 'so tool_test_results cannot be saved at this time.' )
+                    log.debug( 'The attributes used to retrieve the record are:' )
                     log.debug( 'tool_shed: %s name: %s owner: %s changeset_revision: %s' % \
                         ( cleaned_tool_shed_url, name, owner, changeset_revision ) )
 
@@ -1006,9 +980,15 @@ def save_test_results_for_changeset_revision( url, tool_test_results_dicts, tool
     if can_update_tool_shed:
         metadata_revision_id = repository_dict.get( 'id', None )
         if metadata_revision_id is not None:
-            name = str( repository_dict[ 'name' ] )
-            owner = str( repository_dict[ 'owner' ] )
-            changeset_revision = str( repository_dict[ 'changeset_revision' ] )
+            name = repository_dict.get( 'name', None )
+            owner = repository_dict.get( 'owner', None )
+            changeset_revision = repository_dict.get( 'changeset_revision', None )
+            if name is None or owner is None or changeset_revision is None:
+                log.debug( 'Entries for name, owner or changeset_revision missing from repository_dict %s' % str( repository_dict ) )
+                return {}
+            name = str( name )
+            owner = str( owner )
+            changeset_revision = str( changeset_revision )
             log.debug('\n=============================================================\n' )
             log.debug( 'Inserting the following into tool_test_results for revision %s of repository %s owned by %s:\n%s' % \
                 ( changeset_revision, name, owner, str( tool_test_results_dict ) ) )

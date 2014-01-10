@@ -16,27 +16,12 @@ from galaxy.jobs import JobDestination
 from galaxy.jobs.runners import AsynchronousJobState, AsynchronousJobRunner
 
 eggs.require( "drmaa" )
-# We foolishly named this file the same as the name exported by the drmaa
-# library... 'import drmaa' imports itself.
-drmaa = __import__( "drmaa" )
 
 log = logging.getLogger( __name__ )
 
 __all__ = [ 'DRMAAJobRunner' ]
 
-drmaa_state = {
-    drmaa.JobState.UNDETERMINED: 'process status cannot be determined',
-    drmaa.JobState.QUEUED_ACTIVE: 'job is queued and active',
-    drmaa.JobState.SYSTEM_ON_HOLD: 'job is queued and in system hold',
-    drmaa.JobState.USER_ON_HOLD: 'job is queued and in user hold',
-    drmaa.JobState.USER_SYSTEM_ON_HOLD: 'job is queued and in user and system hold',
-    drmaa.JobState.RUNNING: 'job is running',
-    drmaa.JobState.SYSTEM_SUSPENDED: 'job is system suspended',
-    drmaa.JobState.USER_SUSPENDED: 'job is user suspended',
-    drmaa.JobState.DONE: 'job finished normally',
-    drmaa.JobState.FAILED: 'job finished, but failed',
-}
-
+drmaa = None
 
 DRMAA_jobTemplate_attributes = [ 'args', 'remoteCommand', 'outputPath', 'errorPath', 'nativeSpecification',
                                  'jobName', 'email', 'project' ]
@@ -48,8 +33,50 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
     """
     runner_name = "DRMAARunner"
 
-    def __init__( self, app, nworkers ):
+    def __init__( self, app, nworkers, **kwargs ):
         """Start the job runner"""
+
+        global drmaa
+
+        runner_param_specs = dict(
+            drmaa_library_path = dict( map = str, default = os.environ.get( 'DRMAA_LIBRARY_PATH', None ) ),
+            invalidjobexception_state = dict( map = str, valid = lambda x: x in ( model.Job.states.OK, model.Job.states.ERROR ), default = model.Job.states.OK ),
+            invalidjobexception_retries = dict( map = int, valid = lambda x: int >= 0, default = 0 ),
+            internalexception_state = dict( map = str, valid = lambda x: x in ( model.Job.states.OK, model.Job.states.ERROR ), default = model.Job.states.OK ),
+            internalexception_retries = dict( map = int, valid = lambda x: int >= 0, default = 0 ) )
+
+        if 'runner_param_specs' not in kwargs:
+            kwargs[ 'runner_param_specs' ] = dict()
+        kwargs[ 'runner_param_specs' ].update( runner_param_specs )
+
+        super( DRMAAJobRunner, self ).__init__( app, nworkers, **kwargs )
+
+        # This allows multiple drmaa runners (although only one per handler) in the same job config file
+        if 'drmaa_library_path' in kwargs:
+            log.info( 'Overriding DRMAA_LIBRARY_PATH due to runner plugin parameter: %s', self.runner_params.drmaa_library_path )
+            os.environ['DRMAA_LIBRARY_PATH'] = self.runner_params.drmaa_library_path
+
+        # We foolishly named this file the same as the name exported by the drmaa
+        # library... 'import drmaa' imports itself.
+        drmaa = __import__( "drmaa" )
+
+        # Subclasses may need access to state constants
+        self.drmaa_job_states = drmaa.JobState
+
+        # Descriptive state strings pulled from the drmaa lib itself
+        self.drmaa_job_state_strings = {
+            drmaa.JobState.UNDETERMINED: 'process status cannot be determined',
+            drmaa.JobState.QUEUED_ACTIVE: 'job is queued and active',
+            drmaa.JobState.SYSTEM_ON_HOLD: 'job is queued and in system hold',
+            drmaa.JobState.USER_ON_HOLD: 'job is queued and in user hold',
+            drmaa.JobState.USER_SYSTEM_ON_HOLD: 'job is queued and in user and system hold',
+            drmaa.JobState.RUNNING: 'job is running',
+            drmaa.JobState.SYSTEM_SUSPENDED: 'job is system suspended',
+            drmaa.JobState.USER_SUSPENDED: 'job is user suspended',
+            drmaa.JobState.DONE: 'job finished normally',
+            drmaa.JobState.FAILED: 'job finished, but failed',
+        }
+
         self.ds = drmaa.Session()
         self.ds.initialize()
 
@@ -58,7 +85,6 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
         self.external_killJob_script = app.config.drmaa_external_killjob_script
         self.userid = None
 
-        super( DRMAAJobRunner, self ).__init__( app, nworkers )
         self._init_monitor_thread()
         self._init_worker_threads()
 
@@ -137,8 +163,10 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
                 job_wrapper.cleanup()
             return
 
-        log.debug( "(%s) submitting file %s" % ( galaxy_id_tag, ajs.job_file ) )
-        log.debug( "(%s) command is: %s" % ( galaxy_id_tag, command_line ) )
+        log.debug( "(%s) submitting file %s", galaxy_id_tag, ajs.job_file )
+        log.debug( "(%s) command is: %s", galaxy_id_tag, command_line )
+        if native_spec:
+            log.debug( "(%s) native specification is: %s", galaxy_id_tag, native_spec )
 
         # runJob will raise if there's a submit problem
         if self.external_runJob_script is None:
@@ -175,6 +203,20 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
         # Add to our 'queue' of jobs to monitor
         self.monitor_queue.put( ajs )
 
+    def _complete_terminal_job( self, ajs, drmaa_state, **kwargs ):
+        """
+        Handle a job upon its termination in the DRM. This method is meant to
+        be overridden by subclasses to improve post-mortem and reporting of
+        failures.
+        """
+        if drmaa_state == drmaa.JobState.FAILED:
+            if ajs.job_wrapper.get_state() != model.Job.states.DELETED:
+                ajs.stop_job = False
+                ajs.fail_message = "The cluster DRM system terminated this job"
+                self.work_queue.put( ( self.fail_job, ajs ) )
+        elif drmaa_state == drmaa.JobState.DONE:
+            super( DRMAAJobRunner, self )._complete_terminal_job( ajs )
+
     def check_watched_items( self ):
         """
         Called by the monitor thread to look at each watched job and deal
@@ -188,16 +230,27 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
             try:
                 assert external_job_id not in ( None, 'None' ), '(%s/%s) Invalid job id' % ( galaxy_id_tag, external_job_id )
                 state = self.ds.jobStatus( external_job_id )
-            # InternalException was reported to be necessary on some DRMs, but
-            # this could cause failures to be detected as completion!  Please
-            # report if you experience problems with this.
-            except ( drmaa.InvalidJobException, drmaa.InternalException ), e:
-                # we should only get here if an orphaned job was put into the queue at app startup
-                log.info( "(%s/%s) job left DRM queue with following message: %s" % ( galaxy_id_tag, external_job_id, e ) )
-                self.work_queue.put( ( self.finish_job, ajs ) )
+            except ( drmaa.InternalException, drmaa.InvalidJobException ), e:
+                ecn = e.__class__.__name__
+                retry_param = ecn.lower() + '_retries'
+                state_param = ecn.lower() + '_state'
+                retries = getattr( ajs, retry_param, 0 )
+                if self.runner_params[ retry_param ] > 0:
+                    if retries < self.runner_params[ retry_param ]:
+                        # will retry check on next iteration
+                        setattr( ajs, retry_param, retries + 1 )
+                        continue
+                if self.runner_params[ state_param ] == model.Job.states.OK:
+                    log.info( "(%s/%s) job left DRM queue with following message: %s", galaxy_id_tag, external_job_id, e )
+                    self.work_queue.put( ( self.finish_job, ajs ) )
+                elif self.runner_params[ state_param ] == model.Job.states.ERROR:
+                    log.info( "(%s/%s) job check resulted in %s after %s tries: %s", galaxy_id_tag, external_job_id, ecn, retries, e )
+                    self.work_queue.put( ( self.fail_job, ajs ) )
+                else:
+                    raise Exception( "%s is set to an invalid value (%s), this should not be possible. See galaxy.jobs.drmaa.__init__()", state_param, self.runner_params[ state_param ] )
                 continue
             except drmaa.DrmCommunicationException, e:
-                log.warning( "(%s/%s) unable to communicate with DRM: %s" % ( galaxy_id_tag, external_job_id, e ))
+                log.warning( "(%s/%s) unable to communicate with DRM: %s", galaxy_id_tag, external_job_id, e )
                 new_watched.append( ajs )
                 continue
             except Exception, e:
@@ -208,19 +261,12 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
                 self.work_queue.put( ( self.fail_job, ajs ) )
                 continue
             if state != old_state:
-                log.debug( "(%s/%s) state change: %s" % ( galaxy_id_tag, external_job_id, drmaa_state[state] ) )
+                log.debug( "(%s/%s) state change: %s" % ( galaxy_id_tag, external_job_id, self.drmaa_job_state_strings[state] ) )
             if state == drmaa.JobState.RUNNING and not ajs.running:
                 ajs.running = True
                 ajs.job_wrapper.change_state( model.Job.states.RUNNING )
-            if state == drmaa.JobState.FAILED:
-                if ajs.job_wrapper.get_state() != model.Job.states.DELETED:
-                    ajs.stop_job = False
-                    ajs.fail_message = "The cluster DRM system terminated this job"
-                    self.work_queue.put( ( self.fail_job, ajs ) )
-                continue
-            if state == drmaa.JobState.DONE:
-                if ajs.job_wrapper.get_state() != model.Job.states.DELETED:
-                    self.work_queue.put( ( self.finish_job, ajs ) )
+            if state in ( drmaa.JobState.FAILED, drmaa.JobState.DONE ):
+                self._complete_terminal_job( ajs, drmaa_state = state )
                 continue
             ajs.old_state = state
             new_watched.append( ajs )

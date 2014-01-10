@@ -87,5 +87,5 @@ class TestDatatypeConverters( ShedTwillTestCase ):
         so we have to uninstall it first, then verify that it was not assigned a tool panel section.
         '''
         repository = self.test_db_util.get_installed_repository_by_name_owner( repository_name, common.test_user_1_name )
-        self.uninstall_repository( repository, remove_from_disk=True )
+        self.uninstall_repository( repository )
         self.verify_installed_repository_no_tool_panel_section( repository )

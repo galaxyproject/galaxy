@@ -313,6 +313,9 @@ def handle_repository_dependency_elem( trans, elem, unpopulate=False ):
             if lastest_installable_changeset_revision != suc.INITIAL_CHANGELOG_HASH:
                 elem.attrib[ 'changeset_revision' ] = lastest_installable_changeset_revision
                 revised = True
+            else:
+                error_message = 'Invalid latest installable changeset_revision %s ' % str( lastest_installable_changeset_revision )
+                error_message += 'retrieved for repository %s owned by %s.  ' % ( str( name ), str( owner ) )
         else:
             error_message = 'Unable to locate repository with name %s and owner %s.  ' % ( str( name ), str( owner ) )
     return revised, elem, error_message

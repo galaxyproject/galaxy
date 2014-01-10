@@ -217,19 +217,19 @@ class TestSimplePriorInstallation( ShedTwillTestCase ):
         assert filter_repository.update_time > convert_repository.update_time, 'Error: convert_chars_0160 shows a later update time than filtering_0160'
         assert filter_repository.update_time > column_repository.update_time, 'Error: column_maker_0160 shows a later update time than filtering_0160'
 
-    def test_0040_uninstall_all_repositories( self ):
+    def test_0040_deactivate_all_repositories( self ):
         '''Uninstall convert_chars_0160, column_maker_0160, and filtering_0160.'''
         filter_repository = self.test_db_util.get_installed_repository_by_name_owner( filter_repository_name, common.test_user_1_name )
         column_repository = self.test_db_util.get_installed_repository_by_name_owner( column_repository_name, common.test_user_1_name )
         convert_repository = self.test_db_util.get_installed_repository_by_name_owner( convert_repository_name, common.test_user_1_name )
-        self.uninstall_repository( filter_repository, remove_from_disk=False )
-        self.uninstall_repository( column_repository, remove_from_disk=False )
-        self.uninstall_repository( convert_repository, remove_from_disk=False )
+        self.deactivate_repository( filter_repository )
+        self.deactivate_repository( column_repository )
+        self.deactivate_repository( convert_repository )
         
-    def test_0045_reinstall_filter_repository( self ):
+    def test_0045_reactivate_filter_repository( self ):
         '''Reinstall the filtering_0160 repository.'''
         filter_repository = self.test_db_util.get_installed_repository_by_name_owner( filter_repository_name, common.test_user_1_name )
-        self.reinstall_repository( filter_repository )
+        self.reactivate_repository( filter_repository )
         strings_displayed = [ 'filtering_0160',
                               "Galaxy's filtering tool for test 0160",
                               'user1', 
@@ -242,6 +242,7 @@ class TestSimplePriorInstallation( ShedTwillTestCase ):
         
     def test_0050_verify_reinstallation_order( self ):
         '''Verify that convert_chars_0160 and column_maker_0160 were reinstalled before filtering_0160.'''
+        # Fixme: this test is not covering any important behavior since repositories were only deactivated and not uninstalled.
         filter_repository = self.test_db_util.get_installed_repository_by_name_owner( filter_repository_name, common.test_user_1_name )
         column_repository = self.test_db_util.get_installed_repository_by_name_owner( column_repository_name, common.test_user_1_name )
         convert_repository = self.test_db_util.get_installed_repository_by_name_owner( convert_repository_name, common.test_user_1_name )

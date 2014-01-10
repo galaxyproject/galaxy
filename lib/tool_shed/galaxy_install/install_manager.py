@@ -567,14 +567,17 @@ class InstallManager( object ):
 
     def order_repositories_for_installation( self, tool_shed_repositories, repository_dependencies_dict ):
         """
-        Some repositories may have repository dependencies that are required to be installed before the dependent repository.  This method will
-        inspect the list of repositories about to be installed and make sure to order them appropriately.  For each repository about to be installed,
-        if required repositories are not contained in the list of repositories about to be installed, then they are not considered.  Repository
-        dependency definitions that contain circular dependencies should not result in an infinite loop, but obviously prior installation will not be
-        handled for one or more of the repositories that require prior installation.  This process is similar to the process used when installing tool
-        shed repositories (i.e., the order_components_for_installation() method in ~/lib/tool_shed/galaxy_install/repository_util), but does not handle
-        managing tool panel sections and other components since repository dependency definitions contained in tool shed repositories with migrated
-        tools must never define a relationship to a repository dependency that contains a tool.
+        Some repositories may have repository dependencies that are required to be installed before the dependent
+        repository.  This method will inspect the list of repositories about to be installed and make sure to order
+        them appropriately.  For each repository about to be installed, if required repositories are not contained
+        in the list of repositories about to be installed, then they are not considered.  Repository dependency
+        definitions that contain circular dependencies should not result in an infinite loop, but obviously prior
+        installation will not be handled for one or more of the repositories that require prior installation.  This
+        process is similar to the process used when installing tool shed repositories (i.e., the
+        order_components_for_installation() method in ~/lib/tool_shed/galaxy_install/repository_util), but does not
+        handle managing tool panel sections and other components since repository dependency definitions contained
+        in tool shed repositories with migrated tools must never define a relationship to a repository dependency
+        that contains a tool.
         """
         ordered_tool_shed_repositories = []
         ordered_tsr_ids = []

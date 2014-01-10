@@ -313,6 +313,7 @@ def main():
             file_path = os.path.join( galaxy_db_path, 'files' )
             new_file_path = tempfile.mkdtemp( prefix='new_files_path_', dir=tempdir )
             job_working_directory = tempfile.mkdtemp( prefix='job_working_directory_', dir=tempdir )
+            install_database_connection = os.environ.get( 'GALAXY_TEST_INSTALL_DBURI', None )
             if 'GALAXY_TEST_DBURI' in os.environ:
                 database_connection = os.environ['GALAXY_TEST_DBURI']
             else:
@@ -372,6 +373,8 @@ def main():
                        user_library_import_dir=user_library_import_dir,
                        master_api_key=master_api_key,
         )
+        if install_database_connection is not None:
+            kwargs[ 'install_database_connection' ] = install_database_connection
         if psu_production:
             kwargs[ 'global_conf' ] = None
         if not database_connection.startswith( 'sqlite://' ):

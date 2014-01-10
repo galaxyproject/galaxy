@@ -121,7 +121,7 @@ class ToolWithRepositoryDependencies( ShedTwillTestCase ):
         global base_datatypes_count
         installed_repository = self.test_db_util.get_installed_repository_by_name_owner( datatypes_repository_name, common.test_user_1_name )
         old_datatypes_count = int( self.get_datatypes_count() )
-        self.uninstall_repository( installed_repository, remove_from_disk=False )
+        self.deactivate_repository( installed_repository )
         current_datatypes = int( self.get_datatypes_count() )
         assert current_datatypes < old_datatypes_count, 'Uninstalling emboss did not remove datatypes.'
 

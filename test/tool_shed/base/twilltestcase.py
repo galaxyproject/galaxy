@@ -382,7 +382,17 @@ class ShedTwillTestCase( TwillTestCase ):
                     except:
                         pass
         return previously_created, username_taken, invalid_username
-        
+    
+    def deactivate_repository( self, installed_repository, strings_displayed=[], strings_not_displayed=[] ):
+        url = '/admin_toolshed/deactivate_or_uninstall_repository?id=%s' % self.security.encode_id( installed_repository.id )
+        self.visit_galaxy_url( url )
+        self.check_for_strings( strings_displayed, strings_not_displayed )
+        form = tc.browser.get_form( 'deactivate_or_uninstall_repository' )
+        kwd = self.set_form_value( form, {}, 'remove_from_disk', False )
+        tc.submit( 'deactivate_or_uninstall_repository_button' )
+        strings_displayed = [ 'The repository named', 'has been deactivated' ]
+        self.check_for_strings( strings_displayed, strings_not_displayed=[] )
+
     def delete_files_from_repository( self, repository, filenames=[], strings_displayed=[ 'were deleted from the repository' ], strings_not_displayed=[] ):
         files_to_delete = []
         basepath = self.get_repo_path( repository )
@@ -1203,18 +1213,14 @@ class ShedTwillTestCase( TwillTestCase ):
         self.visit_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
         
-    def uninstall_repository( self, installed_repository, remove_from_disk=True, is_required=False, strings_displayed=[], strings_not_displayed=[] ):
+    def uninstall_repository( self, installed_repository, strings_displayed=[], strings_not_displayed=[] ):
         url = '/admin_toolshed/deactivate_or_uninstall_repository?id=%s' % self.security.encode_id( installed_repository.id )
         self.visit_galaxy_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
         form = tc.browser.get_form( 'deactivate_or_uninstall_repository' )
-        kwd = self.set_form_value( form, {}, 'remove_from_disk', remove_from_disk )
+        kwd = self.set_form_value( form, {}, 'remove_from_disk', True )
         tc.submit( 'deactivate_or_uninstall_repository_button' )
-        strings_displayed = [ 'The repository named' ]
-        if remove_from_disk and not is_required:
-            strings_displayed.append( 'has been uninstalled' )
-        else:
-            strings_displayed.append( 'has been deactivated' )
+        strings_displayed = [ 'The repository named', 'has been uninstalled' ]
         self.check_for_strings( strings_displayed, strings_not_displayed=[] )
         
     def update_installed_repository( self, installed_repository, strings_displayed=[], strings_not_displayed=[] ):

@@ -72,7 +72,7 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
         var purged = this.model.get( 'purged' ),
             deleted = this.model.get( 'deleted' ),
             editBtnData = {
-                title       : _l( 'Edit Attributes' ),
+                title       : _l( 'Edit attributes' ),
                 href        : this.urls.edit,
                 target      : this.linkTarget,
                 classes     : 'dataset-edit'
@@ -138,6 +138,7 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
         return faIconButton({
             title       : _l( 'View or report this error' ),
             href        : this.urls.report_error,
+            classes     : 'dataset-report-error-btn',
             target      : this.linkTarget,
             faIcon      : 'fa-bug'
         });
@@ -150,6 +151,7 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
         return faIconButton({
             title       : _l( 'Run this job again' ),
             href        : this.urls.rerun,
+            classes     : 'dataset-rerun-btn',
             target      : this.linkTarget,
             faIcon      : 'fa-refresh'
         });
@@ -189,6 +191,7 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
 
         var $icon = faIconButton({
             title       : _l( 'Visualize' ),
+            classes     : 'dataset-visualize-btn',
             faIcon      : 'fa-bar-chart-o'
         });
 
@@ -242,6 +245,7 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
         }
         var $icon = faIconButton({
             title       : _l( 'Visualize' ),
+            classes     : 'dataset-visualize-btn',
             faIcon      : 'fa-bar-chart-o'
         });
         $icon.addClass( 'visualize-icon' ); // needed?
@@ -364,8 +368,10 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
         // make the dbkey a link to editing
         if( this.model.get( 'metadata_dbkey' ) === '?'
         &&  !this.model.isDeletedOrPurged() ){
-            $body.find( '.dataset-dbkey .value' ).replaceWith(
-                $( '<a target="' + this.linkTarget + '">?</a>' ).attr( 'href', this.urls.edit ) );
+            var editableDbkey = $( '<a class="value">?</a>' )
+                .attr( 'href', this.urls.edit )
+                .attr( 'target', this.linkTarget );
+            $body.find( '.dataset-dbkey .value' ).replaceWith( editableDbkey );
         }
     },
 
