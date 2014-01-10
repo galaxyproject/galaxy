@@ -4,12 +4,11 @@ API for updating Galaxy Pages
 import logging
 from galaxy import web
 from galaxy.web.base.controller import SharableItemSecurityMixin, BaseAPIController, SharableMixin
-from galaxy.model.search import GalaxySearchEngine
 from galaxy.model.item_attrs import UsesAnnotations
-from galaxy.exceptions import ItemAccessibilityException
 from galaxy.util.sanitize_html import sanitize_html
 
 log = logging.getLogger( __name__ )
+
 
 class PagesController( BaseAPIController, SharableItemSecurityMixin, UsesAnnotations, SharableMixin ):
 
@@ -26,7 +25,7 @@ class PagesController( BaseAPIController, SharableItemSecurityMixin, UsesAnnotat
         :returns:   dictionaries containing summary or detailed Page information
         """
         out = []
-        
+
         if trans.user_is_admin():
             r = trans.sa_session.query( trans.app.model.Page )
             if not deleted:
@@ -48,7 +47,6 @@ class PagesController( BaseAPIController, SharableItemSecurityMixin, UsesAnnotat
 
         return out
 
-
     @web.expose_api
     def create( self, trans, payload, **kwd ):
         """
@@ -67,7 +65,7 @@ class PagesController( BaseAPIController, SharableItemSecurityMixin, UsesAnnotat
         """
         user = trans.get_user()
         error_str = ""
-        
+
         if not payload.get("title", None):
             error_str = "Page name is required"
         elif not payload.get("slug", None):
@@ -85,7 +83,7 @@ class PagesController( BaseAPIController, SharableItemSecurityMixin, UsesAnnotat
             page = trans.app.model.Page()
             page.title = payload['title']
             page.slug = payload['slug']
-            page_annotation = sanitize_html( payload.get("annotation",""), 'utf-8', 'text/html' )
+            page_annotation = sanitize_html( payload.get( "annotation", "" ), 'utf-8', 'text/html' )
             self.add_item_annotation( trans.sa_session, trans.get_user(), page, page_annotation )
             page.user = user
             # And the first (empty) page revision
@@ -99,11 +97,10 @@ class PagesController( BaseAPIController, SharableItemSecurityMixin, UsesAnnotat
             session.add( page )
             session.flush()
 
-            rval = self.encode_all_ids( trans, page.to_dict(), True) 
+            rval = self.encode_all_ids( trans, page.to_dict(), True )
             return rval
-        
-        return { "error" : error_str }    
 
+        return { "error" : error_str }
 
     @web.expose_api
     def delete( self, trans, id, **kwd ):
@@ -115,9 +112,9 @@ class PagesController( BaseAPIController, SharableItemSecurityMixin, UsesAnnotat
         :param  id:    ID of page to be deleted
 
         :rtype:     dict
-        :returns:   Dictionary with 'success' or 'error' element to indicate the result of the request 
+        :returns:   Dictionary with 'success' or 'error' element to indicate the result of the request
         """
-        page_id = id;
+        page_id = id
         try:
             page = trans.sa_session.query(self.app.model.Page).get(trans.security.decode_id(page_id))
         except Exception, e:
@@ -130,7 +127,7 @@ class PagesController( BaseAPIController, SharableItemSecurityMixin, UsesAnnotat
         #Mark a workflow as deleted
         page.deleted = True
         trans.sa_session.flush()
-        return {"success" : "Deleted", "id" : page_id}
+        return { "success" : "Deleted", "id" : page_id }
 
     @web.expose_api
     def show( self, trans, id, **kwd ):
@@ -146,6 +143,6 @@ class PagesController( BaseAPIController, SharableItemSecurityMixin, UsesAnnotat
         """
         page = trans.sa_session.query( trans.app.model.Page ).get( trans.security.decode_id( id ) )
         self.security_check( trans, page, check_ownership=False, check_accessible=True)
-        rval = self.encode_all_ids( trans, page.to_dict(), True) 
+        rval = self.encode_all_ids( trans, page.to_dict(), True )
         rval['content'] = page.latest_revision.content
         return rval
