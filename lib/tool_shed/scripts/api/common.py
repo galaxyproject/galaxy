@@ -154,7 +154,7 @@ def json_from_url( url ):
     url_handle = urllib.urlopen( url )
     url_contents = url_handle.read()
     try:
-        parsed_json = simplejson.loads( url_contents )
+        parsed_json = json.loads( url_contents )
     except Exception, e:
         error_message = str( url_contents )
         print 'Error parsing JSON data in json_from_url(): ', str( e )
