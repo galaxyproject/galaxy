@@ -103,6 +103,35 @@ def require_login( verb="perform this action", use_panels=False, webapp='galaxy'
         return decorator
     return argcatcher
 
+
+def __extract_payload_from_request(trans, func, kwargs):
+    content_type = trans.request.headers['content-type']
+    if content_type.startswith('application/x-www-form-urlencoded') or content_type.startswith('multipart/form-data'):
+        # If the content type is a standard type such as multipart/form-data, the wsgi framework parses the request body
+        # and loads all field values into kwargs. However, kwargs also contains formal method parameters etc. which
+        # are not a part of the request body. This is a problem because it's not possible to differentiate between values
+        # which are a part of the request body, and therefore should be a part of the payload, and values which should not be
+        # in the payload. Therefore, the decorated method's formal arguments are discovered through reflection and removed from
+        # the payload dictionary. This helps to prevent duplicate argument conflicts in downstream methods.
+        payload = kwargs.copy()
+        named_args, _, _, _ = inspect.getargspec(func)
+        for arg in named_args:
+            payload.pop(arg, None)
+        for k, v in payload.iteritems():
+            if isinstance(v, (str, unicode)):
+                try:
+                    payload[k] = from_json_string(v)
+                except:
+                    # may not actually be json, just continue
+                    pass
+        payload = util.recursively_stringify_dictionary_keys( payload )
+    else:
+        # Assume application/json content type and parse request body manually, since wsgi won't do it. However, the order of this check
+        # should ideally be in reverse, with the if clause being a check for application/json and the else clause assuming a standard encoding
+        # such as multipart/form-data. Leaving it as is for backward compatibility, just in case.
+        payload = util.recursively_stringify_dictionary_keys( from_json_string( trans.request.body ) )
+    return payload
+
 def expose_api_raw( func ):
     """
     Expose this function via the API but don't dump the results
@@ -140,35 +169,8 @@ def expose_api( func, to_json=True, user_required=True ):
             error_message = "API Authentication Required for this request"
             return error
         if trans.request.body:
-            def extract_payload_from_request(trans, func, kwargs):
-                content_type = trans.request.headers['content-type']
-                if content_type.startswith('application/x-www-form-urlencoded') or content_type.startswith('multipart/form-data'):
-                    # If the content type is a standard type such as multipart/form-data, the wsgi framework parses the request body
-                    # and loads all field values into kwargs. However, kwargs also contains formal method parameters etc. which
-                    # are not a part of the request body. This is a problem because it's not possible to differentiate between values
-                    # which are a part of the request body, and therefore should be a part of the payload, and values which should not be
-                    # in the payload. Therefore, the decorated method's formal arguments are discovered through reflection and removed from
-                    # the payload dictionary. This helps to prevent duplicate argument conflicts in downstream methods.
-                    payload = kwargs.copy()
-                    named_args, _, _, _ = inspect.getargspec(func)
-                    for arg in named_args:
-                        payload.pop(arg, None)
-                    for k, v in payload.iteritems():
-                        if isinstance(v, (str, unicode)):
-                            try:
-                                payload[k] = from_json_string(v)
-                            except:
-                                # may not actually be json, just continue
-                                pass
-                    payload = util.recursively_stringify_dictionary_keys( payload )
-                else:
-                    # Assume application/json content type and parse request body manually, since wsgi won't do it. However, the order of this check
-                    # should ideally be in reverse, with the if clause being a check for application/json and the else clause assuming a standard encoding
-                    # such as multipart/form-data. Leaving it as is for backward compatibility, just in case.
-                    payload = util.recursively_stringify_dictionary_keys( from_json_string( trans.request.body ) )
-                return payload
             try:
-                kwargs['payload'] = extract_payload_from_request(trans, func, kwargs)
+                kwargs['payload'] = __extract_payload_from_request(trans, func, kwargs)
             except ValueError:
                 error_status = '400 Bad Request'
                 error_message = 'Your request did not appear to be valid JSON, please consult the API documentation'
