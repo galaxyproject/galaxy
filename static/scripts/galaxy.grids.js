@@ -199,6 +199,9 @@ var GridView = Backbone.View.extend({
         
         // configure elements
         this.init_grid_elements();
+        
+        // attach global event handler
+        init_refresh_on_change();
     },
     
     // Initialize grid controls
