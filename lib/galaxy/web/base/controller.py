@@ -2469,7 +2469,7 @@ class UsesTagsMixin( object ):
         # based on controllers/tag retag_async: delete all old, reset to entire new
         trans.app.tag_handler.delete_item_tags( trans, user, item )
         new_tags_str = ','.join( new_tags_list )
-        trans.app.tag_handler.apply_item_tags( trans, user, item, new_tags_str.encode( 'utf-8' ) )
+        trans.app.tag_handler.apply_item_tags( trans, user, item, unicode( new_tags_str.encode( 'utf-8' ), 'utf-8' ) )
         trans.sa_session.flush()
         return item.tags
 
