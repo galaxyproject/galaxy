@@ -1,8 +1,6 @@
 from sqlalchemy.types import *
 
-import pkg_resources
-pkg_resources.require("simplejson")
-import simplejson
+import json
 import pickle
 import copy
 import uuid
@@ -19,8 +17,8 @@ import logging
 log = logging.getLogger( __name__ )
 
 # Default JSON encoder and decoder
-json_encoder = simplejson.JSONEncoder( sort_keys=True )
-json_decoder = simplejson.JSONDecoder( )
+json_encoder = json.JSONEncoder( sort_keys=True )
+json_decoder = json.JSONDecoder( )
 
 def _sniffnfix_pg9_hex(value):
     """

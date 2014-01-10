@@ -10,9 +10,11 @@ import logging
 logging.basicConfig()
 log = logging.getLogger( __name__ )
 
+import cPickle
+import json
 import os
 import sys
-import cPickle
+
 # ensure supported version
 from check_python import check_python
 try:
@@ -26,8 +28,6 @@ sys.path = new_path
 
 from galaxy import eggs
 import pkg_resources
-pkg_resources.require("simplejson")
-import simplejson
 import galaxy.model.mapping  # need to load this before we unpickle, in order to setup properties assigned by the mappers
 galaxy.model.Job()  # this looks REAL stupid, but it is REQUIRED in order for SA to insert parameters into the classes defined by the mappers --> it appears that instantiating ANY mapper'ed class would suffice here
 from galaxy.util import stringify_dictionary_keys
@@ -107,17 +107,17 @@ def __main__():
                 dataset.extension = ext_override[ dataset.dataset.id ]
             # Metadata FileParameter types may not be writable on a cluster node, and are therefore temporarily substituted with MetadataTempFiles
             if override_metadata:
-                override_metadata = simplejson.load( open( override_metadata ) )
+                override_metadata = json.load( open( override_metadata ) )
                 for metadata_name, metadata_file_override in override_metadata:
                     if galaxy.datatypes.metadata.MetadataTempFile.is_JSONified_value( metadata_file_override ):
                         metadata_file_override = galaxy.datatypes.metadata.MetadataTempFile.from_JSON( metadata_file_override )
                     setattr( dataset.metadata, metadata_name, metadata_file_override )
-            kwds = stringify_dictionary_keys( simplejson.load( open( filename_kwds ) ) )  # load kwds; need to ensure our keywords are not unicode
+            kwds = stringify_dictionary_keys( json.load( open( filename_kwds ) ) )  # load kwds; need to ensure our keywords are not unicode
             dataset.datatype.set_meta( dataset, **kwds )
             dataset.metadata.to_JSON_dict( filename_out )  # write out results of set_meta
-            simplejson.dump( ( True, 'Metadata has been set successfully' ), open( filename_results_code, 'wb+' ) )  # setting metadata has succeeded
+            json.dump( ( True, 'Metadata has been set successfully' ), open( filename_results_code, 'wb+' ) )  # setting metadata has succeeded
         except Exception, e:
-            simplejson.dump( ( False, str( e ) ), open( filename_results_code, 'wb+' ) )  # setting metadata has failed somehow
+            json.dump( ( False, str( e ) ), open( filename_results_code, 'wb+' ) )  # setting metadata has failed somehow
     clear_mappers()
     # Shut down any additional threads that might have been created via the ObjectStore
     object_store.shutdown()

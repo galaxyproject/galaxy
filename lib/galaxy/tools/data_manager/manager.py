@@ -1,9 +1,6 @@
-import pkg_resources
-
-pkg_resources.require( "simplejson" )
-
-import os, errno
-import simplejson
+import errno
+import json
+import os
 
 from galaxy import util
 from galaxy.util.odict import odict
@@ -226,7 +223,7 @@ class DataManager( object ):
         #TODO: fix this merging below
         for output_name, output_dataset in out_data.iteritems():
             try:
-                output_dict = simplejson.loads( open( output_dataset.file_name ).read() )
+                output_dict = json.loads( open( output_dataset.file_name ).read() )
             except Exception, e:
                 log.warning( 'Error reading DataManagerTool json for "%s": %s'  % ( output_name, e ) )
                 continue

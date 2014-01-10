@@ -1,4 +1,4 @@
-from simplejson import load
+from json import load
 from os.path import abspath
 from os.path import dirname
 from os.path import join

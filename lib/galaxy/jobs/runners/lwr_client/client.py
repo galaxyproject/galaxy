@@ -1,7 +1,6 @@
 import os
 import shutil
-import simplejson
-from simplejson import dumps
+from json import dumps, loads
 from time import sleep
 
 from .destination import submit_params
@@ -16,7 +15,7 @@ class parseJson(object):
     def __call__(self, func):
         def replacement(*args, **kwargs):
             response = func(*args, **kwargs)
-            return simplejson.loads(response)
+            return loads(response)
         return replacement
 
 

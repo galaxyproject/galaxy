@@ -2,12 +2,14 @@
 Sequence classes
 """
 
-import data
+from . import data
 import gzip
+import json
 import logging
 import os
 import re
 import string
+
 from cgi import escape
 
 from galaxy import eggs, util
@@ -16,8 +18,6 @@ from galaxy.datatypes.checkers import is_gzip
 from galaxy.datatypes.sniff import get_test_fname, get_headers
 from galaxy.datatypes.metadata import MetadataElement
 
-eggs.require("simplejson")
-import simplejson
 
 try:
     eggs.require( "bx-python" )
@@ -44,8 +44,8 @@ class SequenceSplitLocations( data.Text ):
     def set_peek( self, dataset, is_multi_byte=False ):
         if not dataset.dataset.purged:
             try:
-                parsed_data = simplejson.load(open(dataset.file_name))
-                # dataset.peek = simplejson.dumps(data, sort_keys=True, indent=4)
+                parsed_data = json.load(open(dataset.file_name))
+                # dataset.peek = json.dumps(data, sort_keys=True, indent=4)
                 dataset.peek = data.get_file_peek( dataset.file_name, is_multi_byte=is_multi_byte )
                 dataset.blurb = '%d sections' % len(parsed_data['sections'])
             except Exception, e:
@@ -60,7 +60,7 @@ class SequenceSplitLocations( data.Text ):
     def sniff( self, filename ):
         if os.path.getsize(filename) < 50000:
             try:
-                data = simplejson.load(open(filename))
+                data = json.load(open(filename))
                 sections = data['sections']
                 for section in sections:
                     if 'start' not in section or 'end' not in section or 'sequences' not in section:
@@ -155,7 +155,7 @@ class Sequence( data.Text ):
     do_slow_split = classmethod(do_slow_split)
 
     def do_fast_split( cls, input_datasets, toc_file_datasets, subdir_generator_function, split_params):
-        data = simplejson.load(open(toc_file_datasets[0].file_name))
+        data = json.load(open(toc_file_datasets[0].file_name))
         sections = data['sections']
         total_sequences = long(0)
         for section in sections:
@@ -191,7 +191,7 @@ class Sequence( data.Text ):
                     toc = toc_file_datasets[ds_no]
                     split_data['args']['toc_file'] = toc.file_name
                 f = open(os.path.join(dir, 'split_info_%s.json' % base_name), 'w')
-                simplejson.dump(split_data, f)
+                json.dump(split_data, f)
                 f.close()
             start_sequence += sequences_per_file[part_no]
         return directories
@@ -557,7 +557,7 @@ class Fastq ( Sequence ):
         sequence_count = long(args['num_sequences'])
 
         if 'toc_file' in args:
-            toc_file = simplejson.load(open(args['toc_file'], 'r'))
+            toc_file = json.load(open(args['toc_file'], 'r'))
             commands = Sequence.get_split_commands_with_toc(input_name, output_name, toc_file, start_sequence, sequence_count)
         else:
             commands = Sequence.get_split_commands_sequential(is_gzip(input_name), input_name, output_name, start_sequence, sequence_count)

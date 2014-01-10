@@ -1,8 +1,12 @@
-import sys, subprocess, tempfile, shutil, glob, os, os.path, gzip
-from galaxy import eggs
-import pkg_resources
-pkg_resources.require( "simplejson" )
-import simplejson
+import glob
+import gzip
+import json
+import os
+import os.path
+import shutil
+import subprocess
+import sys
+import tempfile
 
 CHUNK_SIZE = 1024
 
@@ -42,7 +46,7 @@ def xls_to_interval( xls_file, interval_file, header = None ):
     out.close()
 
 def main():
-    options = simplejson.load( open( sys.argv[1] ) )
+    options = json.load( open( sys.argv[1] ) )
     output_bed = sys.argv[2]
     output_extra_html = sys.argv[3]
     output_extra_path = sys.argv[4]

@@ -6,7 +6,6 @@ the relationship cardinalities are obvious (e.g. prefer Dataset to Data)
 """
 
 from galaxy import eggs
-eggs.require("simplejson")
 eggs.require("pexpect")
 
 import codecs
@@ -15,7 +14,7 @@ import logging
 import operator
 import os
 import pexpect
-import simplejson
+import json
 import socket
 import time
 from string import Template
@@ -2250,7 +2249,7 @@ class LibraryDatasetDatasetAssociation( DatasetInstance ):
             template_data[template.name] = tmp_dict
         return template_data
     def templates_json( self, use_name=False ):
-        return simplejson.dumps( self.templates_dict( use_name=use_name ) )
+        return json.dumps( self.templates_dict( use_name=use_name ) )
 
     def get_display_name( self ):
         """

@@ -3,7 +3,6 @@ import string
 import os
 import re
 import test_db_util
-import simplejson
 import shutil
 import logging
 import time

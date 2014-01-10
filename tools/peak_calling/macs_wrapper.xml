@@ -93,7 +93,7 @@
   </outputs>
   <configfiles>
     <configfile name="options_file">&lt;%
-import simplejson
+import json
 %&gt;
 #set $__options = { 'experiment_name':str( $experiment_name ), 'gsize':int( float( str( $gsize ) ) ), 'tsize':str( $tsize ), 'bw':str( $bw ), 'pvalue':str( $pvalue ), 'mfold':str( $mfold ), 'nolambda':str( $nolambda ), 'lambdaset': str( $lambdaset ), 'futurefdr':str( $futurefdr ) }
 #if str( $xls_to_interval ) == 'create':
@@ -135,7 +135,7 @@ import simplejson
 #if $diag_type['diag_type_selector'] == 'diag':
 #set $__options['diag'] = { 'fe-min':str( $diag_type['fe-min'] ), 'fe-max':str( $diag_type['fe-max'] ), 'fe-step':str( $diag_type['fe-step'] ) }
 #end if
-${ simplejson.dumps( __options ) }
+${ json.dumps( __options ) }
     </configfile>
   </configfiles>
   <tests>

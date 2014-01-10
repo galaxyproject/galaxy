@@ -1,4 +1,8 @@
-import os, sys, urllib, urllib2
+import json
+import os
+import sys
+import urllib
+import urllib2
 
 new_path = [ os.path.join( os.path.dirname( __file__ ), '..', '..', '..', '..', 'lib' ) ]
 new_path.extend( sys.path[ 1: ] )
@@ -6,9 +10,6 @@ sys.path = new_path
 
 from galaxy import eggs
 import pkg_resources
-
-pkg_resources.require( "simplejson" )
-import simplejson
 
 pkg_resources.require( "pycrypto" )
 from Crypto.Cipher import Blowfish
@@ -29,9 +30,9 @@ def delete( api_key, url, data, return_formatted=True ):
     # Sends an API DELETE request and acts as a generic formatter for the JSON response - 'data' will become the JSON payload read by Galaxy.
     try:
         url = make_url( api_key, url )
-        req = urllib2.Request( url, headers = { 'Content-Type': 'application/json' }, data = simplejson.dumps( data ))
+        req = urllib2.Request( url, headers = { 'Content-Type': 'application/json' }, data = json.dumps( data ))
         req.get_method = lambda: 'DELETE'
-        r = simplejson.loads( urllib2.urlopen( req ).read() )
+        r = json.loads( urllib2.urlopen( req ).read() )
     except urllib2.HTTPError, e:
         if return_formatted:
             print e
@@ -86,8 +87,8 @@ def get( url, api_key=None ):
     # Do the actual GET.
     url = make_url( url, api_key=api_key )
     try:
-        return simplejson.loads( urllib2.urlopen( url ).read() )
-    except simplejson.decoder.JSONDecodeError, e:
+        return json.loads( urllib2.urlopen( url ).read() )
+    except ValueError, e:
         print "URL did not return JSON data"
         sys.exit(1)
 
@@ -106,15 +107,15 @@ def make_url( url, api_key=None, args=None ):
 def post( url, data, api_key=None ):
     # Do the actual POST.
     url = make_url( url, api_key=api_key )
-    req = urllib2.Request( url, headers = { 'Content-Type': 'application/json' }, data = simplejson.dumps( data ) )
-    return simplejson.loads( urllib2.urlopen( req ).read() )
+    req = urllib2.Request( url, headers = { 'Content-Type': 'application/json' }, data = json.dumps( data ) )
+    return json.loads( urllib2.urlopen( req ).read() )
 
 def put( url, data, api_key=None ):
     # Do the actual PUT.
     url = make_url( url, api_key=api_key )
-    req = urllib2.Request( url, headers = { 'Content-Type': 'application/json' }, data = simplejson.dumps( data ))
+    req = urllib2.Request( url, headers = { 'Content-Type': 'application/json' }, data = json.dumps( data ))
     req.get_method = lambda: 'PUT'
-    return simplejson.loads( urllib2.urlopen( req ).read() )
+    return json.loads( urllib2.urlopen( req ).read() )
 
 def submit( url, data, api_key=None, return_formatted=True ):
     # Sends an API POST request and acts as a generic formatter for the JSON response - 'data' will become the JSON payload read by Galaxy.

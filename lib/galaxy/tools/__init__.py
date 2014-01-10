@@ -4,6 +4,7 @@ Classes encapsulating galaxy tools and tool configuration.
 
 import binascii
 import glob
+import json
 import logging
 import os
 import pipes
@@ -19,14 +20,12 @@ import urllib
 from math import isinf
 
 from galaxy import eggs
-eggs.require( "simplejson" )
 eggs.require( "MarkupSafe" ) #MarkupSafe must load before mako
 eggs.require( "Mako" )
 eggs.require( "elementtree" )
 eggs.require( "Paste" )
 eggs.require( "SQLAlchemy >= 0.4" )
 
-import simplejson
 from cgi import FieldStorage
 from elementtree import ElementTree
 from mako.template import Template
@@ -869,7 +868,7 @@ class DefaultToolState( object ):
         value = params_to_strings( tool.inputs, self.inputs, app )
         value["__page__"] = self.page
         value["__rerun_remap_job_id__"] = self.rerun_remap_job_id
-        value = simplejson.dumps( value )
+        value = json.dumps( value )
         # Make it secure
         if secure:
             a = hmac_new( app.config.tool_secret, value )
@@ -888,7 +887,7 @@ class DefaultToolState( object ):
             test = hmac_new( app.config.tool_secret, value )
             assert a == test
         # Restore from string
-        values = json_fix( simplejson.loads( value ) )
+        values = json_fix( json.loads( value ) )
         self.page = values.pop( "__page__" )
         if '__rerun_remap_job_id__' in values:
             self.rerun_remap_job_id = values.pop( "__rerun_remap_job_id__" )
@@ -2921,7 +2920,7 @@ class Tool( object, Dictifiable ):
         try:
             json_file = open( os.path.join( job_working_directory, jobs.TOOL_PROVIDED_JOB_METADATA_FILE ), 'r' )
             for line in json_file:
-                line = simplejson.loads( line )
+                line = json.loads( line )
                 if line.get( 'type' ) == 'new_primary_dataset':
                     new_primary_datasets[ os.path.split( line.get( 'filename' ) )[-1] ] = line
         except Exception:
@@ -3085,7 +3084,7 @@ class OutputParameterJSONTool( Tool ):
             if json_filename is None:
                 json_filename = file_name
         out = open( json_filename, 'w' )
-        out.write( simplejson.dumps( json_params ) )
+        out.write( json.dumps( json_params ) )
         out.close()
 
 class DataSourceTool( OutputParameterJSONTool ):
@@ -3145,7 +3144,7 @@ class DataSourceTool( OutputParameterJSONTool ):
             if json_filename is None:
                 json_filename = file_name
         out = open( json_filename, 'w' )
-        out.write( simplejson.dumps( json_params ) )
+        out.write( json.dumps( json_params ) )
         out.close()
 
 class AsyncDataSourceTool( DataSourceTool ):

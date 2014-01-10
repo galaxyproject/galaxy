@@ -11,11 +11,11 @@ sys.path.insert( 0, os.path.dirname( __file__ ) )
 from common import submit
 
 ### Rpark edit ###
-import simplejson
+import json
 
 def openWorkflow(in_file):        
     with open(in_file) as f:
-        temp_data = simplejson.load(f)
+        temp_data = json.load(f)
     return temp_data;
 
 

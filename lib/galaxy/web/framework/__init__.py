@@ -2,6 +2,7 @@
 Galaxy web application framework
 """
 
+import hashlib
 import inspect
 import os
 import pkg_resources
@@ -9,27 +10,24 @@ import random
 import socket
 import string
 import time
-import hashlib
-from Cookie import CookieError
 
+from functools import wraps
+from Cookie import CookieError
 
 pkg_resources.require( "Cheetah" )
 from Cheetah.Template import Template
+
+#TODO: Relative imports to be removed
 import base
-from functools import wraps
-from galaxy import util
-from galaxy.exceptions import MessageException
-from galaxy.util.json import to_json_string, from_json_string
-from galaxy.util.backports.importlib import import_module
-from galaxy.util.sanitize_html import sanitize_html
-from galaxy.util import safe_str_cmp
-
-pkg_resources.require( "simplejson" )
-import simplejson
-
 import helpers
 
+from galaxy import util
+from galaxy.exceptions import MessageException
 from galaxy.util import asbool
+from galaxy.util import safe_str_cmp
+from galaxy.util.backports.importlib import import_module
+from galaxy.util.json import from_json_string, to_json_string
+from galaxy.util.sanitize_html import sanitize_html
 
 import paste.httpexceptions
 
@@ -76,7 +74,7 @@ def json( func ):
     @wraps(func)
     def decorator( self, trans, *args, **kwargs ):
         trans.response.set_content_type( "text/javascript" )
-        return simplejson.dumps( func( self, trans, *args, **kwargs ) )
+        return to_json_string( func( self, trans, *args, **kwargs ) )
     if not hasattr(func, '_orig'):
         decorator._orig = func
     decorator.exposed = True
@@ -86,7 +84,7 @@ def json_pretty( func ):
     @wraps(func)
     def decorator( self, trans, *args, **kwargs ):
         trans.response.set_content_type( "text/javascript" )
-        return simplejson.dumps( func( self, trans, *args, **kwargs ), indent=4, sort_keys=True )
+        return to_json_string( func( self, trans, *args, **kwargs ), indent=4, sort_keys=True )
     if not hasattr(func, '_orig'):
         decorator._orig = func
     decorator.exposed = True
@@ -158,7 +156,7 @@ def expose_api( func, to_json=True, user_required=True ):
                     for k, v in payload.iteritems():
                         if isinstance(v, (str, unicode)):
                             try:
-                                payload[k] = simplejson.loads(v)
+                                payload[k] = from_json_string(v)
                             except:
                                 # may not actually be json, just continue
                                 pass
@@ -167,7 +165,7 @@ def expose_api( func, to_json=True, user_required=True ):
                     # Assume application/json content type and parse request body manually, since wsgi won't do it. However, the order of this check
                     # should ideally be in reverse, with the if clause being a check for application/json and the else clause assuming a standard encoding
                     # such as multipart/form-data. Leaving it as is for backward compatibility, just in case.
-                    payload = util.recursively_stringify_dictionary_keys( simplejson.loads( trans.request.body ) )
+                    payload = util.recursively_stringify_dictionary_keys( from_json_string( trans.request.body ) )
                 return payload
             try:
                 kwargs['payload'] = extract_payload_from_request(trans, func, kwargs)
@@ -198,9 +196,9 @@ def expose_api( func, to_json=True, user_required=True ):
         try:
             rval = func( self, trans, *args, **kwargs)
             if to_json and trans.debug:
-                rval = simplejson.dumps( rval, indent=4, sort_keys=True )
+                rval = to_json_string( rval, indent=4, sort_keys=True )
             elif to_json:
-                rval = simplejson.dumps( rval )
+                rval = to_json_string( rval )
             return rval
         except paste.httpexceptions.HTTPException:
             raise # handled

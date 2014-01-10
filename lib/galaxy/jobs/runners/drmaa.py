@@ -2,13 +2,13 @@
 Job control via the DRMAA API.
 """
 
+import json
+import logging
 import os
+import string
+import subprocess
 import sys
 import time
-import string
-import logging
-import subprocess
-import simplejson as json
 
 from galaxy import eggs
 from galaxy import model

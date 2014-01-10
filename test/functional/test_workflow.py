@@ -5,7 +5,7 @@ from base.interactor import GalaxyInteractorApi, stage_data_in_history
 
 from galaxy.util import parse_xml
 from galaxy.tools.test import parse_param_elem, require_file, test_data_iter, parse_output_elems
-from simplejson import load, dumps
+from json import load, dumps
 
 from logging import getLogger
 log = getLogger( __name__ )

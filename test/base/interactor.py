@@ -5,7 +5,7 @@ from galaxy.util.odict import odict
 import galaxy.model
 from galaxy.model.orm import and_, desc
 from base.test_db_util import sa_session
-from simplejson import dumps, loads
+from json import dumps, loads
 
 from logging import getLogger
 log = getLogger( __name__ )
