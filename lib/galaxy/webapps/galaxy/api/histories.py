@@ -9,6 +9,8 @@ pkg_resources.require( "Paste" )
 from paste.httpexceptions import HTTPBadRequest, HTTPForbidden, HTTPInternalServerError, HTTPException
 
 from galaxy import web
+from galaxy.web import _future_expose_api as expose_api
+from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
 from galaxy.util import string_as_bool, restore_text
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web.base.controller import BaseAPIController, UsesHistoryMixin, UsesTagsMixin
@@ -20,7 +22,7 @@ log = logging.getLogger( __name__ )
 
 class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin ):
 
-    @web.expose_api_anonymous
+    @expose_api_anonymous
     def index( self, trans, deleted='False', **kwd ):
         """
         index( trans, deleted='False' )
@@ -152,7 +154,7 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin ):
 
         return history_data
 
-    @web.expose_api
+    @expose_api
     def create( self, trans, payload, **kwd ):
         """
         create( trans, payload )
