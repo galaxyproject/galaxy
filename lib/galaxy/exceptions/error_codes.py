@@ -1,3 +1,6 @@
+from pkg_resources import resource_string
+from json import loads
+
 # Error codes are provided as a convience to Galaxy API clients, but at this
 # time they do represent part of the more stable interface. They can change
 # without warning between releases.
@@ -16,18 +19,14 @@ class ErrorCode( object ):
     def __int__( self ):
         return int( self.code )
 
-# TODO: Guidelines for error message langauge?
-UNKNOWN = ErrorCode(0, UNKNOWN_ERROR_MESSAGE)
+    @staticmethod
+    def from_dict( entry ):
+        name = entry.get("name")
+        code = entry.get("code")
+        message = entry.get("message")
+        return ( name, ErrorCode( code, message ) )
 
-USER_CANNOT_RUN_AS = ErrorCode(400001, "User does not have permissions to run jobs as another user.")
-USER_INVALID_RUN_AS = ErrorCode(400002, "Invalid run_as request - run_as user does not exist.")
-USER_INVALID_JSON = ErrorCode(400003, "Your request did not appear to be valid JSON, please consult the API documentation.")
-USER_OBJECT_ATTRIBUTE_INVALID = ErrorCode(400004, "Attempted to create or update object with invalid attribute value.")
-USER_OBJECT_ATTRIBUTE_MISSING = ErrorCode(400005, "Attempted to create object without required attribute.")
-USER_SLUG_DUPLICATE = ErrorCode(400006, "Slug must be unique per user.")
-
-USER_NO_API_KEY = ErrorCode(403001, "API Authentication Required for this request")
-USER_CANNOT_ACCESS_ITEM = ErrorCode(403002, "User cannot access specified item.")
-USER_DOES_NOT_OWN_ITEM = ErrorCode(403003, "User does not own specified item.")
-
-USER_OBJECT_NOT_FOUND = ErrorCode(404001, "No such object not found.")
+error_codes_json = resource_string( __name__, 'error_codes.json' )
+for entry in loads( error_codes_json ):
+    name, error_code_obj = ErrorCode.from_dict( entry )
+    globals()[ name ] = error_code_obj
