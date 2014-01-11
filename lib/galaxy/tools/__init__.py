@@ -1834,7 +1834,7 @@ class Tool( object, Dictifiable ):
             # external data source tools).
             if "runtool_btn" not in incoming and "URL" not in incoming:
                 if not self.display_interface:
-                    return 'message.mako', dict( status='info', message="The interface for this tool cannot be displayed", refresh_frames=['everything'] )
+                    return self.__no_display_interface_response()
                 if len(incoming):
                     self.update_state( trans, self.inputs_by_page[state.page], state.inputs, incoming, old_errors=old_errors or {}, source=source )
                 return "tool_form.mako", dict( errors={}, tool_state=state, param_values={}, incoming={} )
@@ -1894,7 +1894,7 @@ class Tool( object, Dictifiable ):
                 pass
             # Just a refresh, render the form with updated state and errors.
             if not self.display_interface:
-                return 'message.mako', dict( status='info', message="The interface for this tool cannot be displayed", refresh_frames=['everything'] )
+                return self.__no_display_interface_response()
             return 'tool_form.mako', dict( errors=errors, tool_state=state )
 
     def __handle_page_advance( self, trans, state, errors ):
@@ -1902,8 +1902,11 @@ class Tool( object, Dictifiable ):
         # Fill in the default values for the next page
         self.fill_in_new_state( trans, self.inputs_by_page[ state.page ], state.inputs )
         if not self.display_interface:
-            return 'message.mako', dict( status='info', message="The interface for this tool cannot be displayed", refresh_frames=['everything'] )
+            return self.__no_display_interface_response()
         return 'tool_form.mako', dict( errors=errors, tool_state=state )
+
+    def __no_display_interface_response( self ):
+        return 'message.mako', dict( status='info', message="The interface for this tool cannot be displayed", refresh_frames=['everything'] )
 
     def __fetch_state( self, trans, incoming, history, all_pages ):
         # Get the state or create if not found
