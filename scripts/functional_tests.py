@@ -475,10 +475,10 @@ def main():
         def _run_functional_test( testing_shed_tools=None ):
             workflow_test = __check_arg( '-workflow', param=True )
             if workflow_test:
-                import functional.test_workflow
-                functional.test_workflow.WorkflowTestCase.workflow_test_file = workflow_test
-                functional.test_workflow.WorkflowTestCase.master_api_key = master_api_key
-                functional.test_workflow.WorkflowTestCase.user_api_key = get_user_api_key()
+                import functional.workflow
+                functional.workflow.WorkflowTestCase.workflow_test_file = workflow_test
+                functional.workflow.WorkflowTestCase.master_api_key = master_api_key
+                functional.workflow.WorkflowTestCase.user_api_key = get_user_api_key()
             data_manager_test = __check_arg( '-data_managers', param=False )
             if data_manager_test:
                 import functional.test_data_managers
