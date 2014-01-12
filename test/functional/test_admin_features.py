@@ -1,5 +1,32 @@
-from base.twilltestcase import *
-from base.test_db_util import *
+from base.twilltestcase import TwillTestCase
+from functional import database_contexts
+import galaxy.model
+from base.test_db_util import (
+    get_user,
+    get_private_role,
+    get_all_histories_for_user,
+    get_latest_history_for_user,
+    get_default_history_permissions_by_history,
+    get_latest_dataset,
+    refresh,
+    flush,
+    get_group_by_name,
+    get_role_by_name,
+    get_user_group_associations_by_group,
+    get_default_history_permissions_by_role,
+    get_default_user_permissions_by_role,
+    get_user_role_associations_by_role,
+    get_group_role_associations_by_group,
+    get_dataset_permissions_by_role,
+    get_group_role_associations_by_role,
+)
+
+
+# Globals setup by these tests.
+regular_user1 = regular_user2 = regular_user3 = admin_user = None
+role_one = role_two = role_three = None
+group_zero = group_one = group_two = None
+
 
 class TestDataSecurity( TwillTestCase ):
     def test_000_initiate_users( self ):
@@ -19,6 +46,7 @@ class TestDataSecurity( TwillTestCase ):
         global admin_user
         admin_user = get_user( 'test@bx.psu.edu' )
         assert admin_user is not None, 'Problem retrieving user with email "test@bx.psu.edu" from the database'
+
     def test_005_create_new_user_account_as_admin( self ):
         """Testing creating a new user account as admin"""
         # Logged in as admin_user
@@ -31,8 +59,9 @@ class TestDataSecurity( TwillTestCase ):
                                                                                                  username='admin-user',
                                                                                                  redirect='' )
         if not username_taken:
-            raise AssertionError, "The public name (%s) is already being used by another user, but no error was displayed" \
-                % 'admin-user'
+            error_msg = "The public name (%s) is already being used by another user, but no error was displayed" % 'admin-user'
+            raise AssertionError( error_msg )
+
         # Test setting the user name to an invalid one.  Note that the account must not exist in order
         # for this test to work as desired, so the email we're passing is important...
         previously_created, username_taken, invalid_username = self.create_new_account_as_admin( email='diff@you.com',
@@ -40,7 +69,7 @@ class TestDataSecurity( TwillTestCase ):
                                                                                                  username='h',
                                                                                                  redirect='' )
         if not invalid_username:
-            raise AssertionError, "The public name (%s) is is invalid, but no error was displayed" % username
+            raise AssertionError( "The public name (%s) is is invalid, but no error was displayed" % 'diff@you.com' )
         previously_created, username_taken, invalid_username = self.create_new_account_as_admin( email=email,
                                                                                                  password=password,
                                                                                                  username='regular-user3',
@@ -61,7 +90,7 @@ class TestDataSecurity( TwillTestCase ):
             raise AssertionError( '%d UserRoleAssociations were created for user %s when the admin created the account ( should have been 1 )' \
                                   % ( len( regular_user3.roles ), regular_user3.email ) )
         for ura in regular_user3.roles:
-            role = sa_session.query( galaxy.model.Role ).get( ura.role_id )
+            role = database_contexts.galaxy_context.query( galaxy.model.Role ).get( ura.role_id )
             if not previously_created and role.type != 'private':
                 raise AssertionError( 'Role created for user %s when the admin created the account is not private, type is' \
                                       % str( role.type ) )
@@ -73,9 +102,11 @@ class TestDataSecurity( TwillTestCase ):
             # Make sure the user was not associated with any groups
             if regular_user3.groups:
                 raise AssertionError( 'Groups were incorrectly associated with user %s when the admin created the account' % email )
+
     def test_010_reset_password_as_admin( self ):
         """Testing reseting a user password as admin"""
         self.reset_password_as_admin( user_id=self.security.encode_id( regular_user3.id ), password='testreset' )
+
     def test_015_login_after_password_reset( self ):
         """Testing logging in after an admin reset a password - tests DefaultHistoryPermissions for accounts created by an admin"""
         # logged in as admin_user
@@ -84,7 +115,7 @@ class TestDataSecurity( TwillTestCase ):
         # Make sure a History and HistoryDefaultPermissions exist for the user
         latest_history = get_latest_history_for_user( regular_user3 )
         if not latest_history.user_id == regular_user3.id:
-            raise AssertionError( 'A history was not created for user %s when he logged in' % email )
+            raise AssertionError( 'A history was not created for user %s when he logged in' % regular_user3.email )
         if not latest_history.default_permissions:
             raise AssertionError( 'No DefaultHistoryPermissions were created for history id %d when it was created' % latest_history.id )
         dhps = get_default_history_permissions_by_history( latest_history )
@@ -102,22 +133,25 @@ class TestDataSecurity( TwillTestCase ):
             if dp.action != galaxy.model.Dataset.permitted_actions.DATASET_MANAGE_PERMISSIONS.action:
                 raise AssertionError( 'The DatasetPermissions for dataset id %d is %s ( should have been %s )' \
                                       % ( latest_dataset.id,
-                                          latest_dataset.actions.action, 
+                                          latest_dataset.actions.action,
                                           galaxy.model.Dataset.permitted_actions.DATASET_MANAGE_PERMISSIONS.action ) )
         self.logout()
         # Reset the password to the default for later tests
         self.login( email='test@bx.psu.edu' )
         self.reset_password_as_admin( user_id=self.security.encode_id( regular_user3.id ), password='testuser' )
+
     def test_020_mark_user_deleted( self ):
         """Testing marking a user account as deleted"""
         # Logged in as admin_user
         self.mark_user_deleted( user_id=self.security.encode_id( regular_user3.id ), email=regular_user3.email )
         if not regular_user3.active_histories:
             raise AssertionError( 'HistoryDatasetAssociations for regular_user3 were incorrectly deleted when the user was marked deleted' )
+
     def test_025_undelete_user( self ):
         """Testing undeleting a user account"""
         # Logged in as admin_user
         self.undelete_user( user_id=self.security.encode_id( regular_user3.id ), email=regular_user3.email )
+
     def test_030_create_role( self ):
         """Testing creating new role with 3 members ( and a new group named the same ), then renaming the role"""
         # Logged in as admin_user
@@ -137,7 +171,7 @@ class TestDataSecurity( TwillTestCase ):
                                               "One of the groups associated with this role is the newly created group with the same name." ] )
         # Get the role object for later tests
         global role_one
-        role_one = sa_session.query( galaxy.model.Role ).filter( galaxy.model.Role.table.c.name==name ).first()
+        role_one = database_contexts.galaxy_context.query( galaxy.model.Role ).filter( galaxy.model.Role.table.c.name == name ).first()
         assert role_one is not None, 'Problem retrieving role named "Role One" from the database'
         # Make sure UserRoleAssociations are correct
         if len( role_one.users ) != len( in_user_ids ):
@@ -156,13 +190,14 @@ class TestDataSecurity( TwillTestCase ):
         group_zero = get_group_by_name( name )
         # Rename the role
         rename = "Role One's been Renamed"
-        new_description="This is Role One's Re-described"
+        new_description = "This is Role One's Re-described"
         self.rename_role( self.security.encode_id( role_one.id ), name=rename, description=new_description )
         self.visit_url( '%s/admin/roles' % self.url )
         self.check_page_for_string( rename )
         self.check_page_for_string( new_description )
         # Reset the role back to the original name and description
         self.rename_role( self.security.encode_id( role_one.id ), name=name, description=description )
+
     def test_035_create_group( self ):
         """Testing creating new group with 3 members and 2 associated roles, then renaming it"""
         # Logged in as admin_user
@@ -202,6 +237,7 @@ class TestDataSecurity( TwillTestCase ):
         self.check_page_for_string( rename )
         # Reset the group back to the original name
         self.rename_group( self.security.encode_id( group_one.id ), name=name )
+
     def test_040_add_members_and_role_to_group( self ):
         """Testing editing user membership and role associations of an existing group"""
         # Logged in as admin_user
@@ -224,6 +260,7 @@ class TestDataSecurity( TwillTestCase ):
                                                    group_two.name,
                                                    user_ids=user_ids,
                                                    role_ids=role_ids )
+
     def test_045_create_role_with_user_and_group_associations( self ):
         """Testing creating a role with user and group associations"""
         # Logged in as admin_user
@@ -233,9 +270,9 @@ class TestDataSecurity( TwillTestCase ):
         # associate_users_and_groups_with_role() method.
         name = 'Role Two'
         description = 'This is Role Two'
-        user_ids=[ str( admin_user.id ) ]
-        group_ids=[ str( group_two.id ) ]
-        private_role=admin_user.email
+        user_ids = [ str( admin_user.id ) ]
+        group_ids = [ str( group_two.id ) ]
+        private_role = admin_user.email
         # Create the role
         self.create_role( name=name,
                           description=description,
@@ -263,15 +300,16 @@ class TestDataSecurity( TwillTestCase ):
         refresh( group_two )
         if len( group_two.roles ) != 2:
             raise AssertionError( '%d GroupRoleAssociations are associated with group id %d ( should be 2 )' % ( len( group_two.roles ), group_two.id ) )
+
     def test_050_change_user_role_associations( self ):
         """Testing changing roles associated with a user"""
         # Logged in as admin_user
         # Create a new role with no associations
         name = 'Role Three'
         description = 'This is Role Three'
-        user_ids=[]
-        group_ids=[]
-        private_role=admin_user.email
+        user_ids = []
+        group_ids = []
+        private_role = admin_user.email
         self.create_role( name=name,
                           description=description,
                           in_user_ids=user_ids,
@@ -301,6 +339,7 @@ class TestDataSecurity( TwillTestCase ):
         if len( admin_user.roles ) != 4:
             raise AssertionError( '%d UserRoleAssociations are associated with %s ( should be 4 )' % \
                                   ( len( admin_user.roles ), admin_user.email ) )
+
     def test_055_mark_group_deleted( self ):
         """Testing marking a group as deleted"""
         # Logged in as admin_user
@@ -314,6 +353,7 @@ class TestDataSecurity( TwillTestCase ):
             raise AssertionError( '%s incorrectly lost all members when it was marked as deleted.' % group_two.name )
         if not group_two.roles:
             raise AssertionError( '%s incorrectly lost all role associations when it was marked as deleted.' % group_two.name )
+
     def test_060_undelete_group( self ):
         """Testing undeleting a deleted group"""
         # Logged in as admin_user
@@ -321,6 +361,7 @@ class TestDataSecurity( TwillTestCase ):
         refresh( group_two )
         if group_two.deleted:
             raise AssertionError( '%s was not correctly marked as not deleted.' % group_two.name )
+
     def test_065_mark_role_deleted( self ):
         """Testing marking a role as deleted"""
         # Logged in as admin_user
@@ -335,10 +376,12 @@ class TestDataSecurity( TwillTestCase ):
             raise AssertionError( '%s incorrectly lost all user associations when it was marked as deleted.' % role_two.name )
         if not role_two.groups:
             raise AssertionError( '%s incorrectly lost all group associations when it was marked as deleted.' % role_two.name )
+
     def test_070_undelete_role( self ):
         """Testing undeleting a deleted role"""
         # Logged in as admin_user
         self.undelete_role( self.security.encode_id( role_two.id ), role_two.name )
+
     def test_075_purge_user( self ):
         """Testing purging a user account"""
         # Logged in as admin_user
@@ -352,26 +395,27 @@ class TestDataSecurity( TwillTestCase ):
         if len( regular_user3.default_permissions ) != 1:
             raise AssertionError( 'DefaultUserPermissions for user %s were not deleted.' % regular_user3.email )
         for dup in regular_user3.default_permissions:
-            role = sa_session.query( galaxy.model.Role ).get( dup.role_id )
+            role = database_contexts.galaxy_context.query( galaxy.model.Role ).get( dup.role_id )
             if role.type != 'private':
                 raise AssertionError( 'DefaultUserPermissions for user %s are not related with the private role.' % regular_user3.email )
         # Make sure History deleted
         for history in regular_user3.histories:
             refresh( history )
             if not history.deleted:
-                raise AssertionError( 'User %s has active history id %d after their account was marked as purged.' % ( regular_user3.email, hda.id ) )
+                raise AssertionError( 'User %s has active history id %d after their account was marked as purged.' % ( regular_user3.email, history.id ) )
             # NOTE: Not all hdas / datasets will be deleted at the time a history is deleted - the cleanup_datasets.py script
             # is responsible for this.
         # Make sure UserGroupAssociations deleted
         if regular_user3.groups:
-            raise AssertionError( 'User %s has active group id %d after their account was marked as purged.' % ( regular_user3.email, uga.id ) )
+            raise AssertionError( 'User %s has active group after their account was marked as purged.' % ( regular_user3.email ) )
         # Make sure UserRoleAssociations deleted EXCEPT FOR THE PRIVATE ROLE
         if len( regular_user3.roles ) != 1:
             raise AssertionError( 'UserRoleAssociations for user %s were not deleted.' % regular_user3.email )
         for ura in regular_user3.roles:
-            role = sa_session.query( galaxy.model.Role ).get( ura.role_id )
+            role = database_contexts.galaxy_context.query( galaxy.model.Role ).get( ura.role_id )
             if role.type != 'private':
                 raise AssertionError( 'UserRoleAssociations for user %s are not related with the private role.' % regular_user3.email )
+
     def test_080_manually_unpurge_user( self ):
         """Testing manually un-purging a user account"""
         # Logged in as admin_user
@@ -381,6 +425,7 @@ class TestDataSecurity( TwillTestCase ):
         regular_user3.purged = False
         regular_user3.deleted = False
         flush( regular_user3 )
+
     def test_085_purge_group( self ):
         """Testing purging a group"""
         # Logged in as admin_user
@@ -394,6 +439,7 @@ class TestDataSecurity( TwillTestCase ):
             raise AssertionError( "Purging the group did not delete the GroupRoleAssociations for group_id '%s'" % group_two.id )
         # Undelete the group for later test runs
         self.undelete_group( self.security.encode_id( group_two.id ), group_two.name )
+
     def test_090_purge_role( self ):
         """Testing purging a role"""
         # Logged in as admin_user
@@ -414,6 +460,7 @@ class TestDataSecurity( TwillTestCase ):
         # Make sure there are no DatasetPermissionss
         if get_dataset_permissions_by_role( role_two ):
             raise AssertionError( "Purging the role did not delete the DatasetPermissionss for role_id '%s'" % role_two.id )
+
     def test_095_manually_unpurge_role( self ):
         """Testing manually un-purging a role"""
         # Logged in as admin_user
@@ -422,6 +469,7 @@ class TestDataSecurity( TwillTestCase ):
         role_two.purged = False
         flush( role_two )
         self.undelete_role( self.security.encode_id( role_two.id ), role_two.name )
+
     def test_999_reset_data_for_later_test_runs( self ):
         """Reseting data to enable later test runs to pass"""
         # Logged in as admin_user
@@ -433,8 +481,8 @@ class TestDataSecurity( TwillTestCase ):
             self.purge_role( self.security.encode_id( role.id ), role.name )
             # Manually delete the role from the database
             refresh( role )
-            sa_session.delete( role )
-            sa_session.flush()
+            database_contexts.galaxy_context.delete( role )
+            database_contexts.galaxy_context.flush()
         ##################
         # Eliminate all groups
         ##################
@@ -443,8 +491,8 @@ class TestDataSecurity( TwillTestCase ):
             self.purge_group( self.security.encode_id( group.id ), group.name )
             # Manually delete the group from the database
             refresh( group )
-            sa_session.delete( group )
-            sa_session.flush()
+            database_contexts.galaxy_context.delete( group )
+            database_contexts.galaxy_context.flush()
         ##################
         # Make sure all users are associated only with their private roles
         ##################

@@ -1,21 +1,26 @@
-import galaxy.model
-from galaxy.model.orm import *
-from base.test_db_util import sa_session
 from base.twilltestcase import TwillTestCase
+from functional import database_contexts
+import galaxy.model
+from galaxy.model.orm import (
+    and_,
+    desc,
+)
+
 
 class TestMetadataEdit( TwillTestCase ):
 
     def test_00_metadata_edit( self ):
         """test_metadata_edit: Testing metadata editing"""
+        sa_session = database_contexts.galaxy_context
         self.logout()
         self.login( email='test@bx.psu.edu', username='admin-user' )
         admin_user = sa_session.query( galaxy.model.User ) \
-                              .filter( galaxy.model.User.table.c.email=='test@bx.psu.edu' ) \
+                              .filter( galaxy.model.User.table.c.email == 'test@bx.psu.edu' ) \
                               .one()
         self.new_history( name='Test Metadata Edit' )
         history1 = sa_session.query( galaxy.model.History ) \
-                            .filter( and_( galaxy.model.History.table.c.deleted==False,
-                                           galaxy.model.History.table.c.user_id==admin_user.id ) ) \
+                            .filter( and_( galaxy.model.History.table.c.deleted == False,
+                                           galaxy.model.History.table.c.user_id == admin_user.id ) ) \
                             .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
                             .first()
         self.upload_file( '1.bed' )

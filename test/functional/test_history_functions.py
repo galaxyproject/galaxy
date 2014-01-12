@@ -4,6 +4,7 @@ from galaxy.model.orm import *
 from base.test_db_util import sa_session
 from base.twilltestcase import *
 
+
 class TestHistory( TwillTestCase ):
 
     def test_000_history_behavior_between_logout_login( self ):
@@ -16,7 +17,7 @@ class TestHistory( TwillTestCase ):
         global anonymous_history
         anonymous_history = (
             sa_session.query( galaxy.model.History )
-                .filter( and_( galaxy.model.History.table.c.deleted==False, galaxy.model.History.table.c.name==name ) )
+                .filter( and_( galaxy.model.History.table.c.deleted == False, galaxy.model.History.table.c.name == name ) )
                 .order_by( desc( galaxy.model.History.table.c.create_time ) )
                 .first()
         )
@@ -26,7 +27,7 @@ class TestHistory( TwillTestCase ):
         self.login( email='test1@bx.psu.edu', username='regular-user1' )
         global regular_user1
         regular_user1 = sa_session.query( galaxy.model.User ) \
-                                  .filter( galaxy.model.User.table.c.email=='test1@bx.psu.edu' ) \
+                                  .filter( galaxy.model.User.table.c.email == 'test1@bx.psu.edu' ) \
                                   .first()
         assert regular_user1 is not None, 'Problem retrieving user with email "test1@bx.psu.edu" from the database'
         # Current history should be anonymous_history
@@ -39,21 +40,21 @@ class TestHistory( TwillTestCase ):
         self.login( email='test2@bx.psu.edu', username='regular-user2' )
         global regular_user2
         regular_user2 = sa_session.query( galaxy.model.User ) \
-                                  .filter( galaxy.model.User.table.c.email=='test2@bx.psu.edu' ) \
+                                  .filter( galaxy.model.User.table.c.email == 'test2@bx.psu.edu' ) \
                                   .first()
         assert regular_user2 is not None, 'Problem retrieving user with email "test2@bx.psu.edu" from the database'
         self.logout()
         self.login( email='test3@bx.psu.edu', username='regular-user3' )
         global regular_user3
         regular_user3 = sa_session.query( galaxy.model.User ) \
-                                  .filter( galaxy.model.User.table.c.email=='test3@bx.psu.edu' ) \
+                                  .filter( galaxy.model.User.table.c.email == 'test3@bx.psu.edu' ) \
                                   .first()
         assert regular_user3 is not None, 'Problem retrieving user with email "test3@bx.psu.edu" from the database'
         self.logout()
         self.login( email='test@bx.psu.edu', username='admin-user' )
         global admin_user
         admin_user = sa_session.query( galaxy.model.User ) \
-                               .filter( galaxy.model.User.table.c.email=='test@bx.psu.edu' ) \
+                               .filter( galaxy.model.User.table.c.email == 'test@bx.psu.edu' ) \
                                .one()
         assert admin_user is not None, 'Problem retrieving user with email "test@bx.psu.edu" from the database'
         # Get the admin_user private role for later use
@@ -66,8 +67,8 @@ class TestHistory( TwillTestCase ):
         if not admin_user_private_role:
             raise AssertionError( "Private role not found for user '%s'" % admin_user.email )
         historyA = sa_session.query( galaxy.model.History ) \
-                             .filter( and_( galaxy.model.History.table.c.deleted==False,
-                                            galaxy.model.History.table.c.user_id==admin_user.id ) ) \
+                             .filter( and_( galaxy.model.History.table.c.deleted == False,
+                                            galaxy.model.History.table.c.user_id == admin_user.id ) ) \
                              .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
                              .first()
         assert historyA is not None, "Problem retrieving historyA from database"
@@ -76,8 +77,8 @@ class TestHistory( TwillTestCase ):
         self.logout()
         self.login( email=admin_user.email )
         historyB = sa_session.query( galaxy.model.History ) \
-                             .filter( and_( galaxy.model.History.table.c.deleted==False,
-                                            galaxy.model.History.table.c.user_id==admin_user.id ) ) \
+                             .filter( and_( galaxy.model.History.table.c.deleted == False,
+                                            galaxy.model.History.table.c.user_id == admin_user.id ) ) \
                              .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
                              .first()
         assert historyB is not None, "Problem retrieving historyB from database"
@@ -87,23 +88,23 @@ class TestHistory( TwillTestCase ):
         """Testing deleting histories"""
         # Logged in as admin_user
         historyB = sa_session.query( galaxy.model.History ) \
-                             .filter( and_( galaxy.model.History.table.c.deleted==False,
-                                            galaxy.model.History.table.c.user_id==admin_user.id ) ) \
+                             .filter( and_( galaxy.model.History.table.c.deleted == False,
+                                            galaxy.model.History.table.c.user_id == admin_user.id ) ) \
                              .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
                              .first()
         assert historyB is not None, "Problem retrieving historyB from database"
         self.delete_history( self.security.encode_id( historyB.id ) )
         sa_session.refresh( historyB )
         if not historyB.deleted:
-            raise AssertionError, "Problem deleting history id %d" % historyB.id
+            raise AssertionError( "Problem deleting history id %d" % historyB.id )
         # Since we deleted the current history, make sure the history frame was refreshed
         self.check_history_for_string( 'Your history is empty.' )
         # We'll now test deleting a list of histories
         # After deleting the current history, a new one should have been created
         global history1
         history1 = sa_session.query( galaxy.model.History ) \
-                             .filter( and_( galaxy.model.History.table.c.deleted==False,
-                                            galaxy.model.History.table.c.user_id==admin_user.id ) ) \
+                             .filter( and_( galaxy.model.History.table.c.deleted == False,
+                                            galaxy.model.History.table.c.user_id == admin_user.id ) ) \
                              .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
                              .first()
         assert history1 is not None, "Problem retrieving history1 from database"
@@ -111,8 +112,8 @@ class TestHistory( TwillTestCase ):
         self.new_history( name=urllib.quote( 'history2' ) )
         global history2
         history2 = sa_session.query( galaxy.model.History ) \
-                             .filter( and_( galaxy.model.History.table.c.deleted==False,
-                                            galaxy.model.History.table.c.user_id==admin_user.id ) ) \
+                             .filter( and_( galaxy.model.History.table.c.deleted == False,
+                                            galaxy.model.History.table.c.user_id == admin_user.id ) ) \
                              .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
                              .first()
         assert history2 is not None, "Problem retrieving history2 from database"
@@ -123,26 +124,26 @@ class TestHistory( TwillTestCase ):
         self.check_history_for_string( 'Your history is empty.' )
         try:
             self.view_stored_active_histories( strings_displayed=[ history1.name ] )
-            raise AssertionError, "History %s is displayed in the active history list after it was deleted" % history1.name
+            raise AssertionError( "History %s is displayed in the active history list after it was deleted" % history1.name )
         except:
             pass
         self.view_stored_deleted_histories( strings_displayed=[ history1.name ] )
         try:
             self.view_stored_active_histories( strings_displayed=[ history2.name ] )
-            raise AssertionError, "History %s is displayed in the active history list after it was deleted" % history2.name
+            raise AssertionError( "History %s is displayed in the active history list after it was deleted" % history2.name )
         except:
             pass
         self.view_stored_deleted_histories( strings_displayed=[ history2.name ] )
         sa_session.refresh( history1 )
         if not history1.deleted:
-            raise AssertionError, "Problem deleting history id %d" % history1.id
+            raise AssertionError( "Problem deleting history id %d" % history1.id )
         if not history1.default_permissions:
-            raise AssertionError, "Default permissions were incorrectly deleted from the db for history id %d when it was deleted" % history1.id
+            raise AssertionError( "Default permissions were incorrectly deleted from the db for history id %d when it was deleted" % history1.id )
         sa_session.refresh( history2 )
         if not history2.deleted:
-            raise AssertionError, "Problem deleting history id %d" % history2.id
+            raise AssertionError( "Problem deleting history id %d" % history2.id )
         if not history2.default_permissions:
-            raise AssertionError, "Default permissions were incorrectly deleted from the db for history id %d when it was deleted" % history2.id
+            raise AssertionError( "Default permissions were incorrectly deleted from the db for history id %d when it was deleted" % history2.id )
         # Current history is empty
         self.history_options( user=True )
 
@@ -151,12 +152,12 @@ class TestHistory( TwillTestCase ):
         # Logged in as admin_user
         global history3
         history3 = sa_session.query( galaxy.model.History ) \
-                             .filter( galaxy.model.History.table.c.deleted==False ) \
+                             .filter( galaxy.model.History.table.c.deleted == False ) \
                              .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
                              .first()
         assert history3 is not None, "Problem retrieving history3 from database"
         if history3.deleted:
-            raise AssertionError, "History id %d deleted when it should not be" % latest_history.id
+            raise AssertionError( "History id %d deleted when it should not be" % latest_history.id )
         self.rename_history( self.security.encode_id( history3.id ), history3.name, new_name=urllib.quote( 'history 3' ) )
         sa_session.refresh( history3 )
 
@@ -192,7 +193,7 @@ class TestHistory( TwillTestCase ):
         # Make sure history3 is now accessible.
         sa_session.refresh( history3 )
         if not history3.importable:
-            raise AssertionError, "History 3 is not marked as importable after make_accessible_via_link"
+            raise AssertionError( "History 3 is not marked as importable after make_accessible_via_link" )
         # Try importing history3
         #Importing your own history was enabled in 5248:dc9efb540f61.
         #self.import_history_via_url( self.security.encode_id( history3.id ),
@@ -235,13 +236,13 @@ class TestHistory( TwillTestCase ):
                             strings_displayed_after_submit=[ 'has been created.' ] )
         global history3_clone1
         history3_clone1 = sa_session.query( galaxy.model.History ) \
-                                    .filter( and_( galaxy.model.History.table.c.deleted==False,
-                                                   galaxy.model.History.table.c.user_id==regular_user1.id ) ) \
+                                    .filter( and_( galaxy.model.History.table.c.deleted == False,
+                                                   galaxy.model.History.table.c.user_id == regular_user1.id ) ) \
                                     .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
                                     .first()
         assert history3_clone1 is not None, "Problem retrieving history3_clone1 from database"
         # Check list of histories to make sure shared history3 was cloned
-        strings_displayed=[ "Copy of '%s' shared by '%s'" % ( history3.name, admin_user.email ) ]
+        strings_displayed = [ "Copy of '%s' shared by '%s'" % ( history3.name, admin_user.email ) ]
         self.view_stored_active_histories( strings_displayed=strings_displayed )
 
     def test_035_clone_current_history( self ):
@@ -255,8 +256,8 @@ class TestHistory( TwillTestCase ):
         self.upload_file( '2.bed', dbkey='hg18' )
         hda_2_bed = (
             sa_session.query( galaxy.model.HistoryDatasetAssociation )
-                .filter( and_( galaxy.model.HistoryDatasetAssociation.table.c.history_id==history3.id,
-                               galaxy.model.HistoryDatasetAssociation.table.c.name=='2.bed' ) )
+                .filter( and_( galaxy.model.HistoryDatasetAssociation.table.c.history_id == history3.id,
+                               galaxy.model.HistoryDatasetAssociation.table.c.name == '2.bed' ) )
                 .first() )
         assert hda_2_bed is not None, "Problem retrieving hda_2_bed from database"
         self.delete_history_item( str( hda_2_bed.id ) )
@@ -264,8 +265,8 @@ class TestHistory( TwillTestCase ):
         self.upload_file( '3.bed', dbkey='hg18' )
         hda_3_bed = (
             sa_session.query( galaxy.model.HistoryDatasetAssociation )
-                .filter( and_( galaxy.model.HistoryDatasetAssociation.table.c.history_id==history3.id,
-                               galaxy.model.HistoryDatasetAssociation.table.c.name=='3.bed' ) )
+                .filter( and_( galaxy.model.HistoryDatasetAssociation.table.c.history_id == history3.id,
+                               galaxy.model.HistoryDatasetAssociation.table.c.name == '3.bed' ) )
                 .first() )
         assert hda_3_bed is not None, "Problem retrieving hda_3_bed from database"
         self.delete_history_item( str( hda_3_bed.id ) )
@@ -276,8 +277,8 @@ class TestHistory( TwillTestCase ):
                             strings_displayed_after_submit=['has been created.' ] )
         global history3_clone2
         history3_clone2 = sa_session.query( galaxy.model.History ) \
-                                    .filter( and_( galaxy.model.History.table.c.deleted==False,
-                                                   galaxy.model.History.table.c.user_id==admin_user.id ) ) \
+                                    .filter( and_( galaxy.model.History.table.c.deleted == False,
+                                                   galaxy.model.History.table.c.user_id == admin_user.id ) ) \
                                     .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
                                     .first()
         assert history3_clone2 is not None, "Problem retrieving history3_clone2 from database"
@@ -288,14 +289,14 @@ class TestHistory( TwillTestCase ):
         self.switch_history( id=self.security.encode_id( history3_clone2.id ), name=history3_clone2.name )
         hda_2_bed = (
             sa_session.query( galaxy.model.HistoryDatasetAssociation )
-                .filter( and_( galaxy.model.HistoryDatasetAssociation.table.c.history_id==history3_clone2.id,
-                               galaxy.model.HistoryDatasetAssociation.table.c.name=='2.bed' ) )
+                .filter( and_( galaxy.model.HistoryDatasetAssociation.table.c.history_id == history3_clone2.id,
+                               galaxy.model.HistoryDatasetAssociation.table.c.name == '2.bed' ) )
                 .first() )
         assert hda_2_bed is not None, "Problem retrieving hda_2_bed from database"
         hda_3_bed = (
             sa_session.query( galaxy.model.HistoryDatasetAssociation )
-                .filter( and_( galaxy.model.HistoryDatasetAssociation.table.c.history_id==history3_clone2.id,
-                               galaxy.model.HistoryDatasetAssociation.table.c.name=='3.bed' ) )
+                .filter( and_( galaxy.model.HistoryDatasetAssociation.table.c.history_id == history3_clone2.id,
+                               galaxy.model.HistoryDatasetAssociation.table.c.name == '3.bed' ) )
                 .first() )
         assert hda_3_bed is not None, "Problem retrieving hda_3_bed from database"
 
@@ -315,15 +316,15 @@ class TestHistory( TwillTestCase ):
         global history3_clone3
         history3_clone3 = (
             sa_session.query( galaxy.model.History )
-                .filter( and_( galaxy.model.History.table.c.deleted==False,
-                               galaxy.model.History.table.c.user_id==admin_user.id ) )
+                .filter( and_( galaxy.model.History.table.c.deleted == False,
+                               galaxy.model.History.table.c.user_id == admin_user.id ) )
                 .order_by( desc( galaxy.model.History.table.c.create_time ) )
                 .first()
         )
         assert history3_clone3 is not None, "Problem retrieving history3_clone3 from database"
 
         # Check list of histories to make sure shared history3 was cloned
-        self.view_stored_active_histories( strings_displayed = ["Copy of '%s'" % history3.name ] )
+        self.view_stored_active_histories( strings_displayed=[ "Copy of '%s'" % history3.name ] )
 
         # Switch to the cloned history to make sure ONLY activatable datasets were cloned
         self.switch_history( id=self.security.encode_id( history3_clone3.id ) )
@@ -332,7 +333,7 @@ class TestHistory( TwillTestCase ):
         try:
             self.check_history_for_exact_string( '"deleted": true', show_deleted=True )
             #self.check_history_for_string( 'This dataset has been deleted.', show_deleted=True )
-            raise AssertionError, "Deleted datasets incorrectly included in cloned history history3_clone3"
+            raise AssertionError( "Deleted datasets incorrectly included in cloned history history3_clone3" )
         except:
             pass
 
@@ -342,14 +343,14 @@ class TestHistory( TwillTestCase ):
         self.new_history()
         global history4
         history4 = sa_session.query( galaxy.model.History ) \
-                             .filter( and_( galaxy.model.History.table.c.deleted==False,
-                                            galaxy.model.History.table.c.user_id==admin_user.id ) ) \
+                             .filter( and_( galaxy.model.History.table.c.deleted == False,
+                                            galaxy.model.History.table.c.user_id == admin_user.id ) ) \
                              .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
                              .first()
         assert history4 is not None, "Problem retrieving history4 from database"
         self.rename_history( self.security.encode_id( history4.id ), history4.name, new_name=urllib.quote( 'history 4' ) )
         sa_session.refresh( history4 )
-        # Galaxy's new history sharing code does not yet support sharing multiple histories; when support for sharing multiple histories is added, 
+        # Galaxy's new history sharing code does not yet support sharing multiple histories; when support for sharing multiple histories is added,
         # this test will be uncommented and updated.
         """
         self.upload_file( '2.bed', dbkey='hg18' )
@@ -377,8 +378,8 @@ class TestHistory( TwillTestCase ):
         self.new_history()
         global history5
         history5 = sa_session.query( galaxy.model.History ) \
-                             .filter( and_( galaxy.model.History.table.c.deleted==False,
-                                            galaxy.model.History.table.c.user_id==admin_user.id ) ) \
+                             .filter( and_( galaxy.model.History.table.c.deleted == False,
+                                            galaxy.model.History.table.c.user_id == admin_user.id ) ) \
                              .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
                              .first()
         assert history5 is not None, "Problem retrieving history5 from database"
@@ -405,14 +406,14 @@ class TestHistory( TwillTestCase ):
                 history5_dataset1 = hda.dataset
                 break
         assert history5_dataset1 is not None, "Problem retrieving history5_dataset1 from the database"
-        # The permissions on the dataset should be restricted from sharing with anyone due to the 
+        # The permissions on the dataset should be restricted from sharing with anyone due to the
         # inherited history permissions
         dataset_permissions = [ a.action for a in history5_dataset1.actions ]
         dataset_permissions.sort()
         if dataset_permissions != history5_default_permissions:
             err_msg = "Dataset permissions for history5_dataset1 (%s) were not correctly inherited from history permissions (%s)" \
                 % ( str( dataset_permissions ), str( history5_default_permissions ) )
-            raise AssertionError, err_msg
+            raise AssertionError( err_msg )
         # Make sure when we logout and login, the history default permissions are preserved
         self.logout()
         self.login( email=admin_user.email )
@@ -420,7 +421,7 @@ class TestHistory( TwillTestCase ):
         current_history_permissions = [ dhp.action for dhp in history5.default_permissions ]
         current_history_permissions.sort()
         if current_history_permissions != history5_default_permissions:
-            raise AssertionError, "With logout and login, the history default permissions are not preserved"
+            raise AssertionError( "With logout and login, the history default permissions are not preserved" )
 
     def test_050_sharing_restricted_history_by_making_datasets_public( self ):
         """Testing sharing a restricted history by making the datasets public"""
@@ -440,8 +441,8 @@ class TestHistory( TwillTestCase ):
                             strings_displayed_after_submit=[ 'has been created.' ] )
         global history5_clone1
         history5_clone1 = sa_session.query( galaxy.model.History ) \
-                                    .filter( and_( galaxy.model.History.table.c.deleted==False,
-                                                   galaxy.model.History.table.c.user_id==regular_user1.id ) ) \
+                                    .filter( and_( galaxy.model.History.table.c.deleted == False,
+                                                   galaxy.model.History.table.c.user_id == regular_user1.id ) ) \
                                     .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
                                     .first()
         assert history5_clone1 is not None, "Problem retrieving history5_clone1 from database"
@@ -462,21 +463,21 @@ class TestHistory( TwillTestCase ):
                                          'The following datasets can be shared with %s by updating their permissions' % regular_user2.email ]
         self.share_current_history( regular_user2.email,
                                     strings_displayed_after_submit=strings_displayed_after_submit,
-                                    action='private' )        
+                                    action='private' )
         # We should now have a new sharing role
         global sharing_role
         role_name = 'Sharing role for: %s, %s' % ( admin_user.email, regular_user2.email )
-        sharing_role = sa_session.query( galaxy.model.Role ).filter( galaxy.model.Role.table.c.name==role_name ).first()
+        sharing_role = sa_session.query( galaxy.model.Role ).filter( galaxy.model.Role.table.c.name == role_name ).first()
         if not sharing_role:
             # May have created a sharing role in a previous functional test suite from the opposite direction.
             role_name = 'Sharing role for: %s, %s' % ( regular_user2.email, admin_user.email )
             sharing_role = sa_session.query( galaxy.model.Role ) \
-                                     .filter( and_( galaxy.model.Role.table.c.type==role_type,
-                                                    galaxy.model.Role.table.c.name==role_name ) ) \
+                                     .filter( and_( galaxy.model.Role.table.c.type == role_type,
+                                                    galaxy.model.Role.table.c.name == role_name ) ) \
                                      .first()
         if not sharing_role:
             raise AssertionError( "Privately sharing a dataset did not properly create a sharing role" )
-        # The DATASET_ACCESS permission on 2.bed was originally associated with admin_user's private role.  
+        # The DATASET_ACCESS permission on 2.bed was originally associated with admin_user's private role.
         # Since we created a new sharing role for 2.bed, the original permission should have been eliminated,
         # replaced with the sharing role.
         history5_dataset2 = None
@@ -498,8 +499,8 @@ class TestHistory( TwillTestCase ):
                             strings_displayed_after_submit=[ 'has been created.' ] )
         global history5_clone2
         history5_clone2 = sa_session.query( galaxy.model.History ) \
-                                    .filter( and_( galaxy.model.History.table.c.deleted==False,
-                                                   galaxy.model.History.table.c.user_id==regular_user2.id ) ) \
+                                    .filter( and_( galaxy.model.History.table.c.deleted == False,
+                                                   galaxy.model.History.table.c.user_id == regular_user2.id ) ) \
                                     .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
                                     .first()
         assert history5_clone2 is not None, "Problem retrieving history5_clone2 from database"
@@ -512,13 +513,13 @@ class TestHistory( TwillTestCase ):
         self.check_history_for_string( '2.bed' )
         # Get both new hdas from the db that were created for the shared history
         hda_1_bed = sa_session.query( galaxy.model.HistoryDatasetAssociation ) \
-                              .filter( and_( galaxy.model.HistoryDatasetAssociation.table.c.history_id==history5_clone2.id,
-                                             galaxy.model.HistoryDatasetAssociation.table.c.name=='1.bed' ) ) \
+                              .filter( and_( galaxy.model.HistoryDatasetAssociation.table.c.history_id == history5_clone2.id,
+                                             galaxy.model.HistoryDatasetAssociation.table.c.name == '1.bed' ) ) \
                               .first()
         assert hda_1_bed is not None, "Problem retrieving hda_1_bed from database"
         hda_2_bed = sa_session.query( galaxy.model.HistoryDatasetAssociation ) \
-                              .filter( and_( galaxy.model.HistoryDatasetAssociation.table.c.history_id==history5_clone2.id,
-                                             galaxy.model.HistoryDatasetAssociation.table.c.name=='2.bed' ) ) \
+                              .filter( and_( galaxy.model.HistoryDatasetAssociation.table.c.history_id == history5_clone2.id,
+                                             galaxy.model.HistoryDatasetAssociation.table.c.name == '2.bed' ) ) \
                               .first()
         assert hda_2_bed is not None, "Problem retrieving hda_2_bed from database"
         # Make sure 1.bed is accessible since it is public
@@ -549,7 +550,7 @@ class TestHistory( TwillTestCase ):
         self.visit_page( "root/history_options" )
         try:
             self.check_page_for_string( 'List</a> histories shared with you by others' )
-            raise AssertionError, "history5 still shared with regular_user2 after unsharing it with that user."
+            raise AssertionError( "history5 still shared with regular_user2 after unsharing it with that user." )
         except:
             pass
 
@@ -558,7 +559,8 @@ class TestHistory( TwillTestCase ):
         email = '%s,%s' % ( regular_user2.email, regular_user3.email )
         strings_displayed_after_submit = [
             'The following datasets can be shared with %s with no changes' % email,
-            'The following datasets can be shared with %s by updating their permissions' % email ]
+            'The following datasets can be shared with %s by updating their permissions' % email
+        ]
 
         # history5 will be shared with regular_user1, regular_user2 and regular_user3
         self.share_current_history( email,
@@ -576,8 +578,8 @@ class TestHistory( TwillTestCase ):
         global history5_clone3
         history5_clone3 = (
             sa_session.query( galaxy.model.History )
-                .filter( and_( galaxy.model.History.table.c.deleted==False,
-                               galaxy.model.History.table.c.user_id==regular_user2.id ) )
+                .filter( and_( galaxy.model.History.table.c.deleted == False,
+                               galaxy.model.History.table.c.user_id == regular_user2.id ) )
                 .order_by( desc( galaxy.model.History.table.c.create_time ) )
                 .first() )
         assert history5_clone3 is not None, "Problem retrieving history5_clone3 from database"
@@ -592,14 +594,14 @@ class TestHistory( TwillTestCase ):
         # Get both new hdas from the db that were created for the shared history
         hda_1_bed = (
             sa_session.query( galaxy.model.HistoryDatasetAssociation )
-                .filter( and_( galaxy.model.HistoryDatasetAssociation.table.c.history_id==history5_clone3.id,
-                               galaxy.model.HistoryDatasetAssociation.table.c.name=='1.bed' ) )
+                .filter( and_( galaxy.model.HistoryDatasetAssociation.table.c.history_id == history5_clone3.id,
+                               galaxy.model.HistoryDatasetAssociation.table.c.name == '1.bed' ) )
                 .first() )
         assert hda_1_bed is not None, "Problem retrieving hda_1_bed from database"
         hda_2_bed = (
             sa_session.query( galaxy.model.HistoryDatasetAssociation )
-                .filter( and_( galaxy.model.HistoryDatasetAssociation.table.c.history_id==history5_clone3.id,
-                               galaxy.model.HistoryDatasetAssociation.table.c.name=='2.bed' ) )
+                .filter( and_( galaxy.model.HistoryDatasetAssociation.table.c.history_id == history5_clone3.id,
+                               galaxy.model.HistoryDatasetAssociation.table.c.name == '2.bed' ) )
                 .first() )
         assert hda_2_bed is not None, "Problem retrieving hda_2_bed from database"
 
@@ -622,8 +624,8 @@ class TestHistory( TwillTestCase ):
         global history5_clone4
         history5_clone4 = (
             sa_session.query( galaxy.model.History )
-                .filter( and_( galaxy.model.History.table.c.deleted==False,
-                               galaxy.model.History.table.c.user_id==regular_user3.id ) )
+                .filter( and_( galaxy.model.History.table.c.deleted == False,
+                               galaxy.model.History.table.c.user_id == regular_user3.id ) )
                 .order_by( desc( galaxy.model.History.table.c.create_time ) )
                 .first() )
         assert history5_clone4 is not None, "Problem retrieving history5_clone4 from database"
@@ -638,14 +640,14 @@ class TestHistory( TwillTestCase ):
         # Get both new hdas from the db that were created for the shared history
         hda_1_bed = (
             sa_session.query( galaxy.model.HistoryDatasetAssociation )
-                .filter( and_( galaxy.model.HistoryDatasetAssociation.table.c.history_id==history5_clone4.id,
-                               galaxy.model.HistoryDatasetAssociation.table.c.name=='1.bed' ) )
+                .filter( and_( galaxy.model.HistoryDatasetAssociation.table.c.history_id == history5_clone4.id,
+                               galaxy.model.HistoryDatasetAssociation.table.c.name == '1.bed' ) )
                 .first() )
         assert hda_1_bed is not None, "Problem retrieving hda_1_bed from database"
         hda_2_bed = (
             sa_session.query( galaxy.model.HistoryDatasetAssociation )
-                .filter( and_( galaxy.model.HistoryDatasetAssociation.table.c.history_id==history5_clone4.id,
-                               galaxy.model.HistoryDatasetAssociation.table.c.name=='2.bed' ) )
+                .filter( and_( galaxy.model.HistoryDatasetAssociation.table.c.history_id == history5_clone4.id,
+                               galaxy.model.HistoryDatasetAssociation.table.c.name == '2.bed' ) )
                 .first() )
         assert hda_2_bed is not None, "Problem retrieving hda_2_bed from database"
         # Make sure 1.bed is accessible since it is public
@@ -653,7 +655,7 @@ class TestHistory( TwillTestCase ):
         # Make sure 2.bed is not accessible since it is protected
         try:
             self.display_history_item( str( hda_2_bed.id ), strings_displayed=[ 'chr1' ] )
-            raise AssertionError, "History item 2.bed is accessible by user %s when is should not be" % regular_user3.email
+            raise AssertionError( "History item 2.bed is accessible by user %s when is should not be" % regular_user3.email )
         except:
             pass
 
@@ -696,7 +698,7 @@ class TestHistory( TwillTestCase ):
         self.visit_page( "root/history_options" )
         try:
             self.check_page_for_string( 'List</a> histories shared with you by others' )
-            raise AssertionError, "history5 still shared with regular_user2 after unshaing it with that user."
+            raise AssertionError( "history5 still shared with regular_user2 after unshaing it with that user." )
         except:
             pass
 
@@ -705,7 +707,7 @@ class TestHistory( TwillTestCase ):
         self.visit_page( "root/history_options" )
         try:
             self.check_page_for_string( 'List</a> histories shared with you by others' )
-            raise AssertionError, "history5 still shared with regular_user3 after unshaing it with that user."
+            raise AssertionError( "history5 still shared with regular_user3 after unshaing it with that user." )
         except:
             pass
         self.logout()
@@ -725,8 +727,8 @@ class TestHistory( TwillTestCase ):
         self.new_history( name=urllib.quote( 'show hide deleted datasets' ) )
         latest_history = (
             sa_session.query( galaxy.model.History )
-                .filter( and_( galaxy.model.History.table.c.deleted==False,
-                               galaxy.model.History.table.c.user_id==admin_user.id ) )
+                .filter( and_( galaxy.model.History.table.c.deleted == False,
+                               galaxy.model.History.table.c.user_id == admin_user.id ) )
                 .order_by( desc( galaxy.model.History.table.c.create_time ) )
                 .first() )
         assert latest_history is not None, "Problem retrieving latest_history from database"
@@ -769,8 +771,8 @@ class TestHistory( TwillTestCase ):
         # Deleting the current history in the last method created a new history
         latest_history = (
             sa_session.query( galaxy.model.History )
-                .filter( and_( galaxy.model.History.table.c.deleted==False,
-                               galaxy.model.History.table.c.user_id==admin_user.id ) )
+                .filter( and_( galaxy.model.History.table.c.deleted == False,
+                               galaxy.model.History.table.c.user_id == admin_user.id ) )
                 .order_by( desc( galaxy.model.History.table.c.create_time ) )
                 .first() )
         assert latest_history is not None, "Problem retrieving latest_history from database"
@@ -786,14 +788,14 @@ class TestHistory( TwillTestCase ):
         self.visit_url( "%s/history/?show_deleted=False" % self.url )
         self.check_page_for_string( '1.bed' )
         self.check_page_for_string( 'hg15' )
-        self.assertEqual ( len( self.get_history_as_data_list() ), 1 )
+        self.assertEqual( len( self.get_history_as_data_list() ), 1 )
         # Delete the history item
         self.delete_history_item( str( latest_hda.id ), strings_displayed=[ "Your history is empty" ] )
-        self.assertEqual ( len( self.get_history_as_data_list() ), 0 )
+        self.assertEqual( len( self.get_history_as_data_list() ), 0 )
         # Try deleting an invalid hid
         try:
             self.delete_history_item( 'XXX' )
-            raise AssertionError, "Inproperly able to delete hda_id 'XXX' which is not an integer"
+            raise AssertionError( "Inproperly able to delete hda_id 'XXX' which is not an integer" )
         except:
             pass
         # Undelete the history item
@@ -809,8 +811,8 @@ class TestHistory( TwillTestCase ):
         # logged in as admin_user
         self.new_history( name=urllib.quote( 'copy history items' ) )
         history6 = sa_session.query( galaxy.model.History ) \
-                             .filter( and_( galaxy.model.History.table.c.deleted==False,
-                                            galaxy.model.History.table.c.user_id==admin_user.id ) ) \
+                             .filter( and_( galaxy.model.History.table.c.deleted == False,
+                                            galaxy.model.History.table.c.user_id == admin_user.id ) ) \
                              .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
                              .first()
         assert history6 is not None, "Problem retrieving history6 from database"
@@ -820,7 +822,7 @@ class TestHistory( TwillTestCase ):
                          .first()
         assert hda1 is not None, "Problem retrieving hda1 from database"
         # We'll just test copying 1 hda
-        source_dataset_ids=self.security.encode_id( hda1.id )
+        source_dataset_ids = self.security.encode_id( hda1.id )
         # The valid list of target histories is only the user's active histories
         all_target_history_ids = [ self.security.encode_id( hda.id ) for hda in admin_user.active_histories ]
         # Since history1 and history2 have been deleted, they should not be displayed in the list of target histories
@@ -834,12 +836,12 @@ class TestHistory( TwillTestCase ):
                                 deleted_history_ids=deleted_history_ids )
         sa_session.refresh( history6 )
         if len( history6.datasets ) != 2:
-            raise AssertionError, "Copying hda1 to the current history failed, history 6 has %d datasets, but should have 2" % len( history6.datasets )
+            raise AssertionError( "Copying hda1 to the current history failed, history 6 has %d datasets, but should have 2" % len( history6.datasets ) )
         # Test copying 1 hda to another history
         self.new_history( name=urllib.quote( 'copy history items - 2' ) )
         history7 = sa_session.query( galaxy.model.History ) \
-                             .filter( and_( galaxy.model.History.table.c.deleted==False,
-                                            galaxy.model.History.table.c.user_id==admin_user.id ) ) \
+                             .filter( and_( galaxy.model.History.table.c.deleted == False,
+                                            galaxy.model.History.table.c.user_id == admin_user.id ) ) \
                              .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
                              .first()
         assert history7 is not None, "Problem retrieving history7 from database"
@@ -848,7 +850,7 @@ class TestHistory( TwillTestCase ):
         target_history_id = self.security.encode_id( history7.id )
         all_target_history_ids = [ self.security.encode_id( hda.id ) for hda in admin_user.active_histories ]
         # Test copying to the a history that is not the current history
-        target_history_ids=[ self.security.encode_id( history7.id ) ]
+        self.security.encode_id( history7.id )
         self.copy_history_item( source_dataset_id=source_dataset_ids,
                                 target_history_id=target_history_id,
                                 all_target_history_ids=all_target_history_ids,
