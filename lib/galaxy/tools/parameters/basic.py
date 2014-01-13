@@ -1441,10 +1441,11 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
                     for opt in option['options']:
                         recurse_option( option_list, opt )
             rval = []
-            recurse_option( rval, get_base_option( value, self.get_options( other_values = other_values ) ) )
+            recurse_option( rval, get_base_option( value, self.get_options( other_values=other_values ) ) )
             return rval or [value]
 
-        if value is None: return "None"
+        if value is None:
+            return "None"
         rval = []
         if self.hierarchy == "exact":
             rval = value
@@ -1483,8 +1484,9 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
                 if value == option['value']:
                     return option['name']
                 rval = get_option_display( value, option['options'] )
-                if rval: return rval
-            return None #not found
+                if rval:
+                    return rval
+            return None  # not found
 
         if isinstance( value, UnvalidatedValue ):
             suffix = "\n(value not yet validated)"
@@ -1524,12 +1526,12 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
         options = []
         try:
             options = self.get_options( trans, {} )
-        except KeyError, key_err:
+        except KeyError:
             # will sometimes error if self.is_dynamic and self.filtered
             #   bc we dont/cant fill out other_values above ({})
             pass
 
-        d[ 'options' ] = options;
+        d[ 'options' ] = options
         return d
 
 
@@ -1762,7 +1764,7 @@ class DataToolParameter( ToolParameter ):
             if v:
                 if v.deleted:
                     raise ValueError( "The previously selected dataset has been previously deleted" )
-                if v.dataset.state in [galaxy.model.Dataset.states.ERROR, galaxy.model.Dataset.states.DISCARDED ]:
+                if v.dataset.state in [ galaxy.model.Dataset.states.ERROR, galaxy.model.Dataset.states.DISCARDED ]:
                     raise ValueError( "The previously selected dataset has entered an unusable state" )
         return rval
 
@@ -1794,7 +1796,8 @@ class DataToolParameter( ToolParameter ):
         return app.model.context.query( app.model.HistoryDatasetAssociation ).get( int( value ) )
 
     def to_param_dict_string( self, value, other_values={} ):
-        if value is None: return "None"
+        if value is None:
+            return "None"
         return value.file_name
 
     def value_to_display_text( self, value, app ):
@@ -1828,12 +1831,13 @@ class DataToolParameter( ToolParameter ):
         if self.tool is None or self.tool.has_multiple_pages or not hasattr( trans, 'workflow_building_mode' ) or trans.workflow_building_mode:
             return False
         if other_values is None:
-            return True # we don't know other values, so we can't check, assume ok
+            return True  # we don't know other values, so we can't check, assume ok
         converter_safe = [True]
-        def visitor( prefix, input, value, parent = None ):
+
+        def visitor( prefix, input, value, parent=None ):
             if isinstance( input, SelectToolParameter ) and self.name in input.get_dependencies():
                 if input.is_dynamic and ( input.dynamic_options or ( not input.dynamic_options and not input.options ) or not input.options.converter_safe ):
-                    converter_safe[0] = False #This option does not allow for conversion, i.e. uses contents of dataset file to generate options
+                    converter_safe[0] = False  # This option does not allow for conversion, i.e. uses contents of dataset file to generate options
         self.tool.visit_inputs( other_values, visitor )
         return False not in converter_safe
 
@@ -1960,21 +1964,24 @@ class LibraryDatasetToolParameter( ToolParameter ):
 #         self.html = form_builder.HiddenField( self.name, trans.history.id ).get_html()
 #         return self.html
 
-parameter_types = dict( text            = TextToolParameter,
-                        integer         = IntegerToolParameter,
-                        float           = FloatToolParameter,
-                        boolean         = BooleanToolParameter,
-                        genomebuild     = GenomeBuildParameter,
-                        select          = SelectToolParameter,
-                        data_column     = ColumnListParameter,
-                        hidden          = HiddenToolParameter,
-                        hidden_data     = HiddenDataToolParameter,
-                        baseurl         = BaseURLToolParameter,
-                        file            = FileToolParameter,
-                        ftpfile         = FTPFileToolParameter,
-                        data            = DataToolParameter,
-                        library_data    = LibraryDatasetToolParameter,
-                        drill_down      = DrillDownSelectToolParameter )
+parameter_types = dict(
+    text=TextToolParameter,
+    integer=IntegerToolParameter,
+    float=FloatToolParameter,
+    boolean=BooleanToolParameter,
+    genomebuild=GenomeBuildParameter,
+    select=SelectToolParameter,
+    data_column=ColumnListParameter,
+    hidden=HiddenToolParameter,
+    hidden_data=HiddenDataToolParameter,
+    baseurl=BaseURLToolParameter,
+    file=FileToolParameter,
+    ftpfile=FTPFileToolParameter,
+    data=DataToolParameter,
+    library_data=LibraryDatasetToolParameter,
+    drill_down=DrillDownSelectToolParameter
+)
+
 
 class UnvalidatedValue( object ):
     """
@@ -1993,4 +2000,3 @@ class RuntimeValue( object ):
     runtime.
     """
     pass
-

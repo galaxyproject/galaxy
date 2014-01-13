@@ -6,6 +6,7 @@ from basic import *
 from grouping import *
 from galaxy.util.json import *
 
+
 def visit_input_values( inputs, input_values, callback, name_prefix="", label_prefix="" ):
     """
     Given a tools parameter definition (`inputs`) and a specific set of
@@ -35,10 +36,11 @@ def visit_input_values( inputs, input_values, callback, name_prefix="", label_pr
         else:
             new_value = callback( input,
                                   input_values[input.name],
-                                  prefixed_name = name_prefix + input.name,
-                                  prefixed_label = label_prefix + input.label )
+                                  prefixed_name=name_prefix + input.name,
+                                  prefixed_label=label_prefix + input.label )
             if new_value:
                 input_values[input.name] = new_value
+
 
 def check_param( trans, param, incoming_value, param_values, source='html' ):
     """
@@ -62,11 +64,12 @@ def check_param( trans, param, incoming_value, param_values, source='html' ):
             # Then do any further validation on the value
             param.validate( filtered_value, trans.history )
         elif value is None and isinstance( param, SelectToolParameter ):
-           # An empty select list or column list
-           param.validate( value, trans.history )
+            # An empty select list or column list
+            param.validate( value, trans.history )
     except ValueError, e:
         error = str( e )
     return value, error
+
 
 def params_to_strings( params, param_values, app ):
     """
@@ -83,6 +86,7 @@ def params_to_strings( params, param_values, app ):
         rval[ key ] = str( to_json_string( value ) )
     return rval
 
+
 def params_from_strings( params, param_values, app, ignore_errors=False ):
     """
     Convert a dictionary of strings as produced by `params_to_strings`
@@ -97,6 +101,7 @@ def params_from_strings( params, param_values, app, ignore_errors=False ):
             value = params[key].value_from_basic( value, app, ignore_errors )
         rval[ key ] = value
     return rval
+
 
 def params_to_incoming( incoming, inputs, input_values, app, name_prefix="" ):
     """
@@ -119,4 +124,3 @@ def params_to_incoming( incoming, inputs, input_values, app, name_prefix="" ):
             params_to_incoming( incoming, input.cases[current].inputs, values, app, new_name_prefix )
         else:
             incoming[ name_prefix + input.name ] = input.to_html_value( input_values.get( input.name ), app )
-
