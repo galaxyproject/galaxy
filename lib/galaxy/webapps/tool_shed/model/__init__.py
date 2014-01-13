@@ -238,10 +238,10 @@ class RepositoryMetadata( object, Dictifiable ):
                                   'has_repository_dependencies', 'includes_datatypes', 'includes_tools', 'includes_tool_dependencies',
                                   'includes_tools_for_display_in_tool_panel', 'includes_workflows' )
 
-    def __init__( self, id=None, repository_id=None, changeset_revision=None, metadata=None, tool_versions=None, malicious=False, downloadable=False,
-                  missing_test_components=None, tools_functionally_correct=False, do_not_test=False, test_install_error=False, time_last_tested=None,
-                  tool_test_results=None, has_repository_dependencies=False, includes_datatypes=False, includes_tools=False, includes_tool_dependencies=False,
-                  includes_workflows=False ):
+    def __init__( self, id=None, repository_id=None, changeset_revision=None, metadata=None, tool_versions=None, malicious=False,
+                  downloadable=False, missing_test_components=None, tools_functionally_correct=False, do_not_test=False,
+                  test_install_error=False, time_last_tested=None, tool_test_results=None, has_repository_dependencies=False,
+                  includes_datatypes=False, includes_tools=False, includes_tool_dependencies=False, includes_workflows=False ):
         self.id = id
         self.repository_id = repository_id
         self.changeset_revision = changeset_revision

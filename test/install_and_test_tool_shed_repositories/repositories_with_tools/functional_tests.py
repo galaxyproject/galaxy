@@ -697,7 +697,7 @@ def test_repository_tools( app, repository, repository_dict, tool_test_results_d
             set_do_not_test = not is_latest_downloadable_revision
         params = dict( tools_functionally_correct=False,
                        test_install_error=False,
-                       do_not_test=str( set_do_not_test ) )
+                       do_not_test=set_do_not_test )
         response_dict = \
             install_and_test_base_util.save_test_results_for_changeset_revision( install_and_test_base_util.galaxy_tool_shed_url,
                                                                                  tool_test_results_dicts,

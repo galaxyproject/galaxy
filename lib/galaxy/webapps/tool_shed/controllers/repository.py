@@ -311,9 +311,9 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             message = 'This list contains repositories that match the following criteria:<br>'
             message += '<ul>'
             message += '<li>you are authorized to update them</li>'
-            message += '<li>the latest installable revision contains at least 1 tool</li>'
             message += '<li>the latest installable revision is not missing any tool test components</li>'
-            message += '<li>the latest installable revision has installation errors (the repository itself, repository dependencies or tool dependencies)</li>'
+            message += '<li>the latest installable revision has installation errors (the repository itself, '
+            message += 'repository dependencies or tool dependencies)</li>'
             message += '</ul>'
             kwd[ 'message' ] = message
             kwd[ 'status' ] = 'warning'
@@ -340,8 +340,10 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             message = 'This list contains repositories that match the following criteria:<br>'
             message += '<ul>'
             message += '<li>you are authorized to update them</li>'
-            message += '<li>the latest installable revision contains at least 1 tool</li>'
-            message += '<li>the latest installable revision has <b>Skip automated testing of tools in this revision</b> checked</li>'
+            message += '<li>the latest installable revision has <b>Skip automated testing of tools in this '
+            message += 'revision</b> checked if the repository type is <b>Unrestricted</b> or <b>Skip '
+            message += 'automated testing of this tool dependency recipe</b> checked if the repository '
+            message += 'type is <b>Tool dependency definition</b></li>'
             message += '</ul>'
             kwd[ 'message' ] = message
             kwd[ 'status' ] = 'warning'
@@ -566,9 +568,9 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         if 'message' not in kwd:
             message = 'This list contains repositories that match the following criteria:<br>'
             message += '<ul>'
-            message += '<li>the latest installable revision contains at least 1 tool</li>'
             message += '<li>the latest installable revision is not missing any tool test components</li>'
-            message += '<li>the latest installable revision has installation errors (the repository itself, repository dependencies or tool dependencies)</li>'
+            message += '<li>the latest installable revision has installation errors (the repository itself, '
+            message += 'repository dependencies or tool dependencies)</li>'
             message += '</ul>'
             kwd[ 'message' ] = message
             kwd[ 'status' ] = 'warning'
@@ -649,8 +651,10 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         if 'message' not in kwd:
             message = 'This list contains repositories that match the following criteria:<br>'
             message += '<ul>'
-            message += '<li>the latest installable revision contains at least 1 tool</li>'
-            message += '<li>the latest installable revision has <b>Skip automated testing of tools in this revision</b> checked</li>'
+            message += '<li>the latest installable revision has <b>Skip automated testing of tools in this '
+            message += 'revision</b> checked if the repository type is <b>Unrestricted</b> or <b>Skip '
+            message += 'automated testing of this tool dependency recipe</b> checked if the repository '
+            message += 'type is <b>Tool dependency definition</b></li>'
             message += '</ul>'
             kwd[ 'message' ] = message
             kwd[ 'status' ] = 'warning'

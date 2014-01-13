@@ -852,7 +852,7 @@ def populate_install_containers_for_repository_dependencies( app, repository, re
             owner = repository_dependencies_dict.get( 'owner', None )
             changeset_revision = repository_dependencies_dict.get( 'changeset_revision', None )
             if name is None or owner is None or changeset_revision is None:
-                log.debug( 'Skipping invalid repository_dependencies_dict due to missing name,owner or changeset_revision: %s' % \
+                log.debug( 'Skipping invalid repository_dependencies_dict due to missing name, owner or changeset_revision: %s' % \
                     str( repository_dependencies_dict ) )
                 continue
             name = str( name )

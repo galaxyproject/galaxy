@@ -1693,12 +1693,11 @@ class ValidRepositoryGrid( RepositoryGrid ):
 
 def filter_by_latest_downloadable_changeset_revision_that_has_failing_tool_tests( trans, repository ):
     """
-    Inspect the latest installable changeset revision for the received repository to see if it includes at least 1 tool that has at least 1 failing test.
+    Inspect the latest downloadable changeset revision for the received repository to see if it
+    includes at least 1 tool that has at least 1 failing test.  This will filter out repositories
+    of type tool_dependency_definition.
     """
-    encoded_repository_id = trans.security.encode_id( repository.id )
-    repo = hg.repository( suc.get_configured_ui(), repository.repo_path( trans.app ) )
-    tip_ctx = str( repo.changectx( repo.changelog.tip() ) )
-    repository_metadata = get_latest_installable_repository_metadata_if_it_includes_tools( trans, repository )
+    repository_metadata = get_latest_downloadable_repository_metadata_if_it_includes_tools( trans, repository )
     if repository_metadata \
         and repository_metadata.tool_test_results is not None \
         and not repository_metadata.missing_test_components \
@@ -1709,109 +1708,135 @@ def filter_by_latest_downloadable_changeset_revision_that_has_failing_tool_tests
 
 def filter_by_latest_downloadable_changeset_revision_that_has_missing_tool_test_components( trans, repository ):
     """
-    Inspect the latest installable changeset revision for the received repository to see if it includes tools that are either missing functional tests
-    or functional test data.  If the changset revision includes tools, but is missing tool test components, return the changeset revision hash.
+    Inspect the latest downloadable changeset revision for the received repository to see if it
+    includes tools that are either missing functional tests or functional test data.  If the
+    changset revision includes tools but is missing tool test components, return the changeset
+    revision hash.  This will filter out repositories of type tool_dependency_definition.
     """
-    encoded_repository_id = trans.security.encode_id( repository.id )
-    repo = hg.repository( suc.get_configured_ui(), repository.repo_path( trans.app ) )
-    tip_ctx = str( repo.changectx( repo.changelog.tip() ) )
-    repository_metadata = get_latest_installable_repository_metadata_if_it_includes_tools( trans, repository )
+    repository_metadata = get_latest_downloadable_repository_metadata_if_it_includes_tools( trans, repository )
     if repository_metadata and repository_metadata.missing_test_components:
         return repository_metadata.changeset_revision
     return None
 
 def filter_by_latest_downloadable_changeset_revision_that_has_no_failing_tool_tests( trans, repository ):
     """
-    Inspect the latest installable changeset revision for the received repository to see if it includes tools with no failing tests.
+    Inspect the latest downloadable changeset revision for the received repository to see if it
+    includes tools with no failing tests.  This will filter out repositories of type tool_dependency_definition.
     """
-    encoded_repository_id = trans.security.encode_id( repository.id )
-    repo = hg.repository( suc.get_configured_ui(), repository.repo_path( trans.app ) )
-    tip_ctx = str( repo.changectx( repo.changelog.tip() ) )
-    repository_metadata = get_latest_installable_repository_metadata_if_it_includes_tools( trans, repository )
-    if repository_metadata and not repository_metadata.missing_test_components and repository_metadata.tools_functionally_correct:
+    repository_metadata = get_latest_downloadable_repository_metadata_if_it_includes_tools( trans, repository )
+    if repository_metadata is not None and \
+        not repository_metadata.missing_test_components and \
+        repository_metadata.tools_functionally_correct:
         return repository_metadata.changeset_revision
     return None
 
 def filter_by_latest_metadata_changeset_revision_that_has_invalid_tools( trans, repository ):
     """
-    Inspect the latest changeset revision with associated metadata for the received repository to see if it has invalid tools.
+    Inspect the latest changeset revision with associated metadata for the received repository
+    to see if it has invalid tools.  This will filter out repositories of type tool_dependency_definition.
     """
-    encoded_repository_id = trans.security.encode_id( repository.id )
-    repo = hg.repository( suc.get_configured_ui(), repository.repo_path( trans.app ) )
-    tip_ctx = str( repo.changectx( repo.changelog.tip() ) )
     repository_metadata = get_latest_repository_metadata_if_it_includes_invalid_tools( trans, repository )
-    if repository_metadata:
+    if repository_metadata is not None:
         return repository_metadata.changeset_revision
     return None
 
 def filter_by_latest_downloadable_changeset_revision_that_has_test_install_errors( trans, repository ):
     """
-    Inspect the latest installable changeset revision for the received repository to see if it has tool test installation errors.
+    Inspect the latest downloadable changeset revision for the received repository to see if
+    it has tool test installation errors.  This will return repositories of type unrestricted
+    as well as type tool_dependency_definition.
     """
-    encoded_repository_id = trans.security.encode_id( repository.id )
-    repo = hg.repository( suc.get_configured_ui(), repository.repo_path( trans.app ) )
-    tip_ctx = str( repo.changectx( repo.changelog.tip() ) )
-    repository_metadata = get_latest_installable_repository_metadata_if_it_includes_tools( trans, repository )
-    if repository_metadata \
-        and repository_metadata.test_install_error \
-        and not repository_metadata.missing_test_components:
+    repository_metadata = get_latest_downloadable_repository_metadata_if_it_has_test_install_errors( trans, repository )
+    # Filter further by eliminating repositories that are missing test components.
+    if repository_metadata is not None and not repository_metadata.missing_test_components:
         return repository_metadata.changeset_revision
     return None
 
 def filter_by_latest_downloadable_changeset_revision_with_skip_tests_checked( trans, repository ):
     """
-    Inspect the latest installable changeset revision for the received repository to see if skip tests is checked.
+    Inspect the latest downloadable changeset revision for the received repository to see if skip tests
+    is checked.  This will return repositories of type unrestricted as well as type tool_dependency_definition.
+    """
+    repository_metadata = get_latest_downloadable_repository_metadata( trans, repository )
+    # The skip_tool_tests attribute is a SkipToolTest table mapping backref to the RepositoryMetadata table.
+    if repository_metadata is not None and repository_metadata.skip_tool_tests:
+        return repository_metadata.changeset_revision
+    return None
+
+def get_latest_downloadable_repository_metadata( trans, repository ):
+    """
+    Return the latest downloadable repository_metadata record for the received repository.  This will
+    return repositories of type unrestricted as well as type tool_dependency_definition.
     """
     encoded_repository_id = trans.security.encode_id( repository.id )
     repo = hg.repository( suc.get_configured_ui(), repository.repo_path( trans.app ) )
     tip_ctx = str( repo.changectx( repo.changelog.tip() ) )
-    repository_metadata = get_latest_installable_repository_metadata_if_it_includes_tools( trans, repository )
-    if repository_metadata and repository_metadata.skip_tool_tests:
-        return repository_metadata.changeset_revision
+    repository_metadata = None
+    try:
+        repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, encoded_repository_id, tip_ctx )
+        if repository_metadata is not None and repository_metadata.downloadable:
+            return repository_metadata
+        return None
+    except:
+        latest_downloadable_revision = suc.get_previous_metadata_changeset_revision( repository, repo, tip_ctx, downloadable=True )
+        if latest_downloadable_revision == suc.INITIAL_CHANGELOG_HASH:
+            return None
+        repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans,
+                                                                                 encoded_repository_id,
+                                                                                 latest_downloadable_revision )
+        if repository_metadata is not None and repository_metadata.downloadable:
+            return repository_metadata
+        return None
+
+def get_latest_downloadable_repository_metadata_if_it_includes_tools( trans, repository ):
+    """
+    Return the latest downloadable repository_metadata record for the received repository if its
+    includes_tools attribute is True.  This will filter out repositories of type tool_dependency_definition.
+    """
+    repository_metadata = get_latest_downloadable_repository_metadata( trans, repository )
+    if repository_metadata is not None and repository_metadata.includes_tools:
+        return repository_metadata
     return None
 
-def get_latest_repository_metadata_if_it_includes_invalid_tools( trans, repository ):
-    """Return the latest repository_metadata record for the received repository that contains invalid tools if one exists."""
-    encoded_repository_id = trans.security.encode_id( repository.id )
-    repo = hg.repository( suc.get_configured_ui(), repository.repo_path( trans.app ) )
-    tip_ctx = str( repo.changectx( repo.changelog.tip() ) )
-    repository_metadata = None
-    try:
-        repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, encoded_repository_id, tip_ctx )
-        if repository_metadata:
-            metadata = repository_metadata.metadata
-            if metadata and 'invalid_tools' in metadata:
-                return repository_metadata
-            return None
-        return None
-    except:
-        latest_installable_revision = suc.get_previous_metadata_changeset_revision( repository, repo, tip_ctx, downloadable=False )
-        if latest_installable_revision == suc.INITIAL_CHANGELOG_HASH:
-            return None
-        repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, encoded_repository_id, latest_installable_revision )
-        if repository_metadata:
-            metadata = repository_metadata.metadata
-            if metadata and 'invalid_tools' in metadata:
-                return repository_metadata
-            return None
-        return None
+def get_latest_downloadable_repository_metadata_if_it_has_test_install_errors( trans, repository ):
+    """
+    Return the latest downloadable repository_metadata record for the received repository if its
+    test_install_error attribute is True.  This will return repositories of type unrestricted as
+    well as type tool_dependency_definition.
+    """
+    repository_metadata = get_latest_downloadable_repository_metadata( trans, repository )
+    if repository_metadata is not None and repository_metadata.test_install_error:
+        return repository_metadata
+    return None
 
-def get_latest_installable_repository_metadata_if_it_includes_tools( trans, repository ):
-    """Return the latest installable repository_metadata record for the received repository that contains valid tools if one exists."""
+def get_latest_repository_metadata( trans, repository ):
+    """
+    Return the latest repository_metadata record for the received repository if it exists.  This will
+    return repositories of type unrestricted as well as type tool_dependency_definition.
+    """
     encoded_repository_id = trans.security.encode_id( repository.id )
     repo = hg.repository( suc.get_configured_ui(), repository.repo_path( trans.app ) )
     tip_ctx = str( repo.changectx( repo.changelog.tip() ) )
-    repository_metadata = None
     try:
         repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, encoded_repository_id, tip_ctx )
-        if repository_metadata and repository_metadata.includes_tools and repository_metadata.downloadable:
-            return repository_metadata
-        return None
+        return repository_metadata
     except:
-        latest_installable_revision = suc.get_previous_metadata_changeset_revision( repository, repo, tip_ctx, downloadable=True )
-        if latest_installable_revision == suc.INITIAL_CHANGELOG_HASH:
+        latest_downloadable_revision = suc.get_previous_metadata_changeset_revision( repository, repo, tip_ctx, downloadable=False )
+        if latest_downloadable_revision == suc.INITIAL_CHANGELOG_HASH:
             return None
-        repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, encoded_repository_id, latest_installable_revision )
-        if repository_metadata and repository_metadata.includes_tools and repository_metadata.downloadable:
+        repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans,
+                                                                                 encoded_repository_id,
+                                                                                 latest_downloadable_revision )
+        return repository_metadata
+
+def get_latest_repository_metadata_if_it_includes_invalid_tools( trans, repository ):
+    """
+    Return the latest repository_metadata record for the received repository that contains invalid
+    tools if one exists.  This will filter out repositories of type tool_dependency_definition.
+    """
+    repository_metadata = get_latest_repository_metadata( trans, repository )
+    if repository_metadata is not None:
+        metadata = repository_metadata.metadata
+        if metadata is not None and 'invalid_tools' in metadata:
             return repository_metadata
-        return None
+    return None
