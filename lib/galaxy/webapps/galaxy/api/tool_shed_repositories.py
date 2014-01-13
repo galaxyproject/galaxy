@@ -66,8 +66,9 @@ class ToolShedRepositoriesController( BaseAPIController ):
             exported_workflows.append( display_dict )
         return exported_workflows
 
-    def __get_value_mapper( self, trans ):
-        value_mapper = { 'id' : trans.security.encode_id }
+    def __get_value_mapper( self, trans, tool_shed_repository ):
+        value_mapper={ 'id' : trans.security.encode_id( tool_shed_repository.id ),
+                       'error_message' : tool_shed_repository.error_message or '' }
         return value_mapper
 
     @web.expose_api
@@ -142,7 +143,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
         for tool_shed_repository in trans.install_model.context.query( trans.app.install_model.ToolShedRepository ) \
                                                                .order_by( trans.app.install_model.ToolShedRepository.table.c.name ):
             tool_shed_repository_dict = \
-                tool_shed_repository.to_dict( value_mapper=self.__get_value_mapper( trans ) )
+                tool_shed_repository.to_dict( value_mapper=self.__get_value_mapper( trans, tool_shed_repository ) )
             tool_shed_repository_dict[ 'url' ] = web.url_for( controller='tool_shed_repositories',
                                                               action='show',
                                                               id=trans.security.encode_id( tool_shed_repository.id ) )
@@ -336,7 +337,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
                                                                   tool_path,
                                                                   install_tool_dependencies,
                                                                   reinstalling=False )
-                    tool_shed_repository_dict = tool_shed_repository.as_dict( value_mapper=self.__get_value_mapper( trans ) )
+                    tool_shed_repository_dict = tool_shed_repository.as_dict( value_mapper=self.__get_value_mapper( trans, tool_shed_repository ) )
                     tool_shed_repository_dict[ 'url' ] = web.url_for( controller='tool_shed_repositories',
                                                                       action='show',
                                                                       id=trans.security.encode_id( tool_shed_repository.id ) )
@@ -471,7 +472,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
                 repair_dict = repository_util.repair_tool_shed_repository( trans,
                                                                            repository,
                                                                            encoding_util.tool_shed_encode( repo_info_dict ) )
-                repository_dict = repository.to_dict( value_mapper=self.__get_value_mapper( trans ) )
+                repository_dict = repository.to_dict( value_mapper=self.__get_value_mapper( trans, repository ) )
                 repository_dict[ 'url' ] = web.url_for( controller='tool_shed_repositories',
                                                         action='show',
                                                         id=trans.security.encode_id( repository.id ) )
@@ -538,7 +539,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
         if tool_shed_repository is None:
             log.debug( "Unable to locate tool_shed_repository record for id %s." % ( str( id ) ) )
             return {}
-        tool_shed_repository_dict = tool_shed_repository.as_dict( value_mapper=self.__get_value_mapper( trans ) )
+        tool_shed_repository_dict = tool_shed_repository.as_dict( value_mapper=self.__get_value_mapper( trans, tool_shed_repository ) )
         tool_shed_repository_dict[ 'url' ] = web.url_for( controller='tool_shed_repositories',
                                                           action='show',
                                                           id=trans.security.encode_id( tool_shed_repository.id ) )
