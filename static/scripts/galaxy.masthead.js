@@ -3,7 +3,7 @@
 */
 
 // dependencies
-define(["utils/galaxy.utils", "libs/toastr"], function(mod_utils, mod_toastr) {
+define(["utils/galaxy.utils"], function(mod_utils) {
 
 // masthead
 var GalaxyMasthead = Backbone.View.extend(
