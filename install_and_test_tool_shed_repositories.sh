@@ -45,18 +45,27 @@ fi
 
 test_tool_dependency_definitions () {
     # Test installation of repositories of type tool_dependency_definition.
+	if [ -f /ToolDepsTest/stage_1_complete ] ; then
+		rm /ToolDepsTest/stage_1_complete
+	fi
     python test/install_and_test_tool_shed_repositories/tool_dependency_definitions/functional_tests.py $* -v --with-nosehtml --html-report-file \
         test/install_and_test_tool_shed_repositories/tool_dependency_definitions/run_functional_tests.html \
         test/install_and_test_tool_shed_repositories/functional/test_install_repositories.py \
-        test/functional/test_toolbox.py  
+        test/functional/test_toolbox.py
+    touch /ToolDepsTest/stage_1_complete
 }
 
 test_repositories_with_tools () {
+	if [ ! -f /ToolDepsTest/stage_1_complete ] ; then
+		echo 'Stage 1 did not complete its run, exiting.'
+		exit 1
+	fi
     # Test installation of repositories that contain valid tools with defined functional tests and a test-data directory containing test files.
     python test/install_and_test_tool_shed_repositories/repositories_with_tools/functional_tests.py $* -v --with-nosehtml --html-report-file \
         test/install_and_test_tool_shed_repositories/repositories_with_tools/run_functional_tests.html \
         test/install_and_test_tool_shed_repositories/functional/test_install_repositories.py \
-        test/functional/test_toolbox.py  
+        test/functional/test_toolbox.py
+    rm /ToolDepsTest/stage_1_complete
 }
 
 which='both'
