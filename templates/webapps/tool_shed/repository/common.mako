@@ -263,8 +263,6 @@
                         folder_label = "%s<i> - installation of these additional repositories is required</i>" % folder_label
                     if trans.webapp.name == 'galaxy':
                         col_span_str = 'colspan="4"'
-                elif folder.label == 'Installation errors':
-                    folder_label = "%s<i> - no functional tests were run for any tools in this changeset revision</i>" % folder_label
                 elif folder.label == 'Invalid repository dependencies':
                     folder_label = "%s<i> - click the repository dependency to see why it is invalid</i>" % folder_label
                 elif folder.label == 'Invalid tool dependencies':
