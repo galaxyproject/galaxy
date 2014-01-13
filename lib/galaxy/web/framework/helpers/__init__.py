@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 from galaxy import eggs
 from galaxy.util import hash_util
 from galaxy.util.json import to_json_string
+eggs.require( "MarkupSafe" ) #required by WebHelpers
 eggs.require( "WebHelpers" )
 from webhelpers import date
 from webhelpers.html.tags import stylesheet_link, javascript_link
