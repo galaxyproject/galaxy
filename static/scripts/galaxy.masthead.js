@@ -294,6 +294,7 @@ var GalaxyMastheadTab = Backbone.View.extend(
         // also show title to explain why they are disabled
         if (this.options.disabled){
             $(this.el).find('.root').addClass('disabled');
+            this._attachPopover();
         }
 
         // visiblity
@@ -380,8 +381,7 @@ var GalaxyMastheadTab = Backbone.View.extend(
         e.preventDefault();
         
         if (this.options.disabled){
-            mod_toastr.info('Please <a href="/user/create">register</a> or <a href="/user/login"> log in</a> to use this feature');
-            return
+            return // prevent link following if menu item is disabled
         }
 
         // check for menu options
@@ -389,7 +389,21 @@ var GalaxyMastheadTab = Backbone.View.extend(
             Galaxy.frame.add(this.options); 
         }
     },
-    
+
+    _attachPopover : function()
+     {
+        var $popover_element = $(this.el).find('.head');
+        $popover_element.popover({
+            html: true,
+            content: 'Please <a href="/user/login">log in</a> or <a href="/user/create">register</a> to use this feature.',
+            placement: 'bottom'
+        }).on('shown.bs.popover', function() { // hooking on bootstrap event to automatically hide popovers after delay
+            setTimeout(function() {
+                $popover_element.popover('hide');
+            }, 5000);
+        });
+     },
+
     // fill template header
     _templateMenuItem: function (options)
     {
