@@ -31,23 +31,28 @@ var GalaxyMenu = Backbone.Model.extend(
         var tab_analysis = new mod_masthead.GalaxyMastheadTab({
             id      : "analysis",
             title   : "Analyze Data",
-            content : "root/index"
+            content : "root/index",
+            title_attribute : 'Main analysis page'
         });
         this.masthead.append(tab_analysis);
 
         //
         // Workflow tab.
         //
-        if (this.options.user.valid)
-        {
-            var tab_workflow = new mod_masthead.GalaxyMastheadTab({
-                id      : "workflow",
-                title   : "Workflow",
-                content : "workflow"
 
-            });
-            this.masthead.append(tab_workflow);
+        var workflow_options = {
+            id      : "workflow",
+            title   : "Workflow",
+            content : "workflow",
+            title_attribute : 'Chain tools into workflows'
         }
+        if (!this.options.user.valid){
+            workflow_options.disabled = true; // disable workflows for anonymous users
+            workflow_options.title_attribute = 'Please register to use workflows';
+        }
+
+        var tab_workflow = new mod_masthead.GalaxyMastheadTab(workflow_options);
+        this.masthead.append(tab_workflow);
 
         //
         // 'Shared Items' or Libraries tab.
@@ -55,7 +60,8 @@ var GalaxyMenu = Backbone.Model.extend(
         var tab_shared = new mod_masthead.GalaxyMastheadTab({
             id      : "shared",
             title   : "Shared Data",
-            content : "library/index"
+            content : "library/index",
+            title_attribute : 'Access public data'
         });
 
         tab_shared.add({
@@ -64,7 +70,7 @@ var GalaxyMenu = Backbone.Model.extend(
         });
 
         tab_shared.add({
-            title   : "New Libraries",
+            title   : "Data Libraries Beta",
             content : "library/list",
             divider : true
         });
@@ -124,7 +130,8 @@ var GalaxyMenu = Backbone.Model.extend(
             var tab_visualization = new mod_masthead.GalaxyMastheadTab({
                 id          : "visualization",
                 title       : "Visualization",
-                content     : "visualization/list"
+                content     : "visualization/list",
+                title_attribute : 'Visualize data'
             });
             tab_visualization.add({
                 title       : "New Track Browser",
@@ -135,6 +142,16 @@ var GalaxyMenu = Backbone.Model.extend(
                 title       : "Saved Visualizations",
                 content     : "visualization/list",
                 target      : "_frame"
+            });
+            this.masthead.append(tab_visualization);
+        } else 
+        {
+            var tab_visualization = new mod_masthead.GalaxyMastheadTab({
+                id          : "visualization",
+                title       : "Visualization",
+                content     : "visualization/list",
+                disabled    : true,
+                title_attribute : 'Please register to create visualizations'
             });
             this.masthead.append(tab_visualization);
         }
@@ -165,7 +182,8 @@ var GalaxyMenu = Backbone.Model.extend(
                 id          : "admin",
                 title       : "Admin",
                 content     : "admin/index",
-                extra_class : "admin-only"
+                extra_class : "admin-only",
+                title_attribute : 'Administer this Galaxy'
             });
             this.masthead.append(tab_admin);
         }
@@ -175,7 +193,8 @@ var GalaxyMenu = Backbone.Model.extend(
         //
         var tab_help = new mod_masthead.GalaxyMastheadTab({
             id      : "help",
-            title   : "Help"
+            title   : "Help",
+            title_attribute : 'Find help with Galaxy'
         });
         if (this.options.biostar_url)
         {
@@ -238,7 +257,8 @@ var GalaxyMenu = Backbone.Model.extend(
             var tab_user = new mod_masthead.GalaxyMastheadTab({
                 id          : "user",
                 title       : "User",
-                extra_class : "loggedout-only"
+                extra_class : "loggedout-only",
+                title_attribute : 'Account information'
             });
 
             // login
@@ -264,7 +284,8 @@ var GalaxyMenu = Backbone.Model.extend(
             var tab_user = new mod_masthead.GalaxyMastheadTab({
                 id          : "user",
                 title       : "User",
-                extra_class : "loggedin-only"
+                extra_class : "loggedin-only",
+                title_attribute : 'Account information'
             });
 
             // show user logged in info

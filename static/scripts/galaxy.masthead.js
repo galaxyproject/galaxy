@@ -3,7 +3,7 @@
 */
 
 // dependencies
-define(["utils/galaxy.utils"], function(mod_utils) {
+define(["utils/galaxy.utils", "libs/toastr"], function(mod_utils, mod_toastr) {
 
 // masthead
 var GalaxyMasthead = Backbone.View.extend(
@@ -259,7 +259,9 @@ var GalaxyMastheadTab = Backbone.View.extend(
         type            : 'url',
         scratchbook     : false,
         on_unload       : null,
-        visible         : true
+        visible         : true,
+        disabled        : false,
+        title_attribute : ''
     },
     
     // location
@@ -288,6 +290,12 @@ var GalaxyMastheadTab = Backbone.View.extend(
         // add template for tab
         this.setElement($(this._template(this.options)));
         
+        // disable menu items that are not available to anonymous user
+        // also show title to explain why they are disabled
+        if (this.options.disabled){
+            $(this.el).find('.root').addClass('disabled');
+        }
+
         // visiblity
         if (!this.options.visible)
             this.hide();
@@ -371,9 +379,14 @@ var GalaxyMastheadTab = Backbone.View.extend(
         // prevent default
         e.preventDefault();
         
+        if (this.options.disabled){
+            mod_toastr.info('Please <a href="/user/create">register</a> to use this feature');
+            return
+        }
+
         // check for menu options
         if (!this.$menu) {
-            Galaxy.frame.add(this.options);
+            Galaxy.frame.add(this.options); 
         }
     },
     
@@ -400,7 +413,7 @@ var GalaxyMastheadTab = Backbone.View.extend(
         // start template
         var tmpl =  '<ul id="' + options.id + '" class="nav navbar-nav" border="0" cellspacing="0">' +
                         '<li class="root dropdown" style="">' +
-                            '<a class="head dropdown-toggle" data-toggle="dropdown" target="' + options.target + '" href="' + options.content + '">' +
+                            '<a class="head dropdown-toggle" data-toggle="dropdown" target="' + options.target + '" href="' + options.content + '" title="' + options.title_attribute + '">' +
                                 options.title + '<b class="symbol"></b>' +
                             '</a>' +
                         '</li>' +
