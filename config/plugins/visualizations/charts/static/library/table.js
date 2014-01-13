@@ -134,7 +134,7 @@ return Backbone.View.extend(
         }
     },
     
-    // cancel last change
+    // confirm new value
     confirm: function(new_value) {
         this.value(new_value);
     },
