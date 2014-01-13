@@ -12,47 +12,25 @@ return Backbone.View.extend(
     },
             
     // render
-    refresh : function()
+    refresh : function(data)
     {
         // add graph to screen
         var self = this;
-        nv.addGraph(function(data) {
+        nv.addGraph(function() {
             self.chart_3d = nv.models.pieChart()
                 .x(function(d) { return d.key })
                 .y(function(d) { return d.y })
-                .color(d3.scale.category10().range())
-                .height(250)
-                .width(250);
+                .showLabels(true);
                 
             d3.select(self.options.svg_id)
-                .datum(self._data())
+                .datum(data)
                 .transition().duration(1200)
-                .attr('height', 250)
-                .attr('width', 250)
                 .call(self.chart_3d);
 
             nv.utils.windowResize(self.chart_3d.update);
+            
+            return self.chart_3d;
         });
-    },
-    
-    _data : function() {
-        return [
-        {
-            key: "Cumulative Return",
-            values: [
-            {
-                key : "CDS / Options" ,
-                y   : 29.765957771107
-            },
-            {
-                key : "Options" ,
-                y   : 19.765957771107
-            },
-            {
-                key : "Other" ,
-                y   : 12.765957771107
-            }]
-        }];
     }
 });
 
