@@ -380,7 +380,7 @@ var GalaxyMastheadTab = Backbone.View.extend(
         e.preventDefault();
         
         if (this.options.disabled){
-            mod_toastr.info('Please <a href="/user/create">register</a> to use this feature');
+            mod_toastr.info('Please <a href="/user/create">register</a> or <a href="/user/login"> log in</a> to use this feature');
             return
         }
 
