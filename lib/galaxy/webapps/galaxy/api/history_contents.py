@@ -385,6 +385,8 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         )
         validated_payload = {}
         for key, val in payload.items():
+            if val is None:
+                continue
             if key in ( 'name', 'genome_build', 'misc_info', 'annotation' ):
                 val = self.validate_and_sanitize_basestring( key, val )
                 #TODO: need better remap system or eliminate the need altogether
