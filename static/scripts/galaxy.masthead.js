@@ -259,7 +259,9 @@ var GalaxyMastheadTab = Backbone.View.extend(
         type            : 'url',
         scratchbook     : false,
         on_unload       : null,
-        visible         : true
+        visible         : true,
+        disabled        : false,
+        title_attribute : ''
     },
     
     // location
@@ -288,6 +290,13 @@ var GalaxyMastheadTab = Backbone.View.extend(
         // add template for tab
         this.setElement($(this._template(this.options)));
         
+        // disable menu items that are not available to anonymous user
+        // also show title to explain why they are disabled
+        if (this.options.disabled){
+            $(this.el).find('.root').addClass('disabled');
+            this._attachPopover();
+        }
+
         // visiblity
         if (!this.options.visible)
             this.hide();
@@ -371,12 +380,30 @@ var GalaxyMastheadTab = Backbone.View.extend(
         // prevent default
         e.preventDefault();
         
+        if (this.options.disabled){
+            return // prevent link following if menu item is disabled
+        }
+
         // check for menu options
         if (!this.$menu) {
-            Galaxy.frame.add(this.options);
+            Galaxy.frame.add(this.options); 
         }
     },
-    
+
+    _attachPopover : function()
+     {
+        var $popover_element = $(this.el).find('.head');
+        $popover_element.popover({
+            html: true,
+            content: 'Please <a href="/user/login">log in</a> or <a href="/user/create">register</a> to use this feature.',
+            placement: 'bottom'
+        }).on('shown.bs.popover', function() { // hooking on bootstrap event to automatically hide popovers after delay
+            setTimeout(function() {
+                $popover_element.popover('hide');
+            }, 5000);
+        });
+     },
+
     // fill template header
     _templateMenuItem: function (options)
     {
@@ -400,7 +427,7 @@ var GalaxyMastheadTab = Backbone.View.extend(
         // start template
         var tmpl =  '<ul id="' + options.id + '" class="nav navbar-nav" border="0" cellspacing="0">' +
                         '<li class="root dropdown" style="">' +
-                            '<a class="head dropdown-toggle" data-toggle="dropdown" target="' + options.target + '" href="' + options.content + '">' +
+                            '<a class="head dropdown-toggle" data-toggle="dropdown" target="' + options.target + '" href="' + options.content + '" title="' + options.title_attribute + '">' +
                                 options.title + '<b class="symbol"></b>' +
                             '</a>' +
                         '</li>' +
