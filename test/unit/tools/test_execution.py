@@ -9,6 +9,7 @@ from galaxy.tools import Tool
 from galaxy.tools import DefaultToolState
 from galaxy.tools.parameters import params_to_incoming
 from galaxy.util import parse_xml
+from galaxy.util.bunch import Bunch
 from galaxy.util import string_to_object
 from galaxy.util import object_to_string
 from galaxy.util.odict import odict
@@ -40,15 +41,31 @@ REPEAT_TOOL_CONTENTS = '''<tool id="test_tool" name="Test Tool">
 </tool>
 '''
 
+# A tool with data parameters (kind of like cat1) my favorite test tool :)
+SIMPLE_CAT_TOOL_CONTENTS = '''<tool id="test_tool" name="Test Tool">
+    <command>cat "$param1" #for $r in $repeat# "$r.param2" #end for# &lt; $out1</command>
+    <inputs>
+        <param type="data" format="tabular" name="param1" value="" />
+        <repeat name="repeat1" label="Repeat 1">
+            <param type="data" format="tabular" name="param2" value="" />
+        </repeat>
+    </inputs>
+    <outputs>
+        <output name="out1" format="data" />
+    </outputs>
+</tool>
+'''
+
 
 class ToolExecutionTestCase( TestCase, UsesApp ):
 
     def setUp(self):
         self.setup_app()
+        self.history = galaxy.model.History()
         self.app.job_config["get_job_tool_configurations"] = lambda ids: None
         self.app.config.drmaa_external_runjob_script = ""
         self.app.config.tool_secret = "testsecret"
-        self.trans = MockTrans( self.app )
+        self.trans = MockTrans( self.app, self.history )
         self.tool_action = MockAction( self.trans )
         self.tool_file = os.path.join( self.test_directory, "tool.xml" )
 
@@ -102,6 +119,29 @@ class ToolExecutionTestCase( TestCase, UsesApp ):
         state = self.__assert_rerenders_tool_without_errors( template, template_vars )
         assert len( state.inputs[ "repeat1" ] ) == 1
 
+    def test_data_param_execute( self ):
+        self.__init_tool( SIMPLE_CAT_TOOL_CONTENTS )
+        hda = self.__add_dataset(1)
+        # Execute tool action
+        template, template_vars = self.__handle_with_incoming(
+            param1=1,
+            runtool_btn="dummy",
+        )
+        assert template == "tool_executed.mako"
+        # Tool 'executed' once, with hda as param1
+        assert len( self.tool_action.execution_call_args ) == 1
+        assert self.tool_action.execution_call_args[ 0 ][ "incoming" ][ "param1" ] == hda
+
+    def test_data_param_state_update( self ):
+        self.__init_tool( SIMPLE_CAT_TOOL_CONTENTS )
+        hda = self.__add_dataset( 1 )
+        # Update state
+        template, template_vars = self.__handle_with_incoming(
+            param1=1,
+        )
+        state = self.__assert_rerenders_tool_without_errors( template, template_vars )
+        assert hda == state.inputs[ "param1" ]
+
     def __handle_with_incoming( self, previous_state=None, **kwds ):
         """ Execute tool.handle_input with incoming specified by kwds
         (optionally extending a previous state).
@@ -122,12 +162,21 @@ class ToolExecutionTestCase( TestCase, UsesApp ):
         new_incoming.update( kwds )
         return new_incoming
 
+    def __add_dataset( self, id, state='ok' ):
+        hda = galaxy.model.HistoryDatasetAssociation()
+        hda.id = id
+        hda.dataset = galaxy.model.Dataset()
+        hda.dataset.state = 'ok'
+
+        self.trans.sa_session.model_objects[ galaxy.model.HistoryDatasetAssociation ][ id ] = hda
+        self.history.datasets.append( hda )
+        return hda
+
     def __assert_rerenders_tool_without_errors( self, template, template_vars ):
         assert template == "tool_form.mako"
         assert not template_vars[ "errors" ]
         state = template_vars[ "tool_state" ]
         return state
-        assert state.inputs[ "param1" ] == "moo"
 
     def __init_tool( self, tool_contents ):
         self.__write_tool( tool_contents )
@@ -174,6 +223,13 @@ class MockAction( object ):
 
 class MockTrans( object ):
 
-    def __init__( self, app ):
+    def __init__( self, app, history ):
         self.app = app
+        self.history = history
         self.history = galaxy.model.History()
+        self.workflow_building_mode = False
+        self.webapp = Bunch( name="galaxy" )
+        self.sa_session = self.app.model.context
+
+    def get_history( self ):
+        return self.history

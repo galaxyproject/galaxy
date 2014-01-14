@@ -3,11 +3,13 @@ tool evaluation. Such extensive "fixtures" are something of an anti-pattern
 so use of this should be limitted to tests of very 'extensive' classes.
 """
 
+from collections import defaultdict
 import os.path
 import tempfile
 import shutil
 
 from galaxy.util.bunch import Bunch
+import galaxy.model
 from galaxy.model import mapping
 
 
@@ -44,8 +46,47 @@ class MockApp( object ):
 
         # Setup some attributes for downstream extension by specific tests.
         self.job_config = Bunch()
-        self.model = Bunch()
+        # Create self.model to mimic app.model.
+        self.model = Bunch( context=MockContext() )
+        for module_member_name in dir( galaxy.model ):
+            module_member = getattr(galaxy.model, module_member_name)
+            if type( module_member ) == type:
+                self.model[ module_member_name ] = module_member
         self.toolbox = None
         self.object_store = None
+
+
+class MockContext(object):
+
+    def __init__(self, model_objects=None):
+        self.expunged_all = False
+        self.flushed = False
+        self.model_objects = model_objects or defaultdict( lambda: {} )
+        self.created_objects = []
+
+    def expunge_all(self):
+        self.expunged_all = True
+
+    def query(self, clazz):
+        return MockQuery(self.model_objects.get(clazz))
+
+    def flush(self):
+        self.flushed = True
+
+    def add(self, object):
+        self.created_objects.append(object)
+
+
+class MockQuery(object):
+
+    def __init__(self, class_objects):
+        self.class_objects = class_objects
+
+    def filter_by(self, **kwds):
+        return Bunch(first=lambda: None)
+
+    def get(self, id):
+        return self.class_objects.get(id, None)
+
 
 __all__ = [ UsesApp ]
