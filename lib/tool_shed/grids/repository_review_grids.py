@@ -307,7 +307,8 @@ class RepositoryReviewsByUserGrid( grids.Grid ):
                 rval += 'edit_review'
             else:
                 rval +='browse_review'
-            rval += '?id=%s">%s</a>' % ( encoded_review_id, suc.get_revision_label( trans, review.repository, review.changeset_revision ) )
+            revision_label = suc.get_revision_label( trans, review.repository, review.changeset_revision, include_date=True )
+            rval += '?id=%s">%s</a>' % ( encoded_review_id, revision_label )
             return rval
 
 

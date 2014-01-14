@@ -1137,7 +1137,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         else:
             containers_dict = None
             export_repository_dependencies_check_box = None
-        revision_label = suc.get_revision_label( trans, repository, changeset_revision )
+        revision_label = suc.get_revision_label( trans, repository, changeset_revision, include_date=True )
         return trans.fill_template( "/webapps/tool_shed/repository/export_repository.mako",
                                     changeset_revision=changeset_revision,
                                     containers_dict=containers_dict,
@@ -2198,7 +2198,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                                                                             selected_value=changeset_revision,
                                                                                             add_id_to_name=False,
                                                                                             downloadable=False )
-        revision_label = suc.get_revision_label( trans, repository, repository.tip( trans.app ) )
+        revision_label = suc.get_revision_label( trans, repository, repository.tip( trans.app ), include_date=False )
         repository_metadata = None
         metadata = None
         is_malicious = False
@@ -2207,16 +2207,18 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         if changeset_revision != suc.INITIAL_CHANGELOG_HASH:
             repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
             if repository_metadata:
-                revision_label = suc.get_revision_label( trans, repository, changeset_revision )
+                revision_label = suc.get_revision_label( trans, repository, changeset_revision, include_date=False )
                 metadata = repository_metadata.metadata
                 is_malicious = repository_metadata.malicious
             else:
-                # There is no repository_metadata defined for the changeset_revision, so see if it was defined in a previous changeset in the changelog.
-                previous_changeset_revision = suc.get_previous_metadata_changeset_revision( repository, repo, changeset_revision, downloadable=False )
+                # There is no repository_metadata defined for the changeset_revision, so see if it was defined in a previous
+                # changeset in the changelog.
+                previous_changeset_revision = \
+                    suc.get_previous_metadata_changeset_revision( repository, repo, changeset_revision, downloadable=False )
                 if previous_changeset_revision != suc.INITIAL_CHANGELOG_HASH:
                     repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, id, previous_changeset_revision )
                     if repository_metadata:
-                        revision_label = suc.get_revision_label( trans, repository, previous_changeset_revision )
+                        revision_label = suc.get_revision_label( trans, repository, previous_changeset_revision, include_date=False )
                         metadata = repository_metadata.metadata
                         is_malicious = repository_metadata.malicious
             if repository_metadata:
@@ -2383,7 +2385,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             repository_metadata_id = None
             metadata = None
             repository_dependencies = None
-        revision_label = suc.get_revision_label( trans, repository, changeset_revision )
+        revision_label = suc.get_revision_label( trans, repository, changeset_revision, include_date=True )
         changeset_revision_select_field = grids_util.build_changeset_revision_select_field( trans,
                                                                                             repository,
                                                                                             selected_value=changeset_revision,
@@ -2457,7 +2459,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                                                                               changeset_revision,
                                                                                               metadata_only=True )
         repository_type_select_field = rt_util.build_repository_type_select_field( trans, repository=repository )
-        revision_label = suc.get_revision_label( trans, repository, changeset_revision )
+        revision_label = suc.get_revision_label( trans, repository, changeset_revision, include_date=True )
         return trans.fill_template( '/webapps/tool_shed/repository/rate_repository.mako',
                                     repository=repository,
                                     metadata=metadata,
@@ -3019,7 +3021,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                                                                             selected_value=changeset_revision,
                                                                                             add_id_to_name=False,
                                                                                             downloadable=False )
-        revision_label = suc.get_revision_label( trans, repository, changeset_revision )
+        revision_label = suc.get_revision_label( trans, repository, changeset_revision, include_date=False )
         repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
         if repository_metadata:
             metadata = repository_metadata.metadata
@@ -3081,7 +3083,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         tool = None
         guid = None
         original_tool_data_path = trans.app.config.tool_data_path
-        revision_label = suc.get_revision_label( trans, repository, changeset_revision )
+        revision_label = suc.get_revision_label( trans, repository, changeset_revision, include_date=False )
         repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
         if repository_metadata:
             repository_metadata_id = trans.security.encode_id( repository_metadata.id )

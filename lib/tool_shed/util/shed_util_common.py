@@ -1213,25 +1213,33 @@ def get_reversed_changelog_changesets( repo ):
         reversed_changelog.insert( 0, changeset )
     return reversed_changelog
 
-def get_revision_label( trans, repository, changeset_revision ):
-    """Return a string consisting of the human read-able changeset rev and the changeset revision string."""
+def get_revision_label( trans, repository, changeset_revision, include_date=True ):
+    """
+    Return a string consisting of the human read-able changeset rev and the changeset revision string
+    which includes the revision date if the receive include_date is True.
+    """
     repo = hg.repository( get_configured_ui(), repository.repo_path( trans.app ) )
     ctx = get_changectx_for_changeset( repo, changeset_revision )
     if ctx:
-        return get_revision_label_from_ctx( ctx )
+        return get_revision_label_from_ctx( ctx, include_date=include_date )
     else:
         return "-1:%s" % changeset_revision
 
-def get_revision_label_from_ctx( ctx ):
-    return '%s:%s <i><font color="#666666">(%s)</font></i>' % \
-        ( str( ctx.rev() ), str( ctx ), str( get_readable_ctx_date( ctx ) ) )
+def get_revision_label_from_ctx( ctx, include_date=True ):
+    if include_date:
+        return '%s:%s <i><font color="#666666">(%s)</font></i>' % \
+            ( str( ctx.rev() ), str( ctx ), str( get_readable_ctx_date( ctx ) ) )
+    return '%s:%s' % ( str( ctx.rev() ), str( ctx ) )
 
-def get_rev_label_from_changeset_revision( repo, changeset_revision ):
-    """Given a changeset revision hash, return two strings, the changeset rev and the changeset revision hash."""
+def get_rev_label_from_changeset_revision( repo, changeset_revision, include_date=True ):
+    """
+    Given a changeset revision hash, return two strings, the changeset rev and the changeset revision hash
+    which includes the revision date if the receive include_date is True.
+    """
     ctx = get_changectx_for_changeset( repo, changeset_revision )
     if ctx:
         rev = '%04d' % ctx.rev()
-        label = get_revision_label_from_ctx( ctx )
+        label = get_revision_label_from_ctx( ctx, include_date=include_date )
     else:
         rev = '-1'
         label = "-1:%s" % changeset_revision

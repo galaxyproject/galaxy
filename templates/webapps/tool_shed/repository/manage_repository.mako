@@ -125,7 +125,7 @@ ${render_tool_shed_repository_actions( repository, metadata=metadata, changeset_
             from tool_shed.util.shed_util_common import get_revision_label_from_ctx
             heads_str = ''
             for ctx in heads:
-                heads_str += '%s<br/>' % get_revision_label_from_ctx( ctx )
+                heads_str += '%s<br/>' % get_revision_label_from_ctx( ctx, include_date=True )
         %>
         Contact the administrator of this Tool Shed as soon as possible and let them know that
         this repository has the following multiple heads which must be merged.<br/>

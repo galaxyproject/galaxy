@@ -422,7 +422,7 @@ class RepositoryMetadataGrid( grids.Grid ):
             repository = repository_metadata.repository
             repo = hg.repository( suc.get_configured_ui(), repository.repo_path( trans.app ) )
             ctx = suc.get_changectx_for_changeset( repo, repository_metadata.changeset_revision )
-            return suc.get_revision_label( trans, repository, repository_metadata.changeset_revision )
+            return suc.get_revision_label( trans, repository, repository_metadata.changeset_revision, include_date=True )
 
 
     class ToolsColumn( grids.TextColumn ):

@@ -105,7 +105,7 @@ class RepositoryGrid( grids.Grid ):
             else:
                 heads_str = ''
             for ctx in heads:
-                heads_str += '%s<br/>' % suc.get_revision_label_from_ctx( ctx )
+                heads_str += '%s<br/>' % suc.get_revision_label_from_ctx( ctx, include_date=True )
             heads_str.rstrip( '<br/>' )
             if multiple_heads:
                 heads_str += '</font>'
@@ -1160,7 +1160,7 @@ class RepositoryMetadataGrid( grids.Grid ):
         def get_value( self, trans, grid, repository_metadata ):
             repository = repository_metadata.repository
             changeset_revision = repository_metadata.changeset_revision
-            changeset_revision_label = suc.get_revision_label( trans, repository, changeset_revision )
+            changeset_revision_label = suc.get_revision_label( trans, repository, changeset_revision, include_date=True )
             return changeset_revision_label
 
 
