@@ -1779,6 +1779,7 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations )
                      visible = hda.visible,
                      state = hda.state,
                      file_size = int( hda.get_size() ),
+                     update_time = hda.update_time.isoformat(),
                      data_type = hda.ext,
                      genome_build = hda.dbkey,
                      misc_info = hda.info,
