@@ -131,73 +131,99 @@ class InstalledRepositoryGrid( grids.Grid ):
                    args = { self.key: val }
                    accepted_filters.append( grids.GridColumnFilter( label, args) )
                 return accepted_filters
+
     # Grid definition
     title = "Installed tool shed repositories"
     model_class = tool_shed_install.ToolShedRepository
     template='/admin/tool_shed_repository/grid.mako'
     default_sort_key = "name"
     columns = [
-        ToolShedStatusColumn( "",
-                              attach_popup=False ),
-        NameColumn( "Name",
+        ToolShedStatusColumn( label="" ),
+        NameColumn( label="Name",
                     key="name",
                     link=( lambda item: iff( item.status in [ tool_shed_install.ToolShedRepository.installation_status.CLONING ],
                                              None,
                                              dict( operation="manage_repository", id=item.id ) ) ),
                     attach_popup=True ),
-        DescriptionColumn( "Description" ),
-        OwnerColumn( "Owner" ),
-        RevisionColumn( "Revision" ),
-        StatusColumn( "Installation Status",
+        DescriptionColumn( label="Description" ),
+        OwnerColumn( label="Owner" ),
+        RevisionColumn( label="Revision" ),
+        StatusColumn( label="Installation Status",
                       filterable="advanced" ),
-        ToolShedColumn( "Tool shed" ),
+        ToolShedColumn( label="Tool shed" ),
         # Columns that are valid for filtering but are not visible.
-        DeletedColumn( "Status",
+        DeletedColumn( label="Status",
                        key="deleted",
                        visible=False,
                        filterable="advanced" )
     ]
     columns.append( grids.MulticolFilterColumn( "Search repository name",
-                                                cols_to_filter=[ columns[0] ],
+                                                cols_to_filter=[ columns[ 1 ] ],
                                                 key="free-text-search",
                                                 visible=False,
                                                 filterable="standard" ) )
     global_actions = [
-        grids.GridAction( "Update tool shed status",
-                          dict( controller='admin_toolshed', action='update_tool_shed_status_for_installed_repository', all_installed_repositories=True ) )
+        grids.GridAction( label="Update tool shed status",
+                          url_args=dict( controller='admin_toolshed',
+                                         action='update_tool_shed_status_for_installed_repository',
+                                         all_installed_repositories=True ),
+                         inbound=False )
     ]
-    operations = [ grids.GridOperation( "Update tool shed status",
-                                        allow_multiple=False,
+    operations = [ grids.GridOperation( label="Update tool shed status",
                                         condition=( lambda item: not item.deleted ),
-                                        async_compatible=False,
-                                        url_args=dict( controller='admin_toolshed', action='browse_repositories', operation='update tool shed status' ) ),
-                   grids.GridOperation( "Get updates",
                                         allow_multiple=False,
-                                        condition=( lambda item: not item.deleted and item.revision_update_available and item.status not in \
-                                            [ tool_shed_install.ToolShedRepository.installation_status.ERROR, tool_shed_install.ToolShedRepository.installation_status.NEW ] ),
-                                        async_compatible=False,
-                                        url_args=dict( controller='admin_toolshed', action='browse_repositories', operation='get updates' ) ),
-                   grids.GridOperation( "Install",
+                                        url_args=dict( controller='admin_toolshed',
+                                                       action='browse_repositories',
+                                                       operation='update tool shed status' ) ),
+                   grids.GridOperation( label="Get updates",
+                                        condition=( lambda item: \
+                                                        not item.deleted and \
+                                                        item.revision_update_available and \
+                                                        item.status not in \
+                                                            [ tool_shed_install.ToolShedRepository.installation_status.ERROR,
+                                                              tool_shed_install.ToolShedRepository.installation_status.NEW ] ),
                                         allow_multiple=False,
-                                        condition=( lambda item: not item.deleted and item.status == tool_shed_install.ToolShedRepository.installation_status.NEW ),
-                                        async_compatible=False,
-                                        url_args=dict( controller='admin_toolshed', action='manage_repository', operation='install' ) ),
-                   grids.GridOperation( "Deactivate or uninstall",
+                                        url_args=dict( controller='admin_toolshed',
+                                                       action='browse_repositories',
+                                                       operation='get updates' ) ),
+                   grids.GridOperation( label="Install latest revision",
+                                        condition=( lambda item: item.upgrade_available ),
                                         allow_multiple=False,
-                                        condition=( lambda item: not item.deleted and item.status not in \
-                                            [ tool_shed_install.ToolShedRepository.installation_status.ERROR, tool_shed_install.ToolShedRepository.installation_status.NEW ] ),
-                                        async_compatible=False,
-                                        url_args=dict( controller='admin_toolshed', action='browse_repositories', operation='deactivate or uninstall' ) ),
-                   grids.GridOperation( "Reset to install",
+                                        url_args=dict( controller='admin_toolshed',
+                                                       action='browse_repositories',
+                                                       operation='install latest revision' ) ),
+                   grids.GridOperation( label="Install",
+                                        condition=( lambda item: \
+                                                        not item.deleted and \
+                                                        item.status == tool_shed_install.ToolShedRepository.installation_status.NEW ),
                                         allow_multiple=False,
-                                        condition=( lambda item: ( item.status == tool_shed_install.ToolShedRepository.installation_status.ERROR ) ),
-                                        async_compatible=False,
-                                        url_args=dict( controller='admin_toolshed', action='browse_repositories', operation='reset to install' ) ),
-                   grids.GridOperation( "Activate or reinstall",
+                                        url_args=dict( controller='admin_toolshed',
+                                                       action='manage_repository',
+                                                       operation='install' ) ),
+                   grids.GridOperation( label="Deactivate or uninstall",
+                                        condition=( lambda item: \
+                                                    not item.deleted and \
+                                                    item.status not in \
+                                                        [ tool_shed_install.ToolShedRepository.installation_status.ERROR,
+                                                         tool_shed_install.ToolShedRepository.installation_status.NEW ] ),
                                         allow_multiple=False,
+                                        url_args=dict( controller='admin_toolshed',
+                                                       action='browse_repositories',
+                                                       operation='deactivate or uninstall' ) ),
+                   grids.GridOperation( label="Reset to install",
+                                        condition=( lambda item: \
+                                                        ( item.status == tool_shed_install.ToolShedRepository.installation_status.ERROR ) ),
+                                        allow_multiple=False,
+                                        url_args=dict( controller='admin_toolshed',
+                                                       action='browse_repositories',
+                                                       operation='reset to install' ) ),
+                   grids.GridOperation( label="Activate or reinstall",
                                         condition=( lambda item: item.deleted ),
-                                        async_compatible=False,
-                                        url_args=dict( controller='admin_toolshed', action='browse_repositories', operation='activate or reinstall' ) ) ]
+                                        allow_multiple=False,
+                                        target=None,
+                                        url_args=dict( controller='admin_toolshed',
+                                                       action='browse_repositories',
+                                                       operation='activate or reinstall' ) ) ]
     standard_filters = []
     default_filter = dict( deleted="False" )
     num_rows_per_page = 50

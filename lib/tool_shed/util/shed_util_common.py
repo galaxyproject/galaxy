@@ -1622,10 +1622,12 @@ def remove_file( file_name ):
 
 def repository_was_previously_installed( trans, tool_shed_url, repository_name, repo_info_tuple ):
     """
-    Find out if a repository is already installed into Galaxy - there are several scenarios where this is necessary.  For example, this method
-    will handle the case where the repository was previously installed using an older changeset_revsion, but later the repository was updated
-    in the tool shed and now we're trying to install the latest changeset revision of the same repository instead of updating the one that was
-    previously installed.  We'll look in the database instead of on disk since the repository may be currently uninstalled.
+    Find out if a repository is already installed into Galaxy - there are several scenarios where this
+    is necessary.  For example, this method will handle the case where the repository was previously
+    installed using an older changeset_revsion, but later the repository was updated in the tool shed
+    and now we're trying to install the latest changeset revision of the same repository instead of
+    updating the one that was previously installed.  We'll look in the database instead of on disk since
+    the repository may be currently uninstalled.
     """
     description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = \
         get_repo_info_tuple_contents( repo_info_tuple )
@@ -1638,8 +1640,8 @@ def repository_was_previously_installed( trans, tool_shed_url, repository_name, 
                                                                                                      changeset_revision )
     if tool_shed_repository:
         return tool_shed_repository, changeset_revision
-    # Get all previous changeset revisions from the tool shed for the repository back to, but excluding, the previous valid changeset
-    # revision to see if it was previously installed using one of them.
+    # Get all previous changeset revisions from the tool shed for the repository back to, but excluding,
+    # the previous valid changeset revision to see if it was previously installed using one of them.
     url = url_join( tool_shed_url,
                     'repository/previous_changeset_revisions?galaxy_url=%s&name=%s&owner=%s&changeset_revision=%s' % \
                     ( url_for( '/', qualified=True ), repository_name, repository_owner, changeset_revision ) )

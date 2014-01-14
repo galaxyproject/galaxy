@@ -224,8 +224,9 @@ def get_installed_and_missing_repository_dependencies( trans, repository ):
 
 def get_installed_and_missing_repository_dependencies_for_new_install( trans, repo_info_tuple ):
     """
-    Parse the received repository_dependencies dictionary that is associated with a repository being installed into Galaxy for the first time
-    and attempt to determine repository dependencies that are already installed and those that are not.
+    Parse the received repository_dependencies dictionary that is associated with a repository being
+    installed into Galaxy for the first time and attempt to determine repository dependencies that are
+    already installed and those that are not.
     """
     missing_repository_dependencies = {}
     installed_repository_dependencies = {}
@@ -236,20 +237,25 @@ def get_installed_and_missing_repository_dependencies_for_new_install( trans, re
     if repository_dependencies:
         description = repository_dependencies[ 'description' ]
         root_key = repository_dependencies[ 'root_key' ]
-        # The repository dependencies container will include only the immediate repository dependencies of this repository, so the container will be
-        # only a single level in depth.
+        # The repository dependencies container will include only the immediate repository dependencies of
+        # this repository, so the container will be only a single level in depth.
         for key, rd_tups in repository_dependencies.items():
             if key in [ 'description', 'root_key' ]:
                 continue
             for rd_tup in rd_tups:
                 tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
                     common_util.parse_repository_dependency_tuple( rd_tup )
-                # Updates to installed repository revisions may have occurred, so make sure to locate the appropriate repository revision if one exists.
-                # We need to create a temporary repo_info_tuple that includes the correct repository owner which we get from the current rd_tup.  The current
-                # tuple looks like: ( description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, installed_td )
+                # Updates to installed repository revisions may have occurred, so make sure to locate the
+                # appropriate repository revision if one exists.  We need to create a temporary repo_info_tuple
+                # that includes the correct repository owner which we get from the current rd_tup.  The current
+                # tuple looks like: ( description, repository_clone_url, changeset_revision, ctx_rev, repository_owner,
+                #                     repository_dependencies, installed_td )
                 tmp_clone_url = suc.generate_clone_url_from_repo_info_tup( rd_tup )
                 tmp_repo_info_tuple = ( None, tmp_clone_url, changeset_revision, None, owner, None, None )
-                repository, installed_changeset_revision = suc.repository_was_previously_installed( trans, tool_shed, name, tmp_repo_info_tuple )
+                repository, installed_changeset_revision = suc.repository_was_previously_installed( trans,
+                                                                                                    tool_shed,
+                                                                                                    name,
+                                                                                                    tmp_repo_info_tuple )
                 if repository:
                     new_rd_tup = [ tool_shed,
                                   name,
@@ -263,10 +269,11 @@ def get_installed_and_missing_repository_dependencies_for_new_install( trans, re
                         if new_rd_tup not in installed_rd_tups:
                             installed_rd_tups.append( new_rd_tup )
                     else:
-                        # A repository dependency that is not installed will not be considered missing if it's value for only_if_compiling_contained_td is
-                        # True  This is because this type of repository dependency will only be considered at the time that the specified tool dependency
-                        # is being installed, and even then only if the compiled binary of the tool dependency could not be installed due to the unsupported
-                        # installation environment.
+                        # A repository dependency that is not installed will not be considered missing if it's value
+                        # for only_if_compiling_contained_td is True  This is because this type of repository dependency
+                        # will only be considered at the time that the specified tool dependency is being installed, and
+                        # even then only if the compiled binary of the tool dependency could not be installed due to the
+                        # unsupported installation environment.
                         if not util.asbool( only_if_compiling_contained_td ):
                             if new_rd_tup not in missing_rd_tups:
                                 missing_rd_tups.append( new_rd_tup )
@@ -280,8 +287,8 @@ def get_installed_and_missing_repository_dependencies_for_new_install( trans, re
                                   None,
                                   'Never installed' ]
                     if not util.asbool( only_if_compiling_contained_td ):
-                        # A repository dependency that is not installed will not be considered missing if it's value for only_if_compiling_contained_td is
-                        # True - see above...
+                        # A repository dependency that is not installed will not be considered missing if it's value for
+                        # only_if_compiling_contained_td is True - see above...
                         if new_rd_tup not in missing_rd_tups:
                             missing_rd_tups.append( new_rd_tup )
     if installed_rd_tups:
@@ -295,7 +302,10 @@ def get_installed_and_missing_repository_dependencies_for_new_install( trans, re
     return installed_repository_dependencies, missing_repository_dependencies
 
 def get_installed_and_missing_tool_dependencies_for_installing_repository( trans, tool_shed_url, tool_dependencies_dict ):
-    """Return the lists of installed tool dependencies and missing tool dependencies for a set of repositories being installed into Galaxy."""
+    """
+    Return the lists of installed tool dependencies and missing tool dependencies for a set of repositories
+    being installed into Galaxy.
+    """
     installed_tool_dependencies = {}
     missing_tool_dependencies = {}
     if tool_dependencies_dict:

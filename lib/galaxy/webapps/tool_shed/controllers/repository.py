@@ -1581,28 +1581,52 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                     items=functional_test_results )
 
     @web.json
+    def get_latest_downloadable_changeset_revision( self, trans, **kwd ):
+        """
+        Return the latest installable changeset revision for the repository associated with the received
+        name and owner.  This method is called from Galaxy when attempting to install the latest revision
+        of an installed repository.
+        """
+        repository_name = kwd.get( 'name', None )
+        repository_owner = kwd.get( 'owner', None )
+        if repository_name is not None and repository_owner is not None:
+            repository = suc.get_repository_by_name_and_owner( trans.app, repository_name, repository_owner )
+            if repository:
+                repo = hg.repository( suc.get_configured_ui(), repository.repo_path( trans.app ) )
+                return suc.get_latest_downloadable_changeset_revision( trans, repository, repo )
+        return suc.INITIAL_CHANGELOG_HASH
+
+    @web.json
     def get_readme_files( self, trans, **kwd ):
         """
-        This method is called when installing or re-installing a single repository into a Galaxy instance.  If the received changeset_revision
-        includes one or more readme files, return them in a dictionary.
+        This method is called when installing or re-installing a single repository into a Galaxy instance.
+        If the received changeset_revision includes one or more readme files, return them in a dictionary.
         """
-        repository_name = kwd[ 'name' ]
-        repository_owner = kwd[ 'owner' ]
-        changeset_revision = kwd[ 'changeset_revision' ]
-        repository = suc.get_repository_by_name_and_owner( trans.app, repository_name, repository_owner )
-        if repository:
-            repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans,
-                                                                                     trans.security.encode_id( repository.id ),
-                                                                                     changeset_revision )
-            if repository_metadata:
-                metadata = repository_metadata.metadata
-                if metadata:
-                    return readme_util.build_readme_files_dict( trans, repository, changeset_revision, repository_metadata.metadata )
+        repository_name = kwd.get( 'name', None )
+        repository_owner = kwd.get( 'owner', None )
+        changeset_revision = kwd.get( 'changeset_revision', None )
+        if repository_name is not None and repository_owner is not None and changeset_revision is not None:
+            repository = suc.get_repository_by_name_and_owner( trans.app, repository_name, repository_owner )
+            if repository:
+                repository_metadata = \
+                    suc.get_repository_metadata_by_changeset_revision( trans,
+                                                                       trans.security.encode_id( repository.id ),
+                                                                       changeset_revision )
+                if repository_metadata:
+                    metadata = repository_metadata.metadata
+                    if metadata:
+                        return readme_util.build_readme_files_dict( trans,
+                                                                    repository,
+                                                                    changeset_revision,
+                                                                    repository_metadata.metadata )
         return {}
 
     @web.json
     def get_repository_dependencies( self, trans, **kwd ):
-        """Return an encoded dictionary of all repositories upon which the contents of the received repository depends."""
+        """
+        Return an encoded dictionary of all repositories upon which the contents of the received repository
+        depends.
+        """
         name = kwd.get( 'name', None )
         owner = kwd.get( 'owner', None )
         changeset_revision = kwd.get( 'changeset_revision', None )
@@ -1630,8 +1654,8 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
     @web.json
     def get_repository_information( self, trans, repository_ids, changeset_revisions, **kwd ):
         """
-        Generate a list of dictionaries, each of which contains the information about a repository that will be necessary for installing it into
-        a local Galaxy instance.
+        Generate a list of dictionaries, each of which contains the information about a repository that will
+        be necessary for installing it into a local Galaxy instance.
         """
         includes_tools = False
         includes_tools_for_display_in_tool_panel = False
@@ -1665,8 +1689,8 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
     @web.json
     def get_required_repo_info_dict( self, trans, encoded_str=None ):
         """
-        Retrieve and return a dictionary that includes a list of dictionaries that each contain all of the information needed to install the list of
-        repositories defined by the received encoded_str.
+        Retrieve and return a dictionary that includes a list of dictionaries that each contain all of the
+        information needed to install the list of repositories defined by the received encoded_str.
         """
         repo_info_dict = {}
         if encoded_str:
@@ -1689,7 +1713,10 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
 
     @web.expose
     def get_tool_dependencies( self, trans, **kwd ):
-        """Handle a request from a Galaxy instance to get the tool_dependencies entry from the metadata for a specified changeset revision."""
+        """
+        Handle a request from a Galaxy instance to get the tool_dependencies entry from the metadata
+        for a specified changeset revision.
+        """
         name = kwd.get( 'name', None )
         owner = kwd.get( 'owner', None )
         changeset_revision = kwd.get( 'changeset_revision', None )
@@ -1705,7 +1732,10 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
 
     @web.expose
     def get_tool_dependencies_config_contents( self, trans, **kwd ):
-        """Handle a request from a Galaxy instance to get the tool_dependencies.xml file contents for a specified changeset revision."""
+        """
+        Handle a request from a Galaxy instance to get the tool_dependencies.xml file contents for a
+        specified changeset revision.
+        """
         name = kwd.get( 'name', None )
         owner = kwd.get( 'owner', None )
         changeset_revision = kwd.get( 'changeset_revision', None )
@@ -1726,8 +1756,8 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
     @web.expose
     def get_tool_versions( self, trans, **kwd ):
         """
-        For each valid /downloadable change set (up to the received changeset_revision) in the repository's change log, append the change
-        set's tool_versions dictionary to the list that will be returned.
+        For each valid /downloadable change set (up to the received changeset_revision) in the repository's
+        change log, append the changeset tool_versions dictionary to the list that will be returned.
         """
         name = kwd[ 'name' ]
         owner = kwd[ 'owner' ]
@@ -1751,7 +1781,10 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
 
     @web.json
     def get_updated_repository_information( self, trans, name, owner, changeset_revision, **kwd ):
-        """Generate a dictionary that contains the information about a repository that is necessary for installing it into a local Galaxy instance."""
+        """
+        Generate a dictionary that contains the information about a repository that is necessary for installing
+        it into a local Galaxy instance.
+        """
         repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
         repository_id = trans.security.encode_id( repository.id )
         repository_clone_url = suc.generate_clone_url_for_repository_in_tool_shed( trans, repository )
@@ -1828,7 +1861,10 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                      repo_info_dict=repo_info_dict )
 
     def get_versions_of_tool( self, trans, repository, repository_metadata, guid ):
-        """Return the tool lineage in descendant order for the received guid contained in the received repsitory_metadata.tool_versions."""
+        """
+        Return the tool lineage in descendant order for the received guid contained in the received
+        repsitory_metadata.tool_versions.
+        """
         encoded_id = trans.security.encode_id( repository.id )
         repo_dir = repository.repo_path( trans.app )
         repo = hg.repository( suc.get_configured_ui(), repo_dir )
@@ -1846,7 +1882,9 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                     current_child_guid = parent_guid
         # Get all descendant guids of the received guid.
         current_parent_guid = guid
-        for changeset in suc.reversed_lower_upper_bounded_changelog( repo, repository_metadata.changeset_revision, repository.tip( trans.app ) ):
+        for changeset in suc.reversed_lower_upper_bounded_changelog( repo,
+                                                                     repository_metadata.changeset_revision,
+                                                                     repository.tip( trans.app ) ):
             ctx = repo.changectx( changeset )
             rm = suc.get_repository_metadata_by_changeset_revision( trans, encoded_id, str( ctx ) )
             if rm:
@@ -1943,8 +1981,9 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
     @web.expose
     def install_repositories_by_revision( self, trans, **kwd ):
         """
-        Send the list of repository_ids and changeset_revisions to Galaxy so it can begin the installation process.  If the value of
-        repository_ids is not received, then the name and owner of a single repository must be received to install a single repository.
+        Send the list of repository_ids and changeset_revisions to Galaxy so it can begin the installation
+        process.  If the value of repository_ids is not received, then the name and owner of a single repository
+        must be received to install a single repository.
         """
         repository_ids = kwd.get( 'repository_ids', None )
         changeset_revisions = kwd.get( 'changeset_revisions', None )
@@ -1958,10 +1997,13 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             # Redirect back to local Galaxy to perform install.
             url = suc.url_join( galaxy_url,
                                 'admin_toolshed/prepare_for_install?tool_shed_url=%s&repository_ids=%s&changeset_revisions=%s' % \
-                                ( web.url_for( '/', qualified=True ), ','.join( util.listify( repository_ids ) ), ','.join( util.listify( changeset_revisions ) ) ) )
+                                ( web.url_for( '/', qualified=True ),
+                                  ','.join( util.listify( repository_ids ) ),
+                                  ','.join( util.listify( changeset_revisions ) ) ) )
             return trans.response.send_redirect( url )
         else:
-            message = 'Repository installation is not possible due to an invalid Galaxy URL: <b>%s</b>.  You may need to enable cookies in your browser.  ' % galaxy_url
+            message = 'Repository installation is not possible due to an invalid Galaxy URL: <b>%s</b>.  '
+            message += 'You may need to enable cookies in your browser.  ' % galaxy_url
             status = 'error'
             return trans.response.send_redirect( web.url_for( controller='repository',
                                                               action='browse_valid_categories',
