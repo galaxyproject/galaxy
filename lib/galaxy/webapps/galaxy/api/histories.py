@@ -118,7 +118,7 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin ):
         return history_data
 
     @web.expose_api
-    def set_as_current( self, trans, id, *kwd ):
+    def set_as_current( self, trans, id, **kwd ):
         """
         set_as_current( trans, id, **kwd )
         * POST /api/histories/{id}/set_as_current:
