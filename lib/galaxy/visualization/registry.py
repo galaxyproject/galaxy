@@ -397,6 +397,10 @@ class VisualizationsConfigParser( object ):
         if 'disabled' in xml_tree.attrib:
             return None
 
+        # a (for now) text description of what the visualization does
+        description = xml_tree.find( 'description' )
+        returned[ 'description' ] = description.text.strip() if description is not None else None
+
         # data_sources are the kinds of objects/data associated with the visualization
         #   e.g. views on HDAs can use this to find out what visualizations are applicable to them
         data_sources = []
