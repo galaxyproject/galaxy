@@ -344,6 +344,8 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin ):
         )
         validated_payload = {}
         for key, val in payload.items():
+            if val is None:
+                continue
             if key in ( 'name', 'genome_build', 'annotation' ):
                 validated_payload[ key ] = self.validate_and_sanitize_basestring( key, val )
             if key in ( 'deleted', 'published' ):
