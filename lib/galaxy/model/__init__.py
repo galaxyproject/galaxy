@@ -2217,6 +2217,7 @@ class LibraryDatasetDatasetAssociation( DatasetInstance ):
                      library_dataset_id = ldda.library_dataset_id,
                      file_size = file_size,
                      file_name = ldda.file_name,
+                     update_time = ldda.update_time.isoformat(),
                      data_type = ldda.ext,
                      genome_build = ldda.dbkey,
                      misc_info = ldda.info,
