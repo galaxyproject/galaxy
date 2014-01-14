@@ -9,6 +9,7 @@ import tempfile
 import shutil
 
 from galaxy.util.bunch import Bunch
+from galaxy.web.security import SecurityHelper
 import galaxy.model
 from galaxy.model import mapping
 
@@ -54,6 +55,7 @@ class MockApp( object ):
                 self.model[ module_member_name ] = module_member
         self.toolbox = None
         self.object_store = None
+        self.security = SecurityHelper(id_secret="testing")
 
 
 class MockContext(object):
