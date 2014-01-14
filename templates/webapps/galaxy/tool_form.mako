@@ -268,12 +268,12 @@
 
 <%def name="row_for_rerun()">
     %if trans.app.config.track_jobs_in_database and tool_state.rerun_remap_job_id is not None:
-        <div class="form-row">
+        <div id="remap-row" class="form-row">
             <input type="checkbox" name="rerun_remap_job_id" value="${tool_state.rerun_remap_job_id}"> Resume dependencies from this job
             <div class="toolParamHelp" style="clear: both;">
                 The previous run of this tool failed and other tools were waiting for it to finish successfully, use this option to resume those tools using the outputs of this tool run.
             </div>
-        <div>
+        </div>
         <div style="clear: both;"></div>
     %endif
 </%def>
