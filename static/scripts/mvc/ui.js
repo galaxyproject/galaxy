@@ -359,6 +359,10 @@ var PopupMenu = Backbone.View.extend({
         return 'PopupMenu';
     }
 });
+/** shortcut to new for when you don't need to preserve the ref */
+PopupMenu.create = function _create( $button, options ){
+    return new PopupMenu( $button, options );
+};
 
 // -----------------------------------------------------------------------------
 // the following class functions are bridges from the original make_popupmenu and make_popup_menus

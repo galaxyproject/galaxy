@@ -343,7 +343,7 @@ class Configuration( object ):
         self.fluent_host = kwargs.get( 'fluent_host', 'localhost' )
         self.fluent_port = int( kwargs.get( 'fluent_port', 24224 ) )
         # visualization plugin framework
-        self.visualizations_plugins_directory = kwargs.get( 'visualizations_plugins_directory', None )
+        self.visualization_plugins_directory = kwargs.get( 'visualization_plugins_directory', None )
 
     @property
     def sentry_dsn_public( self ):

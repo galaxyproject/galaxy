@@ -248,7 +248,6 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
             classes     : 'dataset-visualize-btn',
             faIcon      : 'fa-bar-chart-o'
         });
-        $icon.addClass( 'visualize-icon' ); // needed?
 
         // No need for popup menu because there's a single visualization.
         if( _.keys( visualizations ).length === 1 ) {
@@ -259,9 +258,21 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
         } else {
             var popup_menu_options = [];
             _.each( visualizations, function( linkData ) {
+                linkData.func = function(){
+                    if( Galaxy.frame.active ){
+                        Galaxy.frame.add({
+                            title       : "Visualization",
+                            type        : "url",
+                            content     : linkData.href
+                        });
+                        return false;
+                    }
+                    return true;
+                };
                 popup_menu_options.push( linkData );
+                return false;
             });
-            var popup = new PopupMenu( $icon, popup_menu_options );
+            PopupMenu.create( $icon, popup_menu_options );
         }
         return $icon;
     },
