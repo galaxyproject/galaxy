@@ -250,7 +250,7 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
         });
 
         // No need for popup menu because there's a single visualization.
-        if( _.keys( visualizations ).length === 1 ) {
+        if( visualizations.length === 1 ) {
             var onlyVisualization = visualizations[0];
             $icon.attr( 'data-original-title', _l( 'Visualize in ' ) + onlyVisualization.html );
             $icon.attr( 'href', onlyVisualization.href );

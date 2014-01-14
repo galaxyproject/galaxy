@@ -19,8 +19,6 @@ log = logging.getLogger( __name__ )
 
 __TODO__ = """
 BUGS:
-    anon users clicking a viz link gets 'must be' msg in galaxy_main (w/ masthead)
-        should not show visualizations (no icon)?
     newick files aren't being sniffed prop? - datatype is txt
 
 have parsers create objects instead of dicts
@@ -29,12 +27,9 @@ allow data_sources with no model_class but have tests (isAdmin, etc.)
 some confused vocabulary in docs, var names
 tests:
     anding, grouping, not
-    has_dataprovider
     user is admin
 data_sources:
     lists of
-add description element to visualization.
-
 user_pref for ordering/ex/inclusion of particular visualizations
 """
 
@@ -258,6 +253,7 @@ class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
             if test_fn( target_object, test_result ):
                 #log.debug( '\t test passed' )
                 return True
+
         return False
 
     def get_visualization_url( self, trans, target_object, visualization_name, param_data ):

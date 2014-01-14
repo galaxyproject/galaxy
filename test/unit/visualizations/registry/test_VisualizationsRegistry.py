@@ -49,18 +49,8 @@ class VisualizationsRegistry_TestCase( unittest.TestCase ):
             template_cache_dir=template_cache_dir )
 
         expected_plugins_path = os.path.join( glx_dir, vis_reg_path )
-        expected_plugin_names = [
-            'circster',
-            'graphview',
-            'phyloviz',
-            'scatterplot',
-            'sweepster',
-            'trackster',
-        ]
-
         self.assertEqual( plugin_mgr.base_url, 'visualizations' )
         self.assertItemsEqual( plugin_mgr.directories, [ expected_plugins_path ] )
-        self.assertItemsEqual( plugin_mgr.plugins.keys(), expected_plugin_names )
         
         scatterplot = plugin_mgr.plugins[ 'scatterplot' ]
         self.assertEqual( scatterplot.name, 'scatterplot' )
