@@ -11,26 +11,20 @@
 
         {{#if deleted}}
             {{#if purged}}
-            <div class="warningmessagesmall"><strong>
+            <div class="dataset-purged-msg warningmessagesmall"><strong>
                 {{#local}}This dataset has been deleted and removed from disk.{{/local}}
             </strong></div>
 
             {{else}}{{! deleted, not purged }}
-            <div class="warningmessagesmall"><strong>
+            <div class="dataset-deleted-msg warningmessagesmall"><strong>
                 {{#local}}This dataset has been deleted.{{/local}}
-                {{! edit-only }}
-                {{! how in the hell would you localize this? }}
-                Click <a href="javascript:void(0);" class="dataset-undelete">here</a> to undelete it
-                or <a href="javascript:void(0);" class="dataset-purge">here</a> to immediately remove it from disk
             </strong></div>
             {{/if}}
         {{/if}}
 
         {{#unless visible}}
-        <div class="warningmessagesmall"><strong>
+        <div class="dataset-hidden-msg warningmessagesmall"><strong>
             {{#local}}This dataset has been hidden.{{/local}}
-            {{! edit-only }}
-            Click <a href="javascript:void(0);" class="dataset-unhide">here</a> to unhide it
         </strong></div>
         {{/unless}}
     </div>

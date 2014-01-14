@@ -15,6 +15,8 @@ from .lwr_client import ClientManager, url_to_destination_params
 from .lwr_client import finish_job as lwr_finish_job
 from .lwr_client import submit_job as lwr_submit_job
 from .lwr_client import ClientJobDescription
+from .lwr_client import LwrOutputs
+from .lwr_client import GalaxyOutputs
 
 log = logging.getLogger( __name__ )
 
@@ -79,6 +81,7 @@ class LwrJobRunner( AsynchronousJobRunner ):
                 tool=job_wrapper.tool,
                 config_files=job_wrapper.extra_filenames,
                 requirements=requirements,
+                version_file=job_wrapper.get_version_string_path(),
             )
             job_id = lwr_submit_job(client, client_job_description, remote_job_config)
             log.info("lwr job submitted with job_id %s" % job_id)
@@ -173,7 +176,8 @@ class LwrJobRunner( AsynchronousJobRunner ):
             run_results = client.raw_check_complete()
             stdout = run_results.get('stdout', '')
             stderr = run_results.get('stderr', '')
-            working_directory_contents = run_results.get('working_directory_contents', [])
+            exit_code = run_results.get('returncode', None)
+            lwr_outputs = LwrOutputs(run_results)
             # Use LWR client code to transfer/copy files back
             # and cleanup job if needed.
             completed_normally = \
@@ -187,13 +191,17 @@ class LwrJobRunner( AsynchronousJobRunner ):
                 # no need to handle them differently here.
                 work_dir_outputs = []
             output_files = self.get_output_files( job_wrapper )
+            galaxy_outputs = GalaxyOutputs(
+                working_directory=job_wrapper.working_directory,
+                work_dir_outputs=work_dir_outputs,
+                output_files=output_files,
+                version_file=job_wrapper.get_version_string_path(),
+            )
             finish_args = dict( client=client,
-                                working_directory=job_wrapper.working_directory,
                                 job_completed_normally=completed_normally,
                                 cleanup_job=cleanup_job,
-                                work_dir_outputs=work_dir_outputs,
-                                output_files=output_files,
-                                working_directory_contents=working_directory_contents )
+                                galaxy_outputs=galaxy_outputs,
+                                lwr_outputs=lwr_outputs )
             failed = lwr_finish_job( **finish_args )
 
             if failed:
@@ -207,7 +215,7 @@ class LwrJobRunner( AsynchronousJobRunner ):
             self._handle_metadata_externally( job_wrapper, resolve_requirements=True )
         # Finish the job
         try:
-            job_wrapper.finish( stdout, stderr )
+            job_wrapper.finish( stdout, stderr, exit_code )
         except Exception:
             log.exception("Job wrapper finish method failed")
             job_wrapper.fail("Unable to finish job", exception=True)

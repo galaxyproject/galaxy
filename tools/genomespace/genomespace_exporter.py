@@ -1,12 +1,16 @@
 #Dan Blankenberg
 
-import optparse, os, urllib2, urllib, cookielib, hashlib, base64, cgi, binascii, logging
-
-from galaxy import eggs
-import pkg_resources
-
-pkg_resources.require( "simplejson" )
-import simplejson
+import base64
+import binascii
+import cgi
+import cookielib
+import hashlib
+import json
+import logging
+import optparse
+import os
+import urllib
+import urllib2
 
 log = logging.getLogger( "tools.genomespace.genomespace_exporter" )#( __name__ )
 
@@ -58,7 +62,7 @@ def get_directory( url_opener, dm_url, path ):
         dir_request = urllib2.Request( url, headers = { 'Content-Type': 'application/json', 'Accept': 'application/json' } )
         dir_request.get_method = lambda: 'GET'
         try:
-            dir_dict = simplejson.loads( url_opener.open( dir_request ).read() )
+            dir_dict = json.loads( url_opener.open( dir_request ).read() )
         except urllib2.HTTPError, e:
             #print "e", e, url #punting, assuming lack of permissions at this low of a level...
             continue
@@ -81,16 +85,16 @@ def create_directory( url_opener, directory_dict, new_dir, dm_url ):
         if dir_slice in ( '', '/', None ):
             continue
         url = '/'.join( ( directory_dict['url'], urllib.quote( dir_slice.replace( '/', '_' ), safe='' ) ) )
-        new_dir_request = urllib2.Request( url, headers = { 'Content-Type': 'application/json', 'Accept': 'application/json' }, data = simplejson.dumps( payload ) )
+        new_dir_request = urllib2.Request( url, headers = { 'Content-Type': 'application/json', 'Accept': 'application/json' }, data = json.dumps( payload ) )
         new_dir_request.get_method = lambda: 'PUT'
-        directory_dict = simplejson.loads( url_opener.open( new_dir_request ).read() )
+        directory_dict = json.loads( url_opener.open( new_dir_request ).read() )
     return directory_dict
 
 def get_genome_space_launch_apps( atm_url, url_opener, file_url, file_type ):
     gs_request = urllib2.Request( "%s/%s/webtool/descriptor" % ( atm_url, GENOMESPACE_API_VERSION_STRING ) )
     gs_request.get_method = lambda: 'GET'
     opened_gs_request = url_opener.open( gs_request )
-    webtool_descriptors = simplejson.loads( opened_gs_request.read() )
+    webtool_descriptors = json.loads( opened_gs_request.read() )
     webtools = []
     for webtool in webtool_descriptors:
         webtool_name = webtool.get( 'name' )
@@ -125,7 +129,7 @@ def galaxy_code_get_genomespace_folders( genomespace_site='prod', trans=None, va
         except urllib2.HTTPError, e:
             log.debug( 'GenomeSpace export tool failed reading a directory "%s": %s' % ( url, e ) )
             return #bad url, go to next
-        cur_directory = simplejson.loads( cur_directory )
+        cur_directory = json.loads( cur_directory )
         directory = cur_directory.get( 'directory', {} )
         contents = cur_directory.get( 'contents', [] )
         if directory.get( 'isDirectory', False ):

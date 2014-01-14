@@ -1,9 +1,7 @@
 <%inherit file="/webapps/galaxy/base_panels.mako"/>
 
 <%namespace file="/root/tool_menu.mako" import="*" />
-<%namespace file="/history/history_panel.mako" import="history_panel_javascripts" />
 <%namespace file="/history/history_panel.mako" import="current_history_panel" />
-<%namespace file="/history/history_panel.mako" import="history_panel" />
 
 <%def name="stylesheets()">
     ${parent.stylesheets()}

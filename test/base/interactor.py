@@ -4,8 +4,8 @@ from galaxy.tools.parameters import grouping
 from galaxy.util.odict import odict
 import galaxy.model
 from galaxy.model.orm import and_, desc
-from base.test_db_util import sa_session
-from simplejson import dumps, loads
+from functional import database_contexts
+from json import dumps, loads
 
 from logging import getLogger
 log = getLogger( __name__ )
@@ -31,10 +31,11 @@ def stage_data_in_history( galaxy_interactor, all_test_data, history, shed_tool_
 
 class GalaxyInteractorApi( object ):
 
-    def __init__( self, twill_test_case ):
+    def __init__( self, twill_test_case, test_user=None ):
         self.twill_test_case = twill_test_case
         self.api_url = "%s/api" % twill_test_case.url.rstrip("/")
-        self.api_key = self.__get_user_key( twill_test_case.user_api_key, twill_test_case.master_api_key )
+        self.master_api_key = twill_test_case.master_api_key
+        self.api_key = self.__get_user_key( twill_test_case.user_api_key, twill_test_case.master_api_key, test_user=test_user )
         self.uploads = {}
 
     def verify_output( self, history_id, output_data, outfile, attributes, shed_tool_id, maxseconds ):
@@ -251,19 +252,26 @@ class GalaxyInteractorApi( object ):
         )
         return self._post( "tools", files=files, data=data )
 
-    def __get_user_key( self, user_key, admin_key ):
-        if user_key:
-            return user_key
+    def ensure_user_with_email( self, email ):
+        admin_key = self.master_api_key
         all_users = self._get( 'users', key=admin_key ).json()
         try:
-            test_user = [ user for user in all_users if user["email"] == 'test@bx.psu.edu' ][0]
+            test_user = [ user for user in all_users if user["email"] == email ][0]
         except IndexError:
             data = dict(
-                email='test@bx.psu.edu',
+                email=email,
                 password='testuser',
                 username='admin-user',
             )
             test_user = self._post( 'users', data, key=admin_key ).json()
+        return test_user
+
+    def __get_user_key( self, user_key, admin_key, test_user=None ):
+        if not test_user:
+            test_user = "test@bx.psu.edu"
+        if user_key:
+            return user_key
+        test_user = self.ensure_user_with_email(test_user)
         return self._post( "users/%s/api_key" % test_user['id'], key=admin_key ).json()
 
     def __dataset_fetcher( self, history_id ):
@@ -275,16 +283,16 @@ class GalaxyInteractorApi( object ):
 
         return fetcher
 
-    def _post( self, path, data={}, files=None, key=None):
+    def _post( self, path, data={}, files=None, key=None, admin=False):
         if not key:
-            key = self.api_key
+            key = self.api_key if not admin else self.master_api_key
         data = data.copy()
         data['key'] = key
         return post_request( "%s/%s" % (self.api_url, path), data=data, files=files )
 
-    def _get( self, path, data={}, key=None ):
+    def _get( self, path, data={}, key=None, admin=False ):
         if not key:
-            key = self.api_key
+            key = self.api_key if not admin else self.master_api_key
         data = data.copy()
         data['key'] = key
         if path.startswith("/api"):
@@ -383,9 +391,9 @@ class GalaxyInteractorTwill( object ):
         # Start with a new history
         self.twill_test_case.logout()
         self.twill_test_case.login( email='test@bx.psu.edu' )
-        admin_user = sa_session.query( galaxy.model.User ).filter( galaxy.model.User.table.c.email == 'test@bx.psu.edu' ).one()
+        admin_user = database_contexts.galaxy_context.query( galaxy.model.User ).filter( galaxy.model.User.table.c.email == 'test@bx.psu.edu' ).one()
         self.twill_test_case.new_history()
-        latest_history = sa_session.query( galaxy.model.History ) \
+        latest_history = database_contexts.galaxy_context.query( galaxy.model.History ) \
                                    .filter( and_( galaxy.model.History.table.c.deleted == False,
                                                   galaxy.model.History.table.c.user_id == admin_user.id ) ) \
                                    .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
@@ -409,18 +417,21 @@ GALAXY_INTERACTORS = {
 
 
 # Lets just try to use requests if it is available, but if not provide fallback
-# on custom implementations of limited requests get/post functionality.
+# on custom implementations of limited requests get, put, etc... functionality.
 try:
     from requests import get as get_request
     from requests import post as post_request
+    from requests import put as put_request
+    from requests import delete as delete_request
 except ImportError:
     import urllib2
     import httplib
 
     class RequestsLikeResponse( object ):
 
-        def __init__( self, content ):
+        def __init__( self, content, status_code ):
             self.content = content
+            self.status_code = status_code
 
         def json( self ):
             return loads( self.content )
@@ -431,23 +442,43 @@ except ImportError:
             argsep = '?'
         url = url + argsep + '&'.join( [ '%s=%s' % (k, v) for k, v in params.iteritems() ] )
         #req = urllib2.Request( url, headers = { 'Content-Type': 'application/json' } )
-        return RequestsLikeResponse(urllib2.urlopen( url ).read() )
+        try:
+            response = urllib2.urlopen( url )
+            return RequestsLikeResponse( response.read(), status_code=response.getcode() )
+        except urllib2.HTTPError as e:
+            return RequestsLikeResponse( e.read(), status_code=e.code )
 
-    def post_request( url, data, files ):
+    def post_request( url, data, files={} ):
+        return __multipart_request( url, data, files, verb="POST" )
+
+    def put_request( url, data, files={} ):
+        return __multipart_request( url, data, files, verb="PUT" )
+
+    def delete_request( url ):
+        opener = urllib2.build_opener(urllib2.HTTPHandler)
+        request = urllib2.Request(url)
+        request.get_method = lambda: 'DELETE'
+        try:
+            response = opener.open(request)
+            return RequestsLikeResponse( response.read(), status_code=response.getcode() )
+        except urllib2.HTTPError as e:
+            return RequestsLikeResponse( e.read(), status_code=e.code )
+
+    def __multipart_request( url, data, files={}, verb="POST" ):
         parsed_url = urllib2.urlparse.urlparse( url )
-        return __post_multipart( host=parsed_url.netloc, selector=parsed_url.path, fields=data.iteritems(), files=(files or {}).iteritems() )
+        return __multipart( host=parsed_url.netloc, selector=parsed_url.path, fields=data.iteritems(), files=(files or {}).iteritems(), verb=verb )
 
     # http://stackoverflow.com/a/681182
-    def __post_multipart(host, selector, fields, files):
-        content_type, body = __encode_multipart_formdata(fields, files)
+    def __multipart(host, selector, fields, files, verb="POST"):
         h = httplib.HTTP(host)
-        h.putrequest('POST', selector)
+        h.putrequest(verb, selector)
+        content_type, body = __encode_multipart_formdata(fields, files)
         h.putheader('content-type', content_type)
         h.putheader('content-length', str(len(body)))
         h.endheaders()
         h.send(body)
         errcode, errmsg, headers = h.getreply()
-        return RequestsLikeResponse(h.file.read())
+        return RequestsLikeResponse(h.file.read(), status_code=errcode)
 
     def __encode_multipart_formdata(fields, files):
         LIMIT = '----------lImIt_of_THE_fIle_eW_$'

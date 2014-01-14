@@ -1,13 +1,12 @@
 import pkg_resources
-pkg_resources.require( "simplejson" )
 pkg_resources.require( "SVGFig" )
 
 import base64
 import httplib
+import json
 import math
 import os
 import sgmllib
-import simplejson
 import svgfig
 import urllib2
 
@@ -20,17 +19,17 @@ from galaxy import util
 from galaxy import web
 from galaxy.datatypes.data import Data
 from galaxy.jobs.actions.post import ActionBox
+from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
 from galaxy.model.mapping import desc
 from galaxy.tools.parameters import RuntimeValue, visit_input_values
 from galaxy.tools.parameters.basic import DataToolParameter, DrillDownSelectToolParameter, SelectToolParameter, UnvalidatedValue
 from galaxy.tools.parameters.grouping import Conditional, Repeat
-from galaxy.util.odict import odict
 from galaxy.util.json import to_json_string
+from galaxy.util.odict import odict
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.util.topsort import CycleError, topsort, topsort_levels
 from galaxy.web import error, url_for
 from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesStoredWorkflowMixin
-from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
 from galaxy.web.framework import form
 from galaxy.web.framework.helpers import grids, time_ago
 from galaxy.web.framework.helpers import to_unicode
@@ -812,7 +811,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         # Put parameters in workflow mode
         trans.workflow_building_mode = True
         # Convert incoming workflow data from json
-        data = simplejson.loads( workflow_data )
+        data = json.loads( workflow_data )
         # Create new workflow from incoming data
         workflow = model.Workflow()
         # Just keep the last name (user can rename later)
@@ -920,7 +919,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         #
 
         # Create workflow content JSON.
-        workflow_content = simplejson.dumps( workflow_dict, indent=4, sort_keys=True )
+        workflow_content = json.dumps( workflow_dict, indent=4, sort_keys=True )
 
         # Create myExperiment request.
         request_raw = trans.fill_template( "workflow/myexp_export.mako", \
@@ -1073,7 +1072,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             if workflow_data:
                 # Convert incoming workflow data from json
                 try:
-                    data = simplejson.loads( workflow_data )
+                    data = json.loads( workflow_data )
                 except Exception, e:
                     data = None
                     message = "The data content does not appear to be a Galaxy workflow.<br/>Exception: %s" % str( e )
@@ -1294,7 +1293,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         # It is possible for a workflow to have 0 steps
         if len( workflow.steps ) == 0:
             error( "Workflow cannot be run because it does not have any steps" )
-        #workflow = Workflow.from_simple( simplejson.loads( stored.encoded_value ), trans.app )
+        #workflow = Workflow.from_simple( json.loads( stored.encoded_value ), trans.app )
         if workflow.has_cycles:
             error( "Workflow cannot be run because it contains cycles" )
         if workflow.has_errors:

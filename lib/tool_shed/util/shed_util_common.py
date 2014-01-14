@@ -559,12 +559,65 @@ def get_current_repository_metadata_for_changeset_revision( trans, repository, c
             return repository_metadata
     return None
 
+def get_dependent_downloadable_revisions( trans, repository_metadata ):
+    """
+    Return all repository_metadata records that are downloadable and that depend upon the received
+    repository_metadata record.
+    """
+    # This method is called only from the tool shed.
+    rm_changeset_revision = repository_metadata.changeset_revision
+    rm_repository = repository_metadata.repository
+    rm_repository_name = str( rm_repository.name )
+    rm_repository_owner = str( rm_repository.user.username )
+    dependent_downloadable_revisions = []
+    for repository in trans.sa_session.query( trans.model.Repository ) \
+                                      .filter( and_( trans.model.Repository.table.c.id != rm_repository.id,
+                                                     trans.model.Repository.table.c.deleted == False,
+                                                     trans.model.Repository.table.c.deprecated == False ) ):
+        downloadable_revisions = repository.downloadable_revisions
+        if downloadable_revisions:
+            for downloadable_revision in downloadable_revisions:
+                if downloadable_revision.has_repository_dependencies:
+                    metadata = downloadable_revision.metadata
+                    if metadata:
+                        repository_dependencies_dict = metadata.get( 'repository_dependencies', {} )
+                        repository_dependencies_tups = repository_dependencies_dict.get( 'repository_dependencies', [] )
+                        for repository_dependencies_tup in repository_dependencies_tups:
+                            tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
+                                common_util.parse_repository_dependency_tuple( repository_dependencies_tup )
+                            if name == rm_repository_name and owner == rm_repository_owner:
+                                # We've discovered a repository revision that depends upon the repository associated
+                                # with the received repository_metadata record, but we need to make sure it depends
+                                # upon the revision.
+                                if changeset_revision == rm_changeset_revision:
+                                    dependent_downloadable_revisions.append( downloadable_revision )
+                                else:
+                                    # Make sure the defined changeset_revision is current.
+                                    defined_repository_metadata = \
+                                        trans.sa_session.query( trans.model.RepositoryMetadata ) \
+                                                        .filter( trans.model.RepositoryMetadata.table.c.changeset_revision == changeset_revision ) \
+                                                        .first()
+                                    if defined_repository_metadata is None:
+                                        # The defined changeset_revision is not associated with a repository_metadata
+                                        # record, so updates must be necessary.
+                                        defined_repository = get_repository_by_name_and_owner( trans.app, name, owner )
+                                        defined_repo_dir = defined_repository.repo_path( trans.app )
+                                        defined_repo = hg.repository( get_configured_ui(), defined_repo_dir )
+                                        updated_changeset_revision = \
+                                            get_next_downloadable_changeset_revision( defined_repository,
+                                                                                      defined_repo,
+                                                                                      changeset_revision )
+                                        if updated_changeset_revision == rm_changeset_revision:
+                                            dependent_downloadable_revisions.append( downloadable_revision )
+    return dependent_downloadable_revisions
+
 def get_file_context_from_ctx( ctx, filename ):
     """Return the mercurial file context for a specified file."""
-    # We have to be careful in determining if we found the correct file because multiple files with the same name may be in different directories
-    # within ctx if the files were moved within the change set.  For example, in the following ctx.files() list, the former may have been moved to
-    # the latter: ['tmap_wrapper_0.0.19/tool_data_table_conf.xml.sample', 'tmap_wrapper_0.3.3/tool_data_table_conf.xml.sample'].  Another scenario
-    # is that the file has been deleted.
+    # We have to be careful in determining if we found the correct file because multiple files with
+    # the same name may be in different directories within ctx if the files were moved within the change
+    # set.  For example, in the following ctx.files() list, the former may have been moved to the latter: 
+    # ['tmap_wrapper_0.0.19/tool_data_table_conf.xml.sample', 'tmap_wrapper_0.3.3/tool_data_table_conf.xml.sample'].
+    # Another scenario is that the file has been deleted.
     deleted = False
     filename = strip_path( filename )
     for ctx_file in ctx.files():
@@ -692,10 +745,11 @@ def get_next_downloadable_changeset_revision( repository, repo, after_changeset_
 
 def get_next_prior_import_or_install_required_dict_entry( prior_required_dict, processed_tsr_ids ):
     """
-    This method is used in the Tool Shed when exporting a repository and it's dependencies, and in Galaxy when a repository and it's dependencies
-    are being installed.  The order in which the prior_required_dict is processed is critical in order to ensure that the ultimate repository import
-    or installation order is correctly defined.  This method determines the next key / value pair from the received prior_required_dict that should
-    be processed.
+    This method is used in the Tool Shed when exporting a repository and it's dependencies, and in Galaxy
+    when a repository and it's dependencies are being installed.  The order in which the prior_required_dict
+    is processed is critical in order to ensure that the ultimate repository import or installation order is
+    correctly defined.  This method determines the next key / value pair from the received prior_required_dict
+    that should be processed.
     """
     # Return the first key / value pair that is not yet processed and whose value is an empty list.
     for key, value in prior_required_dict.items():
@@ -703,7 +757,8 @@ def get_next_prior_import_or_install_required_dict_entry( prior_required_dict, p
             continue
         if not value:
             return key
-    # Return the first key / value pair that is not yet processed and whose ids in value are all included in processed_tsr_ids.
+    # Return the first key / value pair that is not yet processed and whose ids in value are all included
+    # in processed_tsr_ids.
     for key, value in prior_required_dict.items():
         if key in processed_tsr_ids:
             continue
@@ -714,7 +769,8 @@ def get_next_prior_import_or_install_required_dict_entry( prior_required_dict, p
                 break
         if all_contained:
             return key
-    # Return the first key / value pair that is not yet processed.  Hopefully this is all that is necessary at this point.
+    # Return the first key / value pair that is not yet processed.  Hopefully this is all that is necessary
+    # at this point.
     for key, value in prior_required_dict.items():
         if key in processed_tsr_ids:
             continue
@@ -809,9 +865,10 @@ def get_prior_import_or_install_required_dict( trans, tsr_ids, repo_info_dicts )
 
 def get_query_for_setting_metadata_on_repositories( trans, my_writable=False, order=True ):
     """
-    Return a query containing repositories for resetting metadata.  This method is called from both the Tool Shed and Galaxy.  The
-    my_writable parameter is ignored unless called from the Tool Shed, and the order parameter is used for displaying the list of
-    repositories ordered alphabetically for display on a page.  When called from wither the Tool Shed or Galaxy API, order is False.
+    Return a query containing repositories for resetting metadata.  This method is called from both the
+    Tool Shed and Galaxy.  The my_writable parameter is ignored unless called from the Tool Shed, and the
+    order parameter is used for displaying the list of repositories ordered alphabetically for display on
+    a page.  When called from either the Tool Shed or Galaxy API, order is False.
     """
     if trans.webapp.name == 'tool_shed':
         # When called from the Tool Shed API, the metadata is reset on all repositories of type tool_dependency_definition in addition
@@ -820,7 +877,8 @@ def get_query_for_setting_metadata_on_repositories( trans, my_writable=False, or
             username = trans.user.username
             clause_list = []
             for repository in trans.sa_session.query( trans.model.Repository ) \
-                                              .filter( trans.model.Repository.table.c.deleted == False ):
+                                              .filter( and_( trans.model.Repository.table.c.deleted == False,
+                                                             trans.model.Repository.table.c.deprecated == False ) ):
                 # Always reset metadata on all repositories of type tool_dependency_definition.
                 if repository.type == rt_util.TOOL_DEPENDENCY_DEFINITION:
                     clause_list.append( trans.model.Repository.table.c.id == repository.id )
@@ -847,12 +905,14 @@ def get_query_for_setting_metadata_on_repositories( trans, my_writable=False, or
         else:
             if order:
                 return trans.sa_session.query( trans.model.Repository ) \
-                                       .filter( trans.model.Repository.table.c.deleted == False ) \
+                                       .filter( and_( trans.model.Repository.table.c.deleted == False,
+                                                      trans.model.Repository.table.c.deprecated == False ) ) \
                                        .order_by( trans.model.Repository.table.c.name,
                                                   trans.model.Repository.table.c.user_id )
             else:
                 return trans.sa_session.query( trans.model.Repository ) \
-                                       .filter( trans.model.Repository.table.c.deleted == False )
+                                       .filter( and_( trans.model.Repository.table.c.deleted == False,
+                                                      trans.model.Repository.table.c.deprecated == False ) )
     else:
         # We're in Galaxy.
         if order:
@@ -863,6 +923,13 @@ def get_query_for_setting_metadata_on_repositories( trans, my_writable=False, or
         else:
             return trans.install_model.context.query( trans.install_model.ToolShedRepository ) \
                                    .filter( trans.install_model.ToolShedRepository.table.c.uninstalled == False )
+
+def get_readable_ctx_date( ctx ):
+    """Convert the date of the changeset (the received ctx) to a human-readable date."""
+    t, tz = ctx.date()
+    date = datetime( *gmtime( float( t ) - tz )[ :6 ] )
+    ctx_date = date.strftime( "%Y-%m-%d" )
+    return ctx_date
 
 def get_repo_info_tuple_contents( repo_info_tuple ):
     """Take care in handling the repo_info_tuple as it evolves over time as new tool shed features are introduced."""
@@ -945,7 +1012,10 @@ def get_repository_dependency_types( repository_dependencies ):
     return has_repository_dependencies, has_repository_dependencies_only_if_compiling_contained_td
 
 def get_repository_for_dependency_relationship( app, tool_shed, name, owner, changeset_revision ):
-    """Return an installed tool_shed_repository database record that is defined by either the current changeset revision or the installed_changeset_revision."""
+    """
+    Return an installed tool_shed_repository database record that is defined by either the current changeset
+    revision or the installed_changeset_revision.
+    """
     # This method is used only in Galaxy, not the tool shed.
     if tool_shed.endswith( '/' ):
         tool_shed = tool_shed.rstrip( '/' )
@@ -1037,6 +1107,11 @@ def get_repository_from_refresh_on_change( trans, **kwd ):
                 return v, repository
     # This should never be reached - raise an exception?
     return v, None
+
+def get_repository_heads( repo ):
+    """Return current repository heads, which are changesets with no child changesets."""
+    heads = [ repo[ h ] for h in repo.heads( None ) ]
+    return heads
 
 def get_repository_ids_requiring_prior_import_or_install( trans, tsr_ids, repository_dependencies ):
     """
@@ -1138,21 +1213,33 @@ def get_reversed_changelog_changesets( repo ):
         reversed_changelog.insert( 0, changeset )
     return reversed_changelog
 
-def get_revision_label( trans, repository, changeset_revision ):
-    """Return a string consisting of the human read-able changeset rev and the changeset revision string."""
+def get_revision_label( trans, repository, changeset_revision, include_date=True ):
+    """
+    Return a string consisting of the human read-able changeset rev and the changeset revision string
+    which includes the revision date if the receive include_date is True.
+    """
     repo = hg.repository( get_configured_ui(), repository.repo_path( trans.app ) )
     ctx = get_changectx_for_changeset( repo, changeset_revision )
     if ctx:
-        return "%s:%s" % ( str( ctx.rev() ), changeset_revision )
+        return get_revision_label_from_ctx( ctx, include_date=include_date )
     else:
         return "-1:%s" % changeset_revision
 
-def get_rev_label_from_changeset_revision( repo, changeset_revision ):
-    """Given a changeset revision hash, return two strings, the changeset rev and the changeset revision hash."""
+def get_revision_label_from_ctx( ctx, include_date=True ):
+    if include_date:
+        return '%s:%s <i><font color="#666666">(%s)</font></i>' % \
+            ( str( ctx.rev() ), str( ctx ), str( get_readable_ctx_date( ctx ) ) )
+    return '%s:%s' % ( str( ctx.rev() ), str( ctx ) )
+
+def get_rev_label_from_changeset_revision( repo, changeset_revision, include_date=True ):
+    """
+    Given a changeset revision hash, return two strings, the changeset rev and the changeset revision hash
+    which includes the revision date if the receive include_date is True.
+    """
     ctx = get_changectx_for_changeset( repo, changeset_revision )
     if ctx:
         rev = '%04d' % ctx.rev()
-        label = "%s:%s" % ( str( ctx.rev() ), changeset_revision )
+        label = get_revision_label_from_ctx( ctx, include_date=include_date )
     else:
         rev = '-1'
         label = "-1:%s" % changeset_revision
@@ -1217,8 +1304,8 @@ def get_tool_shed_repository_by_id( trans, repository_id ):
     """Return a tool shed repository database record defined by the id."""
     # This method is used only in Galaxy, not the tool shed.
     return trans.install_model.context.query( trans.install_model.ToolShedRepository ) \
-                           .filter( trans.install_model.ToolShedRepository.table.c.id == trans.security.decode_id( repository_id ) ) \
-                           .first()
+                                      .filter( trans.install_model.ToolShedRepository.table.c.id == trans.security.decode_id( repository_id ) ) \
+                                      .first()
 
 def get_tool_shed_repository_by_shed_name_owner_changeset_revision( app, tool_shed, name, owner, changeset_revision ):
     """Return a tool shed repository database record defined by the combination of a tool_shed, repository name, repository owner and current changeet_revision."""
@@ -1330,8 +1417,8 @@ def get_tool_shed_repository_status_label( trans, tool_shed_repository=None, nam
 
 def get_updated_changeset_revisions( trans, name, owner, changeset_revision ):
     """
-    Return a string of comma-separated changeset revision hashes for all available updates to the received changeset revision for the repository
-    defined by the received name and owner.
+    Return a string of comma-separated changeset revision hashes for all available updates to the received changeset
+    revision for the repository defined by the received name and owner.
     """
     repository = get_repository_by_name_and_owner( trans.app, name, owner )
     repo_dir = repository.repo_path( trans.app )
@@ -1351,8 +1438,8 @@ def get_updated_changeset_revisions( trans, name, owner, changeset_revision ):
 
 def get_url_from_tool_shed( app, tool_shed ):
     """
-    The value of tool_shed is something like: toolshed.g2.bx.psu.edu.  We need the URL to this tool shed, which is something like:
-    http://toolshed.g2.bx.psu.edu/
+    The value of tool_shed is something like: toolshed.g2.bx.psu.edu.  We need the URL to this tool shed, which is
+    something like: http://toolshed.g2.bx.psu.edu/
     """
     for shed_name, shed_url in app.tool_shed_registry.tool_sheds.items():
         if shed_url.find( tool_shed ) >= 0:
@@ -1414,9 +1501,6 @@ def handle_email_alerts( trans, repository, content_alert_str='', new_repo_alert
             email_from = 'galaxy-no-reply@' + trans.request.host.split( ':' )[0]
         tip_changeset = repo.changelog.tip()
         ctx = repo.changectx( tip_changeset )
-        t, tz = ctx.date()
-        date = datetime( *gmtime( float( t ) - tz )[:6] )
-        display_date = date.strftime( "%Y-%m-%d" )
         try:
             username = ctx.user().split()[0]
         except:
@@ -1427,6 +1511,7 @@ def handle_email_alerts( trans, repository, content_alert_str='', new_repo_alert
             template = new_repo_email_alert_template
         else:
             template = email_alert_template
+        display_date = get_readable_ctx_date( ctx )
         admin_body = string.Template( template ).safe_substitute( host=trans.request.host,
                                                                   sharable_link=sharable_link,
                                                                   repository_name=repository.name,

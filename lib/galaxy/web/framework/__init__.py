@@ -2,6 +2,7 @@
 Galaxy web application framework
 """
 
+import hashlib
 import inspect
 import os
 import pkg_resources
@@ -9,27 +10,24 @@ import random
 import socket
 import string
 import time
-import hashlib
-from Cookie import CookieError
 
+from functools import wraps
+from Cookie import CookieError
 
 pkg_resources.require( "Cheetah" )
 from Cheetah.Template import Template
+
+#TODO: Relative imports to be removed
 import base
-from functools import wraps
-from galaxy import util
-from galaxy.exceptions import MessageException
-from galaxy.util.json import to_json_string, from_json_string
-from galaxy.util.backports.importlib import import_module
-from galaxy.util.sanitize_html import sanitize_html
-from galaxy.util import safe_str_cmp
-
-pkg_resources.require( "simplejson" )
-import simplejson
-
 import helpers
 
+from galaxy import util
+from galaxy.exceptions import MessageException
 from galaxy.util import asbool
+from galaxy.util import safe_str_cmp
+from galaxy.util.backports.importlib import import_module
+from galaxy.util.json import from_json_string, to_json_string
+from galaxy.util.sanitize_html import sanitize_html
 
 import paste.httpexceptions
 
@@ -76,7 +74,7 @@ def json( func ):
     @wraps(func)
     def decorator( self, trans, *args, **kwargs ):
         trans.response.set_content_type( "text/javascript" )
-        return simplejson.dumps( func( self, trans, *args, **kwargs ) )
+        return to_json_string( func( self, trans, *args, **kwargs ) )
     if not hasattr(func, '_orig'):
         decorator._orig = func
     decorator.exposed = True
@@ -86,7 +84,7 @@ def json_pretty( func ):
     @wraps(func)
     def decorator( self, trans, *args, **kwargs ):
         trans.response.set_content_type( "text/javascript" )
-        return simplejson.dumps( func( self, trans, *args, **kwargs ), indent=4, sort_keys=True )
+        return to_json_string( func( self, trans, *args, **kwargs ), indent=4, sort_keys=True )
     if not hasattr(func, '_orig'):
         decorator._orig = func
     decorator.exposed = True
@@ -158,7 +156,7 @@ def expose_api( func, to_json=True, user_required=True ):
                     for k, v in payload.iteritems():
                         if isinstance(v, (str, unicode)):
                             try:
-                                payload[k] = simplejson.loads(v)
+                                payload[k] = from_json_string(v)
                             except:
                                 # may not actually be json, just continue
                                 pass
@@ -167,7 +165,7 @@ def expose_api( func, to_json=True, user_required=True ):
                     # Assume application/json content type and parse request body manually, since wsgi won't do it. However, the order of this check
                     # should ideally be in reverse, with the if clause being a check for application/json and the else clause assuming a standard encoding
                     # such as multipart/form-data. Leaving it as is for backward compatibility, just in case.
-                    payload = util.recursively_stringify_dictionary_keys( simplejson.loads( trans.request.body ) )
+                    payload = util.recursively_stringify_dictionary_keys( from_json_string( trans.request.body ) )
                 return payload
             try:
                 kwargs['payload'] = extract_payload_from_request(trans, func, kwargs)
@@ -198,9 +196,9 @@ def expose_api( func, to_json=True, user_required=True ):
         try:
             rval = func( self, trans, *args, **kwargs)
             if to_json and trans.debug:
-                rval = simplejson.dumps( rval, indent=4, sort_keys=True )
+                rval = to_json_string( rval, indent=4, sort_keys=True )
             elif to_json:
-                rval = simplejson.dumps( rval )
+                rval = to_json_string( rval )
             return rval
         except paste.httpexceptions.HTTPException:
             raise # handled
@@ -586,9 +584,9 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         # things now.
         if self.app.config.use_remote_user:
             #If this is an api request, and they've passed a key, we let this go.
-            assert "HTTP_REMOTE_USER" in self.environ, \
-                "use_remote_user is set but no HTTP_REMOTE_USER variable"
-            remote_user_email = self.environ[ 'HTTP_REMOTE_USER' ]
+            assert self.app.config.remote_user_header in self.environ, \
+                "use_remote_user is set but %s header was not provided" % self.app.config.remote_user_header
+            remote_user_email = self.environ[ self.app.config.remote_user_header ]
             if galaxy_session:
                 # An existing session, make sure correct association exists
                 if galaxy_session.user is None:
@@ -947,8 +945,13 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         return self.user and admin_users and self.user.email in admin_users
 
     def user_can_do_run_as( self ):
-        run_as_users = self.app.config.get( "api_allow_run_as", "" ).split( "," )
-        return self.user and run_as_users and self.user.email in run_as_users
+        run_as_users = [ user for user in self.app.config.get( "api_allow_run_as", "" ).split( "," ) if user ]
+        if not run_as_users:
+            return False
+        user_in_run_as_users = self.user and self.user.email in run_as_users
+        # Can do if explicitly in list or master_api_key supplied.
+        can_do_run_as = user_in_run_as_users or self.api_inherit_admin
+        return can_do_run_as
 
     def get_toolbox(self):
         """Returns the application toolbox"""

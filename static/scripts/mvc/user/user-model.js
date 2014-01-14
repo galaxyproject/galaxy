@@ -74,8 +74,12 @@ var User = Backbone.Model.extend( LoggableMixin ).extend(
      */
     clearSessionStorage : function(){
         for( var key in sessionStorage ){
-            //TODO: currently only history
-            if( key.indexOf( 'HistoryView.' ) === 0 ){
+            //TODO: store these under the user key so we don't have to do this
+            // currently only history
+            if( key.indexOf( 'history:' ) === 0 ){
+                sessionStorage.removeItem( key );
+
+            } else if( key === 'history-panel' ){
                 sessionStorage.removeItem( key );
             }
         }

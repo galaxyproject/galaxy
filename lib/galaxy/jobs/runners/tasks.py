@@ -1,11 +1,10 @@
 import logging
 import subprocess
-from Queue import Queue
-import threading
 
 from galaxy import model
 
-import os, errno
+import os
+import errno
 from time import sleep
 
 from galaxy.jobs import TaskWrapper
@@ -15,11 +14,13 @@ log = logging.getLogger( __name__ )
 
 __all__ = [ 'TaskedJobRunner' ]
 
+
 class TaskedJobRunner( BaseJobRunner ):
     """
     Job runner backed by a finite pool of worker threads. FIFO scheduling
     """
     runner_name = "TaskRunner"
+
     def __init__( self, app, nworkers ):
         """Start the job runner with 'nworkers' worker threads"""
         super( TaskedJobRunner, self ).__init__( app, nworkers )
@@ -124,14 +125,14 @@ class TaskedJobRunner( BaseJobRunner ):
         #this is terminate-able when output dataset/job is deleted
         #so that long running set_meta()s can be canceled without having to reboot the server
         if job_wrapper.get_state() not in [ model.Job.states.ERROR, model.Job.states.DELETED ] and job_wrapper.output_paths:
-            external_metadata_script = job_wrapper.setup_external_metadata( output_fnames = job_wrapper.get_output_fnames(),
-                                                                            set_extension = True,
-                                                                            kwds = { 'overwrite' : False } ) #we don't want to overwrite metadata that was copied over in init_meta(), as per established behavior
+            external_metadata_script = job_wrapper.setup_external_metadata( output_fnames=job_wrapper.get_output_fnames(),
+                                                                            set_extension=True,
+                                                                            kwds={ 'overwrite' : False } )  # we don't want to overwrite metadata that was copied over in init_meta(), as per established behavior
             log.debug( 'executing external set_meta script for job %d: %s' % ( job_wrapper.job_id, external_metadata_script ) )
-            external_metadata_proc = subprocess.Popen( args = external_metadata_script,
-                                         shell = True,
-                                         env = os.environ,
-                                         preexec_fn = os.setpgrp )
+            external_metadata_proc = subprocess.Popen( args=external_metadata_script,
+                                         shell=True,
+                                         env=os.environ,
+                                         preexec_fn=os.setpgrp )
             job_wrapper.external_output_metadata.set_job_runner_external_pid( external_metadata_proc.pid, self.sa_session )
             external_metadata_proc.wait()
             log.debug( 'execution of external set_meta finished for job %d' % job_wrapper.job_id )
@@ -160,7 +161,7 @@ class TaskedJobRunner( BaseJobRunner ):
         else:
             #if our local job has JobExternalOutputMetadata associated, then our primary job has to have already finished
             if job.external_output_metadata:
-                pid = job.external_output_metadata[0].job_runner_external_pid #every JobExternalOutputMetadata has a pid set, we just need to take from one of them
+                pid = job.external_output_metadata[0].job_runner_external_pid  # every JobExternalOutputMetadata has a pid set, we just need to take from one of them
             else:
                 pid = job.job_runner_external_id
             if pid in [ None, '' ]:
@@ -170,7 +171,7 @@ class TaskedJobRunner( BaseJobRunner ):
 
     def recover( self, job, job_wrapper ):
         # DBTODO Task Recovery, this should be possible.
-        job_wrapper.change_state( model.Job.states.ERROR, info = "This job was killed when Galaxy was restarted.  Please retry the job." )
+        job_wrapper.change_state( model.Job.states.ERROR, info="This job was killed when Galaxy was restarted.  Please retry the job." )
 
     def _cancel_job( self, job_wrapper, task_wrappers ):
         """
@@ -227,7 +228,7 @@ class TaskedJobRunner( BaseJobRunner ):
             if e.errno == errno.ESRCH:
                 log.debug( "_check_pid(): PID %d is dead" % pid )
             else:
-                log.warning( "_check_pid(): Got errno %s when attempting to check PID %d: %s" %( errno.errorcode[e.errno], pid, e.strerror ) )
+                log.warning( "_check_pid(): Got errno %s when attempting to check PID %d: %s" % ( errno.errorcode[e.errno], pid, e.strerror ) )
             return False
 
     def _stop_pid( self, pid, job_id ):
@@ -254,7 +255,7 @@ class TaskedJobRunner( BaseJobRunner ):
             # avoid a two-second overhead using some other asynchronous method.
             sleep( 2 )
             if not self._check_pid( pid ):
-                log.debug( "_stop_pid(): %s: PID %d successfully killed with signal %d" %( job_id, pid, sig ) )
+                log.debug( "_stop_pid(): %s: PID %d successfully killed with signal %d" % ( job_id, pid, sig ) )
                 return
         else:
-            log.warning( "_stop_pid(): %s: PID %d refuses to die after signaling TERM/KILL" %( job_id, pid ) )
+            log.warning( "_stop_pid(): %s: PID %d refuses to die after signaling TERM/KILL" % ( job_id, pid ) )

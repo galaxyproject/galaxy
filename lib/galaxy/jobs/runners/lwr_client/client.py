@@ -1,7 +1,6 @@
 import os
 import shutil
-import simplejson
-from simplejson import dumps
+from json import dumps, loads
 from time import sleep
 
 from .destination import submit_params
@@ -16,7 +15,7 @@ class parseJson(object):
     def __call__(self, func):
         def replacement(*args, **kwargs):
             response = func(*args, **kwargs)
-            return simplejson.loads(response)
+            return loads(response)
         return replacement
 
 
@@ -82,16 +81,16 @@ class JobClient(object):
         args = {"job_id": self.job_id, "name": name, "input_type": input_type}
         return self._raw_execute('input_path', args)
 
-    def put_file(self, path, input_type, name=None, contents=None, action='transfer'):
+    def put_file(self, path, input_type, name=None, contents=None, action_type='transfer'):
         if not name:
             name = os.path.basename(path)
         args = {"job_id": self.job_id, "name": name, "input_type": input_type}
         input_path = path
         if contents:
             input_path = None
-        if action == 'transfer':
+        if action_type == 'transfer':
             return self._upload_file(args, contents, input_path)
-        elif action == 'copy':
+        elif action_type == 'copy':
             lwr_path = self._raw_execute('input_path', args)
             self._copy(path, lwr_path)
             return {'path': lwr_path}
@@ -105,11 +104,14 @@ class JobClient(object):
         ## path. Use old paths.
         input_type = args['input_type']
         action = {
-            'input': 'upload_input',
-            'input_extra': 'upload_extra_input',
+            # For backward compatibility just target upload_input_extra for all
+            # inputs, it allows nested inputs. Want to do away with distinction
+            # inputs and extra inputs.
+            'input': 'upload_extra_input',
             'config': 'upload_config_file',
-            'work_dir': 'upload_working_directory_file',
-            'tool': 'upload_tool_file'
+            'workdir': 'upload_working_directory_file',
+            'tool': 'upload_tool_file',
+            'unstructured': 'upload_unstructured_file',
         }[input_type]
         del args['input_type']
         return action
@@ -119,7 +121,23 @@ class JobClient(object):
         return self._raw_execute("get_output_type", {"name": name,
                                                      "job_id": self.job_id})
 
-    def fetch_output(self, path, working_directory, action='transfer'):
+    # Deprecated
+    def fetch_output_legacy(self, path, working_directory, action_type='transfer'):
+        # Needs to determine if output is task/working directory or standard.
+        name = os.path.basename(path)
+
+        output_type = self._get_output_type(name)
+        if output_type == "none":
+            # Just make sure the file was created.
+            if not os.path.exists(path):
+                raise OutputNotFoundException(path)
+            return
+        elif output_type in ["task"]:
+            path = os.path.join(working_directory, name)
+
+        self.__populate_output_path(name, path, output_type, action_type)
+
+    def fetch_output(self, path, name=None, check_exists_remotely=False, action_type='transfer'):
         """
         Download an output dataset from the remote server.
 
@@ -130,38 +148,23 @@ class JobClient(object):
         working_directory : str
             Local working_directory for the job.
         """
-        name = os.path.basename(path)
-        output_type = self._get_output_type(name)
 
-        if output_type == "none":
-            # Just make sure the file was created.
-            if not os.path.exists(path):
-                raise OutputNotFoundException(path)
-            return
+        if not name:
+            # Extra files will send in the path.
+            name = os.path.basename(path)
 
-        output_path = self.__output_path(path, name, working_directory, output_type)
-        self.__populate_output_path(name, output_path, output_type, action)
+        output_type = "direct"  # Task/from_work_dir outputs now handled with fetch_work_dir_output
+        self.__populate_output_path(name, path, output_type, action_type)
 
-    def __populate_output_path(self, name, output_path, output_type, action):
-        if action == 'transfer':
+    def __populate_output_path(self, name, output_path, output_type, action_type):
+        self.__ensure_directory(output_path)
+        if action_type == 'transfer':
             self.__raw_download_output(name, self.job_id, output_type, output_path)
-        elif action == 'copy':
+        elif action_type == 'copy':
             lwr_path = self._output_path(name, self.job_id, output_type)['path']
             self._copy(lwr_path, output_path)
 
-    def __output_path(self, path, name, working_directory, output_type):
-        """
-        Preconditions: output_type is not 'none'.
-        """
-        if output_type == "direct":
-            output_path = path
-        elif output_type == "task":
-            output_path = os.path.join(working_directory, name)
-        else:
-            raise Exception("Unknown output_type returned from LWR server %s" % output_type)
-        return output_path
-
-    def fetch_work_dir_output(self, name, working_directory, output_path, action='transfer'):
+    def fetch_work_dir_output(self, name, working_directory, output_path, action_type='transfer'):
         """
         Download an output dataset specified with from_work_dir from the
         remote server.
@@ -175,11 +178,17 @@ class JobClient(object):
         output_path : str
             Full path to output dataset.
         """
-        if action == 'transfer':
+        self.__ensure_directory(output_path)
+        if action_type == 'transfer':
             self.__raw_download_output(name, self.job_id, "work_dir", output_path)
         else:  # Even if action is none - LWR has a different work_dir so this needs to be copied.
             lwr_path = self._output_path(name, self.job_id, 'work_dir')['path']
             self._copy(lwr_path, output_path)
+
+    def __ensure_directory(self, output_path):
+        output_path_directory = os.path.dirname(output_path)
+        if not os.path.exists(output_path_directory):
+            os.makedirs(output_path_directory)
 
     @parseJson()
     def _output_path(self, name, job_id, output_type):

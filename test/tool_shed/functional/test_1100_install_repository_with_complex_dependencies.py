@@ -278,7 +278,7 @@ class TestInstallingComplexRepositoryDependencies( ShedTwillTestCase ):
         '''
         base_repository = self.test_db_util.get_installed_repository_by_name_owner( bwa_base_repository_name, common.test_user_1_name )
         tool_repository = self.test_db_util.get_installed_repository_by_name_owner( bwa_package_repository_name, common.test_user_1_name )
-        self.uninstall_repository( tool_repository, remove_from_disk=False )
+        self.deactivate_repository( tool_repository )
         env_sh_path = os.path.join( self.galaxy_tool_dependency_dir, 
                                     'bwa', 
                                     '0.5.9', 

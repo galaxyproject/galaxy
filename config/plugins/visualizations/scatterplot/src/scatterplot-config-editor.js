@@ -10,6 +10,7 @@ todo:
     Allow setting perPage of config
     Auto render if given data and/or config
     Allow option to auto set width/height based on screen real estate avail.
+    Handle large number of pages better (Known genes hg19)
     Use d3.nest to allow grouping, pagination/filtration by group (e.g. chromCol)
     Semantic HTML (figure, caption)
     Save as visualization, load from visualization
@@ -29,26 +30,28 @@ todo:
  *          configuring which data will be used
  *          configuring the plot display
  */
-var ScatterplotConfigEditor = BaseView.extend( LoggableMixin ).extend({
+var ScatterplotConfigEditor = Backbone.View.extend( LoggableMixin ).extend({
     //TODO: !should be a view on a visualization model
     //logger      : console,
     className   : 'scatterplot-control-form',
     
     /** initialize requires a configuration Object containing a dataset Object */
     initialize : function( attributes ){
-        //console.log( this + '.initialize, attributes:', attributes );
-        if( !attributes || !attributes.config || !attributes.dataset ){
-            throw new Error( "ScatterplotView requires a configuration and dataset" );
+        if( !this.model ){
+            this.model = new Visualization({ type: 'scatterplot' });
         }
-        //console.log( 'config:', attributes.config );
+        console.log( this + '.initialize, attributes:', attributes );
 
+        if( !attributes || !attributes.dataset ){
+            throw new Error( "ScatterplotConfigEditor requires a dataset" );
+        }
         this.dataset = attributes.dataset;
-        //console.log( 'dataset:', this.dataset );
+        console.log( 'dataset:', this.dataset );
 
 //TODO: ScatterplotView -> ScatterplotDisplay, this.plotView -> this.display
         this.plotView = new ScatterplotView({
             dataset : attributes.dataset,
-            config  : attributes.config
+            model   : this.model
 //TODO: if data
         });
     },
@@ -58,8 +61,7 @@ var ScatterplotConfigEditor = BaseView.extend( LoggableMixin ).extend({
         //console.log( this + '.render' );
 
         // render the tab controls, areas and loading indicator
-        this.$el.append( ScatterplotConfigEditor.templates.mainLayout({
-        }));
+        this.$el.append( ScatterplotConfigEditor.templates.mainLayout({}));
 
         // render the tab content
         this.$el.find( '#data-control'  ).append( this._render_dataControl() );

@@ -51,6 +51,8 @@ from galaxy import util
 from galaxy.util.json import to_json_string
 
 from functional import database_contexts
+from base.api_util import get_master_api_key
+from base.api_util import get_user_api_key
 
 import nose.core
 import nose.config
@@ -64,8 +66,6 @@ default_galaxy_test_port_min = 8000
 default_galaxy_test_port_max = 9999
 default_galaxy_locales = 'en'
 default_galaxy_test_file_dir = "test-data"
-default_galaxy_master_key = "TEST123"
-default_galaxy_user_key = None
 migrated_tool_panel_config = 'migrated_tools_conf.xml'
 installed_tool_panel_configs = [ 'shed_tool_conf.xml' ]
 
@@ -313,6 +313,7 @@ def main():
             file_path = os.path.join( galaxy_db_path, 'files' )
             new_file_path = tempfile.mkdtemp( prefix='new_files_path_', dir=tempdir )
             job_working_directory = tempfile.mkdtemp( prefix='job_working_directory_', dir=tempdir )
+            install_database_connection = os.environ.get( 'GALAXY_TEST_INSTALL_DBURI', None )
             if 'GALAXY_TEST_DBURI' in os.environ:
                 database_connection = os.environ['GALAXY_TEST_DBURI']
             else:
@@ -341,10 +342,11 @@ def main():
     galaxy_data_manager_data_path = tempfile.mkdtemp( prefix='data_manager_tool-data', dir=data_manager_test_tmp_path )
     
     # ---- Build Application --------------------------------------------------
-    master_api_key = os.environ.get( "GALAXY_TEST_MASTER_API_KEY", default_galaxy_master_key )
+    master_api_key = get_master_api_key()
     app = None
     if start_server:
         kwargs = dict( admin_users='test@bx.psu.edu',
+                       api_allow_run_as='test@bx.psu.edu',
                        allow_library_path_paste=True,
                        allow_user_creation=True,
                        allow_user_deletion=True,
@@ -372,6 +374,8 @@ def main():
                        user_library_import_dir=user_library_import_dir,
                        master_api_key=master_api_key,
         )
+        if install_database_connection is not None:
+            kwargs[ 'install_database_connection' ] = install_database_connection
         if psu_production:
             kwargs[ 'global_conf' ] = None
         if not database_connection.startswith( 'sqlite://' ):
@@ -471,10 +475,10 @@ def main():
         def _run_functional_test( testing_shed_tools=None ):
             workflow_test = __check_arg( '-workflow', param=True )
             if workflow_test:
-                import functional.test_workflow
-                functional.test_workflow.WorkflowTestCase.workflow_test_file = workflow_test
-                functional.test_workflow.WorkflowTestCase.master_api_key = master_api_key
-                functional.test_workflow.WorkflowTestCase.user_api_key = os.environ.get( "GALAXY_TEST_USER_API_KEY", default_galaxy_user_key )
+                import functional.workflow
+                functional.workflow.WorkflowTestCase.workflow_test_file = workflow_test
+                functional.workflow.WorkflowTestCase.master_api_key = master_api_key
+                functional.workflow.WorkflowTestCase.user_api_key = get_user_api_key()
             data_manager_test = __check_arg( '-data_managers', param=False )
             if data_manager_test:
                 import functional.test_data_managers
@@ -483,15 +487,20 @@ def main():
                     tmp_dir=data_manager_test_tmp_path,
                     testing_shed_tools=testing_shed_tools,
                     master_api_key=master_api_key,
-                    user_api_key=os.environ.get( "GALAXY_TEST_USER_API_KEY", default_galaxy_user_key ),
+                    user_api_key=get_user_api_key(),
                 )
-            else: #when testing data managers, do not test toolbox
+            else:
+                # We must make sure that functional.test_toolbox is always imported after
+                # database_contexts.galaxy_content is set (which occurs in this method above).
+                # If functional.test_toolbox is imported before database_contexts.galaxy_content
+                # is set, sa_session will be None in all methods that use it.
                 import functional.test_toolbox
                 functional.test_toolbox.toolbox = app.toolbox
+                # When testing data managers, do not test toolbox.
                 functional.test_toolbox.build_tests(
                     testing_shed_tools=testing_shed_tools,
                     master_api_key=master_api_key,
-                    user_api_key=os.environ.get( "GALAXY_TEST_USER_API_KEY", default_galaxy_user_key ),
+                    user_api_key=get_user_api_key(),
                 )
             test_config = nose.config.Config( env=os.environ, ignoreFiles=ignore_files, plugins=nose.plugins.manager.DefaultPluginManager() )
             test_config.configure( sys.argv )

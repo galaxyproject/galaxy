@@ -7,7 +7,7 @@ log = logging.getLogger(__name__)
 
 
 class InstallTestRepositories( InstallTestRepository ):
-    """Abstract test case that installs and uninstalls a predefined list of repositories."""
+    """Abstract test case that installs a predefined list of repositories."""
 
     def do_install( self, repository_dict ):
         self.logout()
@@ -21,27 +21,34 @@ class InstallTestRepositories( InstallTestRepository ):
 
 def generate_install_method( repository_dict=None ):
     """Generate abstract test cases for the defined list of repositories."""
+
+    def make_install_method( repository_dict ):
+        def test_install_repository( self ):
+            self.do_install( repository_dict )
+        return test_install_repository
+
     if repository_dict is None:
         return
     # Push all the toolbox tests to module level
     G = globals()
     # Eliminate all previous tests from G.
     for key, val in G.items():
-        if key.startswith( 'TestInstallRepository_' ) or key.startswith( 'TestUninstallRepository_' ) or key.startswith( 'TestForTool_' ):
+        if key.startswith( 'TestInstallRepository_' ) or key.startswith( 'TestForTool_' ):
             del G[ key ]
-    # Create a new subclass with a method named install_repository_XXX that installs the repository specified by the provided dict.
-    name = "TestInstallRepository_" + repository_dict[ 'name' ]
+    tool_shed = str( repository_dict[ 'tool_shed_url' ] )
+    repository_name = str( repository_dict[ 'name' ] )
+    repository_owner = str( repository_dict[ 'owner' ] )
+    changeset_revision = str( repository_dict[ 'changeset_revision' ] )
+    # Create a new subclass with a method named install_repository_XXX that installs the repository defined
+    # by the received repository_dict along with all of its dependency hierarchy.
+    test_name = "TestInstallRepository_" + repository_name
     baseclasses = ( InstallTestRepositories, )
     namespace = dict()
-    def make_install_method( repository_dict ):
-        def test_install_repository( self ):
-            self.do_install( repository_dict )
-        return test_install_repository
     test_method = make_install_method( repository_dict )
-    test_method.__doc__ = "Install the repository %s from %s." % \
-        ( str( repository_dict[ 'name' ] ), str( repository_dict[ 'tool_shed_url' ] ) )
-    namespace[ 'install_repository_%s' % str( repository_dict[ 'name' ] ) ] = test_method
+    test_method.__doc__ = "Installing revision %s of repository %s owned by %s from tool shed %s." % \
+        ( changeset_revision, repository_name, repository_owner, tool_shed )
+    namespace[ 'install_repository_%s' % repository_name ] = test_method
     # The new.classobj function returns a new class object with name name derived
     # from baseclasses (which should be a tuple of classes) and with namespace dict.
-    new_class_obj = new.classobj( str( name ), baseclasses, namespace )
-    G[ name ] = new_class_obj
+    new_class_obj = new.classobj( str( test_name ), baseclasses, namespace )
+    G[ test_name ] = new_class_obj

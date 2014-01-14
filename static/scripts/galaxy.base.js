@@ -623,8 +623,8 @@ GalaxyAsync.prototype.log_user_action = function( action, context, params ) {
     });
 };
 
-$(document).ready( function() {
-
+// Initialize refresh events.
+function init_refresh_on_change () {
     $("select[refresh_on_change='true']").change( function() {
         var select_field = $(this),
             select_val = select_field.val(),
@@ -663,7 +663,13 @@ $(document).ready( function() {
     $( "a[confirm]" ).click( function() {
         return confirm( $(this).attr("confirm") );
     });
+};
 
+$(document).ready( function() {
+
+    // Refresh events for form fields.
+    init_refresh_on_change();
+    
     // Tooltips
     if ( $.fn.tooltip ) {
         // Put tooltips below items in panel header so that they do not overlap masthead.

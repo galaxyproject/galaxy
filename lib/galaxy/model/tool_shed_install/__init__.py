@@ -279,6 +279,10 @@ class ToolShedRepository( object ):
     def is_deactivated_or_installed( self ):
         return self.status in [ self.installation_status.DEACTIVATED,
                                 self.installation_status.INSTALLED ]
+    
+    @property
+    def is_installed( self ):
+        return self.status == self.installation_status.INSTALLED
 
     @property
     def is_latest_installable_revision( self ):

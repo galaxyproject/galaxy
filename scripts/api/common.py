@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import sys
@@ -9,9 +10,6 @@ sys.path = new_path
 
 from galaxy import eggs
 import pkg_resources
-
-pkg_resources.require( "simplejson" )
-import simplejson
 
 pkg_resources.require( "pycrypto" )
 from Crypto.Cipher import Blowfish
@@ -35,30 +33,30 @@ def get( api_key, url ):
     # Do the actual GET.
     url = make_url( api_key, url )
     try:
-        return simplejson.loads( urllib2.urlopen( url ).read() )
-    except simplejson.decoder.JSONDecodeError, e:
+        return json.loads( urllib2.urlopen( url ).read() )
+    except json.decoder.JSONDecodeError, e:
         print "URL did not return JSON data"
         sys.exit(1)
 
 def post( api_key, url, data ):
     # Do the actual POST.
     url = make_url( api_key, url )
-    req = urllib2.Request( url, headers = { 'Content-Type': 'application/json' }, data = simplejson.dumps( data ) )
-    return simplejson.loads( urllib2.urlopen( req ).read() )
+    req = urllib2.Request( url, headers = { 'Content-Type': 'application/json' }, data = json.dumps( data ) )
+    return json.loads( urllib2.urlopen( req ).read() )
 
 def put( api_key, url, data ):
     # Do the actual PUT
     url = make_url( api_key, url )
-    req = urllib2.Request( url, headers = { 'Content-Type': 'application/json' }, data = simplejson.dumps( data ))
+    req = urllib2.Request( url, headers = { 'Content-Type': 'application/json' }, data = json.dumps( data ))
     req.get_method = lambda: 'PUT'
-    return simplejson.loads( urllib2.urlopen( req ).read() )
+    return json.loads( urllib2.urlopen( req ).read() )
 
 def __del( api_key, url, data ):
     # Do the actual DELETE
     url = make_url( api_key, url )
-    req = urllib2.Request( url, headers = { 'Content-Type': 'application/json' }, data = simplejson.dumps( data ))
+    req = urllib2.Request( url, headers = { 'Content-Type': 'application/json' }, data = json.dumps( data ))
     req.get_method = lambda: 'DELETE'
-    return simplejson.loads( urllib2.urlopen( req ).read() )
+    return json.loads( urllib2.urlopen( req ).read() )
 
 
 def display( api_key, url, return_formatted=True ):

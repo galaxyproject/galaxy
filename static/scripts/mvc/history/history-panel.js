@@ -980,8 +980,9 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
      *      clicking the clear button will clear the search
      *      uses searchInput in ui.js
      */
-    renderSearchControls : function( $where ){
-        var panel = this;
+    setUpSearchInput : function( $where ){
+        var panel = this,
+            inputSelector = '.history-search-input';
 
         function onSearch( searchFor ){
             //console.debug( 'onSearch', searchFor, panel );
@@ -996,10 +997,10 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
                 onSearch( searchFor );
                 return;
             }
-            panel.$el.find( '.history-search-controls' ).searchInput( 'toggle-loading' );
+            panel.$el.find( inputSelector ).searchInput( 'toggle-loading' );
             panel.model.hdas.fetchAllDetails({ silent: true })
                 .always( function(){
-                    panel.$el.find( '.history-search-controls' ).searchInput( 'toggle-loading' );
+                    panel.$el.find( inputSelector ).searchInput( 'toggle-loading' );
                 })
                 .done( function(){
                     onSearch( searchFor );
@@ -1012,7 +1013,7 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
             panel.trigger( 'search:clear', panel );
             panel.renderHdas();
         }
-        return $where.searchInput({
+        $where.searchInput({
                 initialVal      : panel.searchFor,
                 name            : 'history-search',
                 placeholder     : 'search datasets',
@@ -1021,18 +1022,25 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
                 onsearch        : onSearch,
                 onclear         : onSearchClear
             });
+        return $where;
     },
 //TODO: to hidden/shown plugin
     showSearchControls : function( speed ){
         speed = ( speed === undefined )?( this.fxSpeed ):( speed );
         var panel = this,
-            $searchControls = this.$el.find( '.history-search-controls' );
+            $searchControls = this.$el.find( '.history-search-controls' ),
+            $input = $searchControls.find( '.history-search-input' );
         // if it hasn't been rendered - do it now
-        if( !$searchControls.children().size() ){
-            $searchControls = this.renderSearchControls( $searchControls ).hide();
+        if( !$input.children().size() ){
+            this.setUpSearchInput( $input );
+            //$searchControls.append( faIconButton({
+            //    title   : _l( 'More search options' ),
+            //    classes : 'history-search-advanced',
+            //    faIcon  : 'fa-ellipsis-horizontal'
+            //}) );
         }
         // then slide open, focusing on the input, and persisting the setting when it's done
-        $searchControls.show( speed, function(){
+        $searchControls.slideDown( speed, function(){
             $( this ).find( 'input' ).focus();
             panel.preferences.set( 'searching', true );
         });
@@ -1040,7 +1048,7 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
     hideSearchControls : function(){
         speed = ( speed === undefined )?( this.fxSpeed ):( speed );
         var panel = this;
-        this.$el.find( '.history-search-controls' ).hide( speed, function(){
+        this.$el.find( '.history-search-controls' ).slideUp( speed, function(){
             panel.preferences.set( 'searching', false );
         });
     },

@@ -16,7 +16,8 @@ def build_approved_select_field( trans, name, selected_value=None, for_component
         select_field.add_option( option_tup[ 0 ], option_tup[ 1 ], selected=selected )
     return select_field
 
-def build_changeset_revision_select_field( trans, repository, selected_value=None, add_id_to_name=True, downloadable=False, reviewed=False, not_reviewed=False ):
+def build_changeset_revision_select_field( trans, repository, selected_value=None, add_id_to_name=True,
+                                           downloadable=False, reviewed=False, not_reviewed=False ):
     """Build a SelectField whose options are the changeset_rev strings of certain revisions of the received repository."""
     options = []
     changeset_tups = []
@@ -46,7 +47,10 @@ def build_changeset_revision_select_field( trans, repository, selected_value=Non
         # Restrict the options to all revisions that have associated metadata.
         repository_metadata_revisions = repository.metadata_revisions
     for repository_metadata in repository_metadata_revisions:
-        rev, label, changeset_revision = metadata_util.get_rev_label_changeset_revision_from_repository_metadata( trans, repository_metadata, repository=repository )
+        rev, label, changeset_revision = \
+            metadata_util.get_rev_label_changeset_revision_from_repository_metadata( trans,
+                                                                                     repository_metadata,
+                                                                                     repository=repository )
         changeset_tups.append( ( rev, label, changeset_revision ) )
         refresh_on_change_values.append( changeset_revision )
     # Sort options by the revision label.  Even though the downloadable_revisions query sorts by update_time,

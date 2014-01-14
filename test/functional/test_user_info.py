@@ -1,6 +1,8 @@
 from base.twilltestcase import *
 from base.test_db_util import *
 
+
+# TODO: Functional tests start failing at 020, fix or eliminate rest of tests.
 class TestUserInfo( TwillTestCase ):
     def test_000_initiate_users( self ):
         """Ensuring all required user accounts exist"""

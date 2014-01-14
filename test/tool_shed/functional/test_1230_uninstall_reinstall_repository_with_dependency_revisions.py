@@ -144,7 +144,7 @@ class UninstallingAndReinstallingRepositories( ShedTwillTestCase ):
     def test_0015_uninstall_emboss_repository( self ):
         '''Uninstall the emboss repository.'''
         installed_repository = self.test_db_util.get_installed_repository_by_name_owner( emboss_repository_name, common.test_user_1_name )
-        self.uninstall_repository( installed_repository, remove_from_disk=True )
+        self.uninstall_repository( installed_repository )
         strings_not_displayed = [ installed_repository.installed_changeset_revision ]
         self.display_galaxy_browse_repositories_page( strings_not_displayed=strings_not_displayed )
 
@@ -165,7 +165,7 @@ class UninstallingAndReinstallingRepositories( ShedTwillTestCase ):
     def test_0025_deactivate_emboss_repository( self ):
         '''Deactivate the emboss repository without removing it from disk.'''
         installed_repository = self.test_db_util.get_installed_repository_by_name_owner( emboss_repository_name, common.test_user_1_name )
-        self.uninstall_repository( installed_repository, remove_from_disk=False )
+        self.deactivate_repository( installed_repository )
         strings_not_displayed = [ installed_repository.installed_changeset_revision ]
         self.display_galaxy_browse_repositories_page( strings_not_displayed=strings_not_displayed )
  

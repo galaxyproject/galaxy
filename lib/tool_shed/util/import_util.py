@@ -21,6 +21,37 @@ from mercurial import ui
 
 log = logging.getLogger( __name__ )
 
+def check_status_and_reset_downloadable( trans, import_results_tups ):
+    """Check the status of each imported repository and set downloadable to False if errors."""
+    flush = False
+    for import_results_tup in import_results_tups:
+        ok, name_owner, message = import_results_tup
+        name, owner = name_owner
+        if not ok:
+            repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
+            # Do not allow the repository to be automatically installed if population resulted in errors.
+            tip_changeset_revision = repository.tip( trans.app )
+            repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans,
+                                                                                     trans.security.encode_id( repository.id ),
+                                                                                     tip_changeset_revision )
+            if repository_metadata:
+                if repository_metadata.downloadable:
+                    repository_metadata.downloadable = False
+                    trans.sa_session.add( repository_metadata )
+                    if not flush:
+                        flush = True
+                # Do not allow dependent repository revisions to be automatically installed if population
+                # resulted in errors.
+                dependent_downloadable_revisions = suc.get_dependent_downloadable_revisions( trans, repository_metadata )
+                for dependent_downloadable_revision in dependent_downloadable_revisions:
+                    if dependent_downloadable_revision.downloadable:
+                        dependent_downloadable_revision.downloadable = False
+                        trans.sa_session.add( dependent_downloadable_revision )
+                        if not flush:
+                            flush = True
+    if flush:
+        trans.sa_session.flush()
+
 def extract_capsule_files( trans, **kwd ):
     """Extract the uploaded capsule archive into a temporary location for inspection, validation and potential import."""
     return_dict = {}
@@ -243,13 +274,16 @@ def import_repository_archive( trans, repository, repository_archive_dict ):
                                                   commit_message,
                                                   undesirable_dirs_removed,
                                                   undesirable_files_removed )
+        if error_message:
+            results_dict[ 'ok' ] = False
+            results_dict[ 'error_message' ] += error_message
         try:
-            metadata_util.set_repository_metadata_due_to_new_tip( trans, repository, content_alert_str=content_alert_str )
+            metadata_util.set_repository_metadata_due_to_new_tip( trans,
+                                                                  repository,
+                                                                  content_alert_str=content_alert_str )
         except Exception, e:
             log.debug( "Error setting metadata on repository %s created from imported archive %s: %s" % \
                 ( str( repository.name ), str( archive_file_name ), str( e ) ) )
-        results_dict[ 'ok' ] = ok
-        results_dict[ 'error_message' ] += error_message
     else:
         archive.close()
         results_dict[ 'ok' ] = False

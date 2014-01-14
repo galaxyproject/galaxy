@@ -38,7 +38,7 @@ def build_command( runner, job_wrapper, include_metadata=False, include_work_dir
 def __handle_version_command(commands_builder, job_wrapper):
     # Prepend version string
     if job_wrapper.version_string_cmd:
-        version_command = "%s &> %s" % ( job_wrapper.version_string_cmd, job_wrapper.get_version_string_path() )
+        version_command = "%s > %s 2>&1" % ( job_wrapper.version_string_cmd, job_wrapper.get_version_string_path() )
         commands_builder.prepend_command(version_command)
 
 

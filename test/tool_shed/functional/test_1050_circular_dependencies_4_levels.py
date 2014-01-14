@@ -315,7 +315,7 @@ class TestInstallRepositoryCircularDependencies( ShedTwillTestCase ):
         '''Deactivate emboss_datatypes and verify that the datatypes count is reduced.'''
         original_datatypes = self.get_datatypes_count()
         repository = self.test_db_util.get_installed_repository_by_name_owner( emboss_datatypes_repository_name, common.test_user_1_name )
-        self.uninstall_repository( repository, remove_from_disk=False )
+        self.deactivate_repository( repository )
         assert original_datatypes > self.get_datatypes_count(), 'Deactivating emboss_datatypes did not remove datatypes.'
         # Now we have emboss, bismark, column_maker, and convert_chars installed, filtering and freebayes never installed, and emboss_datatypes deactivated.
         installed_repositories = [ ( column_repository_name, common.test_user_1_name ), 
@@ -330,7 +330,7 @@ class TestInstallRepositoryCircularDependencies( ShedTwillTestCase ):
     def test_0070_uninstall_emboss_repository( self ):
         '''Uninstall the emboss_5 repository.'''
         repository = self.test_db_util.get_installed_repository_by_name_owner( emboss_repository_name, common.test_user_1_name )
-        self.uninstall_repository( repository, remove_from_disk=True )
+        self.uninstall_repository( repository )
         strings_not_displayed = [ repository.name, repository.installed_changeset_revision ]
         self.display_galaxy_browse_repositories_page( strings_not_displayed=strings_not_displayed )
         self.test_db_util.ga_refresh( repository )

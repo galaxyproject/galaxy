@@ -51,7 +51,7 @@ elif [ $1 = '-toolshed' ]; then
         python ./test/tool_shed/functional_tests.py -v --with-nosehtml --html-report-file ./test/tool_shed/run_functional_tests.html $2
     fi
 elif [ $1 = '-workflow' ]; then
-    python ./scripts/functional_tests.py -v functional.test_workflow:WorkflowTestCase --with-nosehtml --html-report-file ./test/tool_shed/run_functional_tests.html -workflow $2
+    python ./scripts/functional_tests.py -v functional.workflow:WorkflowTestCase --with-nosehtml --html-report-file ./test/tool_shed/run_functional_tests.html -workflow $2
 elif [ $1 = '-data_managers' ]; then
     if [ ! $2 ]; then
         python ./scripts/functional_tests.py -v functional.test_data_managers --with-nosehtml --html-report-file run_functional_tests.html -data_managers

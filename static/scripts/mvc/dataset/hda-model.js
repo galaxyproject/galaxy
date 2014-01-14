@@ -41,7 +41,7 @@ var HistoryDatasetAssociation = Backbone.Model.extend( LoggableMixin ).extend(
         purged              : false,
 
         // sniffed datatype (sam, tabular, bed, etc.)
-        data_type           : null,
+        data_type           : '',
         // size in bytes
         file_size           : 0,
         file_ext            : '',
@@ -52,7 +52,8 @@ var HistoryDatasetAssociation = Backbone.Model.extend( LoggableMixin ).extend(
         misc_blurb          : '',
         misc_info           : '',
 
-        tags                : null
+        tags                : [],
+        annotation          : ''
     },
 
     /** fetch location of this HDA's history in the api */

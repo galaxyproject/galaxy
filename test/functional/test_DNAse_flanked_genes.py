@@ -1,21 +1,24 @@
 import galaxy.model
 from galaxy.model.orm import *
-from base.test_db_util import sa_session
+import database_contexts
 from base.twilltestcase import TwillTestCase
 
 """ A sample analysis"""
 
+
 class AnalysisDNAseHSSFlankedGenes( TwillTestCase ):
+
     def test_get_DNAseHSS_flanked_genes( self ):
+        sa_session = database_contexts.galaxy_context
         self.logout()
         self.login( email='test@bx.psu.edu' )
         admin_user = sa_session.query( galaxy.model.User ) \
-                               .filter( galaxy.model.User.table.c.email=='test@bx.psu.edu' ) \
+                               .filter( galaxy.model.User.table.c.email == 'test@bx.psu.edu' ) \
                                .one()
         self.new_history( name='DNAseHSS_flanked_genes' )
         history1 = sa_session.query( galaxy.model.History ) \
-                             .filter( and_( galaxy.model.History.table.c.deleted==False,
-                                            galaxy.model.History.table.c.user_id==admin_user.id ) ) \
+                             .filter( and_( galaxy.model.History.table.c.deleted == False,
+                                            galaxy.model.History.table.c.user_id == admin_user.id ) ) \
                              .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
                              .first()
         track_params = dict(

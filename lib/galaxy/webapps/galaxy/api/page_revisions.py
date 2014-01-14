@@ -4,12 +4,11 @@ API for updating Galaxy Pages
 import logging
 from galaxy import web
 from galaxy.web.base.controller import SharableItemSecurityMixin, BaseAPIController, SharableMixin
-from galaxy.model.search import GalaxySearchEngine
 from galaxy.model.item_attrs import UsesAnnotations
-from galaxy.exceptions import ItemAccessibilityException
 from galaxy.util.sanitize_html import sanitize_html
 
 log = logging.getLogger( __name__ )
+
 
 class PageRevisionsController( BaseAPIController, SharableItemSecurityMixin, UsesAnnotations, SharableMixin ):
 
@@ -32,7 +31,6 @@ class PageRevisionsController( BaseAPIController, SharableItemSecurityMixin, Use
                 out.append( self.encode_all_ids( trans, page.to_dict(), True) )
         return out
 
-
     @web.expose_api
     def create( self, trans, page_id, payload, **kwd ):
         """
@@ -46,11 +44,10 @@ class PageRevisionsController( BaseAPIController, SharableItemSecurityMixin, Use
             'content'   = New content of the page
 
         :rtype:     dictionary
-        :returns:   Dictionary with 'success' or 'error' element to indicate the result of the request 
+        :returns:   Dictionary with 'success' or 'error' element to indicate the result of the request
         """
-        user = trans.get_user()
         error_str = ""
-        
+
         if not page_id:
             error_str = "page_id is required"
         elif not payload.get("content", None):
@@ -61,7 +58,7 @@ class PageRevisionsController( BaseAPIController, SharableItemSecurityMixin, Use
             page = trans.sa_session.query( trans.app.model.Page ).get( trans.security.decode_id(page_id) )
             if page is None:
                 return { "error" : "page not found"}
-            
+
             if not self.security_check( trans, page, True, True ):
                 return { "error" : "page not found"}
 
@@ -82,6 +79,6 @@ class PageRevisionsController( BaseAPIController, SharableItemSecurityMixin, Use
             session = trans.sa_session
             session.flush()
 
-            return {"success" : "revision posted"}
-        
-        return { "error" : error_str }    
+            return { "success" : "revision posted" }
+
+        return { "error" : error_str }

@@ -72,7 +72,7 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
         var purged = this.model.get( 'purged' ),
             deleted = this.model.get( 'deleted' ),
             editBtnData = {
-                title       : _l( 'Edit Attributes' ),
+                title       : _l( 'Edit attributes' ),
                 href        : this.urls.edit,
                 target      : this.linkTarget,
                 classes     : 'dataset-edit'
@@ -138,6 +138,7 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
         return faIconButton({
             title       : _l( 'View or report this error' ),
             href        : this.urls.report_error,
+            classes     : 'dataset-report-error-btn',
             target      : this.linkTarget,
             faIcon      : 'fa-bug'
         });
@@ -150,6 +151,7 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
         return faIconButton({
             title       : _l( 'Run this job again' ),
             href        : this.urls.rerun,
+            classes     : 'dataset-rerun-btn',
             target      : this.linkTarget,
             faIcon      : 'fa-refresh'
         });
@@ -189,6 +191,7 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
 
         var $icon = faIconButton({
             title       : _l( 'Visualize' ),
+            classes     : 'dataset-visualize-btn',
             faIcon      : 'fa-bar-chart-o'
         });
 
@@ -242,9 +245,9 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
         }
         var $icon = faIconButton({
             title       : _l( 'Visualize' ),
+            classes     : 'dataset-visualize-btn',
             faIcon      : 'fa-bar-chart-o'
         });
-        $icon.addClass( 'visualize-icon' ); // needed?
 
         // No need for popup menu because there's a single visualization.
         if( _.keys( visualizations ).length === 1 ) {
@@ -255,11 +258,38 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
         } else {
             var popup_menu_options = [];
             _.each( visualizations, function( linkData ) {
+                linkData.func = function(){
+                    if( Galaxy.frame.active ){
+                        Galaxy.frame.add({
+                            title       : "Visualization",
+                            type        : "url",
+                            content     : linkData.href
+                        });
+                        return false;
+                    }
+                    return true;
+                };
                 popup_menu_options.push( linkData );
+                return false;
             });
-            var popup = new PopupMenu( $icon, popup_menu_options );
+            PopupMenu.create( $icon, popup_menu_options );
         }
         return $icon;
+    },
+
+    // ......................................................................... render main
+    _buildNewRender : function(){
+        var $newRender = hdaBase.HDABaseView.prototype._buildNewRender.call( this );
+
+        //TODO: this won't localize easily
+        $newRender.find( '.dataset-deleted-msg' ).append(
+            _l( 'Click <a href="javascript:void(0);" class="dataset-undelete">here</a> to undelete it' +
+            ' or <a href="javascript:void(0);" class="dataset-purge">here</a> to immediately remove it from disk' ));
+
+        $newRender.find( '.dataset-hidden-msg' ).append(
+            _l( 'Click <a href="javascript:void(0);" class="dataset-unhide">here</a> to unhide it' ));
+
+        return $newRender;
     },
     
     // ......................................................................... state body renderers
@@ -349,8 +379,10 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
         // make the dbkey a link to editing
         if( this.model.get( 'metadata_dbkey' ) === '?'
         &&  !this.model.isDeletedOrPurged() ){
-            $body.find( '.dataset-dbkey .value' ).replaceWith(
-                $( '<a target="' + this.linkTarget + '">?</a>' ).attr( 'href', this.urls.edit ) );
+            var editableDbkey = $( '<a class="value">?</a>' )
+                .attr( 'href', this.urls.edit )
+                .attr( 'target', this.linkTarget );
+            $body.find( '.dataset-dbkey .value' ).replaceWith( editableDbkey );
         }
     },
 

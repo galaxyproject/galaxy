@@ -311,9 +311,9 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             message = 'This list contains repositories that match the following criteria:<br>'
             message += '<ul>'
             message += '<li>you are authorized to update them</li>'
-            message += '<li>the latest installable revision contains at least 1 tool</li>'
             message += '<li>the latest installable revision is not missing any tool test components</li>'
-            message += '<li>the latest installable revision has installation errors (the repository itself, repository dependencies or tool dependencies)</li>'
+            message += '<li>the latest installable revision has installation errors (the repository itself, '
+            message += 'repository dependencies or tool dependencies)</li>'
             message += '</ul>'
             kwd[ 'message' ] = message
             kwd[ 'status' ] = 'warning'
@@ -340,8 +340,10 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             message = 'This list contains repositories that match the following criteria:<br>'
             message += '<ul>'
             message += '<li>you are authorized to update them</li>'
-            message += '<li>the latest installable revision contains at least 1 tool</li>'
-            message += '<li>the latest installable revision has <b>Skip automated testing of tools in this revision</b> checked</li>'
+            message += '<li>the latest installable revision has <b>Skip automated testing of tools in this '
+            message += 'revision</b> checked if the repository type is <b>Unrestricted</b> or <b>Skip '
+            message += 'automated testing of this tool dependency recipe</b> checked if the repository '
+            message += 'type is <b>Tool dependency definition</b></li>'
             message += '</ul>'
             kwd[ 'message' ] = message
             kwd[ 'status' ] = 'warning'
@@ -566,9 +568,9 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         if 'message' not in kwd:
             message = 'This list contains repositories that match the following criteria:<br>'
             message += '<ul>'
-            message += '<li>the latest installable revision contains at least 1 tool</li>'
             message += '<li>the latest installable revision is not missing any tool test components</li>'
-            message += '<li>the latest installable revision has installation errors (the repository itself, repository dependencies or tool dependencies)</li>'
+            message += '<li>the latest installable revision has installation errors (the repository itself, '
+            message += 'repository dependencies or tool dependencies)</li>'
             message += '</ul>'
             kwd[ 'message' ] = message
             kwd[ 'status' ] = 'warning'
@@ -649,8 +651,10 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         if 'message' not in kwd:
             message = 'This list contains repositories that match the following criteria:<br>'
             message += '<ul>'
-            message += '<li>the latest installable revision contains at least 1 tool</li>'
-            message += '<li>the latest installable revision has <b>Skip automated testing of tools in this revision</b> checked</li>'
+            message += '<li>the latest installable revision has <b>Skip automated testing of tools in this '
+            message += 'revision</b> checked if the repository type is <b>Unrestricted</b> or <b>Skip '
+            message += 'automated testing of this tool dependency recipe</b> checked if the repository '
+            message += 'type is <b>Tool dependency definition</b></li>'
             message += '</ul>'
             kwd[ 'message' ] = message
             kwd[ 'status' ] = 'warning'
@@ -1133,7 +1137,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         else:
             containers_dict = None
             export_repository_dependencies_check_box = None
-        revision_label = suc.get_revision_label( trans, repository, changeset_revision )
+        revision_label = suc.get_revision_label( trans, repository, changeset_revision, include_date=True )
         return trans.fill_template( "/webapps/tool_shed/repository/export_repository.mako",
                                     changeset_revision=changeset_revision,
                                     containers_dict=containers_dict,
@@ -1883,9 +1887,11 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                 # Add the capsule_file_name and encoded_file_path to the repository_status_info_dict.
                 repository_status_info_dict[ 'capsule_file_name' ] = capsule_file_name
                 repository_status_info_dict[ 'encoded_file_path' ] = encoded_file_path
-                import_results_tups = repository_maintenance_util.create_repository_and_import_archive( trans,
-                                                                                                        repository_status_info_dict,
-                                                                                                        import_results_tups )
+                import_results_tups = \
+                    repository_maintenance_util.create_repository_and_import_archive( trans,
+                                                                                      repository_status_info_dict,
+                                                                                      import_results_tups )
+            import_util.check_status_and_reset_downloadable( trans, import_results_tups )
             suc.remove_dir( file_path )
             return trans.fill_template( '/webapps/tool_shed/repository/import_capsule_results.mako',
                                         export_info_dict=export_info_dict,
@@ -2192,7 +2198,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                                                                             selected_value=changeset_revision,
                                                                                             add_id_to_name=False,
                                                                                             downloadable=False )
-        revision_label = suc.get_revision_label( trans, repository, repository.tip( trans.app ) )
+        revision_label = suc.get_revision_label( trans, repository, repository.tip( trans.app ), include_date=False )
         repository_metadata = None
         metadata = None
         is_malicious = False
@@ -2201,16 +2207,18 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         if changeset_revision != suc.INITIAL_CHANGELOG_HASH:
             repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
             if repository_metadata:
-                revision_label = suc.get_revision_label( trans, repository, changeset_revision )
+                revision_label = suc.get_revision_label( trans, repository, changeset_revision, include_date=False )
                 metadata = repository_metadata.metadata
                 is_malicious = repository_metadata.malicious
             else:
-                # There is no repository_metadata defined for the changeset_revision, so see if it was defined in a previous changeset in the changelog.
-                previous_changeset_revision = suc.get_previous_metadata_changeset_revision( repository, repo, changeset_revision, downloadable=False )
+                # There is no repository_metadata defined for the changeset_revision, so see if it was defined in a previous
+                # changeset in the changelog.
+                previous_changeset_revision = \
+                    suc.get_previous_metadata_changeset_revision( repository, repo, changeset_revision, downloadable=False )
                 if previous_changeset_revision != suc.INITIAL_CHANGELOG_HASH:
                     repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, id, previous_changeset_revision )
                     if repository_metadata:
-                        revision_label = suc.get_revision_label( trans, repository, previous_changeset_revision )
+                        revision_label = suc.get_revision_label( trans, repository, previous_changeset_revision, include_date=False )
                         metadata = repository_metadata.metadata
                         is_malicious = repository_metadata.malicious
             if repository_metadata:
@@ -2253,6 +2261,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         categories = suc.get_categories( trans )
         selected_categories = [ rca.category_id for rca in repository.categories ]
         containers_dict = container_util.build_repository_containers_for_tool_shed( trans, repository, changeset_revision, repository_dependencies, repository_metadata )
+        heads = suc.get_repository_heads( repo )
         return trans.fill_template( '/webapps/tool_shed/repository/manage_repository.mako',
                                     repo_name=repo_name,
                                     description=description,
@@ -2260,6 +2269,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                     current_allow_push_list=current_allow_push_list,
                                     allow_push_select_field=allow_push_select_field,
                                     repo=repo,
+                                    heads=heads,
                                     repository=repository,
                                     containers_dict=containers_dict,
                                     repository_metadata=repository_metadata,
@@ -2375,7 +2385,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             repository_metadata_id = None
             metadata = None
             repository_dependencies = None
-        revision_label = suc.get_revision_label( trans, repository, changeset_revision )
+        revision_label = suc.get_revision_label( trans, repository, changeset_revision, include_date=True )
         changeset_revision_select_field = grids_util.build_changeset_revision_select_field( trans,
                                                                                             repository,
                                                                                             selected_value=changeset_revision,
@@ -2430,6 +2440,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                                               message='Select a repository to rate',
                                                               status='error' ) )
         repository = suc.get_repository_in_tool_shed( trans, id )
+        changeset_revision = repository.tip( trans.app )
         repo = hg.repository( suc.get_configured_ui(), repository.repo_path( trans.app ) )
         if repository.user == trans.user:
             return trans.response.send_redirect( web.url_for( controller='repository',
@@ -2445,12 +2456,14 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         rra = self.get_user_item_rating( trans.sa_session, trans.user, repository, webapp_model=trans.model )
         metadata = metadata_util.get_repository_metadata_by_repository_id_changeset_revision( trans,
                                                                                               id,
-                                                                                              repository.tip( trans.app ),
+                                                                                              changeset_revision,
                                                                                               metadata_only=True )
         repository_type_select_field = rt_util.build_repository_type_select_field( trans, repository=repository )
+        revision_label = suc.get_revision_label( trans, repository, changeset_revision, include_date=True )
         return trans.fill_template( '/webapps/tool_shed/repository/rate_repository.mako',
                                     repository=repository,
                                     metadata=metadata,
+                                    revision_label=revision_label,
                                     avg_rating=avg_rating,
                                     display_reviews=display_reviews,
                                     num_ratings=num_ratings,
@@ -2860,13 +2873,10 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                 has_metadata = True
             else:
                 has_metadata = False
-            t, tz = ctx.date()
-            date = datetime( *gmtime( float( t ) - tz )[:6] )
-            display_date = date.strftime( "%Y-%m-%d" )
             change_dict = { 'ctx' : ctx,
                             'rev' : str( ctx.rev() ),
                             'date' : date,
-                            'display_date' : display_date,
+                            'display_date' : suc.get_readable_ctx_date( ctx ),
                             'description' : ctx.description(),
                             'files' : ctx.files(),
                             'user' : ctx.user(),
@@ -2921,16 +2931,18 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         metadata = metadata_util.get_repository_metadata_by_repository_id_changeset_revision( trans, id, ctx_str, metadata_only=True )
         # For rendering the prev button.
         if ctx_parent:
+            ctx_parent_date = suc.get_readable_ctx_date( ctx_parent )
             ctx_parent_rev = ctx_parent.rev()
             if ctx_parent_rev < 0:
                  prev = None
             else:
-                prev = "%s:%s" % ( ctx_parent_rev, ctx_parent )
+                prev = "<b>%s:%s</b> <i>(%s)</i>" % ( ctx_parent_rev, ctx_parent, ctx_parent_date )
         else:
            prev = None
         if ctx_child:
+            ctx_child_date = suc.get_readable_ctx_date( ctx_child )
             ctx_child_rev = ctx_child.rev()
-            next = "%s:%s" % ( ctx_child_rev, ctx_child )
+            next = "<b>%s:%s</b> <i>(%s)</i>" % ( ctx_child_rev, ctx_child, ctx_child_date )
         else:
             next = None
         return trans.fill_template( '/webapps/tool_shed/repository/view_changeset.mako',
@@ -3009,7 +3021,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                                                                             selected_value=changeset_revision,
                                                                                             add_id_to_name=False,
                                                                                             downloadable=False )
-        revision_label = suc.get_revision_label( trans, repository, changeset_revision )
+        revision_label = suc.get_revision_label( trans, repository, changeset_revision, include_date=False )
         repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
         if repository_metadata:
             metadata = repository_metadata.metadata
@@ -3039,8 +3051,10 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             status = 'error'
         containers_dict = container_util.build_repository_containers_for_tool_shed( trans, repository, changeset_revision, repository_dependencies, repository_metadata )
         repository_type_select_field = rt_util.build_repository_type_select_field( trans, repository=repository )
+        heads = suc.get_repository_heads( repo )
         return trans.fill_template( '/webapps/tool_shed/repository/view_repository.mako',
                                     repo=repo,
+                                    heads=heads,
                                     repository=repository,
                                     repository_metadata=repository_metadata,
                                     metadata=metadata,
@@ -3069,7 +3083,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         tool = None
         guid = None
         original_tool_data_path = trans.app.config.tool_data_path
-        revision_label = suc.get_revision_label( trans, repository, changeset_revision )
+        revision_label = suc.get_revision_label( trans, repository, changeset_revision, include_date=False )
         repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
         if repository_metadata:
             repository_metadata_id = trans.security.encode_id( repository_metadata.id )

@@ -30,7 +30,7 @@ ${render_tool_shed_repository_actions( repository=repository )}
 %endif
 
 <div class="warningmessage">
-    You have elected to create a new review for revision <b>${changeset_revision_label | h}</b>of this repository.  Since previous revisions have been reviewed, 
+    You have elected to create a new review for revision <b>${changeset_revision_label}</b>of this repository.  Since previous revisions have been reviewed, 
     you can select a previous review to copy to your new review, or click the <b>Create a review without copying</b> button.
 </div>
                         
@@ -39,7 +39,7 @@ ${render_tool_shed_repository_actions( repository=repository )}
     <div class="toolFormBody">
         <div class="form-row">
             <label>Revision for new review:</label>
-            <a class="action-button" href="${h.url_for( controller='repository_review', action='view_or_manage_repository', id=trans.security.encode_id( repository.id ), changeset_revision=changeset_revision )}">${changeset_revision_label | h}</a>
+            <a class="action-button" href="${h.url_for( controller='repository_review', action='view_or_manage_repository', id=trans.security.encode_id( repository.id ), changeset_revision=changeset_revision )}">${changeset_revision_label}</a>
             <div style="clear: both"></div>
         </div>
         <div class="form-row">
@@ -76,7 +76,7 @@ ${render_tool_shed_repository_actions( repository=repository )}
                                     <a class="action-button" href="${h.url_for( controller='repository_review', action='create_review', id=trans.security.encode_id( repository.id ), changeset_revision=changeset_revision, previous_review_id=encoded_review_id )}">Copy this review</a>
                                 </div>
                             </td>
-                            <td>${previous_changeset_revision_label | h}</td>
+                            <td>${previous_changeset_revision_label}</td>
                             <td>${render_star_rating( repository_rating_name, review.rating, disabled=True )}</td>
                             <td>${approved_str | h}</td>
                         </tr>

@@ -36,11 +36,12 @@ errorpage = """
 """
 
 class RemoteUser( object ):
-    def __init__( self, app, maildomain=None, display_servers=None, admin_users=None ):
+    def __init__( self, app, maildomain=None, display_servers=None, admin_users=None, remote_user_header=None ):
         self.app = app
         self.maildomain = maildomain
         self.display_servers = display_servers or []
         self.admin_users = admin_users or []
+        self.remote_user_header = remote_user_header or 'HTTP_REMOTE_USER'
     def __call__( self, environ, start_response ):
         # Allow display servers
         if self.display_servers and environ.has_key( 'REMOTE_ADDR' ):
@@ -50,16 +51,16 @@ class RemoteUser( object ):
                 # in the event of a lookup failure, deny access
                 host = None
             if host in self.display_servers:
-                environ[ 'HTTP_REMOTE_USER' ] = 'remote_display_server@%s' % ( self.maildomain or 'example.org' )
+                environ[ self.remote_user_header ] = 'remote_display_server@%s' % ( self.maildomain or 'example.org' )
                 return self.app( environ, start_response )
         # Apache sets REMOTE_USER to the string '(null)' when using the
         # Rewrite* method for passing REMOTE_USER and a user is
         # un-authenticated.  Any other possible values need to go here as well.
         path_info = environ.get('PATH_INFO', '')
-        if environ.has_key( 'HTTP_REMOTE_USER' ) and environ[ 'HTTP_REMOTE_USER' ] != '(null)':
-            if not environ[ 'HTTP_REMOTE_USER' ].count( '@' ):
+        if environ.has_key( self.remote_user_header ) and environ[ self.remote_user_header ] != '(null)':
+            if not environ[ self.remote_user_header ].count( '@' ):
                 if self.maildomain is not None:
-                    environ[ 'HTTP_REMOTE_USER' ] += '@' + self.maildomain
+                    environ[ self.remote_user_header ] += '@' + self.maildomain
                 else:
                     title = "Access to Galaxy is denied"
                     message = """
@@ -73,7 +74,7 @@ class RemoteUser( object ):
                         before you may access Galaxy.
                     """
                     return self.error( start_response, title, message )
-            if path_info.startswith( '/user/create' ) and environ[ 'HTTP_REMOTE_USER' ] in self.admin_users:
+            if path_info.startswith( '/user/create' ) and environ[ self.remote_user_header ] in self.admin_users:
                 pass # admins can create users
             elif path_info.startswith( '/user/api_keys' ):
                 pass # api keys can be managed when remote_user is in use

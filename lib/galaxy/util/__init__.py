@@ -2,7 +2,26 @@
 Utility functions used systemwide.
 
 """
-import binascii, errno, grp, logging, os, pickle, random, re, shutil, smtplib, stat, string, sys, tempfile, threading
+
+from __future__ import absolute_import
+
+import binascii
+import errno
+import grp
+import json
+import logging
+import os
+import pickle
+import random
+import re
+import shutil
+import smtplib
+import stat
+import string
+import sys
+import tempfile
+import threading
+
 from email.MIMEText import MIMEText
 
 from os.path import relpath
@@ -21,11 +40,8 @@ from elementtree import ElementTree, ElementInclude
 eggs.require( "wchartype" )
 import wchartype
 
-from inflection import Inflector, English
+from .inflection import Inflector, English
 inflector = Inflector(English)
-
-eggs.require( "simplejson" )
-import simplejson
 
 log   = logging.getLogger(__name__)
 _lock = threading.RLock()
@@ -292,8 +308,8 @@ def shrink_string_by_size( value, size, join_by="..", left_larger=True, beginnin
 
 def pretty_print_json(json_data, is_json_string=False):
     if is_json_string:
-        json_data = simplejson.loads(json_data)
-    return simplejson.dumps(json_data, sort_keys=True, indent=4 * ' ')
+        json_data = json.loads(json_data)
+    return json.dumps(json_data, sort_keys=True, indent=4 * ' ')
 
 # characters that are valid
 valid_chars  = set(string.letters + string.digits + " -=_.()/+*^,:?!")
@@ -373,6 +389,20 @@ def sanitize_for_filename( text, default=None ):
             return sanitize_for_filename( str( unique_id() ) )
         return default
     return out
+
+
+def in_directory( file, directory ):
+    """
+    Return true, if the common prefix of both is equal to directory
+    e.g. /a/b/c/d.rst and directory is /a/b, the common prefix is /a/b
+    """
+
+    # Make both absolute.
+    directory = os.path.abspath( directory )
+    file = os.path.abspath( file )
+
+    return os.path.commonprefix( [ file, directory ] ) == directory
+
 
 class Params( object ):
     """

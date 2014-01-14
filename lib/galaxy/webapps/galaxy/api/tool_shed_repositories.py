@@ -19,11 +19,6 @@ import tool_shed.util.shed_util_common as suc
 
 log = logging.getLogger( __name__ )
 
-def default_tool_shed_repository_value_mapper( trans, tool_shed_repository ):
-    value_mapper={ 'id' : trans.security.encode_id( tool_shed_repository.id ),
-                   'error_message' : tool_shed_repository.error_message or '' }
-    return value_mapper
-
 def get_message_for_no_shed_tool_config():
     # This Galaxy instance is not configured with a shed-related tool panel configuration file.
     message = 'The tool_config_file setting in universe_wsgi.ini must include at least one shed tool configuration file name with a <toolbox> '
@@ -48,8 +43,8 @@ class ToolShedRepositoriesController( BaseAPIController ):
         :param id: the encoded id of the ToolShedRepository object
         """
         # Example URL: http://localhost:8763/api/tool_shed_repositories/f2db41e1fa331b3e/exported_workflows
-        # Since exported workflows are dictionaries with very few attributes that differentiate them from each other, we'll build the
-        # list based on the following dictionary of those few attributes.
+        # Since exported workflows are dictionaries with very few attributes that differentiate them from each
+        # other, we'll build the list based on the following dictionary of those few attributes.
         exported_workflows = []
         repository = suc.get_tool_shed_repository_by_id( trans, id )
         metadata = repository.metadata
@@ -58,16 +53,23 @@ class ToolShedRepositoriesController( BaseAPIController ):
         else:
             exported_workflow_tups = []
         for index, exported_workflow_tup in enumerate( exported_workflow_tups ):
-            # The exported_workflow_tup looks like ( relative_path, exported_workflow_dict ), where the value of relative_path is the location
-            # on disk (relative to the root of the installed repository) where the exported_workflow_dict file (.ga file) is located.
+            # The exported_workflow_tup looks like ( relative_path, exported_workflow_dict ), where the value of
+            # relative_path is the location on disk (relative to the root of the installed repository) where the
+            # exported_workflow_dict file (.ga file) is located.
             exported_workflow_dict = exported_workflow_tup[ 1 ]
             annotation = exported_workflow_dict.get( 'annotation', '' )
             format_version = exported_workflow_dict.get( 'format-version', '' )
             workflow_name = exported_workflow_dict.get( 'name', '' )
-            # Since we don't have an in-memory object with an id, we'll identify the exported workflow via it's location (i.e., index) in the list.
+            # Since we don't have an in-memory object with an id, we'll identify the exported workflow via it's
+            # location (i.e., index) in the list.
             display_dict = dict( index=index, annotation=annotation, format_version=format_version, workflow_name=workflow_name )
             exported_workflows.append( display_dict )
         return exported_workflows
+
+    def __get_value_mapper( self, trans, tool_shed_repository ):
+        value_mapper={ 'id' : trans.security.encode_id( tool_shed_repository.id ),
+                       'error_message' : tool_shed_repository.error_message or '' }
+        return value_mapper
 
     @web.expose_api
     def import_workflow( self, trans, payload, **kwd ):
@@ -96,13 +98,11 @@ class ToolShedRepositoriesController( BaseAPIController ):
         # Since we don't have an in-memory object with an id, we'll identify the exported workflow via it's location (i.e., index) in the list.
         exported_workflow = exported_workflows[ int( index ) ]
         workflow_name = exported_workflow[ 'workflow_name' ]
-        workflow, status, message = workflow_util.import_workflow( trans, repository, workflow_name )
+        workflow, status, error_message = workflow_util.import_workflow( trans, repository, workflow_name )
         if status == 'error':
-            log.error( message, exc_info=True )
-            trans.response.status = 500
-            return message
-        else:
-            return workflow.to_dict( view='element' )
+            log.debug( error_message )
+            return {}
+        return workflow.to_dict( view='element' )
 
     @web.expose_api
     def import_workflows( self, trans, **kwd ):
@@ -125,11 +125,9 @@ class ToolShedRepositoriesController( BaseAPIController ):
         imported_workflow_dicts = []
         for exported_workflow_dict in exported_workflows:
             workflow_name = exported_workflow_dict[ 'workflow_name' ]
-            workflow, status, message = workflow_util.import_workflow( trans, repository, workflow_name )
+            workflow, status, error_message = workflow_util.import_workflow( trans, repository, workflow_name )
             if status == 'error':
-                log.error( message, exc_info=True )
-                trans.response.status = 500
-                return message
+                log.debug( error_message )
             else:
                 imported_workflow_dicts.append( workflow.to_dict( view='element' ) )
         return imported_workflow_dicts
@@ -142,22 +140,15 @@ class ToolShedRepositoriesController( BaseAPIController ):
         """
         # Example URL: http://localhost:8763/api/tool_shed_repositories
         tool_shed_repository_dicts = []
-        try:
-            query = trans.install_model.context.query( trans.app.install_model.ToolShedRepository ) \
-                                    .order_by( trans.app.install_model.ToolShedRepository.table.c.name ) \
-                                    .all()
-            for tool_shed_repository in query:
-                tool_shed_repository_dict = tool_shed_repository.to_dict( value_mapper=default_tool_shed_repository_value_mapper( trans, tool_shed_repository ) )
-                tool_shed_repository_dict[ 'url' ] = web.url_for( controller='tool_shed_repositories',
-                                                                  action='show',
-                                                                  id=trans.security.encode_id( tool_shed_repository.id ) )
-                tool_shed_repository_dicts.append( tool_shed_repository_dict )
-            return tool_shed_repository_dicts
-        except Exception, e:
-            message = "Error in the tool_shed_repositories API in index: %s" % str( e )
-            log.error( message, exc_info=True )
-            trans.response.status = 500
-            return message
+        for tool_shed_repository in trans.install_model.context.query( trans.app.install_model.ToolShedRepository ) \
+                                                               .order_by( trans.app.install_model.ToolShedRepository.table.c.name ):
+            tool_shed_repository_dict = \
+                tool_shed_repository.to_dict( value_mapper=self.__get_value_mapper( trans, tool_shed_repository ) )
+            tool_shed_repository_dict[ 'url' ] = web.url_for( controller='tool_shed_repositories',
+                                                              action='show',
+                                                              id=trans.security.encode_id( tool_shed_repository.id ) )
+            tool_shed_repository_dicts.append( tool_shed_repository_dict )
+        return tool_shed_repository_dicts
 
     @web.expose_api
     def install_repository_revision( self, trans, payload, **kwd ):
@@ -171,7 +162,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
         :param tool_shed_url (required): the base URL of the Tool Shed from which to install the Repository
         :param name (required): the name of the Repository
         :param owner (required): the owner of the Repository
-        :param changset_revision (required): the changset_revision of the RepositoryMetadata object associated with the Repository
+        :param changeset_revision (required): the changeset_revision of the RepositoryMetadata object associated with the Repository
         :param new_tool_panel_section_label (optional): label of a new section to be added to the Galaxy tool panel in which to load
                                                         tools contained in the Repository.  Either this parameter must be an empty string or
                                                         the tool_panel_section_id parameter must be an empty string or both must be an empty
@@ -208,8 +199,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
         # Make sure this Galaxy instance is configured with a shed-related tool panel configuration file.
         if not suc.have_shed_tool_conf_for_install( trans ):
             message = get_message_for_no_shed_tool_config()
-            log.error( message, exc_info=True )
-            trans.response.status = 500
+            log.debug( message )
             return dict( status='error', error=message )
         # Make sure the current user's API key proves he is an admin user in this Galaxy instance.
         if not trans.user_is_admin():
@@ -225,18 +215,20 @@ class ToolShedRepositoriesController( BaseAPIController ):
         except Exception, e:
             message = "Error attempting to retrieve installation information from tool shed %s for revision %s of repository %s owned by %s: %s" % \
                 ( str( tool_shed_url ), str( changeset_revision ), str( name ), str( owner ), str( e ) )
-            log.error( message, exc_info=True )
-            trans.response.status = 500
+            log.debug( message )
             return dict( status='error', error=message )
         if raw_text:
+            # If successful, the response from get_repository_revision_install_info will be 3
+            # dictionaries, a dictionary defining the Repository, a dictionary defining the
+            # Repository revision (RepositoryMetadata), and a dictionary including the additional
+            # information required to install the repository.
             items = json.from_json_string( raw_text )
             repository_revision_dict = items[ 1 ]
             repo_info_dict = items[ 2 ]
         else:
             message = "Unable to retrieve installation information from tool shed %s for revision %s of repository %s owned by %s: %s" % \
                 ( str( tool_shed_url ), str( changeset_revision ), str( name ), str( owner ), str( e ) )
-            log.error( message, exc_info=True )
-            trans.response.status = 500
+            log.debug( message )
             return dict( status='error', error=message )
         repo_info_dicts = [ repo_info_dict ]
         # Make sure the tool shed returned everything we need for installing the repository.
@@ -345,7 +337,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
                                                                   tool_path,
                                                                   install_tool_dependencies,
                                                                   reinstalling=False )
-                    tool_shed_repository_dict = tool_shed_repository.as_dict( value_mapper=default_tool_shed_repository_value_mapper( trans, tool_shed_repository ) )
+                    tool_shed_repository_dict = tool_shed_repository.as_dict( value_mapper=self.__get_value_mapper( trans, tool_shed_repository ) )
                     tool_shed_repository_dict[ 'url' ] = web.url_for( controller='tool_shed_repositories',
                                                                       action='show',
                                                                       id=trans.security.encode_id( tool_shed_repository.id ) )
@@ -372,7 +364,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
         :param tool_shed_urls: the base URLs of the Tool Sheds from which to install a specified Repository
         :param names: the names of the Repositories to be installed
         :param owners: the owners of the Repositories to be installed
-        :param changset_revisions: the changset_revisions of each RepositoryMetadata object associated with each Repository to be installed
+        :param changeset_revisions: the changeset_revisions of each RepositoryMetadata object associated with each Repository to be installed
         :param new_tool_panel_section_label: optional label of a new section to be added to the Galaxy tool panel in which to load
                                              tools contained in the Repository.  Either this parameter must be an empty string or
                                              the tool_panel_section_id parameter must be an empty string, as both cannot be used.
@@ -394,8 +386,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
         if not suc.have_shed_tool_conf_for_install( trans ):
             # This Galaxy instance is not configured with a shed-related tool panel configuration file.
             message = get_message_for_no_shed_tool_config()
-            log.error( message, exc_info=True )
-            trans.response.status = 500
+            log.debug( message )
             return dict( status='error', error=message )
         if not trans.user_is_admin():
             raise HTTPForbidden( detail='You are not authorized to install a tool shed repository into this Galaxy instance.' )
@@ -410,8 +401,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
             len( changeset_revisions ) != num_specified_repositories:
             message = 'Error in tool_shed_repositories API in install_repository_revisions: the received parameters must be ordered '
             message += 'lists so that positional values in tool_shed_urls, names, owners and changeset_revisions are associated.'
-            log.error( message, exc_info=True )
-            trans.response.status = 500
+            log.debug( message )
             return dict( status='error', error=message )
         # Get the information about the Galaxy components (e.g., tool pane section, tool config file, etc) that will contain information
         # about each of the repositories being installed.
@@ -454,7 +444,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
         :param tool_shed_url (required): the base URL of the Tool Shed from which the Repository was installed
         :param name (required): the name of the Repository
         :param owner (required): the owner of the Repository
-        :param changset_revision (required): the changset_revision of the RepositoryMetadata object associated with the Repository
+        :param changeset_revision (required): the changeset_revision of the RepositoryMetadata object associated with the Repository
         """
         # Get the information about the repository to be installed from the payload.
         tool_shed_url = payload.get( 'tool_shed_url', '' )
@@ -482,7 +472,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
                 repair_dict = repository_util.repair_tool_shed_repository( trans,
                                                                            repository,
                                                                            encoding_util.tool_shed_encode( repo_info_dict ) )
-                repository_dict = repository.to_dict( value_mapper=default_tool_shed_repository_value_mapper( trans, repository ) )
+                repository_dict = repository.to_dict( value_mapper=self.__get_value_mapper( trans, repository ) )
                 repository_dict[ 'url' ] = web.url_for( controller='tool_shed_repositories',
                                                         action='show',
                                                         id=trans.security.encode_id( repository.id ) )
@@ -502,39 +492,39 @@ class ToolShedRepositoriesController( BaseAPIController ):
 
         :param key: the API key of the Galaxy admin user.
         """
-        try:
-            start_time = strftime( "%Y-%m-%d %H:%M:%S" )
-            results = dict( start_time=start_time,
-                            successful_count=0,
-                            unsuccessful_count=0,
-                            repository_status=[] )
-            # Make sure the current user's API key proves he is an admin user in this Galaxy instance.
-            if not trans.user_is_admin():
-                raise HTTPForbidden( detail='You are not authorized to reset metadata on repositories installed into this Galaxy instance.' )
-            query = suc.get_query_for_setting_metadata_on_repositories( trans, my_writable=False, order=False )
-            # Now reset metadata on all remaining repositories.
-            for repository in query:
-                repository_id = trans.security.encode_id( repository.id )
-                try:
-                    invalid_file_tups, metadata_dict = metadata_util.reset_all_metadata_on_installed_repository( trans, repository_id )
-                    if invalid_file_tups:
-                        message = tool_util.generate_message_for_invalid_tools( trans, invalid_file_tups, repository, None, as_html=False )
-                        results[ 'unsuccessful_count' ] += 1
-                    else:
-                        message = "Successfully reset metadata on repository %s owned by %s" % ( str( repository.name ), str( repository.owner ) )
-                        results[ 'successful_count' ] += 1
-                except Exception, e:
-                    message = "Error resetting metadata on repository %s owned by %s: %s" % ( str( repository.name ), str( repository.owner ), str( e ) )
+        start_time = strftime( "%Y-%m-%d %H:%M:%S" )
+        results = dict( start_time=start_time,
+                        successful_count=0,
+                        unsuccessful_count=0,
+                        repository_status=[] )
+        # Make sure the current user's API key proves he is an admin user in this Galaxy instance.
+        if not trans.user_is_admin():
+            raise HTTPForbidden( detail='You are not authorized to reset metadata on repositories installed into this Galaxy instance.' )
+        query = suc.get_query_for_setting_metadata_on_repositories( trans, my_writable=False, order=False )
+        # Now reset metadata on all remaining repositories.
+        for repository in query:
+            repository_id = trans.security.encode_id( repository.id )
+            try:
+                invalid_file_tups, metadata_dict = metadata_util.reset_all_metadata_on_installed_repository( trans, repository_id )
+                if invalid_file_tups:
+                    message = tool_util.generate_message_for_invalid_tools( trans,
+                                                                            invalid_file_tups,
+                                                                            repository,
+                                                                            None,
+                                                                            as_html=False )
                     results[ 'unsuccessful_count' ] += 1
-                results[ 'repository_status' ].append( message )
-            stop_time = strftime( "%Y-%m-%d %H:%M:%S" )
-            results[ 'stop_time' ] = stop_time
-            return json.to_json_string( results, sort_keys=True, indent=4 * ' ' )
-        except Exception, e:
-            message = "Error in the Galaxy tool_shed_repositories API in reset_metadata_on_installed_repositories: %s" % str( e )
-            log.error( message, exc_info=True )
-            trans.response.status = 500
-            return message
+                else:
+                    message = "Successfully reset metadata on repository %s owned by %s" % \
+                        ( str( repository.name ), str( repository.owner ) )
+                    results[ 'successful_count' ] += 1
+            except Exception, e:
+                message = "Error resetting metadata on repository %s owned by %s: %s" % \
+                    ( str( repository.name ), str( repository.owner ), str( e ) )
+                results[ 'unsuccessful_count' ] += 1
+            results[ 'repository_status' ].append( message )
+        stop_time = strftime( "%Y-%m-%d %H:%M:%S" )
+        results[ 'stop_time' ] = stop_time
+        return json.to_json_string( results, sort_keys=True, indent=4 * ' ' )
 
     @web.expose_api
     def show( self, trans, id, **kwd ):
@@ -545,15 +535,12 @@ class ToolShedRepositoriesController( BaseAPIController ):
         :param id: the encoded id of the ToolShedRepository object
         """
         # Example URL: http://localhost:8763/api/tool_shed_repositories/df7a1f0c02a5b08e
-        try:
-            tool_shed_repository = suc.get_tool_shed_repository_by_id( trans, id )
-            tool_shed_repository_dict = tool_shed_repository.as_dict( value_mapper=default_tool_shed_repository_value_mapper( trans, tool_shed_repository ) )
-            tool_shed_repository_dict[ 'url' ] = web.url_for( controller='tool_shed_repositories',
-                                                              action='show',
-                                                              id=trans.security.encode_id( tool_shed_repository.id ) )
-            return tool_shed_repository_dict
-        except Exception, e:
-            message = "Error in tool_shed_repositories API in index: " + str( e )
-            log.error( message, exc_info=True )
-            trans.response.status = 500
-            return message
+        tool_shed_repository = suc.get_tool_shed_repository_by_id( trans, id )
+        if tool_shed_repository is None:
+            log.debug( "Unable to locate tool_shed_repository record for id %s." % ( str( id ) ) )
+            return {}
+        tool_shed_repository_dict = tool_shed_repository.as_dict( value_mapper=self.__get_value_mapper( trans, tool_shed_repository ) )
+        tool_shed_repository_dict[ 'url' ] = web.url_for( controller='tool_shed_repositories',
+                                                          action='show',
+                                                          id=trans.security.encode_id( tool_shed_repository.id ) )
+        return tool_shed_repository_dict

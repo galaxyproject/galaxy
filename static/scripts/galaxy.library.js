@@ -23,6 +23,11 @@ define([
       urlRoot: '/api/libraries'
   });
 
+    // FOLDER AS MODEL
+    var FolderAsModel = Backbone.Model.extend({
+      urlRoot: '/api/folders'
+  });
+
     // LIBRARIES
     var Libraries = Backbone.Collection.extend({
       url: '/api/libraries',
@@ -34,7 +39,7 @@ define([
         urlRoot : '/api/libraries/datasets'
     })
 
-    // FOLDER
+    // FOLDER AS COLLECTION
     var Folder = Backbone.Collection.extend({
       model: Item
   })
@@ -85,7 +90,7 @@ define([
 // === VIEWS ====
 // MMMMMMMMMMMMMM
 
-// galaxy folder
+//main view for folder browsing
 var FolderContentView = Backbone.View.extend({
     // main element definition
     el : '#center',
@@ -111,7 +116,7 @@ var FolderContentView = Backbone.View.extend({
 // === TEMPLATES ====
 // MMMMMMMMMMMMMMMMMM
 
-    // set up
+    // main template for folder browsing
     templateFolder : function (){
         var tmpl_array = [];
 
@@ -157,7 +162,7 @@ var FolderContentView = Backbone.View.extend({
         tmpl_array.push('       <th>name</th>');
         tmpl_array.push('       <th>data type</th>');
         tmpl_array.push('       <th>size</th>');
-        tmpl_array.push('       <th>date</th>');
+        tmpl_array.push('       <th>date (UTC)</th>');
         tmpl_array.push('   </thead>');
         tmpl_array.push('   <tbody>');
         tmpl_array.push('       <td></td>');
@@ -179,7 +184,7 @@ var FolderContentView = Backbone.View.extend({
         tmpl_array.push('           <span class="muted">(empty folder)</span>');
         tmpl_array.push('           <% } %>');
         tmpl_array.push('           </td>');
-        tmpl_array.push('           <td>folder</td>'); // data type
+        tmpl_array.push('           <td>folder</td>');
         tmpl_array.push('           <td><%= _.escape(content_item.get("item_count")) %> item(s)</td>'); // size
         tmpl_array.push('           <% } else {  %>');
         tmpl_array.push('           <td style="text-align: center; "><input style="margin: 0;" type="checkbox"></td>');
@@ -223,7 +228,7 @@ var FolderContentView = Backbone.View.extend({
         tmpl_array.push('           <td><%= _.escape(size) %></td>');
         tmpl_array.push('       </tr>');
         tmpl_array.push('       <tr>');
-        tmpl_array.push('           <th scope="row">Date uploaded</th>');
+        tmpl_array.push('           <th scope="row">Date uploaded (UTC)</th>');
         tmpl_array.push('           <td><%= _.escape(item.get("date_uploaded")) %></td>');
         tmpl_array.push('       </tr>');
         tmpl_array.push('       <tr>');
@@ -235,7 +240,7 @@ var FolderContentView = Backbone.View.extend({
         tmpl_array.push('           <td scope="row"><%= _.escape(item.get("metadata_data_lines")) %></td>');
         tmpl_array.push('       </tr>');
         tmpl_array.push('       <th scope="row">Comment Lines</th>');
-        tmpl_array.push('           <% if (item.get("metadata_comment_lines") === "") { %>'); //folder
+        tmpl_array.push('           <% if (item.get("metadata_comment_lines") === "") { %>');
         tmpl_array.push('               <td scope="row"><%= _.escape(item.get("metadata_comment_lines")) %></td>');
         tmpl_array.push('           <% } else { %>');
         tmpl_array.push('               <td scope="row">unknown</td>');
@@ -291,19 +296,34 @@ var FolderContentView = Backbone.View.extend({
         return tmpl_array.join('');
         },
 
-      // convert size to nice string
-      size_to_string : function (size)
-      {
-            // identify unit
-            var unit = "";
-            if (size >= 100000000000)   { size = size / 100000000000; unit = "TB"; } else
-            if (size >= 100000000)      { size = size / 100000000; unit = "GB"; } else
-            if (size >= 100000)         { size = size / 100000; unit = "MB"; } else
-            if (size >= 100)            { size = size / 100; unit = "KB"; } else
-            { size = size * 10; unit = "b"; }
-            // return formatted string
-            return (Math.round(size) / 10) + unit;
-        },
+      templateProgressBar : function (){
+        var tmpl_array = [];
+
+        tmpl_array.push('<div class="import_text">');
+        tmpl_array.push('Importing selected datasets to history <b><%= _.escape(history_name) %></b>');
+        tmpl_array.push('</div>');
+        tmpl_array.push('<div class="progress">');
+        tmpl_array.push('   <div class="progress-bar progress-bar-import" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 00%;">');
+        tmpl_array.push('       <span class="completion_span">0% Complete</span>');
+        tmpl_array.push('   </div>');
+        tmpl_array.push('</div>');
+        tmpl_array.push('');
+
+        return tmpl_array.join('');
+      },
+
+    templateNewFolderInModal: function(){
+        tmpl_array = [];
+
+        tmpl_array.push('<div id="new_folder_modal">');
+        tmpl_array.push('<form>');
+        tmpl_array.push('<input type="text" name="Name" value="" placeholder="Name">');
+        tmpl_array.push('<input type="text" name="Description" value="" placeholder="Description">');
+        tmpl_array.push('</form>');
+        tmpl_array.push('</div>');
+
+        return tmpl_array.join('');
+    },
 
 // MMMMMMMMMMMMMMM
 // === EVENTS ====
@@ -316,9 +336,13 @@ var FolderContentView = Backbone.View.extend({
             'click #toolbtn_bulk_import' : 'modalBulkImport',
             'click #toolbtn_dl' : 'bulkDownload',
             'click .library-dataset' : 'showDatasetDetails',
-            'click #toolbtn_create_folder' : 'createFolderModal',
+            'click #toolbtn_create_folder' : 'createFolderFromModal',
             'click .btn_open_folder' : 'navigateToFolder'
         },
+
+// MMMMMMMMMMMMMMMMMM
+// === FUNCTIONS ====
+// MMMMMMMMMMMMMMMMMM
 
       //render the folder view
       render: function (options) {
@@ -355,8 +379,25 @@ var FolderContentView = Backbone.View.extend({
               // var template = _.template(that.templateFolder(), { path: folderContainer.full_path, items: folderContainer.attributes.folder.models, id: options.id });
               that.$el.html(template);
 
-            }
+            },
+              error: function(){
+                mod_toastr.error('An error occured :(');
+              }
           })
+        },
+
+      // convert size to nice string
+      size_to_string : function (size)
+      {
+            // identify unit
+            var unit = "";
+            if (size >= 100000000000)   { size = size / 100000000000; unit = "TB"; } else
+            if (size >= 100000000)      { size = size / 100000000; unit = "GB"; } else
+            if (size >= 100000)         { size = size / 100000; unit = "MB"; } else
+            if (size >= 100)            { size = size / 100; unit = "KB"; } else
+            { size = size * 10; unit = "b"; }
+            // return formatted string
+            return (Math.round(size) / 10) + unit;
         },
 
       // handles the click on 'open' and 'upper' folder icons
@@ -393,9 +434,18 @@ var FolderContentView = Backbone.View.extend({
 // TODO can render here already
                 //fetch user histories for import purposes
                 histories.fetch({
-                    success: function (histories){self.renderModalAfterFetch(item, histories)}
+                    success: function (histories){
+                        self.renderModalAfterFetch(item, histories)
+                    },
+                      error: function(){
+                        mod_toastr.error('An error occured during fetching histories:(');
+                        self.renderModalAfterFetch(item)
+                    }
                 });
-            }
+            },
+              error: function(){
+                mod_toastr.error('An error occured during loading dataset details :(');
+              }
         });
     },
 
@@ -403,30 +453,31 @@ var FolderContentView = Backbone.View.extend({
       renderModalAfterFetch : function(item, histories){
         var size = this.size_to_string(item.get('file_size'));
         var template = _.template(this.templateDatasetModal(), { item : item, size : size });
-        this.modal = null;
             // make modal
             var self = this;
             this.modal = new mod_modal.GalaxyModal({
+                destructible : true,
                 title   : 'Dataset Details',
                 body    : template,
                 buttons : {
                     'Import' : function() { self.importCurrentIntoHistory() },
                     'Download' : function() { self.downloadCurrent() },
-                    'Close'  : function() { self.modal.hide(); $('.modal').remove(); self.modal = null; } // TODO refill nicely modal with data
+                    'Close'  : function() { self.modal.hideOrDestroy() }
                 }
             });
-            this.modal.bindEvents(event);
             
             $(".peek").html(item.get("peek"));
-            var history_footer_tmpl = _.template(this.templateHistorySelectInModal(), {histories : histories.models});
-            $(this.modal.elMain).find('.buttons').prepend(history_footer_tmpl);
 
-            // preset last selected history if we know it
-            if (self.lastSelectedHistory.length > 0) {
-                $(this.modal.elMain).find('#dataset_import_single').val(self.lastSelectedHistory);
-            }
-
-            // show the prepared modal
+            // show the import-into-history footer only if the request for histories succeeded
+            if (typeof history.models !== undefined){
+                var history_footer_tmpl = _.template(this.templateHistorySelectInModal(), {histories : histories.models});
+                $(this.modal.elMain).find('.buttons').prepend(history_footer_tmpl);
+                // preset last selected history if we know it
+                if (self.lastSelectedHistory.length > 0) {
+                    $(this.modal.elMain).find('#dataset_import_single').val(self.lastSelectedHistory);
+                }
+            } 
+            this.modal.bindEvents();
             this.modal.show();
         },
 
@@ -506,6 +557,7 @@ var FolderContentView = Backbone.View.extend({
                 source = 'td';
             }
             if (checkbox === '') {event.stopPropagation(); return;} // button in row was clicked
+            if (checkbox === undefined) {event.stopPropagation(); return;} // folder row was clicked
 
                 if (checkbox.checked){
                     if (source==='td'){
@@ -549,7 +601,6 @@ var FolderContentView = Backbone.View.extend({
                 $('#toolbtn_bulk_import').hide();
                 $('#toolbtn_dl').hide();
             }
-
         },
 
         // show bulk import modal
@@ -562,22 +613,26 @@ var FolderContentView = Backbone.View.extend({
                         // make modal
                         var history_modal_tmpl =  _.template(self.templateBulkImportInModal(), {histories : histories.models});
                         self.modal = new mod_modal.GalaxyModal({
+                            destructible : true,
                             title   : 'Import into History',
                             body    : history_modal_tmpl,
                             buttons : {
                                 'Import' : function() {self.importAllIntoHistory()},
-                                'Close'  : function() {self.modal.hide(); $('.modal').remove(); self.modal = null;}
+                                'Close'  : function() {self.modal.hideOrDestroy();}
                             }
                         });
-                        // show the prepared modal
+                        self.modal.bindEvents();
                         self.modal.show();
+                    },
+                    error: function(){
+                      mod_toastr.error('An error occured :(');
                     }
                 });
         },
 
         // import all selected datasets into history
         importAllIntoHistory : function (){
-            //disable the button
+            //disable the button to prevent multiple submission
             this.modal.disableButton('Import');
 
             var history_id = $("select[name=dataset_import_bulk] option:selected").val();
@@ -608,7 +663,7 @@ var FolderContentView = Backbone.View.extend({
                 datasets_to_import.push(historyItem);
             };
 
-            // call the recursive function to call ajax one after each other
+            // call the recursive function to call ajax one after each other (request FIFO queue)
             this.chainCall(datasets_to_import);
         },
 
@@ -617,9 +672,7 @@ var FolderContentView = Backbone.View.extend({
             var popped_item = history_item_set.pop();
             if (typeof popped_item === "undefined") {
                 mod_toastr.success('All datasets imported');
-                this.modal.hide();
-                // enable button again
-                self.modal.enableButton('Import');
+                this.modal.hideOrDestroy();
                 return
             }
                 var promise = $.when(popped_item.save({content: popped_item.content, source: popped_item.source})).done(function(a1){
@@ -635,27 +688,12 @@ var FolderContentView = Backbone.View.extend({
         },
         updateProgress: function(){
             this.progress += this.progressStep;
-            $('.progress-bar').width(Math.round(this.progress) + '%');
+            $('.progress-bar-import').width(Math.round(this.progress) + '%');
             txt_representation = Math.round(this.progress) + '% Complete';
             $('.completion_span').text(txt_representation);
         },
 
-      // progress bar
-      templateProgressBar : function (){
-        var tmpl_array = [];
 
-        tmpl_array.push('<div class="import_text">');
-        tmpl_array.push('Importing selected datasets to history <b><%= _.escape(history_name) %></b>');
-        tmpl_array.push('</div>');
-        tmpl_array.push('<div class="progress">');
-        tmpl_array.push('   <div class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 00%;">');
-        tmpl_array.push('       <span class="completion_span">0% Complete</span>');
-        tmpl_array.push('   </div>');
-        tmpl_array.push('</div>');
-        tmpl_array.push('');
-
-        return tmpl_array.join('');
-      },
 
       // download selected datasets
       download : function(folder_id, format){
@@ -691,9 +729,64 @@ var FolderContentView = Backbone.View.extend({
       },
 
       // shows modal for creating folder
-      createFolderModal: function(){
-        mod_toastr.info('This will create folder...in the future');
-      }
+      createFolderFromModal: function(){
+        event.preventDefault();
+        event.stopPropagation();
+
+        // create modal
+            var self = this;
+            this.modal = new mod_modal.GalaxyModal({
+                destructible : true,
+                title   : 'Create New Folder',
+                body    : this.templateNewFolderInModal(),
+                buttons : {
+                    'Create' : function() {self.create_new_folder_event()},
+                    'Close'  : function() {self.modal.hideOrDestroy(); self.modal = null;}
+                }
+            });
+        this.modal.bindEvents();
+        this.modal.show();
+      },
+
+    // create the new folder from modal
+    create_new_folder_event: function(){
+        var folderDetails = this.serialize_new_folder();
+        if (this.validate_new_folder(folderDetails)){
+            var folder = new FolderAsModel();
+
+            url_items = Backbone.history.fragment.split('/');
+            current_folder_id = url_items[url_items.length-1];
+            folder.url = folder.urlRoot + '/' + current_folder_id ;
+
+            var self = this;
+            folder.save(folderDetails, {
+              success: function (folder) {
+                self.modal.hideOrDestroy();
+                mod_toastr.success('Folder created');
+                self.render({id: current_folder_id});
+              },
+              error: function(){
+                mod_toastr.error('An error occured :(');
+              }
+            });
+        } else {
+            mod_toastr.error('Folder\'s name is missing');
+        }
+        return false;
+    },
+
+    // serialize data from the form
+    serialize_new_folder : function(){
+        return {
+            name: $("input[name='Name']").val(),
+            description: $("input[name='Description']").val()
+        };
+    },
+
+    // validate new library info
+    validate_new_folder: function(folderDetails){
+        return folderDetails.name !== '';
+    }
 
     });
 
@@ -709,11 +802,13 @@ var GalaxyLibraryview = Backbone.View.extend({
     initialize : function(){
     },
 
-    // template
-    template_library_list : function (){
+// MMMMMMMMMMMMMMMMMM
+// === TEMPLATES ====
+// MMMMMMMMMMMMMMMMMM
+
+    templateLibraryList: function(){
         tmpl_array = [];
         tmpl_array.push('<div id="library_container" style="width: 90%; margin: auto; margin-top: 2em; overflow: auto !important; ">');
-
         tmpl_array.push('');
         tmpl_array.push('<h3>New Data Libraries. This is work in progress. Report problems & ideas to <a href="mailto:marten@bx.psu.edu?Subject=DataLibraries_Feedback" target="_blank">Marten</a>.</h3>');
         tmpl_array.push('<a href="" id="create_new_library_btn" class="btn btn-primary file ">New Library</a>');
@@ -738,14 +833,27 @@ var GalaxyLibraryview = Backbone.View.extend({
         tmpl_array.push('       <% }); %>');
         tmpl_array.push('   </tbody>');
         tmpl_array.push('</table>');
-
         tmpl_array.push('</div>');
+
         return tmpl_array.join('');
     },
 
-    // render
+    templateNewLibraryInModal: function(){
+        tmpl_array = [];
+
+        tmpl_array.push('<div id="new_library_modal">');
+        tmpl_array.push('   <form>');
+        tmpl_array.push('       <input type="text" name="Name" value="" placeholder="Name">');
+        tmpl_array.push('       <input type="text" name="Description" value="" placeholder="Description">');
+        tmpl_array.push('       <input type="text" name="Synopsis" value="" placeholder="Synopsis">');
+        tmpl_array.push('   </form>');
+        tmpl_array.push('</div>');
+
+        return tmpl_array.join('');
+    },
+
     render: function () {
-        //hack to show scrollbars due to #center element inheritance
+        // modification of upper DOM element to show scrollbars due to the #center element inheritance
         $("#center").css('overflow','auto');
         
         var that = this;
@@ -753,7 +861,7 @@ var GalaxyLibraryview = Backbone.View.extend({
 
         libraries.fetch({
           success: function (libraries) {
-            var template = _.template(that.template_library_list(), { libraries : libraries.models });
+            var template = _.template(that.templateLibraryList(), { libraries : libraries.models });
             that.$el.html(template);
           },
           error: function(model, response){
@@ -784,17 +892,16 @@ var GalaxyLibraryview = Backbone.View.extend({
 
         // create modal
             var self = this;
-            this.modal = new mod_modal.GalaxyModal(
-            {
+            this.modal = new mod_modal.GalaxyModal({
+                destructible : true,
                 title   : 'Create New Library',
-                body    : this.template_new_library(),
+                body    : this.templateNewLibraryInModal(),
                 buttons : {
                     'Create' : function() {self.create_new_library_event()},
-                    'Close'  : function() {self.modal.hide()}
+                    'Close'  : function() {self.modal.hideOrDestroy();}
                 }
             });
-
-        // show prepared modal
+        this.modal.bindEvents();
         this.modal.show();
     },
 
@@ -806,7 +913,7 @@ var GalaxyLibraryview = Backbone.View.extend({
             var self = this;
             library.save(libraryDetails, {
               success: function (library) {
-                self.modal.hide();
+                self.modal.hideOrDestroy();
                 self.clear_library_modal();
                 self.render();
                 mod_toastr.success('Library created');
@@ -840,21 +947,6 @@ var GalaxyLibraryview = Backbone.View.extend({
     // validate new library info
     validate_new_library: function(libraryDetails){
         return libraryDetails.name !== '';
-    },
-
-    // template for new library modal
-    template_new_library: function(){
-        tmpl_array = [];
-
-        tmpl_array.push('<div id="new_library_modal">');
-        tmpl_array.push('<form>');
-        tmpl_array.push('<input type="text" name="Name" value="" placeholder="Name">');
-        tmpl_array.push('<input type="text" name="Description" value="" placeholder="Description">');
-        tmpl_array.push('<input type="text" name="Synopsis" value="" placeholder="Synopsis">');
-        tmpl_array.push('</form>');
-        tmpl_array.push('</div>');
-
-        return tmpl_array.join('');
     }
 });
 
@@ -862,6 +954,7 @@ var GalaxyLibraryview = Backbone.View.extend({
 var GalaxyLibrary = Backbone.View.extend({
     folderContentView : null,
     galaxyLibraryview : null,
+
     initialize : function(){
 
         folderContentView = new FolderContentView();

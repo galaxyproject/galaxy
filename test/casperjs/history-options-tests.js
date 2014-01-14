@@ -47,9 +47,8 @@ var filepathToUpload = '../../test-data/1.txt',
 
 // =================================================================== TESTS
 // ------------------------------------------------------------------- set up
-// start a new user
+// start a new user and upload a file
 spaceghost.user.loginOrRegisterUser( email, password );
-
 spaceghost.tools.uploadFile( filepathToUpload, function uploadCallback( _uploadInfo ){
     testUploadInfo = _uploadInfo;
 });
@@ -114,8 +113,15 @@ spaceghost.then( function(){
         this.test.assertDoesntExist( '#' + testUploadInfo.hdaElement.attributes.id,
             "Deleted HDA is not in the DOM (using history options -> " + includeDeletedOptionsLabel + ")" );
     });
+});
+
+spaceghost.then( function(){
     // undelete the uploaded file
-    this.historypanel.undeleteHda( '#' + testUploadInfo.hdaElement.attributes.id );
+    this.historyoptions.includeDeleted( function(){
+        this.historypanel.undeleteHda( '#' + testUploadInfo.hdaElement.attributes.id );
+        spaceghost.debug( 'undeleted' );
+    });
+
 });
 
 // ------------------------------------------------------------------- hidden hdas aren't shown
@@ -132,10 +138,8 @@ spaceghost.then( function(){
 
     this.historyoptions.collapseExpanded( function(){
         var uploadedSelector = '#' + testUploadInfo.hdaElement.attributes.id;
-        this.withHistoryPanel( function(){
-            this.test.assertNotVisible( uploadedSelector + ' ' + this.historypanel.data.selectors.hda.body,
-                "Body for uploaded file is not visible" );
-        });
+        this.test.assertNotVisible( uploadedSelector + ' ' + this.historypanel.data.selectors.hda.body,
+            "Body for uploaded file is not visible" );
     });
 });
 

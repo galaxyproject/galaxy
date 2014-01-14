@@ -93,13 +93,7 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
 
         // re-get web controller urls for functions relating to this hda. (new model data may have changed this)
         this.urls = this.model.urls();
-
-        // create a new render using a skeleton template, render title buttons, render body, and set up events, etc.
-        var $newRender = $( HDABaseView.templates.skeleton( this.model.toJSON() ) );
-        $newRender.find( '.dataset-primary-actions' ).append( this._render_titleButtons() );
-        $newRender.children( '.dataset-body' ).replaceWith( this._render_body() );
-        this._setUpBehaviors( $newRender );
-        //this._renderSelectable( $newRender );
+        var $newRender = this._buildNewRender();
 
         // fade the old render out (if desired)
         if( fade ){
@@ -127,6 +121,16 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
             next();
         });
         return this;
+    },
+    
+    _buildNewRender : function(){
+        // create a new render using a skeleton template, render title buttons, render body, and set up events, etc.
+        var $newRender = $( HDABaseView.templates.skeleton( this.model.toJSON() ) );
+        $newRender.find( '.dataset-primary-actions' ).append( this._render_titleButtons() );
+        $newRender.children( '.dataset-body' ).replaceWith( this._render_body() );
+        this._setUpBehaviors( $newRender );
+        //this._renderSelectable( $newRender );
+        return $newRender;
     },
 
     /** set up js behaviors, event handlers for elements within the given container
@@ -211,7 +215,8 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
         // return either: a single download icon-button (if there are no meta files)
         if( _.isEmpty( meta_files ) ){
             return $([
-                '<a href="' + urls.download + '" title="' + _l( 'Download' ) + '" class="icon-btn">',
+                '<a href="' + urls.download + '" title="' + _l( 'Download' ) + '" ',
+                    'class="icon-btn dataset-download-btn">',
                     '<span class="fa fa-floppy-o"></span>',
                 '</a>'
             ].join( '' ) );
@@ -235,7 +240,8 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
                 '</div>',
 
                 '<div class="icon-btn-group">',
-                    '<a href="' + urls.download + '" title="' + _l( 'Download' ) + '" class="icon-btn">',
+                    '<a href="' + urls.download + '" title="' + _l( 'Download' ) + '" ',
+                        'class="icon-btn dataset-download-btn">',
                         '<span class="fa fa-floppy-o"></span>',
                     // join these w/o whitespace or there'll be a gap when rendered
                     '</a><a class="icon-btn popup" id="' + menuId + '">',
@@ -253,6 +259,7 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
         // gen. safe to show in all cases
         return faIconButton({
             title       : _l( 'View details' ),
+            classes     : 'dataset-params-btn',
             href        : this.urls.show_params,
             target      : this.linkTarget,
             faIcon      : 'fa-info-circle'

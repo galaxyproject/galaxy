@@ -415,10 +415,13 @@ def handle_tool_dependency_installation_error( app, tool_dependency, error_messa
                                                    tool_dependency_name=tool_dependency.name,
                                                    tool_dependency_version=tool_dependency.version )
     if remove_installation_path:
-        # This will be True only in the case where an exception was encountered during the installation process after the installation
-        # path was created, but before any information was written to the installation log, and the tool dependency status was not
-        # set to "Installed" or "Error". 
+        # This will be True only in the case where an exception was encountered during the installation process after
+        # the installation path was created but before any information was written to the installation log and the
+        # tool dependency status was not set to "Installed" or "Error". 
         if os.path.exists( install_dir ):
+            log.debug( 'Attempting to remove installation directory %s for version %s of tool dependency %s %s' % \
+                ( str( install_dir ), str( tool_dependency.version ), str( tool_dependency.type ), str( tool_dependency.name ) ) )
+            log.debug( 'due to the following installation error:\n%s' % str( error_message ) )
             try:
                 shutil.rmtree( install_dir )
             except Exception, e:

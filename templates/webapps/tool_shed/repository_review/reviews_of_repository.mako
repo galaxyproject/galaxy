@@ -67,7 +67,7 @@ ${render_tool_shed_repository_actions( repository=repository )}
                     <tr>
                         <td>
                             <div style="float:left;" class="menubutton split popup" id="${changeset_revision}-popup">
-                                <a class="view-info" href="${h.url_for( controller='repository_review', action='view_or_manage_repository', id=trans.security.encode_id( repository.id ), changeset_revision=changeset_revision )}">${changeset_revision_label | h}</a>
+                                <a class="view-info" href="${h.url_for( controller='repository_review', action='view_or_manage_repository', id=trans.security.encode_id( repository.id ), changeset_revision=changeset_revision )}">${changeset_revision_label}</a>
                             </div>
                             <div popupmenu="${changeset_revision}-popup">
                                 %if repository_reviews:

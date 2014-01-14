@@ -1440,16 +1440,17 @@ class AdminToolshed( AdminGalaxy ):
         tool_path, relative_install_dir = repository.get_tool_relative_path( trans.app )
         if relative_install_dir:
             original_metadata_dict = repository.metadata
-            metadata_dict, invalid_file_tups = metadata_util.generate_metadata_for_changeset_revision( app=trans.app,
-                                                                                                       repository=repository,
-                                                                                                       changeset_revision=repository.changeset_revision,
-                                                                                                       repository_clone_url=repository_clone_url,
-                                                                                                       shed_config_dict = repository.get_shed_config_dict( trans.app ),
-                                                                                                       relative_install_dir=relative_install_dir,
-                                                                                                       repository_files_dir=None,
-                                                                                                       resetting_all_metadata_on_repository=False,
-                                                                                                       updating_installed_repository=False,
-                                                                                                       persist=False )
+            metadata_dict, invalid_file_tups = \
+                metadata_util.generate_metadata_for_changeset_revision( app=trans.app,
+                                                                        repository=repository,
+                                                                        changeset_revision=repository.changeset_revision,
+                                                                        repository_clone_url=repository_clone_url,
+                                                                        shed_config_dict = repository.get_shed_config_dict( trans.app ),
+                                                                        relative_install_dir=relative_install_dir,
+                                                                        repository_files_dir=None,
+                                                                        resetting_all_metadata_on_repository=False,
+                                                                        updating_installed_repository=False,
+                                                                        persist=False )
             repository.metadata = metadata_dict
             if metadata_dict != original_metadata_dict:
                 suc.update_in_shed_tool_config( trans.app, repository )
@@ -1607,7 +1608,11 @@ class AdminToolshed( AdminGalaxy ):
         changeset_revision = kwd.get( 'changeset_revision', None )
         latest_changeset_revision = kwd.get( 'latest_changeset_revision', None )
         latest_ctx_rev = kwd.get( 'latest_ctx_rev', None )
-        repository = suc.get_tool_shed_repository_by_shed_name_owner_changeset_revision( trans.app, tool_shed_url, name, owner, changeset_revision )
+        repository = suc.get_tool_shed_repository_by_shed_name_owner_changeset_revision( trans.app,
+                                                                                         tool_shed_url,
+                                                                                         name,
+                                                                                         owner,
+                                                                                         changeset_revision )
         if changeset_revision and latest_changeset_revision and latest_ctx_rev:
             if changeset_revision == latest_changeset_revision:
                 message = "The installed repository named '%s' is current, there are no updates available.  " % name
@@ -1627,16 +1632,17 @@ class AdminToolshed( AdminGalaxy ):
                     if repository.includes_data_managers:
                         data_manager_util.remove_from_data_manager( trans.app, repository )
                     # Update the repository metadata.
-                    metadata_dict, invalid_file_tups = metadata_util.generate_metadata_for_changeset_revision( app=trans.app,
-                                                                                                               repository=repository,
-                                                                                                               changeset_revision=latest_changeset_revision,
-                                                                                                               repository_clone_url=repository_clone_url,
-                                                                                                               shed_config_dict = repository.get_shed_config_dict( trans.app ),
-                                                                                                               relative_install_dir=relative_install_dir,
-                                                                                                               repository_files_dir=None,
-                                                                                                               resetting_all_metadata_on_repository=False,
-                                                                                                               updating_installed_repository=True,
-                                                                                                               persist=True )
+                    metadata_dict, invalid_file_tups = \
+                        metadata_util.generate_metadata_for_changeset_revision( app=trans.app,
+                                                                                repository=repository,
+                                                                                changeset_revision=latest_changeset_revision,
+                                                                                repository_clone_url=repository_clone_url,
+                                                                                shed_config_dict=repository.get_shed_config_dict( trans.app ),
+                                                                                relative_install_dir=relative_install_dir,
+                                                                                repository_files_dir=None,
+                                                                                resetting_all_metadata_on_repository=False,
+                                                                                updating_installed_repository=True,
+                                                                                persist=True )
                     repository.metadata = metadata_dict
                     # Update the repository.changeset_revision column in the database.
                     repository.changeset_revision = latest_changeset_revision
@@ -1674,10 +1680,15 @@ class AdminToolshed( AdminGalaxy ):
                                                                                          repository_tools_tups )
                     # Create tool_dependency records if necessary.
                     if 'tool_dependencies' in metadata_dict:
-                        tool_dependencies = tool_dependency_util.create_tool_dependency_objects( trans.app, repository, relative_install_dir, set_status=False )
-                    message = "The installed repository named '%s' has been updated to change set revision '%s'.  " % ( name, latest_changeset_revision )
+                        tool_dependencies = tool_dependency_util.create_tool_dependency_objects( trans.app,
+                                                                                                 repository,
+                                                                                                 relative_install_dir,
+                                                                                                 set_status=False )
+                    message = "The installed repository named '%s' has been updated to change set revision '%s'.  " % \
+                        ( name, latest_changeset_revision )
                     # See if any tool dependencies can be installed.
-                    shed_tool_conf, tool_path, relative_install_dir = suc.get_tool_panel_config_tool_path_install_dir( trans.app, repository )
+                    shed_tool_conf, tool_path, relative_install_dir = \
+                        suc.get_tool_panel_config_tool_path_install_dir( trans.app, repository )
                     if repository.missing_tool_dependencies:
                         message += "Click the name of one of the missing tool dependencies listed below to install tool dependencies."
                 else:

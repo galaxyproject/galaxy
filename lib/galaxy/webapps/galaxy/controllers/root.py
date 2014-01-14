@@ -508,7 +508,7 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
         Attempts to parse values passed as boolean, float, then int. Defaults
         to string. Non-recursive (will not parse lists).
         """
-        #TODO: use simplejson or json
+        #TODO: use json
         rval = {}
         for k in kwd:
             rval[ k ] = kwd[k]

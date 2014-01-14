@@ -15,19 +15,46 @@ import galaxy.jobs
 from galaxy.jobs.command_factory import build_command
 from galaxy import model
 from galaxy.util import DATABASE_MAX_STRING_SIZE, shrink_stream_by_size
+from galaxy.util import in_directory
 from galaxy.jobs.runners.util.job_script import job_script
 
 log = logging.getLogger( __name__ )
 
 STOP_SIGNAL = object()
 
+
+class RunnerParams( object ):
+
+    def __init__( self, specs = None, params = None ):
+        self.specs = specs or dict()
+        self.params = params or dict()
+        for name, value in self.params.items():
+            assert name in self.specs, 'Invalid job runner parameter for this plugin: %s' % name
+            if 'map' in self.specs[ name ]:
+                try:
+                    self.params[ name ] = self.specs[ name ][ 'map' ]( value )
+                except Exception, e:
+                    raise Exception( 'Job runner parameter "%s" value "%s" could not be converted to the correct type: %s' % ( name, value, e ) )
+            if 'valid' in self.specs[ name ]:
+                assert self.specs[ name ][ 'valid' ]( value ), 'Job runner parameter %s failed validation' % name
+
+    def __getattr__( self, name ):
+        return self.params.get( name, self.specs[ name ][ 'default' ] )
+
+
 class BaseJobRunner( object ):
-    def __init__( self, app, nworkers ):
+    def __init__( self, app, nworkers, **kwargs ):
         """Start the job runner
         """
         self.app = app
         self.sa_session = app.model.context
         self.nworkers = nworkers
+        runner_param_specs = dict( recheck_missing_job_retries = dict( map = int, valid = lambda x: x >= 0, default = 0 ) )
+        if 'runner_param_specs' in kwargs:
+            runner_param_specs.update( kwargs.pop( 'runner_param_specs' ) )
+        if kwargs:
+            log.debug( 'Loading %s with params: %s', self.runner_name, kwargs )
+        self.runner_params = RunnerParams( specs = runner_param_specs, params = kwargs )
 
     def _init_worker_threads(self):
         """Start ``nworkers`` worker threads.
@@ -114,7 +141,7 @@ class BaseJobRunner( object ):
                 job_wrapper.cleanup()
             return False
         elif job_state != model.Job.states.QUEUED:
-            log.info( "(%d) Job is in state %s, skipping execution"  % ( job_id, job_state ) )
+            log.info( "(%s) Job is in state %s, skipping execution"  % ( job_id, job_state ) )
             # cleanup may not be safe in all states
             return False
 
@@ -154,18 +181,6 @@ class BaseJobRunner( object ):
         if not job_working_directory:
             job_working_directory = os.path.abspath( job_wrapper.working_directory )
 
-        def in_directory( file, directory ):
-            """
-            Return true, if the common prefix of both is equal to directory
-            e.g. /a/b/c/d.rst and directory is /a/b, the common prefix is /a/b
-            """
-
-            # Make both absolute.
-            directory = os.path.abspath( directory )
-            file = os.path.abspath( file )
-
-            return os.path.commonprefix( [ file, directory ] ) == directory
-
         # Set up dict of dataset id --> output path; output path can be real or
         # false depending on outputs_to_working_directory
         output_paths = {}
@@ -190,7 +205,7 @@ class BaseJobRunner( object ):
                             # TODO: move instead of copy to save time?
                             source_file = os.path.join( job_working_directory, hda_tool_output.from_work_dir )
                             destination = job_wrapper.get_output_destination( output_paths[ dataset.dataset_id ] )
-                            if in_directory( source_file, job_wrapper.working_directory ):
+                            if in_directory( source_file, job_working_directory ):
                                 output_pairs.append( ( source_file, destination ) )
                                 log.debug( "Copying %s to %s as directed by from_work_dir" % ( source_file, destination ) )
                             else:
@@ -236,6 +251,10 @@ class BaseJobRunner( object ):
         )
         options.update(**kwds)
         return job_script(**options)
+
+    def _complete_terminal_job( self, ajs, **kwargs ):
+        if ajs.job_wrapper.get_state() != model.Job.states.DELETED:
+            self.work_queue.put( ( self.finish_job, ajs ) )
 
 
 class AsynchronousJobState( object ):
@@ -298,8 +317,8 @@ class AsynchronousJobRunner( BaseJobRunner ):
     to the correct methods (queue, finish, cleanup) at appropriate times..
     """
 
-    def __init__( self, app, nworkers ):
-        super( AsynchronousJobRunner, self ).__init__( app, nworkers )
+    def __init__( self, app, nworkers, **kwargs ):
+        super( AsynchronousJobRunner, self ).__init__( app, nworkers, **kwargs )
         # 'watched' and 'queue' are both used to keep track of jobs to watch.
         # 'queue' is used to add new watched jobs, and can be called from
         # any thread (usually by the 'queue_job' method). 'watched' must only

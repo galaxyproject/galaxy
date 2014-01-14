@@ -1,18 +1,24 @@
 #Dan Blankenberg
 
-import optparse, os, urllib, urllib2, urlparse, cookielib
+import cookielib
+import json
+import optparse
+import os
+import urllib
+import urllib2
+import urlparse
 
-from galaxy import eggs
-import pkg_resources
 
-pkg_resources.require( "simplejson" )
-import simplejson
+import galaxy.model # need to import model before sniff to resolve a circular import dependency
+from galaxy.datatypes import sniff
+from galaxy.datatypes.registry import Registry
 
 GENOMESPACE_API_VERSION_STRING = "v1.0"
 GENOMESPACE_SERVER_URL_PROPERTIES = "https://dm.genomespace.org/config/%s/serverurl.properties" % ( GENOMESPACE_API_VERSION_STRING )
 
 CHUNK_SIZE = 2**20 #1mb
 
+AUTO_GALAXY_EXT = "auto"
 DEFAULT_GALAXY_EXT = "data"
 
 #genomespace format identifier is the URL
@@ -38,6 +44,9 @@ GENOMESPACE_EXT_TO_GALAXY_EXT = {'rifles': 'rifles',
                                  'GFF': 'gff', 
                                  'gmt': 'gmt', 
                                  'gct': 'gct'}
+
+GENOMESPACE_UNKNOWN_FORMAT_KEY = 'unknown'
+GENOMESPACE_FORMAT_IDENTIFIER_UNKNOWN = None
 
 VALID_CHARS = '.-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ '
 
@@ -67,7 +76,7 @@ def get_galaxy_ext_from_genomespace_format_url( url_opener, file_format_url ):
         ext = GENOMESPACE_EXT_TO_GALAXY_EXT.get( ext, None )
     if ext is None:
         #could check content type, etc here
-        ext = DEFAULT_GALAXY_EXT
+        ext = AUTO_GALAXY_EXT
     return ext
 
 def get_genomespace_site_urls():
@@ -87,12 +96,14 @@ def set_genomespace_format_identifiers( url_opener, dm_site ):
     gs_request = urllib2.Request( "%s/%s/dataformat/list" % ( dm_site, GENOMESPACE_API_VERSION_STRING ) )
     gs_request.get_method = lambda: 'GET'
     opened_gs_request = url_opener.open( gs_request )
-    genomespace_formats = simplejson.loads( opened_gs_request.read() )
+    genomespace_formats = json.loads( opened_gs_request.read() )
     for format in genomespace_formats:
         GENOMESPACE_FORMAT_IDENTIFIER_TO_GENOMESPACE_EXT[ format['url'] ] = format['name']
+    global GENOMESPACE_FORMAT_IDENTIFIER_UNKNOWN
+    GENOMESPACE_FORMAT_IDENTIFIER_UNKNOWN = dict( map( lambda x: ( x[1], x[0] ) , GENOMESPACE_FORMAT_IDENTIFIER_TO_GENOMESPACE_EXT.iteritems() ) ).get( GENOMESPACE_UNKNOWN_FORMAT_KEY, GENOMESPACE_FORMAT_IDENTIFIER_UNKNOWN )
 
 def download_from_genomespace_file_browser( json_parameter_file, genomespace_site ):
-    json_params = simplejson.loads( open( json_parameter_file, 'r' ).read() )
+    json_params = json.loads( open( json_parameter_file, 'r' ).read() )
     datasource_params = json_params.get( 'param_dict' )
     username = datasource_params.get( "gs-username", None )
     token = datasource_params.get( "gs-token", None )
@@ -108,6 +119,11 @@ def download_from_genomespace_file_browser( json_parameter_file, genomespace_sit
     file_url_prefix = "fileUrl"
     file_type_prefix = "fileFormat"
     metadata_parameter_file = open( json_params['job_config']['TOOL_PROVIDED_JOB_METADATA_FILE'], 'wb' )
+    
+    #setup datatypes registry for sniffing
+    datatypes_registry = Registry()
+    datatypes_registry.load_datatypes( root_dir = json_params[ 'job_config' ][ 'GALAXY_ROOT_DIR' ], config = json_params[ 'job_config' ][ 'GALAXY_DATATYPES_CONF_FILE' ] )
+    
     file_numbers = []
     for name in datasource_params.keys():
         if name.startswith( file_url_prefix ):
@@ -143,28 +159,47 @@ def download_from_genomespace_file_browser( json_parameter_file, genomespace_sit
             filename = urllib.unquote_plus( parsed_url[2].split( '/' )[-1] )
         if not filename:
             filename = download_url
+        metadata_dict = None
+        original_filename = filename
         if output_filename is None:
-            original_filename = filename
             filename = ''.join( c in VALID_CHARS and c or '-' for c in filename )
             while filename in used_filenames:
                 filename = "-%s" % filename
             used_filenames.append( filename )
             output_filename = os.path.join( datasource_params['__new_file_path__'],  'primary_%i_%s_visible_%s' % ( hda_id, filename, galaxy_ext ) )
-            metadata_parameter_file.write( "%s\n" % simplejson.dumps( dict( type = 'new_primary_dataset',
-                                     base_dataset_id = dataset_id,
-                                     ext = galaxy_ext,
-                                     filename = output_filename,
-                                     name = "GenomeSpace import on %s" % ( original_filename ) ) ) )
+            
+            metadata_dict = dict( type = 'new_primary_dataset',
+                                base_dataset_id = dataset_id,
+                                ext = galaxy_ext,
+                                filename = output_filename,
+                                name = "GenomeSpace import on %s" % ( original_filename ) )
         else:
             if dataset_id is not None:
-               metadata_parameter_file.write( "%s\n" % simplejson.dumps( dict( type = 'dataset',
-                                     dataset_id = dataset_id,
-                                     ext = galaxy_ext,
-                                     name = "GenomeSpace import on %s" % ( filename ) ) ) )
+                metadata_dict = dict( type = 'dataset',
+                                dataset_id = dataset_id,
+                                ext = galaxy_ext,
+                                name = "GenomeSpace import on %s" % ( filename ) )
         output_file = open( output_filename, 'wb' )
         chunk_write( target_download_url, output_file )
         output_file.close()
+        
+        if ( galaxy_ext == AUTO_GALAXY_EXT or filetype_url == GENOMESPACE_FORMAT_IDENTIFIER_UNKNOWN ) and metadata_dict:
+            #try to sniff datatype
+            try:
+                galaxy_ext = sniff.handle_uploaded_dataset_file( output_filename, datatypes_registry )
+            except:
+                #sniff failed
+                galaxy_ext = original_filename.rsplit( '.', 1 )[-1]
+                if galaxy_ext not in datatypes_registry.datatypes_by_extension:
+                    galaxy_ext = DEFAULT_GALAXY_EXT
+            metadata_dict[ 'ext' ] = galaxy_ext
+        
         output_filename = None #only have one filename available
+        
+        #write out metadata info
+        if metadata_dict:
+            metadata_parameter_file.write( "%s\n" % json.dumps( metadata_dict ) )
+        
     metadata_parameter_file.close()
     return True
 

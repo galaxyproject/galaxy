@@ -174,24 +174,14 @@ spaceghost.historypanel.waitForHdas().then( function(){
     hdaShow = this.api.hdas.show( lastHistory.id, firstHda.id );
     this.test.assert( hdaShow.name === 'New name', "Update sanitized name: " + hdaShow.name );
 
-    //NOTE!: this fails on sqlite3 (with default setup)
-    try {
-        this.test.comment( 'update should allow unicode in names' );
-        var unicodeName = 'Ржевский сапоги';
-        returned = this.api.hdas.update( lastHistory.id, firstHda.id, {
-            name : unicodeName
-        });
-        //this.debug( 'returned:\n' + this.jsonStr( returned ) );
-        hdaShow = this.api.hdas.show( lastHistory.id, firstHda.id );
-        this.test.assert( hdaShow.name === unicodeName, "Update accepted unicode name: " + hdaShow.name );
-    } catch( err ){
-        //this.debug( this.jsonStr( err ) );
-        if( ( err instanceof this.api.APIError )
-        &&  ( err.status === 500 )
-        &&  ( err.message.indexOf( '(ProgrammingError) You must not use 8-bit bytestrings' ) !== -1 ) ){
-            this.skipTest( 'Unicode update failed. Are you using sqlite3 as the db?' );
-        }
-    }
+    this.test.comment( 'update should allow unicode in names' );
+    var unicodeName = 'Ржевский сапоги';
+    returned = this.api.hdas.update( lastHistory.id, firstHda.id, {
+        name : unicodeName
+    });
+    //this.debug( 'returned:\n' + this.jsonStr( returned ) );
+    hdaShow = this.api.hdas.show( lastHistory.id, firstHda.id );
+    this.test.assert( hdaShow.name === unicodeName, "Update accepted unicode name: " + hdaShow.name );
 
     this.test.comment( 'update should allow escaped quotations in names' );
     var quotedName = '"Bler"';
@@ -239,11 +229,11 @@ spaceghost.historypanel.waitForHdas().then( function(){
     });
     //this.debug( 'returned:\n' + this.jsonStr( returned ) );
     hdaShow = this.api.hdas.show( lastHistory.id, firstHda.id );
+    //this.debug( 'hdaShow:\n' + this.jsonStr( hdaShow ) );
     this.test.assert( hdaShow.genome_build === 'hg18',
         "genome_build successfully set via update: " + hdaShow.genome_build );
     this.test.assert( hdaShow.metadata_dbkey === 'hg18',
         "metadata_dbkey successfully set via the same update: " + hdaShow.metadata_dbkey );
-
     this.test.comment( 'update should sanitize any genome_build' );
     returned = this.api.hdas.update( lastHistory.id, firstHda.id, {
         genome_build : 'hg18<script type="text/javascript" src="bler">alert("blah");</script>'
@@ -257,23 +247,14 @@ spaceghost.historypanel.waitForHdas().then( function(){
 
     this.test.comment( 'update should allow unicode in genome builds' );
     var unicodeBuild = 'Ржевский18';
-    //NOTE!: this fails on sqlite3 (with default setup)
-    try {
-        returned = this.api.hdas.update( lastHistory.id, firstHda.id, {
-            name : unicodeBuild
-        });
-        //this.debug( 'returned:\n' + this.jsonStr( returned ) );
-        hdaShow = this.api.hdas.show( lastHistory.id, firstHda.id );
-        this.test.assert( hdaShow.genome_build === unicodeBuild,
-            "Update accepted unicode genome_build: " + hdaShow.name );
-    } catch( err ){
-        //this.debug( this.jsonStr( err ) );
-        if( ( err instanceof this.api.APIError )
-        &&  ( err.status === 500 )
-        &&  ( err.message.indexOf( '(ProgrammingError) You must not use 8-bit bytestrings' ) !== -1 ) ){
-            this.skipTest( 'Unicode update failed. Are you using sqlite3 as the db?' );
-        }
-    }
+    returned = this.api.hdas.update( lastHistory.id, firstHda.id, {
+        genome_build : unicodeBuild
+    });
+    this.debug( 'returned:\n' + this.jsonStr( returned ) );
+    hdaShow = this.api.hdas.show( lastHistory.id, firstHda.id );
+    this.debug( 'hdaShow:\n' + this.jsonStr( hdaShow ) );
+    this.test.assert( hdaShow.genome_build === unicodeBuild,
+        "Update accepted unicode genome_build: " + hdaShow.genome_build );
 
     // ........................................................................................... misc_info/info
     this.test.comment( 'update should allow changing the misc_info' );
@@ -298,25 +279,14 @@ spaceghost.historypanel.waitForHdas().then( function(){
 
     this.test.comment( 'update should allow unicode in misc_info' );
     var unicodeInfo = '여보!';
-    //NOTE!: this fails on sqlite3 (with default setup)
-    try {
-        returned = this.api.hdas.update( lastHistory.id, firstHda.id, {
-            misc_info : unicodeInfo
-        });
-        //this.debug( 'returned:\n' + this.jsonStr( returned ) );
-        hdaShow = this.api.hdas.show( lastHistory.id, firstHda.id );
-        this.test.assert( hdaShow.misc_info === unicodeInfo,
-            "Update accepted unicode misc_info: " + hdaShow.misc_info );
-    } catch( err ){
-        //this.debug( this.jsonStr( err ) );
-        if( ( err instanceof this.api.APIError )
-        &&  ( err.status === 500 )
-        &&  ( err.message.indexOf( '(ProgrammingError) You must not use 8-bit bytestrings' ) !== -1 ) ){
-            this.skipTest( 'Unicode update failed. Are you using sqlite3 as the db?' );
-        }
-    }
+    returned = this.api.hdas.update( lastHistory.id, firstHda.id, {
+        misc_info : unicodeInfo
+    });
+    //this.debug( 'returned:\n' + this.jsonStr( returned ) );
+    hdaShow = this.api.hdas.show( lastHistory.id, firstHda.id );
+    this.test.assert( hdaShow.misc_info === unicodeInfo,
+        "Update accepted unicode misc_info: " + hdaShow.misc_info );
 
-/*
     // ........................................................................................... annotation
     // currently fails because no annotation is returned in details
     this.test.comment( 'update should allow changing the annotation' );
@@ -338,25 +308,15 @@ spaceghost.historypanel.waitForHdas().then( function(){
     this.test.assert( hdaShow.annotation === 'New annotation',
         "Update sanitized annotation: " + hdaShow.annotation );
 
-    //NOTE!: this fails on sqlite3 (with default setup)
-    try {
-        this.test.comment( 'update should allow unicode in annotations' );
-        var unicodeAnnotation = 'お願いは、それが落下させない';
-        returned = this.api.hdas.update( lastHistory.id, firstHda.id, {
-            annotation : unicodeAnnotation
-        });
-        //this.debug( 'returned:\n' + this.jsonStr( returned ) );
-        hdaShow = this.api.hdas.show( lastHistory.id, firstHda.id );
-        this.test.assert( hdaShow.annotation === unicodeAnnotation,
-            "Update accepted unicode annotation: " + hdaShow.annotation );
-    } catch( err ){
-        //this.debug( this.jsonStr( err ) );
-        if( ( err instanceof this.api.APIError )
-        &&  ( err.status === 500 )
-        &&  ( err.message.indexOf( '(ProgrammingError) You must not use 8-bit bytestrings' ) !== -1 ) ){
-            this.skipTest( 'Unicode update failed. Are you using sqlite3 as the db?' );
-        }
-    }
+    this.test.comment( 'update should allow unicode in annotations' );
+    var unicodeAnnotation = 'お願いは、それが落下させない';
+    returned = this.api.hdas.update( lastHistory.id, firstHda.id, {
+        annotation : unicodeAnnotation
+    });
+    //this.debug( 'returned:\n' + this.jsonStr( returned ) );
+    hdaShow = this.api.hdas.show( lastHistory.id, firstHda.id );
+    this.test.assert( hdaShow.annotation === unicodeAnnotation,
+        "Update accepted unicode annotation: " + hdaShow.annotation );
 
     this.test.comment( 'update should allow escaped quotations in annotations' );
     var quotedAnnotation = '"Bler"';
@@ -367,8 +327,6 @@ spaceghost.historypanel.waitForHdas().then( function(){
     hdaShow = this.api.hdas.show( lastHistory.id, firstHda.id );
     this.test.assert( hdaShow.annotation === quotedAnnotation,
         "Update accepted escaped quotations in annotation: " + hdaShow.annotation );
-*/
-
 
     // ------------------------------------------------------------------------------------------- ERRORS
     this.test.comment( 'create should error with "Please define the source" when the param "from_ld_id" is not used' );
@@ -391,6 +349,8 @@ spaceghost.historypanel.waitForHdas().then( function(){
     //var returned = this.api.hdas.update( lastHistory.id, { deleted: true, blerp: 'blerp' });
     //this.debug( 'returned:' + this.jsonStr( returned ) );
     //this.debug( 'page:' + this.jsonStr( this.page ) );
+/*
+*/
 });
 
 // ===================================================================

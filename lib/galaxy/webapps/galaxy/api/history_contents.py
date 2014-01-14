@@ -51,47 +51,28 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             else:
                 history = self.get_history( trans, history_id, check_ownership=True, check_accessible=True )
 
-            # if ids, return _FULL_ data (as show) for each id passed
+            contents_kwds = {}
             if ids:
-                ids = ids.split( ',' )
-                for index, hda in enumerate( history.datasets ):
-                    encoded_hda_id = trans.security.encode_id( hda.id )
-                    if encoded_hda_id in ids:
-                        #TODO: share code with show
-                        rval.append( self._detailed_hda_dict( trans, hda ) )
-
-            # if no ids passed, return a _SUMMARY_ of _all_ datasets in the history
+                ids = map( lambda id: trans.security.decode_id( id ), ids.split( ',' ) )
+                contents_kwds[ 'ids' ] = ids
+                # If explicit ids given, always used detailed result.
+                details = 'all'
             else:
+                contents_kwds[ 'deleted' ] = kwd.get( 'deleted', None )
+                contents_kwds[ 'visible' ] = kwd.get( 'visible', None )
                 # details param allows a mixed set of summary and detailed hdas
                 #TODO: this is getting convoluted due to backwards compat
                 details = kwd.get( 'details', None ) or []
                 if details and details != 'all':
                     details = util.listify( details )
 
-                # by default return all datasets - even if deleted or hidden (defaulting the next switches to None)
-                #   if specified return those datasets that match the setting
-                # backwards compat
-                return_deleted = util.string_as_bool_or_none( kwd.get( 'deleted', None ) )
-                return_visible = util.string_as_bool_or_none( kwd.get( 'visible', None ) )
-
-                for hda in history.datasets:
-                    # if either return_ setting has been requested (!= None), skip hdas that don't match the request
-                    if return_deleted is not None:
-                        if( ( return_deleted and not hda.deleted )
-                        or  ( not return_deleted and hda.deleted ) ):
-                            continue
-                    if return_visible is not None:
-                        if( ( return_visible and not hda.visible )
-                        or  ( not return_visible and hda.visible ) ):
-                            continue
-
-                    encoded_hda_id = trans.security.encode_id( hda.id )
-                    if( ( encoded_hda_id in details )
-                    or  ( details == 'all' ) ):
-                        rval.append( self._detailed_hda_dict( trans, hda ) )
-                    else:
-                        rval.append( self._summary_hda_dict( trans, history_id, hda ) )
-
+            for hda in history.contents_iter( **contents_kwds ):
+                encoded_hda_id = trans.security.encode_id( hda.id )
+                detailed = details == 'all' or ( encoded_hda_id in details )
+                if detailed:
+                    rval.append( self._detailed_hda_dict( trans, hda ) )
+                else:
+                    rval.append( self._summary_hda_dict( trans, history_id, hda ) )
         except Exception, e:
             # for errors that are not specific to one hda (history lookup or summary list)
             rval = "Error in history API at listing contents: " + str( e )
@@ -404,38 +385,19 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         )
         validated_payload = {}
         for key, val in payload.items():
-            # TODO: lots of boilerplate here, but overhead on abstraction is equally onerous
-            # typecheck, parse, remap key
-            if   key == 'name':
-                if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
-                    raise ValueError( 'name must be a string or unicode: %s' %( str( type( val ) ) ) )
-                validated_payload[ 'name' ] = util.sanitize_html.sanitize_html( val, 'utf-8' )
-                #TODO:?? if sanitized != val: log.warn( 'script kiddie' )
-            elif key == 'deleted':
-                if not isinstance( val, bool ):
-                    raise ValueError( 'deleted must be a boolean: %s' %( str( type( val ) ) ) )
-                validated_payload[ 'deleted' ] = val
-            elif key == 'visible':
-                if not isinstance( val, bool ):
-                    raise ValueError( 'visible must be a boolean: %s' %( str( type( val ) ) ) )
-                validated_payload[ 'visible' ] = val
-            elif key == 'genome_build':
-                if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
-                    raise ValueError( 'genome_build must be a string: %s' %( str( type( val ) ) ) )
-                validated_payload[ 'dbkey' ] = util.sanitize_html.sanitize_html( val, 'utf-8' )
-            elif key == 'annotation' and val is not None:
-                if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
-                    raise ValueError( 'annotation must be a string or unicode: %s' %( str( type( val ) ) ) )
-                validated_payload[ 'annotation' ] = util.sanitize_html.sanitize_html( val, 'utf-8' )
-            elif key == 'misc_info':
-                if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
-                    raise ValueError( 'misc_info must be a string or unicode: %s' %( str( type( val ) ) ) )
-                validated_payload[ 'info' ] = util.sanitize_html.sanitize_html( val, 'utf-8' )
+            if val is None:
+                continue
+            if key in ( 'name', 'genome_build', 'misc_info', 'annotation' ):
+                val = self.validate_and_sanitize_basestring( key, val )
+                #TODO: need better remap system or eliminate the need altogether
+                key = 'dbkey' if key == 'genome_build' else key
+                key = 'info'  if key == 'misc_info' else key
+                validated_payload[ key ] = val
+            if key in ( 'deleted', 'visible' ):
+                validated_payload[ key ] = self.validate_boolean( key, val )
             elif key == 'tags':
-                if isinstance( val, list ):
-                    validated_payload[ 'tags' ] = [ sanitize_html( t, 'utf-8' ) for t in val ]
+                validated_payload[ key ] = self.validate_and_sanitize_basestring_list( key, val )
             elif key not in valid_but_uneditable_keys:
                 pass
                 #log.warn( 'unknown key: %s', str( key ) )
         return validated_payload
-

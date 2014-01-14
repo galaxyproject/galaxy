@@ -105,7 +105,7 @@ class Cleanup(object):
         url = make_url(self.config.database_connection)
 
         log.info('Connecting to database with URL: %s' % url)
-        args = url.translate_connect_args()
+        args = url.translate_connect_args( username='user' )
         args.update(url.query)
 
         assert url.get_dialect().name == 'postgresql', 'This script can only be used with PostgreSQL.'

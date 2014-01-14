@@ -184,6 +184,12 @@ def app_factory( global_conf, **kwargs ):
                            action='download', 
                            conditions=dict( method=[ "POST", "GET" ] ) )
 
+    webapp.mapper.connect( 'create_folder', 
+                           '/api/folders/:encoded_parent_folder_id', 
+                           controller='folders', 
+                           action='create', 
+                           conditions=dict( method=[ "POST" ] ) )
+
     webapp.mapper.resource_with_deleted( 'library',
                                          'libraries', 
                                          path_prefix='/api' )
@@ -196,7 +202,8 @@ def app_factory( global_conf, **kwargs ):
                             controller='folder_contents',
                             name_prefix='folder_',
                             path_prefix='/api/folders/:folder_id',
-                            parent_resources=dict( member_name='folder', collection_name='folders' ) )
+                            parent_resources=dict( member_name='folder', collection_name='folders' ),
+                            conditions=dict( method=[ "GET" ] )  )
 
     webapp.mapper.resource( 'content',
                             'contents',
@@ -350,7 +357,8 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
         from galaxy.web.framework.middleware.remoteuser import RemoteUser
         app = RemoteUser( app, maildomain = conf.get( 'remote_user_maildomain', None ),
                                display_servers = util.listify( conf.get( 'display_servers', '' ) ),
-                               admin_users = conf.get( 'admin_users', '' ).split( ',' ) )
+                               admin_users = conf.get( 'admin_users', '' ).split( ',' ),
+                               remote_user_header = conf.get( 'remote_user_header', 'HTTP_REMOTE_USER' ) )
         log.debug( "Enabling 'remote user' middleware" )
     # The recursive middleware allows for including requests in other
     # requests or forwarding of requests, all on the server side.

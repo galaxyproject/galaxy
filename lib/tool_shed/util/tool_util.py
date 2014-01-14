@@ -466,11 +466,7 @@ def get_list_of_copied_sample_files( repo, ctx, dir ):
     return sample_files, deleted_sample_files
 
 def get_or_create_tool_section( trans, tool_panel_section_id, new_tool_panel_section_label=None ):
-    if tool_panel_section_id.startswith( 'section_' ):
-        tool_panel_section_key = tool_panel_section_id
-        tool_panel_section_id.lstrip( 'section_' )
-    else:
-        tool_panel_section_key = 'section_%s' % str( tool_panel_section_id )
+    tool_panel_section_key = str( tool_panel_section_id )
     if tool_panel_section_key in trans.app.toolbox.tool_panel:
         # Appending a tool to an existing section in trans.app.toolbox.tool_panel
         tool_section = trans.app.toolbox.tool_panel[ tool_panel_section_key ]
@@ -680,16 +676,13 @@ def handle_tool_panel_section( trans, tool_panel_section_id=None, new_tool_panel
     # received tool_panel_section_id must be the id retrieved from a tool panel config (e.g., tool_conf.xml, which
     # may have getext).  If new_tool_panel_section_label is received, a new section will be added to the tool panel.  
     if new_tool_panel_section_label:
-        section_id = 'section_%s' % str( new_tool_panel_section_label.lower().replace( ' ', '_' ) )
+        section_id = str( new_tool_panel_section_label.lower().replace( ' ', '_' ) )
         tool_panel_section_key, tool_section = \
             get_or_create_tool_section( trans,
                                         tool_panel_section_id=section_id,
                                         new_tool_panel_section_label=new_tool_panel_section_label )
     elif tool_panel_section_id:
-        if tool_panel_section_id.startswith( 'section_' ):
-            tool_panel_section_key = str( tool_panel_section_id )
-        else:
-            tool_panel_section_key = 'section_%s' % str( tool_panel_section_id )
+        tool_panel_section_key = str( tool_panel_section_id )
         tool_section = trans.app.toolbox.tool_panel[ tool_panel_section_key ]
     else:
         return None, None
@@ -1000,7 +993,7 @@ def remove_from_tool_panel( trans, repository, shed_tool_conf, uninstall ):
     for config_elem in config_elems:
         if config_elem.tag == 'section':
             # Get the section key for the in-memory tool panel.
-            section_key = 'section_%s' % str( config_elem.get( "id" ) )
+            section_key = str( config_elem.get( "id" ) )
             # Generate the list of tool elements to remove.
             tool_elems_to_remove = []
             for tool_elem in config_elem:

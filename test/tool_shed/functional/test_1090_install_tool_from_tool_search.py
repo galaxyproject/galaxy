@@ -251,7 +251,7 @@ class TestToolSearchAndInstall( ShedTwillTestCase ):
         self.display_galaxy_browse_repositories_page( strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed )
         self.verify_installed_repositories( installed_repositories )
         filtering_repository = self.test_db_util.get_installed_repository_by_name_owner( filtering_repository_name, common.test_user_1_name )
-        self.uninstall_repository( filtering_repository, remove_from_disk=False )
+        self.deactivate_repository( filtering_repository )
         strings_displayed = [ 'freebayes_0090' ]
         strings_not_displayed = [ 'filtering_0090', 'emboss_0090', 'emboss_datatypes_0090', 'bwa_color_0090', 'bwa_base_0090' ]
         self.display_galaxy_browse_repositories_page( strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed )
@@ -278,7 +278,7 @@ class TestToolSearchAndInstall( ShedTwillTestCase ):
         self.display_galaxy_browse_repositories_page( strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed )
         self.verify_installed_repositories( installed_repositories )
         datatypes_repository = self.test_db_util.get_installed_repository_by_name_owner( emboss_datatypes_repository_name, common.test_user_1_name )
-        self.uninstall_repository( datatypes_repository, remove_from_disk=True )
+        self.uninstall_repository( datatypes_repository )
         strings_displayed = [ 'freebayes_0090' ]
         strings_not_displayed = [ 'emboss_datatypes_0090', 'filtering_0090', 'emboss_0090', 'bwa_color_0090', 'bwa_base_0090' ]
         self.display_galaxy_browse_repositories_page( strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed )

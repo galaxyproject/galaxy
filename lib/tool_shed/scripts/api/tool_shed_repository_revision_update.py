@@ -5,17 +5,16 @@ PUT/update script to update appropriate values in a repository_metadata table re
 usage: tool_shed_repository_revision_update.py key url key1=value1 key2=value2 ...
 """
 
-import os, sys
+import json
+import os
+import sys
+
 sys.path.insert( 0, os.path.dirname( __file__ ) )
 from common import update
 
-import pkg_resources
-pkg_resources.require( "simplejson" )
 
-import simplejson
-
-to_json_string = simplejson.dumps
-from_json_string = simplejson.loads
+to_json_string = json.dumps
+from_json_string = json.loads
 
 data = {}
 for key, value in [ kwarg.split( '=', 1 ) for kwarg in sys.argv[ 3: ] ]:

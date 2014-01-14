@@ -123,6 +123,7 @@ class Configuration( object ):
         self.retry_metadata_internally = string_as_bool( kwargs.get( "retry_metadata_internally", "True" ) )
         self.use_remote_user = string_as_bool( kwargs.get( "use_remote_user", "False" ) )
         self.remote_user_maildomain = kwargs.get( "remote_user_maildomain", None )
+        self.remote_user_header = kwargs.get( "remote_user_header", 'HTTP_REMOTE_USER' )
         self.remote_user_logout_href = kwargs.get( "remote_user_logout_href", None )
         self.require_login = string_as_bool( kwargs.get( "require_login", "False" ) )
         self.allow_user_creation = string_as_bool( kwargs.get( "allow_user_creation", "True" ) )
@@ -312,7 +313,7 @@ class Configuration( object ):
         self.datatypes_config = kwargs.get( 'datatypes_config_file', 'datatypes_conf.xml' )
         # Cloud configuration options
         self.enable_cloud_launch = string_as_bool( kwargs.get( 'enable_cloud_launch', False ) )
-        self.cloudlaunch_default_ami = kwargs.get( 'cloudlaunch_default_ami', 'ami-118bfc78' )
+        self.cloudlaunch_default_ami = kwargs.get( 'cloudlaunch_default_ami', 'ami-a7dbf6ce' )
         # Galaxy messaging (AMQP) configuration options
         self.amqp = {}
         try:
@@ -342,7 +343,7 @@ class Configuration( object ):
         self.fluent_host = kwargs.get( 'fluent_host', 'localhost' )
         self.fluent_port = int( kwargs.get( 'fluent_port', 24224 ) )
         # visualization plugin framework
-        self.visualizations_plugins_directory = kwargs.get( 'visualizations_plugins_directory', None )
+        self.visualization_plugins_directory = kwargs.get( 'visualization_plugins_directory', None )
 
     @property
     def sentry_dsn_public( self ):

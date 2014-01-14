@@ -56,7 +56,7 @@ var TagsEditor = Backbone.View.extend( LoggableMixin ).extend( HiddenUntilActiva
 
     /** @returns {jQuery} the input for this view */
     $input : function(){
-        return this.$el.find( '.tags-input' );
+        return this.$el.find( 'input.tags-input' );
     },
 
     /** @returns {String[]} all tags used by the current user */
@@ -73,7 +73,9 @@ var TagsEditor = Backbone.View.extend( LoggableMixin ).extend( HiddenUntilActiva
             view.model.save({ tags: event.val }, { silent: true });
             // if it's new, add the tag to the users tags
             if( event.added ){
-                view._addNewTagToTagsUsed( event.added.text );
+                //??: solve weird behavior in FF on test.galaxyproject.org where
+                //  event.added.text is string object: 'String{ 0="o", 1="n", 2="e" }'
+                view._addNewTagToTagsUsed( event.added.text + '' );
             }
         });
     },

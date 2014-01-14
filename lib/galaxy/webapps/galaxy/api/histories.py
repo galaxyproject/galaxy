@@ -342,34 +342,14 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin ):
             'id', 'model_class', 'nice_size', 'contents_url', 'purged', 'tags',
             'state', 'state_details', 'state_ids'
         )
-
         validated_payload = {}
         for key, val in payload.items():
-            # TODO: lots of boilerplate here, but overhead on abstraction is equally onerous
-            if   key == 'name':
-                if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
-                    raise ValueError( 'name must be a string or unicode: %s' %( str( type( val ) ) ) )
-                validated_payload[ 'name' ] = sanitize_html( val, 'utf-8' )
-                #TODO:?? if sanitized != val: log.warn( 'script kiddie' )
-            elif key == 'deleted':
-                if not isinstance( val, bool ):
-                    raise ValueError( 'deleted must be a boolean: %s' %( str( type( val ) ) ) )
-                validated_payload[ 'deleted' ] = val
-            elif key == 'published':
-                if not isinstance( val, bool ):
-                    raise ValueError( 'published must be a boolean: %s' %( str( type( val ) ) ) )
-                validated_payload[ 'published' ] = val
-            elif key == 'genome_build' and val is not None:
-                if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
-                    raise ValueError( 'genome_build must be a string: %s' %( str( type( val ) ) ) )
-                validated_payload[ 'genome_build' ] = sanitize_html( val, 'utf-8' )
-            elif key == 'annotation':
-                if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
-                    raise ValueError( 'annotation must be a string or unicode: %s' %( str( type( val ) ) ) )
-                validated_payload[ 'annotation' ] = sanitize_html( val, 'utf-8' )
+            if key in ( 'name', 'genome_build', 'annotation' ):
+                validated_payload[ key ] = self.validate_and_sanitize_basestring( key, val )
+            if key in ( 'deleted', 'published' ):
+                validated_payload[ key ] = self.validate_boolean( key, val )
             elif key == 'tags':
-                if isinstance( val, list ):
-                    validated_payload[ 'tags' ] = [ sanitize_html( t, 'utf-8' ) for t in val ]
+                validated_payload[ key ] = self.validate_and_sanitize_basestring_list( key, val )
             elif key not in valid_but_uneditable_keys:
                 pass
                 #log.warn( 'unknown key: %s', str( key ) )

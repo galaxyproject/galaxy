@@ -5,7 +5,6 @@
 <%namespace file="/webapps/tool_shed/common/repository_actions_menu.mako" import="render_tool_shed_repository_actions" />
 
 <%
-    from galaxy.web.framework.helpers import time_ago
     is_new = repository.is_new( trans.app )
     can_push = trans.app.security_agent.can_push( trans.app, trans.user, repository )
     can_download = not is_new and ( not is_malicious or can_push )
@@ -108,7 +107,7 @@ ${render_tool_shed_repository_actions( repository=repository )}
                         </div>
                         <div class="form-row">
                             <label>Pushed:</label>
-                            ${time_ago( changeset[ 'date' ] )}
+                            ${changeset[ 'display_date' ]}
                         </div>
                     </td>
                 </tr>

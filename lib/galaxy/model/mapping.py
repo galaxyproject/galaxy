@@ -1852,16 +1852,21 @@ class_mapper(model.LibraryDatasetDatasetAssociation).add_property( "creating_job
 
 def db_next_hid( self ):
     """
-    Override __next_hid to generate from the database in a concurrency
-    safe way.
+    db_next_hid( self )
+    
+    Override __next_hid to generate from the database in a concurrency safe way.
+    Loads the next history ID from the DB and returns it. 
+    It also saves the future next_id into the DB.
+
+    :rtype:     int
+    :returns:   the next history id
     """
     conn = object_session( self ).connection()
     table = self.table
     trans = conn.begin()
     try:
-        current_hid = select( [table.c.hid_counter], table.c.id == self.id, for_update=True ).scalar()
-        next_hid = current_hid + 1
-        table.update( table.c.id == self.id ).execute( hid_counter = ( next_hid ) )
+        next_hid = select( [table.c.hid_counter], table.c.id == self.id, for_update=True ).scalar()
+        table.update( table.c.id == self.id ).execute( hid_counter = ( next_hid + 1 ) )
         trans.commit()
         return next_hid
     except:

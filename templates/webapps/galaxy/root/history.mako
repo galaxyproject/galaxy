@@ -21,13 +21,10 @@
 ## -----------------------------------------------------------------------------
 <%def name="javascripts()">
 ${parent.javascripts()}
+${history_panel_javascripts()}
 ${h.js(
-    "libs/require",
-    "mvc/base-mvc",
-    "utils/localization",
     "mvc/user/user-model"
 )}
-${h.templates( "helpers-common-templates" )}
 
 <script type="text/javascript">
     if( !window.Galaxy ){
@@ -39,8 +36,6 @@ ${h.templates( "helpers-common-templates" )}
         $( 'body' ).addClass( 'historyPage' ).addClass( 'history-panel' );
     });
 </script>
-
-${history_panel_javascripts()}
 
 <script type="text/javascript">
 onhistoryready.done( function( historyPanel ){
