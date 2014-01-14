@@ -102,6 +102,17 @@ class ToolExecutionTestCase( TestCase, UsesApp ):
         assert template == "tool_executed.mako"
         assert self.tool_action.execution_call_args[ 0 ][ "rerun_remap_job_id" ] == 123
 
+    def test_invalid_remap_job( self ):
+        self.__init_tool( SIMPLE_TOOL_CONTENTS )
+        template, template_vars = self.__handle_with_incoming(
+            param1="moo",
+            rerun_remap_job_id='123',  # Not encoded
+            runtool_btn="dummy",
+        )
+        assert template == "message.mako"
+        assert template_vars[ "status" ] == "error"
+        assert "invalid job" in template_vars[ "message" ]
+
     def test_repeat_state_updates( self ):
         self.__init_tool( REPEAT_TOOL_CONTENTS )
 

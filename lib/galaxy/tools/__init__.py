@@ -1847,6 +1847,14 @@ class Tool( object, Dictifiable ):
         that is why this is not just called for_api.
         """
         all_pages = ( process_state == "populate" )  # If process_state = update, handle all pages at once.
+        rerun_remap_job_id = None
+        if 'rerun_remap_job_id' in incoming:
+            try:
+                rerun_remap_job_id = trans.app.security.decode_id( incoming[ 'rerun_remap_job_id' ] )
+            except Exception:
+                message = 'Failure executing tool (attempting to rerun invalid job).'
+                return 'message.mako', dict( status='error', message=message, refresh_frames=[] )
+
         state, state_new = self.__fetch_state( trans, incoming, history, all_pages=all_pages )
         if state_new:
             # This feels a bit like a hack. It allows forcing full processing
@@ -1874,7 +1882,7 @@ class Tool( object, Dictifiable ):
                 return "tool_form.mako", dict( errors=errors, tool_state=state, incoming=incoming, error_message=error_message )
             # If we've completed the last page we can execute the tool
             elif all_pages or state.page == self.last_page:
-                return self.__handle_tool_execute( trans, incoming, params, history )
+                return self.__handle_tool_execute( trans, rerun_remap_job_id, params, history )
             # Otherwise move on to the next page
             else:
                 return self.__handle_page_advance( trans, state, errors )
@@ -1882,11 +1890,8 @@ class Tool( object, Dictifiable ):
     def __should_refresh_state( self, incoming ):
         return not( 'runtool_btn' in incoming or 'URL' in incoming or 'ajax_upload' in incoming )
 
-    def __handle_tool_execute( self, trans, incoming, params, history ):
+    def __handle_tool_execute( self, trans, rerun_remap_job_id, params, history ):
         try:
-            rerun_remap_job_id = None
-            if 'rerun_remap_job_id' in incoming:
-                rerun_remap_job_id = trans.app.security.decode_id(incoming['rerun_remap_job_id'])
             _, out_data = self.execute( trans, incoming=params, history=history, rerun_remap_job_id=rerun_remap_job_id )
         except httpexceptions.HTTPFound, e:
             #if it's a paste redirect exception, pass it up the stack
