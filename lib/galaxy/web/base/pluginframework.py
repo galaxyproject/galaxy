@@ -119,7 +119,7 @@ class PluginManager( object ):
             try:
                 plugin = self.load_plugin( plugin_path )
                 if not plugin:
-                    log.warn( '%s, plugin load failed: %s. Skipping...', self, plugin_path )
+                    log.warn( '%s, plugin load failed or disabled: %s. Skipping...', self, plugin_path )
                 #NOTE: prevent silent, implicit overwrite here (two plugins in two diff directories)
                 #TODO: overwriting may be desired
                 elif plugin.name in self.plugins:

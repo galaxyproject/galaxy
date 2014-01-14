@@ -375,7 +375,7 @@ class VisualizationsConfigParser( object ):
     def parse_file( self, xml_filepath ):
         """
         Parse the given XML file for visualizations data.
-        :returns: tuple of ( `visualization_name`, `visualization` )
+        :returns: visualization config dictionary
         """
         try:
             xml_tree = galaxy.util.parse_xml( xml_filepath )
@@ -392,6 +392,10 @@ class VisualizationsConfigParser( object ):
         given `xml_tree` for a visualization.
         """
         returned = {}
+
+        # allow manually turning off a vis by checking for a disabled property
+        if 'disabled' in xml_tree.attrib:
+            return None
 
         # data_sources are the kinds of objects/data associated with the visualization
         #   e.g. views on HDAs can use this to find out what visualizations are applicable to them
