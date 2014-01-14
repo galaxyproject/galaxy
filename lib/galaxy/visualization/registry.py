@@ -219,16 +219,13 @@ class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
 
             param_data = data_source[ 'to_params' ]
             url = self.get_visualization_url( trans, target_object, visualization_name, param_data )
-            link_text = visualization.config.get( 'link_text', None )
-            if not link_text:
-                # default to visualization name, titlecase, and replace underscores
-                link_text = visualization_name.title().replace( '_', ' ' )
-            render_location = visualization.config.get( 'render_location', 'galaxy_main' )
+            display_name = visualization.config.get( 'name', None )
+            render_target = visualization.config.get( 'render_target', 'galaxy_main' )
             # remap some of these vars for direct use in ui.js, PopupMenu (e.g. text->html)
             return {
                 'href'  : url,
-                'html'  : link_text,
-                'target': render_location
+                'html'  : display_name,
+                'target': render_target
             }
 
         return None
@@ -362,7 +359,7 @@ class VisualizationsConfigParser( object ):
             -- what provides the data
             -- what information needs to be added to the query string
     """
-    VALID_RENDER_LOCATIONS = [ 'galaxy_main', '_top', '_blank' ]
+    VALID_RENDER_TARGETS = [ 'galaxy_main', '_top', '_blank' ]
 
     def __init__( self, debug=False ):
         self.debug = debug
@@ -396,6 +393,12 @@ class VisualizationsConfigParser( object ):
         # allow manually turning off a vis by checking for a disabled property
         if 'disabled' in xml_tree.attrib:
             return None
+
+        # a text display name for end user links
+        returned[ 'name' ] = xml_tree.attrib.get( 'name', None )
+        if not returned[ 'name' ]:
+            raise ParsingException( 'visualization needs a name attribute' )
+        print returned[ 'name' ]
 
         # a (for now) text description of what the visualization does
         description = xml_tree.find( 'description' )
@@ -458,14 +461,14 @@ class VisualizationsConfigParser( object ):
         if link_text != None and link_text.text:
             returned[ 'link_text' ] = link_text
 
-        # render_location: where in the browser to open the rendered visualization
+        # render_target: where in the browser to open the rendered visualization
         # defaults to: galaxy_main
-        render_location = xml_tree.find( 'render_location' )
-        if( ( render_location != None and render_location.text )
-        and ( render_location.text in self.VALID_RENDER_LOCATIONS ) ):
-            returned[ 'render_location' ] = render_location.text
+        render_target = xml_tree.find( 'render_target' )
+        if( ( render_target != None and render_target.text )
+        and ( render_target.text in self.VALID_RENDER_TARGETS ) ):
+            returned[ 'render_target' ] = render_target.text
         else:
-            returned[ 'render_location' ] = 'galaxy_main'
+            returned[ 'render_target' ] = 'galaxy_main'
         # consider unifying the above into it's own element and parsing method
 
         return returned

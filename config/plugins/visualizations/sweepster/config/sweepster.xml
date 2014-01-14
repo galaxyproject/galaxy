@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
-<visualization name="sweepster" disabled="true">
+<visualization name="Sweepster" disabled="true">
     <data_sources>
         <data_source>
             <model_class>HistoryDatasetAssociation</model_class>
@@ -23,5 +23,5 @@
     <!-- template_root and template are currently ignored for the 'built-in' visualizations -->
     <template_root>webapps/galaxy/visualization</template_root>
     <template>sweepster.mako</template>
-    <render_location>_top</render_location>
+    <render_target>_top</render_target>
 </visualization>
