@@ -497,9 +497,10 @@ class AdminToolshed( AdminGalaxy ):
                         suc.repository_was_previously_installed( trans, tool_shed_url, name, tmp_repo_info_tuple )
                     if installed_repository:
                         current_changeset_revision = str( installed_repository.changeset_revision )
-                        message = 'Revision %s of repository %s owned by %s has already been installed.'
+                        message = 'Revision <b>%s</b> of repository <b>%s</b> owned by <b>%s</b> has already been installed.' % \
+                            ( latest_downloadable_revision, name, owner )
                         if current_changeset_revision != latest_downloadable_revision:
-                            message += '  The current changeset revision is %s.' % current_changeset_revision
+                            message += '  The current changeset revision is <b>%s</b>.' % current_changeset_revision
                         status = 'error'
                     else:
                         # Install the latest downloadable revision of the repository.
@@ -508,10 +509,10 @@ class AdminToolshed( AdminGalaxy ):
                                             ( name, owner, latest_downloadable_revision, web.url_for( '/', qualified=True ) ) )
                         return trans.response.send_redirect( url )
             else:
-                message = 'Cannot locate installed tool shed repository with encoded id %s.' % str( repository_id )
+                message = 'Cannot locate installed tool shed repository with encoded id <b>%s</b>.' % str( repository_id )
                 status = 'error'
         else:
-            message = 'The request parameters did not include the required encoded id of installed repository.'
+            message = 'The request parameters did not include the required encoded <b>id</b> of installed repository.'
             status = 'error'
         return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
                                                           action='browse_repositories',
