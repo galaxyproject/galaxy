@@ -96,7 +96,7 @@ def can_add_to_key_rd_dicts( key_rd_dict, key_rd_dicts ):
     return True
 
 def create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_info_dicts, install_repository_dependencies=False,
-                                          no_changes_checked=False, tool_panel_section_id=None, new_tool_panel_section_label=None ):
+                                          no_changes_checked=False, tool_panel_section=None, new_tool_panel_section=None ):
     """
     Discover all repository dependencies and make sure all tool_shed_repository and associated repository_dependency records exist as well as
     the dependency relationships between installed repositories.  This method is called when uninstalled repositories are being reinstalled.
@@ -174,30 +174,28 @@ def create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_
                     # The database record for the tool shed repository currently being processed can be updated.  Get the repository metadata
                     # to see where it was previously located in the tool panel.
                     if repository_db_record and repository_db_record.metadata:
-                        tool_section, tool_panel_section_key = \
+                        tool_section, new_tool_panel_section, tool_panel_section_key = \
                             tool_util.handle_tool_panel_selection( trans=trans,
                                                                    metadata=repository_db_record.metadata,
                                                                    no_changes_checked=no_changes_checked,
-                                                                   tool_panel_section_id=tool_panel_section_id,
-                                                                   new_tool_panel_section_label=new_tool_panel_section_label )
+                                                                   tool_panel_section=tool_panel_section,
+                                                                   new_tool_panel_section=new_tool_panel_section )
                     else:
                         # We're installing a new tool shed repository that does not yet have a database record.
-                        tool_panel_section_key, tool_section = \
-                            tool_util.handle_tool_panel_section( trans,
-                                                                 tool_panel_section_id=tool_panel_section_id,
-                                                                 new_tool_panel_section_label=new_tool_panel_section_label )
-                    tool_shed_repository = \
-                        suc.create_or_update_tool_shed_repository( app=trans.app,
-                                                                   name=name,
-                                                                   description=description,
-                                                                   installed_changeset_revision=changeset_revision,
-                                                                   ctx_rev=ctx_rev,
-                                                                   repository_clone_url=repository_clone_url,
-                                                                   metadata_dict={},
-                                                                   status=trans.model.ToolShedRepository.installation_status.NEW,
-                                                                   current_changeset_revision=changeset_revision,
-                                                                   owner=repository_owner,
-                                                                   dist_to_shed=False )
+                        tool_panel_section_key, tool_section = tool_util.handle_tool_panel_section( trans,
+                                                                                                    tool_panel_section=tool_panel_section,
+                                                                                                    new_tool_panel_section=new_tool_panel_section )
+                    tool_shed_repository = suc.create_or_update_tool_shed_repository( app=trans.app,
+                                                                                      name=name,
+                                                                                      description=description,
+                                                                                      installed_changeset_revision=changeset_revision,
+                                                                                      ctx_rev=ctx_rev,
+                                                                                      repository_clone_url=repository_clone_url,
+                                                                                      metadata_dict={},
+                                                                                      status=trans.model.ToolShedRepository.installation_status.NEW,
+                                                                                      current_changeset_revision=changeset_revision,
+                                                                                      owner=repository_owner,
+                                                                                      dist_to_shed=False )
                     if tool_shed_repository not in all_created_or_updated_tool_shed_repositories:
                         all_created_or_updated_tool_shed_repositories.append( tool_shed_repository )
                     # Only append the tool shed repository to the list of created_or_updated_tool_shed_repositories if it is supposed to be installed.
@@ -461,10 +459,9 @@ def handle_key_rd_dicts_for_repository( trans, current_repository_key, repositor
         common_util.parse_repository_dependency_tuple( repository_dependency )
     if suc.tool_shed_is_this_tool_shed( toolshed ):
         required_repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
-        required_repository_metadata = \
-            metadata_util.get_repository_metadata_by_repository_id_changeset_revision( trans,
-                                                                                       trans.security.encode_id( required_repository.id ),
-                                                                                       changeset_revision )
+        required_repository_metadata = metadata_util.get_repository_metadata_by_repository_id_changeset_revision( trans,
+                                                                                                                  trans.security.encode_id( required_repository.id ),
+                                                                                                                  changeset_revision )
         if required_repository_metadata:
             # The required_repository_metadata changeset_revision is installable.
             required_metadata = required_repository_metadata.metadata

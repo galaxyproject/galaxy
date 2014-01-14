@@ -262,7 +262,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
                 no_tool_dependency_dir_message = "Tool dependencies can be automatically installed only if you set the value of your 'tool_dependency_dir' "
                 no_tool_dependency_dir_message += "setting in your Galaxy configuration file (universe_wsgi.ini) and restart your Galaxy server."
                 raise HTTPBadRequest( detail=no_tool_dependency_dir_message )
-        new_tool_panel_section_label = payload.get( 'new_tool_panel_section_label', '' )
+        new_tool_panel_section = payload.get( 'new_tool_panel_section_label', '' )
         shed_tool_conf = payload.get( 'shed_tool_conf', None )
         if shed_tool_conf:
             # Get the tool_path setting.
@@ -281,20 +281,15 @@ class ToolShedRepositoriesController( BaseAPIController ):
             raise HTTPBadRequest( detail="Missing required parameter 'shed_tool_conf'." )
         tool_panel_section_id = payload.get( 'tool_panel_section_id', '' )
         if tool_panel_section_id not in [ None, '' ]:
-            if tool_panel_section_id not in trans.app.toolbox.tool_panel:
-                fixed_tool_panel_section_id = 'section_%s' % tool_panel_section_id
-                if fixed_tool_panel_section_id in trans.app.toolbox.tool_panel:
-                    tool_panel_section_id = fixed_tool_panel_section_id
-                else:
-                    tool_panel_section_id = ''
+            tool_panel_section = trans.app.toolbox.tool_panel[ tool_panel_section_id ]
         else:
-            tool_panel_section_id = ''
+            tool_panel_section = ''
         # Build the dictionary of information necessary for creating tool_shed_repository database records for each repository being installed.
         installation_dict = dict( install_repository_dependencies=install_repository_dependencies,
-                                  new_tool_panel_section_label=new_tool_panel_section_label,
+                                  new_tool_panel_section=new_tool_panel_section,
                                   no_changes_checked=False,
                                   repo_info_dicts=repo_info_dicts,
-                                  tool_panel_section_id=tool_panel_section_id,
+                                  tool_panel_section=tool_panel_section,
                                   tool_path=tool_path,
                                   tool_shed_url=tool_shed_url )
         # Create the tool_shed_repository database records and gather additional information for repository installation.
@@ -311,18 +306,17 @@ class ToolShedRepositoriesController( BaseAPIController ):
                                       install_repository_dependencies=install_repository_dependencies,
                                       install_tool_dependencies=install_tool_dependencies,
                                       message='',
-                                      new_tool_panel_section_label=new_tool_panel_section_label,
+                                      new_tool_panel_section=new_tool_panel_section,
                                       shed_tool_conf=shed_tool_conf,
                                       status='done',
-                                      tool_panel_section_id=tool_panel_section_id,
+                                      tool_panel_section=tool_panel_section,
                                       tool_panel_section_keys=tool_panel_section_keys,
                                       tool_path=tool_path,
                                       tool_shed_url=tool_shed_url )
             # Prepare the repositories for installation.  Even though this method receives a single combination of tool_shed_url, name, owner and
             # changeset_revision, there may be multiple repositories for installation at this point because repository dependencies may have added
             # additional repositories for installation along with the single specified repository.
-            encoded_kwd, query, tool_shed_repositories, encoded_repository_ids = \
-                repository_util.initiate_repository_installation( trans, installation_dict )
+            encoded_kwd, query, tool_shed_repositories, encoded_repository_ids = repository_util.initiate_repository_installation( trans, installation_dict )
             # Some repositories may have repository dependencies that are required to be installed before the dependent repository, so we'll
             # order the list of tsr_ids to ensure all repositories install in the required order.
             tsr_ids = [ trans.security.encode_id( tool_shed_repository.id ) for tool_shed_repository in tool_shed_repositories ]
