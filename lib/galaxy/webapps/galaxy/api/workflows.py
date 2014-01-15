@@ -241,7 +241,7 @@ class WorkflowsAPIController(BaseAPIController, UsesAnnotations):
         outputs = util.odict.odict()
         rval['history'] = trans.security.encode_id(history.id)
         rval['outputs'] = []
-        for i, step in enumerate( workflow.steps ):
+        for step in workflow.steps:
             job = None
             if step.type == 'tool' or step.type is None:
                 tool = self.app.toolbox.get_tool( step.tool_id )
@@ -285,7 +285,7 @@ class WorkflowsAPIController(BaseAPIController, UsesAnnotations):
         """
         try:
             stored_workflow = trans.sa_session.query(self.app.model.StoredWorkflow).get(trans.security.decode_id(workflow_id))
-        except Exception,e:
+        except Exception, e:
             return ("Workflow with ID='%s' can not be found\n Exception: %s") % (workflow_id, str( e ))
         # check to see if user has permissions to selected workflow
         if stored_workflow.user != trans.user and not trans.user_is_admin():
@@ -293,7 +293,7 @@ class WorkflowsAPIController(BaseAPIController, UsesAnnotations):
                 trans.response.status = 400
                 return("Workflow is not owned by or shared with current user")
 
-        ret_dict = self._workflow_to_dict( trans, stored_workflow );
+        ret_dict = self._workflow_to_dict( trans, stored_workflow )
         if not ret_dict:
             #This workflow has a tool that's missing from the distribution
             trans.response.status = 400
@@ -309,7 +309,7 @@ class WorkflowsAPIController(BaseAPIController, UsesAnnotations):
 
         copied from galaxy.web.controllers.workflows.py (delete)
         """
-        workflow_id = id;
+        workflow_id = id
 
         try:
             stored_workflow = trans.sa_session.query(self.app.model.StoredWorkflow).get(trans.security.decode_id(workflow_id))
@@ -341,23 +341,23 @@ class WorkflowsAPIController(BaseAPIController, UsesAnnotations):
         # currently assumes payload['workflow'] is a json representation of a workflow to be inserted into the database
         """
 
-        data = payload['workflow'];
+        data = payload['workflow']
         workflow, missing_tool_tups = self._workflow_from_dict( trans, data, source="API" )
 
         # galaxy workflow newly created id
-        workflow_id = workflow.id;
+        workflow_id = workflow.id
         # api encoded, id
-        encoded_id = trans.security.encode_id(workflow_id);
+        encoded_id = trans.security.encode_id(workflow_id)
 
         # return list
-        rval= [];
+        rval = []
 
         item = workflow.to_dict(value_mapper={'id':trans.security.encode_id})
         item['url'] = url_for('workflow', id=encoded_id)
 
-        rval.append(item);
+        rval.append(item)
 
-        return item;
+        return item
 
     def _workflow_from_dict( self, trans, data, source=None ):
         """
@@ -386,7 +386,7 @@ class WorkflowsAPIController(BaseAPIController, UsesAnnotations):
         # will be ( tool_id, tool_name, tool_version ).
         missing_tool_tups = []
         # First pass to build step objects and populate basic values
-        for key, step_dict in data[ 'steps' ].iteritems():
+        for step_dict in data[ 'steps' ].itervalues():
             # Create the model class for the step
             step = model.WorkflowStep()
             steps.append( step )
@@ -530,7 +530,7 @@ class WorkflowsAPIController(BaseAPIController, UsesAnnotations):
                         step_dict['inputs'].append( { "name" : name, "description" : "runtime parameter for tool %s" % module.get_name() } )
                     elif input_type == dict:
                         # Input type is described by a dict, e.g. indexed parameters.
-                        for partname, partval in val.items():
+                        for partval in val.values():
                             if type( partval ) == RuntimeValue:
                                 step_dict['inputs'].append( { "name" : name, "description" : "runtime parameter for tool %s" % module.get_name() } )
             # User outputs
