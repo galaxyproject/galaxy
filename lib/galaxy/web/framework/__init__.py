@@ -10,9 +10,9 @@ import random
 import socket
 import string
 import time
-
-from functools import wraps
+from traceback import format_exc
 from Cookie import CookieError
+from functools import wraps
 
 pkg_resources.require( "Cheetah" )
 from Cheetah.Template import Template
@@ -23,6 +23,7 @@ import helpers
 
 from galaxy import util
 from galaxy.exceptions import MessageException
+from galaxy.exceptions import error_codes
 from galaxy.util import asbool
 from galaxy.util import safe_str_cmp
 from galaxy.util.backports.importlib import import_module
@@ -103,6 +104,35 @@ def require_login( verb="perform this action", use_panels=False, webapp='galaxy'
         return decorator
     return argcatcher
 
+
+def __extract_payload_from_request(trans, func, kwargs):
+    content_type = trans.request.headers['content-type']
+    if content_type.startswith('application/x-www-form-urlencoded') or content_type.startswith('multipart/form-data'):
+        # If the content type is a standard type such as multipart/form-data, the wsgi framework parses the request body
+        # and loads all field values into kwargs. However, kwargs also contains formal method parameters etc. which
+        # are not a part of the request body. This is a problem because it's not possible to differentiate between values
+        # which are a part of the request body, and therefore should be a part of the payload, and values which should not be
+        # in the payload. Therefore, the decorated method's formal arguments are discovered through reflection and removed from
+        # the payload dictionary. This helps to prevent duplicate argument conflicts in downstream methods.
+        payload = kwargs.copy()
+        named_args, _, _, _ = inspect.getargspec(func)
+        for arg in named_args:
+            payload.pop(arg, None)
+        for k, v in payload.iteritems():
+            if isinstance(v, (str, unicode)):
+                try:
+                    payload[k] = from_json_string(v)
+                except:
+                    # may not actually be json, just continue
+                    pass
+        payload = util.recursively_stringify_dictionary_keys( payload )
+    else:
+        # Assume application/json content type and parse request body manually, since wsgi won't do it. However, the order of this check
+        # should ideally be in reverse, with the if clause being a check for application/json and the else clause assuming a standard encoding
+        # such as multipart/form-data. Leaving it as is for backward compatibility, just in case.
+        payload = util.recursively_stringify_dictionary_keys( from_json_string( trans.request.body ) )
+    return payload
+
 def expose_api_raw( func ):
     """
     Expose this function via the API but don't dump the results
@@ -140,35 +170,8 @@ def expose_api( func, to_json=True, user_required=True ):
             error_message = "API Authentication Required for this request"
             return error
         if trans.request.body:
-            def extract_payload_from_request(trans, func, kwargs):
-                content_type = trans.request.headers['content-type']
-                if content_type.startswith('application/x-www-form-urlencoded') or content_type.startswith('multipart/form-data'):
-                    # If the content type is a standard type such as multipart/form-data, the wsgi framework parses the request body
-                    # and loads all field values into kwargs. However, kwargs also contains formal method parameters etc. which
-                    # are not a part of the request body. This is a problem because it's not possible to differentiate between values
-                    # which are a part of the request body, and therefore should be a part of the payload, and values which should not be
-                    # in the payload. Therefore, the decorated method's formal arguments are discovered through reflection and removed from
-                    # the payload dictionary. This helps to prevent duplicate argument conflicts in downstream methods.
-                    payload = kwargs.copy()
-                    named_args, _, _, _ = inspect.getargspec(func)
-                    for arg in named_args:
-                        payload.pop(arg, None)
-                    for k, v in payload.iteritems():
-                        if isinstance(v, (str, unicode)):
-                            try:
-                                payload[k] = from_json_string(v)
-                            except:
-                                # may not actually be json, just continue
-                                pass
-                    payload = util.recursively_stringify_dictionary_keys( payload )
-                else:
-                    # Assume application/json content type and parse request body manually, since wsgi won't do it. However, the order of this check
-                    # should ideally be in reverse, with the if clause being a check for application/json and the else clause assuming a standard encoding
-                    # such as multipart/form-data. Leaving it as is for backward compatibility, just in case.
-                    payload = util.recursively_stringify_dictionary_keys( from_json_string( trans.request.body ) )
-                return payload
             try:
-                kwargs['payload'] = extract_payload_from_request(trans, func, kwargs)
+                kwargs['payload'] = __extract_payload_from_request(trans, func, kwargs)
             except ValueError:
                 error_status = '400 Bad Request'
                 error_message = 'Your request did not appear to be valid JSON, please consult the API documentation'
@@ -209,6 +212,143 @@ def expose_api( func, to_json=True, user_required=True ):
         decorator._orig = func
     decorator.exposed = True
     return decorator
+
+API_RESPONSE_CONTENT_TYPE = "application/json"
+
+
+def __api_error_message( trans, **kwds ):
+    exception = kwds.get( "exception", None )
+    if exception:
+        # If we are passed a MessageException use err_msg.
+        default_error_code = getattr( exception, "err_code", error_codes.UNKNOWN )
+        default_error_message = getattr( exception, "err_msg", default_error_code.default_error_message )
+        extra_error_info = getattr( exception, 'extra_error_info', {} )
+        if not isinstance( extra_error_info, dict ):
+            extra_error_info = {}
+    else:
+        default_error_message = "Error processing API request."
+        default_error_code = error_codes.UNKNOWN
+        extra_error_info = {}
+    traceback_string = kwds.get( "traceback", "No traceback available." )
+    err_msg = kwds.get( "err_msg", default_error_message )
+    error_code_object = kwds.get( "err_code", default_error_code )
+    try:
+        error_code = error_code_object.code
+    except AttributeError:
+        # Some sort of bad error code sent in, logic failure on part of
+        # Galaxy developer.
+        error_code = error_codes.UNKNOWN.code
+    # Would prefer the terminology of error_code and error_message, but
+    # err_msg used a good number of places already. Might as well not change
+    # it?
+    error_response = dict( err_msg=err_msg, err_code=error_code, **extra_error_info )
+    if trans.debug:  # TODO: Should admins get to see traceback as well?
+        error_response[ "traceback" ] = traceback_string
+    return error_response
+
+
+def __api_error_response( trans, **kwds ):
+    error_dict = __api_error_message( trans, **kwds )
+    exception = kwds.get( "exception", None )
+    # If we are given an status code directly - use it - otherwise check
+    # the exception for a status_code attribute.
+    if "status_code" in kwds:
+        status_code = int( kwds.get( "status_code" ) )
+    elif hasattr( exception, "status_code" ):
+        status_code = int( exception.status_code )
+    else:
+        status_code = 500
+    response = trans.response
+    if not response.status or str(response.status).startswith("20"):
+        # Unset status code appears to be string '200 OK', if anything
+        # non-success (i.e. not 200 or 201) has been set, do not override
+        # underlying controller.
+        response.status = status_code
+    return to_json_string( error_dict )
+
+
+# TODO: rename as expose_api and make default.
+def _future_expose_api_anonymous( func, to_json=True ):
+    """
+    Expose this function via the API but don't require a set user.
+    """
+    return _future_expose_api( func, to_json=to_json, user_required=False )
+
+
+# TODO: rename as expose_api and make default.
+def _future_expose_api( func, to_json=True, user_required=True ):
+    """
+    Expose this function via the API.
+    """
+    @wraps(func)
+    def decorator( self, trans, *args, **kwargs ):
+        if trans.error_message:
+            # TODO: Document this branch, when can this happen,
+            # I don't understand it.
+            return __api_error_response( trans, err_msg=trans.error_message )
+        if user_required and trans.anonymous:
+            error_code = error_codes.USER_NO_API_KEY
+            # Use error codes default error message.
+            return __api_error_response( trans, err_code=error_code, status_code=403 )
+        if trans.request.body:
+            try:
+                kwargs['payload'] = __extract_payload_from_request(trans, func, kwargs)
+            except ValueError:
+                error_code = error_codes.USER_INVALID_JSON
+                return __api_error_response( trans, status_code=400, err_code=error_code )
+
+        trans.response.set_content_type( API_RESPONSE_CONTENT_TYPE )
+        # send 'do not cache' headers to handle IE's caching of ajax get responses
+        trans.response.headers[ 'Cache-Control' ] = "max-age=0,no-cache,no-store"
+        # TODO: Refactor next block out into a helper procedure.
+        # Perform api_run_as processing, possibly changing identity
+        if 'payload' in kwargs and 'run_as' in kwargs['payload']:
+            if not trans.user_can_do_run_as():
+                error_code = error_codes.USER_CANNOT_RUN_AS
+                return __api_error_response( trans, err_code=error_code, status_code=403 )
+            try:
+                decoded_user_id = trans.security.decode_id( kwargs['payload']['run_as'] )
+            except TypeError:
+                error_message = "Malformed user id ( %s ) specified, unable to decode." % str( kwargs['payload']['run_as'] )
+                error_code = error_codes.USER_INVALID_RUN_AS
+                return __api_error_response( trans, err_code=error_code, err_msg=error_message, status_code=400)
+            try:
+                user = trans.sa_session.query( trans.app.model.User ).get( decoded_user_id )
+                trans.api_inherit_admin = trans.user_is_admin()
+                trans.set_user(user)
+            except:
+                error_code = error_codes.USER_INVALID_RUN_AS
+                return __api_error_response( trans, err_code=error_code, status_code=400 )
+        try:
+            rval = func( self, trans, *args, **kwargs)
+            if to_json and trans.debug:
+                rval = to_json_string( rval, indent=4, sort_keys=True )
+            elif to_json:
+                rval = to_json_string( rval )
+            return rval
+        except MessageException as e:
+            traceback_string = format_exc()
+            return __api_error_response( trans, exception=e, traceback=traceback_string )
+        except paste.httpexceptions.HTTPException:
+            # TODO: Allow to pass or format for the API???
+            raise  # handled
+        except Exception as e:
+            traceback_string = format_exc()
+            error_message = 'Uncaught exception in exposed API method:'
+            log.exception( error_message )
+            return __api_error_response(
+                trans,
+                status_code=500,
+                exception=e,
+                traceback=traceback_string,
+                err_msg=error_message,
+                err_code=error_codes.UNKNOWN
+            )
+    if not hasattr(func, '_orig'):
+        decorator._orig = func
+    decorator.exposed = True
+    return decorator
+
 
 def require_admin( func ):
     @wraps(func)

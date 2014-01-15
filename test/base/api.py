@@ -60,6 +60,12 @@ class ApiTestCase( TwillTestCase ):
         for key in keys:
             assert key in response, "Response [%s] does not contain key [%s]" % ( response, key )
 
+    def _assert_error_code_is( self, response, error_code ):
+        if hasattr( response, "json" ):
+            response = response.json()
+        self._assert_has_keys( response, "err_code" )
+        self.assertEquals( response[ "err_code" ], int( error_code ) )
+
     def _random_key( self ):  # Used for invalid request testing...
         return "1234567890123456"
 
