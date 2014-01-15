@@ -1,7 +1,7 @@
 from sqlalchemy import desc, and_
 from galaxy import model, web
 from galaxy.web import error, url_for
-from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
+from galaxy.model.item_attrs import UsesItemRatings
 from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesHistoryMixin, UsesStoredWorkflowMixin, UsesVisualizationMixin
 from galaxy.web.framework.helpers import time_ago, grids
 from galaxy import util
@@ -274,7 +274,7 @@ class _PageContentProcessor( _BaseHTMLProcessor ):
         # Default behavior:
         _BaseHTMLProcessor.unknown_endtag( self, tag )
 
-class PageController( BaseUIController, SharableMixin, UsesAnnotations, UsesHistoryMixin,
+class PageController( BaseUIController, SharableMixin, UsesHistoryMixin,
                       UsesStoredWorkflowMixin, UsesVisualizationMixin, UsesItemRatings ):
 
     _page_list = PageListGrid()

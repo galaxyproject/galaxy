@@ -33,7 +33,7 @@ from galaxy.workflow.modules import module_factory
 from galaxy.model.orm import eagerload, eagerload_all, desc
 from galaxy.security.validate_user_input import validate_publicname
 from galaxy.util.sanitize_html import sanitize_html
-from galaxy.model.item_attrs import Dictifiable
+from galaxy.model.item_attrs import Dictifiable, UsesAnnotations
 
 from galaxy.datatypes.interval import ChromatinInteractions
 from galaxy.datatypes.data import Text
@@ -1497,7 +1497,7 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin, UsesLibraryMix
         return return_message
 
 
-class UsesStoredWorkflowMixin( SharableItemSecurityMixin ):
+class UsesStoredWorkflowMixin( SharableItemSecurityMixin, UsesAnnotations ):
     """ Mixin for controllers that use StoredWorkflow objects. """
 
     def get_stored_workflow( self, trans, id, check_ownership=True, check_accessible=False ):
@@ -1538,6 +1538,26 @@ class UsesStoredWorkflowMixin( SharableItemSecurityMixin ):
                 step.state = step.module.get_runtime_state()
             # Connections by input name
             step.input_connections_by_name = dict( ( conn.input_name, conn ) for conn in step.input_connections )
+
+    def _import_shared_workflow( self, trans, stored):
+        """ """
+        # Copy workflow.
+        imported_stored = model.StoredWorkflow()
+        imported_stored.name = "imported: " + stored.name
+        imported_stored.latest_workflow = stored.latest_workflow
+        imported_stored.user = trans.user
+        # Save new workflow.
+        session = trans.sa_session
+        session.add( imported_stored )
+        session.flush()
+
+        # Copy annotations.
+        self.copy_item_annotation( session, stored.user, stored, imported_stored.user, imported_stored )
+        for order_index, step in enumerate( stored.latest_workflow.steps ):
+            self.copy_item_annotation( session, stored.user, step, \
+                                        imported_stored.user, imported_stored.latest_workflow.steps[order_index] )
+        session.flush()
+        return imported_stored
 
 
 class UsesFormDefinitionsMixin:

@@ -3,14 +3,13 @@ API operations on annotations.
 """
 import logging
 from galaxy import web
-from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web.base.controller import BaseAPIController, HTTPNotImplemented, UsesHistoryDatasetAssociationMixin, UsesHistoryMixin, UsesStoredWorkflowMixin
 
 log = logging.getLogger( __name__ )
 
 
-class BaseAnnotationsController( BaseAPIController, UsesAnnotations, UsesHistoryMixin, UsesHistoryDatasetAssociationMixin, UsesStoredWorkflowMixin ):
+class BaseAnnotationsController( BaseAPIController, UsesHistoryMixin, UsesHistoryDatasetAssociationMixin, UsesStoredWorkflowMixin ):
 
     @web.expose_api
     def index( self, trans, **kwd ):

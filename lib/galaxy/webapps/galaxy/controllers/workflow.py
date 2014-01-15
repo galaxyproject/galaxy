@@ -19,7 +19,7 @@ from galaxy import util
 from galaxy import web
 from galaxy.datatypes.data import Data
 from galaxy.jobs.actions.post import ActionBox
-from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
+from galaxy.model.item_attrs import UsesItemRatings
 from galaxy.model.mapping import desc
 from galaxy.tools.parameters import RuntimeValue, visit_input_values
 from galaxy.tools.parameters.basic import DataToolParameter, DrillDownSelectToolParameter, SelectToolParameter, UnvalidatedValue
@@ -132,7 +132,7 @@ class SingleTagContentsParser( sgmllib.SGMLParser ):
             self.tag_content += text
 
 
-class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMixin, UsesAnnotations, UsesItemRatings ):
+class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMixin, UsesItemRatings ):
     stored_list_grid = StoredWorkflowListGrid()
     published_list_grid = StoredWorkflowAllPublishedGrid()
 
@@ -372,34 +372,17 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             referer_message = "<a href='%s'>go to Galaxy's start page</a>" % url_for( '/' )
 
         # Do import.
-        session = trans.sa_session
         stored = self.get_stored_workflow( trans, id, check_ownership=False )
         if stored.importable == False:
             return trans.show_error_message( "The owner of this workflow has disabled imports via this link.<br>You can %s" % referer_message, use_panels=True )
         elif stored.deleted:
             return trans.show_error_message( "You can't import this workflow because it has been deleted.<br>You can %s" % referer_message, use_panels=True )
-        else:
-            # Copy workflow.
-            imported_stored = model.StoredWorkflow()
-            imported_stored.name = "imported: " + stored.name
-            imported_stored.latest_workflow = stored.latest_workflow
-            imported_stored.user = trans.user
-            # Save new workflow.
-            session = trans.sa_session
-            session.add( imported_stored )
-            session.flush()
+        self._import_shared_workflow( trans, stored )
 
-            # Copy annotations.
-            self.copy_item_annotation( session, stored.user, stored, imported_stored.user, imported_stored )
-            for order_index, step in enumerate( stored.latest_workflow.steps ):
-                self.copy_item_annotation( session, stored.user, step, \
-                                            imported_stored.user, imported_stored.latest_workflow.steps[order_index] )
-            session.flush()
-
-            # Redirect to load galaxy frames.
-            return trans.show_ok_message(
-                message="""Workflow "%s" has been imported. <br>You can <a href="%s">start using this workflow</a> or %s."""
-                % ( stored.name, web.url_for( controller='workflow' ), referer_message ), use_panels=True )
+        # Redirect to load galaxy frames.
+        return trans.show_ok_message(
+            message="""Workflow "%s" has been imported. <br>You can <a href="%s">start using this workflow</a> or %s."""
+            % ( stored.name, web.url_for( controller='workflow' ), referer_message ), use_panels=True )
 
     @web.expose
     @web.require_login( "use Galaxy workflows" )
