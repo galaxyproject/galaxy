@@ -76,7 +76,7 @@ class InstalledRepositoryManager( object ):
         # Get the list of repository dependencies for this repository.
         status = self.install_model.ToolShedRepository.installation_status.INSTALLED
         repository_dependency_tups = \
-            repository_dependency_util.get_repository_dependency_tups_for_repository( self.app, repository, status=status )
+            repository_dependency_util.get_repository_dependency_tups_for_installed_repository( self.app, repository, status=status )
         # Add an entry to self.installed_repository_dependencies_of_installed_repositories.
         if repository_tup not in self.installed_repository_dependencies_of_installed_repositories:
             debug_msg = "Adding an entry for revision %s of repository %s owned by %s " % ( installed_changeset_revision, name, owner )
@@ -132,7 +132,7 @@ class InstalledRepositoryManager( object ):
             debug_msg += "to repository_dependencies_of_installed_repositories."
             log.debug( debug_msg )
             repository_dependency_tups = \
-                repository_dependency_util.get_repository_dependency_tups_for_repository( self.app, repository, status=None )
+                repository_dependency_util.get_repository_dependency_tups_for_installed_repository( self.app, repository, status=None )
             self.repository_dependencies_of_installed_repositories[ repository_tup ] = repository_dependency_tups
 
     def add_entry_to_runtime_tool_dependencies_of_installed_tool_dependencies( self, tool_dependency ):
