@@ -1,3 +1,6 @@
+"""
+Common methods used by the API sample scripts.
+"""
 import json
 import logging
 import os
@@ -9,17 +12,16 @@ new_path.extend( sys.path[1:] )
 sys.path = new_path
 
 from galaxy import eggs
-import pkg_resources
+eggs.require( "pycrypto" )
 
-pkg_resources.require( "pycrypto" )
 from Crypto.Cipher import Blowfish
-from Crypto.Util.randpool import RandomPool
-from Crypto.Util import number
 
 log = logging.getLogger( __name__ )
 
 def make_url( api_key, url, args=None ):
-    # Adds the API Key to the URL if it's not already there.
+    """
+    Adds the API Key to the URL if it's not already there.
+    """
     if args is None:
         args = []
     argsep = '&'
@@ -30,29 +32,37 @@ def make_url( api_key, url, args=None ):
     return url + argsep + '&'.join( [ '='.join( t ) for t in args ] )
 
 def get( api_key, url ):
-    # Do the actual GET.
+    """
+    Do the actual GET.
+    """
     url = make_url( api_key, url )
     try:
         return json.loads( urllib2.urlopen( url ).read() )
-    except json.decoder.JSONDecodeError, e:
-        print "URL did not return JSON data"
+    except ValueError, e:
+        print "URL did not return JSON data: %s" % e
         sys.exit(1)
 
 def post( api_key, url, data ):
-    # Do the actual POST.
+    """
+    Do the actual POST.
+    """
     url = make_url( api_key, url )
     req = urllib2.Request( url, headers = { 'Content-Type': 'application/json' }, data = json.dumps( data ) )
     return json.loads( urllib2.urlopen( req ).read() )
 
 def put( api_key, url, data ):
-    # Do the actual PUT
+    """
+    Do the actual PUT
+    """
     url = make_url( api_key, url )
     req = urllib2.Request( url, headers = { 'Content-Type': 'application/json' }, data = json.dumps( data ))
     req.get_method = lambda: 'PUT'
     return json.loads( urllib2.urlopen( req ).read() )
 
 def __del( api_key, url, data ):
-    # Do the actual DELETE
+    """
+    Do the actual DELETE
+    """
     url = make_url( api_key, url )
     req = urllib2.Request( url, headers = { 'Content-Type': 'application/json' }, data = json.dumps( data ))
     req.get_method = lambda: 'DELETE'
@@ -60,7 +70,9 @@ def __del( api_key, url, data ):
 
 
 def display( api_key, url, return_formatted=True ):
-    # Sends an API GET request and acts as a generic formatter for the JSON response.
+    """
+    Sends an API GET request and acts as a generic formatter for the JSON response.
+    """
     try:
         r = get( api_key, url )
     except urllib2.HTTPError, e:
@@ -97,8 +109,10 @@ def display( api_key, url, return_formatted=True ):
         print 'response is unknown type: %s' % type( r )
 
 def submit( api_key, url, data, return_formatted=True ):
-    # Sends an API POST request and acts as a generic formatter for the JSON response.
-    # 'data' will become the JSON payload read by Galaxy.
+    """
+    Sends an API POST request and acts as a generic formatter for the JSON response.
+    'data' will become the JSON payload read by Galaxy.
+    """
     try:
         r = post( api_key, url, data )
     except urllib2.HTTPError, e:
@@ -131,8 +145,10 @@ def submit( api_key, url, data, return_formatted=True ):
         print r
 
 def update( api_key, url, data, return_formatted=True ):
-    # Sends an API PUT request and acts as a generic formatter for the JSON response.
-    # 'data' will become the JSON payload read by Galaxy.
+    """
+    Sends an API PUT request and acts as a generic formatter for the JSON response.
+    'data' will become the JSON payload read by Galaxy.
+    """
     try:
         r = put( api_key, url, data )
     except urllib2.HTTPError, e:
@@ -147,10 +163,12 @@ def update( api_key, url, data, return_formatted=True ):
     print 'Response'
     print '--------'
     print r
-        
+
 def delete( api_key, url, data, return_formatted=True ):
-    # Sends an API DELETE request and acts as a generic formatter for the JSON response.
-    # 'data' will become the JSON payload read by Galaxy.
+    """
+    Sends an API DELETE request and acts as a generic formatter for the JSON response.
+    'data' will become the JSON payload read by Galaxy.
+    """
     try:
         r = __del( api_key, url, data )
     except urllib2.HTTPError, e:
@@ -166,12 +184,14 @@ def delete( api_key, url, data, return_formatted=True ):
     print '--------'
     print r
 
-# utility method to encode ID's
 def encode_id( config_id_secret, obj_id ):
+    """
+    utility method to encode ID's
+    """
     id_cipher = Blowfish.new( config_id_secret )
     # Convert to string
     s = str( obj_id )
-    # Pad to a multiple of 8 with leading "!" 
+    # Pad to a multiple of 8 with leading "!"
     s = ( "!" * ( 8 - len(s) % 8 ) ) + s
     # Encrypt
     return id_cipher.encrypt( s ).encode( 'hex' )
