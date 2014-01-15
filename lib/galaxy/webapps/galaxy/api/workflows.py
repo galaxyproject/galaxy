@@ -6,20 +6,21 @@ API operations for Workflows
 
 import logging
 from sqlalchemy import desc, or_
+from galaxy import exceptions
 from galaxy import util
 from galaxy import web
 from galaxy import model
 from galaxy.tools.parameters import visit_input_values, DataToolParameter, RuntimeValue
-from galaxy.web.base.controller import BaseAPIController, url_for
+from galaxy.web import _future_expose_api as expose_api
+from galaxy.web.base.controller import BaseAPIController, url_for, UsesStoredWorkflowMixin
 from galaxy.workflow.modules import module_factory, ToolModule
 from galaxy.jobs.actions.post import ActionBox
-from galaxy.model.item_attrs import UsesAnnotations
 
 from ..controllers.workflow import attach_ordered_steps
 
 log = logging.getLogger(__name__)
 
-class WorkflowsAPIController(BaseAPIController, UsesAnnotations):
+class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin):
     @web.expose_api
     def index(self, trans, **kwd):
         """
@@ -584,3 +585,31 @@ class WorkflowsAPIController(BaseAPIController, UsesAnnotations):
             data['steps'][step.order_index] = step_dict
         return data
 
+    @expose_api
+    def import_shared_worflow(self, trans, payload, **kwd):
+        """
+        POST /api/workflows/import
+        Import a workflow shared by other users.
+
+        :param  workflow_id:      the workflow id (required)
+        :type   workflow_id:      str
+
+        :raises: exceptions.MessageException, exceptions.ObjectNotFound
+        """
+        # Pull parameters out of payload.
+        workflow_id = payload.get('workflow_id', None)
+        if workflow_id == None:
+            raise exceptions.ObjectAttributeMissingException( "Missing required parameter 'workflow_id'." )
+        try:
+            stored_workflow = self.get_stored_workflow( trans, workflow_id, check_ownership=False )
+        except:
+            raise exceptions.ObjectNotFound( "Malformed workflow id ( %s ) specified." % workflow_id )
+        if stored_workflow.importable == False:
+            raise exceptions.MessageException( 'The owner of this workflow has disabled imports via this link.' )
+        elif stored_workflow.deleted:
+            raise exceptions.MessageException( "You can't import this workflow because it has been deleted." )
+        imported_workflow = self._import_shared_workflow( trans, stored_workflow )
+        item = imported_workflow.to_dict(value_mapper={'id':trans.security.encode_id})
+        encoded_id = trans.security.encode_id(imported_workflow.id)
+        item['url'] = url_for('workflow', id=encoded_id)
+        return item
