@@ -16,50 +16,72 @@ var GalaxyModal = Backbone.View.extend(
         height      : null,
         width       : null
     },
+
+    // flag whether the closing events are bound
+    eventsBound: false,
     
     // options
     options : {
         // by default the modal cannot be removed by the self.destroy() method 
         // but only hidden through self.hide()
-        destructible: false 
+        destructible: false,
+        // by default don't bind the events
+        bindClosingEvents: false
     },
     
     // initialize
     initialize : function(options) {
         self = this;
-        if (options)
+        if (options){
             this.create(options);
+        }
     },
 
     hideOrDestroy: function(){
-        if (this.options.destructible){
-            self.destroy();
+        self.visible = false;
+
+        //unbinds event for ALL modals?
+        self.unbindEvents();
+
+        if (self.options.destructible){
+            self.$el.remove(); // destroy
         } else {
             self.hide();
         }
     },
 
+    // hide modal, shouldn't be called directly but through hideOrDestroy()
+    // however hide() remains for backwards compatibility
+    hide: function(){
+        this.visible = false;
+        this.$el.fadeOut('fast');
+    },    
+
     // bind the click-to-hide function
     bindEvents: function() {
         // bind the ESC key to hideOrDestroy() function
         $(document).on('keyup', function(event){
-            if (event.keyCode == 27) { self.hideOrDestroy() }
+            if (event.keyCode == 27) { 
+                self.hideOrDestroy() 
+            }
         })
         // bind the 'click anywhere' to hideOrDestroy() function...
-        $('html').on('click', function(event){ 
-            self.hideOrDestroy()
-        })
+        $('html').on('click', self.hideOrDestroy)
         // ...but don't hide if the click is on modal content
         $('.modal-content').on('click', function(event){
             event.stopPropagation();
         })
+
+        self.eventsBound = true;
     },
 
     // unbind the click-to-hide function
     unbindEvents: function(){
         // unbind the ESC key to hideOrDestroy() function
         $(document).off('keyup', function(event){
-            if (event.keyCode == 27) { self.hideOrDestroy() }
+            if (event.keyCode == 27) { 
+                self.hideOrDestroy() 
+            }
         })
         // unbind the 'click anywhere' to hideOrDestroy() function...
         $('html').off('click', function(event){
@@ -68,6 +90,8 @@ var GalaxyModal = Backbone.View.extend(
         $('.modal-content').off('click', function(event){
             event.stopPropagation();
         })
+
+        self.eventsBound = false;
     },
 
     // adds and displays a new frame/window
@@ -76,45 +100,27 @@ var GalaxyModal = Backbone.View.extend(
         this.initialize(options);
         
         // fix height
-        if (this.options.height)
-        {
+        if (this.options.height){
             this.$body.css('height', this.options.height);
             this.$body.css('overflow', 'hidden');
-        } else
+        } else{
             this.$body.css('max-height', $(window).height() / 2);
+        }
 
         // fix width
-        if (this.options.width)
+        if (this.options.width){
             this.$dialog.css('width', this.options.width);
+        }
         
         // show
-        if (this.visible)
+        if (this.visible){
             this.$el.show();
-        else
+        } else {
             this.$el.fadeIn('fast');
+        }
         
         // set flag
         this.visible = true;
-    },
-    
-    // hide modal, shouldn't be called directly but through hideOrDestroy()
-    hide: function(){
-        // fade out
-        this.$el.fadeOut('fast');
-        // set flag
-        this.visible = false;
-        // unbind events
-        this.unbindEvents();
-    },    
-
-    // destroy modal, shouldn't be called directly but through hideOrDestroy()
-    destroy: function(){
-        // set flag
-        this.visible = false;
-        // unbind events
-        this.unbindEvents();
-        // remove
-        this.$el.remove();
     },
     
     // create
@@ -123,12 +129,14 @@ var GalaxyModal = Backbone.View.extend(
         this.options = _.defaults(options, this.optionsDefault);
         
         // check for progress bar request
-        if (this.options.body == 'progress')
+        if (this.options.body == 'progress'){
             this.options.body = $('<div class="progress progress-striped active"><div class="progress-bar progress-bar-info" style="width:100%"></div></div>');
+        }
             
         // remove former element
-        if (this.$el)
+        if (this.$el){
             this.$el.remove();
+        }
         
         // create new element
         this.setElement(this.template(this.options.title));
@@ -144,8 +152,9 @@ var GalaxyModal = Backbone.View.extend(
         this.$body.html(this.options.body);
         
         // configure background
-        if (!this.options.backdrop)
+        if (!this.options.backdrop){
             this.$backdrop.removeClass('in');
+        }
                         
         // append buttons
         if (this.options.buttons) {
@@ -160,6 +169,10 @@ var GalaxyModal = Backbone.View.extend(
         
         // append to main element
         $(this.elMain).append($(this.el));
+
+        if (this.options.bindClosingEvents && !this.eventsBound){
+            this.bindEvents();
+        }
     },
     
     // enable buttons
