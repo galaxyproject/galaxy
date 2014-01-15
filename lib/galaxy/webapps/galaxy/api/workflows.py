@@ -60,10 +60,10 @@ class WorkflowsAPIController(BaseAPIController, UsesAnnotations):
             return "Malformed workflow id ( %s ) specified, unable to decode." % str(workflow_id)
         try:
             stored_workflow = trans.sa_session.query(trans.app.model.StoredWorkflow).get(decoded_workflow_id)
-            if stored_workflow.user != trans.user and not trans.user_is_admin():
+            if stored_workflow.importable == False and stored_workflow.user != trans.user and not trans.user_is_admin():
                 if trans.sa_session.query(trans.app.model.StoredWorkflowUserShareAssociation).filter_by(user=trans.user, stored_workflow=stored_workflow).count() == 0:
                     trans.response.status = 400
-                    return("Workflow is not owned by or shared with current user")
+                    return("Workflow is neither importable, nor owned by or shared with current user")
         except:
             trans.response.status = 400
             return "That workflow does not exist."
