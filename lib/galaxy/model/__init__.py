@@ -35,7 +35,9 @@ from galaxy.web.form_builder import (AddressField, CheckboxField, HistoryField,
         PasswordField, SelectField, TextArea, TextField, WorkflowField,
         WorkflowMappingField)
 from sqlalchemy.orm import object_session
+from sqlalchemy.orm import joinedload
 from sqlalchemy.sql.expression import func
+from sqlalchemy import not_
 
 log = logging.getLogger( __name__ )
 
@@ -897,6 +899,22 @@ class History( object, Dictifiable, UsesAnnotations ):
         if nice_size:
             rval = galaxy.datatypes.data.nice_size( rval )
         return rval
+
+    @property
+    def active_datasets_children_and_roles( self ):
+        if not hasattr(self, '_active_datasets_children_and_roles'):
+            db_session = object_session( self )
+            query = db_session.query( HistoryDatasetAssociation ).filter( HistoryDatasetAssociation.table.c.history_id == self.id ). \
+                filter( not_( HistoryDatasetAssociation.deleted ) ). \
+                order_by( HistoryDatasetAssociation.table.c.hid.asc() ). \
+                options(
+                    joinedload("children"),
+                    joinedload("dataset"),
+                    joinedload("dataset.actions"),
+                    joinedload("dataset.actions.role"),
+                )
+            self._active_datasets_children_and_roles = query.all()
+        return self._active_datasets_children_and_roles
 
     def contents_iter( self, **kwds ):
         """
