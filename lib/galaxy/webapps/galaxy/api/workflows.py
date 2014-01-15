@@ -5,7 +5,7 @@ API operations for Workflows
 """
 
 import logging
-from sqlalchemy import desc
+from sqlalchemy import desc, or_
 from galaxy import util
 from galaxy import web
 from galaxy import model
@@ -26,10 +26,17 @@ class WorkflowsAPIController(BaseAPIController, UsesAnnotations):
         GET /api/workflows
 
         Displays a collection of workflows.
+
+        :param  show_published:      if True, show also published workflows
+        :type   show_published:      boolean
         """
+        show_published = util.string_as_bool( kwd.get( 'show_published', 'False' ) )
         rval = []
-        for wf in trans.sa_session.query(trans.app.model.StoredWorkflow).filter_by(
-                user=trans.user, deleted=False).order_by(
+        filter1 = ( trans.app.model.StoredWorkflow.user == trans.user )
+        if show_published:
+            filter1 = or_( filter1, ( trans.app.model.StoredWorkflow.published == True ) )
+        for wf in trans.sa_session.query(trans.app.model.StoredWorkflow).filter(
+                filter1, trans.app.model.StoredWorkflow.table.c.deleted == False ).order_by(
                 desc(trans.app.model.StoredWorkflow.table.c.update_time)).all():
             item = wf.to_dict(value_mapper={'id':trans.security.encode_id})
             encoded_id = trans.security.encode_id(wf.id)
