@@ -1719,7 +1719,7 @@ class DataToolParameter( ToolParameter ):
                     most_recent_dataset.append(data)
                 # Also collect children via association object
                 dataset_collector( data.children )
-        dataset_collector( history.datasets )
+        dataset_collector( history.active_datasets )
         most_recent_dataset.reverse()
         if already_used is not None:
             for val in most_recent_dataset:
