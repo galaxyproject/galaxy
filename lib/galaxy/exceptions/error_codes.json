@@ -52,6 +52,6 @@
    {
     "name": "USER_OBJECT_NOT_FOUND",
     "code": 404001,
-    "message": "No such object not found."
+    "message": "No such object found."
    }
 ]
