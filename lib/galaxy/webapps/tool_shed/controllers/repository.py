@@ -2002,8 +2002,8 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                   ','.join( util.listify( changeset_revisions ) ) ) )
             return trans.response.send_redirect( url )
         else:
-            message = 'Repository installation is not possible due to an invalid Galaxy URL: <b>%s</b>.  '
-            message += 'You may need to enable cookies in your browser.  ' % galaxy_url
+            message = 'Repository installation is not possible due to an invalid Galaxy URL: <b>%s</b>.  '  % galaxy_url
+            message += 'You may need to enable cookies in your browser.  '
             status = 'error'
             return trans.response.send_redirect( web.url_for( controller='repository',
                                                               action='browse_valid_categories',
