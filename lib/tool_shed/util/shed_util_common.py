@@ -724,8 +724,8 @@ def get_named_tmpfile_from_ctx( ctx, filename, dir ):
 
 def get_next_downloadable_changeset_revision( repository, repo, after_changeset_revision ):
     """
-    Return the installable changeset_revision in the repository changelog after the changeset to which after_changeset_revision refers.  If there
-    isn't one, return None.
+    Return the installable changeset_revision in the repository changelog after the changeset to which
+    after_changeset_revision refers.  If there isn't one, return None.
     """
     changeset_revisions = get_ordered_metadata_changeset_revisions( repository, repo, downloadable=True )
     if len( changeset_revisions ) == 1:
