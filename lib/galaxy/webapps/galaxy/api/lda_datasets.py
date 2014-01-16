@@ -2,7 +2,6 @@
 API operations on the datasets from library.
 """
 import glob
-import logging
 import operator
 import os
 import os.path
