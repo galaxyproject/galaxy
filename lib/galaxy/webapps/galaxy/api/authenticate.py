@@ -21,19 +21,24 @@ class AuthenticationController( BaseAPIController ):
         def get_api_key( self, trans, **kwd )
         * GET /api/authenticate/baseauth
           returns an API key for authenticated user based on BaseAuth headers
+
+        :rtype:   dict
+        :returns: api_key in json format
+
+        :raises: ObjectNotFound, HTTPBadRequest
         """
         email, password = self._decode_baseauth( trans.environ.get( 'HTTP_AUTHORIZATION' ) )
 
         user = trans.sa_session.query( trans.app.model.User ).filter( trans.app.model.User.table.c.email == email ).all()
 
-        if (len(user) is not 1):
+        if ( len( user ) is not 1 ):
             # DB is inconsistent and we have more users with same email
             raise ObjectNotFound
         else:
             user = user[0]
             is_valid_user = user.check_password( password )
 
-        if (is_valid_user):
+        if ( is_valid_user ):
             user_id = user.id
             api_key_row = trans.sa_session.query( trans.app.model.APIKeys ).filter( trans.app.model.APIKeys.table.c.user_id == user_id ).first()
         else:
@@ -47,23 +52,23 @@ class AuthenticationController( BaseAPIController ):
         the form (email, password), and raises a HTTPBadRequest exception if
         nothing could be decoded.
         """
-        split = encoded_str.strip().split(' ')
+        split = encoded_str.strip().split( ' ' )
 
         # If split is only one element, try to decode the email and password
         # directly.
-        if len(split) == 1:
+        if len( split ) == 1:
             try:
-                email, password = b64decode(split[0]).split(':')
+                email, password = b64decode( split[ 0 ] ).split( ':' )
             except:
                 raise HTTPBadRequest
 
         # If there are only two elements, check the first and ensure it says
         # 'basic' so that we know we're about to decode the right thing. If not,
         # bail out.
-        elif len(split) == 2:
-            if split[0].strip().lower() == 'basic':
+        elif len( split ) == 2:
+            if split[ 0 ].strip().lower() == 'basic':
                 try:
-                    email, password = b64decode(split[1]).split(':')
+                    email, password = b64decode( split[ 1 ] ).split( ':' )
                 except:
                     raise HTTPBadRequest
             else:
@@ -74,4 +79,4 @@ class AuthenticationController( BaseAPIController ):
         else:
             raise HTTPBadRequest
 
-        return unquote(email), unquote(password)
+        return unquote( email ), unquote( password )
