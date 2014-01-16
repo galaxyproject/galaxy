@@ -971,8 +971,9 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
     @web.require_login( "deprecate repository" )
     def deprecate( self, trans, **kwd ):
         """Mark a repository in the tool shed as deprecated or not deprecated."""
-        # Marking a repository in the tool shed as deprecated has no effect on any downloadable changeset revisions that may be associated with the
-        # repository.  Revisions are not marked as not downlaodable because those that have installed the repository must be allowed to get updates.
+        # Marking a repository in the tool shed as deprecated has no effect on any downloadable changeset
+        # revisions that may be associated with the repository.  Revisions are not marked as not downlaodable
+        # because those that have installed the repository must be allowed to get updates.
         message = kwd.get( 'message', ''  )
         status = kwd.get( 'status', 'done' )
         repository_id = kwd.get( 'id', None )
@@ -2287,7 +2288,9 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                         status = 'warning'
                     else:
                         # Handle messaging for orphan tool dependency definitions.
-                        orphan_message = tool_dependency_util.generate_message_for_orphan_tool_dependencies( trans, repository, metadata )
+                        orphan_message = tool_dependency_util.generate_message_for_orphan_tool_dependencies( trans,
+                                                                                                             repository,
+                                                                                                             metadata )
                         if orphan_message:
                             message += orphan_message
                             status = 'warning'
@@ -2302,14 +2305,23 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         skip_tool_tests_check_box = CheckboxField( 'skip_tool_tests', checked=skip_tool_tests_checked )
         categories = suc.get_categories( trans )
         selected_categories = [ rca.category_id for rca in repository.categories ]
-        containers_dict = container_util.build_repository_containers_for_tool_shed( trans, repository, changeset_revision, repository_dependencies, repository_metadata )
+        containers_dict = container_util.build_repository_containers_for_tool_shed( trans,
+                                                                                    repository,
+                                                                                    changeset_revision,
+                                                                                    repository_dependencies,
+                                                                                    repository_metadata )
         heads = suc.get_repository_heads( repo )
+        deprecated_repository_dependency_tups = \
+            repository_dependency_util.get_repository_dependency_tups_from_repository_metadata( trans.app,
+                                                                                                repository_metadata,
+                                                                                                deprecated_only=True )
         return trans.fill_template( '/webapps/tool_shed/repository/manage_repository.mako',
                                     repo_name=repo_name,
                                     description=description,
                                     long_description=long_description,
                                     current_allow_push_list=current_allow_push_list,
                                     allow_push_select_field=allow_push_select_field,
+                                    deprecated_repository_dependency_tups=deprecated_repository_dependency_tups,
                                     repo=repo,
                                     heads=heads,
                                     repository=repository,

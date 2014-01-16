@@ -303,10 +303,13 @@ def get_repository_dependencies_for_changeset_revision( trans, repository, repos
                                                         key_rd_dicts_to_be_processed=None, all_repository_dependencies=None,
                                                         handled_key_rd_dicts=None, circular_repository_dependencies=None ):
     """
-    Return a dictionary of all repositories upon which the contents of the received repository_metadata record depend.  The dictionary keys
-    are name-spaced values consisting of toolshed_base_url/repository_name/repository_owner/changeset_revision and the values are lists of
-    repository_dependency tuples consisting of ( toolshed_base_url, repository_name, repository_owner, changeset_revision ).  This method
-    ensures that all required repositories to the nth degree are returned.
+    Return a dictionary of all repositories upon which the contents of the received
+    repository_metadata record depend.  The dictionary keys are name-spaced values
+    consisting of:
+    toolshed_base_url/repository_name/repository_owner/changeset_revision
+    and the values are lists of repository_dependency tuples consisting of:
+    ( toolshed_base_url, repository_name, repository_owner, changeset_revision ).
+    This method ensures that all required repositories to the nth degree are returned.
     """
     if handled_key_rd_dicts is None:
         handled_key_rd_dicts = []
@@ -331,8 +334,8 @@ def get_repository_dependencies_for_changeset_revision( trans, repository, repos
                 all_repository_dependencies = initialize_all_repository_dependencies( current_repository_key,
                                                                                       repository_dependencies_dict,
                                                                                       all_repository_dependencies )
-            # Handle the repository dependencies defined in the current repository, if any, and populate the various repository dependency objects for
-            # this round of processing.
+            # Handle the repository dependencies defined in the current repository, if any, and populate
+            # the various repository dependency objects for this round of processing.
             current_repository_key_rd_dicts, key_rd_dicts_to_be_processed, handled_key_rd_dicts, all_repository_dependencies = \
                 populate_repository_dependency_objects_for_processing( trans,
                                                                        current_repository_key,
@@ -375,10 +378,41 @@ def get_repository_dependencies_for_changeset_revision( trans, repository, repos
     all_repository_dependencies = prune_invalid_repository_dependencies( all_repository_dependencies )
     return all_repository_dependencies
 
-def get_repository_dependency_tups_for_repository( app, repository, dependency_tups=None, status=None ):
+def get_repository_dependency_tups_from_repository_metadata( app, repository_metadata, deprecated_only=False ):
+    """
+    Return a list of of tuples defining repository objects required by the received repository.  The returned
+    list defines the entire repository dependency tree.  This method is called only from the Tool Shed.
+    """
+    dependency_tups = []
+    if repository_metadata is not None:
+        metadata = repository_metadata.metadata
+        if metadata:
+            repository_dependencies_dict = metadata.get( 'repository_dependencies', None )
+            if repository_dependencies_dict is not None:
+                repository_dependency_tups = repository_dependencies_dict.get( 'repository_dependencies', None )
+                if repository_dependency_tups is not None:
+                    # The value of repository_dependency_tups is a list of repository dependency tuples like this:
+                    # ['http://localhost:9009', 'package_samtools_0_1_18', 'devteam', 'ef37fc635cb9', 'False', 'False']
+                    for repository_dependency_tup in repository_dependency_tups:
+                        toolshed, name, owner, changeset_revision, pir, oicct = \
+                        common_util.parse_repository_dependency_tuple( repository_dependency_tup )
+                        repository = suc.get_repository_by_name_and_owner( app, name, owner )
+                        if repository:
+                            if deprecated_only:
+                                if repository.deprecated:
+                                    dependency_tups.append( repository_dependency_tup )
+                            else:
+                                dependency_tups.append( repository_dependency_tup )
+                        else:
+                            log.debug( "Cannot locate repository %s owned by %s for inclusion in repository dependency tups." % \
+                                ( name, owner ) )
+    return dependency_tups
+
+def get_repository_dependency_tups_for_installed_repository( app, repository, dependency_tups=None, status=None ):
     """
     Return a list of of tuples defining tool_shed_repository objects (whose status can be anything) required by the
-    received repository.  The returned list defines the entire repository dependency tree.
+    received repository.  The returned list defines the entire repository dependency tree.  This method is called
+    only from Galaxy.
     """
     if dependency_tups is None:
         dependency_tups = []
@@ -393,7 +427,9 @@ def get_repository_dependency_tups_for_repository( app, repository, dependency_t
                 continue
             if required_repository_tup not in dependency_tups:
                 dependency_tups.append( required_repository_tup )
-                return get_repository_dependency_tups_for_repository( app, required_repository, dependency_tups=dependency_tups )
+                return get_repository_dependency_tups_for_installed_repository( app,
+                                                                                required_repository,
+                                                                                dependency_tups=dependency_tups )
     return dependency_tups
 
 def get_repository_tuple_for_installed_repository_manager( repository ):
@@ -657,12 +693,16 @@ def merge_missing_repository_dependencies_to_installed_container( containers_dic
     containers_dict[ 'missing_repository_dependencies' ] = None
     return containers_dict
 
-def populate_repository_dependency_objects_for_processing( trans, current_repository_key, repository_dependencies_dict, key_rd_dicts_to_be_processed,
-                                                           handled_key_rd_dicts, circular_repository_dependencies, all_repository_dependencies ):
+def populate_repository_dependency_objects_for_processing( trans, current_repository_key, repository_dependencies_dict,
+                                                           key_rd_dicts_to_be_processed, handled_key_rd_dicts,
+                                                           circular_repository_dependencies, all_repository_dependencies ):
     """
-    The process that discovers all repository dependencies for a specified repository's changeset revision uses this method to populate the following items
-    for the current processing loop: filtered_current_repository_key_rd_dicts, key_rd_dicts_to_be_processed, handled_key_rd_dicts, all_repository_dependencies.
-    Each processing loop may discover more repository dependencies, so this method is repeatedly called until all repository dependencies have been discovered.
+    The process that discovers all repository dependencies for a specified repository's
+    changeset revision uses this method to populate the following items for the current
+    processing loop: filtered_current_repository_key_rd_dicts, key_rd_dicts_to_be_processed,
+    handled_key_rd_dicts, all_repository_dependencies.  Each processing loop may discover
+    more repository dependencies, so this method is repeatedly called until all repository
+    dependencies have been discovered.
     """
     current_repository_key_rd_dicts = []
     filtered_current_repository_key_rd_dicts = []
@@ -673,13 +713,15 @@ def populate_repository_dependency_objects_for_processing( trans, current_reposi
     if current_repository_key_rd_dicts and current_repository_key:
         # Remove all repository dependencies that point to a revision within its own repository.
         current_repository_key_rd_dicts = remove_ropository_dependency_reference_to_self( current_repository_key_rd_dicts )
-    current_repository_key_rd_dicts = get_updated_changeset_revisions_for_repository_dependencies( trans, current_repository_key_rd_dicts )
+    current_repository_key_rd_dicts = get_updated_changeset_revisions_for_repository_dependencies( trans,
+                                                                                                   current_repository_key_rd_dicts )
     for key_rd_dict in current_repository_key_rd_dicts:
         # Filter out repository dependencies that are required only if compiling the dependent repository's tool dependency.
         key_rd_dict = filter_only_if_compiling_contained_td( key_rd_dict )
         if key_rd_dict:
             is_circular = False
-            if not in_key_rd_dicts( key_rd_dict, handled_key_rd_dicts ) and not in_key_rd_dicts( key_rd_dict, key_rd_dicts_to_be_processed ):
+            if not in_key_rd_dicts( key_rd_dict, handled_key_rd_dicts ) and not in_key_rd_dicts( key_rd_dict,
+                                                                                                 key_rd_dicts_to_be_processed ):
                 filtered_current_repository_key_rd_dicts.append( key_rd_dict )
                 repository_dependency = key_rd_dict[ current_repository_key ]
                 if current_repository_key in all_repository_dependencies:
@@ -708,8 +750,10 @@ def populate_repository_dependency_objects_for_processing( trans, current_reposi
 
 def prune_invalid_repository_dependencies( repository_dependencies ):
     """
-    Eliminate all invalid entries in the received repository_dependencies dictionary.  An entry is invalid if the value_list of the key/value pair is
-    empty.  This occurs when an invalid combination of tool shed, name , owner, changeset_revision is used and a repository_metadata record is not found.
+    Eliminate all invalid entries in the received repository_dependencies dictionary.  An entry
+    is invalid if the value_list of the key/value pair is empty.  This occurs when an invalid
+    combination of tool shed, name , owner, changeset_revision is used and a repository_metadata
+    record is not found.
     """
     valid_repository_dependencies = {}
     description = repository_dependencies.get( 'description', None )
@@ -752,7 +796,9 @@ def remove_ropository_dependency_reference_to_self( key_rd_dicts ):
         toolshed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
             common_util.parse_repository_dependency_tuple( repository_dependency )
         if rd_toolshed == toolshed and rd_name == name and rd_owner == owner:
-            log.debug( "Removing repository dependency for repository %s owned by %s since it refers to a revision within itself." % ( name, owner ) )
+            debug_msg = "Removing repository dependency for repository %s owned by %s " % ( name, owner )
+            debug_msg += 'since it refers to a revision within itself.'
+            log.debug( debug_msg )
         else:
             new_key_rd_dict = {}
             new_key_rd_dict[ key ] = repository_dependency

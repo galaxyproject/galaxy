@@ -14,9 +14,9 @@ import urllib
 import urllib2
 import zipfile
 from paste.httpexceptions import HTTPBadRequest
+from galaxy import util, web
 from galaxy.exceptions import ItemAccessibilityException, MessageException, ItemDeletionException, ObjectNotFound
 from galaxy.security import Action
-from galaxy import util, web
 from galaxy.util.streamball import StreamBall
 from galaxy.web.base.controller import BaseAPIController, UsesVisualizationMixin
 
@@ -39,14 +39,12 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         :returns:   detailed dataset information from base controller
         .. seealso:: :attr:`galaxy.web.base.controller.UsesLibraryMixinItems.get_library_dataset`
         """
-        # Get dataset.
         try:
             dataset = self.get_library_dataset( trans, id = id, check_ownership=False, check_accessible=True )
         except Exception, e:
             trans.response.status = 500
             return str( e )
         try:
-            # Default: return dataset as dict.
             rval = dataset.to_dict()
         except Exception, e:
             rval = "Error in dataset API at listing contents: " + str( e )

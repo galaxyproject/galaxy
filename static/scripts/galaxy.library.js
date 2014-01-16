@@ -122,7 +122,7 @@ var FolderContentView = Backbone.View.extend({
 
         // CONTAINER
         tmpl_array.push('<div id="library_container" style="width: 90%; margin: auto; margin-top: 2em; ">');
-        tmpl_array.push('<h3>New Data Libraries. This is work in progress. Report problems & ideas to <a href="mailto:marten@bx.psu.edu?Subject=DataLibraries_Feedback" target="_blank">Marten</a>.</h3>');
+        tmpl_array.push('<h3>Data Libraries Beta Test. This is work in progress. Please report problems & ideas via <a href="mailto:galaxy-bugs@bx.psu.edu?Subject=DataLibrariesBeta_Feedback" target="_blank">email</a> and <a href="https://trello.com/c/nwYQNFPK/56-data-library-ui-progressive-display-of-folders" target="_blank">Trello</a>.</h3>');
 
         // TOOLBAR
         tmpl_array.push('<div id="library_folder_toolbar" >');
@@ -457,6 +457,7 @@ var FolderContentView = Backbone.View.extend({
             var self = this;
             this.modal = new mod_modal.GalaxyModal({
                 destructible : true,
+                bindClosingEvents: true,
                 title   : 'Dataset Details',
                 body    : template,
                 buttons : {
@@ -477,7 +478,6 @@ var FolderContentView = Backbone.View.extend({
                     $(this.modal.elMain).find('#dataset_import_single').val(self.lastSelectedHistory);
                 }
             } 
-            this.modal.bindEvents();
             this.modal.show();
         },
 
@@ -614,6 +614,7 @@ var FolderContentView = Backbone.View.extend({
                         var history_modal_tmpl =  _.template(self.templateBulkImportInModal(), {histories : histories.models});
                         self.modal = new mod_modal.GalaxyModal({
                             destructible : true,
+                            bindClosingEvents: true,
                             title   : 'Import into History',
                             body    : history_modal_tmpl,
                             buttons : {
@@ -621,7 +622,6 @@ var FolderContentView = Backbone.View.extend({
                                 'Close'  : function() {self.modal.hideOrDestroy();}
                             }
                         });
-                        self.modal.bindEvents();
                         self.modal.show();
                     },
                     error: function(){
@@ -724,6 +724,7 @@ var FolderContentView = Backbone.View.extend({
                 //send request
                 $('<form action="'+ url +'" method="'+ (method||'post') +'">'+inputs+'</form>')
                 .appendTo('body').submit().remove();
+                
                 mod_toastr.info('Your download will begin soon');
         };
       },
@@ -737,6 +738,7 @@ var FolderContentView = Backbone.View.extend({
             var self = this;
             this.modal = new mod_modal.GalaxyModal({
                 destructible : true,
+                bindClosingEvents: true,
                 title   : 'Create New Folder',
                 body    : this.templateNewFolderInModal(),
                 buttons : {
@@ -744,7 +746,6 @@ var FolderContentView = Backbone.View.extend({
                     'Close'  : function() {self.modal.hideOrDestroy(); self.modal = null;}
                 }
             });
-        this.modal.bindEvents();
         this.modal.show();
       },
 
@@ -810,7 +811,7 @@ var GalaxyLibraryview = Backbone.View.extend({
         tmpl_array = [];
         tmpl_array.push('<div id="library_container" style="width: 90%; margin: auto; margin-top: 2em; overflow: auto !important; ">');
         tmpl_array.push('');
-        tmpl_array.push('<h3>New Data Libraries. This is work in progress. Report problems & ideas to <a href="mailto:marten@bx.psu.edu?Subject=DataLibraries_Feedback" target="_blank">Marten</a>.</h3>');
+        tmpl_array.push('<h3>Data Libraries Beta Test. This is work in progress. Please report problems & ideas via <a href="mailto:galaxy-bugs@bx.psu.edu?Subject=DataLibrariesBeta_Feedback" target="_blank">email</a> and <a href="https://trello.com/c/nwYQNFPK/56-data-library-ui-progressive-display-of-folders" target="_blank">Trello</a>.</h3>');
         tmpl_array.push('<a href="" id="create_new_library_btn" class="btn btn-primary file ">New Library</a>');
         tmpl_array.push('<table class="table table-condensed">');
         tmpl_array.push('   <thead>');
@@ -866,7 +867,7 @@ var GalaxyLibraryview = Backbone.View.extend({
           },
           error: function(model, response){
             if (response.statusCode().status === 403){
-                mod_toastr.error('Please log in first. Redirecting to login page in 3s.');   
+                mod_toastr.info('Please log in first. Redirecting to login page in 3s.');   
                 setTimeout(that.redirectToLogin, 3000);
             } else {
                 mod_toastr.error('An error occured. Please try again.');
@@ -894,6 +895,7 @@ var GalaxyLibraryview = Backbone.View.extend({
             var self = this;
             this.modal = new mod_modal.GalaxyModal({
                 destructible : true,
+                bindClosingEvents: true,
                 title   : 'Create New Library',
                 body    : this.templateNewLibraryInModal(),
                 buttons : {
@@ -901,7 +903,6 @@ var GalaxyLibraryview = Backbone.View.extend({
                     'Close'  : function() {self.modal.hideOrDestroy();}
                 }
             });
-        this.modal.bindEvents();
         this.modal.show();
     },
 

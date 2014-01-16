@@ -87,6 +87,14 @@
         multiple_heads = len( heads ) > 1
     else:
         multiple_heads = False
+    
+    if repository_metadata is None:
+        revision_installable = False
+    else:
+        if repository_metadata.downloadable is None:
+            revision_installable = 'unknown'
+        else:
+            revision_installable = repository_metadata.downloadable
 %>
 
 <%!
@@ -119,18 +127,12 @@ ${render_tool_shed_repository_actions( repository, metadata=metadata, changeset_
     <div class="warningmessage">
         This repository has been marked as deprecated, so some tool shed features may be restricted.
     </div>
-%elif multiple_heads:
-    <div class="warningmessage">
-        <%
-            from tool_shed.util.shed_util_common import get_revision_label_from_ctx
-            heads_str = ''
-            for ctx in heads:
-                heads_str += '%s<br/>' % get_revision_label_from_ctx( ctx, include_date=True )
-        %>
-        Contact the administrator of this Tool Shed as soon as possible and let them know that
-        this repository has the following multiple heads which must be merged.<br/>
-        ${heads_str}
-    </div>
+%endif:
+%if multiple_heads:
+    ${render_multiple_heads_message( heads )}
+%endif
+%if deprecated_repository_dependency_tups:
+    ${render_deprecated_repository_dependencies_message( deprecated_repository_dependency_tups )}
 %endif
 
 %if len( changeset_revision_select_field.options ) > 1:
@@ -207,7 +209,11 @@ ${render_tool_shed_repository_actions( repository, metadata=metadata, changeset_
                 ${repository.user.username | h}
             </div>
             <div class="form-row">
-                <label>Times downloaded:</label>
+                <label>This revision can be installed:</label>
+                ${revision_installable}
+            </div>
+            <div class="form-row">
+                <label>Times cloned / installed:</label>
                 ${repository.times_downloaded | h}
             </div>
             %if is_admin:
