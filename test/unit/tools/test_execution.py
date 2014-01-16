@@ -15,6 +15,10 @@ from galaxy.util import object_to_string
 from galaxy.util.odict import odict
 from tools_support import UsesApp
 
+from galaxy import eggs
+eggs.require( "Paste" )
+from paste import httpexceptions
+
 # Simple tool with just one text parameter and output.
 SIMPLE_TOOL_CONTENTS = '''<tool id="test_tool" name="Test Tool">
     <command>echo "$param1" &lt; $out1</command>
@@ -91,6 +95,41 @@ class ToolExecutionTestCase( TestCase, UsesApp ):
         assert template == "tool_executed.mako"
         # Didn't specify a rerun_remap_id so this should be None
         assert self.tool_action.execution_call_args[ 0 ][ "rerun_remap_job_id" ] is None
+
+    def test_execute_exception( self ):
+        self.__init_tool( SIMPLE_TOOL_CONTENTS )
+        self.tool_action.raise_exception( )
+        template, template_vars = self.__handle_with_incoming(
+            param1="moo",
+            runtool_btn="dummy",
+        )
+        assert template == "message.mako"
+        assert template_vars[ "status" ] == "error"
+        assert "Error executing tool" in template_vars[ "message" ]
+
+    def test_execute_errors( self ):
+        self.__init_tool( SIMPLE_TOOL_CONTENTS )
+        self.tool_action.return_error( )
+        template, template_vars = self.__handle_with_incoming(
+            param1="moo",
+            runtool_btn="dummy",
+        )
+        assert template == "message.mako"
+        assert template_vars[ "status" ] == "error"
+        assert "Test Error Message" in template_vars[ "message" ], template_vars
+
+    def test_redirect( self ):
+        self.__init_tool( SIMPLE_TOOL_CONTENTS )
+        self.tool_action.expect_redirect = True
+        redirect_raised = False
+        try:
+            template, template_vars = self.__handle_with_incoming(
+                param1="moo",
+                runtool_btn="dummy",
+            )
+        except httpexceptions.HTTPFound:
+            redirect_raised = True
+        assert redirect_raised
 
     def test_remap_job( self ):
         self.__init_tool( SIMPLE_TOOL_CONTENTS )
@@ -237,11 +276,30 @@ class MockAction( object ):
     def __init__( self, expected_trans ):
         self.expected_trans = expected_trans
         self.execution_call_args = []
+        self.expect_redirect = False
+        self.exception_after_exection = None
+        self.error_message_after_excution = None
 
     def execute( self, tool, trans, **kwds ):
         assert self.expected_trans == trans
         self.execution_call_args.append( kwds )
+        num_calls = len( self.execution_call_args )
+        if self.expect_redirect:
+            raise httpexceptions.HTTPFound( "http://google.com" )
+        if self.exception_after_exection is not None:
+            if num_calls > self.exception_after_exection:
+                raise Exception( "Test Exception" )
+        if self.error_message_after_excution is not None:
+            if num_calls > self.error_message_after_excution:
+                return None, "Test Error Message"
+
         return None, odict(dict(out1="1"))
+
+    def raise_exception( self, after_execution=0 ):
+        self.exception_after_exection = after_execution
+
+    def return_error( self, after_execution=0 ):
+        self.error_message_after_excution = after_execution
 
 
 class MockTrans( object ):
