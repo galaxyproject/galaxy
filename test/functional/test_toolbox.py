@@ -72,13 +72,13 @@ class ToolTestCase( TwillTestCase ):
                 raise
 
 
-def build_tests( testing_shed_tools=False, master_api_key=None, user_api_key=None ):
+def build_tests( app=None, testing_shed_tools=False, master_api_key=None, user_api_key=None ):
     """
     If the module level variable `toolbox` is set, generate `ToolTestCase`
     classes for all of its tests and put them into this modules globals() so
     they can be discovered by nose.
     """
-    if toolbox is None:
+    if app is None:
         return
 
     # Push all the toolbox tests to module level
@@ -88,9 +88,8 @@ def build_tests( testing_shed_tools=False, master_api_key=None, user_api_key=Non
     for key, val in G.items():
         if key.startswith( 'TestForTool_' ):
             del G[ key ]
-
-    for i, tool_id in enumerate( toolbox.tools_by_id ):
-        tool = toolbox.get_tool( tool_id )
+    for i, tool_id in enumerate( app.toolbox.tools_by_id ):
+        tool = app.toolbox.get_tool( tool_id )
         if isinstance( tool, TOOL_TYPES_NO_TEST ):
             #We do not test certain types of tools (e.g. Data Manager tools) as part of ToolTestCase 
             continue

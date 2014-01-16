@@ -498,6 +498,7 @@ def main():
                 functional.test_toolbox.toolbox = app.toolbox
                 # When testing data managers, do not test toolbox.
                 functional.test_toolbox.build_tests(
+                    app=app,
                     testing_shed_tools=testing_shed_tools,
                     master_api_key=master_api_key,
                     user_api_key=get_user_api_key(),
