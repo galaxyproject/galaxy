@@ -1,10 +1,10 @@
 // dependencies
 define(['library/portlet', 'library/ui', 'library/utils',
         'views/charts', 'views/viewport', 'views/chart', 'views/group',
-        'models/datasets', 'models/chart', 'models/charts', 'models/types'],
+        'models/config', 'models/datasets', 'models/chart', 'models/charts', 'models/group', 'models/types'],
         function(   Portlet, Ui, Utils,
                     ChartsView, ViewportView, ChartView, GroupView,
-                    Datasets, Chart, Charts, Types
+                    Config, Datasets, Chart, Charts, Group, Types
                 ) {
 
 // widget
@@ -19,10 +19,14 @@ return Backbone.View.extend(
         // link galaxy
         this.modal = parent.Galaxy.modal;
         
+        // create configuration model
+        this.config = new Config();
+        
         // create chart models
         this.types = new Types();
         this.chart = new Chart();
         this.charts = new Charts();
+        this.group = new Group();
         
         // create dataset handler
         this.datasets = new Datasets(this);

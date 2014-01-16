@@ -125,6 +125,9 @@ return Backbone.View.extend(
         this.chart.on('change:type', function(chart) {
             self.table.value(chart.get('type'));
         });
+        this.chart.on('reset', function(chart) {
+            self._resetChart();
+        });
         
         // collection events
         this.app.charts.on('add', function(chart) {
@@ -140,21 +143,15 @@ return Backbone.View.extend(
         });
         
         // reset
-        this.reset();
+        this._resetChart();
     },
 
     // reset
-    reset: function() {
-        this.chart.reset();
+    _resetChart: function() {
         this.chart.set('id', Utils.uuid());
         this.chart.set('dataset_id', this.app.options.dataset.id);
         this.chart.set('type', 'bardiagram');
         this.chart.set('title', 'Chart title');
-    },
-    
-    // set chart
-    setChart: function(new_chart) {
-        this.chart.copy(new_chart);
     },
     
     // create chart

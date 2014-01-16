@@ -1,13 +1,10 @@
 // dependencies
-define(['library/portlet', 'library/table', 'library/ui', 'library/utils', 'models/group'],
-        function(Portlet, Table, Ui, Utils, Group) {
+define(['library/portlet', 'library/table', 'library/ui', 'library/utils'],
+        function(Portlet, Table, Ui, Utils) {
 
 // chart config
 return Backbone.View.extend(
 {
-    // model
-    group: new Group(),
-    
     // columns
     columns: [],
     
@@ -18,6 +15,7 @@ return Backbone.View.extend(
     
         // get current chart object
         this.chart = this.app.chart;
+        this.group = this.app.group;
         
         // ui elements
         this.message = new Ui.Message();
@@ -69,6 +67,9 @@ return Backbone.View.extend(
         this.group.on('change', function() {
             self._refreshGroup();
         });
+        this.group.on('reset', function() {
+            self._resetGroup();
+        });
     },
     
     // show
@@ -77,8 +78,7 @@ return Backbone.View.extend(
     },
     
     // reset
-    reset: function() {
-        this.group.reset();
+    _resetGroup: function() {
         this.group.set('id', Utils.uuid());
         this.group.set('label', 'Group label');
     },
