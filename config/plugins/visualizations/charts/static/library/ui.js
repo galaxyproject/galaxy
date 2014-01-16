@@ -422,7 +422,8 @@ var Input = Backbone.View.extend(
         value           : '',
         type            : 'text',
         placeholder     : '',
-        disabled        : false
+        disabled        : false,
+        visible         : true
     },
     
     // initialize
@@ -439,6 +440,11 @@ var Input = Backbone.View.extend(
         // disable input field
         if (this.options.disabled) {
             this.$el.prop('disabled', true);
+        }
+        
+        // hide input field
+        if (!this.options.visible) {
+            this.$el.hide();
         }
     },
     

@@ -14,7 +14,7 @@ return Backbone.View.extend(
         
         // table
         this.table = new Table({
-            content     : 'Add data sources to this table.',
+            content     : 'Add data columns to this table.',
             ondblclick  : function(group_id) {
                 // get group
                 var group = self.app.chart.groups.get(group_id);
@@ -30,7 +30,7 @@ return Backbone.View.extend(
         var self = this;
         this.portlet = new Portlet({
             icon : '',
-            label : 'Configure data sources:',
+            label : 'Select data columns:',
             height : 100,
             operations : {
                 'new'   : new Ui.ButtonIcon({

@@ -39,7 +39,7 @@ return Backbone.Model.extend(
             }
         },
         'piechart' : {
-            title : 'Pie chart (under development)',
+            title : 'Pie chart',
             data  : {
                 y : {
                     title   : 'Values for y-axis'

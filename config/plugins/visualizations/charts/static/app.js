@@ -44,10 +44,13 @@ return Backbone.View.extend(
         
         // create
         this.config.$el.hide();
-        this.create.$el.hide();
+        this.main.$el.hide();
         
         // set elements
         this.setElement(this.portlet.$el);
+        
+        // reset create view
+        this.create.reset();
     },
     
     // execute command

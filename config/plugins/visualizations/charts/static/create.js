@@ -29,7 +29,7 @@ return Backbone.View.extend(
         // main elements
         this.message = new Ui.Message();
         this.title = new Ui.Input({placeholder: 'Chart title'});
-        this.dataset = new Ui.Input({value : app.options.dataset.id, disabled: true});
+        this.dataset = new Ui.Input({value : app.options.dataset.id, disabled: true, visible: false});
         
         // configure dataset
         this.groups = new Groups(this.app);
@@ -91,14 +91,14 @@ return Backbone.View.extend(
             operations : {
                 'save'      : new Ui.ButtonIcon({
                                 icon    : 'fa-save',
-                                tooltip : 'Save',
+                                tooltip : 'Save Chart',
                                 onclick : function() {
                                     self._saveChart();
                                 }
                             }),
                 'back'      : new Ui.ButtonIcon({
-                                icon    : 'fa-caret-left',
-                                tooltip : 'Return',
+                                icon    : 'fa-list',
+                                tooltip : 'Show Charts',
                                 onclick : function() {
                                     self.$el.hide();
                                     self.app.main.$el.show();
@@ -107,10 +107,9 @@ return Backbone.View.extend(
             }
         });
         this.portlet.append(this.message.$el);
+        this.portlet.append(this.dataset.$el);
         this.portlet.append((new Ui.Label({ label : 'Provide a chart title:'})).$el);
         this.portlet.append(this.title.$el);
-        this.portlet.append((new Ui.Label({ label : 'Select a dataset:'})).$el);
-        this.portlet.append(this.dataset.$el);
         this.portlet.append((new Ui.Label({ label : 'Select a chart type:'})).$el);
         this.portlet.append(this.table.$el);
         this.portlet.append(this.groups.$el);
@@ -132,7 +131,7 @@ return Backbone.View.extend(
     reset: function() {
         this.chart.reset();
         this.chart.set('id', Utils.uuid());
-        this.chart.set('dataset_id', app.options.dataset.id);
+        this.chart.set('dataset_id', this.app.options.dataset.id);
         this.chart.set('type', 'bardiagram');
         this.chart.set('title', 'Chart title');
     },

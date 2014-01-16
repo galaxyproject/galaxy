@@ -14,23 +14,37 @@ return Backbone.View.extend(
     // render
     refresh : function(data)
     {
-        // add graph to screen
-        var self = this;
-        nv.addGraph(function() {
-            self.chart_3d = nv.models.pieChart()
-                .x(function(d) { return d.key })
-                .y(function(d) { return d.y })
-                .showLabels(true);
-                
-            d3.select(self.options.svg_id)
-                .datum(data)
-                .transition().duration(1200)
-                .call(self.chart_3d);
-
-            nv.utils.windowResize(self.chart_3d.update);
+        // loop through data groups
+        for (var key in data) {
+            // get group
+            var group = data[key];
             
-            return self.chart_3d;
-        });
+            // format chart data
+            var pie_data = [];
+            for (var key in group.values) {
+                var value = group.values[key];
+                pie_data.push ({
+                    key : value.x,
+                    y   : value.y
+                });
+            }
+            
+            // add graph to screen
+            var self = this;
+            nv.addGraph(function() {
+                self.chart_3d = nv.models.pieChart()
+                    .donut(true)
+                    .showLegend(false);
+                
+                d3.select(self.options.svg_id)
+                    .datum(pie_data)
+                    .call(self.chart_3d);
+
+                nv.utils.windowResize(self.chart_3d.update);
+                
+                return self.chart_3d;
+            });
+        }
     }
 });
 
