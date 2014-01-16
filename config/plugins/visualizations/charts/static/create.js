@@ -97,8 +97,8 @@ return Backbone.View.extend(
                                 }
                             }),
                 'back'      : new Ui.ButtonIcon({
-                                icon    : 'fa-list',
-                                tooltip : 'Show Charts',
+                                icon    : 'fa-caret-left',
+                                tooltip : 'Return',
                                 onclick : function() {
                                     self.$el.hide();
                                     self.app.main.$el.show();
@@ -117,7 +117,10 @@ return Backbone.View.extend(
         // elements
         this.setElement(this.portlet.$el);
         
-        // events
+        // hide back button on startup
+        this.portlet.hideOperation('back');
+        
+        // model events
         var self = this;
         this.chart.on('change:title', function(chart) {
             self.title.value(chart.get('title'));
@@ -125,6 +128,22 @@ return Backbone.View.extend(
         this.chart.on('change:type', function(chart) {
             self.table.value(chart.get('type'));
         });
+        
+        // collection events
+        this.app.charts.on('add', function(chart) {
+            self.portlet.showOperation('back');
+        });
+        this.app.charts.on('remove', function(chart) {
+            if (self.app.charts.length == 1) {
+                self.portlet.hideOperation('back');
+            }
+        });
+        this.app.charts.on('reset', function(chart) {
+            self.portlet.hideOperation('back');
+        });
+        
+        // reset
+        this.reset();
     },
 
     // reset

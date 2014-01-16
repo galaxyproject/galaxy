@@ -48,9 +48,6 @@ return Backbone.View.extend(
         
         // set elements
         this.setElement(this.portlet.$el);
-        
-        // reset create view
-        this.create.reset();
     },
     
     // execute command

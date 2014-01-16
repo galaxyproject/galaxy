@@ -34,6 +34,7 @@ var Button = Backbone.View.extend(
 {
     // options
     optionsDefault: {
+        id    : null,
         label : '',
         float : 'right',
         cls   : 'btn-default',
@@ -55,7 +56,7 @@ var Button = Backbone.View.extend(
     
     // element
     template: function(options) {
-        var str =   '<button type="' + options.type + '" style="margin-right: 5px; float: ' + options.float + ';" type="button" class="btn ' + options.cls + '">';
+        var str =   '<button id="' + options.id + '" type="' + options.type + '" style="margin-right: 5px; float: ' + options.float + ';" type="button" class="btn ' + options.cls + '">';
         if (options.icon) {
             str +=      '<i class="icon fa ' + options.icon + '"></i>&nbsp;' ;
         }
@@ -375,6 +376,7 @@ var ButtonIcon = Backbone.View.extend(
 {
     // options
     optionsDefault: {
+        id      : null,
         label   : '',
         float   : 'right',
         cls     : 'icon-btn',
@@ -403,7 +405,7 @@ var ButtonIcon = Backbone.View.extend(
     
     // element
     template: function(options) {
-        var str =   '<a style="margin-right: 5px; float: ' + options.float + ';" class="' + options.cls + '">';
+        var str =   '<a id="' + options.id + '" style="margin-right: 5px; float: ' + options.float + ';" class="' + options.cls + '">';
         if (options.icon) {
             str +=      '<i class="icon fa ' + options.icon + '"></i>';
         }

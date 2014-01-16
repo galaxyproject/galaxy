@@ -45,6 +45,7 @@ return Backbone.View.extend(
             // link functions
             var self = this;
             $.each(this.options.buttons, function(name, item) {
+                item.$el.prop('id', name);
                 self.$buttons.append(item.$el);
             });
         } else {
@@ -57,6 +58,7 @@ return Backbone.View.extend(
             // link functions
             var self = this;
             $.each(this.options.operations, function(name, item) {
+                item.$el.prop('id', name);
                 self.$operations.append(item.$el);
             });
         }
@@ -96,13 +98,23 @@ return Backbone.View.extend(
     },
 
     // enable buttons
-    enableButton: function(name) {
-        this.$buttons.find('#' + String(name).toLowerCase()).prop('disabled', false);
+    enableButton: function(id) {
+        this.$buttons.find('#' + id).prop('disabled', false);
     },
 
     // disable buttons
-    disableButton: function(name) {
-        this.$buttons.find('#' + String(name).toLowerCase()).prop('disabled', true);
+    disableButton: function(id) {
+        this.$buttons.find('#' + id).prop('disabled', true);
+    },
+    
+    // enable operation
+    hideOperation: function(id) {
+        this.$operations.find('#' + id).hide();
+    },
+
+    // disable operation
+    showOperation: function(id) {
+        this.$operations.find('#' + id).show();
     },
         
     // fill regular modal template
