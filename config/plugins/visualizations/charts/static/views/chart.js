@@ -1,6 +1,6 @@
 // dependencies
-define(['library/portlet', 'library/table', 'library/ui', 'library/utils', 'models/chart', 'groups'],
-    function(Portlet, Table, Ui, Utils, Chart, Groups) {
+define(['library/portlet', 'library/table', 'library/ui', 'library/utils', 'models/chart', 'views/groups'],
+    function(Portlet, Table, Ui, Utils, Chart, GroupsView) {
 
 // widget
 return Backbone.View.extend(
@@ -10,9 +10,6 @@ return Backbone.View.extend(
         header  : true,
         content : 'No content available.'
     },
-
-    // current chart
-    chart : null,
 
     // initialize
     initialize: function(app, options)
@@ -32,7 +29,7 @@ return Backbone.View.extend(
         this.dataset = new Ui.Input({value : app.options.dataset.id, disabled: true, visible: false});
         
         // configure dataset
-        this.groups = new Groups(this.app);
+        this.groups_view = new GroupsView(this.app);
         
         // table
         var self = this;
@@ -101,7 +98,7 @@ return Backbone.View.extend(
                                 tooltip : 'Return',
                                 onclick : function() {
                                     self.$el.hide();
-                                    self.app.main.$el.show();
+                                    self.app.charts_view.$el.show();
                                 }
                             })
             }
@@ -112,7 +109,7 @@ return Backbone.View.extend(
         this.portlet.append(this.title.$el);
         this.portlet.append((new Ui.Label({ label : 'Select a chart type:'})).$el);
         this.portlet.append(this.table.$el);
-        this.portlet.append(this.groups.$el);
+        this.portlet.append(this.groups_view.$el);
 
         // elements
         this.setElement(this.portlet.$el);
@@ -200,7 +197,7 @@ return Backbone.View.extend(
         this.$el.hide();
         
         // update main
-        this.app.main.$el.show();
+        this.app.charts_view.$el.show();
     }
 });
 

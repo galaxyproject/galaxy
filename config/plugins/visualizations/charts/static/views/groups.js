@@ -20,9 +20,9 @@ return Backbone.View.extend(
                 var group = self.app.chart.groups.get(group_id);
                 
                 // show edit
-                self.app.create.$el.hide();
-                self.app.config.show();
-                self.app.config.group.set(group.attributes);
+                self.app.chart_view.$el.hide();
+                self.app.group_view.show();
+                self.app.group_view.group.set(group.attributes);
             }
         });
         
@@ -37,9 +37,9 @@ return Backbone.View.extend(
                             icon : 'fa-plus',
                             tooltip: 'Create',
                             onclick: function() {
-                                self.app.create.$el.hide();
-                                self.app.config.show();
-                                self.app.config.reset();
+                                self.app.chart_view.$el.hide();
+                                self.app.group_view.show();
+                                self.app.group_view.reset();
                             }
                         }),
                 'edit'  : new Ui.ButtonIcon({
@@ -56,9 +56,9 @@ return Backbone.View.extend(
                                 var group = self.app.chart.groups.get(group_id);
                                 
                                 // show edit
-                                self.app.create.$el.hide();
-                                self.app.config.show();
-                                self.app.config.group.set(group.attributes);
+                                self.app.chart_view.$el.hide();
+                                self.app.group_view.show();
+                                self.app.group_view.group.set(group.attributes);
                             }
                         }),
                 'delete' : new Ui.ButtonIcon({
@@ -90,7 +90,7 @@ return Backbone.View.extend(
             self._removeGroupAll();
         });
         this.chart.on('change:type', function() {
-            self.app.config.trigger('change');
+            self.app.group_view.trigger('change');
         });
         this.chart.groups.on('add', function(group) {
             self._addGroup(group);

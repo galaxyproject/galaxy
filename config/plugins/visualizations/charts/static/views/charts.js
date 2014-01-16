@@ -21,11 +21,11 @@ return Backbone.View.extend(
                 self.$el.hide();
                 
                 // update model and show create
-                self.app.create.setChart(chart);
-                self.app.create.$el.show();
+                self.app.chart_view.setChart(chart);
+                self.app.chart_view.$el.show();
             },
             onchange : function(chart_id) {
-                self.app.viewport.show(chart_id);
+                self.app.viewport_view.show(chart_id);
             }
         });
         
@@ -41,8 +41,8 @@ return Backbone.View.extend(
                             tooltip: 'Create',
                             onclick: function() {
                                 self.$el.hide();
-                                self.app.create.reset();
-                                self.app.create.$el.show();
+                                self.app.chart_view.reset();
+                                self.app.chart_view.$el.show();
                             }
                         }),
                 'edit'  : new Ui.ButtonIcon({
@@ -60,8 +60,8 @@ return Backbone.View.extend(
                                 
                                 // show edit
                                 self.$el.hide();
-                                self.app.create.$el.show();
-                                self.app.create.setChart(chart);
+                                self.app.chart_view.$el.show();
+                                self.app.chart_view.setChart(chart);
                             }
                         }),
                 'delete' : new Ui.ButtonIcon({

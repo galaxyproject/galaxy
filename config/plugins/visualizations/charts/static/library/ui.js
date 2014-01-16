@@ -48,14 +48,14 @@ var Button = Backbone.View.extend(
         this.options = Utils.merge(options, this.optionsDefault);
             
         // create new element
-        this.setElement(this.template(this.options));
+        this.setElement(this._template(this.options));
         
         // add event
         $(this.el).on('click', options.onclick);
     },
     
     // element
-    template: function(options) {
+    _template: function(options) {
         var str =   '<button id="' + options.id + '" type="' + options.type + '" style="margin-right: 5px; float: ' + options.float + ';" type="button" class="btn ' + options.cls + '">';
         if (options.icon) {
             str +=      '<i class="icon fa ' + options.icon + '"></i>&nbsp;' ;
@@ -80,14 +80,14 @@ var Anchor = Backbone.View.extend(
         this.options = Utils.merge(options, this.optionsDefault);
             
         // create new element
-        this.setElement(this.template(this.options));
+        this.setElement(this._template(this.options));
         
         // add event
         $(this.el).on('click', options.onclick);
     },
     
     // element
-    template: function(options) {
+    _template: function(options) {
         return '<div><a href="javascript:void(0)">' + options.label + '</a></div>';
     }
 });
@@ -218,7 +218,7 @@ var Title = Backbone.View.extend(
 var ButtonMenu = Backbone.View.extend(
 {
     // main options
-    options:
+    optionsDefault:
     {
         id              : '',
         title           : '',
@@ -237,9 +237,8 @@ var ButtonMenu = Backbone.View.extend(
     // initialize
     initialize: function (options)
     {
-        // read in defaults
-        if (options)
-            this.options = _.defaults(options, this.options);
+        // get options
+        this.options = Utils.merge(options, this.optionsDefault);
         
         // add template for tab
         this.setElement($(this._template(this.options)));
@@ -290,9 +289,8 @@ var ButtonMenu = Backbone.View.extend(
             icon        : null
         }
     
-        // read in defaults
-        if (options)
-            menuOptions = _.defaults(options, menuOptions);
+        // get options
+        menuOptions = Utils.merge(options, menuOptions);
         
         // check if submenu element is available
         if (!this.$menu)
@@ -388,10 +386,7 @@ var ButtonIcon = Backbone.View.extend(
     // initialize
     initialize : function(options) {
         // get options
-        if (options)
-            this.options = _.defaults(options, this.optionsDefault);
-        else
-            this.options = this.optionsDefault;
+        this.options = Utils.merge(options, this.optionsDefault);
             
         // create new element
         this.setElement(this.template(this.options));
@@ -430,11 +425,8 @@ var Input = Backbone.View.extend(
     
     // initialize
     initialize : function(options) {
-        // get options
-        if (options)
-            this.options = _.defaults(options, this.optionsDefault);
-        else
-            this.options = this.optionsDefault;
+        // configure options
+        this.options = Utils.merge(options, this.optionsDefault);
             
         // create new element
         this.setElement(this.template(this.options));

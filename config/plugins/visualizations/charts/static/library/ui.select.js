@@ -1,14 +1,14 @@
 // dependencies
 define(['library/utils'], function(Utils) {
 
-
 // plugin
 return Backbone.View.extend(
 {
     // options
     optionsDefault: {
-        id  : '',
-        cls : ''
+        id      : '',
+        cls     : '',
+        empty   : 'No data available'
     },
     
     // initialize
@@ -17,21 +17,41 @@ return Backbone.View.extend(
         this.options = Utils.merge(options, this.optionsDefault);
         
         // create new element
-        this.setElement(this.template(this.options));
+        this.setElement(this._template(this.options));
         
         // add change event
         var self = this;
         if (this.options.onchange) {
-            this.$el.on('change', function() { self.options.onchange(self.value()) });
+            this.$el.on('change', function() { self.options.onchange(self.value()); });
         }
+        
+        // refresh
+        this._refresh();
     },
     
     // value
-    value : function (new_val) {
-        if (new_val !== undefined) {
-            this.$el.val(new_val);
+    value : function (new_value) {
+        // get current id/value
+        var before = this.$el.val();
+        
+        // check if new_value is defined
+        if (new_value !== undefined) {
+            this.$el.val(new_value);
         }
-        return this.$el.val();
+        
+        // get current id/value
+        var after = this.$el.val();
+        if(after === undefined) {
+            return null;
+        } else {
+            // fire onchange
+            if ((after != before && this.options.onchange) || this.$el.find('option').length == 1) {
+                this.options.onchange(after);
+            }
+            
+            // return current value
+            return after;
+        }
     },
     
     // label
@@ -42,6 +62,35 @@ return Backbone.View.extend(
     // disabled
     disabled: function() {
         return this.$el.is(':disabled');
+    },
+
+    // enable
+    enable: function() {
+        this.$el.prop('disabled', false);
+    },
+        
+    // disable
+    disable: function() {
+        this.$el.prop('disabled', true);
+    },
+    
+    // add
+    add: function(options) {
+        // add options
+        $(this.el).append(this._templateOption(options));
+        
+        // refresh
+        this._refresh();
+    },
+    
+    // remove
+    remove: function(value) {
+        // remove option
+        $(this.el).find('option[value=' + value + ']').remove();
+        $(this.el).trigger('change');
+        
+        // refresh
+        this._refresh();
     },
     
     // render
@@ -54,47 +103,46 @@ return Backbone.View.extend(
 
         // add new options
         for (var key in options.data) {
-            $(this.el).append(this.templateOption(options.data[key]));
+            $(this.el).append(this._templateOption(options.data[key]));
         }
         
-        // check if selected value exists
-        var exists = 0 != $(this.el).find('option[value=' + selected + ']').length;
-        
         // add selected value
-        if (exists)
+        if (this._exists(selected))
             $(this.el).val(selected);
+        
+        // refresh
+        this._refresh();
     },
     
-    // update from url
-    updateUrl : function(options, callback) {
-        // get json
-        var self = this;
-        Utils.get(options.url, function(json) {
-            // write data into array
-            var data = [];
-            for (key in json) {
-                data.push({label: json[key].name, value: json[key].id});
-            }
-
-            // check if disabled. do not update disabled select elements.
-            if (!self.disabled()) {
-                self.update({data: data});
-            }
-            
-            // callback
-            if (callback) {
-                callback();
-            }
-        });
+    // refresh
+    _refresh: function() {
+        // remove placeholder
+        $(this.el).find('option[value=null]').remove();
+        
+        // count remaining entries
+        var remaining = $(this.el).find('option').length;
+        if (remaining == 0) {
+            // append placeholder
+            $(this.el).append(this._templateOption({value : 'null', label : this.options.empty}));
+            this.disable();
+        } else {
+            this.enable();
+        }
+    },
+    
+    // exists
+    _exists: function(value) {
+        // check if selected value exists
+        return 0 != $(this.el).find('option[value=' + value + ']').length;
     },
     
     // option
-    templateOption: function(options) {
+    _templateOption: function(options) {
         return '<option value="' + options.value + '">' + options.label + '</option>';
     },
     
     // element
-    template: function(options) {
+    _template: function(options) {
         var tmpl =  '<select id="' + options.id + '" class="select ' + options.cls + ' ' + options.id + '">';
         for (key in options.data) {
             // options

@@ -6,21 +6,6 @@ function get (url, success, error) {
     request('GET', url, {}, success, error);
 };
 
-// delete
-function del (url, success, error) {
-    request('DELETE', url, {}, success, error);
-};
-
-// post
-function post (url, data, success, error) {
-    request('POST', url, data, success, error);
-};
-
-// put
-function put (url, data, success, error) {
-    request('PUT', url, data, success, error);
-};
-
 // generic function to send json to url
 function request (method, url, data, success, error) {
 
@@ -134,11 +119,8 @@ function time() {
 return {
     cssLoadFile : cssLoadFile,
     cssGetAttribute : cssGetAttribute,
-    merge : merge,
     get : get,
-    post : post,
-    del : del,
-    put : put,
+    merge : merge,
     request: request,
     uuid: uuid,
     wrap : wrap,

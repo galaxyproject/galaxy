@@ -43,7 +43,7 @@ return Backbone.View.extend(
                                 tooltip : 'Return',
                                 onclick : function() {
                                     self.$el.hide();
-                                    self.app.create.$el.show();
+                                    self.app.chart_view.$el.show();
                                 }
                             })
             }
@@ -212,7 +212,7 @@ return Backbone.View.extend(
         this.$el.hide();
         
         // update main
-        this.app.create.$el.show();
+        this.app.chart_view.$el.show();
     }
 });
 

@@ -1,9 +1,9 @@
 // dependencies
 define(['library/portlet', 'library/ui', 'library/utils',
-        'main', 'viewport', 'create', 'config',
+        'views/charts', 'views/viewport', 'views/chart', 'views/group',
         'models/datasets', 'models/chart', 'models/charts', 'models/types'],
         function(   Portlet, Ui, Utils,
-                    Main, Viewport, Create, Config,
+                    ChartsView, ViewportView, ChartView, GroupView,
                     Datasets, Chart, Charts, Types
                 ) {
 
@@ -19,32 +19,32 @@ return Backbone.View.extend(
         // link galaxy
         this.modal = parent.Galaxy.modal;
         
-        // create chart objects
+        // create chart models
         this.types = new Types();
         this.chart = new Chart();
-        this.charts = new Charts(this);
+        this.charts = new Charts();
         
         // create dataset handler
         this.datasets = new Datasets(this);
         
         // create views
-        this.main = new Main(this);
-        this.viewport = new Viewport(this);
-        this.config = new Config(this);
-        this.create = new Create(this);
+        this.charts_view = new ChartsView(this);
+        this.group_view = new GroupView(this);
+        this.chart_view = new ChartView(this);
+        this.viewport_view = new ViewportView(this);
         
         // portlet
         this.portlet = new Portlet({icon : 'fa-bar-chart-o', label : 'Charts'});
-        this.portlet.append(this.main.$el);
-        this.portlet.append(this.config.$el);
-        this.portlet.append(this.create.$el);
+        this.portlet.append(this.charts_view.$el);
+        this.portlet.append(this.group_view.$el);
+        this.portlet.append(this.chart_view.$el);
         
         // append main
-        this.main.append(this.viewport.$el);
+        this.charts_view.append(this.viewport_view.$el);
         
         // create
-        this.config.$el.hide();
-        this.main.$el.hide();
+        this.group_view.$el.hide();
+        this.charts_view.$el.hide();
         
         // set elements
         this.setElement(this.portlet.$el);
