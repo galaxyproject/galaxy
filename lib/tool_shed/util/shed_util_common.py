@@ -1596,7 +1596,7 @@ def open_repository_files_folder( trans, folder_path ):
     return folder_contents
 
 def pretty_print( dict=None ):
-    if dict is not:
+    if dict is not None:
         return json.to_json_string( dict, sort_keys=True, indent=4 )
 
 def remove_dir( dir ):
