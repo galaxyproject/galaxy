@@ -734,8 +734,7 @@ class History( object, Dictifiable, UsesAnnotations ):
         self.tags = []
 
     def _next_hid( self ):
-        # TODO: override this with something in the database that ensures
-        # better integrity
+        # this is overriden in mapping.py db_next_hid() method
         if len( self.datasets ) == 0:
             return 1
         else:
@@ -3446,4 +3445,7 @@ class UserAction( object ):
         self.context = context
 
 class APIKeys( object ):
-    pass
+    def __init__( self, id=None, user_id=None, key=None):
+        self.id = id
+        self.user_id = user_id
+        self.key = key
