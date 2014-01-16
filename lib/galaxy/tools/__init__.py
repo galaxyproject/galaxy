@@ -1871,7 +1871,7 @@ class Tool( object, Dictifiable ):
 
         errors, params = self.__check_param_values( trans, incoming, state, old_errors, process_state, history=history, source=source )
         if self.__should_refresh_state( incoming ):
-            return self.__handle_state_refresh( trans, state, errors )
+            template, template_vars = self.__handle_state_refresh( trans, state, errors )
         else:
             # User actually clicked next or execute.
 
@@ -1879,18 +1879,30 @@ class Tool( object, Dictifiable ):
             # error messages
             if errors:
                 error_message = "One or more errors were found in the input you provided. The specific errors are marked below."
-                return "tool_form.mako", dict( errors=errors, tool_state=state, incoming=incoming, error_message=error_message )
+                template = "tool_form.mako"
+                template_vars = dict( errors=errors, tool_state=state, incoming=incoming, error_message=error_message )
             # If we've completed the last page we can execute the tool
             elif all_pages or state.page == self.last_page:
-                return self.__handle_tool_execute( trans, rerun_remap_job_id, params, history )
+                tool_executed, result = self.__handle_tool_execute( trans, rerun_remap_job_id, params, history )
+                if tool_executed:
+                    template = 'tool_executed.mako'
+                    template_vars = dict( out_data=result )
+                else:
+                    template = 'message.mako'
+                    template_vars = dict( status='error', message=result, refresh_frames=[] )
             # Otherwise move on to the next page
             else:
-                return self.__handle_page_advance( trans, state, errors )
+                template, template_vars = self.__handle_page_advance( trans, state, errors )
+        return template, template_vars
 
     def __should_refresh_state( self, incoming ):
         return not( 'runtool_btn' in incoming or 'URL' in incoming or 'ajax_upload' in incoming )
 
     def __handle_tool_execute( self, trans, rerun_remap_job_id, params, history ):
+        """
+        Return a pair with whether execution is successful as well as either
+        resulting output data or an error message indicating the problem.
+        """
         try:
             _, out_data = self.execute( trans, incoming=params, history=history, rerun_remap_job_id=rerun_remap_job_id )
         except httpexceptions.HTTPFound, e:
@@ -1898,16 +1910,16 @@ class Tool( object, Dictifiable ):
             raise e
         except Exception, e:
             log.exception('Exception caught while attempting tool execution:')
-            return 'message.mako', dict( status='error', message='Error executing tool: %s' % str(e), refresh_frames=[] )
-        try:
-            assert isinstance( out_data, odict )
-            return 'tool_executed.mako', dict( out_data=out_data )
-        except:
+            message = 'Error executing tool: %s' % str(e)
+            return False, message
+        if isinstance( out_data, odict ):
+            return True, out_data
+        else:
             if isinstance( out_data, str ):
                 message = out_data
             else:
-                message = 'Failure executing tool (odict not returned from tool execution)'
-            return 'message.mako', dict( status='error', message=message, refresh_frames=[] )
+                message = 'Failure executing tool (invalid data returned from tool execution)'
+            return False, message
 
     def __handle_state_refresh( self, trans, state, errors ):
             try:
