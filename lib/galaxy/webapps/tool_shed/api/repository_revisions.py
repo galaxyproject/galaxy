@@ -68,7 +68,8 @@ class RepositoryRevisionsController( BaseAPIController ):
 
     def __get_value_mapper( self, trans ):
         value_mapper = { 'id' : trans.security.encode_id,
-                         'repository_id' : trans.security.encode_id }
+                         'repository_id' : trans.security.encode_id,
+                         'user_id' : trans.security.encode_id }
         return value_mapper
 
     @web.expose_api_anonymous
@@ -159,15 +160,33 @@ class RepositoryRevisionsController( BaseAPIController ):
                 repository_dependency_repository_metadata = \
                     suc.get_repository_metadata_by_changeset_revision( trans, repository_dependency_id, changeset_revision )
                 if repository_dependency_repository_metadata is None:
-                    log.debug( 'Cannot locate repository_metadata with id %s for repository dependency %s owned by %s.' % \
-                        ( str( repository_dependency_id ), str( name ), str( owner ) ) )
-                    continue
+                    # The changeset_revision column in the repository_metadata table has been updated with a new
+                    # value value, so find the changeset_revision to which we need to update.
+                    repo_dir = repository_dependency.repo_path( trans.app )
+                    repo = hg.repository( suc.get_configured_ui(), repo_dir )
+                    new_changeset_revision = suc.get_next_downloadable_changeset_revision( repository_dependency,
+                                                                                           repo,
+                                                                                           changeset_revision )
+                    repository_dependency_repository_metadata = \
+                        suc.get_repository_metadata_by_changeset_revision( trans,
+                                                                           repository_dependency_id,
+                                                                           new_changeset_revision )
+                    if repository_dependency_repository_metadata is None:
+                        decoded_repository_dependency_id = trans.security.decode_id( repository_dependency_id )
+                        debug_msg = 'Cannot locate repository_metadata with id %d for repository dependency %s owned by %s ' % \
+                            ( decoded_repository_dependency_id, str( name ), str( owner ) )
+                        debug_msg += 'using either of these changeset_revisions: %s, %s.' % \
+                            ( str( changeset_revision ), str( new_changeset_revision ) )
+                        log.debug( debug_msg )
+                        continue
+                    else:
+                        changeset_revision = new_changeset_revision
                 repository_dependency_repository_metadata_id = trans.security.encode_id( repository_dependency_repository_metadata.id )
                 repository_dependency_dict = repository_dependency.to_dict( view='element',
                                                                             value_mapper=self.__get_value_mapper( trans ) )
                 # We have to add the changeset_revision of of the repository dependency.
                 repository_dependency_dict[ 'changeset_revision' ] = changeset_revision
-                repository_dependency_dict[ 'url' ] = web.url_for( controller='repositories',
+                repository_dependency_dict[ 'url' ] = web.url_for( controller='repository_revisions',
                                                                    action='show',
                                                                    id=repository_dependency_repository_metadata_id )
                 repository_dependencies_dicts.append( repository_dependency_dict )
