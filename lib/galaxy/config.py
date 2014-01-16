@@ -602,7 +602,11 @@ class ConfiguresGalaxyMixin:
         if check_migrate_tools:
             # Alert the Galaxy admin to tools that have been moved from the distribution to the tool shed.
             from tool_shed.galaxy_install.migrate.check import verify_tools
-            verify_tools( self, install_db_url, config_file, self.config.database_engine_options )
+            if combined_install_database:
+                install_database_options = self.config.database_engine_options
+            else:
+                install_database_options = self.config.install_database_engine_options
+            verify_tools( self, install_db_url, config_file, install_database_options )
 
         from galaxy.model import mapping
         self.model = mapping.init( self.config.file_path,

@@ -129,7 +129,7 @@ class RepositoriesController( BaseAPIController ):
             repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans,
                                                                                      encoded_repository_id,
                                                                                      changeset_revision )
-            if not repository_metadata:
+            if repository_metadata is None:
                 # The changeset_revision column in the repository_metadata table has been updated with a new
                 # value value, so find the changeset_revision to which we need to update.
                 repo_dir = repository.repo_path( trans.app )
@@ -139,7 +139,7 @@ class RepositoriesController( BaseAPIController ):
                                                                                          encoded_repository_id,
                                                                                          new_changeset_revision )
                 changeset_revision = new_changeset_revision
-            if repository_metadata:
+            if repository_metadata is not None:
                 encoded_repository_metadata_id = trans.security.encode_id( repository_metadata.id )
                 repository_metadata_dict = repository_metadata.to_dict( view='collection',
                                                                         value_mapper=self.__get_value_mapper( trans ) )
@@ -168,7 +168,8 @@ class RepositoriesController( BaseAPIController ):
 
     def __get_value_mapper( self, trans ):
         value_mapper = { 'id' : trans.security.encode_id,
-                         'repository_id' : trans.security.encode_id }
+                         'repository_id' : trans.security.encode_id,
+                         'user_id' : trans.security.encode_id }
         return value_mapper
 
     @web.expose_api

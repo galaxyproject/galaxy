@@ -169,6 +169,16 @@ def app_factory( global_conf, **kwargs ):
     webapp.mapper.connect( 'workflow_dict', '/api/workflows/download/{workflow_id}', controller='workflows', action='workflow_dict', conditions=dict( method=['GET'] ) )
     webapp.mapper.connect( 'import_shared_workflow', '/api/workflows/import', controller='workflows', action='import_shared_worflow', conditions=dict( method=['POST'] ) )
 
+    # ============================
+    # ===== AUTHENTICATE API =====
+    # ============================
+
+    webapp.mapper.connect( 'api_key_retrieval',
+                           '/api/authenticate/baseauth/', 
+                           controller='authenticate', 
+                           action='get_api_key', 
+                           conditions=dict( method=[ "GET" ] ) )
+
     # =======================
     # ===== LIBRARY API =====
     # =======================
