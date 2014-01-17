@@ -402,10 +402,13 @@ def get_repositories_to_install( tool_shed_url, test_framework ):
     log.debug( "...retrieved %d repository revisions for installation and possible testing." % len( repository_dicts ) )
     log.debug( "Repository revisions for testing:" )
     for repository_dict in repository_dicts:
+        repository_id = str( repository_dict.get( 'repository_id', None ) )
+        repository_metadata_id = str( repository_dict.get( 'id', None ) )
         name = str( repository_dict.get( 'name', None ) )
         owner = str( repository_dict.get( 'owner', None ) )
         changeset_revision = str( repository_dict.get( 'changeset_revision', None ) )
-        log.debug( "Revision %s of repository %s owned by %s" % ( changeset_revision, name, owner ) )
+        log.debug( "Revision %s of repository %s owned by %s with repository_id %s, (repository_metadata) id %s" % \
+            ( changeset_revision, name, owner, repository_id, repository_metadata_id ) )
     return repository_dicts, error_message
 
 def get_repository( name, owner, changeset_revision ):
