@@ -304,27 +304,28 @@ var TabularButtonTracksterView = Backbone.View.extend(
         }
 
         // check
-        if(this.col.chrom === null)
-        {
-            console.log("TabularButtonTrackster : Chromosome column undefined.");
+        if(this.col.chrom === null) {
             return;
         }
 
         // get dataset id
-        if (typeof options.model.attributes.id === "undefined")
+        if (typeof options.model.attributes.id === "undefined") {
             console.log("TabularButtonTrackster : Dataset identification is missing.");
-        else
+        } else {
             this.dataset_id = options.model.attributes.id;
+        }
         
         // get url
-        if (typeof options.model.attributes.url_viz === "undefined")
+        if (typeof options.model.attributes.url_viz === "undefined") {
             console.log("TabularButtonTrackster : Url for visualization controller is missing.");
-        else
+        } else {
             this.url_viz = options.model.attributes.url_viz;
+        }
 
         // get genome_build / database key
-        if (typeof options.model.attributes.genome_build !== "undefined")
+        if (typeof options.model.attributes.genome_build !== "undefined") {
             this.genome_build = options.model.attributes.genome_build;
+        }
 
         // render the icon from template
         var btn_viz = new IconButtonView({ model : new IconButton({
