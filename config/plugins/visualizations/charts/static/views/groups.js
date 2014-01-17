@@ -37,9 +37,9 @@ return Backbone.View.extend(
                             icon : 'fa-plus',
                             tooltip: 'Create',
                             onclick: function() {
+                                self.app.group.reset();
                                 self.app.chart_view.$el.hide();
                                 self.app.group_view.show();
-                                self.app.group_view.reset();
                             }
                         }),
                 'edit'  : new Ui.ButtonIcon({

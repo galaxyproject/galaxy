@@ -877,8 +877,7 @@ def get_query_for_setting_metadata_on_repositories( trans, my_writable=False, or
             username = trans.user.username
             clause_list = []
             for repository in trans.sa_session.query( trans.model.Repository ) \
-                                              .filter( and_( trans.model.Repository.table.c.deleted == False,
-                                                             trans.model.Repository.table.c.deprecated == False ) ):
+                                              .filter( trans.model.Repository.table.c.deleted == False ):
                 # Always reset metadata on all repositories of type tool_dependency_definition.
                 if repository.type == rt_util.TOOL_DEPENDENCY_DEFINITION:
                     clause_list.append( trans.model.Repository.table.c.id == repository.id )
@@ -905,14 +904,12 @@ def get_query_for_setting_metadata_on_repositories( trans, my_writable=False, or
         else:
             if order:
                 return trans.sa_session.query( trans.model.Repository ) \
-                                       .filter( and_( trans.model.Repository.table.c.deleted == False,
-                                                      trans.model.Repository.table.c.deprecated == False ) ) \
+                                       .filter( trans.model.Repository.table.c.deleted == False ) \
                                        .order_by( trans.model.Repository.table.c.name,
                                                   trans.model.Repository.table.c.user_id )
             else:
                 return trans.sa_session.query( trans.model.Repository ) \
-                                       .filter( and_( trans.model.Repository.table.c.deleted == False,
-                                                      trans.model.Repository.table.c.deprecated == False ) )
+                                       .filter( trans.model.Repository.table.c.deleted == False )
     else:
         # We're in Galaxy.
         if order:
@@ -1599,8 +1596,8 @@ def open_repository_files_folder( trans, folder_path ):
     return folder_contents
 
 def pretty_print( dict=None ):
-    if dict:
-        return json.to_json_string( dict, sort_keys=True, indent=4 * ' ' )
+    if dict is not None:
+        return json.to_json_string( dict, sort_keys=True, indent=4 )
 
 def remove_dir( dir ):
     """Attempt to remove a directory from disk."""

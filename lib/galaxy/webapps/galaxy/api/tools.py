@@ -53,7 +53,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMix
         link_details = util.string_as_bool( kwd.get( 'link_details', False ) )
         try:
             id = urllib.unquote_plus( id )
-            tool = self.app.toolbox.tools_by_id.get( id, None )
+            tool = self.app.toolbox.get_tool( id )
             if not tool:
                 trans.response.status = 404
                 return { 'error': 'tool not found', 'id': id }

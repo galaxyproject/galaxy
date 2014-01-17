@@ -524,7 +524,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
             results[ 'repository_status' ].append( message )
         stop_time = strftime( "%Y-%m-%d %H:%M:%S" )
         results[ 'stop_time' ] = stop_time
-        return json.to_json_string( results, sort_keys=True, indent=4 * ' ' )
+        return json.to_json_string( results, sort_keys=True, indent=4 )
 
     @web.expose_api
     def show( self, trans, id, **kwd ):

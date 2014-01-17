@@ -384,7 +384,7 @@ class RepositoriesController( BaseAPIController ):
                 results = handle_repository( trans, repository, results )
         stop_time = strftime( "%Y-%m-%d %H:%M:%S" )
         results[ 'stop_time' ] = stop_time
-        return json.to_json_string( results, sort_keys=True, indent=4 * ' ' )
+        return json.to_json_string( results, sort_keys=True, indent=4 )
 
     @web.expose_api
     def reset_metadata_on_repository( self, trans, payload, **kwd ):
@@ -423,7 +423,7 @@ class RepositoriesController( BaseAPIController ):
             results = handle_repository( trans, start_time, repository )
             stop_time = strftime( "%Y-%m-%d %H:%M:%S" )
             results[ 'stop_time' ] = stop_time
-        return json.to_json_string( results, sort_keys=True, indent=4 * ' ' )
+        return json.to_json_string( results, sort_keys=True, indent=4 )
 
     @web.expose_api_anonymous
     def show( self, trans, id, **kwd ):

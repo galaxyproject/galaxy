@@ -22,8 +22,9 @@ return Backbone.Model.extend(
     // reset
     reset: function()
     {
-        this.clear().set(this.defaults);
+        this.clear({silent: true}).set(this.defaults);
         this.groups.reset();
+        this.trigger('reset', this);
     },
     
     // copy
