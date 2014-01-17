@@ -41,6 +41,8 @@ class RunnerParams( object ):
     def __getattr__( self, name ):
         return self.params.get( name, self.specs[ name ][ 'default' ] )
 
+    __getitem__ = __getattr__
+
 
 class BaseJobRunner( object ):
     def __init__( self, app, nworkers, **kwargs ):
