@@ -186,9 +186,9 @@ class RepositoryRevisionsController( BaseAPIController ):
                                                                             value_mapper=self.__get_value_mapper( trans ) )
                 # We have to add the changeset_revision of of the repository dependency.
                 repository_dependency_dict[ 'changeset_revision' ] = changeset_revision
-                repository_dependency_dict[ 'url' ] = web.url_for( controller='repository_revisions',
+                repository_dependency_dict[ 'url' ] = web.url_for( controller='repositories',
                                                                    action='show',
-                                                                   id=repository_dependency_repository_metadata_id )
+                                                                   id=repository_dependency_id )
                 repository_dependencies_dicts.append( repository_dependency_dict )
         return repository_dependencies_dicts
 
@@ -205,11 +205,13 @@ class RepositoryRevisionsController( BaseAPIController ):
         if repository_metadata is None:
             log.debug( 'Cannot locate repository_metadata with id %s' % str( id ) )
             return {}
+        encoded_repository_id = trans.security.encode_id( repository_metadata.repository_id )
+        repository = suc.get_repository_by_id( trans, encoded_repository_id )
         repository_metadata_dict = repository_metadata.to_dict( view='element',
                                                                 value_mapper=self.__get_value_mapper( trans ) )
-        repository_metadata_dict[ 'url' ] = web.url_for( controller='repository_revisions',
+        repository_metadata_dict[ 'url' ] = web.url_for( controller='repositories',
                                                          action='show',
-                                                         id=trans.security.encode_id( repository_metadata.id ) )
+                                                         id=encoded_repository_id )
         return repository_metadata_dict
 
     @web.expose_api
@@ -223,8 +225,11 @@ class RepositoryRevisionsController( BaseAPIController ):
             raise HTTPBadRequest( detail="Missing required parameter 'id'." )
         repository_metadata = metadata_util.get_repository_metadata_by_id( trans, repository_metadata_id )
         if repository_metadata is None:
-            log.debug( 'Cannot locate repository_metadata with id %s' % str( repository_metadata_id ) )
+            decoded_repository_metadata_id = trans.security.decode_id( repository_metadata_id )
+            log.debug( 'Cannot locate repository_metadata with id %s' % str( decoded_repository_metadata_id ) )
             return {}
+        else:
+            decoded_repository_metadata_id = repository_metadata.id
         flush_needed = False
         for key, new_value in payload.items():
             if key == 'time_last_tested':
@@ -239,6 +244,8 @@ class RepositoryRevisionsController( BaseAPIController ):
                 setattr( repository_metadata, key, new_value )
                 flush_needed = True
         if flush_needed:
+            log.debug( 'Updating repository_metadata record with id %s and changeset_revision %s.' % \
+                ( str( decoded_repository_metadata_id ), str( repository_metadata.changeset_revision ) ) )
             trans.sa_session.add( repository_metadata )
             trans.sa_session.flush()
             trans.sa_session.refresh( repository_metadata )
@@ -246,5 +253,5 @@ class RepositoryRevisionsController( BaseAPIController ):
                                                                 value_mapper=self.__get_value_mapper( trans ) )
         repository_metadata_dict[ 'url' ] = web.url_for( controller='repository_revisions',
                                                          action='show',
-                                                         id=trans.security.encode_id( repository_metadata.id ) )
+                                                         id=repository_metadata_id )
         return repository_metadata_dict
