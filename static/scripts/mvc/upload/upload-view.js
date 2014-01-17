@@ -129,8 +129,13 @@ return Backbone.View.extend(
         this.collection.on('remove', function(item) {
             self._eventRemove(item);
         });
-        this.collection.on('change', function(item) {
-            console.log('here');
+        this.collection.on('change:genome', function(item) {
+            var genome = item.get('genome');
+            self.collection.each(function(item) {
+                if (item.get('status') == 'init' && item.get('genome') == '?') {
+                    item.set('genome', genome);
+                }
+            });
         });
     },
     

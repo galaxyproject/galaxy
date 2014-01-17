@@ -85,6 +85,9 @@ return Backbone.View.extend({
         this.model.on('change:info', function() {
             self._refreshInfo();
         });
+        this.model.on('change:genome', function() {
+            self._refreshGenome();
+        });
         this.model.on('remove', function() {
             self.remove();
         });
@@ -130,7 +133,15 @@ return Backbone.View.extend({
             text.show();
         }
     },
-    
+
+    // genome
+    _refreshGenome: function()
+    {
+        // write error message
+        var genome = this.model.get('genome');
+        this.$el.find('#genome').val(genome);
+    },
+        
     // progress
     _refreshInfo: function()
     {
