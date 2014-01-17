@@ -38,7 +38,10 @@
       </param>
       <param name="url_paste" type="text" area="true" size="5x35" label="URL/Text" help="Here you may specify a list of URLs (one per line) or paste the contents of a file."/> 
       <param name="ftp_files" type="ftpfile" label="Files uploaded via FTP"/>
-      <param name="to_posix_lines" type="select" display="checkboxes" multiple="True" label="Convert universal line endings to Posix line endings" help="Turn this option off if you upload a gzip, bz2 or zip archive which contains a binary file."> 
+      <!-- Change the following parameter from hidden to select to enable
+           modifying this option via the Web GUI. See Bitbucket pull request
+           171 for more information. -->
+      <param name="to_posix_lines" type="hidden" display="checkboxes" multiple="True" label="Convert universal line endings to Posix line endings" help="Turn this option off if you upload a gzip, bz2 or zip archive which contains a binary file." value="Yes"> 
         <option value="Yes" selected="true">Yes</option>
       </param>
       <param name="space_to_tab" type="select" display="checkboxes" multiple="True" label="Convert spaces to tabs" help="Use this option if you are entering intervals by hand."> 
