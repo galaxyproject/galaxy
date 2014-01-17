@@ -400,7 +400,7 @@ class TabularToolDataTable( ToolDataTable ):
             if fields not in self.data or allow_duplicates:
                 self.data.append( fields )
             else:
-                log.error( "Attempted to add fields (%s) to data table '%s', but this entry already exists and allow_duplicates is False.", fields, self.name )
+                log.debug( "Attempted to add fields (%s) to data table '%s', but this entry already exists and allow_duplicates is False.", fields, self.name )
                 is_error = True
         else:
             log.error( "Attempted to add fields (%s) to data table '%s', but there were not enough fields specified ( %i < %i ).", fields, self.name, len( fields ), self.largest_index + 1 )

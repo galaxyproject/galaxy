@@ -303,7 +303,8 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
         with make_tmp_dir() as work_dir:
             with lcd( work_dir ):
                 # The first action in the list of actions will be the one that defines the installation process.  There
-                # are currently only two supported processes; download_by_url and clone via a "shell_command" action type.
+                # are currently three supported processes; download_binary, download_by_url and clone via a "shell_command"
+                # action type.
                 action_type, action_dict = actions[ 0 ]
                 if action_type == 'download_binary':
                     url = action_dict[ 'url' ]
@@ -316,11 +317,13 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                         downloaded_filename = td_common_util.download_binary( url, work_dir )
                         # Filter out any actions that are not download_binary, chmod, or set_environment.
                         filtered_actions = filter_actions_after_binary_installation( actions[ 1: ] )
-                        # Set actions to the same, so that the current download_binary doesn't get re-run in the filtered actions below.
+                        # Set actions to the same, so that the current download_binary doesn't get re-run in the
+                        # filtered actions below.
                         actions = filtered_actions
                     except Exception, e:
                         log.exception( str( e ) )
-                        # No binary exists, or there was an error downloading the binary from the generated URL. Proceed with the remaining actions.
+                        # No binary exists, or there was an error downloading the binary from the generated URL.
+                        # Proceed with the remaining actions.
                         filtered_actions = actions[ 1: ]
                         action_type, action_dict = filtered_actions[ 0 ]
                     # If the downloaded file exists, move it to $INSTALL_DIR. Put this outside the try/catch above so that
@@ -345,8 +348,9 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                     is_binary = action_dict.get( 'is_binary', False )
                     log.debug( 'Attempting to download via url: %s', url )
                     if 'target_filename' in action_dict:
-                        # Sometimes compressed archives extract their content to a folder other than the default defined file name.  Using this
-                        # attribute will ensure that the file name is set appropriately and can be located after download, decompression and extraction.
+                        # Sometimes compressed archives extract their content to a folder other than the default
+                        # defined file name.  Using this attribute will ensure that the file name is set appropriately
+                        # and can be located after download, decompression and extraction.
                         downloaded_filename = action_dict[ 'target_filename' ]
                     else:
                         downloaded_filename = os.path.split( url )[ -1 ]
@@ -374,8 +378,9 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                     filtered_actions = actions[ 1: ]
                     url = action_dict[ 'url' ]
                     if 'target_filename' in action_dict:
-                        # Sometimes compressed archives extracts their content to a folder other than the default defined file name.  Using this
-                        # attribute will ensure that the file name is set appropriately and can be located after download, decompression and extraction.
+                        # Sometimes compressed archives extracts their content to a folder other than the default
+                        # defined file name.  Using this attribute will ensure that the file name is set appropriately
+                        # and can be located after download, decompression and extraction.
                         filename = action_dict[ 'target_filename' ]
                     else:
                         filename = url.split( '/' )[ -1 ]

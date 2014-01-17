@@ -406,9 +406,9 @@ var FolderContentView = Backbone.View.extend({
         if (typeof folder_id === 'undefined') {
             return false;
         } else if (folder_id === '0'){
-            library_router.navigate('#', {trigger: true, replace: true});
+            library_router.navigate('/', {trigger: true, replace: false});
         } else {
-            library_router.navigate('folders/' + folder_id, {trigger: true, replace: true});
+            library_router.navigate('folders/' + folder_id, {trigger: true, replace: false});
         }
       },
 
@@ -984,9 +984,9 @@ var GalaxyLibrary = Backbone.View.extend({
           }
         });
 
-Backbone.history.start();
+Backbone.history.start({pushState: false});
 
-return this
+// return this
 }
 });
 
