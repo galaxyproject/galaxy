@@ -22,8 +22,8 @@ class AuthenticationController( BaseAPIController ):
         * GET /api/authenticate/baseauth
           returns an API key for authenticated user based on BaseAuth headers
 
-        :rtype:   dict
         :returns: api_key in json format
+        :rtype:   dict
 
         :raises: ObjectNotFound, HTTPBadRequest
         """
@@ -48,9 +48,20 @@ class AuthenticationController( BaseAPIController ):
         return dict( api_key= api_key_row.key )
 
     def _decode_baseauth( self, encoded_str ):
-        """Decode an encrypted HTTP basic authentication string. Returns a tuple of
+        """
+        Decode an encrypted HTTP basic authentication string. Returns a tuple of
         the form (email, password), and raises a HTTPBadRequest exception if
         nothing could be decoded.
+
+        :param  encoded_str: BaseAuth string encoded base64
+        :type   encoded_str: string
+
+        :returns: email of the user
+        :rtype:   string
+        :returns: password of the user
+        :rtype:   string
+
+        :raises: HTTPBadRequest
         """
         split = encoded_str.strip().split( ' ' )
 
