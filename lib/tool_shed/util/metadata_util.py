@@ -791,26 +791,30 @@ def generate_package_dependency_metadata( app, elem, valid_tool_dependencies_dic
             if sub_elem.tag == 'readme':
                 requirements_dict[ 'readme' ] = sub_elem.text
             elif sub_elem.tag == 'repository':
-                # We have a complex repository dependency.  If the returned value of repository_dependency_is_valid is True, the tool
-                # dependency definition will be set as invalid.  This is currently the only case where a tool dependency definition is
-                # considered invalid.
-                repository_dependency_tup, repository_dependency_is_valid, error_message = handle_repository_elem( app=app,
-                                                                                                                   repository_elem=sub_elem,
-                                                                                                                   only_if_compiling_contained_td=False )
+                # We have a complex repository dependency.  If the returned value of repository_dependency_is_valid
+                # is True, the tool dependency definition will be set as invalid.  This is currently the only case
+                # where a tool dependency definition is considered invalid.
+                repository_dependency_tup, repository_dependency_is_valid, error_message = \
+                    handle_repository_elem( app=app, repository_elem=sub_elem, only_if_compiling_contained_td=False )
             elif sub_elem.tag == 'install':
                 package_install_version = sub_elem.get( 'version', '1.0' )
                 if package_install_version == '1.0':
-                    # Complex repository dependencies can be defined within the last <actions> tag set contained in an <actions_group> tag set.
-                    # Comments, <repository> tag sets and <readme> tag sets will be skipped in td_common_util.parse_package_elem().
-                    actions_elem_tuples = td_common_util.parse_package_elem( sub_elem, platform_info_dict=None, include_after_install_actions=False )
+                    # Complex repository dependencies can be defined within the last <actions> tag set contained in an
+                    # <actions_group> tag set.  Comments, <repository> tag sets and <readme> tag sets will be skipped
+                    # in td_common_util.parse_package_elem().
+                    actions_elem_tuples = td_common_util.parse_package_elem( sub_elem,
+                                                                             platform_info_dict=None,
+                                                                             include_after_install_actions=False )
                     if actions_elem_tuples:
-                        # We now have a list of a single tuple that looks something like: [(True, <Element 'actions' at 0x104017850>)]
+                        # We now have a list of a single tuple that looks something like:
+                        # [(True, <Element 'actions' at 0x104017850>)]
                         actions_elem_tuple = actions_elem_tuples[ 0 ]
                         in_actions_group, actions_elem = actions_elem_tuple
                         if in_actions_group:
-                            # Since we're inside an <actions_group> tag set, inspect the actions_elem to see if a complex repository dependency
-                            # is defined.  By definition, complex repository dependency definitions contained within the last <actions> tag set
-                            # within an <actions_group> tag set will have the value of "only_if_compiling_contained_td" set to True in 
+                            # Since we're inside an <actions_group> tag set, inspect the actions_elem to see if a complex
+                            # repository dependency is defined.  By definition, complex repository dependency definitions
+                            # contained within the last <actions> tag set within an <actions_group> tag set will have the
+                            # value of "only_if_compiling_contained_td" set to True in 
                             for action_elem in actions_elem:
                                 if action_elem.tag == 'package':
                                     # <package name="libgtextutils" version="0.6">
@@ -834,7 +838,8 @@ def generate_package_dependency_metadata( app, elem, valid_tool_dependencies_dic
             # Append the error message to the requirements_dict.
             requirements_dict[ 'error' ] = error_message
             invalid_tool_dependencies_dict[ dependency_key ] = requirements_dict
-    return valid_tool_dependencies_dict, invalid_tool_dependencies_dict, repository_dependency_tup, repository_dependency_is_valid, error_message
+    return valid_tool_dependencies_dict, invalid_tool_dependencies_dict, repository_dependency_tup, \
+        repository_dependency_is_valid, error_message
 
 def generate_repository_dependency_metadata( app, repository_dependencies_config, metadata_dict ):
     """
@@ -1986,7 +1991,8 @@ def set_repository_metadata_due_to_new_tip( trans, repository, content_alert_str
                                                      content_alert_str=content_alert_str,
                                                      **kwd )
     if error_message:
-        # FIXME: This probably should not redirect since this method is called from the upload controller as well as the repository controller.
+        # FIXME: This probably should not redirect since this method is called from the upload controller as well
+        # as the repository controller.
         # If there is an error, display it.
         return trans.response.send_redirect( web.url_for( controller='repository',
                                                           action='manage_repository',
