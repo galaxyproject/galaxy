@@ -1,0 +1,1 @@
+define([],function(){var b=Backbone.Model.extend({defaults:{extension:"auto",genome:"?",url_paste:"",space_to_tabs:false,status:"init",info:null}});var a=Backbone.Collection.extend({model:b});return{Model:b,Collection:a}});

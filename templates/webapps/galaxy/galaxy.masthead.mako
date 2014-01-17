@@ -80,8 +80,8 @@
 
         ## load galaxy js-modules
         $(function() {
-            require(['galaxy.masthead', 'galaxy.menu', 'galaxy.modal', 'galaxy.frame', 'galaxy.upload'],
-            function(mod_masthead, mod_menu, mod_modal, mod_frame, mod_upload)
+            require(['galaxy.masthead', 'galaxy.menu', 'galaxy.modal', 'galaxy.frame', 'mvc/upload/upload-view'],
+            function(mod_masthead, mod_menu, mod_modal, mod_frame, GalaxyUpload)
             {
                 ## check if masthead is available
                 if (Galaxy.masthead)
@@ -102,7 +102,7 @@
                 });
                 
                 ## add upload plugin
-                ##Galaxy.upload = new mod_upload.GalaxyUpload(masthead_config);
+                ##Galaxy.upload = new GalaxyUpload(masthead_config);
 
                 ## set up the quota meter (And fetch the current user data from trans)
                 ## add quota meter to masthead
