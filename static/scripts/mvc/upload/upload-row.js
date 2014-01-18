@@ -58,6 +58,7 @@ return Backbone.View.extend({
             
             // update url paste content
             self.model.set('url_paste', value);
+            self.model.set('file_size', count);
         });
         
         // handle genome selection
