@@ -46,12 +46,23 @@ return Backbone.View.extend(
         // append main
         this.charts_view.append(this.viewport_view.$el);
         
-        // create
+        // set elements
+        this.setElement(this.portlet.$el);
+        
+        // hide views
         this.group_view.$el.hide();
         this.charts_view.$el.hide();
         
-        // set elements
-        this.setElement(this.portlet.$el);
+        // events
+        var self = this;
+        this.config.on('change:current_view', function() {
+            self._showCurrent();
+        });
+    },
+    
+    // current view
+    _showCurrent: function() {
+        
     },
     
     // execute command

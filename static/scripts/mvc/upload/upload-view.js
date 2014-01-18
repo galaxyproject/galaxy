@@ -1,0 +1,514 @@
+// dependencies
+define(["galaxy.modal",
+        "galaxy.masthead",
+        "utils/utils",
+        "mvc/upload/upload-model",
+        "mvc/upload/upload-row",
+        "utils/uploadbox"],
+       
+        function(   mod_modal,
+                    mod_masthead,
+                    mod_utils,
+                    UploadModel,
+                    UploadItem
+                ) {
+
+// galaxy upload
+return Backbone.View.extend(
+{
+    // own modal
+    modal : null,
+    
+    // button
+    button_show : null,
+    
+    // jquery uploadbox plugin
+    uploadbox: null,
+    
+    // current history
+    current_history: null,
+    
+    // extension types
+    select_extension :[['Auto-detect', 'auto']],
+    
+    // genomes
+    select_genome : [['Unspecified (?)', '?']],
+    
+    // collection
+    collection : new UploadModel.Collection(),
+    
+    // counter
+    counter : {
+        // stats
+        announce    : 0,
+        success     : 0,
+        error       : 0,
+        running     : 0,
+        
+        // reset stats
+        reset : function()
+        {
+            this.announce = this.success = this.error = this.running = 0;
+        }
+    },
+    
+    // options
+    options : {
+        nginx_upload_path : ''
+    },
+    
+    // initialize
+    initialize : function(options)
+    {
+        // link this
+        var self = this;
+            
+        // wait for galaxy history panel (workaround due to the use of iframes)
+        if (!Galaxy.currHistoryPanel)
+        {
+            window.setTimeout(function() { self.initialize() }, 500)
+            return;
+        }
+        
+        // check if logged in
+        if (!Galaxy.currUser.get('id'))
+            return;
+            
+        // add activate icon
+        this.button_show = new mod_masthead.GalaxyMastheadIcon (
+        {
+            icon        : 'fa-arrow-circle-o-up',
+            tooltip     : 'Upload Files',
+            on_click    : function(e) { self._eventShow(e) },
+            on_unload   : function() {
+                if (self.counter.running > 0)
+                    return "Several uploads are still processing.";
+            },
+            with_number : true
+        });
+        
+        // add to masthead
+        Galaxy.masthead.prepend(this.button_show);
+        
+        // load extension
+        var self = this;
+        mod_utils.jsonFromUrl(galaxy_config.root + "api/datatypes",
+            function(datatypes) {
+                for (key in datatypes)
+                    self.select_extension.push([datatypes[key], datatypes[key]]);
+            });
+            
+        // load genomes
+        mod_utils.jsonFromUrl(galaxy_config.root + "api/genomes",
+            function(genomes) {
+                // backup default
+                var def = self.select_genome[0];
+                
+                // fill array
+                self.select_genome = [];
+                for (key in genomes)
+                    if (genomes[key].length > 1)
+                        if (genomes[key][1] !== def[1])
+                            self.select_genome.push(genomes[key]);
+                
+                // sort
+                self.select_genome.sort(function(a, b) {
+                    return a[0] > b[0] ? 1 : a[0] < b[0] ? -1 : 0;
+                });
+
+                // insert default back to array
+                self.select_genome.unshift(def);
+            });
+        
+        // read in options
+        if (options) {
+            this.options = _.defaults(options, this.options);
+        }
+        
+        // events
+        this.collection.on('remove', function(item) {
+            self._eventRemove(item);
+        });
+        this.collection.on('change:genome', function(item) {
+            var genome = item.get('genome');
+            self.collection.each(function(item) {
+                if (item.get('status') == 'init' && item.get('genome') == '?') {
+                    item.set('genome', genome);
+                }
+            });
+        });
+    },
+    
+    //
+    // event triggered by upload button
+    //
+    
+    // show/hide upload frame
+    _eventShow : function (e)
+    {
+        // prevent default
+        e.preventDefault();
+        
+        // create modal
+        if (!this.modal)
+        {
+            // make modal
+            var self = this;
+            this.modal = new mod_modal.GalaxyModal(
+            {
+                title   : 'Upload files from your local drive',
+                body    : this._template('upload-box', 'upload-info'),
+                buttons : {
+                    'Select'    : function() {self.uploadbox.select()},
+                    'Create'    : function() {self._eventCreate()},
+                    'Upload'    : function() {self._eventStart()},
+                    'Pause'     : function() {self._eventStop()},
+                    'Reset'     : function() {self._eventReset()},
+                    'Close'     : function() {self.modal.hide()},
+                },
+                height      : '400',
+                width       : '900'
+            });
+        
+            // set element
+            this.setElement('#upload-box');
+            
+            // file upload
+            var self = this;
+            this.uploadbox = this.$el.uploadbox(
+            {
+                announce        : function(index, file, message) { self._eventAnnounce(index, file, message) },
+                initialize      : function(index, file, message) { return self._eventInitialize(index, file, message) },
+                progress        : function(index, file, message) { self._eventProgress(index, file, message) },
+                success         : function(index, file, message) { self._eventSuccess(index, file, message) },
+                error           : function(index, file, message) { self._eventError(index, file, message) },
+                complete        : function() { self._eventComplete() }
+            });
+            
+            // setup info
+            this._updateScreen();
+        }
+        
+        // show modal
+        this.modal.show();
+    },
+
+    //
+    // events triggered by collection
+    //
+    
+    // remove item from upload list
+    _eventRemove : function(item)
+    {
+        // update status
+        var status = item.get('status');
+                
+        // reduce counter
+        if (status == 'success') {
+            this.counter.success--;
+        } else if (status == 'error') {
+            this.counter.error--;
+        } else {
+            this.counter.announce--;
+        }
+        
+        // show on screen info
+        this._updateScreen();
+            
+        // remove from queue
+        this.uploadbox.remove(item.id);
+    },
+    
+    //
+    // events triggered by the upload box plugin
+    //
+    
+    // a new file has been dropped/selected through the uploadbox plugin
+    _eventAnnounce : function(index, file, message)
+    {
+        // update counter
+        this.counter.announce++;
+        
+        // update screen
+        this._updateScreen();
+        
+        // create view/model
+        var upload_item = new UploadItem(this, {
+            id          : index,
+            file_name   : file.name,
+            file_size   : file.size
+        });
+        
+        // add to collection
+        this.collection.add(upload_item.model);
+        
+        // add upload item element to table
+        $(this.el).find('tbody:last').append(upload_item.$el);
+        
+        // render
+        upload_item.render();
+    },
+    
+    // the uploadbox plugin is initializing the upload for this file
+    _eventInitialize : function(index, file, message)
+    {
+        // get element
+        var it = this.collection.get(index);
+        
+        // update status
+        it.set('state', 'running');
+      
+        // update on screen counter
+        this.button_show.number(this.counter.announce);
+    
+        // get configuration
+        var file_type       = it.get('extension');
+        var file_name       = it.get('file_name');
+        var genome          = it.get('genome');
+        var url_paste       = it.get('url_paste');
+        var space_to_tabs   = it.get('space_to_tabs');
+        
+        // validate
+        if (!url_paste && !(file.size > 0))
+            return null;
+            
+        // configure uploadbox
+        this.uploadbox.configure({url : this.options.nginx_upload_path, paramname : "files_0|file_data"});
+        
+        // configure tool
+        tool_input = {};
+        tool_input['dbkey'] = genome;
+        tool_input['file_type'] = file_type;
+        tool_input['files_0|NAME'] = file_name;
+        tool_input['files_0|type'] = 'upload_dataset';
+        tool_input['files_0|url_paste'] = url_paste;
+        tool_input['space_to_tabs'] = space_to_tabs;
+        
+        // setup data
+        data = {};
+        data['history_id'] = this.current_history;
+        data['tool_id'] = 'upload1';
+        data['inputs'] = JSON.stringify(tool_input);
+        
+        // return additional data to be send with file
+        return data;
+    },
+    
+    // progress
+    _eventProgress : function(index, file, percentage)
+    {
+        var it = this.collection.get(index);
+        it.set('percentage', percentage);
+    },
+    
+    // success
+    _eventSuccess : function(index, file, message)
+    {
+        // update status
+        var it = this.collection.get(index);
+        it.set('status', 'success');
+        
+        // update on screen counter
+        this.button_show.number('');
+        
+        // update counter
+        this.counter.announce--;
+        this.counter.success++;
+        
+        // update on screen info
+        this._updateScreen();
+        
+        // update galaxy history
+        Galaxy.currHistoryPanel.refreshHdas();
+    },
+    
+    // error
+    _eventError : function(index, file, message)
+    {
+        // get element
+        var it = this.collection.get(index);
+        
+        // update status
+        it.set('status', 'error');
+        it.set('info', message);
+        
+        // update on screen counter
+        this.button_show.number('');
+        
+        // update counter
+        this.counter.announce--;
+        this.counter.error++;
+        
+        // update on screen info
+        this._updateScreen();
+    },
+    
+    // queue is done
+    _eventComplete: function() {
+        // reset queued upload to initial status
+        this.collection.each(function(item) {
+            if(item.get('status') == 'queued') {
+                item.set('status', 'init');
+            }
+        });
+        
+        // update running
+        this.counter.running = 0;
+        this._updateScreen();
+    },
+    
+    //
+    // events triggered by this view
+    //
+
+    // create (pseudo) file
+    _eventCreate : function ()
+    {
+        this.uploadbox.add([{ name : 'New File', size : -1 }]);
+    },
+
+    // start upload process
+    _eventStart : function() {
+        // check
+        if (this.counter.announce == 0 || this.counter.running > 0) {
+            return;
+        }
+            
+        // switch icons for new uploads
+        this.collection.each(function(item) {
+            if(item.get('status') == 'init') {
+                item.set('status', 'queued');
+            }
+        });
+        
+        // backup current history
+        this.current_history = Galaxy.currHistoryPanel.model.get('id');
+        
+        // update running
+        this.counter.running = this.counter.announce;
+        this._updateScreen();
+        
+        // initiate upload procedure in plugin
+        this.uploadbox.start();
+    },
+    
+    // pause upload process
+    _eventStop : function() {
+        // check
+        if (this.counter.running == 0) {
+            return;
+        }
+                            
+        // request pause
+        this.uploadbox.stop();
+        
+        // set html content
+        $('#upload-info').html('Queue will pause after completing the current file...');
+    },
+    
+    // remove all
+    _eventReset : function() {
+        // make sure queue is not running
+        if (this.counter.running == 0)
+        {
+            // reset collection
+            this.collection.reset();
+            
+            // reset counter
+            this.counter.reset();
+        
+            // show on screen info
+            this._updateScreen();
+            
+            // remove from queue
+            this.uploadbox.reset();
+        }
+    },
+    
+    // set screen
+    _updateScreen: function ()
+    {
+        /*
+            update on screen info
+        */
+        
+        // check default message
+        if(this.counter.announce == 0)
+        {
+            if (this.uploadbox.compatible())
+                message = 'Drag&drop files into this box or click \'Select\' to select files!';
+            else
+                message = 'Unfortunately, your browser does not support multiple file uploads or drag&drop.<br>Please upgrade to i.e. Firefox 4+, Chrome 7+, IE 10+, Opera 12+ or Safari 6+.'
+        } else {
+            if (this.counter.running == 0)
+                message = 'You added ' + this.counter.announce + ' file(s) to the queue. Add more files or click \'Upload\' to proceed.';
+            else
+                message = 'Please wait...' + this.counter.announce + ' out of ' + this.counter.running + ' remaining.';
+        }
+        
+        // set html content
+        $('#upload-info').html(message);
+        
+        /*
+            update button status
+        */
+        
+        // update reset button
+        if (this.counter.running == 0 && this.counter.announce + this.counter.success + this.counter.error > 0)
+            this.modal.enableButton('Reset');
+        else
+            this.modal.disableButton('Reset');
+            
+        // update upload button
+        if (this.counter.running == 0 && this.counter.announce > 0)
+            this.modal.enableButton('Upload');
+        else
+            this.modal.disableButton('Upload');
+
+        // pause upload button
+        if (this.counter.running > 0)
+            this.modal.enableButton('Pause');
+        else
+            this.modal.disableButton('Pause');
+        
+        // select upload button
+        if (this.counter.running == 0)
+        {
+            this.modal.enableButton('Select');
+            this.modal.enableButton('Create');
+        } else {
+            this.modal.disableButton('Select');
+            this.modal.disableButton('Create');
+        }
+        
+        // table visibility
+        if (this.counter.announce + this.counter.success + this.counter.error > 0)
+            $(this.el).find('table').show();
+        else
+            $(this.el).find('table').hide();
+    },
+
+    // load html template
+    _template: function(id, idInfo)
+    {
+        return  '<div id="' + id + '" class="upload-box">' +
+                    '<table class="table table-striped" style="display: none;">' +
+                        '<thead>' +
+                            '<tr>' +
+                                '<th>Name</th>' +
+                                '<th>Size</th>' +
+                                '<th>Type</th>' +
+                                '<th>Genome</th>' +
+                                '<th>Space&#8594;Tab</th>' +
+                                '<th>Status</th>' +
+                                '<th></th>' +
+                            '</tr>' +
+                        '</thead>' +
+                        '<tbody></tbody>' +
+                    '</table>' +
+                '</div>' +
+                '<h6 id="' + idInfo + '" class="upload-info"></h6>';
+    }
+});
+
+});

@@ -1,9 +1,5 @@
-/*
-    galaxy masthead
-*/
-
 // dependencies
-define(["utils/galaxy.utils"], function(mod_utils) {
+define([], function() {
 
 // masthead
 var GalaxyMasthead = Backbone.View.extend(

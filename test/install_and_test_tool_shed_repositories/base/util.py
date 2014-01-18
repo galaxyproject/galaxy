@@ -1001,6 +1001,8 @@ def save_test_results_for_changeset_revision( url, tool_test_results_dicts, tool
             # Set the time_last_tested entry so that the repository_metadata.time_last_tested will be set in the tool shed.
             params[ 'time_last_tested' ] = 'This entry will result in this value being set via the Tool Shed API.'
             url = '%s' % ( suc.url_join( galaxy_tool_shed_url,'api', 'repository_revisions', str( metadata_revision_id ) ) )
+            log.debug( 'url: %s' % str( url ) )
+            log.degug( 'params: %s' % str( params ) )
             try:
                 return update( tool_shed_api_key, url, params, return_formatted=False )
             except Exception, e:
