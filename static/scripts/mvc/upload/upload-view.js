@@ -84,13 +84,7 @@ var ProgressButton = Backbone.View.extend({
     // set percentage
     _percentage: function(value) {
         var $el = this.$el.find('.progress-bar');
-        if (value) {
-            // change to new percentage
-            $el.css({ width : value + '%' });
-        } else {
-            // reset without transition
-            $el.css({ width : '0%' });
-        }
+        $el.css({ width : value + '%' });
     },
     
     // template
