@@ -59,14 +59,15 @@ var ProgressButton = Backbone.View.extend({
         
         // unload event
         var self = this;
-        window.onbeforeunload = function() {
+        $(window).on('beforeunload', function() {
             var text = "";
             if (self.options.onunload) {
                 text = self.options.onunload();
             }
-            if (text != "")
+            if (text != "") {
                 return text;
-        };
+            }
+        });
     },
     
     // set status
