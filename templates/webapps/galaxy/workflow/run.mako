@@ -3,6 +3,9 @@
 <%def name="javascripts()">
     ${parent.javascripts()}
     <script type="text/javascript">
+         $.fn.outerHTML = function(s) {
+             return s ? this.before(s).remove() : jQuery("<p>").append(this.eq(0).clone()).html();
+         };
         $( function() {
             function show_tool_body(title){
                 title.parent().show().css('border-bottom-width', '1px');
@@ -129,7 +132,34 @@
                 select.after(filter);
                 select.width(new_width);
             });
+        // Editable Workflow
 
+         $(".edit").on("click",function(){
+                var state = $(this).attr("name");
+                var stepToolBox = $(this).parent().find('input:not([class]), select:not([class])');
+                var split_name=stepToolBox.attr("name").split("|");
+                var step_id = split_name[0];
+                var step_name = split_name[2];
+                hidden_html = "<input type='hidden' name='"+step_id+"|__runtime__"+step_name+"' value='true' />";
+                if (state === "edit"){
+                    stepToolBoxClone = stepToolBox.clone();
+                    stepToolBoxClone.attr({"name":step_id+"|"+step_name});
+                    stepToolBoxClone.show()
+                    $(this).parent().find(".editable").show();
+                    $(this).parent().parent().find(".uneditable_field").hide();
+                    $(this).parent().find(".editable").html(stepToolBoxClone.outerHTML()+hidden_html);
+                    $(this).attr("name","revert");
+                    $(this).val("Revert")
+                }
+                else{
+                    $(this).parent().find(".editable").html("");
+                    $(this).parent().find(".display").show()
+                    $(".uneditable_field").show();
+                    $(this).attr("name","edit");
+                    $(this).val("Edit")
+                    stepToolBox.hide();
+                }
+            });
             // Augment hidden fields with icons.
             // http://stackoverflow.com/a/2088430
             $(function(){
@@ -216,6 +246,9 @@
     }
     .workflow-annotation {
         margin-bottom: 1em;
+    }
+    .editable {
+        display: none;
     }
     </style>
 </%def>
@@ -353,7 +386,19 @@ if wf_parms:
                     <span class="p_text_wrapper">${p_text}</span>
                     <input type="hidden" name="${step.id}|__runtime__${prefix}${param.name}" value="true" />
                 %else:
-                    ${param.value_to_display_text( value, app )}
+                <span class="workflow_parameters">
+                    <span class="uneditable_field">
+                        ${param.value_to_display_text( value, app )}
+                    </span>
+                    <span class="editable_field">
+                        <span class="editable">
+                            ${param.get_html_field( t, value, other_values).get_html( str(step.id) + "|" + "editable" + "|"+ prefix )}
+                        </span>
+
+                        <input type="button" name="edit" value="Edit" class="edit"/>
+                        <input type="hidden" name="fallback" class="fallback" value="${param.value_to_display_text( value, app )}"
+                    </span>
+                </span>
                 %endif
             %endif
         </div>
