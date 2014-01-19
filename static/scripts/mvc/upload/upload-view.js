@@ -1,6 +1,5 @@
 // dependencies
 define(["galaxy.modal",
-        "galaxy.masthead",
         "utils/utils",
         "mvc/upload/upload-model",
         "mvc/upload/upload-row",
@@ -8,7 +7,6 @@ define(["galaxy.modal",
         "utils/uploadbox"],
        
         function(   Modal,
-                    Masthead,
                     Utils,
                     UploadModel,
                     UploadItem
@@ -58,27 +56,45 @@ var ProgressButton = Backbone.View.extend({
         this.model.on('change:status', function() {
             self._status(self.model.get('status'));
         });
+        
+        // unload event
+        var self = this;
+        window.onbeforeunload = function() {
+            var text = "";
+            if (self.options.onunload) {
+                text = self.options.onunload();
+            }
+            if (text != "")
+                return text;
+        };
     },
     
     // set status
     _status: function(value) {
         var $el = this.$el.find('.progress-bar');
+        $el.removeClass();
+        $el.addClass('progress-bar');
+        $el.addClass('progress-bar-notransition');
         if (value != '') {
             $el.addClass('progress-bar-' + value);
-        } else {
-            $el.removeClass();
-            $el.addClass('progress-bar');
         }
     },
     
     // set percentage
     _percentage: function(value) {
-        this.$el.find('.progress-bar').css({ width : value + '%' });
+        var $el = this.$el.find('.progress-bar');
+        if (value) {
+            // change to new percentage
+            $el.css({ width : value + '%' });
+        } else {
+            // reset without transition
+            $el.css({ width : '0%' });
+        }
     },
     
     // template
     _template: function(options) {
-        return  '<div style="position: absolute; width: 100px; right: 10px; top: 7px; cursor: pointer;">' +
+        return  '<div class="progress-button">' +
                     '<div class="progress">' +
                         '<div class="progress-bar"></div>' +
                     '</div>' +
@@ -154,7 +170,7 @@ return Backbone.View.extend(
         // create model
         this.button_show = new ProgressButtonModel({
             icon        : 'fa-upload',
-            tooltip     : 'Upload Files',
+            tooltip     : 'upload files',
             label       : 'Upload',
             onclick     : function(e) {
                 if (e) {
@@ -162,8 +178,9 @@ return Backbone.View.extend(
                 }
             },
             onunload    : function() {
-                if (self.counter.running > 0)
+                if (self.counter.running > 0) {
                     return "Several uploads are still processing.";
+                }
             }
         });
         
@@ -336,7 +353,7 @@ return Backbone.View.extend(
         var it = this.collection.get(index);
         
         // update status
-        it.set('state', 'running');
+        it.set('status', 'running');
     
         // get configuration
         var file_type       = it.get('extension');
@@ -478,8 +495,8 @@ return Backbone.View.extend(
         });
         
         // reset progress
-        this.button_show.set('progress', 0);
-        this.button_show.set('status', '');
+        this.button_show.set('percentage', 0);
+        this.button_show.set('status', 'success');
         
         // backup current history
         this.current_history = Galaxy.currHistoryPanel.model.get('id');
@@ -498,7 +515,10 @@ return Backbone.View.extend(
         if (this.counter.running == 0) {
             return;
         }
-        
+
+        // show upload has paused
+        this.button_show.set('status', 'info');
+
         // request pause
         this.uploadbox.stop();
         
@@ -522,6 +542,9 @@ return Backbone.View.extend(
             
             // remove from queue
             this.uploadbox.reset();
+            
+            // reset button
+            this.button_show.set('percentage', 0);
         }
     },
     

@@ -102,7 +102,7 @@
                 });
                 
                 ## add upload plugin
-                ##Galaxy.upload = new GalaxyUpload(masthead_config);
+                Galaxy.upload = new GalaxyUpload(masthead_config);
 
                 ## set up the quota meter (And fetch the current user data from trans)
                 ## add quota meter to masthead

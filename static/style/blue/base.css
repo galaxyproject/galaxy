@@ -1250,6 +1250,10 @@ label{font-weight:normal}
 .galaxy-frame .frame .f-close{right:5px;top:3px}
 .galaxy-frame .frame .f-pin{left:6px;top:3px}
 .galaxy-frame .frame .f-resize{background:#fff;width:16px;height:16px;color:#2c3143;right:0px;bottom:0px;text-align:center;line-height:16px;border:0px}
+.progress-button{position:absolute;width:100px;right:10px;top:6px;cursor:pointer;height:19px;border:1px solid #aaa;-moz-border-radius:3px;border-radius:3px}.progress-button .progress-bar-danger{background:#f9c7c5}
+.progress-button .progress-bar-success{background:#aff1af;border:0px}
+.progress-button .progress-bar-info{background:#ffc}
+.progress-button .progress-bar-notransition{-webkit-transition:none;-moz-transition:none;-ms-transition:none;-o-transition:none;transition:none}
 .upload-info{font-weight:normal;text-align:center}
 .upload-box{width:100%;height:95%;text-align:center;overflow:scroll;font-size:12px;line-height:1.33;-moz-border-radius:5px;border-radius:5px;border:1px dashed #bfbfbf;padding:10px;overflow-x:hidden;-ms-overflow-style:none}.upload-box .table{width:100%}
 .upload-box .table th{text-align:center;white-space:nowrap}
@@ -1262,7 +1266,7 @@ label{font-weight:normal}
 .upload-box .size{width:60px;white-space:nowrap}
 .upload-box .info{width:130px;font-size:11px}.upload-box .info .progress{top:1px;position:relative;width:100%;padding:0px;margin:0px}.upload-box .info .progress .progress-bar{border-radius:inherit;-moz-border-radius:inherit}
 .upload-box .info .progress .percentage{position:absolute;text-align:center;width:100%;color:#fff}
-.upload-box .symbol{cursor:pointer}
+.upload-box .symbol{font-size:1.2em;cursor:pointer}
 .libraryRow{background-color:#ebd9b2}
 .datasetHighlighted{background-color:#f9f9f9}
 .libraryItemDeleted-True{font-style:italic}

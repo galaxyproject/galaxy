@@ -12,6 +12,7 @@ return Backbone.View.extend({
     status_classes : {
         init    : 'symbol fa fa-trash-o',
         queued  : 'symbol fa fa-spinner fa-spin',
+        running : 'symbol fa fa-spinner fa-spin',
         success : 'symbol fa fa-check',
         error   : 'symbol fa fa-exclamation-triangle'
     },
