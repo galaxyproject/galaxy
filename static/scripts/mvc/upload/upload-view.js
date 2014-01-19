@@ -1,17 +1,108 @@
 // dependencies
 define(["galaxy.modal",
-        "galaxy.masthead",
         "utils/utils",
         "mvc/upload/upload-model",
         "mvc/upload/upload-row",
+        "mvc/ui",
         "utils/uploadbox"],
        
-        function(   mod_modal,
-                    mod_masthead,
-                    mod_utils,
+        function(   Modal,
+                    Utils,
                     UploadModel,
                     UploadItem
                 ) {
+
+// create model
+var ProgressButtonModel = Backbone.Model.extend({
+    defaults: {
+        percentage  : 0,
+        icon        : 'fa-circle',
+        label       : '',
+        status      : ''
+    }
+});
+
+// progress bar button on ui
+var ProgressButton = Backbone.View.extend({
+    // model
+    model : null,
+
+    // initialize
+    initialize : function(model) {
+        // link this
+        var self = this;
+        
+        // create model
+        this.model = model;
+        
+        // get options
+        this.options = this.model.attributes;
+            
+        // create new element
+        this.setElement(this._template(this.options));
+        
+        // add event
+        $(this.el).on('click', this.options.onclick);
+        
+        // add tooltip
+        if (this.options.tooltip) {
+            $(this.el).tooltip({title: this.options.tooltip, placement: 'bottom'});
+        }
+        
+        // events
+        this.model.on('change:percentage', function() {
+            self._percentage(self.model.get('percentage'));
+        });
+        this.model.on('change:status', function() {
+            self._status(self.model.get('status'));
+        });
+        
+        // unload event
+        var self = this;
+        $(window).on('beforeunload', function() {
+            var text = "";
+            if (self.options.onunload) {
+                text = self.options.onunload();
+            }
+            if (text != "") {
+                return text;
+            }
+        });
+    },
+    
+    // set status
+    _status: function(value) {
+        var $el = this.$el.find('.progress-bar');
+        $el.removeClass();
+        $el.addClass('progress-bar');
+        $el.addClass('progress-bar-notransition');
+        if (value != '') {
+            $el.addClass('progress-bar-' + value);
+        }
+    },
+    
+    // set percentage
+    _percentage: function(value) {
+        var $el = this.$el.find('.progress-bar');
+        if (value) {
+            // change to new percentage
+            $el.css({ width : value + '%' });
+        } else {
+            // reset without transition
+            $el.css({ width : '0%' });
+        }
+    },
+    
+    // template
+    _template: function(options) {
+        return  '<div class="progress-button">' +
+                    '<div class="progress">' +
+                        '<div class="progress-bar"></div>' +
+                    '</div>' +
+                    '<div id="label" class="label" style="position: absolute; top: 0px; width: inherit; text-align: center;"><div class="fa ' + options.icon + '"></div>&nbsp;' + options.label + '</div>' +
+                '</div>';
+    }
+});
 
 // galaxy upload
 return Backbone.View.extend(
@@ -27,6 +118,9 @@ return Backbone.View.extend(
     
     // current history
     current_history: null,
+    
+    // current upload size
+    upload_size: 0,
     
     // extension types
     select_extension :[['Auto-detect', 'auto']],
@@ -74,32 +168,36 @@ return Backbone.View.extend(
         if (!Galaxy.currUser.get('id'))
             return;
             
-        // add activate icon
-        this.button_show = new mod_masthead.GalaxyMastheadIcon (
-        {
-            icon        : 'fa-arrow-circle-o-up',
-            tooltip     : 'Upload Files',
-            on_click    : function(e) { self._eventShow(e) },
-            on_unload   : function() {
-                if (self.counter.running > 0)
-                    return "Several uploads are still processing.";
+        // create model
+        this.button_show = new ProgressButtonModel({
+            icon        : 'fa-upload',
+            tooltip     : 'Upload files',
+            label       : 'Upload',
+            onclick     : function(e) {
+                if (e) {
+                    self._eventShow(e)
+                }
             },
-            with_number : true
+            onunload    : function() {
+                if (self.counter.running > 0) {
+                    return "Several uploads are still processing.";
+                }
+            }
         });
         
-        // add to masthead
-        Galaxy.masthead.prepend(this.button_show);
+        // define location
+        $('#left .unified-panel-header-inner').append((new ProgressButton(this.button_show)).$el);
         
         // load extension
         var self = this;
-        mod_utils.jsonFromUrl(galaxy_config.root + "api/datatypes",
+        Utils.jsonFromUrl(galaxy_config.root + "api/datatypes",
             function(datatypes) {
                 for (key in datatypes)
                     self.select_extension.push([datatypes[key], datatypes[key]]);
             });
             
         // load genomes
-        mod_utils.jsonFromUrl(galaxy_config.root + "api/genomes",
+        Utils.jsonFromUrl(galaxy_config.root + "api/genomes",
             function(genomes) {
                 // backup default
                 var def = self.select_genome[0];
@@ -154,7 +252,7 @@ return Backbone.View.extend(
         {
             // make modal
             var self = this;
-            this.modal = new mod_modal.GalaxyModal(
+            this.modal = new Modal.GalaxyModal(
             {
                 title   : 'Upload files from your local drive',
                 body    : this._template('upload-box', 'upload-info'),
@@ -256,10 +354,7 @@ return Backbone.View.extend(
         var it = this.collection.get(index);
         
         // update status
-        it.set('state', 'running');
-      
-        // update on screen counter
-        this.button_show.number(this.counter.announce);
+        it.set('status', 'running');
     
         // get configuration
         var file_type       = it.get('extension');
@@ -297,8 +392,12 @@ return Backbone.View.extend(
     // progress
     _eventProgress : function(index, file, percentage)
     {
+        // set progress for row
         var it = this.collection.get(index);
         it.set('percentage', percentage);
+        
+        // update ui button
+        this.button_show.set('percentage', this._upload_percentage(percentage, file.size));
     },
     
     // success
@@ -308,8 +407,14 @@ return Backbone.View.extend(
         var it = this.collection.get(index);
         it.set('status', 'success');
         
-        // update on screen counter
-        this.button_show.number('');
+        // file size
+        var file_size = it.get('file_size');
+        
+        // update ui button
+        this.button_show.set('percentage', this._upload_percentage(100, file_size));
+        
+        // update completed
+        this.upload_completed += file_size * 100;
         
         // update counter
         this.counter.announce--;
@@ -332,8 +437,12 @@ return Backbone.View.extend(
         it.set('status', 'error');
         it.set('info', message);
         
-        // update on screen counter
-        this.button_show.number('');
+        // update ui button
+        this.button_show.set('percentage', this._upload_percentage(100, file.size));
+        this.button_show.set('status', 'danger');
+        
+        // update completed
+        this.upload_completed += file.size * 100;
         
         // update counter
         this.counter.announce--;
@@ -373,13 +482,22 @@ return Backbone.View.extend(
         if (this.counter.announce == 0 || this.counter.running > 0) {
             return;
         }
-            
+        
+        // reset current size
+        var self = this;
+        this.upload_size = 0;
+        this.upload_completed = 0;
         // switch icons for new uploads
         this.collection.each(function(item) {
             if(item.get('status') == 'init') {
                 item.set('status', 'queued');
+                self.upload_size += item.get('file_size');
             }
         });
+        
+        // reset progress
+        this.button_show.set('percentage', 0);
+        this.button_show.set('status', 'success');
         
         // backup current history
         this.current_history = Galaxy.currHistoryPanel.model.get('id');
@@ -398,7 +516,10 @@ return Backbone.View.extend(
         if (this.counter.running == 0) {
             return;
         }
-                            
+
+        // show upload has paused
+        this.button_show.set('status', 'info');
+
         // request pause
         this.uploadbox.stop();
         
@@ -422,6 +543,9 @@ return Backbone.View.extend(
             
             // remove from queue
             this.uploadbox.reset();
+            
+            // reset button
+            this.button_show.set('percentage', 0);
         }
     },
     
@@ -486,6 +610,11 @@ return Backbone.View.extend(
             $(this.el).find('table').show();
         else
             $(this.el).find('table').hide();
+    },
+
+    // calculate percentage of all queued uploads
+    _upload_percentage: function(percentage, size) {
+        return (this.upload_completed + (percentage * size)) / this.upload_size;
     },
 
     // load html template

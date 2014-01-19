@@ -36,18 +36,18 @@ var GalaxyMasthead = Backbone.View.extend(
         
         // loop through unload functions if the user attempts to unload the page
         var self = this;
-        window.onbeforeunload = function()
-        {
+        $(window).on('beforeunload', function() {
             var text = "";
-            for (key in self.list)
-                if (self.list[key].options.on_unload)
-                {
-                    var q = self.list[key].options.on_unload();
+            for (key in self.list) {
+                if (self.list[key].options.onunload) {
+                    var q = self.list[key].options.onunload();
                     if (q) text += q + " ";
                 }
-            if (text != "")
+            }
+            if (text != "") {
                 return text;
-        };
+            }
+        });
     },
 
     // configure events
@@ -159,8 +159,8 @@ var GalaxyMastheadIcon = Backbone.View.extend(
         icon            : 'fa-cog',
         tooltip         : '',
         with_number     : false,
-        on_click        : function() { alert ('clicked') },
-        on_unload       : null,
+        onclick         : function() { alert ('clicked') },
+        onunload        : null,
         visible         : true
     },
     
@@ -180,7 +180,7 @@ var GalaxyMastheadIcon = Backbone.View.extend(
         // configure icon
         var self = this;
         $(this.el).find('.icon').tooltip({title: this.options.tooltip, placement: 'bottom'})
-                                .on('mouseup', self.options.on_click);
+                                .on('mouseup', self.options.onclick);
         
         // visiblity
         if (!this.options.visible)
@@ -254,7 +254,7 @@ var GalaxyMastheadTab = Backbone.View.extend(
         content         : '',
         type            : 'url',
         scratchbook     : false,
-        on_unload       : null,
+        onunload        : null,
         visible         : true,
         disabled        : false,
         title_attribute : ''

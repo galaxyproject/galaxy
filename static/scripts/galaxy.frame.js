@@ -87,10 +87,11 @@ var GalaxyFrame = Backbone.View.extend(
         {
             icon        : 'fa-th',
             tooltip     : 'Enable/Disable Scratchbook',
-            on_click    : function(e) { self._event_panel_active(e) },
-            on_unload   : function() {
-                if (self.frame_counter > 0)
+            onclick     : function(e) { self._event_panel_active(e) },
+            onunload    : function() {
+                if (self.frame_counter > 0) {
                     return "You opened " + self.frame_counter + " frame(s) which will be lost.";
+                }
             }
         });
         
@@ -102,7 +103,7 @@ var GalaxyFrame = Backbone.View.extend(
         {
             icon        : 'fa-eye',
             tooltip     : 'Show/Hide Scratchbook',
-            on_click    : function(e) { self._event_panel_load(e) },
+            onclick     : function(e) { self._event_panel_load(e) },
             with_number : true
         });
 

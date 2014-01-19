@@ -7,7 +7,7 @@ var browser_router  = null;
 require(
 [
     // load js libraries
-    'utils/galaxy.utils',
+    'utils/utils',
     'libs/jquery/jstorage',
     'libs/jquery/jquery.event.drag',
     'libs/jquery/jquery.event.hover',

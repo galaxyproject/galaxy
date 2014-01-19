@@ -63,11 +63,20 @@ function cssLoadFile (url) {
         $('<link href="' + galaxy_config.root + url + '" rel="stylesheet">').appendTo('head');
 };
 
+// merge
+function merge (options, optionsDefault) {
+    if (options)
+        return _.defaults(options, optionsDefault);
+    else
+        return optionsDefault;
+};
+
 // return
 return {
     cssLoadFile   : cssLoadFile,
     cssGetAttribute : cssGetAttribute,
-    jsonFromUrl : jsonFromUrl
+    jsonFromUrl : jsonFromUrl,
+    merge : merge
 };
 
 });
