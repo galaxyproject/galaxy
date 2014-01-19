@@ -1234,10 +1234,10 @@ label{font-weight:normal}
 .select2-measure-scrollbar{position:absolute;top:-10000px;left:-10000px;width:100px;height:100px;overflow:scroll}
 @media only screen and (-webkit-min-device-pixel-ratio:1.5),only screen and (min-resolution:144dpi){.select2-search input,.select2-search-choice-close,.select2-container .select2-choice abbr,.select2-container .select2-choice .select2-arrow b{background-image:url('../images/select2x2.png') !important;background-repeat:no-repeat !important;background-size:60px 40px !important} .select2-search input{background-position:100% -21px !important}}.select2-container{min-width:256px}
 .galaxy-frame{}.galaxy-frame .corner{-moz-border-radius:5px;border-radius:5px}
-.galaxy-frame .toggle{color:#BCC800}
+.galaxy-frame .toggle{color:gold}
 .galaxy-frame .frame-background{z-index:1000;position:absolute;display:none;top:0px;left:0px;height:100%;width:100%;opacity:0.6;background:#000;overflow:auto}
 .galaxy-frame .frame-shadow{z-index:1001;position:absolute;display:none;top:0px;left:0px;opacity:0.5;background:#2c3143;border:1px solid #888}
-.galaxy-frame .frame-menu{z-index:1005;position:absolute;cursor:pointer;color:#BCC800;right:10px}
+.galaxy-frame .frame-menu{z-index:1005;position:absolute;cursor:pointer;color:gold;right:10px}
 .galaxy-frame .frame-scroll-up{top:50px}
 .galaxy-frame .frame-scroll-down{bottom:20px}
 .galaxy-frame .frame{z-index:1002;overflow:hidden;position:absolute;background:#fff;border:1px solid #888;-webkit-box-shadow:0 0 5px rgba(0,0,0,0.3);}.galaxy-frame .frame .f-content{position:absolute;overflow:hidden;background:#fff;border:none;top:24px;bottom:3px;left:3px;right:3px}
@@ -1370,7 +1370,7 @@ div.unified-panel-body{position:absolute;top:30px;bottom:0;width:100%}
 #masthead .navbar-brand a{color:white;text-decoration:none}
 #masthead .iconbar{position:absolute;top:5px;right:110px;cursor:pointer;color:#999;overflow:hidden}#masthead .iconbar .symbol{float:left;margin:0px 10px;height:26px}
 #masthead .iconbar .symbol .number{font-weight:bold;font-size:10px;font-family:"Lucida Grande",verdana,arial,helvetica,sans-serif;position:relative;left:23px;top:-12px}
-#masthead .iconbar .toggle{color:#BCC800}
+#masthead .iconbar .toggle{color:gold}
 .quota-meter-container{position:absolute;top:0;right:0;height:32px}
 .quota-meter{position:absolute;top:8px;right:8px;height:16px;width:100px;background-color:#f5f5f5}
 .quota-meter-bar{position:absolute;top:0;left:0;height:16px;background-color:#5f6990}
