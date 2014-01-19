@@ -170,7 +170,7 @@ return Backbone.View.extend(
         // create model
         this.button_show = new ProgressButtonModel({
             icon        : 'fa-upload',
-            tooltip     : 'upload files',
+            tooltip     : 'Upload files',
             label       : 'Upload',
             onclick     : function(e) {
                 if (e) {
