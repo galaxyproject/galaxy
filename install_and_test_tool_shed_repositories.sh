@@ -22,6 +22,11 @@ if [ -z $GALAXY_INSTALL_TEST_TOOL_SHED_API_KEY ] ; then
 	exit 1
 fi
 
+if [ -z $GALAXY_INSTALL_TEST_TOOL_DEPENDENCY_DIR ] ; then
+	echo "This script requires the GALAXY_INSTALL_TEST_TOOL_DEPENDENCY_DIR environment variable to be set to your configured tool dependency path."
+	exit 1
+fi
+
 if [ -z $GALAXY_INSTALL_TEST_TOOL_SHED_URL ] ; then
 	echo "This script requires the GALAXY_INSTALL_TEST_TOOL_SHED_URL environment variable to be set and non-empty."
 	exit 1
@@ -45,8 +50,8 @@ fi
 
 test_tool_dependency_definitions () {
     # Test installation of repositories of type tool_dependency_definition.
-	if [ -f /ToolDepsTest/stage_1_complete ] ; then
-		rm /ToolDepsTest/stage_1_complete
+	if [ -f $GALAXY_INSTALL_TEST_TOOL_DEPENDENCY_DIR/stage_1_complete ] ; then
+		rm $GALAXY_INSTALL_TEST_TOOL_DEPENDENCY_DIR/stage_1_complete
 	fi
     echo "Starting stage 1, tool dependency definitions."
     python test/install_and_test_tool_shed_repositories/tool_dependency_definitions/functional_tests.py $* -v --with-nosehtml --html-report-file \
@@ -54,11 +59,11 @@ test_tool_dependency_definitions () {
         test/install_and_test_tool_shed_repositories/functional/test_install_repositories.py \
         test/functional/test_toolbox.py
     echo "Stage 1 complete, exit code $?"
-    touch /ToolDepsTest/stage_1_complete
+    touch $GALAXY_INSTALL_TEST_TOOL_DEPENDENCY_DIR/stage_1_complete
 }
 
 test_repositories_with_tools () {
-	if [ ! -f /ToolDepsTest/stage_1_complete ] ; then
+	if [ ! -f $GALAXY_INSTALL_TEST_TOOL_DEPENDENCY_DIR/stage_1_complete ] ; then
 		echo 'Stage 1 did not complete its run, exiting.'
 		exit 1
 	fi
@@ -69,7 +74,7 @@ test_repositories_with_tools () {
         test/install_and_test_tool_shed_repositories/functional/test_install_repositories.py \
         test/functional/test_toolbox.py
     echo "Stage 2 complete, exit code $?"
-    rm /ToolDepsTest/stage_1_complete
+    rm $GALAXY_INSTALL_TEST_TOOL_DEPENDENCY_DIR/stage_1_complete
 }
 
 which='both'
