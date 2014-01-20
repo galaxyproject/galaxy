@@ -25,8 +25,11 @@ var GalaxyModal = Backbone.View.extend(
         // by default the modal cannot be removed by the self.destroy() method 
         // but only hidden through self.hide()
         destructible: false,
+
         // by default don't bind the events
-        bindClosingEvents: false
+        bindClosingEvents: false,
+        // set false to ommit binding ESC key
+        bindEscKey: true,
     },
     
     // initialize
@@ -57,14 +60,15 @@ var GalaxyModal = Backbone.View.extend(
         this.$el.fadeOut('fast');
     },    
 
-    // bind the click-to-hide function
     bindEvents: function() {
-        // bind the ESC key to hideOrDestroy() function
-        $(document).on('keyup', function(event){
-            if (event.keyCode == 27) { 
-                self.hideOrDestroy() 
-            }
-        })
+        if (self.options.bindEscKey){
+            // bind the ESC key to hideOrDestroy() function
+            $(document).on('keyup', function(event){
+                if (event.keyCode == 27) { 
+                    self.hideOrDestroy() 
+                }
+            })
+        }
         // bind the 'click anywhere' to hideOrDestroy() function...
         $('html').on('click', self.hideOrDestroy)
         // ...but don't hide if the click is on modal content
@@ -75,7 +79,6 @@ var GalaxyModal = Backbone.View.extend(
         self.eventsBound = true;
     },
 
-    // unbind the click-to-hide function
     unbindEvents: function(){
         // unbind the ESC key to hideOrDestroy() function
         $(document).off('keyup', function(event){

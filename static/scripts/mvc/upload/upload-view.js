@@ -253,16 +253,17 @@ return Backbone.View.extend(
                 title   : 'Download data directly from web or upload files from your disk',
                 body    : this._template('upload-box', 'upload-info'),
                 buttons : {
-                    'Choose file'    : function() {self.uploadbox.select()},
-                    'from URL'    : function() {self._eventCreate()},
-                    'Start'    : function() {self._eventStart()},
-                    'Pause'     : function() {self._eventStop()},
-                    'Reset'     : function() {self._eventReset()},
-                    'Close'     : function() {self.modal.hide()},
+                    'Choose files'    : function() {self.uploadbox.select()},
+                    'Create file'     : function() {self._eventCreate()},
+                    'Start'           : function() {self._eventStart()},
+                    'Pause'           : function() {self._eventStop()},
+                    'Reset'           : function() {self._eventReset()},
+                    'Close'           : function() {self.modal.hide()},
                 },
-                height      : '400',
-                width       : '900',
-                bindClosingEvents: true
+                height              : '400',
+                width               : '900',
+                bindClosingEvents   : true,
+                bindEscKey          : false
             });
         
             // set element
@@ -595,11 +596,11 @@ return Backbone.View.extend(
         // select upload button
         if (this.counter.running == 0)
         {
-            this.modal.enableButton('Choose file');
-            this.modal.enableButton('from URL');
+            this.modal.enableButton('Choose files');
+            this.modal.enableButton('Create file');
         } else {
-            this.modal.disableButton('Choose file');
-            this.modal.disableButton('from URL');
+            this.modal.disableButton('Choose files');
+            this.modal.disableButton('Create file');
         }
         
         // table visibility
