@@ -61,53 +61,9 @@ class ToolShedRepository( object ):
     def can_reset_metadata( self ):
         return self.status == self.installation_status.INSTALLED
 
-    def can_uninstall( self, app ):
-        # An installed repository cannot be uninstalled if other installed repositories or installed repository
-        # contents (i.e., tool dependencies) require it.
-        if self.status == self.installation_status.UNINSTALLED:
-            return False
-        this_repository_tup = ( str( self.tool_shed ),
-                                str( self.name ),
-                                str( self.owner ),
-                                str( self.installed_changeset_revision ) )
-        irm = app.installed_repository_manager
-        # See if this repository's current dependencies are restricted to a single circular relationship.  This
-        # means that this repository has a single repository dependency which itself depends upon this repository.
-        # The repository dependency may have other repository dependencies, but that is not relevant here.
-        single_repository_dependency_tup = None
-        installed_repository_dependency_tups = \
-            irm.installed_repository_dependencies_of_installed_repositories.get( this_repository_tup, [] )
-        # If this repository defines a circular relationship to another repository, then the list of tuples
-        # defining installed repository dependencies will include itself.
-        if len( installed_repository_dependency_tups ) == 2:
-            if this_repository_tup in installed_repository_dependency_tups:
-                # We have a single circular dependency definition, so get the other repository.
-                for installed_repository_dependency_tup in installed_repository_dependency_tups:
-                    if installed_repository_dependency_tup != this_repository_tup:
-                        single_repository_dependency_tup = installed_repository_dependency_tup
-                        break
-        if single_repository_dependency_tup is not None:
-            installed_repository_dependency_tups = \
-                irm.installed_repository_dependencies_of_installed_repositories.get( this_repository_tup, [] )
-            if this_repository_tup in installed_repository_dependency_tups:
-                # This repository is a dependency of the single repository upon which it depends, so we have
-                # a single circular relationship and this repository can be uninstalled.
-                return True
-        # Find other installed repositories that require this repository.
-        installed_dependent_repositories = \
-                    irm.installed_dependent_repositories_of_installed_repositories.get( this_repository_tup, [] )
-        if installed_dependent_repositories:
-            # This repository cannot be uninstalled because other installed repositories require it.
-            return False
-        # Find installed tool dependencies that require this repository's installed tool dependencies.
-        installed_tool_dependencies = irm.installed_tool_dependencies_of_installed_repositories.get( this_repository_tup, [] )
-        for td_tup in installed_tool_dependencies:
-            installed_dependent_td_tups = irm.installed_runtime_dependent_tool_dependencies_of_installed_tool_dependencies.get( td_tup, [] )
-            if installed_dependent_td_tups:
-                # This repository cannot be uninstalled because it contains installed tool dependencies that
-                # are required at run time by other installed tool dependencies.
-                return False
-        return True
+    @property
+    def can_uninstall( self ):
+        return self.status != self.installation_status.UNINSTALLED
 
     @property
     def can_deactivate( self ):
@@ -564,9 +520,7 @@ class ToolDependency( object ):
 
     @property
     def can_uninstall( self ):
-        # A tool dependency can be uninstalled only if it is currently in an error state.  Only the containing
-        # repository can be uninstalled if a tool dependency is properly installed.
-        return self.status in [ self.installation_status.ERROR ]
+        return self.status in [ self.installation_status.ERROR, self.installation_status.INSTALLED ]
 
     @property
     def can_update( self ):

@@ -144,11 +144,11 @@ class TestRepairRepository( ShedTwillTestCase ):
         This is step 2 - Uninstall the filter_1430 repository.
         '''
         installed_repository = self.test_db_util.get_installed_repository_by_name_owner( 'filter_1430', common.test_user_1_name )
-        strings_displayed = [ 'This repository cannot be uninstalled' ]
-        strings_not_displayed = [ 'Check to uninstall' ]
-        self.deactivate_repository( installed_repository, 
-                                    strings_displayed=strings_displayed, 
-                                    strings_not_displayed=strings_not_displayed  )
+        strings_displayed = [ 'Uninstalling this repository will affect the following dependent items' ]
+        strings_not_displayed = []
+        self.uninstall_repository( installed_repository, 
+                                   strings_displayed=strings_displayed, 
+                                   strings_not_displayed=strings_not_displayed  )
         strings_not_displayed = [ 'filter_1430',
                                   "Galaxy's filter tool for test 1430",
                                   installed_repository.installed_changeset_revision ]

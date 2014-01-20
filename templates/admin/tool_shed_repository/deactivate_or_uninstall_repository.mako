@@ -38,21 +38,76 @@ ${render_galaxy_repository_actions( repository )}
             <div class="form-row">
                 <%
                     can_deactivate_repository = repository.can_deactivate
-                    can_uninstall_repository = repository.can_uninstall( trans.app )
+                    can_uninstall_repository = repository.can_uninstall
                 %>
-                %if can_deactivate_repository and can_uninstall_repository:
-                    <% deactivate_uninstall_button_text = "Deactivate or Uninstall" %>
-                    ${remove_from_disk_check_box.get_html()}
-                    <label for="repository" style="display: inline;font-weight:normal;">Check to uninstall or leave blank to deactivate</label>
-                    <br/><br/>
-                %elif can_deactivate_repository:
-                    <% deactivate_uninstall_button_text = "Deactivate" %>
-                %else:
-                    <% deactivate_uninstall_button_text = "Uninstall" %>
-                    ##hack to mimic check box
-                    <input type="hidden" name="remove_from_disk" value="true"/><input type="hidden" name="remove_from_disk" value="true"/>
+                %if can_deactivate_repository:
+                    <table width="100%" border="0" cellpadding="0" cellspacing="0">
+                        <tr>
+                            <td bgcolor="#D8D8D8">
+                                <label>Deactivating this repository will result in the following:</label>
+                            </td>
+                        </tr>
+                    </table>
+                    <div class="toolParamHelp" style="clear: both;">
+                            * The repository and all of it's contents will remain on disk and can still be used by dependent items.
+                    </div>
+                    %if repository.includes_tools_for_display_in_tool_panel:
+                        <div class="toolParamHelp" style="clear: both;">
+                            * The repository's tools will not be loaded into the tool panel.
+                        </div>
+                    %endif
+                    %if repository.includes_tool_dependencies:
+                        <div class="toolParamHelp" style="clear: both;">
+                            * The repository's installed tool dependencies will remain on disk.
+                        </div>
+                    %endif
+                    %if repository.includes_datatypes:
+                        <div class="toolParamHelp" style="clear: both;">
+                            * The repository's datatypes, datatype converters and display applications will be eliminated from the datatypes registry.
+                        </div>
+                    %endif
+                    <div class="toolParamHelp" style="clear: both;">
+                        * The repository record's deleted column in the tool_shed_repository database table will be set to True.
+                    </div>
+                    <br/>
                 %endif
-                %if not can_uninstall_repository:
+                %if can_uninstall_repository:
+                    <table width="100%" border="0" cellpadding="0" cellspacing="0">
+                        <tr>
+                            <td bgcolor="#D8D8D8">
+                                <label>Uninstalling this repository will result in the following:</label>
+                            </td>
+                        </tr>
+                    </table>
+                    <div class="toolParamHelp" style="clear: both;">
+                        * The repository and all of it's contents will be removed from disk and can no longer be used by dependent items.
+                    </div>
+                    %if repository.includes_tools_for_display_in_tool_panel:
+                        <div class="toolParamHelp" style="clear: both;">
+                            * The repository's tool tag sets will be removed from the tool config file in which they are defined.
+                        </div>
+                    %endif
+                    %if repository.includes_tool_dependencies:
+                        <div class="toolParamHelp" style="clear: both;">
+                            * The repository's installed tool dependencies will be removed from disk and can no longer be used by dependent items.
+                        </div>
+                        <div class="toolParamHelp" style="clear: both;">
+                            * Each associated tool dependency record's status column in the tool_dependency database table will be set to 'Uninstalled'.
+                        </div>
+                    %endif
+                    %if repository.includes_datatypes:
+                        <div class="toolParamHelp" style="clear: both;">
+                            * The repository's datatypes, datatype converters and display applications will be eliminated from the datatypes registry.
+                        </div>
+                    %endif
+                    <div class="toolParamHelp" style="clear: both;">
+                        * The repository record's deleted column in the tool_shed_repository database table will be set to True.
+                    </div>
+                    <div class="toolParamHelp" style="clear: both;">
+                        * The repository record's uninstalled column in the tool_shed_repository database table will be set to True.
+                    </div>
+                    <div style="clear: both"></div>
+                    <br/>
                     <%
                         from tool_shed.util.repository_dependency_util import get_repository_tuple_for_installed_repository_manager
                         from tool_shed.util.tool_dependency_util import get_tool_dependency_tuple_for_installed_repository_manager
@@ -80,7 +135,7 @@ ${render_galaxy_repository_actions( repository )}
                         <table width="100%" border="0" cellpadding="0" cellspacing="0">
                             <tr>
                                 <td bgcolor="#D8D8D8">
-                                    <label>This repository cannot be uninstalled because it is required by the following installed items:</label>
+                                    <label>Uninstalling this repository will affect the following dependent items:</label>
                                 </td>
                             </tr>
                         </table>
@@ -116,77 +171,24 @@ ${render_galaxy_repository_actions( repository )}
                         <br/>
                     %endif
                 %endif
-                %if can_deactivate_repository:
-                    <table width="100%" border="0" cellpadding="0" cellspacing="0">
-                        <tr>
-                            <td bgcolor="#D8D8D8">
-                                <label>Deactivating this repository will result in the following:</label>
-                            </td>
-                        </tr>
-                    </table>
-                    <div class="toolParamHelp" style="clear: both;">
-                            * The repository and all of it's contents will remain on disk.
-                    </div>
-                    %if repository.includes_tools_for_display_in_tool_panel:
-                        <div class="toolParamHelp" style="clear: both;">
-                            * The repository's tools will not be loaded into the tool panel.
-                        </div>
-                    %endif
-                    %if repository.includes_tool_dependencies:
-                        <div class="toolParamHelp" style="clear: both;">
-                            * The repository's installed tool dependencies will remain on disk.
-                        </div>
-                    %endif
-                    %if repository.includes_datatypes:
-                        <div class="toolParamHelp" style="clear: both;">
-                            * The repository's datatypes, datatype converters and display applications will be eliminated from the datatypes registry.
-                        </div>
-                    %endif
-                    <div class="toolParamHelp" style="clear: both;">
-                        * The repository record's deleted column in the tool_shed_repository database table will be set to True.
-                    </div>
-                    <br/>
-                %endif
-                %if can_uninstall_repository:
-                    <table width="100%" border="0" cellpadding="0" cellspacing="0">
-                        <tr>
-                            <td bgcolor="#D8D8D8">
-                                <label>Uninstalling this repository will result in the following:</label>
-                            </td>
-                        </tr>
-                    </table>
-                    <div class="toolParamHelp" style="clear: both;">
-                        * The repository and all of it's contents will be removed from disk.
-                    </div>
-                    %if repository.includes_tools_for_display_in_tool_panel:
-                        <div class="toolParamHelp" style="clear: both;">
-                            * The repository's tool tag sets will be removed from the tool config file in which they are defined.
-                        </div>
-                    %endif
-                    %if repository.includes_tool_dependencies:
-                        <div class="toolParamHelp" style="clear: both;">
-                            * The repository's installed tool dependencies will be removed from disk.
-                        </div>
-                        <div class="toolParamHelp" style="clear: both;">
-                            * Each associated tool dependency record's status column in the tool_dependency database table will be set to 'Uninstalled'.
-                        </div>
-                    %endif
-                    %if repository.includes_datatypes:
-                        <div class="toolParamHelp" style="clear: both;">
-                            * The repository's datatypes, datatype converters and display applications will be eliminated from the datatypes registry.
-                        </div>
-                    %endif
-                    <div class="toolParamHelp" style="clear: both;">
-                        * The repository record's deleted column in the tool_shed_repository database table will be set to True.
-                    </div>
-                    <div class="toolParamHelp" style="clear: both;">
-                        * The repository record's uninstalled column in the tool_shed_repository database table will be set to True.
-                    </div>
-                    <div style="clear: both"></div>
-                    <br/>
-                %endif
             </div>
             <div class="form-row">
+                <%
+                    can_deactivate_repository = repository.can_deactivate
+                    can_uninstall_repository = repository.can_uninstall
+                %>
+                %if can_deactivate_repository and can_uninstall_repository:
+                    <% deactivate_uninstall_button_text = "Deactivate or Uninstall" %>
+                    ${remove_from_disk_check_box.get_html()}
+                    <label for="repository" style="display: inline;font-weight:normal;">Check to uninstall or leave blank to deactivate</label>
+                    <br/><br/>
+                %elif can_deactivate_repository:
+                    <% deactivate_uninstall_button_text = "Deactivate" %>
+                %else:
+                    <% deactivate_uninstall_button_text = "Uninstall" %>
+                    ##hack to mimic check box
+                    <input type="hidden" name="remove_from_disk" value="true"/><input type="hidden" name="remove_from_disk" value="true"/>
+                %endif
                 <input type="submit" name="deactivate_or_uninstall_repository_button" value="${deactivate_uninstall_button_text}"/>
             </div>
         </form>
