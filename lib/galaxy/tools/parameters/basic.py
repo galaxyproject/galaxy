@@ -1611,9 +1611,7 @@ class DataToolParameter( ToolParameter ):
                 filter_value = self.options.get_options( trans, other_values )[0][0]
             except IndexError:
                 pass  # no valid options
-        assert trans is not None, "DataToolParameter requires a trans"
-        history = trans.get_history()
-        assert history is not None, "DataToolParameter requires a history"
+        history = self._get_history( trans )
         if value is not None:
             if type( value ) != list:
                 value = [ value ]
@@ -1683,10 +1681,7 @@ class DataToolParameter( ToolParameter ):
         # Can't look at history in workflow mode. Tool shed has no histories.
         if trans is None or trans.workflow_building_mode or trans.webapp.name == 'tool_shed':
             return DummyDataset()
-        assert trans is not None, "DataToolParameter requires a trans"
-        if history is None:
-            history = trans.get_history()
-        assert history is not None, "DataToolParameter requires a history"
+        history = self._get_history( trans, history )
         if self.optional:
             return None
         most_recent_dataset = []
@@ -1859,6 +1854,14 @@ class DataToolParameter( ToolParameter ):
         if call_attribute:
             ref = ref()
         return ref
+
+    def _get_history( self, trans, history=None ):
+        class_name = self.__class__.__name__
+        assert trans is not None, "%s requires a trans" % class_name
+        if history is None:
+            history = trans.get_history()
+        assert history is not None, "%s requires a history" % class_name
+        return history
 
 
 class HiddenDataToolParameter( HiddenToolParameter, DataToolParameter ):
