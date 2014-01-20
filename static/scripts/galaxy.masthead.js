@@ -131,6 +131,7 @@ var GalaxyMasthead = Backbone.View.extend(
     // fill template
     _template: function(options)
     {
+        var brand_text = options.brand ? ("/ " + options.brand) : "" ;
         return  '<div><div id="masthead" class="navbar navbar-fixed-top navbar-inverse">' +
                     '<div style="position: relative; right: -50%; float: left;">' +
                         '<div id="navbar" style="display: block; position: relative; right: 50%;"></div>' +
@@ -138,7 +139,7 @@ var GalaxyMasthead = Backbone.View.extend(
                    '<div class="navbar-brand">' +
                         '<a href="' + options.logo_url + '">' +
                             '<img border="0" src="' + galaxy_config.root + 'static/images/galaxyIcon_noText.png">' +
-                            '<span id="brand"> Galaxy ' + options.brand + '</span>' +
+                            '<span id="brand"> Galaxy ' + brand_text + '</span>' +
                         '</a>' +
                     '</div>' +
                     '<div class="quota-meter-container"></div>' +
