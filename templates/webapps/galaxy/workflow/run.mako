@@ -139,7 +139,7 @@
                 var stepToolBox = $(this).parent().find('input:not([class]), select:not([class])');
                 var split_name=stepToolBox.attr("name").split("|");
                 var step_id = split_name[0];
-                var step_name = split_name[2];
+                var step_name = split_name[split_name.length-1];
                 hidden_html = "<input type='hidden' name='"+step_id+"|__runtime__"+step_name+"' value='true' />";
                 if (state === "edit"){
                     stepToolBoxClone = stepToolBox.clone();
@@ -152,9 +152,8 @@
                     $(this).val("Revert")
                 }
                 else{
-                    $(this).parent().find(".editable").html("");
-                    $(this).parent().find(".display").show()
-                    $(".uneditable_field").show();
+                    $(this).parent().find(".editable").hide();
+                    $(this).parent().parent().find(".uneditable_field").show();
                     $(this).attr("name","edit");
                     $(this).val("Edit")
                     stepToolBox.hide();
@@ -396,7 +395,7 @@ if wf_parms:
                         </span>
 
                         <input type="button" name="edit" value="Edit" class="edit"/>
-                        <input type="hidden" name="fallback" class="fallback" value="${param.value_to_display_text( value, app )}"
+                        <input type="hidden" name="fallback" class="fallback" value="${param.value_to_display_text( value, app )}"/>
                     </span>
                 </span>
                 %endif
