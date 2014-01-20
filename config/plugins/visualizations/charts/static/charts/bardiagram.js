@@ -1,5 +1,5 @@
 // dependencies
-define(['library/utils'], function(Utils) {
+define([], function() {
 
 // widget
 return Backbone.View.extend(
@@ -8,7 +8,6 @@ return Backbone.View.extend(
     initialize: function(app, options) {
         this.app        = app;
         this.options    = options;
-        this.chart      = options.chart;
     },
             
     // render
