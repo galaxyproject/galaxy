@@ -145,7 +145,7 @@ def get_repository_dict( url, repository_dict ):
         extended_dict[ 'latest_revision' ] = str( latest_changeset_revision )
         return extended_dict, error_message
     else:
-        error_message = 'Invalid extended_dict does not contain name or woner entries: %s' % str( extended_dict )
+        error_message = 'Invalid extended_dict does not contain name or owner entries: %s' % str( extended_dict )
         return None, error_message
 
 def json_from_url( url ):

@@ -362,24 +362,21 @@ def get_repositories_to_install( tool_shed_url, test_framework ):
         if error_message:
             log.debug( 'Error getting additional details from the API: %s' % str(  error_message ) )
         else:
-            # Don't test deprecated repositories since testing them is necessary only if reproducibility is guaranteed
-            # and we are not currently guaranteeing reproducibility.
-            deprecated = asbool( repository_dict.get( 'deprecated', False ) )
-            if not deprecated:
-                # Don't test empty repositories.
-                changeset_revision = baseline_repository_dict[ 'changeset_revision' ]
-                if changeset_revision != suc.INITIAL_CHANGELOG_HASH:
-                    # If testing repositories of type tool_dependency_definition, filter accordingly.
-                    if test_framework == TOOL_DEPENDENCY_DEFINITIONS and repository_dict[ 'type' ] != rt_util.TOOL_DEPENDENCY_DEFINITION:
-                        continue
-                    # Merge the dictionary returned from /api/repository_revisions with the detailed repository_dict and
-                    # append it to the list of repository_dicts to install and test.
-                    if latest_revision_only:
-                        latest_revision = repository_dict[ 'latest_revision' ]
-                        if changeset_revision == latest_revision:
-                            repository_dicts.append( dict( repository_dict.items() + baseline_repository_dict.items() ) )
-                    else:
+            changeset_revision = baseline_repository_dict[ 'changeset_revision' ]
+            # We have to test deprecated repositories since other repositories can define them as dependencies, but 
+            # don't test empty repositories.
+            if changeset_revision != suc.INITIAL_CHANGELOG_HASH:
+                # If testing repositories of type tool_dependency_definition, filter accordingly.
+                if test_framework == TOOL_DEPENDENCY_DEFINITIONS and repository_dict[ 'type' ] != rt_util.TOOL_DEPENDENCY_DEFINITION:
+                    continue
+                # Merge the dictionary returned from /api/repository_revisions with the detailed repository_dict and
+                # append it to the list of repository_dicts to install and test.
+                if latest_revision_only:
+                    latest_revision = repository_dict[ 'latest_revision' ]
+                    if changeset_revision == latest_revision:
                         repository_dicts.append( dict( repository_dict.items() + baseline_repository_dict.items() ) )
+                else:
+                    repository_dicts.append( dict( repository_dict.items() + baseline_repository_dict.items() ) )
     if testing_single_repository_dict:
         tsr_name = testing_single_repository_dict[ 'name' ]
         tsr_owner = testing_single_repository_dict[ 'owner' ]
@@ -435,7 +432,7 @@ def get_repository_current_revision( repo_path ):
     hg_id = '%d:%s' % ( ctx_rev, str( changectx ) )
     return hg_id
 
-def get_repository_dependencies_for_changeset_revision( tool_shed_url, encoded_repository_metadata_id ):
+def get_repository_dependencies_dicts( tool_shed_url, encoded_repository_metadata_id ):
     """
     Return the list of dictionaries that define all repository dependencies of the repository_metadata
     record associated with the received encoded_repository_metadata_id via the Tool Shed API.
@@ -443,19 +440,6 @@ def get_repository_dependencies_for_changeset_revision( tool_shed_url, encoded_r
     error_message = ''
     parts = [ 'api', 'repository_revisions', encoded_repository_metadata_id, 'repository_dependencies' ]
     api_url = get_api_url( base=tool_shed_url, parts=parts )
-    repository_dependency_dicts, error_message = json_from_url( api_url )
-    if error_message:
-        return None, error_message
-    return repository_dependency_dicts, error_message
-
-def get_repository_dependencies_dicts( url, encoded_repository_metadata_id ):
-    """
-    Return a list if dictionaries that define the repository dependencies of the repository defined by the
-    received repository_dict.
-    """
-    error_message = ''
-    parts = [ 'api', 'repository_revisions', encoded_repository_metadata_id, 'repository_dependencies' ]
-    api_url = get_api_url( base=url, parts=parts )
     repository_dependencies_dicts, error_message = json_from_url( api_url )
     if error_message:
         return None, error_message
@@ -644,7 +628,7 @@ def is_excluded( exclude_list_dicts, name, owner, changeset_revision, encoded_re
             return True, reason
         # Skip this repository if it has a repository dependency that is in the exclude list.
         repository_dependency_dicts, error_message = \
-            get_repository_dependencies_for_changeset_revision( galaxy_tool_shed_url, encoded_repository_metadata_id )
+            get_repository_dependencies_dicts( galaxy_tool_shed_url, encoded_repository_metadata_id )
         if error_message:
             log.debug( 'Error getting repository dependencies for revision %s of repository %s owned by %s:' % \
                 ( changeset_revision, name, owner ) )
@@ -877,7 +861,7 @@ def populate_install_containers_for_repository_dependencies( app, repository, re
                 # has been updated within the past 12 hours.  The RepositoryMetadata class's to_dict() method
                 # returns the value of time_last_tested in datetime.isoformat().
                 twenty_hours_ago = ( datetime.utcnow() - timedelta( hours=20 ) ).isoformat()
-                time_last_tested, error_message = get_time_last_tested( galaxy_tool_shed_url, repository_metadata_id )
+                time_last_tested, error_message = get_time_last_tested( galaxy_tool_shed_url, required_repository_metadata_id )
                 if time_last_tested is not None and time_last_tested < twenty_hours_ago:
                     log.debug( 'The install containers for version %s of repository dependency %s owned by %s have been ' % \
                         ( changeset_revision, name, owner ) )

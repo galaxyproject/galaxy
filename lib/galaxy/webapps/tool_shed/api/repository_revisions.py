@@ -134,7 +134,12 @@ class RepositoryRevisionsController( BaseAPIController ):
     def repository_dependencies( self, trans, id, **kwd ):
         """
         GET /api/repository_revisions/{encoded repository_metadata id}/repository_dependencies
-        Displays information about a repository_metadata record in the Tool Shed.
+
+        Returns a list of dictionaries that each define a specific downloadable revision of a
+        repository in the Tool Shed.  This method returns dictionaries with more information in
+        them than other methods in this controller.  The information about repository_metdata is
+        enhanced to include information about the repository (e.g., name, owner, etc) associated
+        with the repository_metadata record.
 
         :param id: the encoded id of the `RepositoryMetadata` object
         """
@@ -182,14 +187,24 @@ class RepositoryRevisionsController( BaseAPIController ):
                     else:
                         changeset_revision = new_changeset_revision
                 repository_dependency_repository_metadata_id = trans.security.encode_id( repository_dependency_repository_metadata.id )
+                repository_dependency_metadata_dict = \
+                    repository_dependency_repository_metadata.to_dict( view='element',
+                                                                       value_mapper=self.__get_value_mapper( trans ) )
                 repository_dependency_dict = repository_dependency.to_dict( view='element',
                                                                             value_mapper=self.__get_value_mapper( trans ) )
-                # We have to add the changeset_revision of of the repository dependency.
-                repository_dependency_dict[ 'changeset_revision' ] = changeset_revision
-                repository_dependency_dict[ 'url' ] = web.url_for( controller='repositories',
-                                                                   action='show',
-                                                                   id=repository_dependency_id )
-                repository_dependencies_dicts.append( repository_dependency_dict )
+                # We need to be careful with the entries in our repository_dependency_dict here since this Tool Shed API
+                # controller is working with repository_metadata records.  The above to_dict() method returns a dictionary
+                # with an id entry for the repository record.  However, all of the other methods in this controller have
+                # the id entry associated with a repository_metadata record id.  To avoid confusion, we'll update the
+                # repository_dependency_metadata_dict with entries from the repository_dependency_dict without using the
+                # Python dictionary update() method because we do not want to overwrite existing entries.
+                for k, v in repository_dependency_dict.items():
+                    if k not in repository_dependency_metadata_dict:
+                        repository_dependency_metadata_dict[ k ] = v
+                repository_dependency_metadata_dict[ 'url' ] = web.url_for( controller='repositories',
+                                                                            action='show',
+                                                                            id=repository_dependency_id )
+                repository_dependencies_dicts.append( repository_dependency_metadata_dict )
         return repository_dependencies_dicts
 
     @web.expose_api_anonymous
