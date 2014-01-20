@@ -238,7 +238,7 @@ return Backbone.View.extend({
                             '<div style="position: relative;">' +
                                 '<div id="title" class="title"></div>' +
                                 '<div id="text" class="text">' +
-                                    '<div class="text-info">You may specify a list of URLs (one per line) or paste the contents of a file.</div>' +
+                                    '<div class="text-info">You can tell Galaxy to download data from web by entering URL in this box (one per line). You can also directly paste the contents of a file.</div>' +
                                     '<textarea id="text-content" class="text-content form-control"></textarea>' +
                                 '</div>' +
                             '</div>' +

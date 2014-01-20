@@ -165,8 +165,8 @@ return Backbone.View.extend(
         // create model
         this.button_show = new ProgressButtonModel({
             icon        : 'fa-upload',
-            tooltip     : 'Upload files',
-            label       : 'Upload',
+            tooltip     : 'Download from URL or upload files from disk',
+            label       : 'Load Data',
             onclick     : function(e) {
                 if (e) {
                     self._eventShow(e)
@@ -240,6 +240,8 @@ return Backbone.View.extend(
     {
         // prevent default
         e.preventDefault();
+        // stop propagation of event (for click-outside-of-modal-to-close functionality)
+        e.stopPropagation();
         
         // create modal
         if (!this.modal)
@@ -248,18 +250,19 @@ return Backbone.View.extend(
             var self = this;
             this.modal = new Modal.GalaxyModal(
             {
-                title   : 'Upload files from your local drive',
+                title   : 'Download data directly from web or upload files from your disk',
                 body    : this._template('upload-box', 'upload-info'),
                 buttons : {
-                    'Select'    : function() {self.uploadbox.select()},
-                    'Create'    : function() {self._eventCreate()},
-                    'Upload'    : function() {self._eventStart()},
+                    'Choose file'    : function() {self.uploadbox.select()},
+                    'from URL'    : function() {self._eventCreate()},
+                    'Start'    : function() {self._eventStart()},
                     'Pause'     : function() {self._eventStop()},
                     'Reset'     : function() {self._eventReset()},
                     'Close'     : function() {self.modal.hide()},
                 },
                 height      : '400',
-                width       : '900'
+                width       : '900',
+                bindClosingEvents: true
             });
         
             // set element
@@ -554,12 +557,12 @@ return Backbone.View.extend(
         if(this.counter.announce == 0)
         {
             if (this.uploadbox.compatible())
-                message = 'Drag&drop files into this box or click \'Select\' to select files!';
+                message = 'You can Drag & Drop files into this box.';
             else
-                message = 'Unfortunately, your browser does not support multiple file uploads or drag&drop.<br>Please upgrade to i.e. Firefox 4+, Chrome 7+, IE 10+, Opera 12+ or Safari 6+.'
+                message = 'Unfortunately, your browser does not support multiple file uploads or drag&drop.<br>Some supported browsers are: Firefox 4+, Chrome 7+, IE 10+, Opera 12+ or Safari 6+.'
         } else {
             if (this.counter.running == 0)
-                message = 'You added ' + this.counter.announce + ' file(s) to the queue. Add more files or click \'Upload\' to proceed.';
+                message = 'You added ' + this.counter.announce + ' file(s) to the queue. Add more files or click \'Start\' to proceed.';
             else
                 message = 'Please wait...' + this.counter.announce + ' out of ' + this.counter.running + ' remaining.';
         }
@@ -579,9 +582,9 @@ return Backbone.View.extend(
             
         // update upload button
         if (this.counter.running == 0 && this.counter.announce > 0)
-            this.modal.enableButton('Upload');
+            this.modal.enableButton('Start');
         else
-            this.modal.disableButton('Upload');
+            this.modal.disableButton('Start');
 
         // pause upload button
         if (this.counter.running > 0)
@@ -592,11 +595,11 @@ return Backbone.View.extend(
         // select upload button
         if (this.counter.running == 0)
         {
-            this.modal.enableButton('Select');
-            this.modal.enableButton('Create');
+            this.modal.enableButton('Choose file');
+            this.modal.enableButton('from URL');
         } else {
-            this.modal.disableButton('Select');
-            this.modal.disableButton('Create');
+            this.modal.disableButton('Choose file');
+            this.modal.disableButton('from URL');
         }
         
         // table visibility
