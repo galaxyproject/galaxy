@@ -2908,7 +2908,8 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                                                       action='import_capsule',
                                                                       **capsule_dict ) )
                 else:
-                    message = 'The capsule contents are invalid and cannpt be imported:<br/>%s' % str( capsule_dict.get( 'error_message', '' ) )
+                    message = 'The capsule contents are invalid and cannot be imported:<br/>%s' % \
+                        str( capsule_dict.get( 'error_message', '' ) )
         return trans.fill_template( '/webapps/tool_shed/repository/upload_capsule.mako',
                                     url=url,
                                     message=message,

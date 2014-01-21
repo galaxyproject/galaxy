@@ -213,7 +213,7 @@ class RepositoriesController( BaseAPIController ):
         capsule_dict = import_util.validate_capsule( trans, **capsule_dict )
         status = capsule_dict.get( 'status', 'error' )
         if status == 'error':
-            log.debug( 'The capsule contents are invalid and cannpt be imported:<br/>%s' % \
+            log.debug( 'The capsule contents are invalid and cannot be imported:<br/>%s' % \
                 str( capsule_dict.get( 'error_message', '' ) ) )
             return {}
         encoded_file_path = capsule_dict.get( 'encoded_file_path', None )
