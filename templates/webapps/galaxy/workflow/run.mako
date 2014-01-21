@@ -419,7 +419,7 @@ if wf_parms:
                 if isinstance(p_text, basestring):
                     for rematch in re.findall('\$\{.+?\}', p_text):
                         replacements.append('wf_parm__%s' % rematch[2:-1])
-                        p_text = p_text.replace(rematch, '<span style="background-color:%s" class="wfpspan wf_parm__%s">%s</span>' % (wf_parms[rematch[2:-1]], rematch[2:-1], rematch[2:-1]))
+                        p_text = p_text.replace(rematch, '<span style="background-color:%s" class="runtime-form-row wfpspan wf_parm__%s">%s</span>' % (wf_parms[rematch[2:-1]], rematch[2:-1], rematch[2:-1]))
                 %>
                 %if replacements:
                     <span style="display:none" class="parm_wrap ${' '.join(replacements)}">
