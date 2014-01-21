@@ -361,6 +361,7 @@ class UploadDataset( Group ):
                                   'filename' : os.path.basename( ftp_file ) }
                 file_bunch = get_data_file_filename( ftp_data_file, override_name = name, override_info = info )
                 if file_bunch.path:
+                    file_bunch.to_posix_lines = to_posix_lines
                     file_bunch.space_to_tab = space_to_tab
                     rval.append( file_bunch )
             return rval
