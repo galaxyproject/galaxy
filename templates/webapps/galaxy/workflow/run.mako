@@ -60,7 +60,7 @@
             }
             else {
                 // Collapse non-interactive run-workflow panels by default.
-                $("div.toolFormBody:not(:has(select, textarea, input[type!=hidden], .wfpspan))").hide().parent().css('border-bottom-width', '0px');
+                $("div.toolFormBody:not(:has(.runtime-form-row))").hide().parent().css('border-bottom-width', '0px');
             }
             $("#show_all_tool_body").click(function(){
                 $("div.toolFormTitle").each(function(){
@@ -229,8 +229,6 @@
                 });
                 return true;
             });
-            // hide parameters that are not runtime inputs
-            $("div.toolFormBody:not(:has(.runtime-form-row))").hide().parent().css('border-bottom-width', '0px');
         });
     </script>
 </%def>
