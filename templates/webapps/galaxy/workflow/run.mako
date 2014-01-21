@@ -176,7 +176,10 @@
                     readyParameter($(this));
                 }
             }).each(function(i, icon) {
-                readyParameter($(icon));
+                var conditionalStart = $(this).closest(".form-row").prev().hasClass("conditional-start");
+                if(! conditionalStart ) {
+                    readyParameter($(icon));
+                }
             });
 
             // Augment hidden fields with icons.
@@ -338,6 +341,7 @@ if wf_parms:
       <% current_case = group_values['__current_case__'] %>
       <% new_prefix = prefix + input.name + "|" %>
       <% group_errors = errors.get( input.name, {} ) %>
+      <span class="conditional-start"></span>
       ${row_for_param( input.test_param, group_values[ input.test_param.name ], other_values, group_errors, prefix, step, already_used )}
       ${do_inputs( input.cases[ current_case ].inputs, group_values, group_errors, new_prefix, step, other_values, already_used )}
     %else:
