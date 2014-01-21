@@ -134,7 +134,25 @@
             });
         // Editable Workflow
 
-         $(".edit").on("click",function(){
+        var readyParameter = function(icon) {
+            icon.attr("name", "edit");
+            icon.attr('title', "Modify default value for this workflow parameter.");
+            icon.removeClass("workflow-edit-button-editing");
+            icon.addClass("workflow-edit-button-ready");
+            icon.addClass("fa-edit");
+            icon.removeClass("fa-undo");
+        };
+
+        var editingParameter = function(icon) {
+            icon.attr("name", "revert");
+            icon.attr('title', "Restore workflow default value for this parameter.");
+            icon.addClass("workflow-edit-button-editing");
+            icon.removeClass("workflow-edit-button-ready");
+            icon.removeClass("fa-edit");
+            icon.addClass("fa-undo");
+        };
+
+         $(".workflow-edit-button").on("click",function(){
                 var state = $(this).attr("name");
                 var stepToolBox = $(this).parent().find('input:not([class]), select:not([class])');
                 var split_name=stepToolBox.attr("name").split("|");
@@ -148,17 +166,19 @@
                     $(this).parent().find(".editable").show();
                     $(this).parent().parent().find(".uneditable_field").hide();
                     $(this).parent().find(".editable").html(stepToolBoxClone.outerHTML()+hidden_html);
-                    $(this).attr("name","revert");
-                    $(this).val("Revert")
+                    editingParameter($(this));
                 }
                 else{
                     $(this).parent().find(".editable").hide();
                     $(this).parent().parent().find(".uneditable_field").show();
-                    $(this).attr("name","edit");
-                    $(this).val("Edit")
+                    $(this).attr("name", "edit");
                     stepToolBox.hide();
+                    readyParameter($(this));
                 }
+            }).each(function(i, icon) {
+                readyParameter($(icon));
             });
+
             // Augment hidden fields with icons.
             // http://stackoverflow.com/a/2088430
             $(function(){
@@ -249,6 +269,19 @@
     .editable {
         display: none;
     }
+
+    .workflow-edit-button-editing {
+        color: black;
+    }
+
+    .workflow-edit-button-default {
+        color: Gray;
+    }
+
+    .workflow-edit-button:hover {
+        color: green; // TODO: Use a history panel green.
+    }
+
     </style>
 </%def>
 
@@ -394,7 +427,7 @@ if wf_parms:
                             ${param.get_html_field( t, value, other_values).get_html( str(step.id) + "|" + "editable" + "|"+ prefix )}
                         </span>
 
-                        <input type="button" name="edit" value="Edit" class="edit"/>
+                        <i class="fa workflow-edit-button"></i>
                         <input type="hidden" name="fallback" class="fallback" value="${param.value_to_display_text( value, app )}"/>
                     </span>
                 </span>
