@@ -1712,7 +1712,7 @@ def set_image_paths( app, encoded_repository_id, text ):
     """
     if text:
         if app.name == 'galaxy':
-            route_to_images = '/admin_toolshed/static/images/%s' % encoded_repository_id
+            route_to_images = 'admin_toolshed/static/images/%s' % encoded_repository_id
         else:
             # We're in the tool shed.
             route_to_images = '/repository/static/images/%s' % encoded_repository_id
