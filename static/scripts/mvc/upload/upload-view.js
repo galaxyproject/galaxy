@@ -152,7 +152,7 @@ return Backbone.View.extend(
         var self = this;
             
         // wait for galaxy history panel (workaround due to the use of iframes)
-        if (!Galaxy.currHistoryPanel)
+        if (!Galaxy.currHistoryPanel || !Galaxy.currHistoryPanel.model)
         {
             window.setTimeout(function() { self.initialize() }, 500)
             return;
