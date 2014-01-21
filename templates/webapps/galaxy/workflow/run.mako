@@ -229,6 +229,8 @@
                 });
                 return true;
             });
+            // Hack to hide all steps onLoad
+            $("#hide_all_tool_body").trigger("click");
         });
     </script>
 </%def>
