@@ -229,8 +229,8 @@
                 });
                 return true;
             });
-            // Hack to collapse all steps onLoad
-            $("#hide_all_tool_body").trigger("click");
+            // hide parameters that are not runtime inputs
+            $("div.toolFormBody:not(:has(.runtime-form-row))").hide().parent().css('border-bottom-width', '0px');
         });
     </script>
 </%def>
@@ -381,12 +381,16 @@ if wf_parms:
                     %>
                     %if step.type == 'data_input':
                     ##Input Dataset Step, wrap for multiinput.
-                        <span class='multiinput_wrap'>
-                        <input class="multi-mode" type="hidden" name="${str(step.id)}|multi_mode" id="${str(step.id)}|multi_mode" value="matched" />
-                        ${param.get_html_field( t, value, other_values ).get_html( str(step.id) + "|" + prefix )}
+                        <span class="runtime-form-row">
+                            <span class='multiinput_wrap'>
+                            <input class="multi-mode" type="hidden" name="${str(step.id)}|multi_mode" id="${str(step.id)}|multi_mode" value="matched" />
+                            ${param.get_html_field( t, value, other_values ).get_html( str(step.id) + "|" + prefix )}
+                            </span>
                         </span>
                     %else:
-                        ${param.get_html_field( t, value, other_values ).get_html( str(step.id) + "|" + prefix )}
+                        <span class="runtime-form-row">
+                            ${param.get_html_field( t, value, other_values ).get_html( str(step.id) + "|" + prefix )}
+                        </span>
                     %endif
 
                     <input type="hidden" name="${step.id}|__force_update__${prefix}${param.name}" value="true" />
@@ -406,8 +410,10 @@ if wf_parms:
                     if not enable_unique_defaults:
                         del already_used[:]
                 %>
-                ${param.get_html_field( t, value, other_values ).get_html( str(step.id) + "|" + prefix )}
-                <input type="hidden" name="${step.id}|__runtime__${prefix}${param.name}" value="true" />
+                <span class="runtime-form-row">
+                    ${param.get_html_field( t, value, other_values ).get_html( str(step.id) + "|" + prefix )}
+                    <input type="hidden" name="${step.id}|__runtime__${prefix}${param.name}" value="true" />
+                </span>
             %else:
                 <%
                 p_text = param.value_to_display_text( value, app )
@@ -434,7 +440,6 @@ if wf_parms:
                         </span>
 
                         <i class="fa workflow-edit-button"></i>
-                        <input type="hidden" name="fallback" class="fallback" value="${param.value_to_display_text( value, app )}"/>
                     </span>
                 </span>
                 %endif
