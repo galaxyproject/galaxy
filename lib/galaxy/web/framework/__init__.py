@@ -812,11 +812,13 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
                     host = None
                 if host in UCSC_SERVERS:
                     return
-            external_display_path = url_for( controller='dataset', action='display_application' )
+            external_display_path = url_for( controller='',action='display_application' )
             if self.request.path.startswith( external_display_path ):
-                request_path_split = external_display_path.split( '/' )
+                request_path_split = self.request.path.split( '/' )
                 try:
-                    if self.app.datatypes_registry.display_applications.get( request_path_split[-5] ) and request_path_split[-4] in self.app.datatypes_registry.display_applications.get( request_path_split[-5] ).links and request_path_split[-3] != 'None':
+                    if self.app.datatypes_registry.display_applications.get( request_path_split[-5] ) and \
+                        request_path_split[-4] in self.app.datatypes_registry.display_applications.get( request_path_split[-5] ).links and \
+                        request_path_split[-3] != 'None':
                         return
                 except IndexError:
                     pass
