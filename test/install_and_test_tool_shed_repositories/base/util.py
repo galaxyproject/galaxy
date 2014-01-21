@@ -234,40 +234,42 @@ def display_repositories_by_owner( repository_dicts ):
     # Group summary display by repository owner.
     repository_dicts_by_owner = {}
     for repository_dict in repository_dicts:
-        name = str( repository_dict[ 'name' ] )
-        owner = str( repository_dict[ 'owner' ] )
-        changeset_revision = str( repository_dict[ 'changeset_revision' ] )
-        if owner in repository_dicts_by_owner:
-            repository_dicts_by_owner[ owner ].append( repository_dict )
-        else:
-            repository_dicts_by_owner[ owner ] = [ repository_dict ]
+        name = str( repository_dict.get( 'name', '' ) )
+        owner = str( repository_dict.get('owner', '' ) )
+        changeset_revision = str( repository_dict.get( 'changeset_revision', '' ) )
+        if owner:
+            if owner in repository_dicts_by_owner:
+                repository_dicts_by_owner[ owner ].append( repository_dict )
+            else:
+                repository_dicts_by_owner[ owner ] = [ repository_dict ]
     # Display grouped summary.
     for owner, grouped_repository_dicts in repository_dicts_by_owner.items():
         print "# "
         for repository_dict in grouped_repository_dicts:
-            name = str( repository_dict[ 'name' ] )
-            owner = str( repository_dict[ 'owner' ] )
-            changeset_revision = str( repository_dict[ 'changeset_revision' ] )
+            name = str( repository_dict.get( 'name', '' ) )
+            owner = str( repository_dict.get( 'owner', '' ) )
+            changeset_revision = str( repository_dict.get( 'changeset_revision', '' ) )
             print "# Revision %s of repository %s owned by %s" % ( changeset_revision, name, owner )
 
 def display_tool_dependencies_by_name( tool_dependency_dicts ):
     # Group summary display by repository owner.
     tool_dependency_dicts_by_name = {}
     for tool_dependency_dict in tool_dependency_dicts:
-        name = str( tool_dependency_dict[ 'name' ] )
-        type = str( tool_dependency_dict[ 'type' ] )
-        version = str( tool_dependency_dict[ 'version' ] )
-        if name in tool_dependency_dicts_by_name:
-            tool_dependency_dicts_by_name[ name ].append( tool_dependency_dict )
-        else:
-            tool_dependency_dicts_by_name[ name ] = [ tool_dependency_dict ]
+        name = str( tool_dependency_dict.get( 'name', '' ) )
+        type = str( tool_dependency_dict.get( 'type', '' ) )
+        version = str( tool_dependency_dict.get( 'version', '' ) )
+        if name:
+            if name in tool_dependency_dicts_by_name:
+                tool_dependency_dicts_by_name[ name ].append( tool_dependency_dict )
+            else:
+                tool_dependency_dicts_by_name[ name ] = [ tool_dependency_dict ]
     # Display grouped summary.
     for name, grouped_tool_dependency_dicts in tool_dependency_dicts_by_name.items():
         print "# "
         for tool_dependency_dict in grouped_tool_dependency_dicts:
-            type = str( tool_dependency_dict[ 'type' ] )
-            name = str( tool_dependency_dict[ 'name' ] )
-            version = str( tool_dependency_dict[ 'version' ] )
+            type = str( tool_dependency_dict.get( 'type', '' ) )
+            name = str( tool_dependency_dict.get( 'name', '' ) )
+            version = str( tool_dependency_dict.get( 'version', '' ) )
             print "# %s %s version %s" % ( type, name, version )
 
 def get_database_version( app ):
@@ -292,15 +294,15 @@ def get_missing_repository_dependencies( repository ):
     Return the entire list of missing repository dependencies for the received repository.  The entire
     dependency tree will be inspected.
     """
-    log.debug( 'Checking revision %s of repository %s owned by %s for missing repository dependencies.' % \
-        ( str( repository.changeset_revision ), str( repository.name ), str( repository.owner ) ) )
+    print 'Checking revision %s of repository %s owned by %s for missing repository dependencies.' % \
+        ( repository.changeset_revision, repository.name, repository.owner )
     missing_repository_dependencies = repository.missing_repository_dependencies
     for missing_required_repository in missing_repository_dependencies:
-        log.debug( 'Revision %s of required repository %s owned by %s has status %s.' % \
-            ( str( missing_required_repository.changeset_revision ),
-              str( missing_required_repository.name ),
-              str( missing_required_repository.owner ),
-              str( missing_required_repository.status ) ) )
+        print 'Revision %s of required repository %s owned by %s has status %s.' % \
+            ( missing_required_repository.changeset_revision,
+              missing_required_repository.name,
+              missing_required_repository.owner,
+              missing_required_repository.status )
     for repository_dependency in repository.repository_dependencies:
         if repository_dependency.missing_repository_dependencies:
             missing_repository_dependencies.extend( get_missing_repository_dependencies( repository_dependency ) )
@@ -311,12 +313,12 @@ def get_missing_tool_dependencies( repository ):
     Return the entire list of missing tool dependencies for the received repository.  The entire
     dependency tree will be inspected.
     """
-    log.debug( 'Checking revision %s of repository %s owned by %s for missing tool dependencies.' % \
-        ( str( repository.changeset_revision ), str( repository.name ), str( repository.owner ) ) )
+    print 'Checking revision %s of repository %s owned by %s for missing tool dependencies.' % \
+        ( repository.changeset_revision, repository.name, repository.owner )
     missing_tool_dependencies = repository.missing_tool_dependencies
     for missing_tool_dependency in missing_tool_dependencies:
-        log.debug( 'Tool dependency %s version %s has status %s.' % \
-            ( str( missing_tool_dependency.name ), str( missing_tool_dependency.version ), str( missing_tool_dependency.status ) ) )
+        print 'Tool dependency %s version %s has status %s.' % \
+            ( missing_tool_dependency.name, missing_tool_dependency.version, missing_tool_dependency.status )
     for repository_dependency in repository.repository_dependencies:
         if repository_dependency.includes_tool_dependencies:
             missing_tool_dependencies.extend( get_missing_tool_dependencies( repository_dependency ) )
@@ -334,7 +336,7 @@ def get_repositories_to_install( tool_shed_url, test_framework ):
     error_message = ''
     latest_revision_only = '-check_all_revisions' not in sys.argv
     if latest_revision_only:
-        log.debug( 'Testing is restricted to the latest downloadable revision in this test run.' )
+        print 'Testing is restricted to the latest downloadable revision in this test run.'
     repository_dicts = []
     parts = [ 'repository_revisions' ]
     # We'll filter out deprecated repositories from testing since testing them is necessary only if reproducibility
@@ -360,32 +362,35 @@ def get_repositories_to_install( tool_shed_url, test_framework ):
         # module that will generate the install methods.
         repository_dict, error_message = get_repository_dict( galaxy_tool_shed_url, baseline_repository_dict )
         if error_message:
-            log.debug( 'Error getting additional details from the API: %s' % str(  error_message ) )
+            print 'Error getting additional details from the API: %s' % error_message
         else:
-            changeset_revision = baseline_repository_dict[ 'changeset_revision' ]
-            # We have to test deprecated repositories since other repositories can define them as dependencies, but 
-            # don't test empty repositories.
-            if changeset_revision != suc.INITIAL_CHANGELOG_HASH:
-                # If testing repositories of type tool_dependency_definition, filter accordingly.
-                if test_framework == TOOL_DEPENDENCY_DEFINITIONS and repository_dict[ 'type' ] != rt_util.TOOL_DEPENDENCY_DEFINITION:
-                    continue
-                # Merge the dictionary returned from /api/repository_revisions with the detailed repository_dict and
-                # append it to the list of repository_dicts to install and test.
-                if latest_revision_only:
-                    latest_revision = repository_dict[ 'latest_revision' ]
-                    if changeset_revision == latest_revision:
+            deprecated = asbool( repository_dict.get( 'deprecated', False ) )
+            # Filter deprecated repositories in the initial query.  Repositories included in the query may have
+            # repository dependencies that are deprecated though.
+            if not deprecated:
+                changeset_revision = baseline_repository_dict.get( 'changeset_revision', suc.INITIAL_CHANGELOG_HASH )
+                if changeset_revision != suc.INITIAL_CHANGELOG_HASH:
+                    # If testing repositories of type tool_dependency_definition, filter accordingly.
+                    if test_framework == TOOL_DEPENDENCY_DEFINITIONS and \
+                        repository_dict.get( 'type', None ) != rt_util.TOOL_DEPENDENCY_DEFINITION:
+                        continue
+                    # Merge the dictionary returned from /api/repository_revisions with the detailed repository_dict and
+                    # append it to the list of repository_dicts to install and test.
+                    if latest_revision_only:
+                        latest_revision = repository_dict.get( 'latest_revision', None )
+                        if changeset_revision == latest_revision:
+                            repository_dicts.append( dict( repository_dict.items() + baseline_repository_dict.items() ) )
+                    else:
                         repository_dicts.append( dict( repository_dict.items() + baseline_repository_dict.items() ) )
-                else:
-                    repository_dicts.append( dict( repository_dict.items() + baseline_repository_dict.items() ) )
     if testing_single_repository_dict:
-        tsr_name = testing_single_repository_dict[ 'name' ]
-        tsr_owner = testing_single_repository_dict[ 'owner' ]
-        tsr_changeset_revision = testing_single_repository_dict[ 'changeset_revision' ]
-        log.debug( 'Testing single repository with name %s and owner %s.' % ( str( tsr_name ), str( tsr_owner ) ) )
+        tsr_name = testing_single_repository_dict.get( 'name', None )
+        tsr_owner = testing_single_repository_dict.get( 'owner', None )
+        tsr_changeset_revision = testing_single_repository_dict.get( 'changeset_revision', None )
+        print 'Testing single repository with name %s and owner %s.' % ( tsr_name, tsr_owner )
         for repository_to_install in repository_dicts:
-            rti_name = repository_to_install[ 'name' ]
-            rti_owner = repository_to_install[ 'owner' ]
-            rti_changeset_revision = repository_to_install[ 'changeset_revision' ]
+            rti_name = repository_to_install.get( 'name', None )
+            rti_owner = repository_to_install.get( 'owner', None )
+            rti_changeset_revision = repository_to_install.get( 'changeset_revision', None )
             if rti_name == tsr_name and rti_owner == tsr_owner:
                 if tsr_changeset_revision is None:
                     return [ repository_to_install ], error_message
@@ -395,17 +400,17 @@ def get_repositories_to_install( tool_shed_url, test_framework ):
         return repository_dicts, error_message
     # Get a list of repositories to test from the tool shed specified in the GALAXY_INSTALL_TEST_TOOL_SHED_URL
     # environment variable.
-    log.debug( "The Tool Shed's API url...\n%s" % str( api_url ) )
-    log.debug( "...retrieved %d repository revisions for installation and possible testing." % len( repository_dicts ) )
-    log.debug( "Repository revisions for testing:" )
+    print "The Tool Shed's API url...\n%s" % api_url
+    print "...retrieved %d repository revisions for installation and possible testing." % len( repository_dicts )
+    print "Repository revisions for testing:"
     for repository_dict in repository_dicts:
         repository_id = str( repository_dict.get( 'repository_id', None ) )
         repository_metadata_id = str( repository_dict.get( 'id', None ) )
         name = str( repository_dict.get( 'name', None ) )
         owner = str( repository_dict.get( 'owner', None ) )
         changeset_revision = str( repository_dict.get( 'changeset_revision', None ) )
-        log.debug( "Revision %s of repository %s owned by %s with repository_id %s, (repository_metadata) id %s" % \
-            ( changeset_revision, name, owner, repository_id, repository_metadata_id ) )
+        print "Revision %s of repository %s owned by %s with repository_id %s, (repository_metadata) id %s" % \
+            ( changeset_revision, name, owner, repository_id, repository_metadata_id )
     return repository_dicts, error_message
 
 def get_repository( name, owner, changeset_revision ):
@@ -549,9 +554,8 @@ def initialize_install_and_test_statistics_dict( test_framework ):
     install_and_test_statistics_dict[ 'successful_tool_dependency_installations' ] = []
     install_and_test_statistics_dict[ 'repositories_with_installation_error' ] = []
     install_and_test_statistics_dict[ 'tool_dependencies_with_installation_error' ] = []
-    if test_framework == REPOSITORIES_WITH_TOOLS:
-        install_and_test_statistics_dict[ 'all_tests_passed' ] = []
-        install_and_test_statistics_dict[ 'at_least_one_test_failed' ] = []
+    install_and_test_statistics_dict[ 'all_tests_passed' ] = []
+    install_and_test_statistics_dict[ 'at_least_one_test_failed' ] = []
     return install_and_test_statistics_dict
 
 def initialize_tool_tests_results_dict( app, tool_test_results_dict ):
@@ -589,12 +593,12 @@ def initialize_tool_tests_results_dict( app, tool_test_results_dict ):
 
 def install_repository( app, repository_dict ):
     """Install a repository defined by the received repository_dict from the tool shed into Galaxy."""
-    name = str( repository_dict[ 'name' ] )
-    owner = str( repository_dict[ 'owner' ] )
-    changeset_revision = str( repository_dict[ 'changeset_revision' ] )
+    name = str( repository_dict.get( 'name', None ) )
+    owner = str( repository_dict.get( 'owner', None ) )
+    changeset_revision = str( repository_dict.get( 'changeset_revision', None ) )
     error_message = ''
     repository = None
-    log.debug( "Installing revision %s of repository %s owned by %s." % ( changeset_revision, name, owner ) )
+    print "Installing revision %s of repository %s owned by %s." % ( changeset_revision, name, owner )
     # Use the repository information dictionary to generate an install method that will install the repository into the
     # embedded Galaxy application, with tool dependencies and repository dependencies, if any.
     test_install_repositories.generate_install_method( repository_dict )
@@ -617,34 +621,33 @@ def is_excluded( exclude_list_dicts, name, owner, changeset_revision, encoded_re
     be excluded from testing for any reason.
     """
     for exclude_dict in exclude_list_dicts:
-        reason = exclude_dict[ 'reason' ]
-        exclude_repositories = exclude_dict[ 'repositories' ]
+        reason = exclude_dict.get( 'reason', '' )
+        exclude_repositories = exclude_dict.get( 'repositories', None )
         # 'repositories':
         #    [( name, owner, changeset_revision if changeset_revision else None ),
         #     ( name, owner, changeset_revision if changeset_revision else None )]
         if ( name, owner, changeset_revision ) in exclude_repositories or ( name, owner, None ) in exclude_repositories:
-            log.debug( 'Revision %s of repository %s owned by %s is excluded from testing because:\n%s' % \
-                ( str( changeset_revision ), str( name ), str( owner ), str( reason ) ) )
+            print 'Revision %s of repository %s owned by %s is excluded from testing because:\n%s' % \
+                ( changeset_revision, name, owner, reason )
             return True, reason
         # Skip this repository if it has a repository dependency that is in the exclude list.
         repository_dependency_dicts, error_message = \
             get_repository_dependencies_dicts( galaxy_tool_shed_url, encoded_repository_metadata_id )
         if error_message:
-            log.debug( 'Error getting repository dependencies for revision %s of repository %s owned by %s:' % \
-                ( changeset_revision, name, owner ) )
-            log.debug( error_message )
+            print 'Error getting repository dependencies for revision %s of repository %s owned by %s:' % \
+                ( changeset_revision, name, owner )
+            print error_message
         else:
             for repository_dependency_dict in repository_dependency_dicts:
-                rd_name = repository_dependency_dict[ 'name' ]
-                rd_owner = repository_dependency_dict[ 'owner' ]
-                rd_changeset_revision = repository_dependency_dict[ 'changeset_revision' ]
+                rd_name = repository_dependency_dict.get( 'name', '' )
+                rd_owner = repository_dependency_dict.get( 'owner', '' )
+                rd_changeset_revision = repository_dependency_dict.get( 'changeset_revision', '' )
                 if ( rd_name, rd_owner, rd_changeset_revision ) in exclude_repositories or \
                     ( rd_name, rd_owner, None ) in exclude_repositories:
-                    log_msg = 'Revision %s of repository %s owned by %s is excluded from testing because ' % \
-                        ( str( changeset_revision ), str( name ), str( owner ), str( reason ) )
-                    log_msg += 'it requires revision %s of repository %s owned by %s (which is excluded from testing).' % \
+                    print 'Revision %s of repository %s owned by %s is excluded from testing because ' % \
+                        ( changeset_revision, name, owner, reason )
+                    print 'it requires revision %s of repository %s owned by %s (which is excluded from testing).' % \
                         ( rd_changeset_revision, rd_name, rd_owner )
-                    log.debug( log_msg )
                     reason = 'This repository requires revision %s of repository %s owned by %s which is excluded from testing.' % \
                         ( rd_changeset_revision, rd_name, rd_owner )
                     return True, reason
@@ -690,8 +693,7 @@ def parse_exclude_list( xml_filename ):
     exclude_tups = []
     xml_tree, error_message = parse_xml( xml_filename )
     if error_message:
-        log.debug( 'The exclude file %s is invalid, so no repositories will be excluded from testing: %s' % \
-            ( str( xml_filename ), str( error_message ) ) )
+        print 'The exclude file %s is invalid, so no repositories will be excluded from testing: %s' % ( xml_filename, error_message )
         return exclude_list
     tool_sheds = xml_tree.findall( 'repositories' )
     xml_element = []
@@ -717,15 +719,14 @@ def parse_exclude_list( xml_filename ):
                 exclude_dict[ 'repositories' ].append( repository_tuple )
         exclude_list.append( exclude_dict )
     if exclude_tups:
-        log.debug( 'The exclude file %s defines the following %d repositories to be excluded from testing:' % \
-            ( str( xml_filename ), exclude_count ) )
+        print 'The exclude file %s defines the following %d repositories to be excluded from testing:' % ( xml_filename, exclude_count )
         for name, owner, changeset_revision in exclude_tups:
             if changeset_revision:
-                log.debug( 'Revision %s of repository %s owned by %s.' % ( str( changeset_revision ), str( name ), str( owner ) ) )
+                print 'Revision %s of repository %s owned by %s.' % ( changeset_revision, name, owner )
             else:
-                log.debug( 'All revisions of repository %s owned by %s.' % ( str( name ), str( owner ) ) )
+                print 'All revisions of repository %s owned by %s.' % ( name, owner )
     else:
-        log.debug( 'The exclude file %s defines no repositories to be excluded from testing.' % str( xml_filename ) )
+        print 'The exclude file %s defines no repositories to be excluded from testing.' % xml_filename
     return exclude_list
 
 def populate_dependency_install_containers( app, repository, repository_identifier_dict, install_and_test_statistics_dict,
@@ -743,8 +744,8 @@ def populate_dependency_install_containers( app, repository, repository_identifi
     params = dict( test_install_error=False,
                    do_not_test=False )
     if repository.missing_repository_dependencies:
-        log.debug( 'The following repository dependencies for revision %s of repository %s owned by %s have installation errors:' % \
-            ( repository_changeset_revision, repository_name, repository_owner ) )
+        print 'The following repository dependencies for revision %s of repository %s owned by %s have installation errors:' % \
+            ( repository_changeset_revision, repository_name, repository_owner )
         params[ 'test_install_error' ] = True
         # Keep statistics for this repository's repository dependencies that resulted in installation errors.
         for missing_repository_dependency in repository.missing_repository_dependencies:
@@ -753,7 +754,7 @@ def populate_dependency_install_containers( app, repository, repository_identifi
             owner = str( missing_repository_dependency.owner )
             changeset_revision = str( missing_repository_dependency.changeset_revision )
             error_message = unicodify( missing_repository_dependency.error_message )
-            log.debug( 'Revision %s of repository %s owned by %s:\n%s' % ( changeset_revision, name, owner, error_message ) )
+            print 'Revision %s of repository %s owned by %s:\n%s' % ( changeset_revision, name, owner, error_message )
             missing_repository_dependency_info_dict = dict( tool_shed=tool_shed,
                                                             name=name,
                                                             owner=owner,
@@ -762,8 +763,8 @@ def populate_dependency_install_containers( app, repository, repository_identifi
             install_and_test_statistics_dict[ 'repositories_with_installation_error' ].append( missing_repository_dependency_info_dict )
             tool_test_results_dict[ 'installation_errors' ][ 'repository_dependencies' ].append( missing_repository_dependency_info_dict )
     if repository.missing_tool_dependencies:
-        log.debug( 'The following tool dependencies for revision %s of repository %s owned by %s have installation errors:' % \
-            ( repository_changeset_revision, repository_name, repository_owner ) )
+        print 'The following tool dependencies for revision %s of repository %s owned by %s have installation errors:' % \
+            ( repository_changeset_revision, repository_name, repository_owner )
         params[ 'test_install_error' ] = True
         # Keep statistics for this repository's tool dependencies that resulted in installation errors.
         for missing_tool_dependency in repository.missing_tool_dependencies:
@@ -771,7 +772,7 @@ def populate_dependency_install_containers( app, repository, repository_identifi
             type = str( missing_tool_dependency.type )
             version = str( missing_tool_dependency.version )
             error_message = unicodify( missing_tool_dependency.error_message )
-            log.debug( 'Version %s of tool dependency %s %s:\n%s' % ( version, type, name, error_message ) )
+            print 'Version %s of tool dependency %s %s:\n%s' % ( version, type, name, error_message )
             missing_tool_dependency_info_dict = dict( type=type,
                                                       name=name,
                                                       version=version,
@@ -779,15 +780,15 @@ def populate_dependency_install_containers( app, repository, repository_identifi
             install_and_test_statistics_dict[ 'tool_dependencies_with_installation_error' ].append( missing_tool_dependency_info_dict )
             tool_test_results_dict[ 'installation_errors' ][ 'tool_dependencies' ].append( missing_tool_dependency_info_dict )
     if repository.installed_repository_dependencies:
-        log.debug( 'The following repository dependencies for revision %s of repository %s owned by %s are installed:' % \
-            ( repository_changeset_revision, repository_name, repository_owner ) )
+        print 'The following repository dependencies for revision %s of repository %s owned by %s are installed:' % \
+            ( repository_changeset_revision, repository_name, repository_owner )
         # Keep statistics for this repository's tool dependencies that resulted in successful installations.
         for repository_dependency in repository.installed_repository_dependencies:
             tool_shed = str( repository_dependency.tool_shed )
             name = str( repository_dependency.name )
             owner = str( repository_dependency.owner )
             changeset_revision = str( repository_dependency.changeset_revision )
-            log.debug( 'Revision %s of repository %s owned by %s.' % ( changeset_revision, name, owner ) )
+            print 'Revision %s of repository %s owned by %s.' % ( changeset_revision, name, owner )
             repository_dependency_info_dict = dict( tool_shed=tool_shed,
                                                     name=name,
                                                     owner=owner,
@@ -795,15 +796,15 @@ def populate_dependency_install_containers( app, repository, repository_identifi
             install_and_test_statistics_dict[ 'successful_repository_installations' ].append( repository_dependency_info_dict )
             tool_test_results_dict[ 'successful_installations' ][ 'repository_dependencies' ].append( repository_dependency_info_dict )
     if repository.installed_tool_dependencies:
-        log.debug( 'The following tool dependencies for revision %s of repository %s owned by %s are installed:' % \
-            ( repository_changeset_revision, repository_name, repository_owner ) )
+        print 'The following tool dependencies for revision %s of repository %s owned by %s are installed:' % \
+            ( repository_changeset_revision, repository_name, repository_owner )
         # Keep statistics for this repository's tool dependencies that resulted in successful installations.
         for tool_dependency in repository.installed_tool_dependencies:
             name = str( tool_dependency.name )
             type = str( tool_dependency.type )
             version = str( tool_dependency.version )
             installation_directory = tool_dependency.installation_directory( app )
-            log.debug( 'Version %s of tool dependency %s %s is installed in: %s' % ( version, type, name, installation_directory ) )
+            print 'Version %s of tool dependency %s %s is installed in: %s' % ( version, type, name, installation_directory )
             tool_dependency_info_dict = dict( type=type,
                                               name=name,
                                               version=version,
@@ -827,35 +828,35 @@ def populate_install_containers_for_repository_dependencies( app, repository, re
     repository_changeset_revision = str( repository.changeset_revision )
     repository_dependencies_dicts, error_message = get_repository_dependencies_dicts( galaxy_tool_shed_url, repository_metadata_id )
     if error_message:
-        log.debug( 'Cannot check or populate repository dependency install containers for version %s of repository %s owned by %s ' % \
-            ( repository_changeset_revision, repository_name, repository_owner ) )
-        log.debug( 'due to the following error getting repository_dependencies_dicts:\n%s' % str( error_message ) )
+        print 'Cannot check or populate repository dependency install containers for version %s of repository %s owned by %s ' % \
+            ( repository_changeset_revision, repository_name, repository_owner )
+        print 'due to the following error getting repository_dependencies_dicts:\n%s' % str( error_message )
     else:
         for repository_dependencies_dict in repository_dependencies_dicts:
             if not isinstance( repository_dependencies_dict, dict ):
-                log.debug( 'Skipping invalid repository_dependencies_dict: %s' % str( repository_dependencies_dict ) )
+                print 'Skipping invalid repository_dependencies_dict: %s' % str( repository_dependencies_dict )
                 continue
             name = repository_dependencies_dict.get( 'name', None )
             owner = repository_dependencies_dict.get( 'owner', None )
             changeset_revision = repository_dependencies_dict.get( 'changeset_revision', None )
             if name is None or owner is None or changeset_revision is None:
-                log.debug( 'Skipping invalid repository_dependencies_dict due to missing name, owner or changeset_revision: %s' % \
-                    str( repository_dependencies_dict ) )
+                print 'Skipping invalid repository_dependencies_dict due to missing name, owner or changeset_revision: %s' % \
+                    str( repository_dependencies_dict )
                 continue
             name = str( name )
             owner = str( owner )
             changeset_revision = str( changeset_revision )
-            log.debug( 'Checking installation containers for revision %s of repository dependency %s owned by %s' % \
-                ( changeset_revision, name, owner ) )
+            print 'Checking installation containers for revision %s of repository dependency %s owned by %s' % \
+                ( changeset_revision, name, owner )
             required_repository_metadata_id = repository_dependencies_dict[ 'id' ]
             # Get the current list of tool_test_results dictionaries associated with the repository_metadata
             # record in the tool shed.
             tool_test_results_dicts, error_message = get_tool_test_results_dicts( galaxy_tool_shed_url,
                                                                                   required_repository_metadata_id )
             if error_message:
-                log.debug( 'Cannot check install container for version %s of repository dependency %s owned by %s ' % \
-                    ( changeset_revision, name, owner ) )
-                log.debug( 'due to the following error getting tool_test_results:\n%s' % str( error_message ) )
+                print 'Cannot check install container for version %s of repository dependency %s owned by %s ' % \
+                    ( changeset_revision, name, owner )
+                print 'due to the following error getting tool_test_results:\n%s' % str( error_message )
             else:
                 # Check the required repository's time_last_tested value to see if its tool_test_results column
                 # has been updated within the past 12 hours.  The RepositoryMetadata class's to_dict() method
@@ -863,19 +864,19 @@ def populate_install_containers_for_repository_dependencies( app, repository, re
                 twenty_hours_ago = ( datetime.utcnow() - timedelta( hours=20 ) ).isoformat()
                 time_last_tested, error_message = get_time_last_tested( galaxy_tool_shed_url, required_repository_metadata_id )
                 if time_last_tested is not None and time_last_tested < twenty_hours_ago:
-                    log.debug( 'The install containers for version %s of repository dependency %s owned by %s have been ' % \
-                        ( changeset_revision, name, owner ) )
-                    log.debug( 'populated within the past 20 hours (likely in this test run), so skipping this check.' )
+                    print 'The install containers for version %s of repository dependency %s owned by %s have been ' % \
+                        ( changeset_revision, name, owner )
+                    print 'populated within the past 20 hours (likely in this test run), so skipping this check.'
                     continue
                 elif time_last_tested is None:
-                    log.debug( 'The time_last_tested column value is None for version %s of repository dependency %s owned by %s.' % \
-                        ( changeset_revision, name, owner ) )
+                    print 'The time_last_tested column value is None for version %s of repository dependency %s owned by %s.' % \
+                        ( changeset_revision, name, owner )
                 elif time_last_tested < twenty_hours_ago:
-                    log.debug( 'Version %s of repository dependency %s owned by %s was last tested less than 20 hours ago.' % \
-                        ( changeset_revision, name, owner ) )
+                    print 'Version %s of repository dependency %s owned by %s was last tested less than 20 hours ago.' % \
+                        ( changeset_revision, name, owner )
                 else:
-                    log.debug( 'Version %s of repository dependency %s owned by %s was last tested more than 20 hours ago.' % \
-                        ( changeset_revision, name, owner ) )
+                    print 'Version %s of repository dependency %s owned by %s was last tested more than 20 hours ago.' % \
+                        ( changeset_revision, name, owner )
                 # Inspect the tool_test_results_dict for the last test run to see if it has not yet been populated.
                 if len( tool_test_results_dicts ) == 0:
                     tool_test_results_dict = {}
@@ -916,9 +917,9 @@ def populate_install_containers_for_repository_dependencies( app, repository, re
                                                                                   repository_dependencies_dict,
                                                                                   params,
                                                                                   can_update_tool_shed )
-                        log.debug( 'Result of inserting tool_test_results for revision %s of repository %s owned by %s:\n%s' % \
-                            ( changeset_revision, name, owner, str( response_dict ) ) )
-                        log.debug('\n=============================================================\n' )
+                        print 'Result of inserting tool_test_results for revision %s of repository %s owned by %s:\n%s' % \
+                            ( changeset_revision, name, owner, str( response_dict ) )
+                        print'============================================================='
                     else:
                         # The required repository's installation failed.
                         tool_test_results_dict[ 'installation_errors' ][ 'current_repository' ] = str( required_repository.error_message )
@@ -930,16 +931,62 @@ def populate_install_containers_for_repository_dependencies( app, repository, re
                                                                                   repository_dependencies_dict,
                                                                                   params,
                                                                                   can_update_tool_shed )
-                        log.debug( 'Result of inserting tool_test_results for revision %s of repository %s owned by %s:\n%s' % \
-                            ( changeset_revision, name, owner, str( response_dict ) ) )
-                        log.debug('\n=============================================================\n' )
+                        print 'Result of inserting tool_test_results for revision %s of repository %s owned by %s:\n%s' % \
+                            ( changeset_revision, name, owner, str( response_dict ) )
+                        print'============================================================='
                 else:
-                    log.debug( 'Cannot retrieve revision %s of required repository %s owned by %s from the database ' % \
-                        ( changeset_revision, name, owner ) )
-                    log.debug( 'so tool_test_results cannot be saved at this time.' )
-                    log.debug( 'The attributes used to retrieve the record are:' )
-                    log.debug( 'tool_shed: %s name: %s owner: %s changeset_revision: %s' % \
-                        ( cleaned_tool_shed_url, name, owner, changeset_revision ) )
+                    print 'Cannot retrieve revision %s of required repository %s owned by %s from the database ' % \
+                        ( changeset_revision, name, owner )
+                    print 'so tool_test_results cannot be saved at this time.'
+                    print 'The attributes used to retrieve the record are:'
+                    print 'tool_shed: %s name: %s owner: %s changeset_revision: %s' % \
+                        ( cleaned_tool_shed_url, name, owner, changeset_revision )
+
+def print_install_and_test_results( install_stage_type, install_and_test_statistics_dict, error_message ):
+    if error_message:
+        print "Error returned from install_and_test_repositories:"
+        print error_message
+    elif isinstance ( install_and_test_statistics_dict, dict ):
+        all_tests_passed = install_and_test_statistics_dict.get( 'all_tests_passed', None )
+        at_least_one_test_failed = install_and_test_statistics_dict.get( 'at_least_one_test_failed', None )
+        repositories_with_installation_error = \
+            install_and_test_statistics_dict.get( 'repositories_with_installation_error', None )
+        successful_repository_installations = \
+            install_and_test_statistics_dict.get( 'successful_repository_installations', None )
+        successful_tool_dependency_installations = \
+            install_and_test_statistics_dict.get( 'successful_tool_dependency_installations', None )
+        tool_dependencies_with_installation_error = \
+            install_and_test_statistics_dict.get( 'tool_dependencies_with_installation_error', None )
+        total_repositories_processed = install_and_test_statistics_dict.get( 'total_repositories_processed', None )
+        now = time.strftime( "%Y-%m-%d %H:%M:%S" )
+        print "####################################################################################"
+        print "# %s - installation script for %s completed." % ( now, install_stage_type )
+        print "# Repository revisions processed: %s" % str( total_repositories_processed )
+        if successful_repository_installations is not None:
+            print "# ----------------------------------------------------------------------------------"
+            print "# The following %d revisions were successfully installed:" % len( successful_repository_installations )
+            display_repositories_by_owner( successful_repository_installations )
+        if repositories_with_installation_error is not None:
+            print "# ----------------------------------------------------------------------------------"
+            print "# The following %d revisions have installation errors:" % len( repositories_with_installation_error )
+            display_repositories_by_owner( repositories_with_installation_error )
+        if successful_tool_dependency_installations is not None:
+            print "# ----------------------------------------------------------------------------------"
+            print "# The following %d tool dependencies were successfully installed:" % len( successful_tool_dependency_installations )
+            display_tool_dependencies_by_name( successful_tool_dependency_installations )
+        if tool_dependencies_with_installation_error is not None:
+            print "# ----------------------------------------------------------------------------------"
+            print "# The following %d tool dependencies have installation errors:" % len( tool_dependencies_with_installation_error )
+            display_tool_dependencies_by_name( tool_dependencies_with_installation_error )
+        if all_tests_passed is not None:
+            print '# ----------------------------------------------------------------------------------'
+            print "# The following %d revisions successfully passed all functional tests:" % len( all_tests_passed )
+            display_repositories_by_owner( all_tests_passed )
+        if at_least_one_test_failed is not None:
+            print '# ----------------------------------------------------------------------------------'
+            print "# The following %d revisions failed at least 1 functional test:" % len( at_least_one_test_failed )
+            display_repositories_by_owner( at_least_one_test_failed )
+        print "####################################################################################"
 
 def run_tests( test_config ):
     loader = nose.loader.TestLoader( config=test_config )
@@ -971,22 +1018,22 @@ def save_test_results_for_changeset_revision( url, tool_test_results_dicts, tool
             owner = repository_dict.get( 'owner', None )
             changeset_revision = repository_dict.get( 'changeset_revision', None )
             if name is None or owner is None or changeset_revision is None:
-                log.debug( 'Entries for name, owner or changeset_revision missing from repository_dict %s' % str( repository_dict ) )
+                print 'Entries for name, owner or changeset_revision missing from repository_dict %s' % repository_dict
                 return {}
             name = str( name )
             owner = str( owner )
             changeset_revision = str( changeset_revision )
-            log.debug('\n=============================================================\n' )
-            log.debug( 'Inserting the following into tool_test_results for revision %s of repository %s owned by %s:\n%s' % \
-                ( changeset_revision, name, owner, str( tool_test_results_dict ) ) )
-            log.debug( 'Updating tool_test_results for repository_metadata id %s.' % str( metadata_revision_id ) )
+            print '============================================================='
+            print 'Inserting the following into tool_test_results for revision %s of repository %s owned by %s:\n%s' % \
+                ( changeset_revision, name, owner, str( tool_test_results_dict ) )
+            print 'Updating tool_test_results for repository_metadata id %s.' % metadata_revision_id
             tool_test_results_dicts.insert( 0, tool_test_results_dict )
             params[ 'tool_test_results' ] = tool_test_results_dicts
             # Set the time_last_tested entry so that the repository_metadata.time_last_tested will be set in the tool shed.
             params[ 'time_last_tested' ] = 'This entry will result in this value being set via the Tool Shed API.'
             url = '%s' % ( suc.url_join( galaxy_tool_shed_url,'api', 'repository_revisions', str( metadata_revision_id ) ) )
-            log.debug( 'url: %s' % str( url ) )
-            log.debug( 'params: %s' % str( params ) )
+            print 'url: ', url
+            print 'params: ', params
             try:
                 return update( tool_shed_api_key, url, params, return_formatted=False )
             except Exception, e:

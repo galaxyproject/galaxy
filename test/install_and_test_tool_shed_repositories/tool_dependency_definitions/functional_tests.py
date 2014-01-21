@@ -83,16 +83,16 @@ def install_and_test_repositories( app, galaxy_shed_tools_dict, galaxy_shed_tool
         install_and_test_base_util.get_repositories_to_install( install_and_test_base_util.galaxy_tool_shed_url, test_framework )
     if error_message:
         return None, error_message
-    log.debug( 'The exclude list file is defined as %s' % str( exclude_list_file ) )
+    print 'The exclude list file is defined as %s' % exclude_list_file
     if os.path.exists( exclude_list_file ):
-        log.debug( 'Loading the list of repositories excluded from testing from the file %s...' % str( exclude_list_file ) )
+        print 'Loading the list of repositories excluded from testing from the file %s...' % exclude_list_file
         # The following exclude_list will look something like this:
         # [{ 'reason': The default reason or the reason specified in this section,
         #    'repositories': [( name, owner, changeset_revision if changeset_revision else None ),
         #                     ( name, owner, changeset_revision if changeset_revision else None )]}]
         exclude_list_dicts = install_and_test_base_util.parse_exclude_list( exclude_list_file )
     else:
-        log.debug( 'The exclude list file %s does not exist, so no repositories will be excluded from testing.' % str( exclude_list_file ) )
+        print 'The exclude list file %s does not exist, so no repositories will be excluded from testing.' % exclude_list_file
         exclude_list_dicts = []
     # Generate a test method that will use Twill to install each repository into the embedded Galaxy application that was
     # started up, installing repository and tool dependencies. Upon successful installation, generate a test case for each
@@ -104,18 +104,18 @@ def install_and_test_repositories( app, galaxy_shed_tools_dict, galaxy_shed_tool
         # Add the URL for the tool shed we're installing from, so the automated installation methods go to the right place.
         repository_dict[ 'tool_shed_url' ] = install_and_test_base_util.galaxy_tool_shed_url
         # Get the name and owner out of the repository info dict.
-        name = str( repository_dict[ 'name' ] )
-        owner = str( repository_dict[ 'owner' ] )
-        changeset_revision = str( repository_dict[ 'changeset_revision' ] )
-        log.debug( "Processing revision %s of repository %s owned by %s..." % ( changeset_revision, name, owner ) )
+        name = str( repository_dict.get( 'name', '' ) )
+        owner = str( repository_dict.get( 'owner', '' ) )
+        changeset_revision = str( repository_dict.get( 'changeset_revision', '' ) )
+        print "Processing revision %s of repository %s owned by %s..." % ( changeset_revision, name, owner )
         repository_identifier_dict = dict( name=name, owner=owner, changeset_revision=changeset_revision )
         # Retrieve the stored list of tool_test_results_dicts.
         tool_test_results_dicts, error_message = \
             install_and_test_base_util.get_tool_test_results_dicts( install_and_test_base_util.galaxy_tool_shed_url,
                                                                     encoded_repository_metadata_id )
         if error_message:
-            log.debug( 'Cannot install version %s of repository %s owned by %s due to the following error getting tool_test_results:\n%s' % \
-                ( changeset_revision, name, owner, str( error_message ) ) )
+            print 'Cannot install version %s of repository %s owned by %s due to the following error getting tool_test_results:\n%s' % \
+                ( changeset_revision, name, owner, str( error_message ) )
         else:
             tool_test_results_dict = install_and_test_base_util.get_tool_test_results_dict( tool_test_results_dicts )
             is_excluded, reason = install_and_test_base_util.is_excluded( exclude_list_dicts,
@@ -125,8 +125,8 @@ def install_and_test_repositories( app, galaxy_shed_tools_dict, galaxy_shed_tool
                                                                           encoded_repository_metadata_id )
             if is_excluded:
                 # If this repository is being skipped, register the reason.
-                log.debug( "Not testing revision %s of repository %s owned by %s because it is in the exclude list for this test run." % \
-                    ( changeset_revision, name, owner ) )
+                print "Not testing revision %s of repository %s owned by %s because it is in the exclude list for this test run." % \
+                    ( changeset_revision, name, owner )
                 tool_test_results_dict[ 'not_tested' ] = dict( reason=reason )
                 params = dict( do_not_test=False )
                 response_dict = \
@@ -136,9 +136,9 @@ def install_and_test_repositories( app, galaxy_shed_tools_dict, galaxy_shed_tool
                                                                                          repository_dict,
                                                                                          params,
                                                                                          can_update_tool_shed )
-                log.debug( 'Result of inserting tool_test_results for revision %s of repository %s owned by %s:\n%s' % \
-                    ( changeset_revision, name, owner, str( response_dict ) ) )
-                log.debug('\n=============================================================\n' )
+                print 'Result of inserting tool_test_results for revision %s of repository %s owned by %s:\n%s' % \
+                    ( changeset_revision, name, owner, str( response_dict ) )
+                print '============================================================='
             else:
                 # See if the repository was installed in a previous test.
                 repository = install_and_test_base_util.get_repository( name, owner, changeset_revision )
@@ -149,7 +149,7 @@ def install_and_test_repositories( app, galaxy_shed_tools_dict, galaxy_shed_tool
                     install_and_test_statistics_dict[ 'total_repositories_processed' ] += 1
                     if error_message:
                         # The repository installation failed.
-                        log.debug( 'Installation failed for revision %s of repository %s owned by %s.' % ( changeset_revision, name, owner ) )
+                        print 'Installation failed for revision %s of repository %s owned by %s.' % ( changeset_revision, name, owner )
                         install_and_test_statistics_dict[ 'repositories_with_installation_error' ].append( repository_identifier_dict )
                         tool_test_results_dict[ 'installation_errors' ][ 'current_repository' ] = error_message
                         params = dict( test_install_error=True,
@@ -161,13 +161,13 @@ def install_and_test_repositories( app, galaxy_shed_tools_dict, galaxy_shed_tool
                                                                                                  repository_dict,
                                                                                                  params,
                                                                                                  can_update_tool_shed )
-                        log.debug( 'Result of inserting tool_test_results for revision %s of repository %s owned by %s:\n%s' % \
-                            ( changeset_revision, name, owner, str( response_dict ) ) )
-                        log.debug('\n=============================================================\n' )
+                        print 'Result of inserting tool_test_results for revision %s of repository %s owned by %s:\n%s' % \
+                            ( changeset_revision, name, owner, str( response_dict ) )
+                        print '============================================================='
                     else:
                         # The repository was successfully installed.
-                        log.debug( 'Installation succeeded for revision %s of repository %s owned by %s.' % \
-                            ( changeset_revision, name, owner ) )
+                        print 'Installation succeeded for revision %s of repository %s owned by %s.' % \
+                            ( changeset_revision, name, owner )
                         # Populate the installation containers (success and error) for the repository's immediate dependencies
                         # (the entire dependency tree is not handled here).
                         params, install_and_test_statistics_dict, tool_test_results_dict = \
@@ -183,9 +183,9 @@ def install_and_test_repositories( app, galaxy_shed_tools_dict, galaxy_shed_tool
                                                                                                  repository_dict,
                                                                                                  params,
                                                                                                  can_update_tool_shed )
-                        log.debug( 'Result of inserting tool_test_results for revision %s of repository %s owned by %s:\n%s' % \
-                            ( changeset_revision, name, owner, str( response_dict ) ) )
-                        log.debug('\n=============================================================\n' )
+                        print 'Result of inserting tool_test_results for revision %s of repository %s owned by %s:\n%s' % \
+                            ( changeset_revision, name, owner, str( response_dict ) )
+                        print '============================================================='
                         # Populate the installation containers (success or error) for the repository's immediate repository
                         # dependencies whose containers are not yet populated.
                         install_and_test_base_util.populate_install_containers_for_repository_dependencies( app,
@@ -194,9 +194,9 @@ def install_and_test_repositories( app, galaxy_shed_tools_dict, galaxy_shed_tool
                                                                                                             install_and_test_statistics_dict,
                                                                                                             can_update_tool_shed )
                 else:
-                    log.debug( 'Skipped attempt to install revision %s of repository %s owned by %s because ' % \
-                        ( changeset_revision, name, owner ) )
-                    log.debug( 'it was previously installed and currently has status %s' % str( repository.status ) )
+                    print 'Skipped attempt to install revision %s of repository %s owned by %s because ' % \
+                        ( changeset_revision, name, owner )
+                    print 'it was previously installed and currently has status %s' % repository.status
     return install_and_test_statistics_dict, error_message
 
 def main():
@@ -394,9 +394,9 @@ def main():
         time.sleep( 0.1 )
     else:
         raise Exception( "Test HTTP server did not return '200 OK' after 10 tries" )
-    log.debug( "Embedded galaxy web server started..." )
-    log.debug( "The embedded Galaxy application is running on %s:%s" % ( str( galaxy_test_host ), str( galaxy_test_port ) ) )
-    log.debug( "Repositories will be installed from the tool shed at %s" % str( install_and_test_base_util.galaxy_tool_shed_url ) )
+    print "Embedded galaxy web server started..."
+    print "The embedded Galaxy application is running on %s:%s" % ( galaxy_test_host, galaxy_test_port )
+    print "Repositories will be installed from the tool shed at %s" % install_and_test_base_util.galaxy_tool_shed_url
     # If a tool_data_table_conf.test.xml file was found, add the entries from it into the app's tool data tables.
     if install_and_test_base_util.additional_tool_data_tables:
         app.tool_data_tables.add_new_entries_from_config_file( config_filename=install_and_test_base_util.additional_tool_data_tables,
@@ -409,37 +409,12 @@ def main():
     if not can_update_tool_shed:
         print "# This run will not update the Tool Shed database."
     print "####################################################################################"
-    install_and_test_statistics_dict, error_message = \
-        install_and_test_repositories( app, galaxy_shed_tools_dict, galaxy_shed_tool_conf_file )
-    if error_message:
-        log.debug( error_message )
-    else:
-        total_repositories_processed = install_and_test_statistics_dict[ 'total_repositories_processed' ]
-        successful_repository_installations = install_and_test_statistics_dict[ 'successful_repository_installations' ]
-        successful_tool_dependency_installations = install_and_test_statistics_dict[ 'successful_tool_dependency_installations' ]
-        repositories_with_installation_error = install_and_test_statistics_dict[ 'repositories_with_installation_error' ]
-        tool_dependencies_with_installation_error = install_and_test_statistics_dict[ 'tool_dependencies_with_installation_error' ]
-        now = time.strftime( "%Y-%m-%d %H:%M:%S" )
-        print "####################################################################################"
-        print "# %s - installation script for repositories of type tool_dependency_definition completed." % now
-        print "# Repository revisions processed: %s" % str( total_repositories_processed )
-        if successful_repository_installations:
-            print "# ----------------------------------------------------------------------------------"
-            print "# The following %d revisions were successfully installed:" % len( successful_repository_installations )
-            install_and_test_base_util.display_repositories_by_owner( successful_repository_installations )
-        if repositories_with_installation_error:
-            print "# ----------------------------------------------------------------------------------"
-            print "# The following %d revisions have installation errors:" % len( repositories_with_installation_error )
-            install_and_test_base_util.successful_repository_installations( repositories_with_installation_error )
-        if successful_tool_dependency_installations:
-            print "# ----------------------------------------------------------------------------------"
-            print "# The following %d tool dependencies were successfully installed:" % len( successful_tool_dependency_installations )
-            install_and_test_base_util.display_tool_dependencies_by_name( successful_tool_dependency_installations )
-        if tool_dependencies_with_installation_error:
-            print "# ----------------------------------------------------------------------------------"
-            print "# The following %d tool dependencies have installation errors:" % len( tool_dependencies_with_installation_error )
-            install_and_test_base_util.display_tool_dependencies_by_name( tool_dependencies_with_installation_error )
-        print "####################################################################################"
+    install_and_test_statistics_dict, error_message = install_and_test_repositories( app,
+                                                                                     galaxy_shed_tools_dict,
+                                                                                     galaxy_shed_tool_conf_file )
+    install_and_test_base_util.print_install_and_test_results( 'tool dependency definitions',
+                                                               install_and_test_statistics_dict,
+                                                               error_message )
     log.debug( "Shutting down..." )
     # Gracefully shut down the embedded web server and UniverseApplication.
     if server:
