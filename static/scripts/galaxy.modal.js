@@ -1,8 +1,7 @@
-
 // dependencies
 define([], function() {
 
-// frame manager
+// modal
 var GalaxyModal = Backbone.View.extend(
 {
     // base element
@@ -10,93 +9,24 @@ var GalaxyModal = Backbone.View.extend(
     
     // defaults options
     optionsDefault: {
-        title       : "galaxy-modal",
-        body        : "",
-        backdrop    : true,
-        height      : null,
-        width       : null
+        title           : "galaxy-modal",
+        body            : "",
+        backdrop        : true,
+        height          : null,
+        width           : null,
+        closing_events  : false
     },
 
-    // flag whether the closing events are bound
-    eventsBound: false,
-    
-    // options
-    options : {
-        // by default the modal cannot be removed by the self.destroy() method 
-        // but only hidden through self.hide()
-        destructible: false,
+    // button list
+    buttonList: {},
 
-        // by default don't bind the events
-        bindClosingEvents: false,
-        // set false to ommit binding ESC key
-        bindEscKey: true,
-    },
-    
     // initialize
     initialize : function(options) {
-        self = this;
         if (options){
-            this.create(options);
+            this._create(options);
         }
     },
-
-    hideOrDestroy: function(){
-        self.visible = false;
-
-        //unbinds event for ALL modals?
-        self.unbindEvents();
-
-        if (self.options.destructible){
-            self.$el.remove(); // destroy
-        } else {
-            self.hide();
-        }
-    },
-
-    // hide modal, shouldn't be called directly but through hideOrDestroy()
-    // however hide() remains for backwards compatibility
-    hide: function(){
-        this.visible = false;
-        this.$el.fadeOut('fast');
-    },    
-
-    bindEvents: function() {
-        if (self.options.bindEscKey){
-            // bind the ESC key to hideOrDestroy() function
-            $(document).on('keyup', function(event){
-                if (event.keyCode == 27) { 
-                    self.hideOrDestroy() 
-                }
-            })
-        }
-        // bind the 'click anywhere' to hideOrDestroy() function...
-        $('html').on('click', self.hideOrDestroy)
-        // ...but don't hide if the click is on modal content
-        $('.modal-content').on('click', function(event){
-            event.stopPropagation();
-        })
-
-        self.eventsBound = true;
-    },
-
-    unbindEvents: function(){
-        // unbind the ESC key to hideOrDestroy() function
-        $(document).off('keyup', function(event){
-            if (event.keyCode == 27) { 
-                self.hideOrDestroy() 
-            }
-        })
-        // unbind the 'click anywhere' to hideOrDestroy() function...
-        $('html').off('click', function(event){
-            self.hideOrDestroy()
-        })
-        $('.modal-content').off('click', function(event){
-            event.stopPropagation();
-        })
-
-        self.eventsBound = false;
-    },
-
+    
     // adds and displays a new frame/window
     show: function(options) {
         // create
@@ -114,20 +44,58 @@ var GalaxyModal = Backbone.View.extend(
         if (this.options.width){
             this.$dialog.css('width', this.options.width);
         }
-        
+
         // show
-        if (this.visible){
+        if (this.visible) {
             this.$el.show();
         } else {
             this.$el.fadeIn('fast');
         }
-        
-        // set flag
+
+        // set visible flag
         this.visible = true;
     },
+
+    // hide
+    hide: function() {
+        this.visible = false;
+        this.$el.fadeOut('fast');
+    },
+
+    // enable buttons
+    enableButton: function(name) {
+        var button_id = this.buttonList[name];
+        this.$buttons.find('#' + button_id).prop('disabled', false);
+    },
+
+    // disable buttons
+    disableButton: function(name) {
+        var button_id = this.buttonList[name];
+        this.$buttons.find('#' + button_id).prop('disabled', true);
+    },
     
+    // show buttons
+    showButton: function(name) {
+        var button_id = this.buttonList[name];
+        this.$buttons.find('#' + button_id).show();
+    },
+
+    // hide buttons
+    hideButton: function(name) {
+        var button_id = this.buttonList[name];
+        this.$buttons.find('#' + button_id).hide();
+    },
+    
+    // returns scroll top for body element
+    scrollTop: function() {
+        return this.$body.scrollTop();
+    },
+
     // create
-    create: function(options) {
+    _create: function(options) {
+        // link this
+        var self = this;
+        
         // configure options
         this.options = _.defaults(options, this.optionsDefault);
         
@@ -137,12 +105,16 @@ var GalaxyModal = Backbone.View.extend(
         }
             
         // remove former element
-        if (this.$el){
+        if (this.$el) {
+            // remove element
             this.$el.remove();
+            
+            // remove escape event
+            $(document).off('keyup');
         }
         
         // create new element
-        this.setElement(this.template(this.options.title));
+        this.setElement(this._template(this.options.title));
         
         // link elements
         this.$dialog = (this.$el).find('.modal-dialog');
@@ -161,54 +133,38 @@ var GalaxyModal = Backbone.View.extend(
                         
         // append buttons
         if (this.options.buttons) {
-            // link functions
-            var self = this;
+            // reset button list
+            this.buttonList = {};
+            var counter = 0;
             $.each(this.options.buttons, function(name, value) {
-                 self.$buttons.append($('<button id="' + String(name).toLowerCase() + '"></button>').text(name).click(value)).append(" ");
+                var button_id = 'button-' + counter++;
+                self.$buttons.append($('<button id="' + button_id + '"></button>').text(name).click(value)).append(" ");
+                self.buttonList[name] = button_id;
             });
-        } else
+        } else {
             // hide footer
             this.$footer.hide();
+        }
         
         // append to main element
         $(this.elMain).append($(this.el));
 
-        if (this.options.bindClosingEvents && !this.eventsBound){
-            this.bindEvents();
+        // bind additional closing events
+        if (this.options.closing_events) {
+            // bind the ESC key to hide() function
+            $(document).on('keyup', function(e) {
+                if (e.keyCode == 27) {
+                    self.hide();
+                }
+            });
+            
+            // hide modal if background is clicked
+            this.$el.find('.modal-backdrop').on('click', function() { self.hide(); });
         }
     },
     
-    // enable buttons
-    enableButton: function(name) {
-        this.$buttons.find('#' + String(name).toLowerCase()).prop('disabled', false);
-    },
-
-    // disable buttons
-    disableButton: function(name) {
-        this.$buttons.find('#' + String(name).toLowerCase()).prop('disabled', true);
-    },
-    
-    // hide buttons
-    hideButton: function(name) {
-        this.$buttons.find('#' + String(name).toLowerCase()).hide();
-    },
-    // show buttons
-    showButton: function(name) {
-        this.$buttons.find('#' + String(name).toLowerCase()).show();
-    },
-
-    // returns scroll top for body element
-    scrollTop: function()
-    {
-        return this.$body.scrollTop();
-    },
-        
-    /*
-        HTML TEMPLATES
-    */
-    
     // fill regular modal template
-    template: function(title) {
+    _template: function(title) {
         return  '<div class="modal">' +
                     '<div class="modal-backdrop fade in" style="z-index: -1;"></div>' +
                     '<div class="modal-dialog">' +
@@ -227,9 +183,8 @@ var GalaxyModal = Backbone.View.extend(
     }
 });
 
-// return
 return {
-    GalaxyModal: GalaxyModal
-};
+    GalaxyModal : GalaxyModal
+}
 
 });

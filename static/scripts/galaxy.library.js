@@ -455,15 +455,15 @@ var FolderContentView = Backbone.View.extend({
         var template = _.template(this.templateDatasetModal(), { item : item, size : size });
             // make modal
             var self = this;
-            this.modal = new mod_modal.GalaxyModal({
-                destructible : true,
-                bindClosingEvents: true,
-                title   : 'Dataset Details',
-                body    : template,
-                buttons : {
-                    'Import' : function() { self.importCurrentIntoHistory() },
-                    'Download' : function() { self.downloadCurrent() },
-                    'Close'  : function() { self.modal.hideOrDestroy() }
+            this.modal = Galaxy.modal;
+            this.modal.show({
+                closing_events  : true,
+                title           : 'Dataset Details',
+                body            : template,
+                buttons         : {
+                    'Import'    : function() { self.importCurrentIntoHistory() },
+                    'Download'  : function() { self.downloadCurrent() },
+                    'Close'     : function() { self.modal.hide() }
                 }
             });
             
@@ -477,8 +477,7 @@ var FolderContentView = Backbone.View.extend({
                 if (self.lastSelectedHistory.length > 0) {
                     $(this.modal.elMain).find('#dataset_import_single').val(self.lastSelectedHistory);
                 }
-            } 
-            this.modal.show();
+            }
         },
 
         // download dataset shown currently in modal
@@ -612,17 +611,16 @@ var FolderContentView = Backbone.View.extend({
                     success: function (histories){
                         // make modal
                         var history_modal_tmpl =  _.template(self.templateBulkImportInModal(), {histories : histories.models});
-                        self.modal = new mod_modal.GalaxyModal({
-                            destructible : true,
-                            bindClosingEvents: true,
-                            title   : 'Import into History',
-                            body    : history_modal_tmpl,
-                            buttons : {
-                                'Import' : function() {self.importAllIntoHistory()},
-                                'Close'  : function() {self.modal.hideOrDestroy();}
+                        self.modal = Galaxy.modal;
+                        self.modal.show({
+                            closing_events  : true,
+                            title           : 'Import into History',
+                            body            : history_modal_tmpl,
+                            buttons         : {
+                                'Import'    : function() {self.importAllIntoHistory()},
+                                'Close'     : function() {self.modal.hide();}
                             }
                         });
-                        self.modal.show();
                     },
                     error: function(){
                       mod_toastr.error('An error occured :(');
@@ -672,7 +670,7 @@ var FolderContentView = Backbone.View.extend({
             var popped_item = history_item_set.pop();
             if (typeof popped_item === "undefined") {
                 mod_toastr.success('All datasets imported');
-                this.modal.hideOrDestroy();
+                this.modal.hide();
                 return
             }
                 var promise = $.when(popped_item.save({content: popped_item.content, source: popped_item.source})).done(function(a1){
@@ -735,18 +733,17 @@ var FolderContentView = Backbone.View.extend({
         event.stopPropagation();
 
         // create modal
-            var self = this;
-            this.modal = new mod_modal.GalaxyModal({
-                destructible : true,
-                bindClosingEvents: true,
-                title   : 'Create New Folder',
-                body    : this.templateNewFolderInModal(),
-                buttons : {
-                    'Create' : function() {self.create_new_folder_event()},
-                    'Close'  : function() {self.modal.hideOrDestroy(); self.modal = null;}
-                }
-            });
-        this.modal.show();
+        var self = this;
+        this.modal = Galaxy.modal;
+        this.modal.show({
+            closing_events  : true,
+            title           : 'Create New Folder',
+            body            : this.templateNewFolderInModal(),
+            buttons         : {
+                'Create'    : function() {self.create_new_folder_event()},
+                'Close'     : function() {self.modal.hide(); self.modal = null;}
+            }
+        });
       },
 
     // create the new folder from modal
@@ -762,7 +759,7 @@ var FolderContentView = Backbone.View.extend({
             var self = this;
             folder.save(folderDetails, {
               success: function (folder) {
-                self.modal.hideOrDestroy();
+                self.modal.hide();
                 mod_toastr.success('Folder created');
                 self.render({id: current_folder_id});
               },
@@ -892,18 +889,17 @@ var GalaxyLibraryview = Backbone.View.extend({
         event.stopPropagation();
 
         // create modal
-            var self = this;
-            this.modal = new mod_modal.GalaxyModal({
-                destructible : true,
-                bindClosingEvents: true,
-                title   : 'Create New Library',
-                body    : this.templateNewLibraryInModal(),
-                buttons : {
-                    'Create' : function() {self.create_new_library_event()},
-                    'Close'  : function() {self.modal.hideOrDestroy();}
-                }
-            });
-        this.modal.show();
+        var self = this;
+        this.modal = Galaxy.modal;
+        this.modal.show({
+            closing_events  : true,
+            title           : 'Create New Library',
+            body            : this.templateNewLibraryInModal(),
+            buttons         : {
+                'Create'    : function() {self.create_new_library_event()},
+                'Close'     : function() {self.modal.hide();}
+            }
+        });
     },
 
     // create the new library from modal
@@ -914,7 +910,7 @@ var GalaxyLibraryview = Backbone.View.extend({
             var self = this;
             library.save(libraryDetails, {
               success: function (library) {
-                self.modal.hideOrDestroy();
+                self.modal.hide();
                 self.clear_library_modal();
                 self.render();
                 mod_toastr.success('Library created');
