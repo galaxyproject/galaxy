@@ -230,46 +230,42 @@ def clean_tool_shed_url( base_url ):
     log.debug( "Returning base_url from clean_tool_shed_url: %s" % str( base_url ) )
     return base_url
 
-def display_repositories_by_owner( repository_dicts ):
-    # Group summary display by repository owner.
-    repository_dicts_by_owner = {}
-    for repository_dict in repository_dicts:
-        name = str( repository_dict.get( 'name', '' ) )
-        owner = str( repository_dict.get('owner', '' ) )
-        changeset_revision = str( repository_dict.get( 'changeset_revision', '' ) )
+def display_repositories_by_owner( repository_tups ):
+    """Group summary display by repository owner."""
+    repository_tups_by_owner = {}
+    for repository_tup in repository_tups:
+        name, owner, changeset_revision = repository_tup
         if owner:
-            if owner in repository_dicts_by_owner:
-                repository_dicts_by_owner[ owner ].append( repository_dict )
+            if owner in repository_tups_by_owner:
+                processed_repository_tups_by_owner = repository_tups_by_owner.get( owner, [] )
+                if repository_tup not in processed_repository_tups_by_owner:
+                    repository_tups_by_owner[ owner ].append( repository_tup )
             else:
-                repository_dicts_by_owner[ owner ] = [ repository_dict ]
+                repository_tups_by_owner[ owner ] = [ repository_tup ]
     # Display grouped summary.
-    for owner, grouped_repository_dicts in repository_dicts_by_owner.items():
+    for owner, repository_tups in repository_tups_by_owner.items():
         print "# "
-        for repository_dict in grouped_repository_dicts:
-            name = str( repository_dict.get( 'name', '' ) )
-            owner = str( repository_dict.get( 'owner', '' ) )
-            changeset_revision = str( repository_dict.get( 'changeset_revision', '' ) )
+        for repository_tup in repository_tups:
+            name, owner, changeset_revision = repository_tup
             print "# Revision %s of repository %s owned by %s" % ( changeset_revision, name, owner )
 
-def display_tool_dependencies_by_name( tool_dependency_dicts ):
-    # Group summary display by repository owner.
-    tool_dependency_dicts_by_name = {}
-    for tool_dependency_dict in tool_dependency_dicts:
-        name = str( tool_dependency_dict.get( 'name', '' ) )
-        type = str( tool_dependency_dict.get( 'type', '' ) )
-        version = str( tool_dependency_dict.get( 'version', '' ) )
+def display_tool_dependencies_by_name( tool_dependency_tups ):
+    """Group summary display by repository owner."""
+    tool_dependency_tups_by_name = {}
+    for tool_dependency_tup in tool_dependency_tups:
+        name, type, version = tool_dependency_tup
         if name:
-            if name in tool_dependency_dicts_by_name:
-                tool_dependency_dicts_by_name[ name ].append( tool_dependency_dict )
+            if name in tool_dependency_tups_by_name:
+                processed_tool_dependency_tups_by_name = tool_dependency_tups_by_name.get( name, [] )
+                if tool_dependency_tup not in processed_tool_dependency_tups_by_name:
+                    tool_dependency_tups_by_name[ name ].append( tool_dependency_tup )
             else:
-                tool_dependency_dicts_by_name[ name ] = [ tool_dependency_dict ]
+                tool_dependency_tups_by_name[ name ] = [ tool_dependency_tup ]
     # Display grouped summary.
-    for name, grouped_tool_dependency_dicts in tool_dependency_dicts_by_name.items():
+    for name, tool_dependency_tups in tool_dependency_tups_by_name.items():
         print "# "
-        for tool_dependency_dict in grouped_tool_dependency_dicts:
-            type = str( tool_dependency_dict.get( 'type', '' ) )
-            name = str( tool_dependency_dict.get( 'name', '' ) )
-            version = str( tool_dependency_dict.get( 'version', '' ) )
+        for tool_dependency_tup in tool_dependency_tups:
+            name, type, version = tool_dependency_tup
             print "# %s %s version %s" % ( type, name, version )
 
 def get_database_version( app ):
@@ -546,7 +542,7 @@ def get_webapp_global_conf():
         global_conf.update( get_static_settings() )
     return global_conf
 
-def initialize_install_and_test_statistics_dict( test_framework ):
+def initialize_install_and_test_statistics_dict():
     # Initialize a dictionary for the summary that will be printed to stdout.
     install_and_test_statistics_dict = {}
     install_and_test_statistics_dict[ 'total_repositories_processed' ] = 0
@@ -729,7 +725,7 @@ def parse_exclude_list( xml_filename ):
         print 'The exclude file %s defines no repositories to be excluded from testing.' % xml_filename
     return exclude_list
 
-def populate_dependency_install_containers( app, repository, repository_identifier_dict, install_and_test_statistics_dict,
+def populate_dependency_install_containers( app, repository, repository_identifier_tup, install_and_test_statistics_dict,
                                             tool_test_results_dict ):
     """
     Populate the installation containers (successful or errors) for the received repository's (which
@@ -739,7 +735,10 @@ def populate_dependency_install_containers( app, repository, repository_identifi
     repository_name = str( repository.name )
     repository_owner = str( repository.owner )
     repository_changeset_revision = str( repository.changeset_revision )
-    install_and_test_statistics_dict[ 'successful_repository_installations' ].append( repository_identifier_dict )
+    processed_successful_repository_installations = install_and_test_statistics_dict.get( 'successful_repository_installations', [] )
+    if repository_identifier_tup not in processed_successful_repository_installations:
+        install_and_test_statistics_dict[ 'successful_repository_installations' ].append( repository_identifier_tup )
+    repository_identifier_dict = dict( name=repository_name, owner=repository_owner, changeset_revision=repository_changeset_revision )
     tool_test_results_dict[ 'successful_installations' ][ 'current_repository' ].append( repository_identifier_dict )
     params = dict( test_install_error=False,
                    do_not_test=False )
@@ -760,7 +759,10 @@ def populate_dependency_install_containers( app, repository, repository_identifi
                                                             owner=owner,
                                                             changeset_revision=changeset_revision,
                                                             error_message=error_message )
-            install_and_test_statistics_dict[ 'repositories_with_installation_error' ].append( missing_repository_dependency_info_dict )
+            processed_repositories_with_installation_error = \
+                install_and_test_statistics_dict.get( 'repositories_with_installation_error', [] )
+            if missing_repository_dependency_info_dict not in processed_repositories_with_installation_error:
+                install_and_test_statistics_dict[ 'repositories_with_installation_error' ].append( missing_repository_dependency_info_dict )
             tool_test_results_dict[ 'installation_errors' ][ 'repository_dependencies' ].append( missing_repository_dependency_info_dict )
     if repository.missing_tool_dependencies:
         print 'The following tool dependencies for revision %s of repository %s owned by %s have installation errors:' % \
@@ -777,7 +779,10 @@ def populate_dependency_install_containers( app, repository, repository_identifi
                                                       name=name,
                                                       version=version,
                                                       error_message=error_message )
-            install_and_test_statistics_dict[ 'tool_dependencies_with_installation_error' ].append( missing_tool_dependency_info_dict )
+            processed_tool_dependencies_with_installation_error = \
+                install_and_test_statistics_dict.get( 'tool_dependencies_with_installation_error', [] )
+            if missing_tool_dependency_info_dict not in processed_tool_dependencies_with_installation_error:
+                install_and_test_statistics_dict[ 'tool_dependencies_with_installation_error' ].append( missing_tool_dependency_info_dict )
             tool_test_results_dict[ 'installation_errors' ][ 'tool_dependencies' ].append( missing_tool_dependency_info_dict )
     if repository.installed_repository_dependencies:
         print 'The following repository dependencies for revision %s of repository %s owned by %s are installed:' % \
@@ -789,11 +794,14 @@ def populate_dependency_install_containers( app, repository, repository_identifi
             owner = str( repository_dependency.owner )
             changeset_revision = str( repository_dependency.changeset_revision )
             print 'Revision %s of repository %s owned by %s.' % ( changeset_revision, name, owner )
+            identifier_tup = ( name, owner, changeset_revision )
+            processed_successful_repository_installations = install_and_test_statistics_dict.get( 'successful_repository_installations', [] )
+            if identifier_tup not in processed_successful_repository_installations:
+                install_and_test_statistics_dict[ 'successful_repository_installations' ].append( identifier_tup )
             repository_dependency_info_dict = dict( tool_shed=tool_shed,
                                                     name=name,
                                                     owner=owner,
                                                     changeset_revision=changeset_revision )
-            install_and_test_statistics_dict[ 'successful_repository_installations' ].append( repository_dependency_info_dict )
             tool_test_results_dict[ 'successful_installations' ][ 'repository_dependencies' ].append( repository_dependency_info_dict )
     if repository.installed_tool_dependencies:
         print 'The following tool dependencies for revision %s of repository %s owned by %s are installed:' % \
@@ -805,11 +813,15 @@ def populate_dependency_install_containers( app, repository, repository_identifi
             version = str( tool_dependency.version )
             installation_directory = tool_dependency.installation_directory( app )
             print 'Version %s of tool dependency %s %s is installed in: %s' % ( version, type, name, installation_directory )
+            identity_tup = ( name, type, version )
+            processed_successful_tool_dependency_installations = \
+                install_and_test_statistics_dict.get( 'successful_tool_dependency_installations', [] )
+            if identity_tup not in processed_successful_tool_dependency_installations:
+                install_and_test_statistics_dict[ 'successful_tool_dependency_installations' ].append( identity_tup )
             tool_dependency_info_dict = dict( type=type,
                                               name=name,
                                               version=version,
                                               installation_directory=installation_directory )
-            install_and_test_statistics_dict[ 'successful_tool_dependency_installations' ].append( tool_dependency_info_dict )
             tool_test_results_dict[ 'successful_installations' ][ 'tool_dependencies' ].append( tool_dependency_info_dict )
     return params, install_and_test_statistics_dict, tool_test_results_dict
 
@@ -901,14 +913,14 @@ def populate_install_containers_for_repository_dependencies( app, repository, re
                                                                                         owner,
                                                                                         changeset_revision )
                 if required_repository is not None:
-                    repository_identifier_dict = dict( name=name, owner=owner, changeset_revision=changeset_revision )
+                    repository_identifier_tup = ( name, owner, changeset_revision )
                     if required_repository.is_installed:
                         # The required_repository was successfully installed, so populate the installation
                         # containers (success and error) for the repository's immediate dependencies.
                         params, install_and_test_statistics_dict, tool_test_results_dict = \
                             populate_dependency_install_containers( app,
                                                                     required_repository,
-                                                                    repository_identifier_dict,
+                                                                    repository_identifier_tup,
                                                                     install_and_test_statistics_dict,
                                                                     tool_test_results_dict )
                         response_dict = save_test_results_for_changeset_revision( galaxy_tool_shed_url,
@@ -943,6 +955,7 @@ def populate_install_containers_for_repository_dependencies( app, repository, re
                         ( cleaned_tool_shed_url, name, owner, changeset_revision )
 
 def print_install_and_test_results( install_stage_type, install_and_test_statistics_dict, error_message ):
+    "Print statistics for the current test run."
     if error_message:
         print "Error returned from install_and_test_repositories:"
         print error_message
@@ -962,29 +975,29 @@ def print_install_and_test_results( install_stage_type, install_and_test_statist
         print "####################################################################################"
         print "# %s - installation script for %s completed." % ( now, install_stage_type )
         print "# Repository revisions processed: %s" % str( total_repositories_processed )
-        if successful_repository_installations is not None:
+        if successful_repository_installations:
             print "# ----------------------------------------------------------------------------------"
-            print "# The following %d revisions were successfully installed:" % len( successful_repository_installations )
+            print "# The following revisions were successfully installed:"
             display_repositories_by_owner( successful_repository_installations )
-        if repositories_with_installation_error is not None:
+        if repositories_with_installation_error:
             print "# ----------------------------------------------------------------------------------"
-            print "# The following %d revisions have installation errors:" % len( repositories_with_installation_error )
+            print "# The following revisions have installation errors:"
             display_repositories_by_owner( repositories_with_installation_error )
-        if successful_tool_dependency_installations is not None:
+        if successful_tool_dependency_installations:
             print "# ----------------------------------------------------------------------------------"
-            print "# The following %d tool dependencies were successfully installed:" % len( successful_tool_dependency_installations )
+            print "# The following tool dependencies were successfully installed:"
             display_tool_dependencies_by_name( successful_tool_dependency_installations )
-        if tool_dependencies_with_installation_error is not None:
+        if tool_dependencies_with_installation_error:
             print "# ----------------------------------------------------------------------------------"
-            print "# The following %d tool dependencies have installation errors:" % len( tool_dependencies_with_installation_error )
+            print "# The following tool dependencies have installation errors:"
             display_tool_dependencies_by_name( tool_dependencies_with_installation_error )
-        if all_tests_passed is not None:
+        if all_tests_passed:
             print '# ----------------------------------------------------------------------------------'
-            print "# The following %d revisions successfully passed all functional tests:" % len( all_tests_passed )
+            print "# The following revisions successfully passed all functional tests:"
             display_repositories_by_owner( all_tests_passed )
-        if at_least_one_test_failed is not None:
+        if at_least_one_test_failed:
             print '# ----------------------------------------------------------------------------------'
-            print "# The following %d revisions failed at least 1 functional test:" % len( at_least_one_test_failed )
+            print "# The following revisions failed at least 1 functional test:"
             display_repositories_by_owner( at_least_one_test_failed )
         print "####################################################################################"
 
