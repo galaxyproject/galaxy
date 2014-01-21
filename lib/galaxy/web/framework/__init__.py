@@ -812,7 +812,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
                     host = None
                 if host in UCSC_SERVERS:
                     return
-            external_display_path = url_for( controller='',action='display_application' )
+            external_display_path = url_for( controller='', action='display_application' )
             if self.request.path.startswith( external_display_path ):
                 request_path_split = self.request.path.split( '/' )
                 try:
