@@ -62,7 +62,13 @@ class UploadController( BaseUIController ):
                 uploaded_directory = tempfile.mkdtemp()
                 repo_url = 'http%s' % url[ len( 'hg' ): ]
                 repo_url = repo_url.encode( 'ascii', 'replace' )
-                commands.clone( suc.get_configured_ui(), repo_url, uploaded_directory )
+                try:
+                    commands.clone( suc.get_configured_ui(), repo_url, uploaded_directory )
+                except Exception, e:
+                    message = 'Error uploading via mercurial clone: %s' % suc.to_html_string( str( e ) )
+                    status = 'error'
+                    suc.remove_dir( uploaded_directory )
+                    uploaded_directory = None
             elif url:
                 valid_url = True
                 try:
