@@ -1,5 +1,8 @@
 <tool id="CONVERTER_wig_to_bigwig" name="Convert Wiggle to BigWig" hidden="true">
   <!-- Used internally to generate track indexes -->
+  <requirements>
+      <requirement type="package">ucsc_tools</requirement>
+  </requirements>
   <command>grep -v "^track" $input | wigToBigWig -clip stdin $chromInfo $output</command>
   <inputs>
     <page>
