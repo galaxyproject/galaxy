@@ -45,25 +45,6 @@ return Backbone.View.extend(
                                 self.app.chart_view.$el.show();
                             }
                         }),
-                'edit'  : new Ui.ButtonIcon({
-                            icon : 'fa-pencil',
-                            tooltip: 'Edit',
-                            onclick: function() {
-                                // check if element has been selected
-                                var chart_id = self.table.value();
-                                if (!chart_id) {
-                                    return;
-                                }
-                                
-                                // get chart
-                                var chart = self.app.charts.get(chart_id);
-                                self.app.chart.copy(chart);
-                                
-                                // show edit
-                                self.$el.hide();
-                                self.app.chart_view.$el.show();
-                            }
-                        }),
                 'delete' : new Ui.ButtonIcon({
                     icon : 'fa-minus',
                     tooltip: 'Delete',
@@ -100,7 +81,9 @@ return Backbone.View.extend(
         this.portlet.append(this.table.$el);
         
         // append to main
-        this.$el.append(this.portlet.$el);
+        if (!this.app.options.config.widget) {
+            this.$el.append(this.portlet.$el);
+        }
         
         // events
         var self = this;

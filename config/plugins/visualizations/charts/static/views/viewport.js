@@ -25,8 +25,16 @@ return Backbone.View.extend(
         
         // add table to portlet
         this.portlet = new Portlet({
+            label       : '',
+            icon        : 'fa-signal',
             height      : this.options.height,
-            overflow    : 'hidden'
+            overflow    : 'hidden',
+            operations  : {
+                'edit'  : new Ui.ButtonIcon({
+                    icon    : 'fa-gear',
+                    tooltip : 'Configure'
+                })
+            }
         });
         
         // set this element
@@ -69,6 +77,24 @@ return Backbone.View.extend(
     
     // add
     _addChart: function(chart) {
+        // link this
+        var self = this;
+        
+        // backup chart details
+        var chart_id = chart.id;
+    
+        // update portlet
+        this.portlet.label(chart.get('title'));
+        this.portlet.setOperation('edit', function() {
+            // get chart
+            var chart = self.app.charts.get(chart_id);
+            self.app.chart.copy(chart);
+            
+            // show edit
+            self.app.charts_view.$el.hide();
+            self.app.chart_view.$el.show();
+        });
+                    
         // make sure that svg does not exist already
         this._removeChart(chart.id);
             
