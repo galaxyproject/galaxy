@@ -17,7 +17,7 @@ var SVGUtils = Backbone.Model.extend({
             // To the right of screen?
             eltBRect.left > svgBRect.right ||
             // Above screen?
-            eltBRect.bottom < 0 || 
+            eltBRect.bottom < 0 ||
             // Below screen?
             eltBRect.top > svgBRect.bottom) {
             return false;
@@ -125,7 +125,7 @@ var CircsterLabelTrack = Backbone.Model.extend({});
 
 /**
  * Renders a full circster visualization.
- */ 
+ */
 var CircsterView = Backbone.View.extend({
     className: 'circster',
     
@@ -174,7 +174,7 @@ var CircsterView = Backbone.View.extend({
             min_dimension = Math.min(this.$el.width(), this.$el.height()),
             // Compute radius start based on model, will be centered 
             // and fit entirely inside element by default.
-            radius_start = min_dimension / 2 - 
+            radius_start = min_dimension / 2 -
                             circular_tracks.length * (this.dataset_arc_height + this.track_gap) -
                             (this.label_arc_height + this.track_gap),
 
@@ -212,7 +212,7 @@ var CircsterView = Backbone.View.extend({
                     // Do zoom, drag.
                     var scale = d3.event.scale;
                     svg.attr("transform",
-                      "translate(" + d3.event.translate + ")" + 
+                      "translate(" + d3.event.translate + ")" +
                       " scale(" + scale + ")");
 
                     // Propagate scale changes to views.
@@ -320,7 +320,7 @@ var CircsterView = Backbone.View.extend({
             // Update chords tracks.
             _.each(this.chords_views, function(track_view) {
                 track_view.update_radius_bounds(new_track_bounds[0]);
-            });            
+            });
 
             // Render new track.
             var track_index = this.circular_views.length,
@@ -510,8 +510,8 @@ var CircsterTrackView = Backbone.View.extend({
                 self._update_data_bounds();
 
                 // Find chromosome arc to draw data on.
-                var chrom_arc = _.find(self.chroms_layout, function(layout) { 
-                        return layout.data.chrom === chrom; 
+                var chrom_arc = _.find(self.chroms_layout, function(layout) {
+                        return layout.data.chrom === chrom;
                 });
 
                 // Add new data path and apply preferences.
@@ -668,7 +668,7 @@ var CircsterChromLabelTrackView = CircsterTrackView.extend({
             .attr('id', function(d) { return 'label-' + d.data.chrom; });
           
         chrom_arcs.append("svg:text")
-            .filter(function(d) { 
+            .filter(function(d) {
                 return d.endAngle - d.startAngle > self.min_arc_len;
             })
             .attr('text-anchor', 'middle')
@@ -676,7 +676,7 @@ var CircsterChromLabelTrackView = CircsterTrackView.extend({
             .attr("xlink:href", function(d) { return "#label-" + d.data.chrom; })
             .attr('startOffset', '25%')
             .attr('font-weight', 'bold')
-            .text(function(d) { 
+            .text(function(d) {
                 return d.data.chrom;
             });
 
@@ -944,9 +944,9 @@ var CircsterChromInteractionsTrackView = CircsterTrackView.extend({
         });
 
         // Return angle at position.
-        return  chrom_angle_data.endAngle - 
-                ( 
-                    (chrom_angle_data.endAngle - chrom_angle_data.startAngle) * 
+        return  chrom_angle_data.endAngle -
+                (
+                    (chrom_angle_data.endAngle - chrom_angle_data.startAngle) *
                     (chrom_angle_data.data.len - position) / chrom_angle_data.data.len
                 );
     }
@@ -1021,7 +1021,7 @@ var Circster = Backbone.View.extend(
                     Galaxy.modal.show({
                         title   : "Could Not Save",
                         body    : "Could not save visualization. Please try again later.",
-                        buttons : { "Cancel": function() { Galaxy.modal.hide() } }
+                        buttons : { "Cancel": function() { Galaxy.modal.hide(); } }
                     });
                 });
             }
