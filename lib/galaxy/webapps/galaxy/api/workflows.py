@@ -586,7 +586,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin):
         return data
 
     @expose_api
-    def import_shared_worflow(self, trans, payload, **kwd):
+    def import_shared_workflow(self, trans, payload, **kwd):
         """
         POST /api/workflows/import
         Import a workflow shared by other users.
