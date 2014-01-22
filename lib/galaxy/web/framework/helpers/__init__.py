@@ -57,7 +57,7 @@ def css( *args ):
 
     Cache-bust with time that server started running on
     """
-    return "\n".join( [ stylesheet_link( "static/style/" + name + ".css?v=%s" % server_starttime ) for name in args ] )
+    return "\n".join( [ stylesheet_link( url_for( "/static/style/%s.css?v=%s" % (name, server_starttime) ) ) for name in args ] )
 
 def js_helper( prefix, *args ):
     """
@@ -66,7 +66,7 @@ def js_helper( prefix, *args ):
 
     Cache-bust with time that server started running on
     """
-    return "\n".join( [ javascript_link( prefix + name + ".js?v=%s" % server_starttime ) for name in args ] )
+    return "\n".join( [ javascript_link( url_for( "/%s%s.js?v=%s" % (prefix, name, server_starttime ) ) ) for name in args ] )
 
 def js( *args ):
     """
