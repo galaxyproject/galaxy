@@ -753,7 +753,9 @@ def populate_dependency_install_containers( app, repository, repository_identifi
             owner = str( missing_repository_dependency.owner )
             changeset_revision = str( missing_repository_dependency.changeset_revision )
             error_message = unicodify( missing_repository_dependency.error_message )
-            print 'Revision %s of repository %s owned by %s:\n%s' % ( changeset_revision, name, owner, error_message )
+            print 'Revision %s of repository %s owned by %s has the following installation error:' % ( changeset_revision, name, owner )
+            # Use log.debug here instead of print because print will throw UnicodeEncodeError exceptions.
+            log.debug( '%s' % error_message )
             missing_repository_dependency_info_dict = dict( tool_shed=tool_shed,
                                                             name=name,
                                                             owner=owner,
@@ -774,7 +776,9 @@ def populate_dependency_install_containers( app, repository, repository_identifi
             type = str( missing_tool_dependency.type )
             version = str( missing_tool_dependency.version )
             error_message = unicodify( missing_tool_dependency.error_message )
-            print 'Version %s of tool dependency %s %s:\n%s' % ( version, type, name, error_message )
+            print 'Version %s of tool dependency %s %s has the following installation error:' % ( version, type, name )
+            # Use log.debug here instead of print because print will throw UnicodeEncodeError exceptions.
+            log.debug( '%s' % error_message )
             missing_tool_dependency_info_dict = dict( type=type,
                                                       name=name,
                                                       version=version,
@@ -870,25 +874,38 @@ def populate_install_containers_for_repository_dependencies( app, repository, re
                     ( changeset_revision, name, owner )
                 print 'due to the following error getting tool_test_results:\n%s' % str( error_message )
             else:
-                # Check the required repository's time_last_tested value to see if its tool_test_results column
-                # has been updated within the past 12 hours.  The RepositoryMetadata class's to_dict() method
-                # returns the value of time_last_tested in datetime.isoformat().
-                twenty_hours_ago = ( datetime.utcnow() - timedelta( hours=20 ) ).isoformat()
+                # The assumption is that the Tool SHed's install and test framework is executed no more than once per 24 hour
+                # period, so check the required repository's time_last_tested value to see if its tool_test_results column
+                # has been updated within the past 24 hours.  The RepositoryMetadata class's to_dict() method returns the value
+                # of time_last_tested in datetime.isoformat().
                 time_last_tested, error_message = get_time_last_tested( galaxy_tool_shed_url, required_repository_metadata_id )
-                if time_last_tested is not None and time_last_tested < twenty_hours_ago:
-                    print 'The install containers for version %s of repository dependency %s owned by %s have been ' % \
-                        ( changeset_revision, name, owner )
-                    print 'populated within the past 20 hours (likely in this test run), so skipping this check.'
-                    continue
-                elif time_last_tested is None:
+                print 'Value of time_last_tested: %s' % str( time_last_tested )
+                if time_last_tested is None:
                     print 'The time_last_tested column value is None for version %s of repository dependency %s owned by %s.' % \
                         ( changeset_revision, name, owner )
-                elif time_last_tested < twenty_hours_ago:
-                    print 'Version %s of repository dependency %s owned by %s was last tested less than 20 hours ago.' % \
-                        ( changeset_revision, name, owner )
                 else:
-                    print 'Version %s of repository dependency %s owned by %s was last tested more than 20 hours ago.' % \
-                        ( changeset_revision, name, owner )
+                    twenty_four_hours_ago = ( datetime.utcnow() - timedelta( hours=24 ) ).isoformat()
+                    print 'Value of twenty_four_hours_ago: %s' % str( twenty_four_hours_ago )
+                    # This is counter intuitive because the following check is on strings like this: '2014-01-21T19:46:06.953741',
+                    # so if "time_last_tested > twenty_four_hours_ago" is True, then it implies that the time_last_tested column
+                    # was actually updated less than 24 hours ago, and should not be updated again because we're likely processing
+                    # another dependent repository, many of which can have the same repository dependency.  
+                    try:
+                        # Be very conservative here.  Our default behavior will be to assume containers have not been populated
+                        # during the current test run.
+                        already_populated = time_last_tested > twenty_four_hours_ago
+                    except Exception, e:
+                        log.exception( 'Error attempting to set already_populated: %s' % str( e ) )
+                        already_populated = False
+                    print 'Value of already_populated: %s' % str( already_populated )
+                    if already_populated:
+                        print 'The install containers for version %s of repository dependency %s owned by %s have been ' % \
+                            ( changeset_revision, name, owner )
+                        print 'populated within the past 24 hours (likely in this test run), so skipping this check.'
+                        continue
+                    else:
+                        print 'Version %s of repository dependency %s owned by %s was last tested more than 24 hours ago.' % \
+                            ( changeset_revision, name, owner )
                 # Inspect the tool_test_results_dict for the last test run to see if it has not yet been populated.
                 if len( tool_test_results_dicts ) == 0:
                     tool_test_results_dict = {}
