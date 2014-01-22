@@ -124,7 +124,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 #genome_data_path = tool-data/genome
 
 # URL for rsync server to download pre-built indexes.
-#rsync_url = rsync://scofield.bx.psu.edu/indexes
+#rsync_url = rsync://datacache.galaxyproject.org/indexes
 
 # Dataset files are stored in this directory.
 #file_path = database/files
