@@ -209,8 +209,8 @@ class User( object, Dictifiable ):
 
 
 class Job( object, Dictifiable ):
-    dict_collection_visible_keys = [ 'id', 'state', 'exit_code'  ]
-    dict_element_visible_keys = [ 'id', 'state', 'exit_code' ]
+    dict_collection_visible_keys = [ 'id', 'state', 'exit_code', 'update_time', 'create_time' ]
+    dict_element_visible_keys = [ 'id', 'state', 'exit_code', 'update_time', 'create_time'  ]
 
     """
     A job represents a request to run a tool given input datasets, tool
@@ -416,30 +416,31 @@ class Job( object, Dictifiable ):
                 dataset.info = 'Job output deleted by user before job completed'
     def to_dict( self, view='collection' ):
         rval = super( Job, self ).to_dict( view=view )
-        rval['tool_name'] = self.tool_id
-        param_dict = dict( [ ( p.name, p.value ) for p in self.parameters ] )
-        rval['params'] = param_dict
+        if view == 'element':
+            rval['tool_name'] = self.tool_id
+            param_dict = dict( [ ( p.name, p.value ) for p in self.parameters ] )
+            rval['params'] = param_dict
 
-        input_dict = {}
-        for i in self.input_datasets:
-            if i.dataset is not None:
-                input_dict[i.name] = {"hda_id" : i.dataset.id}
-        for i in self.input_library_datasets:
-            if i.dataset is not None:
-                input_dict[i.name] = {"ldda_id" : i.dataset.id}
-        for k in input_dict:
-            if k in param_dict:
-                del param_dict[k]
-        rval['inputs'] = input_dict
+            input_dict = {}
+            for i in self.input_datasets:
+                if i.dataset is not None:
+                    input_dict[i.name] = {"id" : i.dataset.id, "src" : "hda"}
+            for i in self.input_library_datasets:
+                if i.dataset is not None:
+                    input_dict[i.name] = {"id" : i.dataset.id, "src" : "ldda"}
+            for k in input_dict:
+                if k in param_dict:
+                    del param_dict[k]
+            rval['inputs'] = input_dict
 
-        output_dict = {}
-        for i in self.output_datasets:
-            if i.dataset is not None:
-                output_dict[i.name] = {"hda_id" : i.dataset.id}
-        for i in self.output_library_datasets:
-            if i.dataset is not None:
-                output_dict[i.name] = {"ldda_id" : i.dataset.id}
-        rval['outputs'] = output_dict
+            output_dict = {}
+            for i in self.output_datasets:
+                if i.dataset is not None:
+                    output_dict[i.name] = {"id" : i.dataset.id, "src" : "hda"}
+            for i in self.output_library_datasets:
+                if i.dataset is not None:
+                    output_dict[i.name] = {"id" : i.dataset.id, "src" : "ldda"}
+            rval['outputs'] = output_dict
 
         return rval
 

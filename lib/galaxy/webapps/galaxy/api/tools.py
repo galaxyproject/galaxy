@@ -78,7 +78,12 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMix
         # -- Execute tool. --
 
         # Get tool.
-        tool = trans.app.toolbox.get_tool( payload[ 'tool_id' ] ) if 'tool_id' in payload else None
+        tool = None
+        if 'tool_id' in payload:
+            tool = trans.app.toolbox.get_tool( payload[ 'tool_id' ] )
+        if 'tool_name' in payload:
+            #in job descriptions it is called 'tool_name' to avoid having the name 'crushed'
+            tool = trans.app.toolbox.get_tool( payload[ 'tool_name' ] )
         if not tool:
             trans.response.status = 404
             return { "message": { "type": "error", "text" : trans.app.model.Dataset.conversion_messages.NO_TOOL } }
