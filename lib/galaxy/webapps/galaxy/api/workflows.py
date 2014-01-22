@@ -9,10 +9,10 @@ from sqlalchemy import desc, or_
 from galaxy import exceptions
 from galaxy import util
 from galaxy import web
-from galaxy.tools.parameters import visit_input_values, DataToolParameter, RuntimeValue
+from galaxy.tools.parameters import visit_input_values, DataToolParameter
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web.base.controller import BaseAPIController, url_for, UsesStoredWorkflowMixin
-from galaxy.workflow.modules import module_factory, ToolModule
+from galaxy.workflow.modules import module_factory
 from galaxy.jobs.actions.post import ActionBox
 
 
@@ -364,141 +364,6 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin):
         rval.append(item)
 
         return item
-
-    def _workflow_to_dict( self, trans, stored ):
-        """
-        RPARK: copied from galaxy.web.controllers.workflows.py
-        Converts a workflow to a dict of attributes suitable for exporting.
-        """
-        workflow = stored.latest_workflow
-
-        ### ----------------------------------- ###
-        ## RPARK EDIT ##
-        workflow_annotation = self.get_item_annotation_obj( trans.sa_session, trans.user, stored )
-        annotation_str = ""
-        if workflow_annotation:
-            annotation_str = workflow_annotation.annotation
-        ### ----------------------------------- ###
-
-
-        # Pack workflow data into a dictionary and return
-        data = {}
-        data['a_galaxy_workflow'] = 'true' # Placeholder for identifying galaxy workflow
-        data['format-version'] = "0.1"
-        data['name'] = workflow.name
-        ### ----------------------------------- ###
-        ## RPARK EDIT ##
-        data['annotation'] = annotation_str
-        ### ----------------------------------- ###
-
-        data['steps'] = {}
-        # For each step, rebuild the form and encode the state
-        for step in workflow.steps:
-            # Load from database representation
-            module = module_factory.from_workflow_step( trans, step )
-            if not module:
-                return None
-
-            ### ----------------------------------- ###
-            ## RPARK EDIT ##
-
-            # TODO: This is duplicated from
-            # lib/galaxy/webapps/controllres/workflow.py -- refactor and
-            # eliminate copied code.
-
-            # Get user annotation.
-            step_annotation = self.get_item_annotation_obj(trans.sa_session, trans.user, step )
-            annotation_str = ""
-            if step_annotation:
-                annotation_str = step_annotation.annotation
-            ### ----------------------------------- ###
-
-            # Step info
-            step_dict = {
-                'id': step.order_index,
-                'type': module.type,
-                'tool_id': module.get_tool_id(),
-                'tool_version' : step.tool_version,
-                'name': module.get_name(),
-                'tool_state': module.get_state( secure=False ),
-                'tool_errors': module.get_errors(),
-                ## 'data_inputs': module.get_data_inputs(),
-                ## 'data_outputs': module.get_data_outputs(),
-
-                ### ----------------------------------- ###
-                ## RPARK EDIT ##
-                'annotation' : annotation_str
-                ### ----------------------------------- ###
-
-            }
-            # Add post-job actions to step dict.
-            if module.type == 'tool':
-                pja_dict = {}
-                for pja in step.post_job_actions:
-                    pja_dict[pja.action_type+pja.output_name] = dict( action_type = pja.action_type,
-                                                                      output_name = pja.output_name,
-                                                                      action_arguments = pja.action_arguments )
-                step_dict[ 'post_job_actions' ] = pja_dict
-            # Data inputs
-            step_dict['inputs'] = []
-            if module.type == "data_input":
-                # Get input dataset name; default to 'Input Dataset'
-                name = module.state.get( 'name', 'Input Dataset')
-                step_dict['inputs'].append( { "name" : name, "description" : annotation_str } )
-            else:
-                # Step is a tool and may have runtime inputs.
-                for name, val in module.state.inputs.items():
-                    input_type = type( val )
-                    if input_type == RuntimeValue:
-                        step_dict['inputs'].append( { "name" : name, "description" : "runtime parameter for tool %s" % module.get_name() } )
-                    elif input_type == dict:
-                        # Input type is described by a dict, e.g. indexed parameters.
-                        for partval in val.values():
-                            if type( partval ) == RuntimeValue:
-                                step_dict['inputs'].append( { "name" : name, "description" : "runtime parameter for tool %s" % module.get_name() } )
-            # User outputs
-            step_dict['user_outputs'] = []
-            """
-            module_outputs = module.get_data_outputs()
-            step_outputs = trans.sa_session.query( WorkflowOutput ).filter( step=step )
-            for output in step_outputs:
-                name = output.output_name
-                annotation = ""
-                for module_output in module_outputs:
-                    if module_output.get( 'name', None ) == name:
-                        output_type = module_output.get( 'extension', '' )
-                        break
-                data['outputs'][name] = { 'name' : name, 'annotation' : annotation, 'type' : output_type }
-            """
-
-            # All step outputs
-            step_dict['outputs'] = []
-            if type( module ) is ToolModule:
-                for output in module.get_data_outputs():
-                    step_dict['outputs'].append( { 'name' : output['name'], 'type' : output['extensions'][0] } )
-            # Connections
-            input_connections = step.input_connections
-            if step.type is None or step.type == 'tool':
-                # Determine full (prefixed) names of valid input datasets
-                data_input_names = {}
-                def callback( input, value, prefixed_name, prefixed_label ):
-                    if isinstance( input, DataToolParameter ):
-                        data_input_names[ prefixed_name ] = True
-                visit_input_values( module.tool.inputs, module.state.inputs, callback )
-                # Filter
-                # FIXME: this removes connection without displaying a message currently!
-                input_connections = [ conn for conn in input_connections if conn.input_name in data_input_names ]
-            # Encode input connections as dictionary
-            input_conn_dict = {}
-            for conn in input_connections:
-                input_conn_dict[ conn.input_name ] = \
-                    dict( id=conn.output_step.order_index, output_name=conn.output_name )
-            step_dict['input_connections'] = input_conn_dict
-            # Position
-            step_dict['position'] = step.position
-            # Add to return value
-            data['steps'][step.order_index] = step_dict
-        return data
 
     @expose_api
     def import_shared_workflow(self, trans, payload, **kwd):
