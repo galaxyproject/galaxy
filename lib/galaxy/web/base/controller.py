@@ -5,15 +5,11 @@ import logging
 import operator
 import os
 import re
-import urllib
 from gettext import gettext
 
 import pkg_resources
 pkg_resources.require("SQLAlchemy >= 0.4")
 from sqlalchemy import func, and_, select
-
-pkg_resources.require( "Routes" )
-import routes
 
 from paste.httpexceptions import HTTPBadRequest, HTTPInternalServerError
 from paste.httpexceptions import HTTPNotImplemented, HTTPRequestRangeNotSatisfiable
@@ -40,7 +36,6 @@ from galaxy.datatypes.data import Text
 
 from galaxy.model import ExtendedMetadata, ExtendedMetadataIndex, LibraryDatasetDatasetAssociation, HistoryDatasetAssociation
 
-from galaxy.datatypes.display_applications import util as da_util
 from galaxy.datatypes.metadata import FileParameter
 
 
