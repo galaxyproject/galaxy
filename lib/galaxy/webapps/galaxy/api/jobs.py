@@ -8,21 +8,22 @@ import pkg_resources
 pkg_resources.require( "Paste" )
 from paste.httpexceptions import HTTPBadRequest, HTTPForbidden, HTTPInternalServerError, HTTPException
 
-from sqlalchemy import or_
-
+from sqlalchemy import or_, and_
+from sqlalchemy.orm import aliased
+import json
 from galaxy import web
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
 from galaxy.util import string_as_bool, restore_text
 from galaxy.util.sanitize_html import sanitize_html
-from galaxy.web.base.controller import BaseAPIController
+from galaxy.web.base.controller import BaseAPIController, UsesHistoryDatasetAssociationMixin, UsesLibraryMixinItems
 from galaxy.web import url_for
 from galaxy.model.orm import desc
 
 import logging
 log = logging.getLogger( __name__ )
 
-class HistoriesController( BaseAPIController ):
+class HistoriesController( BaseAPIController, UsesHistoryDatasetAssociationMixin, UsesLibraryMixinItems ):
 
     @web.expose_api
     def index( self, trans, **kwd ):
@@ -61,6 +62,18 @@ class HistoriesController( BaseAPIController ):
 
     @web.expose_api
     def show( self, trans, id, **kwd ):
+        """
+        show( trans, id )
+        * GET /api/jobs/{job_id}:
+            return jobs for current user
+
+        :type   id: string
+        :param  id: Specific job id
+
+        :rtype:     dictionary
+        :returns:   dictionary containing full description of job data
+        """
+
         decoded_job_id = trans.security.decode_id(id)
         query = trans.sa_session.query(trans.app.model.Job).filter( 
             trans.app.model.Job.user == trans.user,
@@ -72,13 +85,100 @@ class HistoriesController( BaseAPIController ):
 
     @expose_api
     def create( self, trans, payload, **kwd ):
+        """
+        show( trans, payload )
+        * POST /api/jobs:
+            return jobs for current user
+
+        :type   payload: dict
+        :param  payload: Dictionary containing description of requested job. This is in the same format as
+            a request to POST /apt/tools would take to initiate a job
+
+        :rtype:     list
+        :returns:   list of dictionaries containing summary job information of the jobs that match the requested job run
+
+        This method is designed to scan the list of previously run jobs and find records of jobs that had 
+        the exact some input parameters and datasets. This can be used to minimize the amount of repeated work, and simply 
+        recycle the old results.
+        """
+
         error = None
-        if 'tool_id' not in payload:
+        tool_id = None
+        if 'tool_id' in payload:
+            tool_id = payload.get('tool_id')
+        if 'tool_name' in payload:
+            tool_id = payload.get('tool_name')
+
+        tool = trans.app.toolbox.get_tool( tool_id )
+        if tool is None:
+            error = "Requested tool not found"
+        if 'inputs' not in payload:
+            error = "No inputs defined"
+        if tool_id is None:
             error = "No tool ID" 
-
-        tool_id = payload.get('tool_id')
-
         if error is not None:
             return { "error" : error }
 
+        inputs = payload['inputs']
 
+        input_data = {}
+        input_param = {}
+        for k, v in inputs.items():
+            if isinstance(v,dict):
+                if 'id' in v:
+                    try:
+                        if 'src' not in v or v['src'] == 'hda':
+                            dataset = self.get_dataset( trans, v['id'], check_ownership=False, check_accessible=True )
+                        else:
+                            dataset = self.get_library_dataset_dataset_association( trans, v['id'] )
+                    except Exception, e:
+                        return { "error" : str( e ) }
+                    if dataset is None:
+                        return { "error" : "Dataset %s not found" % (v['id']) }                
+                    input_data[k] = dataset.dataset_id
+            else:
+                input_param[k] = json.dumps(v)
+
+        query = trans.sa_session.query( trans.app.model.Job ).filter( 
+            trans.app.model.Job.tool_id == tool_id, 
+            trans.app.model.Job.user == trans.user
+        ).filter(
+            or_( 
+                trans.app.model.Job.state == 'running', 
+                trans.app.model.Job.state == 'queued', 
+                trans.app.model.Job.state == 'waiting', 
+                trans.app.model.Job.state == 'running',
+                trans.app.model.Job.state == 'ok',                  
+            )
+        )
+
+        for k,v in input_param.items():
+            a = aliased(trans.app.model.JobParameter)
+            query = query.filter( and_(
+                trans.app.model.Job.id == a.job_id,
+                a.name == k,
+                a.value == v
+            ))
+
+        for k,v in input_data.items():
+            """
+            Here we are attempting to link the inputs to the underlying dataset (not the dataset association)
+            This way, if the calulation was done using a copied HDA (copied from the library or another history)
+            the search will still find the job
+            """
+            a = aliased(trans.app.model.JobToInputDatasetAssociation)
+            b = aliased(trans.app.model.HistoryDatasetAssociation)
+            query = query.filter( and_(
+                trans.app.model.Job.id == a.job_id,
+                a.dataset_id == b.id,
+                b.deleted == False,
+                b.dataset_id == v
+            ))
+        out = []
+        for job in query.all():
+            """
+            check to make sure none of the output files have been deleted
+            """
+            if all(list(a.dataset.deleted == False for a in job.output_datasets)):
+                out.append( self.encode_all_ids( trans, job.to_dict('element'), True) )
+        return out

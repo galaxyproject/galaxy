@@ -416,8 +416,8 @@ class Job( object, Dictifiable ):
                 dataset.info = 'Job output deleted by user before job completed'
     def to_dict( self, view='collection' ):
         rval = super( Job, self ).to_dict( view=view )
+        rval['tool_name'] = self.tool_id
         if view == 'element':
-            rval['tool_name'] = self.tool_id
             param_dict = dict( [ ( p.name, p.value ) for p in self.parameters ] )
             rval['params'] = param_dict
 
