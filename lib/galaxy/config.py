@@ -151,6 +151,7 @@ class Configuration( object ):
             h, m, s = [ int( v ) for v in self.job_walltime.split( ':' ) ]
             self.job_walltime_delta = timedelta( 0, s, 0, 0, m, h )
         self.admin_users = kwargs.get( "admin_users", "" )
+        self.reset_password_length = int( kwargs.get('reset_password_length', '15') )
         self.mailing_join_addr = kwargs.get('mailing_join_addr',"galaxy-announce-join@bx.psu.edu")
         self.error_email_to = kwargs.get( 'error_email_to', None )
         self.activation_email = kwargs.get( 'activation_email', None )
