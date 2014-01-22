@@ -9,14 +9,12 @@ from sqlalchemy import desc, or_
 from galaxy import exceptions
 from galaxy import util
 from galaxy import web
-from galaxy import model
 from galaxy.tools.parameters import visit_input_values, DataToolParameter, RuntimeValue
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web.base.controller import BaseAPIController, url_for, UsesStoredWorkflowMixin
 from galaxy.workflow.modules import module_factory, ToolModule
 from galaxy.jobs.actions.post import ActionBox
 
-from ..controllers.workflow import attach_ordered_steps
 
 log = logging.getLogger(__name__)
 
@@ -366,89 +364,6 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin):
         rval.append(item)
 
         return item
-
-    def _workflow_from_dict( self, trans, data, source=None ):
-        """
-        RPARK: copied from galaxy.webapps.galaxy.controllers.workflows.py
-        Creates a workflow from a dict. Created workflow is stored in the database and returned.
-        """
-        # Put parameters in workflow mode
-        trans.workflow_building_mode = True
-        # Create new workflow from incoming dict
-        workflow = model.Workflow()
-        # If there's a source, put it in the workflow name.
-        if source:
-            name = "%s (imported from %s)" % ( data['name'], source )
-        else:
-            name = data['name']
-        workflow.name = name
-        # Assume no errors until we find a step that has some
-        workflow.has_errors = False
-        # Create each step
-        steps = []
-        # The editor will provide ids for each step that we don't need to save,
-        # but do need to use to make connections
-        steps_by_external_id = {}
-        # Keep track of tools required by the workflow that are not available in
-        # the local Galaxy instance.  Each tuple in the list of missing_tool_tups
-        # will be ( tool_id, tool_name, tool_version ).
-        missing_tool_tups = []
-        # First pass to build step objects and populate basic values
-        for step_dict in data[ 'steps' ].itervalues():
-            # Create the model class for the step
-            step = model.WorkflowStep()
-            steps.append( step )
-            steps_by_external_id[ step_dict['id' ] ] = step
-            # FIXME: Position should be handled inside module
-            step.position = step_dict['position']
-            module = module_factory.from_dict( trans, step_dict, secure=False )
-            if module.type == 'tool' and module.tool is None:
-                # A required tool is not available in the local Galaxy instance.
-                missing_tool_tup = ( step_dict[ 'tool_id' ], step_dict[ 'name' ], step_dict[ 'tool_version' ] )
-                if missing_tool_tup not in missing_tool_tups:
-                    missing_tool_tups.append( missing_tool_tup )
-            module.save_to_step( step )
-            if step.tool_errors:
-                workflow.has_errors = True
-            # Stick this in the step temporarily
-            step.temp_input_connections = step_dict['input_connections']
-            # Save step annotation.
-            #annotation = step_dict[ 'annotation' ]
-            #if annotation:
-                #annotation = sanitize_html( annotation, 'utf-8', 'text/html' )
-                # ------------------------------------------ #
-                # RPARK REMOVING: user annotation b/c of API
-                #self.add_item_annotation( trans.sa_session, trans.get_user(), step, annotation )
-                # ------------------------------------------ #
-            # Unpack and add post-job actions.
-            post_job_actions = step_dict.get( 'post_job_actions', {} )
-            for name, pja_dict in post_job_actions.items():
-                model.PostJobAction( pja_dict[ 'action_type' ],
-                                     step, pja_dict[ 'output_name' ],
-                                     pja_dict[ 'action_arguments' ] )
-        # Second pass to deal with connections between steps
-        for step in steps:
-            # Input connections
-            for input_name, conn_dict in step.temp_input_connections.iteritems():
-                if conn_dict:
-                    conn = model.WorkflowStepConnection()
-                    conn.input_step = step
-                    conn.input_name = input_name
-                    conn.output_name = conn_dict['output_name']
-                    conn.output_step = steps_by_external_id[ conn_dict['id'] ]
-            del step.temp_input_connections
-        # Order the steps if possible
-        attach_ordered_steps( workflow, steps )
-        # Connect up
-        stored = model.StoredWorkflow()
-        stored.name = workflow.name
-        workflow.stored_workflow = stored
-        stored.latest_workflow = workflow
-        stored.user = trans.user
-        # Persist
-        trans.sa_session.add( stored )
-        trans.sa_session.flush()
-        return stored, missing_tool_tups
 
     def _workflow_to_dict( self, trans, stored ):
         """
