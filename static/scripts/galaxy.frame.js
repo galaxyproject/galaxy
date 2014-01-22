@@ -173,8 +173,7 @@ var GalaxyFrame = Backbone.View.extend(
             title: '',
             content: null,
             target: '',
-            type: null,
-            scratchbook: false
+            type: null
         }
         
         // read in defaults
@@ -1096,8 +1095,14 @@ var GalaxyFrame = Backbone.View.extend(
             title = '';
 
         // identify content type
-        if (type == 'url')
-            content = '<iframe scrolling="auto" class="f-iframe"  src="' + content + '"></iframe>';
+        if (type == 'url') {
+            if (content.indexOf('?') == -1)
+                content += '?';
+            else
+                content += '&';
+            content += 'widget=True';
+            content = '<iframe scrolling="auto" class="f-iframe" src="' + content + '"></iframe>';
+        }
         
         // load template
         return  '<div id="' + id + '" class="frame corner">' +

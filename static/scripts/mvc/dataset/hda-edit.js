@@ -425,8 +425,7 @@ function create_scatterplot_action_fn( url, params, target ){
             title       : "Scatterplot",
             type        : "url",
             content     : url + '/scatterplot?' + $.param(params),
-            target      : target,
-            scratchbook : true
+            target      : target
         });
 
         //TODO: this needs to go away
@@ -487,8 +486,7 @@ function create_scatterplot_action_fn( url, params, target ){
                                                 parent.Galaxy.frame.add({
                                                     title       : "Trackster",
                                                     type        : "url",
-                                                    content     : vis_url + "/trackster?" + $.param(dataset_params),
-                                                    scratchbook : true
+                                                    content     : vis_url + "/trackster?" + $.param(dataset_params)
                                                 });
                                             });
                                         }
@@ -505,8 +503,7 @@ function create_scatterplot_action_fn( url, params, target ){
                                 parent.Galaxy.frame.add({
                                     title       : "Trackster",
                                     type        : "url",
-                                    content     : url,
-                                    scratchbook : true
+                                    content     : url
                                 });
                             }
                         }

@@ -37,17 +37,27 @@ return Backbone.View.extend(
         this.chart_view = new ChartView(this);
         this.viewport_view = new ViewportView(this);
         
-        // portlet
-        this.portlet = new Portlet({icon : 'fa-bar-chart-o', label : 'Charts'});
+        // append view port to charts viewer
+        this.charts_view.append(this.viewport_view.$el);
+            
+        // create portlet
+        if (!this.options.config.widget) {
+            this.portlet = new Portlet({icon : 'fa-bar-chart-o', label : 'Charts'});
+        } else {
+            this.portlet = $('<div></div>');
+        }
+        
+        // append views
         this.portlet.append(this.charts_view.$el);
         this.portlet.append(this.group_view.$el);
         this.portlet.append(this.chart_view.$el);
         
-        // append main
-        this.charts_view.append(this.viewport_view.$el);
-        
-        // set elements
-        this.setElement(this.portlet.$el);
+        // set element
+        if (!this.options.config.widget) {
+            this.setElement(this.portlet.$el);
+        } else {
+            this.setElement(this.portlet);
+        }
         
         // hide views
         this.group_view.$el.hide();
