@@ -57,7 +57,7 @@ def css( *args ):
 
     Cache-bust with time that server started running on
     """
-    return "\n".join( [ stylesheet_link( "/static/style/" + name + ".css?v=%s" % server_starttime ) for name in args ] )
+    return "\n".join( [ stylesheet_link( "static/style/" + name + ".css?v=%s" % server_starttime ) for name in args ] )
 
 def js_helper( prefix, *args ):
     """
@@ -73,14 +73,14 @@ def js( *args ):
     Take a prefix and list of javascript names and return appropriate
     string of script tags.
     """
-    return js_helper( '/static/scripts/', *args )
+    return js_helper( 'static/scripts/', *args )
 
 def templates( *args ):
     """
     Take a list of template names (no extension) and return appropriate
     string of script tags.
     """
-    return js_helper( '/static/scripts/templates/compiled/', *args )
+    return js_helper( 'static/scripts/templates/compiled/', *args )
 
 # Hashes
 
