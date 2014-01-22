@@ -875,7 +875,7 @@ var BrowserBookmarkCollection = Backbone.Collection.extend({
 var BackboneTrack = Backbone.Model.extend({
 
     initialize: function(options) {
-        this.set('dataset', new data_mod.Dataset('dataset'));
+        this.set('dataset', new data_mod.Dataset(options.dataset));
 
         // -- Set up config settings. -- 
 
@@ -902,7 +902,7 @@ var BackboneTrack = Backbone.Model.extend({
     }
 });
 
-var BackboneTrackCollection = new Backbone.Collection.extend({
+var BackboneTrackCollection = Backbone.Collection.extend({
     model: BackboneTrack
 });
 
