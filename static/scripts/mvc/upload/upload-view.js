@@ -262,8 +262,7 @@ return Backbone.View.extend(
                 },
                 height              : '400',
                 width               : '900',
-                bindClosingEvents   : true,
-                bindEscKey          : false
+                closing_events   : true
             });
         
             // set element
