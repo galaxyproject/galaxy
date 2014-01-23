@@ -772,6 +772,10 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
                 s_end = Math.floor( Math.max(0, (seq_start + cig_len - tile_low - 0.5) * w_scale) );
 
             if (!is_overlap([seq_start, seq_start + cig_len], tile_region)) {
+                // Increment base offset only for certain operations.
+                if ("MDN=X".indexOf(cig_op) !== -1) {
+                    base_offset += cig_len;
+                }
                 continue;
             }
             
@@ -960,7 +964,6 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
             f_end   = Math.ceil( Math.min(width, Math.max(0, (feature_end - tile_low - 0.5) * w_scale)) ),
             y_start = (mode === "Dense" ? 0 : (0 + slot)) * y_scale,
             label_color = this.prefs.label_color;
-
         
         // Draw read.
         if (feature[5] instanceof Array) {
