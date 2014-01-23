@@ -61,14 +61,29 @@ return Backbone.View.extend(
     },
     
     // show
-    show: function(id) {
+    show: function(chart_id) {
         // hide all
         this.$el.find('svg').hide();
         
-        var item = this.list[id];
+        // identify selected item from list
+        var item = this.list[chart_id];
         if (item) {
             // show selected chart
             this.$el.find(item.svg_id).show();
+        
+            // get chart
+            var chart = self.app.charts.get(chart_id);
+                
+            // update portlet
+            this.portlet.label(chart.get('title'));
+            this.portlet.setOperation('edit', function() {
+                // get chart
+                self.app.chart.copy(chart);
+                
+                // show edit
+                self.app.charts_view.$el.hide();
+                self.app.chart_view.$el.show();
+            });
         
             // this trigger d3 update events
             $(window).trigger('resize');
@@ -83,23 +98,11 @@ return Backbone.View.extend(
         // backup chart details
         var chart_id = chart.id;
     
-        // update portlet
-        this.portlet.label(chart.get('title'));
-        this.portlet.setOperation('edit', function() {
-            // get chart
-            var chart = self.app.charts.get(chart_id);
-            self.app.chart.copy(chart);
-            
-            // show edit
-            self.app.charts_view.$el.hide();
-            self.app.chart_view.$el.show();
-        });
-                    
         // make sure that svg does not exist already
-        this._removeChart(chart.id);
+        this._removeChart(chart_id);
             
         // create id
-        var svg_id = '#svg_' + chart.id;
+        var svg_id = '#svg_' + chart_id;
         
         // create element
         var chart_el = $(this._template({id: svg_id, height : this.options.height}));
@@ -108,7 +111,7 @@ return Backbone.View.extend(
         this.portlet.append(chart_el);
         
         // backup id
-        this.list[chart.id] = {
+        this.list[chart_id] = {
             svg_id : svg_id
         }
         
@@ -155,8 +158,8 @@ return Backbone.View.extend(
                 chart_index++;
             });
             
-            // add view
-            self.list[chart.id].view = view;
+            // show
+            self.show(chart_id);
         });
     },
     
