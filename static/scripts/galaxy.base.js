@@ -185,7 +185,7 @@ function make_popup_menus( parent ) {
                                 link.click();
                             }
                         }
-                        return false;
+                        //return false;
                     }
                 };
             }
