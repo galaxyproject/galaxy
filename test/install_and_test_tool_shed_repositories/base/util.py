@@ -756,15 +756,16 @@ def populate_dependency_install_containers( app, repository, repository_identifi
             print 'Revision %s of repository %s owned by %s has the following installation error:' % ( changeset_revision, name, owner )
             # Use log.debug here instead of print because print will throw UnicodeEncodeError exceptions.
             log.debug( '%s' % error_message )
+            identity_tup = ( name, owner, changeset_revision )
+            processed_repositories_with_installation_error = \
+                install_and_test_statistics_dict.get( 'repositories_with_installation_error', [] )
+            if identity_tup not in processed_repositories_with_installation_error:
+                install_and_test_statistics_dict[ 'repositories_with_installation_error' ].append( identity_tup )
             missing_repository_dependency_info_dict = dict( tool_shed=tool_shed,
                                                             name=name,
                                                             owner=owner,
                                                             changeset_revision=changeset_revision,
                                                             error_message=error_message )
-            processed_repositories_with_installation_error = \
-                install_and_test_statistics_dict.get( 'repositories_with_installation_error', [] )
-            if missing_repository_dependency_info_dict not in processed_repositories_with_installation_error:
-                install_and_test_statistics_dict[ 'repositories_with_installation_error' ].append( missing_repository_dependency_info_dict )
             tool_test_results_dict[ 'installation_errors' ][ 'repository_dependencies' ].append( missing_repository_dependency_info_dict )
     if repository.missing_tool_dependencies:
         print 'The following tool dependencies for revision %s of repository %s owned by %s have installation errors:' % \
@@ -779,14 +780,15 @@ def populate_dependency_install_containers( app, repository, repository_identifi
             print 'Version %s of tool dependency %s %s has the following installation error:' % ( version, type, name )
             # Use log.debug here instead of print because print will throw UnicodeEncodeError exceptions.
             log.debug( '%s' % error_message )
+            identity_tup = ( name, type, version )
+            processed_tool_dependencies_with_installation_error = \
+                install_and_test_statistics_dict.get( 'tool_dependencies_with_installation_error', [] )
+            if identity_tup not in processed_tool_dependencies_with_installation_error:
+                install_and_test_statistics_dict[ 'tool_dependencies_with_installation_error' ].append( identity_tup )
             missing_tool_dependency_info_dict = dict( type=type,
                                                       name=name,
                                                       version=version,
                                                       error_message=error_message )
-            processed_tool_dependencies_with_installation_error = \
-                install_and_test_statistics_dict.get( 'tool_dependencies_with_installation_error', [] )
-            if missing_tool_dependency_info_dict not in processed_tool_dependencies_with_installation_error:
-                install_and_test_statistics_dict[ 'tool_dependencies_with_installation_error' ].append( missing_tool_dependency_info_dict )
             tool_test_results_dict[ 'installation_errors' ][ 'tool_dependencies' ].append( missing_tool_dependency_info_dict )
     if repository.installed_repository_dependencies:
         print 'The following repository dependencies for revision %s of repository %s owned by %s are installed:' % \
