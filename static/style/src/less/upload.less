@@ -2,12 +2,16 @@
     position: absolute;
     width: 100px;
     right: 10px;
-    top: 6px;
+    top: 5px;
     cursor: pointer;
-    height: 19px;
+    height: 20px;
     border: 1px solid @input-border;
     -moz-border-radius: @border-radius-base;
     border-radius: @border-radius-base;
+
+    .progress {
+        height: 18px;
+    }
 
     .progress-bar-danger {
         background: @state-danger-bg;
@@ -28,6 +32,14 @@
         -ms-transition: none;
         -o-transition: none;
         transition: none;
+    }
+    
+    .label {
+        position: absolute;
+        top: 0px;
+        width: inherit;
+        text-align: center;
+        line-height: 20px;
     }
 }
 

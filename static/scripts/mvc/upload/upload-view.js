@@ -93,7 +93,8 @@ var ProgressButton = Backbone.View.extend({
                     '<div class="progress">' +
                         '<div class="progress-bar"></div>' +
                     '</div>' +
-                    '<div id="label" class="label" style="position: absolute; top: 0px; width: inherit; text-align: center;"><div class="fa ' + options.icon + '"></div>&nbsp;' + options.label + '</div>' +
+                    '<div id="label" class="label">' +
+                        '<div class="fa ' + options.icon + '"></div>&nbsp;' + options.label + '</div>' +
                 '</div>';
     }
 });
