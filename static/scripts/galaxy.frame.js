@@ -1096,6 +1096,11 @@ var GalaxyFrame = Backbone.View.extend(
 
         // identify content type
         if (type == 'url') {
+            if (content.indexOf('?') == -1)
+                content += '?';
+            else
+                content += '&';
+            content += 'widget=True';
             content = '<iframe scrolling="auto" class="f-iframe" src="' + content + '"></iframe>';
         }
         
