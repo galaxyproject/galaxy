@@ -603,7 +603,7 @@ if wf_parms:
     %if history_id is None:
 <p id='new_history_p'>
     <input type="checkbox" name='new_history' value="true" id='new_history_cbx'/><label for='new_history_cbx'>Send results to a new history </label>
-    <span id="new_history_input">named: <input type='text' name='new_history_name' value='${h.to_unicode( workflow.name )}'/></span>
+    <span id="new_history_input">named: <input type='text' name='new_history_name' value='${ h.to_unicode( workflow.name ) | h }'/></span>
 </p>
     %endif
 <input type="submit" class="btn btn-primary" name="run_workflow" value="Run workflow" />
