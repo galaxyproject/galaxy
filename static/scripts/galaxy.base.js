@@ -179,6 +179,7 @@ function make_popup_menus( parent ) {
                             // so manually do it here. 
                             if (target) {
                                 window.open(href, target);
+                                return false;
                             }
                             // For all other links, do the default action.
                             else {
