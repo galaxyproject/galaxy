@@ -149,20 +149,20 @@ class RoleGrid( grids.Grid ):
     class NameColumn( grids.TextColumn ):
 
         def get_value( self, trans, grid, role ):
-            return role.name
+            return str( role.name )
 
 
     class DescriptionColumn( grids.TextColumn ):
 
         def get_value( self, trans, grid, role ):
             if role.description:
-                return role.description
+                return str( role.description )
             return ''
 
 
     class TypeColumn( grids.TextColumn ):
         def get_value( self, trans, grid, role ):
-            return role.type
+            return str( role.type )
 
 
     class StatusColumn( grids.GridColumn ):
@@ -181,6 +181,14 @@ class RoleGrid( grids.Grid ):
             return 0
 
 
+    class RepositoriesColumn( grids.GridColumn ):
+
+        def get_value( self, trans, grid, role ):
+            if role.repositories:
+                return len( role.repositories )
+            return 0
+
+
     class UsersColumn( grids.GridColumn ):
 
         def get_value( self, trans, grid, role ):
@@ -195,20 +203,16 @@ class RoleGrid( grids.Grid ):
     columns = [
         NameColumn( "Name",
                     key="name",
-                    link=( lambda item: dict( operation="Manage users and groups", id=item.id ) ),
+                    link=( lambda item: dict( operation="Manage role associations", id=item.id ) ),
                     attach_popup=True,
                     filterable="advanced" ),
         DescriptionColumn( "Description",
                            key='description',
                            attach_popup=False,
                            filterable="advanced" ),
-        TypeColumn( "Type",
-                    key='type',
-                    attach_popup=False,
-                    filterable="advanced" ),
         GroupsColumn( "Groups", attach_popup=False ),
+        RepositoriesColumn( "Repositories", attach_popup=False ),
         UsersColumn( "Users", attach_popup=False ),
-        StatusColumn( "Status", attach_popup=False ),
         # Columns that are valid for filtering but are not visible.
         grids.DeletedColumn( "Deleted",
                              key="deleted",
@@ -224,20 +228,23 @@ class RoleGrid( grids.Grid ):
         grids.GridAction( "Add new role",
                           dict( controller='admin', action='roles', operation='create' ) )
     ]
+    # Repository admin roles currently do not have any operations since they are managed automatically based
+    # on other events.  For example, if a repository is renamed, its associated admin role is automatically
+    # renamed accordingly and if a repository is deleted its associated admin role is automatically deleted.
     operations = [ grids.GridOperation( "Rename",
-                                        condition=( lambda item: not item.deleted ),
+                                        condition=( lambda item: not item.deleted and not item.is_repository_admin_role ),
                                         allow_multiple=False,
                                         url_args=dict( action="rename_role" ) ),
                    grids.GridOperation( "Delete",
-                                        condition=( lambda item: not item.deleted ),
+                                        condition=( lambda item: not item.deleted and not item.is_repository_admin_role ),
                                         allow_multiple=True,
                                         url_args=dict( action="mark_role_deleted" ) ),
                    grids.GridOperation( "Undelete",
-                                        condition=( lambda item: item.deleted ),
+                                        condition=( lambda item: item.deleted and not item.is_repository_admin_role ),
                                         allow_multiple=True,
                                         url_args=dict( action="undelete_role" ) ),
                    grids.GridOperation( "Purge",
-                                        condition=( lambda item: item.deleted ),
+                                        condition=( lambda item: item.deleted and not item.is_repository_admin_role ),
                                         allow_multiple=True,
                                         url_args=dict( action="purge_role" ) ) ]
     standard_filters = [

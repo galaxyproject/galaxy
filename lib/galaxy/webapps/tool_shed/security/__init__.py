@@ -152,7 +152,13 @@ class CommunityRBACAgent( RBACAgent ):
                                              self.model.Role.table.c.type == self.model.Role.types.SYSTEM ) ) \
                               .first()
 
-    def set_entity_group_associations( self, groups=[], users=[], roles=[], delete_existing_assocs=True ):
+    def set_entity_group_associations( self, groups=None, users=None, roles=None, delete_existing_assocs=True ):
+        if groups is None:
+            groups = []
+        if users is None:
+            users = []
+        if roles is None:
+            roles = []
         for group in groups:
             if delete_existing_assocs:
                 for a in group.roles + group.users:
@@ -163,7 +169,15 @@ class CommunityRBACAgent( RBACAgent ):
             for user in users:
                 self.associate_components( group=group, user=user )
 
-    def set_entity_role_associations( self, roles=[], users=[], groups=[], delete_existing_assocs=True ):
+    def set_entity_role_associations( self, roles=None, users=None, groups=None, repositories=None, delete_existing_assocs=True ):
+        if roles is None:
+            roles = []
+        if users is None:
+            users = []
+        if groups is None:
+            groups = []
+        if repositories is None:
+            repositories = []
         for role in roles:
             if delete_existing_assocs:
                 for a in role.users + role.groups:
@@ -174,7 +188,13 @@ class CommunityRBACAgent( RBACAgent ):
             for group in groups:
                 self.associate_components( group=group, role=role )
 
-    def set_entity_user_associations( self, users=[], roles=[], groups=[], delete_existing_assocs=True ):
+    def set_entity_user_associations( self, users=None, roles=None, groups=None, delete_existing_assocs=True ):
+        if users is None:
+            users = []
+        if roles is None:
+            roles = []
+        if groups is None:
+            groups = []
         for user in users:
             if delete_existing_assocs:
                 for a in user.non_private_roles + user.groups:
@@ -191,6 +211,29 @@ class CommunityRBACAgent( RBACAgent ):
     def can_push( self, app, user, repository ):
         if user:
             return user.username in listify( repository.allow_push( app ) )
+        return False
+
+    def user_can_administer_repository( self, user, repository ):
+        """Return True if the received user can administer the received repository."""
+        if user:
+            if repository:
+                repository_admin_role = repository.admin_role
+                for rra in repository.roles:
+                    role = rra.role
+                    if role.id == repository_admin_role.id:
+                        # We have the repository's admin role, so see if the user is associated with it.
+                        for ura in role.users:
+                            role_member = ura.user
+                            if role_member.id == user.id:
+                                return True
+                        # The user is not directly associated with the role, so see if they are a member
+                        # of a group that is associated with the role.
+                        for gra in role.groups:
+                            group = gra.group
+                            for uga in group.members:
+                                member = uga.user
+                                if member.id == user.id:
+                                    return True
         return False
 
     def user_can_import_repository_archive( self, user, archive_owner ):

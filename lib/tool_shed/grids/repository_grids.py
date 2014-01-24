@@ -555,6 +555,52 @@ class RepositoriesIOwnGrid( RepositoryGrid ):
                                .outerjoin( model.RepositoryCategoryAssociation.table ) \
                                .outerjoin( model.Category.table )
 
+class RepositoriesICanAdministerGrid( RepositoryGrid ):
+    title = "Repositories I can administer"
+    columns = [
+        RepositoryGrid.NameColumn( "Name",
+                                   key="name",
+                                   link=( lambda item: dict( operation="view_or_manage_repository", id=item.id ) ),
+                                   attach_popup=False ),
+        RepositoryGrid.UserColumn( "Owner" ),
+        RepositoryGrid.MetadataRevisionColumn( "Metadata<br/>Revisions" ),
+        RepositoryGrid.ToolsFunctionallyCorrectColumn( "Tools<br/>Verified" ),
+        RepositoryGrid.DeprecatedColumn( "Deprecated" )
+    ]
+    columns.append( grids.MulticolFilterColumn( "Search repository name",
+                                                cols_to_filter=[ columns[0] ],
+                                                key="free-text-search",
+                                                visible=False,
+                                                filterable="standard" ) )
+    operations = []
+    use_paging = False
+
+    def build_initial_query( self, trans, **kwd ):
+        """
+        Retrieve all repositories for which the current user has been granted administrative privileges.
+        """
+        current_user = trans.user
+        # Build up an or-based clause list containing role table records.
+        clause_list = []
+        # Include each of the user's roles.
+        for ura in current_user.roles:
+            clause_list.append( model.Role.table.c.id == ura.role_id )
+        # Include each role associated with each group of which the user is a member.
+        for uga in current_user.groups:
+            group = uga.group
+            for gra in group.roles:
+                clause_list.append( model.Role.table.c.id == gra.role_id )
+        # Filter out repositories for which the user does not have the administrative role either directly
+        # via a role association or indirectly via a group -> role association.
+        return trans.sa_session.query( model.Repository ) \
+                               .filter( model.Repository.table.c.deleted == False ) \
+                               .outerjoin( model.RepositoryRoleAssociation.table ) \
+                               .outerjoin( model.Role.table ) \
+                               .filter( or_( *clause_list ) ) \
+                               .join( model.User.table ) \
+                               .outerjoin( model.RepositoryCategoryAssociation.table ) \
+                               .outerjoin( model.Category.table )
+
 
 class RepositoriesMissingToolTestComponentsGrid( RepositoryGrid ):
     # This grid displays only the latest installable revision of each repository.

@@ -94,6 +94,9 @@ class Admin( object ):
                 return self.purge_role( trans, **kwargs )
             if operation == "manage users and groups":
                 return self.manage_users_and_groups_for_role( trans, **kwargs )
+            if operation == "manage role associations":
+                # This is currently used only in the Tool Shed.
+                return self.manage_role_associations( trans, **kwargs )
             if operation == "rename":
                 return self.rename_role( trans, **kwargs )
         # Render the list view
