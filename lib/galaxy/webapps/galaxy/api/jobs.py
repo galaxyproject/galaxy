@@ -19,6 +19,7 @@ from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web.base.controller import BaseAPIController, UsesHistoryDatasetAssociationMixin, UsesLibraryMixinItems
 from galaxy.web import url_for
 from galaxy.model.orm import desc
+from galaxy import exceptions
 
 import logging
 log = logging.getLogger( __name__ )
@@ -73,14 +74,16 @@ class JobController( BaseAPIController, UsesHistoryDatasetAssociationMixin, Uses
         :rtype:     dictionary
         :returns:   dictionary containing full description of job data
         """
-
-        decoded_job_id = trans.security.decode_id(id)
+        try:
+            decoded_job_id = trans.security.decode_id(id)
+        except:
+            raise exceptions.ObjectAttributeInvalidException()
         query = trans.sa_session.query(trans.app.model.Job).filter( 
             trans.app.model.Job.user == trans.user,
             trans.app.model.Job.id == decoded_job_id)
         job = query.first()
         if job is None:
-            return None
+            raise exceptions.ObjectNotFound()
         return self.encode_all_ids( trans, job.to_dict('element'), True)
 
     @expose_api
@@ -106,20 +109,17 @@ class JobController( BaseAPIController, UsesHistoryDatasetAssociationMixin, Uses
         recycle the old results.
         """
 
-        error = None
         tool_id = None
         if 'tool_id' in payload:
             tool_id = payload.get('tool_id')
+        if tool_id is None:
+            raise exceptions.ObjectAttributeMissingException("No tool id")
 
         tool = trans.app.toolbox.get_tool( tool_id )
         if tool is None:
-            error = "Requested tool not found"
+            raise exceptions.ObjectNotFound( "Requested tool not found" )
         if 'inputs' not in payload:
-            error = "No inputs defined"
-        if tool_id is None:
-            error = "No tool ID" 
-        if error is not None:
-            return { "error" : error }
+            raise exceptions.ObjectAttributeMissingException("No inputs defined")
 
         inputs = payload['inputs']
 
@@ -136,7 +136,7 @@ class JobController( BaseAPIController, UsesHistoryDatasetAssociationMixin, Uses
                     except Exception, e:
                         return { "error" : str( e ) }
                     if dataset is None:
-                        return { "error" : "Dataset %s not found" % (v['id']) }                
+                        raise exceptions.ObjectNotFound("Dataset %s not found" % (v['id']))
                     input_data[k] = dataset.dataset_id
             else:
                 input_param[k] = json.dumps(v)
