@@ -231,7 +231,7 @@ def app_factory( global_conf, **kwargs ):
     webapp.mapper.resource( 'job', 
                             'jobs', 
                             path_prefix='/api' )
-    #webapp.mapper.connect( 'job_item', '/api/jobs/:job_id', controller='jobs', action='show', conditions=dict( method=['GET'] ) )
+    webapp.mapper.connect( 'job_search', '/api/jobs/search', controller='jobs', action='search', conditions=dict( method=['POST'] ) )
 
 
     _add_item_extended_metadata_controller( webapp,

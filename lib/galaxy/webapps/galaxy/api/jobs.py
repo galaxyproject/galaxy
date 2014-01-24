@@ -23,7 +23,7 @@ from galaxy.model.orm import desc
 import logging
 log = logging.getLogger( __name__ )
 
-class HistoriesController( BaseAPIController, UsesHistoryDatasetAssociationMixin, UsesLibraryMixinItems ):
+class JobController( BaseAPIController, UsesHistoryDatasetAssociationMixin, UsesLibraryMixinItems ):
 
     @web.expose_api
     def index( self, trans, **kwd ):
@@ -85,9 +85,13 @@ class HistoriesController( BaseAPIController, UsesHistoryDatasetAssociationMixin
 
     @expose_api
     def create( self, trans, payload, **kwd ):
+        raise NotImplementedError()
+
+    @expose_api
+    def search(self, trans, payload, **kwd):
         """
-        show( trans, payload )
-        * POST /api/jobs:
+        search( trans, payload )
+        * POST /api/jobs/search:
             return jobs for current user
 
         :type   payload: dict
@@ -106,8 +110,6 @@ class HistoriesController( BaseAPIController, UsesHistoryDatasetAssociationMixin
         tool_id = None
         if 'tool_id' in payload:
             tool_id = payload.get('tool_id')
-        if 'tool_name' in payload:
-            tool_id = payload.get('tool_name')
 
         tool = trans.app.toolbox.get_tool( tool_id )
         if tool is None:
@@ -142,15 +144,28 @@ class HistoriesController( BaseAPIController, UsesHistoryDatasetAssociationMixin
         query = trans.sa_session.query( trans.app.model.Job ).filter( 
             trans.app.model.Job.tool_id == tool_id, 
             trans.app.model.Job.user == trans.user
-        ).filter(
-            or_( 
-                trans.app.model.Job.state == 'running', 
-                trans.app.model.Job.state == 'queued', 
-                trans.app.model.Job.state == 'waiting', 
-                trans.app.model.Job.state == 'running',
-                trans.app.model.Job.state == 'ok',                  
-            )
         )
+
+        if 'state' not in payload:
+            query = query.filter(
+                or_( 
+                    trans.app.model.Job.state == 'running', 
+                    trans.app.model.Job.state == 'queued', 
+                    trans.app.model.Job.state == 'waiting', 
+                    trans.app.model.Job.state == 'running',
+                    trans.app.model.Job.state == 'ok',                  
+                )
+            )
+        else:
+            if isinstance(payload['state'], basestring):
+                query = query.filter( trans.app.model.Job.state == payload['state'] )
+            elif isinstance(payload['state'], list):
+                o = []
+                for s in payload['state']:
+                    o.append( trans.app.model.Job.state == s )
+                query = query.filter(
+                    or_(*o)
+                )
 
         for k,v in input_param.items():
             a = aliased(trans.app.model.JobParameter)
