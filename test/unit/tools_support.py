@@ -12,6 +12,8 @@ from galaxy.util.bunch import Bunch
 from galaxy.web.security import SecurityHelper
 import galaxy.model
 from galaxy.model import mapping
+from galaxy.tools import Tool
+from galaxy.util import parse_xml
 
 
 class UsesApp( object ):
@@ -26,6 +28,21 @@ class UsesApp( object ):
 
     def tear_down_app( self ):
         shutil.rmtree( self.test_directory )
+
+
+class UsesTools( object ):
+
+    def _init_tool( self, tool_contents ):
+        self.__write_tool( tool_contents )
+        self.__setup_tool( )
+
+    def __setup_tool( self ):
+        tree = parse_xml( self.tool_file )
+        self.tool = Tool( self.tool_file, tree.getroot(), self.app )
+        self.tool.tool_action = self.tool_action
+
+    def __write_tool( self, contents ):
+        open( self.tool_file, "w" ).write( contents )
 
 
 class MockApp( object ):
