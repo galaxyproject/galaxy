@@ -578,15 +578,22 @@ def remove_tests( app ):
                 # Revisit this code if at some point we notice that Twill re-runs tests that should have been deleted.
                 # Undoubtedly the following if statement will need to be enhanced to find the tool id in question. For
                 # example, the following or is required because Twill replaces some spaces with underscores in test names.
-                if app_tool_id == tool_id or app_tool_id.replace( '_', ' ' ) == tool_id.replace( '_', ' ' ):
-                    tools_to_delete_by_id.append( tool_id )
+                if app_tool_id == tool_id:
+                    print 'Setting tool id %s for deletion from app.toolbox[ tools_by_id ].' % str( app_tool_id )
+                    tools_to_delete_by_id.append( app_tool_id )
+                else:
+                    reset_spaces_app_tool_id = app_tool_id.replace( '_', ' ' )
+                    reset_spaces_tool_id = tool_id.replace( '_', ' ' )
+                    if reset_spaces_app_tool_id == reset_spaces_tool_id:
+                        print 'Setting tool id %s for deletion from app.toolbox[ tools_by_id ].' % str( app_tool_id )
+                        tools_to_delete_by_id.append( app_tool_id )                        
     # Delete the discovered twill-generated tests.
     for key in tests_to_delete:
         if key in test_toolbox.__dict__:
-            log.debug( 'Deleting test %s from test_toolbox.' % str( key ) )
+            print 'Deleting test %s from test_toolbox.' % str( key )
             del test_toolbox.__dict__[ key ]
     for tool_id in tools_to_delete_by_id:
-        log.debug( 'Deleting tool id %s from app.toolbox[ tools_by_id ].' % str( tool_id ) )
+        print 'Deleting tool id %s from app.toolbox[ tools_by_id ].' % str( tool_id )
         del app.toolbox.tools_by_id[ tool_id ]
 
 def test_repository_tools( app, repository, repository_dict, tool_test_results_dicts, tool_test_results_dict,
