@@ -1693,11 +1693,6 @@ class DataToolParameter( ToolParameter ):
                 pass  # no valid options
 
         def dataset_collector( datasets ):
-            def is_convertable( dataset ):
-                target_ext, converted_dataset = dataset.find_conversion_destination( self.formats )
-                if target_ext is not None:
-                    return True
-                return False
             for i, data in enumerate( datasets ):
                 if data.visible and not data.deleted and data.state not in [data.states.ERROR, data.states.DISCARDED]:
                     is_valid = False
