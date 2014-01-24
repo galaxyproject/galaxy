@@ -92,7 +92,7 @@ class ToolExecutionTestCase( TestCase, UsesApp ):
             param1="moo",
             runtool_btn="dummy",
         )
-        assert template == "tool_executed.mako"
+        self.__assert_exeuted( template, template_vars )
         # Didn't specify a rerun_remap_id so this should be None
         assert self.tool_action.execution_call_args[ 0 ][ "rerun_remap_job_id" ] is None
 
@@ -138,7 +138,7 @@ class ToolExecutionTestCase( TestCase, UsesApp ):
             rerun_remap_job_id=self.app.security.encode_id(123),
             runtool_btn="dummy",
         )
-        assert template == "tool_executed.mako"
+        self.__assert_exeuted( template, template_vars )
         assert self.tool_action.execution_call_args[ 0 ][ "rerun_remap_job_id" ] == 123
 
     def test_invalid_remap_job( self ):
@@ -189,7 +189,7 @@ class ToolExecutionTestCase( TestCase, UsesApp ):
             param1=1,
             runtool_btn="dummy",
         )
-        assert template == "tool_executed.mako"
+        self.__assert_exeuted( template, template_vars )
         # Tool 'executed' once, with hda as param1
         assert len( self.tool_action.execution_call_args ) == 1
         assert self.tool_action.execution_call_args[ 0 ][ "incoming" ][ "param1" ] == hda
@@ -236,9 +236,19 @@ class ToolExecutionTestCase( TestCase, UsesApp ):
 
     def __assert_rerenders_tool_without_errors( self, template, template_vars ):
         assert template == "tool_form.mako"
-        assert not template_vars[ "errors" ]
+        self.__assert_no_errors( template_vars )
         state = template_vars[ "tool_state" ]
         return state
+
+    def __assert_exeuted( self, template, template_vars ):
+        if template == "tool_form.mako":
+            self.__assert_no_errors( template_vars )
+        self.assertEquals(template, "tool_executed.mako")
+
+    def __assert_no_errors( self, template_vars ):
+        assert "errors" in template_vars, "tool_form.mako rendered without errors defintion."
+        errors = template_vars[ "errors" ]
+        assert not errors, "Template rendered unexpected errors - %s" % errors
 
     def __init_tool( self, tool_contents ):
         self.__write_tool( tool_contents )
