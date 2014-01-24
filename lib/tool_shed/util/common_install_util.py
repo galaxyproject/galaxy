@@ -435,7 +435,7 @@ def get_required_repo_info_dicts( trans, tool_shed_url, repo_info_dicts ):
                     all_required_repo_info_dict[ 'all_repo_info_dicts' ] = all_repo_info_dicts
     return all_required_repo_info_dict
 
-def handle_tool_dependencies( app, tool_shed_repository, tool_dependencies_config, tool_dependencies ):
+def handle_tool_dependencies( app, tool_shed_repository, tool_dependencies_config, tool_dependencies, from_install_manager=False ):
     """
     Install and build tool dependencies defined in the tool_dependencies_config.  This config's tag sets can currently refer to installation
     methods in Galaxy's tool_dependencies module.  In the future, proprietary fabric scripts contained in the repository will be supported.
@@ -487,7 +487,11 @@ def handle_tool_dependencies( app, tool_shed_repository, tool_dependencies_confi
                                                                                          error_message=None,
                                                                                          remove_from_disk=False )
                             else:
-                                tool_dependency = install_package( app, elem, tool_shed_repository, tool_dependencies=tool_dependencies )
+                                tool_dependency = install_package( app, 
+                                                                   elem, 
+                                                                   tool_shed_repository, 
+                                                                   tool_dependencies=tool_dependencies, 
+                                                                   from_install_manager=from_install_manager )
                         except Exception, e:
                             error_message = "Error installing tool dependency %s version %s: %s" % ( str( package_name ), str( package_version ), str( e ) )
                             log.exception( error_message )

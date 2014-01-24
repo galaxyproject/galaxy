@@ -285,7 +285,7 @@ def install_and_build_package_via_fabric( app, tool_dependency, actions_dict ):
     tool_dependency = tool_dependency_util.mark_tool_dependency_installed( app, tool_dependency )
     return tool_dependency
 
-def install_package( app, elem, tool_shed_repository, tool_dependencies=None ):
+def install_package( app, elem, tool_shed_repository, tool_dependencies=None, from_install_manager=False ):
     # The value of tool_dependencies is a partial or full list of ToolDependency records associated with the tool_shed_repository.
     sa_session = app.install_model.context
     tool_dependency = None
@@ -317,14 +317,16 @@ def install_package( app, elem, tool_shed_repository, tool_dependencies=None ):
                                                                                     tool_dependency_version=package_version )
                 can_install_tool_dependency = True
                 if os.path.exists( install_dir ):
-                    # Notice that we'll throw away the following tool_dependency if it can be installed.
-                    tool_dependency, can_install_tool_dependency = \
-                        tool_dependency_util.sync_database_with_file_system( app,
-                                                                             tool_shed_repository,
-                                                                             package_name,
-                                                                             package_version,
-                                                                             install_dir,
-                                                                             tool_dependency_type='package' )
+                    if not from_install_manager:
+                        # Notice that we'll throw away the following tool_dependency if it can be installed.
+                        print 'Calling sync_database_with_file_system 2'
+                        tool_dependency, can_install_tool_dependency = \
+                            tool_dependency_util.sync_database_with_file_system( app,
+                                                                                 tool_shed_repository,
+                                                                                 package_name,
+                                                                                 package_version,
+                                                                                 install_dir,
+                                                                                 tool_dependency_type='package' )
                 else:
                     can_install_tool_dependency = True
                 if can_install_tool_dependency:
