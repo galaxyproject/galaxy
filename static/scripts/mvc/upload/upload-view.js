@@ -372,7 +372,6 @@ return Backbone.View.extend(
         tool_input = {};
         tool_input['dbkey'] = genome;
         tool_input['file_type'] = file_type;
-        tool_input['files_0|NAME'] = file_name;
         tool_input['files_0|type'] = 'upload_dataset';
         tool_input['files_0|url_paste'] = url_paste;
         tool_input['space_to_tabs'] = space_to_tabs;
