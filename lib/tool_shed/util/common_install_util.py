@@ -471,10 +471,12 @@ def handle_tool_dependencies( app, tool_shed_repository, tool_dependencies_confi
                     tool_dependency = tool_dependencies[ index ]
                     if tool_dependency.can_install:
                         # The database record is currently in a state that allows us to install the package on the file system.
+                        log.debug( 'Attempting to install tool dependency package %s version %s.' % ( str( package_name ), str( package_version ) ) )
                         try:
                             dependencies_ignored = not app.toolbox.dependency_manager.uses_tool_shed_dependencies()
                             if dependencies_ignored:
-                                log.debug( "Skipping package %s because tool shed dependency resolver not enabled." % str( package_name ) )
+                                log.debug( "Skipping installation of tool dependency package %s because tool shed dependency resolver not enabled." % \
+                                    str( package_name ) )
                                 # Tool dependency resolves have been configured and they do not include the tool shed. Do not install package.
                                 if app.toolbox.dependency_manager.find_dep( package_name, package_version, type='package') != INDETERMINATE_DEPENDENCY:
                                     ## TODO: Do something here such as marking it installed or
@@ -493,7 +495,7 @@ def handle_tool_dependencies( app, tool_shed_repository, tool_dependencies_confi
                                                                    tool_dependencies=tool_dependencies, 
                                                                    from_install_manager=from_install_manager )
                         except Exception, e:
-                            error_message = "Error installing tool dependency %s version %s: %s" % ( str( package_name ), str( package_version ), str( e ) )
+                            error_message = "Error installing tool dependency package %s version %s: %s" % ( str( package_name ), str( package_version ), str( e ) )
                             log.exception( error_message )
                             if tool_dependency:
                                 # Since there was an installation error, update the tool dependency status to Error. The remove_installation_path option must

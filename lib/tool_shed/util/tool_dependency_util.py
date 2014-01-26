@@ -581,7 +581,9 @@ def sync_database_with_file_system( app, tool_shed_repository, tool_dependency_n
     """
     # This method should be reached very rarely.  It implies that either the Galaxy environment became corrupted (i.e.,
     # the database records for installed tool dependencies is not synchronized with tool dependencies on disk) or the Tool
-    # Shed's install and test framework is running.
+    # Shed's install and test framework is running.  The Tool Shed's install and test framework which installs repositories
+    # in 2 stages, those of type tool_dependency_definition followed by those containing valid tools and tool functional
+    # test components.
     sa_session = app.install_model.context.current
     can_install_tool_dependency = False
     tool_dependency = get_tool_dependency_by_name_version_type_repository( app,
