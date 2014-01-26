@@ -26,6 +26,7 @@ def build_repository_dependency_relationships( trans, repo_info_dicts, tool_shed
     relationships are defined in the repository_dependencies entry for each dictionary in the received list of repo_info_dicts.  Each of
     these dictionaries is associated with a repository in the received tool_shed_repositories list.
     """
+    log.debug( "Building repository dependency relationships..." )
     for repo_info_dict in repo_info_dicts:
         for name, repo_info_tuple in repo_info_dict.items():
             description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = \
@@ -103,6 +104,7 @@ def create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_
     If the user elected to install repository dependencies, all items in the all_repo_info_dicts list will be processed.  However, if repository
     dependencies are not to be installed, only those items contained in the received repo_info_dicts list will be processed.
     """
+    log.debug( "Creating repository dependency objects..." )
     # The following list will be maintained within this method to contain all created or updated tool shed repositories, including repository
     # dependencies that may not be installed.
     all_created_or_updated_tool_shed_repositories = []
@@ -140,8 +142,12 @@ def create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_
                                                         trans.install_model.ToolShedRepository.installation_status.INSTALLING_REPOSITORY_DEPENDENCIES,
                                                         trans.install_model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES,
                                                         trans.install_model.ToolShedRepository.installation_status.LOADING_PROPRIETARY_DATATYPES ]:
-                        log.debug( "Skipping installation of tool_shed_repository '%s' because it's installation status is '%s'." % \
-                                   ( str( repository_db_record.name ), str( repository_db_record.status ) ) )
+                        debug_msg = "Skipping installation of revision %s of repository '%s' because it was installed " % \
+                            ( str( changeset_revision ), str( repository_db_record.name ) )
+                        debug_msg += "with the (possibly updated) revision %s and it's current installation status is '%s'." % \
+                            ( str( installed_changeset_revision ), str( repository_db_record.status ) )
+                        log.debug( debug_msg )
+                        can_update_db_record = False
                     else:
                         if repository_db_record.status in [ trans.install_model.ToolShedRepository.installation_status.ERROR,
                                                             trans.install_model.ToolShedRepository.installation_status.NEW,

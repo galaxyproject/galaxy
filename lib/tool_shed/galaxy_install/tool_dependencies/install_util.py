@@ -228,6 +228,11 @@ def handle_complex_repository_dependency_for_package( app, elem, package_name, p
                                                                          package_version,
                                                                          dependent_install_dir,
                                                                          tool_dependency_type='package' )
+                if not can_install_tool_dependency:
+                    log.debug( "Tool dependency %s version %s cannot be installed (it was probably previously installed), " % \
+                        ( str( tool_dependency.name, str( tool_dependency.version ) ) ) )
+                    log.debug( "so appending it to the list of handled tool dependencies." )
+                    handled_tool_dependencies.append( tool_dependency )
         else:
             can_install_tool_dependency = True
         if can_install_tool_dependency:
@@ -271,8 +276,6 @@ def handle_complex_repository_dependency_for_package( app, elem, package_name, p
                                                                                             package_version=package_version,
                                                                                             tool_dependencies_config=config_to_use )
             suc.remove_file( tmp_filename )
-        else:
-            handled_tool_dependencies.append( tool_dependency )
     else:
         message = "Unable to locate required tool shed repository named %s owned by %s with revision %s." % \
             ( str( required_repository_name ), str( required_repository_owner ), str( default_required_repository_changeset_revision ) )
@@ -345,6 +348,10 @@ def install_package( app, elem, tool_shed_repository, tool_dependencies=None, fr
                                                                                  package_version,
                                                                                  install_dir,
                                                                                  tool_dependency_type='package' )
+                        if not can_install_tool_dependency:
+                            log.debug( "Tool dependency %s version %s cannot be installed (it was probably previously installed), so returning it." % \
+                                ( str( tool_dependency.name, str( tool_dependency.version ) ) ) )
+                            return tool_dependency
                 else:
                     can_install_tool_dependency = True
                 if can_install_tool_dependency:
