@@ -296,9 +296,8 @@ class WorkflowsAPIController(BaseAPIController, UsesAnnotations):
 
         # check to see if user has permissions to selected workflow
         if stored_workflow.user != trans.user and not trans.user_is_admin():
-            if trans.sa_session.query(trans.app.model.StoredWorkflowUserShareAssociation).filter_by(user=trans.user, stored_workflow=stored_workflow).count() == 0:
-                trans.response.status = 403
-                return("Workflow is not owned by or shared with current user")
+            trans.response.status = 403
+            return("Workflow is not owned by current user")
 
         #Mark a workflow as deleted
         stored_workflow.deleted = True
