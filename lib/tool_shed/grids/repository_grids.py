@@ -304,7 +304,7 @@ class EmailAlertsRepositoryGrid( RepositoryGrid ):
                              visible=False,
                              filterable="advanced" )
     ]
-    operations = []
+    operations = [ grids.GridOperation( "Receive email alerts", allow_multiple=True  ) ]
     global_actions = [
             grids.GridAction( "User preferences", dict( controller='user', action='index', cntrller='repository' ) )
     ]

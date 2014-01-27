@@ -2466,6 +2466,10 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                     kwd[ 'message' ] = 'You must be logged in to set email alerts.'
                     kwd[ 'status' ] = 'error'
                     del kwd[ 'operation' ]
+            elif operation == "view_or_manage_repository":
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='view_or_manage_repository',
+                                                                  **kwd ) )
         self.email_alerts_repository_grid.title = "Set email alerts for repository changes"
         return self.email_alerts_repository_grid( trans, **kwd )
 
@@ -2766,9 +2770,8 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
     @web.expose
     @web.require_login( "set email alerts" )
     def set_email_alerts( self, trans, **kwd ):
-        # Set email alerts for selected repositories
-        # This method is called from multiple grids, so
-        # the caller must be passed.
+        """Set email alerts for selected repositories."""
+        # This method is called from multiple grids, so the caller must be passed.
         caller = kwd[ 'caller' ]
         user = trans.user
         if user:
