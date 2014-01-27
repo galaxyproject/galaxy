@@ -342,6 +342,8 @@ def main():
     if not os.path.isdir( galaxy_test_tmp_dir ):
         os.mkdir( galaxy_test_tmp_dir )
     # Set up the configuration files for the Galaxy instance.
+    galaxy_shed_tool_path = os.environ.get( 'GALAXY_INSTALL_TEST_SHED_TOOL_PATH',
+                                            tempfile.mkdtemp( dir=galaxy_test_tmp_dir, prefix='shed_tools' ) )
     shed_tool_data_table_conf_file = os.environ.get( 'GALAXY_INSTALL_TEST_SHED_TOOL_DATA_TABLE_CONF',
                                                      os.path.join( galaxy_test_tmp_dir, 'test_shed_tool_data_table_conf.xml' ) )
     galaxy_tool_data_table_conf_file = os.environ.get( 'GALAXY_INSTALL_TEST_TOOL_DATA_TABLE_CONF',
@@ -377,7 +379,6 @@ def main():
     galaxy_file_path = os.path.join( galaxy_db_path, 'files' )
     new_repos_path = tempfile.mkdtemp( dir=galaxy_test_tmp_dir )
     galaxy_tempfiles = tempfile.mkdtemp( dir=galaxy_test_tmp_dir )
-    galaxy_shed_tool_path = tempfile.mkdtemp( dir=galaxy_test_tmp_dir, prefix='shed_tools' )
     galaxy_migrated_tool_path = tempfile.mkdtemp( dir=galaxy_test_tmp_dir )
     # Set up the tool dependency path for the Galaxy instance.
     tool_dependency_dir = os.environ.get( 'GALAXY_INSTALL_TEST_TOOL_DEPENDENCY_DIR', None )
