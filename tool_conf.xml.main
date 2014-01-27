@@ -139,7 +139,6 @@
     <tool file="plotting/histogram2.xml" />
     <tool file="plotting/scatterplot.xml" />
     <tool file="plotting/boxplot.xml" />
-    <tool file="visualization/GMAJ.xml" />
     <tool file="visualization/build_ucsc_custom_track.xml" />
     <tool file="maf/vcf_to_maf_customtrack.xml" />
     <tool file="mutation/visualize.xml" />
@@ -174,9 +173,6 @@
     <tool file="hyphy/hyphy_branch_lengths_wrapper.xml" />
     <tool file="hyphy/hyphy_nj_tree_wrapper.xml" />
     <!-- <tool file="hyphy/hyphy_dnds_wrapper.xml" />  -->
- </section>
- <section id="motifs" name="Motif Tools">
-    <tool file="rgenetics/rgWebLogo3.xml" />
  </section>
  <section id="clustal" name="Multiple Alignments">
     <tool file="rgenetics/rgClustalw.xml" />
@@ -252,10 +248,6 @@
     <tool file="gatk/variants_validate.xml" />
     <tool file="gatk/variant_eval.xml" />
     <tool file="gatk/variant_combine.xml" />
-  </section>
-  <section id="peak_calling" name="NGS: Peak Calling">
-   <tool file="peak_calling/macs_wrapper.xml" />
-   <tool file="peak_calling/sicer_wrapper.xml" />
   </section>
   <section id="ngs-rna-tools" name="NGS: RNA Analysis">
    <label id="rna_seq" text="RNA-seq" />
