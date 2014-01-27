@@ -1,3 +1,5 @@
+from contextlib import contextmanager
+
 # TODO: We don't need all of TwillTestCase, strip down to a common super class
 # shared by API and Twill test cases.
 from .twilltestcase import TwillTestCase
@@ -11,6 +13,7 @@ from urllib import urlencode
 
 
 TEST_USER = "user@bx.psu.edu"
+DEFAULT_OTHER_USER = "otheruser@bx.psu.edu"  # A second user for API testing.
 
 
 # TODO: Allow these to point at existing Galaxy instances.
@@ -39,6 +42,30 @@ class ApiTestCase( TwillTestCase ):
         user = [ user for user in users if user["email"] == email ][0]
         return user
 
+    def _setup_user_get_key( self, email ):
+        self.galaxy_interactor.ensure_user_with_email( email )
+        users = self._get( "users", admin=True ).json()
+        user = [ user for user in users if user["email"] == email ][0]
+        return self._post( "users/%s/api_key" % user[ "id" ], admin=True ).json()
+
+    @contextmanager
+    def _different_user( self, email=DEFAULT_OTHER_USER ):
+        """ Use in test cases to switch get/post operations to act as new user,
+
+            with self._different_user( "other_user@bx.psu.edu" ):
+                self._get( "histories" )  # Gets other_user@bx.psu.edu histories.
+        """
+        original_api_key = self.user_api_key
+        original_interactor_key = self.galaxy_interactor.api_key
+        new_key = self._setup_user_get_key( email )
+        try:
+            self.user_api_key = new_key
+            self.galaxy_interactor.api_key = new_key
+            yield
+        finally:
+            self.user_api_key = original_api_key
+            self.galaxy_interactor.api_key = original_interactor_key
+
     def _get( self, *args, **kwds ):
         return self.galaxy_interactor.get( *args, **kwds )
 
@@ -51,7 +78,7 @@ class ApiTestCase( TwillTestCase ):
             try:
                 body = response.json()
             except Exception:
-                body = "INVALID JSON RESPONSE"
+                body = "INVALID JSON RESPONSE <%s>" % response.content
             assertion_message_template = "Request status code (%d) was not expected value %d. Body was %s"
             assertion_message = assertion_message_template % ( response_status_code, expected_status_code, body )
             raise AssertionError( assertion_message )
