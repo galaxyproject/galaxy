@@ -1566,13 +1566,13 @@ div.permissionContainer{padding-left:20px}
 .icon-button.link{background:url(../images/silk/link.png) no-repeat;cursor:pointer;float:none;display:inline-block;margin-left:10px}
 .icon-button.link-broken{background:url(../images/silk/link_break.png) no-repeat;cursor:pointer;float:none;display:inline-block;margin-left:10px}
 .workflow-invocation-complete{border:solid 1px #6A6;border-left-width:5px;margin:10px 0;padding-left:5px}
-.icon-btn{display:inline-block;height:20px;width:20px;text-align:center;line-height:17px;font-size:1.2em;border-radius:3px;border:1px solid rgba(0,0,0,0.1);background-color:rgba(0,0,0,0.05);color:#555;cursor:pointer}
+.icon-btn{display:inline-block;height:22px;width:22px;text-align:center;line-height:19px;font-size:1.2em;border-radius:3px;border:1px solid #bfbfbf;background-color:#f2f2f2;color:#333;cursor:pointer}
 .icon-btn:hover{background-color:white;color:maroon}
-.icon-btn.disabled{background-color:transparent;color:rgba(0,0,0,0.05)}
+.icon-btn.disabled{background-color:transparent;color:#f2f2f2}
 .search-input .search-query{width:100%;padding-right:24px}
 .search-input .search-clear,.search-input .search-loading{position:relative;display:inline-block;float:right;margin-top:-23px;margin-right:4px;font-size:1.4em;line-height:23px;color:grey}
 .search-input .search-clear:hover{color:#303030}
-#history-refresh-button,#history-options-button{display:inline-block;height:20px;width:20px;text-align:center;line-height:17px;font-size:1.2em;padding:0px}
+#history-refresh-button,#history-options-button{display:inline-block;height:22px;width:22px;text-align:center;line-height:19px;font-size:1.2em;padding:0px}
 .history-panel [class$="messagesmall"]{margin:0px}
 .history-panel .editable-text{border:solid transparent 1px}
 .history-panel .editable-text:hover{cursor:pointer;border:1px dotted #999999}
@@ -1586,12 +1586,12 @@ div.permissionContainer{padding-left:20px}
 .history-panel .history-controls .history-size{float:left}
 .history-panel .history-controls .history-secondary-actions{float:right}.history-panel .history-controls .history-secondary-actions .icon-btn{margin-left:2px}
 .history-panel .history-controls .quota-message{display:none;margin:8px 0px 5px 0px}
-.history-panel .history-controls .tags-display,.history-panel .history-controls .annotation-display{display:none;margin-bottom:8px}.history-panel .history-controls .tags-display label,.history-panel .history-controls .annotation-display label{display:block;margin:0px;padding:0px;font-weight:normal;font-style:italic;font-size:90%;color:#555}
+.history-panel .history-controls .tags-display,.history-panel .history-controls .annotation-display{display:none;margin-bottom:8px}.history-panel .history-controls .tags-display label,.history-panel .history-controls .annotation-display label{display:block;margin:0px;padding:0px;font-weight:normal;color:#555}
 .history-panel .history-controls .tags-display label:after,.history-panel .history-controls .annotation-display label:after{content:':'}
 .history-panel .history-controls .tags-display .select2-container{min-width:0px}.history-panel .history-controls .tags-display .select2-container .select2-choices{border-radius:3px}
 .history-panel .history-controls .tags-display input{border-radius:3px}
 .history-panel .history-controls .annotation-display .annotation{border-radius:3px;border:1px solid rgba(153,153,153,0.5);padding:4px;white-space:pre-line}
-.history-panel .history-controls .annotation-display .annotation:empty{height:20px}
+.history-panel .history-controls .annotation-display .annotation:empty{height:22px}
 .history-panel .history-controls .annotation-display .annotation:empty:after{position:relative;top:-4px;font-size:10px;font-style:italic;color:grey;content:'Click here to edit annotation'}
 .history-panel .history-controls .annotation-display textarea{margin:0px 0px 2px 0px;display:block;border-radius:3px;width:100%}
 .history-panel .history-controls .history-dataset-actions{display:none}.history-panel .history-controls .history-dataset-actions:before,.history-panel .history-controls .history-dataset-actions:after{content:" ";display:table;}
@@ -1608,28 +1608,33 @@ div.permissionContainer{padding-left:20px}
 .dataset .info-section{border-radius:3px;border:1px solid rgba(153,153,153,0.30000000000000004);padding:4px}
 .dataset .dataset-padding{padding:6px 10px 6px 8px}
 .dataset [class$=messagesmall]{margin:6px 10px 2px 8px;font-size:90%}
-.dataset .help-text{font-weight:normal;font-style:italic;font-size:90%;color:#555}
+.dataset .help-text{font-weight:normal;color:#555}
 .dataset .dataset-selector{float:left;display:none;width:0px;margin:0 0 -6px 0;padding:5px 0 2px 8px;cursor:pointer;vertical-align:middle}
-.dataset .dataset-title-bar{cursor:pointer;padding:6px 10px 6px 8px}
+.dataset .dataset-title-bar{cursor:pointer;outline:none;padding:6px 10px 6px 8px}
 .dataset .dataset-title-bar .dataset-title{display:inline;font-weight:bold;text-decoration:underline;word-wrap:break-word;word-break:break-all;line-height:16px}
-.dataset .dataset-primary-actions{float:right;margin:6px 10px 0}.dataset .dataset-primary-actions .icon-btn{margin-left:2px}
-.dataset .dataset-body{display:none;background-color:rgba(255,255,255,0.30000000000000004);padding:6px 10px 6px 8px}.dataset .dataset-body [class$=messagesmall]{margin:0px 0px 8px 0px}
+.dataset .dataset-primary-actions{display:inline-block;float:right;margin:6px 10px 0}.dataset .dataset-primary-actions .icon-btn:not(:last-child){margin:0px;border-radius:0px;border-right:none}
+.dataset .dataset-primary-actions .icon-btn:first-child{margin-right:0px;border-top-left-radius:3px;border-bottom-left-radius:3px}
+.dataset .dataset-primary-actions .icon-btn:last-child{margin-left:0px;border-radius:0px 3px 3px 0px}
+.dataset .dataset-primary-actions .icon-btn{margin-left:2px}
+.dataset .dataset-body{display:none;padding:6px 10px 6px 8px}.dataset .dataset-body [class$=messagesmall]{margin:0px 0px 8px 0px}
 .dataset .dataset-body label{margin:0px;padding:0px;font-weight:normal}
-.dataset .dataset-body .prompt{font-weight:normal;font-style:italic;font-size:90%;color:#555}
+.dataset .dataset-body .prompt{font-weight:normal;color:#555}
 .dataset .dataset-body .prompt:after{content:':'}
 .dataset .dataset-body .dataset-summary{margin-bottom:8px}.dataset .dataset-body .dataset-summary .dataset-blurb{margin-bottom:2px}
 .dataset .dataset-body .dataset-summary .dataset-datatype,.dataset .dataset-body .dataset-summary .dataset-dbkey{display:inline}.dataset .dataset-body .dataset-summary .dataset-datatype .value,.dataset .dataset-body .dataset-summary .dataset-dbkey .value{font-weight:bold}
-.dataset .dataset-body .dataset-summary .dataset-datatype .value:after{content:',';font-weight:normal;font-style:italic;font-size:90%;color:#555}
+.dataset .dataset-body .dataset-summary .dataset-datatype .value:after{content:',';font-weight:normal;color:#555}
 .dataset .dataset-body .dataset-summary .dataset-dbkey:after{content:' ';display:block;margin-bottom:8px}
 .dataset .dataset-body .dataset-summary .dataset-info{border-radius:3px;border:1px solid rgba(153,153,153,0.30000000000000004);padding:4px}.dataset .dataset-body .dataset-summary .dataset-info .value{white-space:pre-line}
 .dataset .dataset-body .dataset-summary .job-error-text{border-radius:3px;border:1px solid rgba(153,153,153,0.30000000000000004);padding:4px;overflow:auto;white-space:pre}
-.dataset .dataset-body .dataset-actions .left{float:left}.dataset .dataset-body .dataset-actions .left .icon-btn{margin-right:2px}
-.dataset .dataset-body .dataset-actions .left .icon-btn-group{margin-right:2px}.dataset .dataset-body .dataset-actions .left .icon-btn-group .icon-btn{margin-right:0}
+.dataset .dataset-body .dataset-actions .left{display:inline-block;float:left}.dataset .dataset-body .dataset-actions .left .icon-btn:not(:last-child){margin:0px;border-radius:0px;border-right:none}
+.dataset .dataset-body .dataset-actions .left .icon-btn:first-child{margin-right:0px;border-top-left-radius:3px;border-bottom-left-radius:3px}
+.dataset .dataset-body .dataset-actions .left .icon-btn:last-child{margin-left:0px;border-radius:0px 3px 3px 0px}
+.dataset .dataset-body .dataset-actions .left .icon-btn{margin-right:2px}
 .dataset .dataset-body .dataset-actions .left:not(:empty){margin-bottom:8px}
 .dataset .dataset-body .dataset-actions .right{float:right}.dataset .dataset-body .dataset-actions .right .icon-btn{margin-left:2px}
 .dataset .dataset-body .tags-display{display:none;margin-bottom:8px}.dataset .dataset-body .tags-display .select2-container{min-width:0px}.dataset .dataset-body .tags-display .select2-container .select2-choices{border-radius:3px}
 .dataset .dataset-body .annotation-display{display:none;margin-bottom:8px}.dataset .dataset-body .annotation-display .annotation{border-radius:3px;border:1px solid rgba(153,153,153,0.30000000000000004);padding:4px;white-space:pre-line}
-.dataset .dataset-body .annotation-display .annotation:empty{height:20px}
+.dataset .dataset-body .annotation-display .annotation:empty{height:22px}
 .dataset .dataset-body .annotation-display .annotation:empty:after{position:relative;top:-4px;font-size:10px;font-style:italic;color:grey;content:'Click here to edit annotation'}
 .dataset .dataset-body .annotation-display textarea{margin:0px 0px 2px 0px;display:block;border-radius:3px;width:100%}
 .dataset .dataset-body .dataset-display-applications .display-application:last-child{margin-bottom:8px}
