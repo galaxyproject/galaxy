@@ -75,7 +75,7 @@
     <repository owner="devteam" changeset_revision="31154ff9f5e1" name="filter_transcripts_via_tracking" description="Filter Combined Transcripts">
         <tool id="filter_combined_via_tracking" version="0.1" file="filter_transcripts_via_tracking.xml" />
     </repository>
-    <repository owner="devteam" changeset_revision="acf51ff24c7d" name="find_diag_hits" description="find_diag_hits">
+    <repository owner="devteam" changeset_revision="acf51ff24c7d" name="find_diag_hits" description="Identify sequence reads corresponding to a particular taxonomic group">
         <tool id="find_diag_hits" version="1.0.0" file="find_diag_hits.xml" />
     </repository>
     <repository owner="devteam" changeset_revision="33a0e6aca936" name="freebayes_wrapper" description="Call SNPS with Freebayes">
