@@ -19,48 +19,72 @@ log = logging.getLogger( __name__ )
 
 
 class UserGrid( grids.Grid ):
-    # TODO: move this to an admin_common controller since it is virtually the same in the galaxy webapp.
+
+
     class UserLoginColumn( grids.TextColumn ):
+
         def get_value( self, trans, grid, user ):
             return user.email
+
+
     class UserNameColumn( grids.TextColumn ):
+
         def get_value( self, trans, grid, user ):
             if user.username:
                 return user.username
             return 'not set'
+
+
     class GroupsColumn( grids.GridColumn ):
+
         def get_value( self, trans, grid, user ):
             if user.groups:
                 return len( user.groups )
             return 0
+
+
     class RolesColumn( grids.GridColumn ):
+
         def get_value( self, trans, grid, user ):
             if user.roles:
                 return len( user.roles )
             return 0
+
+
     class ExternalColumn( grids.GridColumn ):
+
         def get_value( self, trans, grid, user ):
             if user.external:
                 return 'yes'
             return 'no'
+
+
     class LastLoginColumn( grids.GridColumn ):
+
         def get_value( self, trans, grid, user ):
             if user.galaxy_sessions:
                 return self.format( user.galaxy_sessions[ 0 ].update_time )
             return 'never'
+
+
     class StatusColumn( grids.GridColumn ):
+
         def get_value( self, trans, grid, user ):
             if user.purged:
                 return "purged"
             elif user.deleted:
                 return "deleted"
             return ""
+
+
     class EmailColumn( grids.GridColumn ):
+
         def filter( self, trans, user, query, column_filter ):
             if column_filter == 'All':
                 return query
             return query.filter( and_( model.Tool.table.c.user_id == model.User.table.c.id,
                                        model.User.table.c.email == column_filter ) )
+
     title = "Users"
     model_class = model.User
     template='/admin/user/grid.mako'
@@ -114,37 +138,64 @@ class UserGrid( grids.Grid ):
     num_rows_per_page = 50
     preserve_state = False
     use_paging = True
+
     def get_current_item( self, trans, **kwargs ):
         return trans.user
 
+
 class RoleGrid( grids.Grid ):
-    # TODO: move this to an admin_common controller since it is virtually the same in the galaxy webapp.
+
+
     class NameColumn( grids.TextColumn ):
+
         def get_value( self, trans, grid, role ):
-            return role.name
+            return str( role.name )
+
+
     class DescriptionColumn( grids.TextColumn ):
+
         def get_value( self, trans, grid, role ):
             if role.description:
-                return role.description
+                return str( role.description )
             return ''
+
+
     class TypeColumn( grids.TextColumn ):
         def get_value( self, trans, grid, role ):
-            return role.type
+            return str( role.type )
+
+
     class StatusColumn( grids.GridColumn ):
+
         def get_value( self, trans, grid, role ):
             if role.deleted:
                 return "deleted"
             return ""
+
+
     class GroupsColumn( grids.GridColumn ):
+
         def get_value( self, trans, grid, role ):
             if role.groups:
                 return len( role.groups )
             return 0
+
+
+    class RepositoriesColumn( grids.GridColumn ):
+
+        def get_value( self, trans, grid, role ):
+            if role.repositories:
+                return len( role.repositories )
+            return 0
+
+
     class UsersColumn( grids.GridColumn ):
+
         def get_value( self, trans, grid, role ):
             if role.users:
                 return len( role.users )
             return 0
+
     title = "Roles"
     model_class = model.Role
     template='/admin/dataset_security/role/grid.mako'
@@ -152,20 +203,16 @@ class RoleGrid( grids.Grid ):
     columns = [
         NameColumn( "Name",
                     key="name",
-                    link=( lambda item: dict( operation="Manage users and groups", id=item.id ) ),
+                    link=( lambda item: dict( operation="Manage role associations", id=item.id ) ),
                     attach_popup=True,
                     filterable="advanced" ),
         DescriptionColumn( "Description",
                            key='description',
                            attach_popup=False,
                            filterable="advanced" ),
-        TypeColumn( "Type",
-                    key='type',
-                    attach_popup=False,
-                    filterable="advanced" ),
         GroupsColumn( "Groups", attach_popup=False ),
+        RepositoriesColumn( "Repositories", attach_popup=False ),
         UsersColumn( "Users", attach_popup=False ),
-        StatusColumn( "Status", attach_popup=False ),
         # Columns that are valid for filtering but are not visible.
         grids.DeletedColumn( "Deleted",
                              key="deleted",
@@ -181,20 +228,23 @@ class RoleGrid( grids.Grid ):
         grids.GridAction( "Add new role",
                           dict( controller='admin', action='roles', operation='create' ) )
     ]
+    # Repository admin roles currently do not have any operations since they are managed automatically based
+    # on other events.  For example, if a repository is renamed, its associated admin role is automatically
+    # renamed accordingly and if a repository is deleted its associated admin role is automatically deleted.
     operations = [ grids.GridOperation( "Rename",
-                                        condition=( lambda item: not item.deleted ),
+                                        condition=( lambda item: not item.deleted and not item.is_repository_admin_role ),
                                         allow_multiple=False,
                                         url_args=dict( action="rename_role" ) ),
                    grids.GridOperation( "Delete",
-                                        condition=( lambda item: not item.deleted ),
+                                        condition=( lambda item: not item.deleted and not item.is_repository_admin_role ),
                                         allow_multiple=True,
                                         url_args=dict( action="mark_role_deleted" ) ),
                    grids.GridOperation( "Undelete",
-                                        condition=( lambda item: item.deleted ),
+                                        condition=( lambda item: item.deleted and not item.is_repository_admin_role ),
                                         allow_multiple=True,
                                         url_args=dict( action="undelete_role" ) ),
                    grids.GridOperation( "Purge",
-                                        condition=( lambda item: item.deleted ),
+                                        condition=( lambda item: item.deleted and not item.is_repository_admin_role ),
                                         allow_multiple=True,
                                         url_args=dict( action="purge_role" ) ) ]
     standard_filters = [
@@ -205,29 +255,43 @@ class RoleGrid( grids.Grid ):
     num_rows_per_page = 50
     preserve_state = False
     use_paging = True
+
     def apply_query_filter( self, trans, query, **kwd ):
         return query.filter( model.Role.type != model.Role.types.PRIVATE )
 
+
 class GroupGrid( grids.Grid ):
-    # TODO: move this to an admin_common controller since it is virtually the same in the galaxy webapp.
+
+
     class NameColumn( grids.TextColumn ):
+
         def get_value( self, trans, grid, group ):
             return group.name
+
+
     class StatusColumn( grids.GridColumn ):
+
         def get_value( self, trans, grid, group ):
             if group.deleted:
                 return "deleted"
             return ""
+
+
     class RolesColumn( grids.GridColumn ):
+
         def get_value( self, trans, grid, group ):
             if group.roles:
                 return len( group.roles )
             return 0
+
+
     class UsersColumn( grids.GridColumn ):
+
         def get_value( self, trans, grid, group ):
             if group.members:
                 return len( group.members )
             return 0
+
     title = "Groups"
     model_class = model.Group
     template='/admin/dataset_security/group/grid.mako'
@@ -279,6 +343,7 @@ class GroupGrid( grids.Grid ):
     preserve_state = False
     use_paging = True
 
+
 class ManageCategoryGrid( CategoryGrid ):
     columns = [ col for col in CategoryGrid.columns ]
     # Override the NameColumn to include an Edit link
@@ -292,16 +357,22 @@ class ManageCategoryGrid( CategoryGrid ):
                           dict( controller='admin', action='manage_categories', operation='create' ) )
     ]
 
+
 class AdminRepositoryGrid( RepositoryGrid ):
+
+
     class DeletedColumn( grids.BooleanColumn ):
+
         def get_value( self, trans, grid, repository ):
             if repository.deleted:
                 return 'yes'
             return ''
+
     columns = [ RepositoryGrid.NameColumn( "Name",
                                            key="name",
                                            link=( lambda item: dict( operation="view_or_manage_repository", id=item.id ) ),
                                            attach_popup=True ),
+                RepositoryGrid.HeadsColumn( "Heads" ),
                 RepositoryGrid.UserColumn( "Owner",
                                            model_class=model.User,
                                            link=( lambda item: dict( operation="repositories_by_user", id=item.id ) ),
@@ -326,27 +397,43 @@ class AdminRepositoryGrid( RepositoryGrid ):
                                             async_compatible=False ) )
     standard_filters = []
     default_filter = {}
+
     def build_initial_query( self, trans, **kwd ):
         return trans.sa_session.query( model.Repository ) \
                                .join( model.User.table )
 
+
 class RepositoryMetadataGrid( grids.Grid ):
+
+
     class IdColumn( grids.IntegerColumn ):
+
         def get_value( self, trans, grid, repository_metadata ):
             return repository_metadata.id
+
+
     class NameColumn( grids.TextColumn ):
+
         def get_value( self, trans, grid, repository_metadata ):
             return repository_metadata.repository.name
+
+
     class OwnerColumn( grids.TextColumn ):
+
         def get_value( self, trans, grid, repository_metadata ):
             return repository_metadata.repository.user.username
+
     class RevisionColumn( grids.TextColumn ):
+
         def get_value( self, trans, grid, repository_metadata ):
             repository = repository_metadata.repository
             repo = hg.repository( suc.get_configured_ui(), repository.repo_path( trans.app ) )
             ctx = suc.get_changectx_for_changeset( repo, repository_metadata.changeset_revision )
-            return "%s:%s" % ( str( ctx.rev() ), repository_metadata.changeset_revision )
+            return suc.get_revision_label( trans, repository, repository_metadata.changeset_revision, include_date=True )
+
+
     class ToolsColumn( grids.TextColumn ):
+
         def get_value( self, trans, grid, repository_metadata ):
             tools_str = '0'
             if repository_metadata:
@@ -358,7 +445,10 @@ class RepositoryMetadataGrid( grids.Grid ):
                         #    tools_str += '%s <b>%s</b><br/>' % ( tool_metadata_dict[ 'id' ], tool_metadata_dict[ 'version' ] )
                         return '%d' % len( metadata[ 'tools' ] )
             return tools_str
+
+
     class DatatypesColumn( grids.TextColumn ):
+
         def get_value( self, trans, grid, repository_metadata ):
             datatypes_str = '0'
             if repository_metadata:
@@ -370,7 +460,10 @@ class RepositoryMetadataGrid( grids.Grid ):
                         #    datatypes_str += '%s<br/>' % datatype_metadata_dict[ 'extension' ]
                         return '%d' % len( metadata[ 'datatypes' ] )
             return datatypes_str
+
+
     class WorkflowsColumn( grids.TextColumn ):
+
         def get_value( self, trans, grid, repository_metadata ):
             workflows_str = '0'
             if repository_metadata:
@@ -387,21 +480,31 @@ class RepositoryMetadataGrid( grids.Grid ):
                         #    workflows_str += '%s<br/>' % workflow_metadata_dict[ 'name' ]
                         return '%d' % len( metadata[ 'workflows' ] )
             return workflows_str
+
+
     class DeletedColumn( grids.BooleanColumn ):
+
         def get_value( self, trans, grid, repository_metadata ):
             if repository_metadata.repository.deleted:
                 return 'yes'
             return ''
+
+
     class DeprecatedColumn( grids.BooleanColumn ):
+
         def get_value( self, trans, grid, repository_metadata ):
             if repository_metadata.repository.deprecated:
                 return 'yes'
             return ''
+
+
     class MaliciousColumn( grids.BooleanColumn ):
+
         def get_value( self, trans, grid, repository_metadata ):
             if repository_metadata.malicious:
                 return 'yes'
             return ''
+
     # Grid definition
     title = "Repository Metadata"
     model_class = model.RepositoryMetadata
@@ -440,6 +543,7 @@ class RepositoryMetadataGrid( grids.Grid ):
     num_rows_per_page = 50
     preserve_state = False
     use_paging = True
+
     def build_initial_query( self, trans, **kwd ):
         return trans.sa_session.query( model.RepositoryMetadata ) \
                                .join( model.Repository.table )

@@ -5,7 +5,6 @@ import logging
 from galaxy.web.base.controller import BaseAPIController, UsesQuotaMixin, url_for
 from galaxy.web.base.controllers.admin import Admin
 from galaxy import web, util
-from elementtree.ElementTree import XML
 
 from galaxy.web.params import QuotaParamParser
 from galaxy.actions.admin import AdminActions
@@ -140,8 +139,7 @@ class QuotaAPIController( BaseAPIController, Admin, AdminActions, UsesQuotaMixin
         Undeletes a quota
         """
         quota = self.get_quota( trans, id, deleted=True )
-        params = self.get_quota_params( payload )
         try:
-            return self._undelete_quota( quota, params )
+            return self._undelete_quota( quota )
         except ActionInputError, e:
             raise HTTPBadRequest( detail=str( e ) )

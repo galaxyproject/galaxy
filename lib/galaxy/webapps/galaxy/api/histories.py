@@ -9,18 +9,20 @@ pkg_resources.require( "Paste" )
 from paste.httpexceptions import HTTPBadRequest, HTTPForbidden, HTTPInternalServerError, HTTPException
 
 from galaxy import web
+from galaxy.web import _future_expose_api as expose_api
+from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
 from galaxy.util import string_as_bool, restore_text
 from galaxy.util.sanitize_html import sanitize_html
-from galaxy.web.base.controller import BaseAPIController, UsesHistoryMixin
+from galaxy.web.base.controller import BaseAPIController, UsesHistoryMixin, UsesTagsMixin
 from galaxy.web import url_for
 from galaxy.model.orm import desc
 
 import logging
 log = logging.getLogger( __name__ )
 
-class HistoriesController( BaseAPIController, UsesHistoryMixin ):
+class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin ):
 
-    @web.expose_api_anonymous
+    @expose_api_anonymous
     def index( self, trans, deleted='False', **kwd ):
         """
         index( trans, deleted='False' )
@@ -41,11 +43,9 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
         deleted = string_as_bool( deleted )
         try:
             if trans.user:
-                query = ( trans.sa_session.query( trans.app.model.History )
-                            .filter_by( user=trans.user, deleted=deleted )
-                            .order_by( desc( trans.app.model.History.table.c.update_time ) )
-                            .all() )
-                for history in query:
+                histories = self.get_user_histories( trans, user=trans.user, only_deleted=deleted )
+                #for history in query:
+                for history in histories:
                     item = history.to_dict(value_mapper={'id':trans.security.encode_id})
                     item['url'] = url_for( 'history', id=trans.security.encode_id( history.id ) )
                     rval.append( item )
@@ -58,6 +58,7 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
                 rval.append(item)
 
         except Exception, e:
+            raise
             rval = "Error in history API"
             log.error( rval + ": %s" % str(e) )
             trans.response.status = 500
@@ -65,7 +66,6 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
 
     @web.expose_api_anonymous
     def show( self, trans, id, deleted='False', **kwd ):
-        # oh, sphinx - you bastard
         """
         show( trans, id, deleted='False' )
         * GET /api/histories/{id}:
@@ -97,6 +97,9 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
                 # Most recent active history for user sessions, not deleted
                 history = trans.user.galaxy_sessions[0].histories[-1].history
 
+            elif history_id == "current":
+                history = trans.get_history( create=True )
+
             else:
                 history = self.get_history( trans, history_id, check_ownership=False,
                                             check_accessible=True, deleted=deleted )
@@ -110,14 +113,14 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
 
         except Exception, e:
             msg = "Error in history API at showing history detail: %s" % ( str( e ) )
-            log.exception( msg, exc_info=True )
+            log.exception( msg )
             trans.response.status = 500
             return msg
 
         return history_data
 
     @web.expose_api
-    def set_as_current( self, trans, id, *kwd ):
+    def set_as_current( self, trans, id, **kwd ):
         """
         set_as_current( trans, id, **kwd )
         * POST /api/histories/{id}/set_as_current:
@@ -145,13 +148,13 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
 
         except Exception, e:
             msg = "Error in history API when switching current history: %s" % ( str( e ) )
-            log.exception( e )
+            log.exception( msg )
             trans.response.status = 500
             return msg
 
         return history_data
 
-    @web.expose_api
+    @expose_api
     def create( self, trans, payload, **kwd ):
         """
         create( trans, payload )
@@ -174,7 +177,8 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
 
         trans.sa_session.add( new_history )
         trans.sa_session.flush()
-        item = new_history.to_dict(view='element', value_mapper={'id':trans.security.encode_id})
+        #item = new_history.to_dict(view='element', value_mapper={'id':trans.security.encode_id})
+        item = self.get_history_dict( trans, new_history )
         item['url'] = url_for( 'history', id=item['id'] )
 
         #TODO: possibly default to True here - but favor explicit for now (and backwards compat)
@@ -340,31 +344,16 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
             'id', 'model_class', 'nice_size', 'contents_url', 'purged', 'tags',
             'state', 'state_details', 'state_ids'
         )
-
         validated_payload = {}
         for key, val in payload.items():
-            # TODO: lots of boilerplate here, but overhead on abstraction is equally onerous
-            if   key == 'name':
-                if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
-                    raise ValueError( 'name must be a string or unicode: %s' %( str( type( val ) ) ) )
-                validated_payload[ 'name' ] = sanitize_html( val, 'utf-8' )
-                #TODO:?? if sanitized != val: log.warn( 'script kiddie' )
-            elif key == 'deleted':
-                if not isinstance( val, bool ):
-                    raise ValueError( 'deleted must be a boolean: %s' %( str( type( val ) ) ) )
-                validated_payload[ 'deleted' ] = val
-            elif key == 'published':
-                if not isinstance( val, bool ):
-                    raise ValueError( 'published must be a boolean: %s' %( str( type( val ) ) ) )
-                validated_payload[ 'published' ] = val
-            elif key == 'genome_build':
-                if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
-                    raise ValueError( 'genome_build must be a string: %s' %( str( type( val ) ) ) )
-                validated_payload[ 'genome_build' ] = sanitize_html( val, 'utf-8' )
-            elif key == 'annotation':
-                if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
-                    raise ValueError( 'annotation must be a string or unicode: %s' %( str( type( val ) ) ) )
-                validated_payload[ 'annotation' ] = sanitize_html( val, 'utf-8' )
+            if val is None:
+                continue
+            if key in ( 'name', 'genome_build', 'annotation' ):
+                validated_payload[ key ] = self.validate_and_sanitize_basestring( key, val )
+            if key in ( 'deleted', 'published' ):
+                validated_payload[ key ] = self.validate_boolean( key, val )
+            elif key == 'tags':
+                validated_payload[ key ] = self.validate_and_sanitize_basestring_list( key, val )
             elif key not in valid_but_uneditable_keys:
                 pass
                 #log.warn( 'unknown key: %s', str( key ) )

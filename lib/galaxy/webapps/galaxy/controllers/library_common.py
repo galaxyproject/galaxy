@@ -18,7 +18,7 @@ from galaxy.tools.actions import upload_common
 from galaxy.util import inflector
 from galaxy.util.json import to_json_string, from_json_string
 from galaxy.util.streamball import StreamBall
-from galaxy.web.base.controller import BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMetadataMixin
+from galaxy.web.base.controller import BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMetadataMixin, UsesLibraryMixinItems
 from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, build_select_field
 from galaxy.model.orm import and_, eagerload_all
 
@@ -54,26 +54,18 @@ for comptype in ( 'gz', 'bz2' ):
         os.unlink( tmpf )
     except OSError:
         pass
-ziptype = '32'
-tmpf = os.path.join( tmpd, 'compression_test.zip' )
 try:
-    archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_DEFLATED, True )
-    archive.close()
+    import zlib
     comptypes.append( 'zip' )
-    ziptype = '64'
-except RuntimeError:
-    log.exception( "Compression error when testing zip compression. This option will be disabled for library downloads." )
-except (TypeError, zipfile.LargeZipFile):
-    # ZIP64 is only in Python2.5+.  Remove TypeError when 2.4 support is dropped
-    log.warning( 'Max zip file size is 2GB, ZIP64 not supported' )
-    comptypes.append( 'zip' )
-try:
-    os.unlink( tmpf )
-except OSError:
+except ImportError:
     pass
-os.rmdir( tmpd )
 
-class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMetadataMixin ):
+try:
+    os.rmdir( tmpd )
+except:
+    pass
+
+class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMetadataMixin, UsesLibraryMixinItems ):
     @web.json
     def library_item_updates( self, trans, ids=None, states=None ):
         # Avoid caching
@@ -1758,7 +1750,8 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
             ldda_ids = util.listify( ldda_ids )
             for ldda_id in ldda_ids:
                 try:
-                    ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( ldda_id ) )
+                    # Load the ldda requested and check whether the user has access to them
+                    ldda = self.get_library_dataset_dataset_association( trans, ldda_id )
                     assert not ldda.dataset.purged
                     lddas.append( ldda )
                 except:
@@ -1831,14 +1824,10 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                         tmpd = tempfile.mkdtemp()
                         util.umask_fix_perms( tmpd, trans.app.config.umask, 0777, self.app.config.gid )
                         tmpf = os.path.join( tmpd, 'library_download.' + action )
-                        if ziptype == '64' and trans.app.config.upstream_gzip:
+                        if trans.app.config.upstream_gzip:
                             archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_STORED, True )
-                        elif ziptype == '64':
-                            archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_DEFLATED, True )
-                        elif trans.app.config.upstream_gzip:
-                            archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_STORED )
                         else:
-                            archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_DEFLATED )
+                            archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_DEFLATED, True )
                         archive.add = lambda x, y: archive.write( x, y.encode('CP437') )
                     elif action == 'tgz':
                         if trans.app.config.upstream_gzip:

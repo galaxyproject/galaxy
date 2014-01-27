@@ -25,6 +25,19 @@
         tip_str = ''
         sharable_link_label = 'Sharable link to this repository revision:'
         sharable_link_changeset_revision = changeset_revision
+    
+    if heads:
+        multiple_heads = len( heads ) > 1
+    else:
+        multiple_heads = False
+
+    if repository_metadata is None:
+        revision_installable = False
+    else:
+        if repository_metadata.downloadable is None:
+            revision_installable = 'unknown'
+        else:
+            revision_installable = repository_metadata.downloadable
 %>
 
 <%!
@@ -61,6 +74,12 @@
     <div class="warningmessage">
         This repository has been marked as deprecated, so some tool shed features may be restricted.
     </div>
+%endif:
+%if multiple_heads:
+    ${render_multiple_heads_message( heads )}
+%endif
+%if deprecated_repository_dependency_tups:
+    ${render_deprecated_repository_dependencies_message( deprecated_repository_dependency_tups )}
 %endif
 
 %if len( changeset_revision_select_field.options ) > 1:
@@ -100,7 +119,11 @@
                 ${repository.name | h}
             %endif
         </div>
-        ${render_repository_type_select_field( repository_type_select_field, render_help=False )}
+        <div class="form-row">
+            <label>Type:</label>
+            ${repository.type | h}
+            <div style="clear: both"></div>
+        </div>
         <div class="form-row">
             <label>Synopsis:</label>
             ${repository.description | h}
@@ -113,7 +136,7 @@
             %if can_view_change_log:
                 <a href="${h.url_for( controller='repository', action='view_changelog', id=trans.app.security.encode_id( repository.id ) )}">${revision_label}</a>
             %else:
-                ${revision_label | h}
+                ${revision_label}
             %endif
         </div>
         <div class="form-row">
@@ -121,7 +144,11 @@
             ${repository.user.username | h}
         </div>
         <div class="form-row">
-            <label>Times downloaded:</label>
+            <label>This revision can be installed:</label>
+            ${revision_installable}
+        </div>
+        <div class="form-row">
+            <label>Times cloned / installed:</label>
             ${repository.times_downloaded}
         </div>
         %if trans.user_is_admin():

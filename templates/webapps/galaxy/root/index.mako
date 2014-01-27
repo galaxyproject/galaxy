@@ -1,10 +1,18 @@
 <%inherit file="/webapps/galaxy/base_panels.mako"/>
 
 <%namespace file="/root/tool_menu.mako" import="*" />
+<%namespace file="/history/history_panel.mako" import="current_history_panel" />
 
 <%def name="stylesheets()">
     ${parent.stylesheets()}
     ${h.css("tool_menu")}
+    <style>
+        #right .unified-panel-body {
+            background: none repeat scroll 0 0 #DFE5F9;
+            overflow: auto;
+            padding: 0;
+        }
+    </style>
 </%def>
 
 <%def name="javascripts()">
@@ -35,7 +43,9 @@
             },
             "${_("Current History")}": null,
             "${_("Create New")}": function() {
-                galaxy_history.location = "${h.url_for( controller='root', action='history_new' )}";
+                if( Galaxy && Galaxy.currHistoryPanel ){
+                    Galaxy.currHistoryPanel.createNewHistory();
+                }
             },
             "${_("Copy History")}": function() {
                 galaxy_main.location = "${h.url_for( controller='history', action='copy')}";
@@ -53,7 +63,7 @@
                 galaxy_main.location = "${h.url_for( controller='root', action='history_set_default_permissions' )}";
             },
             "${_("Resume Paused Jobs")}": function() {
-                galaxy_history.location = "${h.url_for( controller='history', action='resume_paused_jobs', current=True)}";
+                galaxy_main.location = "${h.url_for( controller='history', action='resume_paused_jobs', current=True)}";
             },
             "${_("Collapse Expanded Datasets")}": function() {
                 if( Galaxy && Galaxy.currHistoryPanel ){
@@ -106,7 +116,6 @@
                 galaxy_main.location = "${h.url_for( controller='history', action='import_archive' )}";
             }
         });
-        // since we need to communicate state of hpanel with the options menu, cache the popupmenu here
         Galaxy.historyOptionsMenu = popupmenu;
 
         // Fix iFrame scrolling on iOS
@@ -175,22 +184,30 @@
     <div class="unified-panel-header" unselectable="on">
         <div class="unified-panel-header-inner">
             <div style="float: right">
-                <a id="history-refresh-button" class='panel-header-button'
-                   href="${h.url_for( controller='root', action='history' )}" target="galaxy_history">
-                    <span class="fa-icon-refresh"></span>
+                <a id="history-refresh-button" class='panel-header-button' href="javascript:void(0)">
+                    <span class="fa fa-refresh"></span>
                 </a>
                 <a id="history-options-button" class='panel-header-button'
                    href="${h.url_for( controller='root', action='history_options' )}" target="galaxy_main">
-                    <span class="fa-icon-cog"></span>
+                    <span class="fa fa-cog"></span>
                 </a>
             </div>
             <div class="panel-header-text">${_('History')}</div>
         </div>
     </div>
-    <div class="unified-panel-body" style="overflow: hidden;">
-    <iframe name="galaxy_history" width="100%" height="100%" frameborder="0"
-                style="position: absolute; margin: 0; border: 0 none; height: 100%;"
-                src="${h.url_for( controller='root', action='history' )}">
-        </iframe>
+    <div class="unified-panel-body">
+        <div id="current-history-panel" class="history-panel"></div>
+        ## Don't bootstrap data here - confuses the browser history: load via API
+        ${current_history_panel( selector_to_attach_to='#current-history-panel' )}
+        <script type="text/javascript">
+            $(function(){
+                $( '#history-refresh-button' ).on( 'click', function(){
+                    if( top.Galaxy && top.Galaxy.currHistoryPanel ){
+                        top.Galaxy.currHistoryPanel.loadCurrentHistory();
+                        inside_galaxy_frameset = true;
+                    }
+                });
+            });
+        </script>
     </div>
 </%def>

@@ -291,6 +291,8 @@
 </%def>
 
 <%def name="left_panel()">
+    <% from galaxy.tools import Tool, ToolSection, ToolSectionLabel %>
+
     <div class="unified-panel-header" unselectable="on">
         <div class='unified-panel-header-inner'>
             ${n_('Tools')}
@@ -306,9 +308,9 @@
             <div class="toolSectionList">
                 %for key, val in app.toolbox.tool_panel.items():
                     <div class="toolSectionWrapper">
-                    %if key.startswith( 'tool' ):
+                    %if isinstance( val, Tool ):
                         ${render_tool( val, False )}
-                    %elif key.startswith( 'section' ) and val.elems:
+                    %elif isinstance( val, ToolSection ) and val.elems:
                     <% section = val %>
                         <div class="toolSectionTitle" id="title_${section.id}">
                             <span>${section.name}</span>
@@ -316,15 +318,15 @@
                         <div id="${section.id}" class="toolSectionBody">
                             <div class="toolSectionBg">
                                 %for section_key, section_val in section.elems.items():
-                                    %if section_key.startswith( 'tool' ):
+                                    %if isinstance( section_val, Tool ):
                                         ${render_tool( section_val, True )}
-                                    %elif section_key.startswith( 'label' ):
+                                    %elif isinstance( section_val, ToolSectionLabel ):
                                         ${render_label( section_val )}
                                     %endif
                                 %endfor
                             </div>
                         </div>
-                    %elif key.startswith( 'label' ):
+                    %elif isinstance( val, ToolSectionLabel ):
                         ${render_label( val )}
                     %endif
                     </div>
@@ -372,7 +374,7 @@
 
     <div class="unified-panel-header" unselectable="on">
         <div class="unified-panel-header-inner" style="float: right">
-            <a id="workflow-options-button" class="panel-header-button" href="#"><span class="fa-icon-cog"></span></a>
+            <a id="workflow-options-button" class="panel-header-button" href="#"><span class="fa fa-cog"></span></a>
         </div>
         <div class="unified-panel-header-inner">
             Workflow Canvas | ${h.to_unicode( stored.name ) | h}

@@ -1,7 +1,24 @@
-from base.twilltestcase import *
-from base.test_db_util import *
+import galaxy.model
+from base.twilltestcase import TwillTestCase
+from base.test_db_util import (
+    get_user,
+    get_private_role,
+    get_latest_history_for_user,
+    get_default_history_permissions_by_history,
+    get_latest_dataset,
+    refresh,
+    get_default_user_permissions_by_user,
+    get_dataset_permissions_by_dataset,
+)
+
+regular_user1 = regular_user2 = regular_user3 = None
+admin_user = None
+admin_user_private_role = regular_user1_private_role = None
+regular_user2_private_role = None
+
 
 class TestDataSecurity( TwillTestCase ):
+
     def test_000_initiate_users( self ):
         """Ensuring all required user accounts exist"""
         self.logout()
@@ -32,6 +49,7 @@ class TestDataSecurity( TwillTestCase ):
         assert admin_user is not None, 'Problem retrieving user with email "test@bx.psu.edu" from the database'
         global admin_user_private_role
         admin_user_private_role = get_private_role( admin_user )
+
     def test_005_default_permissions( self ):
         """Testing initial settings for DefaultUserPermissions and DefaultHistoryPermissions"""
         # Logged in as admin_user
@@ -59,7 +77,8 @@ class TestDataSecurity( TwillTestCase ):
         # Try deleting the admin_user's private role
         self.manage_roles_and_groups_for_user( self.security.encode_id( admin_user.id ),
                                                out_role_ids=str( admin_user_private_role.id ),
-                                               strings_displayed = [ "You cannot eliminate a user's private role association." ] )
+                                               strings_displayed=[ "You cannot eliminate a user's private role association." ] )
+
     def test_010_private_role_creation_and_default_history_permissions( self ):
         """Testing private role creation and changing DefaultHistoryPermissions for new histories"""
         # Logged in as admin_user
@@ -127,6 +146,7 @@ class TestDataSecurity( TwillTestCase ):
         if dps != dhps:
                 raise AssertionError( 'DatasetPermissions "%s" for dataset id %d differ from DefaultHistoryPermissions "%s" for history id %d' \
                                       % ( str( dps ), latest_dataset.id, str( dhps ), latest_history.id ) )
+
     def test_015_change_default_permissions_for_current_history( self ):
         """Testing changing DefaultHistoryPermissions for the current history"""
         # logged in a regular_user1
@@ -139,7 +159,6 @@ class TestDataSecurity( TwillTestCase ):
         # Make sure these are in sorted order for later comparison
         actions_in = [ 'manage permissions' ]
         permissions_out = [ 'DATASET_ACCESS' ]
-        actions_out = [ 'access' ]
         # Change DefaultHistoryPermissions for the current history
         self.history_set_default_permissions( permissions_out=permissions_out, permissions_in=permissions_in, role_id=str( regular_user2_private_role.id ) )
         if len( latest_history.default_permissions ) != len( actions_in ):
@@ -168,6 +187,7 @@ class TestDataSecurity( TwillTestCase ):
         if dps != dhps:
             raise AssertionError( 'DatasetPermissionss "%s" for dataset id %d differ from DefaultHistoryPermissions "%s"' \
                                       % ( str( dps ), latest_dataset.id, str( dhps ) ) )
+
     def test_999_reset_data_for_later_test_runs( self ):
         """Reseting data to enable later test runs to pass"""
         # Logged in as regular_user2

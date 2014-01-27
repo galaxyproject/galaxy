@@ -45,7 +45,7 @@ ${render_tool_shed_repository_actions( repository=repository, changeset_revision
     <div class="toolFormBody">
         <div class="form-row">
             <label>Revision:</label>
-            <a class="action-button" href="${h.url_for( controller='repository_review', action='view_or_manage_repository', id=trans.security.encode_id( repository.id ), changeset_revision=changeset_revision )}">${changeset_revision_label | h}</a>
+            <a class="action-button" href="${h.url_for( controller='repository_review', action='view_or_manage_repository', id=trans.security.encode_id( repository.id ), changeset_revision=changeset_revision )}">${changeset_revision_label}</a>
             <div style="clear: both"></div>
         </div>
         <div class="form-row">

@@ -2,6 +2,9 @@
   <requirements><requirement type='package'>bowtie</requirement></requirements>
   <!-- <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
   <!-- Used on the metadata edit page. -->
+  <requirements>
+      <requirement type="package">bowtie</requirement>
+  </requirements>
   <command>
   mkdir ${output.files_path}
   &amp;&amp; bowtie-build --quiet

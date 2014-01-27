@@ -3,6 +3,8 @@ from sqlalchemy.orm.collections import InstrumentedList
 # Cannot import galaxy.model b/c it creates a circular import graph.
 import galaxy
 import logging
+import datetime
+
 log = logging.getLogger( __name__ )
 
 class RuntimeException( Exception ):
@@ -182,6 +184,13 @@ class Dictifiable:
             except:
                 if key in value_mapper:
                     return value_mapper.get( key )( item )
+                if type(item) == datetime.datetime:
+                    return item.isoformat()
+                # Leaving this for future reference, though we may want a more
+                # generic way to handle special type mappings going forward.
+                # If the item is of a class that needs to be 'stringified' before being put into a JSON data structure
+                # elif type(item) in []:
+                #    return str(item)
                 return item
 
         # Create dict to represent item.

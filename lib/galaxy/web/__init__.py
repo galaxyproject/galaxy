@@ -15,3 +15,7 @@ from framework import expose_api_anonymous
 from framework import expose_api_raw
 from framework import expose_api_raw_anonymous
 from framework.base import httpexceptions
+
+# TODO: Drop and make these the default.
+from framework import _future_expose_api
+from framework import _future_expose_api_anonymous

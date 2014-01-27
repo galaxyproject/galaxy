@@ -1,0 +1,25 @@
+<tool id="output_order" name="output_order" version="0.1.0">
+  <command>echo $pa > $output_a; echo $pb > $output_b</command>
+  <inputs>
+    <param name="pa" type="integer" value="1" />
+    <param name="pb" type="integer" value="2" />
+  </inputs>
+  <outputs>
+    <data format="txt" name="output_a" />
+    <data format="txt" name="output_b" />
+  </outputs>
+  <tests>
+    <test>
+      <output name="output_b">
+        <assert_contents>
+          <has_line line="2" />
+        </assert_contents>
+      </output>
+      <output name="output_a">
+        <assert_contents>
+          <has_line line="1" />
+        </assert_contents>
+      </output>
+    </test>
+  </tests>
+</tool>

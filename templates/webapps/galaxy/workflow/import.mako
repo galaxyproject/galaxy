@@ -31,7 +31,7 @@
             <form name="import_workflow" id="import_workflow" action="${h.url_for( controller='workflow', action='import_workflow' )}" enctype="multipart/form-data" method="POST">
                 <div class="form-row">
                     <label>Galaxy workflow URL:</label> 
-                    <input type="text" name="url" value="${url}" size="40">
+                    <input type="text" name="url" value="${url | h}" size="40">
                     <div class="toolParamHelp" style="clear: both;">
                         If the workflow is accessible via a URL, enter the URL above and click <b>Import</b>.
                     </div>

@@ -13,6 +13,10 @@ elif [ $1 = 'help' ]; then
 	echo "'run_functional_tests.sh -list'                    for listing all the tool ids"
 	echo "'run_functional_tests.sh -toolshed'                for running all the test scripts in the ./test/tool_shed/functional directory"
 	echo "'run_functional_tests.sh -toolshed testscriptname' for running one test script named testscriptname in the .test/tool_shed/functional directory"
+    echo "'run_functional_tests.sh -workflow test.xml'       for running a workflow test case as defined by supplied workflow xml test file"
+	echo "'run_functional_tests.sh -framework'               for running through example tool tests testing framework features in test/functional/tools"    
+	echo "'run_functional_tests.sh -framework -id toolid'    for testing one framework tool (in test/functional/tools/) with id 'toolid'"
+	echo "'run_functional_tests.sh -data_managers -id data_manager_id'    for testing one Data Manager with id 'data_manager_id'"
 elif [ $1 = '-id' ]; then
 	python ./scripts/functional_tests.py -v functional.test_toolbox:TestForTool_$2 --with-nosehtml --html-report-file run_functional_tests.html
 elif [ $1 = '-sid' ]; then
@@ -45,6 +49,24 @@ elif [ $1 = '-toolshed' ]; then
         python ./test/tool_shed/functional_tests.py -v --with-nosehtml --html-report-file ./test/tool_shed/run_functional_tests.html ./test/tool_shed/functional
     else
         python ./test/tool_shed/functional_tests.py -v --with-nosehtml --html-report-file ./test/tool_shed/run_functional_tests.html $2
+    fi
+elif [ $1 = '-workflow' ]; then
+    python ./scripts/functional_tests.py -v functional.workflow:WorkflowTestCase --with-nosehtml --html-report-file ./test/tool_shed/run_functional_tests.html -workflow $2
+elif [ $1 = '-data_managers' ]; then
+    if [ ! $2 ]; then
+        python ./scripts/functional_tests.py -v functional.test_data_managers --with-nosehtml --html-report-file run_functional_tests.html -data_managers
+    elif [ $2 = '-id' ]; then
+        python ./scripts/functional_tests.py -v functional.test_data_managers:TestForDataManagerTool_$3 --with-nosehtml --html-report-file run_functional_tests.html -data_managers
+    else
+        python ./scripts/functional_tests.py -v functional.test_data_managers --with-nosehtml --html-report-file run_functional_tests.html -data_managers
+    fi
+elif [ $1 = '-framework' ]; then
+    if [ ! $2 ]; then
+        python ./scripts/functional_tests.py -v functional.test_toolbox --with-nosehtml --html-report-file run_functional_tests.html -framework
+    elif [ $2 = '-id' ]; then
+        python ./scripts/functional_tests.py -v functional.test_toolbox:TestForTool_$3 --with-nosehtml --html-report-file run_functional_tests.html -framework
+    else
+        echo "Invalid test option selected, if -framework first argument to $0, optional second argument must be -id followed a tool id."
     fi
 else
 	python ./scripts/functional_tests.py -v --with-nosehtml --html-report-file run_functional_tests.html $1

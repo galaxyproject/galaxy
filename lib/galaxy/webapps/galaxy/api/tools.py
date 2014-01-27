@@ -1,15 +1,18 @@
 import urllib
 
 from galaxy import web, util
-from galaxy.web.base.controller import BaseAPIController, UsesHistoryDatasetAssociationMixin, UsesVisualizationMixin
+from galaxy.web.base.controller import BaseAPIController
+from galaxy.web.base.controller import UsesVisualizationMixin
+from galaxy.web.base.controller import UsesHistoryMixin
 from galaxy.visualization.genomes import GenomeRegion
-from galaxy.util.json import to_json_string, from_json_string
+from galaxy.util.json import to_json_string
 from galaxy.visualization.data_providers.genome import *
 
 import logging
 log = logging.getLogger( __name__ )
 
-class ToolsController( BaseAPIController, UsesVisualizationMixin ):
+
+class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMixin ):
     """
     RESTful controller for interactions with tools.
     """
@@ -46,11 +49,11 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         GET /api/tools/{tool_id}
         Returns tool information, including parameters and inputs.
         """
-        io_details   = util.string_as_bool( kwd.get( 'io_details', False ) )
+        io_details = util.string_as_bool( kwd.get( 'io_details', False ) )
         link_details = util.string_as_bool( kwd.get( 'link_details', False ) )
         try:
             id = urllib.unquote_plus( id )
-            tool = self.app.toolbox.tools_by_id.get( id, None )
+            tool = self.app.toolbox.get_tool( id )
             if not tool:
                 trans.response.status = 404
                 return { 'error': 'tool not found', 'id': id }
@@ -85,8 +88,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         # dataset upload.
         history_id = payload.get("history_id", None)
         if history_id:
-            target_history = trans.sa_session.query(trans.app.model.History).get(
-                trans.security.decode_id(history_id))
+            target_history = self.get_history( trans, history_id )
         else:
             target_history = None
 
@@ -94,9 +96,9 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         inputs = payload.get( 'inputs', {} )
         # Find files coming in as multipart file data and add to inputs.
         for k, v in payload.iteritems():
-            if k.startswith("files_"):
+            if k.startswith("files_") or k.startswith("__files_"):
                 inputs[k] = v
-        
+
         #for inputs that are coming from the Library, copy them into the history
         input_patch = {}
         for k, v in inputs.iteritems():
@@ -112,21 +114,37 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         inputs['runtool_btn'] = 'Execute'
         # TODO: encode data ids and decode ids.
         # TODO: handle dbkeys
-        params = util.Params( inputs, sanitize = False )
-        template, vars = tool.handle_input( trans, params.__dict__, history=target_history )
+        params = util.Params( inputs, sanitize=False )
+        # process_state will be 'populate' or 'update'. When no tool
+        # state is specified in input - it will be 'populate', and
+        # tool will fully expand repeat and conditionals when building
+        # up state. If tool state is found in input
+        # parameters,process_state will be 'update' and complex
+        # submissions (with repeats and conditionals) must be built up
+        # over several iterative calls to the API - mimicing behavior
+        # of web controller (though frankly API never returns
+        # tool_state so this "legacy" behavior is probably impossible
+        # through API currently).
+        incoming = params.__dict__
+        process_state = "update" if "tool_state" in incoming else "populate"
+        template, vars = tool.handle_input( trans, incoming, history=target_history, process_state=process_state, source="json" )
         if 'errors' in vars:
             trans.response.status = 400
             return { "message": { "type": "error", "data" : vars[ 'errors' ] } }
 
         # TODO: check for errors and ensure that output dataset(s) are available.
-        output_datasets = vars.get( 'out_data', {} ).values()
+        output_datasets = vars.get( 'out_data', {} ).iteritems()
         rval = {
             "outputs": []
         }
         outputs = rval[ "outputs" ]
         #TODO:?? poss. only return ids?
-        for output in output_datasets:
+        for output_name, output in output_datasets:
             output_dict = output.to_dict()
+            #add the output name back into the output data structure
+            #so it's possible to figure out which newly created elements
+            #correspond with which tool file outputs
+            output_dict['output_name'] = output_name
             outputs.append( trans.security.encode_dict_ids( output_dict ) )
         return rval
 
@@ -169,13 +187,12 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
 
         # HACK: add run button so that tool.handle_input will run tool.
         kwargs['runtool_btn'] = 'Execute'
-        params = util.Params( kwargs, sanitize = False )
+        params = util.Params( kwargs, sanitize=False )
         template, vars = tool.handle_input( trans, params.__dict__, history=target_history )
 
         # TODO: check for errors and ensure that output dataset is available.
         output_datasets = vars[ 'out_data' ].values()
         return self.add_track_async( trans, output_datasets[0].id )
-
 
     def _rerun_tool( self, trans, payload, **kwargs ):
         """
@@ -347,7 +364,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
                 continue
 
             input_dataset = jida.dataset
-            if input_dataset is None: #optional dataset and dataset wasn't selected
+            if input_dataset is None:  # optional dataset and dataset wasn't selected
                 tool_params[ jida.name ] = None
             elif run_on_regions and 'data' in input_dataset.datatype.data_sources:
                 # Dataset is indexed and hence a subset can be extracted and used
@@ -391,7 +408,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
                     # Set metadata.
                     # TODO: set meta internally if dataset is small enough?
                     trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute( trans.app.datatypes_registry.set_external_metadata_tool,
-                                                                                                 trans, incoming = { 'input1':new_dataset },
+                                                                                                 trans, incoming={ 'input1': new_dataset },
                                                                                                  overwrite=False, job_params={ "source" : "trackster" } )
                     # Add HDA subset association.
                     subset_association = trans.app.model.HistoryDatasetAssociationSubset( hda=input_dataset, subset=new_dataset, location=regions_str )
@@ -434,5 +451,5 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
 
         dataset_dict = output_dataset.to_dict()
         dataset_dict[ 'id' ] = trans.security.encode_id( dataset_dict[ 'id' ] )
-        dataset_dict[ 'track_config' ] = self.get_new_track_config( trans, output_dataset );
+        dataset_dict[ 'track_config' ] = self.get_new_track_config( trans, output_dataset )
         return dataset_dict

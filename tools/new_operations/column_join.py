@@ -13,19 +13,16 @@ usage: %prog -o output -1 input1 -2 input2 -c column1[,column2[,column3[,...]]] 
     other_inputs: the other input files to join
 """
 
-import optparse, os, re, struct, sys, tempfile
+import json
+import optparse
+import os
+import re
+import struct
+import sys
+import tempfile
 
-try:
-    simple_json_exception = None
-    from galaxy import eggs
-    from galaxy.util.bunch import Bunch
-    from galaxy.util import stringify_dictionary_keys
-    import pkg_resources
-    pkg_resources.require("simplejson")
-    import simplejson
-except Exception, e:
-    simplejson_exception = e
-    simplejson = None
+from galaxy.util.bunch import Bunch
+from galaxy.util import stringify_dictionary_keys
 
 def stop_err( msg ):
     sys.stderr.write( msg )
@@ -162,11 +159,9 @@ def __main__():
     fill_options = None
     if options.fill_options_file != 'None' and options.fill_options_file is not None:
         try:
-            if simplejson is None:
-                raise simplejson_exception
-            fill_options = Bunch( **stringify_dictionary_keys( simplejson.load( open( options.fill_options_file ) ) ) )
+            fill_options = Bunch( **stringify_dictionary_keys( json.load( open( options.fill_options_file ) ) ) )
         except Exception, e:
-            print 'Warning: Ignoring fill options due to simplejson error (%s).' % e
+            print 'Warning: Ignoring fill options due to json error (%s).' % e
     if fill_options is None:
         fill_options = Bunch()
     if 'file1_columns' not in fill_options:

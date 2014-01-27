@@ -1,12 +1,4 @@
 // =================================================================== module object, exports
-/** Creates a new api module object.
- *  @param {SpaceGhost} spaceghost a spaceghost instance
- *  @exported
- */
-exports.create = function createAPI( spaceghost, apikey ){
-    return new API( spaceghost );
-};
-
 /** User object constructor.
  *  @param {SpaceGhost} spaceghost  a spaceghost instance
  *  @param {String} apikey          apikey for use when not using session authentication
@@ -28,14 +20,21 @@ var API = function API( spaceghost, apikey ){
 };
 exports.API = API;
 
+/** Creates a new api module object.
+ *  @param {SpaceGhost} spaceghost a spaceghost instance
+ *  @exported
+ */
+exports.create = function createAPI( spaceghost, apikey ){
+    return new API( spaceghost );
+};
+
+
 API.prototype.toString = function toString(){
     return ( this.spaceghost + '.API:'
         + (( this.apikey )?( this.apikey ):( '(session)' )) );
 };
 
 // ------------------------------------------------------------------- APIError
-APIError.prototype = new Error();
-APIError.prototype.constructor = Error;
 /** @class Thrown when Galaxy the API returns an error from a request */
 function APIError( msg, status ){
     Error.apply( this, arguments );
@@ -43,6 +42,8 @@ function APIError( msg, status ){
     this.message = msg;
     this.status = status;
 }
+APIError.prototype = new Error();
+APIError.prototype.constructor = Error;
 API.prototype.APIError = APIError;
 exports.APIError = APIError;
 
@@ -331,21 +332,23 @@ ToolsAPI.prototype.show = function show( id ){
     this.api.spaceghost.info( 'tools.show: ' + [ id ] );
     var data = {};
 
+    data.io_details = true;
+
     return this.api._ajax( utils.format( this.urlTpls.show, id ), {
         data : data
     });
 };
 
-//ToolsAPI.prototype.create = function create( payload ){
-//    this.api.spaceghost.info( 'tools.create: ' + [ this.api.spaceghost.jsonStr( payload ) ] );
-//
-//    // py.payload <-> ajax.data
-//    payload = this.api.ensureObject( payload );
-//    return this.api._ajax( utils.format( this.urlTpls.create, this.api.ensureId( historyId ) ), {
-//        type : 'POST',
-//        data : payload
-//    });
-//};
+ToolsAPI.prototype.create = function create( payload ){
+    this.api.spaceghost.info( 'tools.create: ' + [ this.api.spaceghost.jsonStr( payload ) ] );
+
+    // py.payload <-> ajax.data
+    payload = this.api.ensureObject( payload );
+    return this.api._ajax( utils.format( this.urlTpls.create ), {
+        type : 'POST',
+        data : payload
+    });
+};
 
 
 // =================================================================== WORKFLOWS

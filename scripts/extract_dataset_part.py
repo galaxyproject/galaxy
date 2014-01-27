@@ -6,20 +6,16 @@ Used by jobs that split large files into pieces to be processed concurrently
 on a gid in a scatter-gather mode. This does part of the scatter.
 
 """
+import json
+import logging
 import os
 import sys
-import logging
 logging.basicConfig()
 log = logging.getLogger( __name__ )
 
 new_path = [ os.path.join( os.getcwd(), "lib" ) ]
 new_path.extend( sys.path[1:] ) # remove scripts/ from the path
 sys.path = new_path
-
-from galaxy import eggs
-import pkg_resources
-pkg_resources.require("simplejson")
-import simplejson
 
 # This junk is here to prevent loading errors
 import galaxy.model.mapping #need to load this before we unpickle, in order to setup properties assigned by the mappers
@@ -33,7 +29,7 @@ def __main__():
     if not os.path.isfile(file_path):
         #Nothing to do - some splitters don't write a JSON file
         sys.exit(0)
-    data = simplejson.load(open(file_path, 'r'))
+    data = json.load(open(file_path, 'r'))
     try:
         class_name_parts = data['class_name'].split('.')
         module_name = '.'.join(class_name_parts[:-1])

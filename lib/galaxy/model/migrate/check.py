@@ -45,7 +45,22 @@ def create_or_verify_database( url, galaxy_config_file, engine_options={}, app=N
         log.error( "database_connection contains an unknown SQLAlchemy database dialect: %s" % dialect )
     # Create engine and metadata
     engine = create_engine( url, **engine_options )
+
+    def migrate():
+        try:
+            # Declare the database to be under a repository's version control
+            db_schema = schema.ControlledSchema.create( engine, migrate_repository )
+        except:
+            # The database is already under version control
+            db_schema = schema.ControlledSchema( engine, migrate_repository )
+        # Apply all scripts to get to current version
+        migrate_to_current_version( engine, db_schema )
+
     meta = MetaData( bind=engine )
+    if app and getattr( app.config, 'database_auto_migrate', False ):
+        migrate()
+        return
+
     # Try to load dataset table
     try:
         dataset_table = Table( "dataset", meta, autoload=True )
@@ -55,15 +70,7 @@ def create_or_verify_database( url, galaxy_config_file, engine_options={}, app=N
         if app:
             app.new_installation = True
         log.info( "No database, initializing" )
-        # Database might or might not be versioned
-        try:
-            # Declare the database to be under a repository's version control
-            db_schema = schema.ControlledSchema.create( engine, migrate_repository )
-        except:
-            # The database is already under version control
-            db_schema = schema.ControlledSchema( engine, migrate_repository )
-        # Apply all scripts to get to current version
-        migrate_to_current_version( engine, db_schema )
+        migrate()
         return
     try:
         hda_table = Table( "history_dataset_association", meta, autoload=True )

@@ -1,4 +1,7 @@
-define(["libs/underscore", "libs/d3", "viz/visualization"], function(_, d3, visualization) {
+define(["utils/utils", "libs/underscore", "libs/d3", "viz/visualization"], function(utils, _, d3, visualization) {
+
+// Load needed CSS.
+utils.cssLoadFile("static/style/circster.css");
 
 /**
  * Utility class for working with SVG.
@@ -17,7 +20,7 @@ var SVGUtils = Backbone.Model.extend({
             // To the right of screen?
             eltBRect.left > svgBRect.right ||
             // Above screen?
-            eltBRect.bottom < 0 || 
+            eltBRect.bottom < 0 ||
             // Below screen?
             eltBRect.top > svgBRect.bottom) {
             return false;
@@ -125,7 +128,7 @@ var CircsterLabelTrack = Backbone.Model.extend({});
 
 /**
  * Renders a full circster visualization.
- */ 
+ */
 var CircsterView = Backbone.View.extend({
     className: 'circster',
     
@@ -174,7 +177,7 @@ var CircsterView = Backbone.View.extend({
             min_dimension = Math.min(this.$el.width(), this.$el.height()),
             // Compute radius start based on model, will be centered 
             // and fit entirely inside element by default.
-            radius_start = min_dimension / 2 - 
+            radius_start = min_dimension / 2 -
                             circular_tracks.length * (this.dataset_arc_height + this.track_gap) -
                             (this.label_arc_height + this.track_gap),
 
@@ -212,7 +215,7 @@ var CircsterView = Backbone.View.extend({
                     // Do zoom, drag.
                     var scale = d3.event.scale;
                     svg.attr("transform",
-                      "translate(" + d3.event.translate + ")" + 
+                      "translate(" + d3.event.translate + ")" +
                       " scale(" + scale + ")");
 
                     // Propagate scale changes to views.
@@ -320,7 +323,7 @@ var CircsterView = Backbone.View.extend({
             // Update chords tracks.
             _.each(this.chords_views, function(track_view) {
                 track_view.update_radius_bounds(new_track_bounds[0]);
-            });            
+            });
 
             // Render new track.
             var track_index = this.circular_views.length,
@@ -510,8 +513,8 @@ var CircsterTrackView = Backbone.View.extend({
                 self._update_data_bounds();
 
                 // Find chromosome arc to draw data on.
-                var chrom_arc = _.find(self.chroms_layout, function(layout) { 
-                        return layout.data.chrom === chrom; 
+                var chrom_arc = _.find(self.chroms_layout, function(layout) {
+                        return layout.data.chrom === chrom;
                 });
 
                 // Add new data path and apply preferences.
@@ -652,7 +655,7 @@ var CircsterChromLabelTrackView = CircsterTrackView.extend({
         this.bg_fill = 'fff';
 
         // Minimum arc distance for labels to be applied.
-        this.min_arc_len = 0.08;
+        this.min_arc_len = 0.05;
     },
 
     /**
@@ -668,15 +671,15 @@ var CircsterChromLabelTrackView = CircsterTrackView.extend({
             .attr('id', function(d) { return 'label-' + d.data.chrom; });
           
         chrom_arcs.append("svg:text")
-            .filter(function(d) { 
+            .filter(function(d) {
                 return d.endAngle - d.startAngle > self.min_arc_len;
             })
             .attr('text-anchor', 'middle')
           .append("svg:textPath")
+            .attr("class", "chrom-label")
             .attr("xlink:href", function(d) { return "#label-" + d.data.chrom; })
             .attr('startOffset', '25%')
-            .attr('font-weight', 'bold')
-            .text(function(d) { 
+            .text(function(d) {
                 return d.data.chrom;
             });
 
@@ -791,11 +794,16 @@ var CircsterQuantitativeTrackView = CircsterTrackView.extend({
                 return "rotate(90)";
             };
 
+        // Draw min, max on first chrom only.
+        this.drawTicks(this.parent_elt, [ this.chroms_layout[0] ], this._data_bounds_ticks_fn(), textTransform, true);
+
+        /*
         // Filter for visible chroms, then for every third chrom so that labels attached to only every
         // third chrom.
         var visibleChroms = _.filter(this.chroms_layout, function(c) { return c.endAngle - c.startAngle > 0.08; }),
             labeledChroms = _.filter(visibleChroms, function(c, i) { return i % 3 === 0; });
         this.drawTicks(this.parent_elt, labeledChroms, this._data_bounds_ticks_fn(), textTransform, true);
+        */
     },
 
     /**
@@ -868,7 +876,8 @@ var CircsterBigWigTrackView = CircsterQuantitativeTrackView.extend({
             if (d) {
                 // Each data point has the form [position, value], so return all values.
                 return _.map(d.data, function(p) {
-                    return p[1];
+                    // Null is used for a lack of data; resolve null to 0 for comparison.
+                    return parseInt(p[1], 10) || 0;
                 });
             }
             else {
@@ -876,7 +885,9 @@ var CircsterBigWigTrackView = CircsterQuantitativeTrackView.extend({
             }
         }) );
 
-        return [ _.min(values), this._quantile(values, 0.98) ];
+        // For max, use 98% quantile in attempt to avoid very large values. However, this max may be 0 
+        // for sparsely populated data, so use max in that case.
+        return [ _.min(values), this._quantile(values, 0.98) || _.max(values) ];
     }
 });
 
@@ -944,9 +955,9 @@ var CircsterChromInteractionsTrackView = CircsterTrackView.extend({
         });
 
         // Return angle at position.
-        return  chrom_angle_data.endAngle - 
-                ( 
-                    (chrom_angle_data.endAngle - chrom_angle_data.startAngle) * 
+        return  chrom_angle_data.endAngle -
+                (
+                    (chrom_angle_data.endAngle - chrom_angle_data.startAngle) *
                     (chrom_angle_data.data.len - position) / chrom_angle_data.data.len
                 );
     }
@@ -967,7 +978,7 @@ var Circster = Backbone.View.extend(
             el                  : $('#center .unified-panel-body'),
             
             // gaps are difficult to set because it very dependent on chromosome size and organization.
-            total_gap           : 2 * Math.PI * 0.1,
+            total_gap           : 2 * Math.PI * 0.4,
             genome              : genome,
             model               : vis,
             dataset_arc_height  : 25
@@ -1021,7 +1032,7 @@ var Circster = Backbone.View.extend(
                     Galaxy.modal.show({
                         title   : "Could Not Save",
                         body    : "Could not save visualization. Please try again later.",
-                        buttons : { "Cancel": function() { Galaxy.modal.hide() } }
+                        buttons : { "Cancel": function() { Galaxy.modal.hide(); } }
                     });
                 });
             }

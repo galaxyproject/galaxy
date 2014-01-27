@@ -1,6 +1,4 @@
 from tool_shed.base.twilltestcase import ShedTwillTestCase, common, os
-import tool_shed.base.test_db_util as test_db_util
-
 datatypes_repository_name = 'emboss_datatypes_0030'
 datatypes_repository_description = "Galaxy applicable data formats used by Emboss tools."
 datatypes_repository_long_description = "Galaxy applicable data formats used by Emboss tools.  This repository contains no tools."
@@ -15,7 +13,6 @@ base_datatypes_count = 0
 repository_datatypes_count = 0
 running_standalone = False
 
-
 class RepositoryWithDependencyRevisions( ShedTwillTestCase ):
     '''Test installing a repository with dependency revisions.'''
   
@@ -23,19 +20,19 @@ class RepositoryWithDependencyRevisions( ShedTwillTestCase ):
         """Create necessary user accounts."""
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        test_user_1 = test_db_util.get_user( common.test_user_1_email )
+        test_user_1 = self.test_db_util.get_user( common.test_user_1_email )
         assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % test_user_1_email
-        test_user_1_private_role = test_db_util.get_private_role( test_user_1 )
+        test_user_1_private_role = self.test_db_util.get_private_role( test_user_1 )
         self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
-        admin_user = test_db_util.get_user( common.admin_email )
+        admin_user = self.test_db_util.get_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
-        admin_user_private_role = test_db_util.get_private_role( admin_user )
+        admin_user_private_role = self.test_db_util.get_private_role( admin_user )
         self.galaxy_logout()
         self.galaxy_login( email=common.admin_email, username=common.admin_username )
-        galaxy_admin_user = test_db_util.get_galaxy_user( common.admin_email )
+        galaxy_admin_user = self.test_db_util.get_galaxy_user( common.admin_email )
         assert galaxy_admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
-        galaxy_admin_user_private_role = test_db_util.get_galaxy_private_role( galaxy_admin_user )
+        galaxy_admin_user_private_role = self.test_db_util.get_galaxy_private_role( galaxy_admin_user )
  
     def test_0005_ensure_repositories_and_categories_exist( self ):
         '''Create the 0030 category and add repositories to it, if necessary.'''
@@ -124,7 +121,7 @@ class RepositoryWithDependencyRevisions( ShedTwillTestCase ):
         self.galaxy_logout()
         self.galaxy_login( email=common.admin_email, username=common.admin_username )
         self.browse_tool_shed( url=self.url, strings_displayed=[ 'Test 0030 Repository Dependency Revisions' ] )
-        category = test_db_util.get_category_by_name( 'Test 0030 Repository Dependency Revisions' )
+        category = self.test_db_util.get_category_by_name( 'Test 0030 Repository Dependency Revisions' )
         self.browse_category( category, strings_displayed=[ 'emboss_0030' ] )
         self.preview_repository_in_tool_shed( 'emboss_0030', common.test_user_1_name, strings_displayed=[ 'emboss_0030', 'Valid tools' ] )
 
@@ -140,8 +137,8 @@ class RepositoryWithDependencyRevisions( ShedTwillTestCase ):
                                  'Test 0030 Repository Dependency Revisions',
                                  strings_displayed=strings_displayed,
                                  install_tool_dependencies=False, 
-                                 new_tool_panel_section='test_1030' )
-        installed_repository = test_db_util.get_installed_repository_by_name_owner( 'emboss_0030', common.test_user_1_name )
+                                 new_tool_panel_section_label='test_1030' )
+        installed_repository = self.test_db_util.get_installed_repository_by_name_owner( 'emboss_0030', common.test_user_1_name )
         strings_displayed = [ 'emboss_0030',
                               'Galaxy wrappers for Emboss version 5.0.0 tools for test 0030',
                               'user1', 

@@ -1,4 +1,7 @@
-from cStringIO import StringIO
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from io import StringIO
 try:
     from pycurl import Curl
 except:
@@ -25,6 +28,8 @@ class PycurlTransport(object):
                 c.setopt(c.INFILESIZE, filesize)
             if data:
                 c.setopt(c.POST, 1)
+                if type(data).__name__ == 'unicode':
+                    data = data.encode('UTF-8')
                 c.setopt(c.POSTFIELDS, data)
             c.perform()
             if not output_path:

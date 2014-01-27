@@ -2,6 +2,7 @@ import os, logging
 from galaxy import web
 from galaxy.web.base.controller import BaseUIController
 from tool_shed.util.shed_util_common import get_repository_by_name_and_owner
+from tool_shed.util.shed_util_common import update_repository
 from tool_shed.util.metadata_util import set_repository_metadata
 
 from galaxy import eggs
@@ -9,6 +10,8 @@ eggs.require('mercurial')
 import mercurial.__version__
 from mercurial.hgweb.hgwebdir_mod import hgwebdir
 from mercurial.hgweb.request import wsgiapplication
+from mercurial import hg
+from mercurial import ui
 
 log = logging.getLogger(__name__)
 
@@ -36,6 +39,11 @@ class HgController( BaseUIController ):
                 repository = get_repository_by_name_and_owner( trans.app, name, owner )
                 if repository:
                     if hg_version >= '2.2.3':
+                        # Update the repository on disk to the tip revision, because the web upload form uses the on-disk working
+                        # directory. If the repository is not updated on disk, pushing from the command line and then uploading 
+                        # via the web interface will result in a new head being created.
+                        repo = hg.repository( ui.ui(), repository.repo_path( trans.app ) )
+                        update_repository( repo, ctx_rev=None )
                         # Set metadata using the repository files on disk.
                         error_message, status = set_repository_metadata( trans, repository )
                         if status == 'ok' and error_message:

@@ -681,7 +681,7 @@ var Genome = Backbone.Model.extend({
 /**
  * A genomic region.
  */
-var GenomeRegion = Backbone.RelationalModel.extend({
+var GenomeRegion = Backbone.Model.extend({
     defaults: {
         chrom: null,
         start: 0,
@@ -850,19 +850,15 @@ var GenomeRegionCollection = Backbone.Collection.extend({
 /**
  * A genome browser bookmark.
  */
-var BrowserBookmark = Backbone.RelationalModel.extend({
+var BrowserBookmark = Backbone.Model.extend({
     defaults: {
         region: null,
         note: ''
     },
 
-    relations: [
-        {
-            type: Backbone.HasOne,
-            key: 'region',
-            relatedModel: GenomeRegion
-        }
-    ]
+    initialize: function(options) {
+        this.set('region', new GenomeRegion(options.region));
+    }
 });
 
 /**
@@ -876,17 +872,10 @@ var BrowserBookmarkCollection = Backbone.Collection.extend({
  * A track of data in a genome visualization.
  */
 // TODO: rename to Track and merge with Trackster's Track object.
-var BackboneTrack = Backbone.RelationalModel.extend({
-
-    relations: [
-        {
-            type: Backbone.HasOne,
-            key: 'dataset',
-            relatedModel: data_mod.Dataset
-        }
-    ],
+var BackboneTrack = Backbone.Model.extend({
 
     initialize: function(options) {
+        this.set('dataset', new data_mod.Dataset(options.dataset));
 
         // -- Set up config settings. -- 
 
@@ -913,10 +902,14 @@ var BackboneTrack = Backbone.RelationalModel.extend({
     }
 });
 
+var BackboneTrackCollection = Backbone.Collection.extend({
+    model: BackboneTrack
+});
+
 /**
  * A visualization.
  */
-var Visualization = Backbone.RelationalModel.extend({
+var Visualization = Backbone.Model.extend({
     defaults: {
         title: '',
         type: ''
@@ -953,13 +946,9 @@ var GenomeVisualization = Visualization.extend({
         viewport: null
     }),
 
-    relations: [
-        {
-            type: Backbone.HasMany,
-            key: 'tracks',
-            relatedModel: BackboneTrack
-        }
-    ],
+    initialize: function(options) {
+        this.set('tracks', new BackboneTrackCollection(options.tracks));
+    },
 
     /**
      * Add a track or array of tracks to the visualization.

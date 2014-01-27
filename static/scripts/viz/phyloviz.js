@@ -244,7 +244,7 @@ var PhyloTree = visualization_mod.Visualization.extend({
     save: function() {
         var root = this.root;
         cleanTree(root);
-        this.set("root", root);
+        //this.set("root", root);
 
         function cleanTree(node){
             // we need to remove parent to delete circular reference
@@ -267,10 +267,10 @@ var PhyloTree = visualization_mod.Visualization.extend({
         show_message("Saving to Galaxy", "progress");
 
         return $.ajax({
-            url: this.url(),
-            type: "POST",
+            url     : this.url,
+            type    : "POST",
             dataType: "json",
-            data: {
+            data    : {
                 vis_json: JSON.stringify(config)
             },
             success: function(res){
@@ -478,7 +478,6 @@ var PhylovizLinearView =  PhylovizLayoutBase.extend({
                     self.updateAndRender(d);   // re-render the tree
                 }
             });
-        console.debug( 'source:', source )
         //TODO: newick and phyloxml return arrays. where should this go (client (here, else), server)?
         if( toString.call( source ) === '[object Array]' ){
             // if d is an array, replate with the first object (newick, phyloxml)

@@ -1,13 +1,9 @@
 import binascii
+import json
 import logging
 from galaxy import eggs
 from galaxy.util.hash_util import hmac_new
 from galaxy.util.json import json_fix
-
-import pkg_resources
-
-pkg_resources.require( "simplejson" )
-import simplejson
 
 log = logging.getLogger( __name__ )
 
@@ -23,7 +19,7 @@ def tool_shed_decode( value ):
     # Restore from string
     values = None
     try:
-        values = simplejson.loads( value )
+        values = json.loads( value )
     except Exception, e:
         #log.debug( "Decoding json value from tool shed for value '%s' threw exception: %s" % ( str( value ), str( e ) ) )
         pass
@@ -39,7 +35,7 @@ def tool_shed_decode( value ):
 
 def tool_shed_encode( val ):
     if isinstance( val, dict ):
-        value = simplejson.dumps( val )
+        value = json.dumps( val )
     else:
         value = val
     a = hmac_new( 'ToolShedAndGalaxyMustHaveThisSameKey', value )

@@ -2,9 +2,15 @@
 Demo sequencer web application framework
 """
 
+import json
+import os
 import pkg_resources
+import random
+import socket
+import string
+import sys
+import time
 
-import os, sys, time, socket, random, string
 pkg_resources.require( "Cheetah" )
 from Cheetah.Template import Template
 
@@ -18,9 +24,6 @@ from galaxy.web.framework import MessageException, FormBuilder, FormInput, FormD
 import galaxy.web.framework.base
 
 from galaxy.util import asbool
-
-pkg_resources.require( "simplejson" )
-import simplejson
 
 pkg_resources.require( "Mako" )
 import mako.template

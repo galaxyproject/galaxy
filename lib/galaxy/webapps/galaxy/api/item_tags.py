@@ -29,9 +29,10 @@ class BaseItemTagsController( BaseAPIController, UsesTagsMixin ):
         return self._api_value( tag, trans )
 
     @web.expose_api
-    def create( self, trans, tag_name, payload={}, **kwd ):
+    def create( self, trans, tag_name, payload=None, **kwd ):
         """
         """
+        payload = payload or {}
         value = payload.get("value", None)
         tag = self._apply_item_tag( trans, self.tagged_item_class, kwd[self.tagged_item_id], tag_name, value )
         return self._api_value( tag, trans )
@@ -50,6 +51,7 @@ class BaseItemTagsController( BaseAPIController, UsesTagsMixin ):
 
     def _api_value( self, tag, trans, view='element' ):
         return tag.to_dict( view=view, value_mapper={ 'id': trans.security.encode_id } )
+
 
 class HistoryContentTagsController( BaseItemTagsController ):
     controller_name = "history_content_tags"

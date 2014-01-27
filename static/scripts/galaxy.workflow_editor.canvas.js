@@ -200,7 +200,7 @@ $.extend( Node.prototype, {
                         .appendTo( "body" )
                         .append(
                             $("<div class='button'></div>").append(
-                                $("<div/>").addClass("fa-icon-button fa-icon-remove").click( function() {
+                                $("<div/>").addClass("fa-icon-button fa fa-times").click( function() {
                                     $.each( terminal.connectors, function( _, x ) {
                                         if (x) {
                                             x.destroy();
@@ -360,7 +360,7 @@ $.extend( Node.prototype, {
                                 workflow.has_changes = true;
                                 canvas_manager.draw_overview();
                             })))
-                    .tooltip({delay:500, title: "Flag this as a workflow output.  All non-flagged outputs will be hidden." });
+                    .tooltip({delay:500, title: "Mark dataset as a workflow output. All unmarked datasets will be hidden." });
                 callout.css({
                         top: '50%',
                         margin:'-8px 0px 0px 0px',
@@ -859,7 +859,7 @@ function prebuild_node( type, title_text, tool_id ) {
     // Fix width to computed width
     // Now add floats
     var buttons = $("<div class='buttons' style='float: right;'></div>");
-    buttons.append( $("<div>").addClass("fa-icon-button fa-icon-remove").click( function( e ) {
+    buttons.append( $("<div>").addClass("fa-icon-button fa fa-times").click( function( e ) {
         node.destroy();
     }));
     // Place inside container

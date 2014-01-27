@@ -58,7 +58,6 @@
             shim: {
                 "libs/underscore": { exports: "_" },
                 "libs/backbone/backbone": { exports: "Backbone" },
-                "libs/backbone/backbone-relational": ["libs/backbone/backbone"]
             }
         });
         require( ["base", "viz/visualization", "viz/trackster_ui", "viz/trackster/tracks"], 

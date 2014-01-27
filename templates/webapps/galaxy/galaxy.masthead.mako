@@ -6,7 +6,9 @@
     if trans.user:
         user_dict = trans.user.to_dict( view='element', value_mapper={ 'id': trans.security.encode_id,
                                                                              'total_disk_usage': float } )
-        user_dict['quota_percent'] = trans.app.quota_agent.get_percent( trans=trans )
+        user_dict[ 'quota_percent' ] = trans.app.quota_agent.get_percent( trans=trans )
+        users_api_controller = trans.webapp.api_controllers[ 'users' ]
+        user_dict[ 'tags_used' ] = users_api_controller.get_user_tags_used( trans, user=trans.user )
     else:
         usage = 0
         percent = None
@@ -21,234 +23,94 @@
             'nice_total_disk_usage' : util.nice_size( usage ),
             'quota_percent'         : percent
         }
+    return user_dict
 %>
-${h.to_json_string( user_dict )}
 </%def>
 
-## master head generator
-<%def name="load()">
+## masthead head generator
+<%def name="load(active_view = None)">
+    <%
+        ## get configuration
+        masthead_config = {
+            ## inject configuration
+            'brand'                     : app.config.get("brand", ""),
+            'nginx_upload_path'         : app.config.get("nginx_upload_path", h.url_for(controller='api', action='tools')),
+            'use_remote_user'           : app.config.use_remote_user,
+            'remote_user_logout_href'   : app.config.remote_user_logout_href,
+            'enable_cloud_launch'       : app.config.get_bool('enable_cloud_launch', False),
+            'lims_doc_url'              : app.config.get("lims_doc_url", "http://main.g2.bx.psu.edu/u/rkchak/p/sts"),
+            'biostar_url'               : app.config.biostar_url,
+            'biostar_url_redirect'      : h.url_for(controller='biostar', action='biostar_redirect', biostar_action='show/tag/galaxy'),
+            'support_url'               : app.config.get("support_url", "http://wiki.galaxyproject.org/Support"),
+            'search_url'                : app.config.get("search_url", "http://galaxyproject.org/search/usegalaxy/"),
+            'mailing_lists'             : app.config.get("mailing_lists", "http://wiki.galaxyproject.org/MailingLists"),
+            'screencasts_url'           : app.config.get("screencasts_url", "http://vimeo.com/galaxyproject"),
+            'wiki_url'                  : app.config.get("wiki_url", "http://galaxyproject.org/"),
+            'citation_url'              : app.config.get("citation_url", "http://wiki.galaxyproject.org/CitingGalaxy"),
+            'terms_url'                 : app.config.get("terms_url", ""),
+            'allow_user_creation'       : app.config.allow_user_creation,
+            'logo_url'                  : h.url_for(app.config.get( 'logo_url', '/')),
+            'is_admin_user'             : trans.user and app.config.is_admin_user(trans.user),
+            'active_view'               : active_view,
+
+            ## user details
+            'user'          : {
+                'requests'  : bool(trans.user and (trans.user.requests or trans.app.security_agent.get_accessible_request_types(trans, trans.user))),
+                'email'     : trans.user.email if (trans.user) else "",
+                'valid'     : bool(trans.user != None),
+                'json'      : get_user_json()
+            }
+        }
+    %>
+
+    ${h.templates( "helpers-common-templates" )}
+    ${h.js( "mvc/base-mvc", "utils/localization", "mvc/user/user-model", "mvc/user/user-quotameter" )}
+
     ## load the frame manager
     <script type="text/javascript">
+        if( !window.Galaxy ){
+            window.Galaxy = {};
+        }
+        ## fetch the current user data from trans
+        Galaxy.currUser = new User(${ h.to_json_string( get_user_json(), indent=2 ) });
+
         ## load additional style sheet
         if (window != window.top)
             $('<link href="' + galaxy_config.root + 'static/style/galaxy.frame.masthead.css" rel="stylesheet">').appendTo('head');
-        
+
         ## load galaxy js-modules
-        require(['galaxy.master', 'galaxy.frame', 'galaxy.modal'], function(master, frame, modal)
-        {
-            Galaxy.master = new master.GalaxyMaster();
-            Galaxy.frame_manager = new frame.GalaxyFrameManager();
-            Galaxy.modal = new modal.GalaxyModal();
+        $(function() {
+            require(['galaxy.masthead', 'galaxy.menu', 'galaxy.modal', 'galaxy.frame', 'mvc/upload/upload-view'],
+            function(mod_masthead, mod_menu, mod_modal, mod_frame, GalaxyUpload)
+            {
+                ## check if masthead is available
+                if (Galaxy.masthead)
+                    return;
+
+                ## get configuration
+                var masthead_config = ${ h.to_json_string( masthead_config ) };
+
+                ## load global galaxy objects
+                Galaxy.masthead = new mod_masthead.GalaxyMasthead(masthead_config);
+                Galaxy.modal = new mod_modal.GalaxyModal();
+                Galaxy.frame = new mod_frame.GalaxyFrame();
+
+                ## construct default menu options
+                Galaxy.menu = new mod_menu.GalaxyMenu({
+                    masthead: Galaxy.masthead,
+                    config: masthead_config
+                });
+                
+                ## add upload plugin
+                Galaxy.upload = new GalaxyUpload(masthead_config);
+
+                ## set up the quota meter (And fetch the current user data from trans)
+                ## add quota meter to masthead
+                Galaxy.quotaMeter = new UserQuotaMeter({
+                    model   : Galaxy.currUser,
+                    el      : $(Galaxy.masthead.el).find('.quota-meter-container')
+                }).render();
+            });
         });
     </script>
-
-    ## start main tag
-    <div id="masthead" class="navbar navbar-fixed-top navbar-inverse">
-
-    ## Tab area, fills entire width
-    <div style="position: relative; right: -50%; float: left;">
-    <div style="display: block; position: relative; right: 50%;">
-
-    <ul class="nav navbar-nav" border="0" cellspacing="0">
-    
-    <%def name="tab( id, display, href, onclick=False, target='_parent', visible=True, extra_class='', menu_options=None )">
-        ## Create a tab at the top of the panels. menu_options is a list of 2-elements lists of [name, link]
-        ## that are options in the menu.
-    
-        <%
-        cls = ""
-        a_cls = ""
-        extra = ""
-        if extra_class:
-            cls += " " + extra_class
-        if menu_options:
-            cls += " dropdown"
-            a_cls += " dropdown-toggle"
-            extra = "<b class='caret'></b>"
-        style = ""
-        if not visible:
-            style = "display: none;"
-        %>
-        <li class="${cls}" style="${style}">
-            %if href:
-                <a class="${a_cls}" data-toggle="dropdown" target="${target}" href="${href}">${display}${extra}</a>
-            %else:
-                <a class="${a_cls}" data-toggle="dropdown">${display}${extra}</a>
-            %endif
-            %if menu_options:
-                <ul class="dropdown-menu">
-                    %for menu_item in menu_options:
-                        %if not menu_item:
-                            <li class="divider"></li>
-                        %else:
-                            <li>
-                            %if len ( menu_item ) == 1:
-                                ${menu_item[0]}
-                            %elif len ( menu_item ) == 2:
-                                <% name, link = menu_item %>
-                                %if onclick:
-                                    <a href="${link}" onclick="Galaxy.frame_manager.frame_new({title: '${name}', type: 'url', content: '${link}'}); return false;">${name}</a>
-                                %else:
-                                    <a href="${link}">${name}</a>
-                                %endif
-                            %else:
-                                <% name, link, target = menu_item %>
-                                <a target="${target}" href="${link}">${name}</a>
-                            %endif
-                            </li>
-                        %endif
-                    %endfor
-                </ul>
-            %endif
-        </li>
-    </%def>
-
-    ## Analyze data tab.
-    ${tab( "analysis", _("Analyze Data"), h.url_for( controller='/root', action='index' ) )}
-    
-    ## Workflow tab.
-    ${tab( "workflow", _("Workflow"), h.url_for( controller='/workflow', action='index' ) )}
-
-    ## 'Shared Items' or Libraries tab.
-    <%
-        menu_options = [ 
-                        [ _('Data Libraries'), h.url_for( controller='/library', action='index') ],
-                        None,
-                        [ _('Published Histories'), h.url_for( controller='/history', action='list_published' ) ],
-                        [ _('Published Workflows'), h.url_for( controller='/workflow', action='list_published' ) ],
-                        [ _('Published Visualizations'), h.url_for( controller='/visualization', action='list_published' ) ],
-                        [ _('Published Pages'), h.url_for( controller='/page', action='list_published' ) ]
-                       ] 
-        tab( "shared", _("Shared Data"), h.url_for( controller='/library', action='index'), menu_options=menu_options )
-    %>
-    
-    ## Lab menu.
-    <%
-        menu_options = [
-                         [ _('Sequencing Requests'), h.url_for( controller='/requests', action='index' ) ],
-                         [ _('Find Samples'), h.url_for( controller='/requests', action='find_samples_index' ) ],
-                         [ _('Help'), app.config.get( "lims_doc_url", "http://main.g2.bx.psu.edu/u/rkchak/p/sts" ), "galaxy_main" ]
-                       ]
-        tab( "lab", "Lab", None, menu_options=menu_options, visible=( trans.user and ( trans.user.requests or trans.app.security_agent.get_accessible_request_types( trans, trans.user ) ) ) )
-    %>
-
-
-                                    
-    ## Visualization menu.
-    <%
-        menu_options = [
-                         [_('New Track Browser'), h.url_for( controller='/visualization', action='trackster' )],
-                         [_('Saved Visualizations'), h.url_for( controller='/visualization', action='list' )]
-                       ]
-        tab( "visualization", _("Visualization"), h.url_for( controller='/visualization', action='list' ), menu_options=menu_options, onclick=True )
-    %>
-
-    ## Cloud menu.
-    %if app.config.get_bool( 'enable_cloud_launch', False ):
-        <%
-            menu_options = [
-                             [_('New Cloud Cluster'), h.url_for( controller='/cloudlaunch', action='index' ) ],
-                           ]
-            tab( "cloud", _("Cloud"), h.url_for( controller='/cloudlaunch', action='index'), menu_options=menu_options )
-        %>
-    %endif
-
-    ## Admin tab.
-    ${tab( "admin", "Admin", h.url_for( controller='/admin', action='index' ), extra_class="admin-only", visible=( trans.user and app.config.is_admin_user( trans.user ) ) )}
-    
-    ## Help tab.
-    <%
-        menu_options = []
-        if app.config.biostar_url:
-            menu_options = [ [_('Galaxy Q&A Site'), h.url_for( controller='biostar', action='biostar_redirect', biostar_action='show/tag/galaxy' ), "_blank" ],
-                             [_('Ask a question'), h.url_for( controller='biostar', action='biostar_question_redirect' ), "_blank" ] ]
-        menu_options.extend( [
-            [_('Support'), app.config.get( "support_url", "http://wiki.galaxyproject.org/Support" ), "_blank" ],
-            [_('Search'), app.config.get( "search_url", "http://galaxyproject.org/search/usegalaxy/" ), "_blank" ],
-            [_('Mailing Lists'), app.config.get( "mailing_lists", "http://wiki.galaxyproject.org/MailingLists" ), "_blank" ],
-            [_('Videos'), app.config.get( "screencasts_url", "http://vimeo.com/galaxyproject" ), "_blank" ],
-            [_('Wiki'), app.config.get( "wiki_url", "http://galaxyproject.org/" ), "_blank" ],
-            [_('How to Cite Galaxy'), app.config.get( "citation_url", "http://wiki.galaxyproject.org/CitingGalaxy" ), "_blank" ]
-        ] )
-        if app.config.get( 'terms_url', None ) is not None:
-            menu_options.append( [_('Terms and Conditions'), app.config.get( 'terms_url', None ), '_blank'] )
-        tab( "help", _("Help"), None, menu_options=menu_options )
-    %>
-    
-    ## User tabs.
-    <%  
-        # Menu for user who is not logged in.
-        menu_options = [ [ _("Login"), h.url_for( controller='/user', action='login' ), "galaxy_main" ] ]
-        if app.config.allow_user_creation:
-            menu_options.append( [ _("Register"), h.url_for( controller='/user', action='create', cntrller='user' ), "galaxy_main" ] ) 
-        extra_class = "loggedout-only"
-        visible = ( trans.user == None )
-        tab( "user", _("User"), None, visible=visible, menu_options=menu_options )
-        
-        # Menu for user who is logged in.
-        if trans.user:
-            email = trans.user.email
-        else:
-            email = ""
-        menu_options = [ [ '<a>Logged in as <span id="user-email">%s</span></a>' %  email ] ]
-        if app.config.use_remote_user:
-            if app.config.remote_user_logout_href:
-                menu_options.append( [ _('Logout'), app.config.remote_user_logout_href, "_top" ] )
-        else:
-            menu_options.append( [ _('Preferences'), h.url_for( controller='/user', action='index', cntrller='user' ), "galaxy_main" ] )
-            menu_options.append( [ 'Custom Builds', h.url_for( controller='/user', action='dbkeys' ), "galaxy_main" ] )
-            logout_url = h.url_for( controller='/user', action='logout' )
-            menu_options.append( [ 'Logout', logout_url, "_top" ] )
-            menu_options.append( None )
-        menu_options.append( [ _('Saved Histories'), h.url_for( controller='/history', action='list' ), "galaxy_main" ] )
-        menu_options.append( [ _('Saved Datasets'), h.url_for( controller='/dataset', action='list' ), "galaxy_main" ] )
-        menu_options.append( [ _('Saved Pages'), h.url_for( controller='/page', action='list' ), "_top" ] )
-        menu_options.append( [ _('API Keys'), h.url_for( controller='/user', action='api_keys', cntrller='user' ), "galaxy_main" ] )
-        if app.config.use_remote_user:
-            menu_options.append( [ _('Public Name'), h.url_for( controller='/user', action='edit_username', cntrller='user' ), "galaxy_main" ] )
-
-        extra_class = "loggedin-only"
-        visible = ( trans.user != None )
-        tab( "user", "User", None, visible=visible, menu_options=menu_options )
-    %>
-    
-    </ul>
-
-    ## End centered tabs
-    </div>
-    </div>
-    
-    ## Logo, layered over tabs to be clickable
-    <div class="navbar-brand">
-        <a href="${h.url_for( app.config.get( 'logo_url', '/' ) )}">
-        <img border="0" src="${h.url_for('/static/images/galaxyIcon_noText.png')}">
-        Galaxy
-        %if app.config.brand:
-            <span>/ ${app.config.brand}</span>
-        %endif
-        </a>
-    </div>
-
-    <div class="quota-meter-container"></div>
-    
-    <!-- quota meter -->
-    ${h.templates( "helpers-common-templates", "template-user-quotaMeter-quota", "template-user-quotaMeter-usage" )}
-    ${h.js( "mvc/base-mvc", "utils/localization", "mvc/user/user-model", "mvc/user/user-quotameter" )}
-    <script type="text/javascript">
-
-        // start a Galaxy namespace for objects created
-        window.Galaxy = window.Galaxy || {};
-
-        // set up the quota meter (And fetch the current user data from trans)
-        Galaxy.currUser = new User( ${get_user_json()} );
-        Galaxy.quotaMeter = new UserQuotaMeter({
-            model   : Galaxy.currUser,
-            el      : $( document ).find( '.quota-meter-container' )
-        }).render();
-    </script>
-
-
-    ## end main tag
-    </div>
-
 </%def>

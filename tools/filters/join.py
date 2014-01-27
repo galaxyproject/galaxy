@@ -8,20 +8,15 @@ User can also opt to have have non-joining rows of file1 echoed.
 
 """
 
-import optparse, os, sys, tempfile, struct
+import json
+import optparse
+import os
 import psyco_full
-
-try:
-    simple_json_exception = None
-    from galaxy import eggs
-    from galaxy.util.bunch import Bunch
-    from galaxy.util import stringify_dictionary_keys
-    import pkg_resources
-    pkg_resources.require("simplejson")
-    import simplejson
-except Exception, e:
-    simplejson_exception = e
-    simplejson = None
+import struct
+import sys
+import tempfile
+from galaxy.util.bunch import Bunch
+from galaxy.util import stringify_dictionary_keys
 
 
 class OffsetList:
@@ -337,11 +332,9 @@ def main():
     fill_options = None
     if options.fill_options_file is not None:
         try:
-            if simplejson is None:
-                raise simplejson_exception
-            fill_options = Bunch( **stringify_dictionary_keys( simplejson.load( open( options.fill_options_file ) ) ) ) #simplejson.load( open( options.fill_options_file ) )
+            fill_options = Bunch( **stringify_dictionary_keys( json.load( open( options.fill_options_file ) ) ) ) #json.load( open( options.fill_options_file ) )
         except Exception, e:
-            print "Warning: Ignoring fill options due to simplejson error (%s)." % e
+            print "Warning: Ignoring fill options due to json error (%s)." % e
     if fill_options is None:
         fill_options = Bunch()
     if 'fill_unjoined_only' not in fill_options:

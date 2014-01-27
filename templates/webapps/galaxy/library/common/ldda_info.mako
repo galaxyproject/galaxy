@@ -92,7 +92,7 @@
         </div>
         <div class="form-row">
             <label>Date uploaded:</label>
-            ${ldda.create_time.strftime( "%Y-%m-%d" )}
+            ${ldda.create_time.strftime( trans.app.config.pretty_datetime_format )}
             <div style="clear: both"></div>
         </div>
         <div class="form-row">

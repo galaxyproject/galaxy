@@ -20,5 +20,16 @@
             <extra_dir type="temp" path="database/tmp3"/>
             <extra_dir type="job_work" path="database/job_working_directory3"/>
         </object_store>
+        <!--  Sample S3 Object Store
+
+        <object_store type="s3">
+            <auth access_key="...." secret_key="....." />
+            <bucket name="unique_bucket_name" use_reduced_redundancy="False" />
+            <connection host="" port="" is_secure="" conn_path="" />
+            <cache path="database/files/" size="100" />
+        </object_store>
+
+        -->
     </backends>
 </object_store>
+

@@ -1,6 +1,4 @@
-import pkg_resources
-pkg_resources.require("simplejson")
-import simplejson
+import json
 
 class Node(object):
     """Node class of PhyloTree, which represents a CLAUDE in a phylogenetic tree"""
@@ -118,7 +116,7 @@ class Base_Parser(object):
 
     def toJson(self, jsonDict):
         """Convenience method to get a json string from a python json dict"""
-        return simplejson.dumps(jsonDict)
+        return json.dumps(jsonDict)
 
     def _writeJsonToFile(self, filepath, json):
         """Writes the file out to the system"""
