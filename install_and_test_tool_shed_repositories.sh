@@ -48,6 +48,14 @@ else
 	fi
 fi
 
+if [ -z $GALAXY_INSTALL_TEST_SHED_TOOL_PATH ] ; then
+	export GALAXY_INSTALL_TEST_SHED_TOOL_PATH='/tmp/shed_tools'
+fi
+
+if [ ! -d $GALAXY_INSTALL_TEST_SHED_TOOL_PATH ] ; then
+	mkdir -p $GALAXY_INSTALL_TEST_SHED_TOOL_PATH
+fi
+
 test_tool_dependency_definitions () {
     # Test installation of repositories of type tool_dependency_definition.
 	if [ -f $GALAXY_INSTALL_TEST_TOOL_DEPENDENCY_DIR/stage_1_complete ] ; then
