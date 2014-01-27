@@ -4,7 +4,7 @@
 <br/><br/>
 <ul class="manage-table-actions">
     <li>
-        <a class="action-button"  href="${h.url_for( controller='repository', action='multi_select_email_alerts', cntrller='repository' )}">Manage repository alerts</a>
+        <a class="action-button"  href="${h.url_for( controller='repository', action='multi_select_email_alerts' )}">Manage repository alerts</a>
     </li>
     <li>
         <a class="action-button"  href="${h.url_for( controller='user', action='index', cntrller='repository' )}">User preferences</a>
