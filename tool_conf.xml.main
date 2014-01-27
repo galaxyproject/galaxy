@@ -184,8 +184,6 @@
         <tool file="solid_tools/solid_qual_boxplot.xml" />
     <label id="generic_fastq" text="Generic FASTQ manipulation" />
     <label id="fastx_toolkit_fastq" text="FASTX-Toolkit for FASTQ data" />
-    <label id="fastq_qc" text="FASTQ QC" />
-        <tool file="rgenetics/rgFastQC.xml" />
   </section>
   <section id="ngs_mapping" name="NGS: Mapping">
     <label id="illumina" text="Illumina" />
