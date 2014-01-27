@@ -18,7 +18,9 @@ from galaxy.jobs.actions.post import ActionBox
 
 log = logging.getLogger(__name__)
 
+
 class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin):
+
     @web.expose_api
     def index(self, trans, **kwd):
         """
@@ -34,10 +36,10 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin):
         filter1 = ( trans.app.model.StoredWorkflow.user == trans.user )
         if show_published:
             filter1 = or_( filter1, ( trans.app.model.StoredWorkflow.published == True ) )
-        for wf in trans.sa_session.query(trans.app.model.StoredWorkflow).filter(
+        for wf in trans.sa_session.query( trans.app.model.StoredWorkflow ).filter(
                 filter1, trans.app.model.StoredWorkflow.table.c.deleted == False ).order_by(
-                desc(trans.app.model.StoredWorkflow.table.c.update_time)).all():
-            item = wf.to_dict(value_mapper={'id':trans.security.encode_id})
+                desc( trans.app.model.StoredWorkflow.table.c.update_time ) ).all():
+            item = wf.to_dict( value_mapper={ 'id': trans.security.encode_id } )
             encoded_id = trans.security.encode_id(wf.id)
             item['url'] = url_for('workflow', id=encoded_id)
             rval.append(item)
@@ -45,9 +47,9 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin):
                 user=trans.user ).join( 'stored_workflow' ).filter(
                 trans.app.model.StoredWorkflow.deleted == False ).order_by(
                 desc( trans.app.model.StoredWorkflow.update_time ) ).all():
-            item = wf_sa.stored_workflow.to_dict(value_mapper={'id':trans.security.encode_id})
+            item = wf_sa.stored_workflow.to_dict( value_mapper={ 'id': trans.security.encode_id  })
             encoded_id = trans.security.encode_id(wf_sa.stored_workflow.id)
-            item['url'] = url_for('workflow', id=encoded_id)
+            item['url'] = url_for( 'workflow', id=encoded_id )
             rval.append(item)
         return rval
 
@@ -73,16 +75,16 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin):
         except:
             trans.response.status = 400
             return "That workflow does not exist."
-        item = stored_workflow.to_dict(view='element', value_mapper={'id':trans.security.encode_id})
+        item = stored_workflow.to_dict( view='element', value_mapper={ 'id': trans.security.encode_id } )
         item['url'] = url_for('workflow', id=workflow_id)
         latest_workflow = stored_workflow.latest_workflow
         inputs = {}
         for step in latest_workflow.steps:
             if step.type == 'data_input':
                 if step.tool_inputs and "name" in step.tool_inputs:
-                    inputs[step.id] = {'label':step.tool_inputs['name'], 'value':""}
+                    inputs[step.id] = {'label': step.tool_inputs['name'], 'value': ""}
                 else:
-                    inputs[step.id] = {'label':"Input Dataset", 'value':""}
+                    inputs[step.id] = {'label': "Input Dataset", 'value': ""}
             else:
                 pass
                 # Eventually, allow regular tool parameters to be inserted and modified at runtime.
@@ -220,12 +222,12 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin):
                     if 'param' in param_dict and 'value' in param_dict:
                         param_dict[ param_dict['param'] ] = param_dict['value']
 
-                    # Update step if there's no step id (i.e. all steps with tool are 
+                    # Update step if there's no step id (i.e. all steps with tool are
                     # updated) or update if step ids match.
                     if not step_id or ( step_id and int( step_id ) == step.id ):
                         for name, value in param_dict.items():
                             step.state.inputs[ name ] = value
-                
+
                 if step.tool_errors:
                     trans.response.status = 400
                     return "Workflow cannot be run because of validation errors in some steps: %s" % step_errors
@@ -251,6 +253,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin):
             job = None
             if step.type == 'tool' or step.type is None:
                 tool = self.app.toolbox.get_tool( step.tool_id )
+
                 def callback( input, value, prefixed_name, prefixed_label ):
                     if isinstance( input, DataToolParameter ):
                         if prefixed_name in step.input_connections_by_name:
@@ -347,6 +350,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin):
         """
 
         data = payload['workflow']
+
         workflow, missing_tool_tups = self._workflow_from_dict( trans, data, source="API" )
 
         # galaxy workflow newly created id
@@ -357,7 +361,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin):
         # return list
         rval = []
 
-        item = workflow.to_dict(value_mapper={'id':trans.security.encode_id})
+        item = workflow.to_dict(value_mapper={'id': trans.security.encode_id})
         item['url'] = url_for('workflow', id=encoded_id)
 
         rval.append(item)
@@ -388,7 +392,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin):
         elif stored_workflow.deleted:
             raise exceptions.MessageException( "You can't import this workflow because it has been deleted." )
         imported_workflow = self._import_shared_workflow( trans, stored_workflow )
-        item = imported_workflow.to_dict(value_mapper={'id':trans.security.encode_id})
+        item = imported_workflow.to_dict( value_mapper={ 'id': trans.security.encode_id } )
         encoded_id = trans.security.encode_id(imported_workflow.id)
         item['url'] = url_for('workflow', id=encoded_id)
         return item
