@@ -10,7 +10,7 @@ usage: %prog < input > output restricted
 """
 
 from galaxy import eggs
-import pkg_resources 
+import pkg_resources
 pkg_resources.require( "bx-python" )
 try:
     pkg_resources.require( "numpy" )
@@ -54,7 +54,7 @@ def main():
         defn = "non-CpG"
     cpgfilter.run( reader, writer.write )
     
-    print "%2.2f percent bases masked; Mask character = %s, Definition = %s" %(float(cpgfilter.masked)/float(cpgfilter.total) * 100, mask, defn)
+    print "%2.2f percent bases masked; Mask character = %s, Definition = %s" % ( float(cpgfilter.masked)/float(cpgfilter.total) * 100, mask, defn )
 
 if __name__ == "__main__":
     main()
