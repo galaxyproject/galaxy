@@ -4,31 +4,18 @@
     <tool file="data_source/upload.xml" />
     <tool file="data_source/ucsc_tablebrowser.xml" />
     <tool file="data_source/ucsc_tablebrowser_archaea.xml" />
-    <tool file="data_source/bx_browser.xml" />
     <tool file="data_source/ebi_sra.xml" />
     <tool file="data_source/biomart.xml" />
     <tool file="data_source/gramene_mart.xml" />
-    <tool file="data_source/flymine.xml" />
     <tool file="data_source/fly_modencode.xml" />
-    <tool file="data_source/modmine.xml" />
-    <tool file="data_source/mousemine.xml" />
-    <tool file="data_source/ratmine.xml" />
-    <tool file="data_source/yeastmine.xml" />
     <tool file="data_source/worm_modencode.xml" />
     <tool file="data_source/wormbase.xml" />
     <tool file="data_source/eupathdb.xml" />
-    <tool file="data_source/encode_db.xml" />
-    <tool file="data_source/epigraph_import.xml" />
     <tool file="genomespace/genomespace_file_browser_prod.xml" />
     <tool file="genomespace/genomespace_importer.xml" />
   </section>
   <section id="send" name="Send Data">
-    <tool file="data_destination/epigraph.xml" />
     <tool file="genomespace/genomespace_exporter.xml" />
-  </section>
-  <section id="EncodeTools" name="ENCODE Tools">
-    <tool file="encode/gencode_partition.xml" />
-    <tool file="encode/random_intervals.xml" />
   </section>
   <section id="liftOver" name="Lift-Over">
     <tool file="extract/liftOver_wrapper.xml" />
@@ -87,7 +74,6 @@
     <tool file="filters/compare.xml" />
     <tool file="new_operations/subtract_query.xml" />
     <tool file="stats/grouping.xml" />
-    <tool file="new_operations/column_join.xml" />
   </section>
   <section id="features" name="Extract Features">
     <tool file="filters/ucsc_gene_bed_to_exon_bed.xml" />
@@ -111,7 +97,6 @@
   <section id="scores" name="Get Genomic Scores">
     <tool file="stats/wiggle_to_simple.xml" />
     <tool file="stats/aggregate_binned_scores_in_intervals.xml" />
-    <tool file="extract/phastOdds/phastOdds_tool.xml" />
   </section>
   <section id="bxops" name="Operate on Genomic Intervals">
     <tool file="new_operations/intersect.xml" />
@@ -169,11 +154,6 @@
     <tool file="multivariate_stats/kpca.xml" />
     <tool file="multivariate_stats/kcca.xml" />
   </section>
- <section id="hyphy" name="Evolution">
-    <tool file="hyphy/hyphy_branch_lengths_wrapper.xml" />
-    <tool file="hyphy/hyphy_nj_tree_wrapper.xml" />
-    <!-- <tool file="hyphy/hyphy_dnds_wrapper.xml" />  -->
- </section>
  <section id="clustal" name="Multiple Alignments">
     <tool file="rgenetics/rgClustalw.xml" />
  </section>
