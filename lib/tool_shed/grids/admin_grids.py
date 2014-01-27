@@ -135,9 +135,8 @@ class UserGrid( grids.Grid ):
         grids.GridColumnFilter( "Purged", args=dict( purged=True ) ),
         grids.GridColumnFilter( "All", args=dict( deleted='All' ) )
     ]
-    num_rows_per_page = 50
-    preserve_state = False
-    use_paging = True
+
+    use_paging = False
 
     def get_current_item( self, trans, **kwargs ):
         return trans.user
@@ -220,7 +219,7 @@ class RoleGrid( grids.Grid ):
                              filterable="advanced" )
     ]
     columns.append( grids.MulticolFilterColumn( "Search",
-                                                cols_to_filter=[ columns[0], columns[1], columns[2] ],
+                                                cols_to_filter=[ columns[0] ],
                                                 key="free-text-search",
                                                 visible=False,
                                                 filterable="standard" ) )
@@ -252,9 +251,8 @@ class RoleGrid( grids.Grid ):
         grids.GridColumnFilter( "Deleted", args=dict( deleted=True ) ),
         grids.GridColumnFilter( "All", args=dict( deleted='All' ) )
     ]
-    num_rows_per_page = 50
-    preserve_state = False
-    use_paging = True
+
+    use_paging = False
 
     def apply_query_filter( self, trans, query, **kwd ):
         return query.filter( model.Role.type != model.Role.types.PRIVATE )
@@ -266,7 +264,7 @@ class GroupGrid( grids.Grid ):
     class NameColumn( grids.TextColumn ):
 
         def get_value( self, trans, grid, group ):
-            return group.name
+            return str( group.name )
 
 
     class StatusColumn( grids.GridColumn ):
@@ -298,6 +296,7 @@ class GroupGrid( grids.Grid ):
     default_sort_key = "name"
     columns = [
         NameColumn( "Name",
+                    key="name",
                     link=( lambda item: dict( operation="Manage users and roles", id=item.id ) ),
                     attach_popup=True ),
         UsersColumn( "Users", attach_popup=False ),
@@ -310,7 +309,7 @@ class GroupGrid( grids.Grid ):
                              filterable="advanced" )
     ]
     columns.append( grids.MulticolFilterColumn( "Search",
-                                                cols_to_filter=[ columns[0], columns[1], columns[2] ],
+                                                cols_to_filter=[ columns[0] ],
                                                 key="free-text-search",
                                                 visible=False,
                                                 filterable="standard" ) )
@@ -339,9 +338,8 @@ class GroupGrid( grids.Grid ):
         grids.GridColumnFilter( "Deleted", args=dict( deleted=True ) ),
         grids.GridColumnFilter( "All", args=dict( deleted='All' ) )
     ]
-    num_rows_per_page = 50
-    preserve_state = False
-    use_paging = True
+
+    use_paging = False
 
 
 class ManageCategoryGrid( CategoryGrid ):
@@ -540,9 +538,7 @@ class RepositoryMetadataGrid( grids.Grid ):
                                         confirm="Repository metadata records cannot be recovered after they are deleted. Click OK to delete the selected items." ) ]
     standard_filters = []
     default_filter = {}
-    num_rows_per_page = 50
-    preserve_state = False
-    use_paging = True
+    use_paging = False
 
     def build_initial_query( self, trans, **kwd ):
         return trans.sa_session.query( model.RepositoryMetadata ) \
