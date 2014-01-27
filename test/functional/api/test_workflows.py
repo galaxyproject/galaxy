@@ -5,6 +5,8 @@ from pkg_resources import resource_string
 import time
 from .helpers import TestsDatasets
 
+from base.interactor import delete_request  # requests like delete
+
 workflow_str = resource_string( __name__, "test_workflow_1.ga" )
 
 
@@ -14,6 +16,23 @@ workflow_str = resource_string( __name__, "test_workflow_1.ga" )
 #    /workflows with id in payload.
 # - Much more testing obviously, always more testing.
 class WorkflowsApiTestCase( api.ApiTestCase, TestsDatasets ):
+
+    def test_delete( self ):
+        workflow_id = self._simple_workflow( "test_delete" )
+        workflow_name = "test_delete (imported from API)"
+        self._assert_user_has_workflow_with_name( workflow_name )
+        workflow_url = self._api_url( "workflows/%s" % workflow_id, use_key=True )
+        delete_response = delete_request( workflow_url )
+        self._assert_status_code_is( delete_response, 200 )
+        # Make sure workflow is no longer in index by default.
+        assert workflow_name not in self.__workflow_names()
+
+    def test_other_cannot_delete( self ):
+        workflow_id = self._simple_workflow( "test_other_delete" )
+        with self._different_user():
+            workflow_url = self._api_url( "workflows/%s" % workflow_id, use_key=True )
+            delete_response = delete_request( workflow_url )
+            self._assert_status_code_is( delete_response, 403 )
 
     def test_index( self ):
         index_response = self._get( "workflows" )
@@ -29,7 +48,7 @@ class WorkflowsApiTestCase( api.ApiTestCase, TestsDatasets ):
         self._assert_user_has_workflow_with_name( "test_import (imported from API)" )
 
     def test_export( self ):
-        uploaded_workflow_id = self._create_workflow( self._load_workflow( name="test_for_export" ) )
+        uploaded_workflow_id = self._simple_workflow( "test_for_export" )
         download_response = self._get( "workflows/%s/download" % uploaded_workflow_id )
         self._assert_status_code_is( download_response, 200 )
         downloaded_workflow = download_response.json()
@@ -100,9 +119,14 @@ class WorkflowsApiTestCase( api.ApiTestCase, TestsDatasets ):
     def _ds_entry( self, hda ):
         return dict( src="hda", id=hda[ "id" ] )
 
-    def _create_workflow( self, workflow ):
+    def _simple_workflow( self, name, **create_kwds ):
+        workflow = self._load_workflow( name )
+        return self._create_workflow( workflow, **create_kwds )
+
+    def _create_workflow( self, workflow, **create_kwds ):
         data = dict(
             workflow=dumps( workflow ),
+            **create_kwds
         )
         upload_response = self._post( "workflows/upload", data=data )
         self._assert_status_code_is( upload_response, 200 )
@@ -110,10 +134,14 @@ class WorkflowsApiTestCase( api.ApiTestCase, TestsDatasets ):
         return uploaded_workflow_id
 
     def _assert_user_has_workflow_with_name( self, name ):
+        names = self.__workflow_names()
+        assert name in names, "No workflows with name %s in users workflows <%s>" % ( name, names )
+
+    def __workflow_names( self ):
         index_response = self._get( "workflows" )
         self._assert_status_code_is( index_response, 200 )
         names = map( lambda w: w[ "name" ], index_response.json() )
-        assert name in names, "No workflows with name %s in users workflows <%s>" % ( name, names )
+        return names
 
     def _load_workflow( self, name, add_pja=False ):
         workflow = loads( workflow_str )
