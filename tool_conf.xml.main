@@ -55,7 +55,6 @@
   <section id="convert" name="Convert Formats">
     <tool file="filters/bed2gff.xml" />
     <tool file="fasta_tools/fasta_to_tabular.xml" />
-    <tool file="fastq/fastq_to_fasta.xml" />
     <tool file="filters/gff2bed.xml" />
     <tool file="maf/maf_to_bed.xml" />
     <tool file="maf/maf_to_interval.xml" />
@@ -182,14 +181,6 @@
  <section id="clustal" name="Multiple Alignments">
     <tool file="rgenetics/rgClustalw.xml" />
  </section>
- <section id="tax_manipulation" name="Metagenomic analyses">
-    <tool file="taxonomy/gi2taxonomy.xml" />
-    <tool file="taxonomy/t2t_report.xml" />
-    <tool file="taxonomy/t2ps_wrapper.xml" />
-    <tool file="taxonomy/find_diag_hits.xml" />
-    <tool file="taxonomy/lca.xml" />
-    <tool file="taxonomy/poisson2test.xml" />
-  </section>
   <section id="hgv" name="Phenotype Association">
     <tool file="evolution/codingSnps.xml" />
     <tool file="evolution/add_scores.xml" />
@@ -202,41 +193,26 @@
     <tool file="phenotype_association/gpass.xml" />
     <tool file="phenotype_association/beam.xml" />
     <tool file="phenotype_association/lps.xml" />
-    <tool file="phenotype_association/freebayes.xml" />
     <tool file="phenotype_association/master2pg.xml" />
     <tool file="phenotype_association/vcf2pgSnp.xml" />
   </section>
   <label id="ngs" text="NGS Toolbox Beta" />
   <section id="cshl_library_information" name="NGS: QC and manipulation">
     <label id="illumina" text="Illumina data" />
-        <tool file="fastq/fastq_groomer.xml" />
-        <tool file="fastq/fastq_paired_end_splitter.xml" />
-        <tool file="fastq/fastq_paired_end_joiner.xml" />
-        <tool file="fastq/fastq_stats.xml" />
     <label id="454" text="Roche-454 data" />
         <tool file="metag_tools/short_reads_figure_score.xml" />
         <tool file="metag_tools/short_reads_trim_seq.xml" />
-        <tool file="fastq/fastq_combiner.xml" />
     <label id="solid" text="AB-SOLiD data" />
         <tool file="next_gen_conversion/solid2fastq.xml" />
         <tool file="solid_tools/solid_qual_stats.xml" />
         <tool file="solid_tools/solid_qual_boxplot.xml" />
     <label id="generic_fastq" text="Generic FASTQ manipulation" />
-        <tool file="fastq/fastq_filter.xml" />
-        <tool file="fastq/fastq_trimmer.xml" />
-        <tool file="fastq/fastq_trimmer_by_quality.xml" />
-        <tool file="fastq/fastq_masker_by_quality.xml" />
-        <tool file="fastq/fastq_manipulation.xml" />
-        <tool file="fastq/fastq_to_fasta.xml" />
-        <tool file="fastq/fastq_to_tabular.xml" />
-        <tool file="fastq/tabular_to_fastq.xml" />
     <label id="fastx_toolkit_fastq" text="FASTX-Toolkit for FASTQ data" />
     <label id="fastq_qc" text="FASTQ QC" />
         <tool file="rgenetics/rgFastQC.xml" />
   </section>
   <section id="ngs_mapping" name="NGS: Mapping">
     <label id="illumina" text="Illumina" />
-    <tool file="sr_mapping/bowtie2_wrapper.xml" />
     <label id="roche_454" text="Roche-454" />
     <tool file="metag_tools/megablast_wrapper.xml" />
     <tool file="metag_tools/megablast_xml_parser.xml" />
@@ -283,10 +259,6 @@
   </section>
   <section id="ngs-rna-tools" name="NGS: RNA Analysis">
    <label id="rna_seq" text="RNA-seq" />
-      <tool file="ngs_rna/tophat_wrapper.xml" />
-      <tool file="ngs_rna/tophat2_wrapper.xml" />
-      <tool file="ngs_rna/express_wrapper.xml" />
    <label id="filtering" text="Filtering" />
-      <tool file="ngs_rna/filter_transcripts_via_tracking.xml" />
   </section>
 </toolbox>
