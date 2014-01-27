@@ -201,7 +201,7 @@ def main():
                                     continue
                             # Get the score, only count if not 'nan'
                             score = scores_by_chrom[chrom][j]
-                            if not isNaN( score ):
+                            if not isnan( score ):
                                 total += score
                                 count += 1
                                 max_score = max( score, max_score )
