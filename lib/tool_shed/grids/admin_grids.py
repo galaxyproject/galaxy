@@ -508,6 +508,7 @@ class RepositoryMetadataGrid( grids.Grid ):
     model_class = model.RepositoryMetadata
     template='/webapps/tool_shed/repository/grid.mako'
     default_sort_key = "name"
+    use_hide_message = False
     columns = [
         IdColumn( "Id",
                   visible=False,

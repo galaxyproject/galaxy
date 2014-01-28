@@ -64,6 +64,7 @@
         'legend'                        : grid.legend,
         'current_item_id'               : False,
         'use_panels'                    : context.get('use_panels'),
+        'use_hide_message'              : grid.use_hide_message,
         'insert'                        : insert,
         'default_filter_dict'           : default_filter_dict,
         'advanced_search'               : advanced_search,
