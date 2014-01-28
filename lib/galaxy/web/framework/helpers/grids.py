@@ -24,6 +24,7 @@ class Grid( object ):
     template = "grid_base.mako"
     async_template = "grid_base_async.mako"
     use_async = False
+    use_hide_message = True
     global_actions = []
     columns = []
     operations = []
@@ -286,6 +287,7 @@ class Grid( object ):
                                     status = status,
                                     message = message,
                                     use_panels=self.use_panels,
+                                    use_hide_message=self.use_hide_message,
                                     advanced_search=self.advanced_search,
                                     show_item_checkboxes = ( self.show_item_checkboxes or
                                                              kwargs.get( 'show_item_checkboxes', '' ) in [ 'True', 'true' ] ),
