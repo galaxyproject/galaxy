@@ -223,8 +223,6 @@ def main():
             tool_conf = os.path.join( framework_tool_dir, 'samples_tool_conf.xml' )
             datatypes_conf_override = os.path.join( framework_tool_dir, 'sample_datatypes_conf.xml' )
             test_dir = os.path.join( framework_tool_dir, 'test-data')
-
-            tool_path = framework_tool_dir
         else:
             # Use tool_conf.xml toolbox.
             tool_conf = 'tool_conf.xml'
@@ -373,6 +371,7 @@ def main():
                        use_heartbeat=False,
                        user_library_import_dir=user_library_import_dir,
                        master_api_key=master_api_key,
+                       use_tasked_jobs=True,
         )
         if install_database_connection is not None:
             kwargs[ 'install_database_connection' ] = install_database_connection

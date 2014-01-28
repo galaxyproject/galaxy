@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<toolbox>
+<toolbox tool_path="test/functional/tools">
   <tool file="upload.xml"/>
   <tool file="simple_constructs.xml" />
   <tool file="composite.xml" />
@@ -13,6 +13,7 @@
   <tool file="output_order.xml" />
   <tool file="disambiguate_repeats.xml" />
   <tool file="min_repeat.xml" />
+  <tool file="parallelism.xml" />
   <tool file="implicit_default_conds.xml" />
   <tool file="multi_data_param.xml" />
 </toolbox>
