@@ -236,6 +236,7 @@ class RepositoryGrid( grids.Grid ):
     model_class = model.Repository
     template='/webapps/tool_shed/repository/grid.mako'
     default_sort_key = "name"
+    use_hide_message = False
     columns = [
         NameColumn( "Name",
                     key="name",
@@ -344,6 +345,7 @@ class MatchedRepositoryGrid( grids.Grid ):
     model_class = model.RepositoryMetadata
     template='/webapps/tool_shed/repository/grid.mako'
     default_sort_key = "Repository.name"
+    use_hide_message = False
     columns = [
         NameColumn( "Repository name",
                     link=( lambda item: dict( operation="view_or_manage_repository", id=item.id ) ),
@@ -652,7 +654,7 @@ class MyWritableRepositoriesMissingToolTestComponentsGrid( RepositoriesMissingTo
     columns = [ col for col in RepositoriesMissingToolTestComponentsGrid.columns ]
     operations = []
     use_paging = False
-
+    
     def build_initial_query( self, trans, **kwd ):
         # First get all repositories that the current user is authorized to update.
         username = trans.user.username

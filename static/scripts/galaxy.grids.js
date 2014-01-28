@@ -194,7 +194,9 @@ var GridView = Backbone.View.extend({
         // update message
         if (options.message) {
             $('#grid-message').html(this.template_message(options));
-            setTimeout( function() { $('#grid-message').html(''); }, 5000);
+            if (options.use_hide_message) {
+                setTimeout( function() { $('#grid-message').html(''); }, 5000);
+            }
         }
         
         // configure elements

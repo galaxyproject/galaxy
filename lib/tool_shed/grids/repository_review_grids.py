@@ -36,6 +36,7 @@ class ComponentGrid( grids.Grid ):
     model_class = model.Component
     template='/webapps/tool_shed/repository_review/grid.mako'
     default_sort_key = "name"
+    use_hide_message = False
     columns = [
         NameColumn( "Name",
                     key="Component.name",
@@ -333,6 +334,7 @@ class RepositoryReviewsByUserGrid( grids.Grid ):
     model_class = model.RepositoryReview
     template='/webapps/tool_shed/repository_review/grid.mako'
     default_sort_key = 'repository_id'
+    use_hide_message = False
     columns = [
         RepositoryNameColumn( "Repository Name",
                               model_class=model.Repository,
