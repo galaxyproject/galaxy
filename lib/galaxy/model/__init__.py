@@ -926,10 +926,10 @@ class History( object, Dictifiable, UsesAnnotations ):
         query = query.order_by( HistoryDatasetAssociation.table.c.hid.asc() )
         deleted = galaxy.util.string_as_bool_or_none( kwds.get( 'deleted', None ) )
         if deleted is not None:
-            query = query.filter( HistoryDatasetAssociation.deleted == bool( kwds['deleted'] ) )
+            query = query.filter( HistoryDatasetAssociation.deleted == deleted )
         visible = galaxy.util.string_as_bool_or_none( kwds.get( 'visible', None ) )
         if visible is not None:
-            query = query.filter( HistoryDatasetAssociation.visible == bool( kwds['visible'] ) )
+            query = query.filter( HistoryDatasetAssociation.visible == visible )
         if 'ids' in kwds:
             ids = kwds['ids']
             max_in_filter_length = kwds.get('max_in_filter_length', MAX_IN_FILTER_LENGTH)

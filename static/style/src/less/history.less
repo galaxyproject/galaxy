@@ -20,12 +20,12 @@
 //@icon-btn-border:   transparent;
 
 // big & dark style
-@icon-btn-size:     20px;
+@icon-btn-size:     22px;
 @icon-btn-margin:   2px;
-@icon-btn-color:    #555;
+@icon-btn-color:    @btn-default-color;
 //@icon-btn-bg:       transparent;
-@icon-btn-bg:       rgba( 0, 0, 0, 0.05 );
-@icon-btn-border:   rgba( 0, 0, 0, 0.1 );
+@icon-btn-bg:       @btn-default-bg;
+@icon-btn-border:   @btn-default-border;
 
 .icon-btn {
     display : inline-block;
@@ -178,8 +178,6 @@
                 margin: 0px;
                 padding: 0px;
                 font-weight: normal;
-                font-style: italic;
-                font-size: 90%;
                 color: #555;
             }
             label:after {
@@ -300,8 +298,8 @@
 
     .help-text {
         font-weight: normal;
-        font-style: italic;
-        font-size: 90%;
+        // font-style: italic;
+        // font-size: 90%;
         color: #555;
     }
 
@@ -320,6 +318,7 @@
 
     .dataset-title-bar {
         cursor: pointer;
+        outline: none; 
         .dataset-padding;
 
         .dataset-state-icon {
@@ -335,6 +334,7 @@
     }
 
     .dataset-primary-actions {
+        .icon-btn-group();
         float: right;
         margin: @spacing-top @spacing-right 0;
         .icon-btn {
@@ -344,7 +344,7 @@
 
     .dataset-body {
         display: none;
-        background-color: fadeout( white, 70% );
+        // background-color: fadeout( white, 70% );
         .dataset-padding;
 
         [class$=messagesmall] {
@@ -401,16 +401,17 @@
 
         .dataset-actions {
             .left {
+                .icon-btn-group();
                 float: left;
                 .icon-btn {
                     margin-right: @icon-btn-margin;
                 }
-                .icon-btn-group {
-                    margin-right: @icon-btn-margin;
-                    .icon-btn {
-                        margin-right: 0;
-                    }
-                }
+                //.icon-btn-group {
+                //    margin-right: @icon-btn-margin;
+                //    .icon-btn {
+                //        margin-right: 0;
+                //    }
+                //}
                 &:not(:empty) {
                     // can't use :empty on dataset-actions - will always have left & right, so
                     //  add gap to left (more likely to have children)
