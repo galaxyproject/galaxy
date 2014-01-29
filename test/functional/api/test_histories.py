@@ -7,7 +7,6 @@ from base.interactor import get_request
 from .helpers import TestsDatasets
 
 
-
 class HistoriesApiTestCase( api.ApiTestCase, TestsDatasets ):
 
     def test_create_history( self ):
@@ -31,12 +30,13 @@ class HistoriesApiTestCase( api.ApiTestCase, TestsDatasets ):
         self._assert_status_code_is( create_response, 403 )
 
     def test_export( self ):
-        history_id = self._new_history()
+        history_id = self._new_history( name="for_export" )
         self._new_dataset( history_id, content="1 2 3" )
         self._wait_for_history( history_id, assert_ok=True )
         export_url = self._api_url( "histories/%s/exports" % history_id , use_key=True )
         put_response = put_request( export_url )
         self._assert_status_code_is( put_response, 202 )
+        # TODO: Break after some period of time.
         while True:
             put_response = put_request( export_url )
             if put_response.status_code == 202:
@@ -50,3 +50,21 @@ class HistoriesApiTestCase( api.ApiTestCase, TestsDatasets ):
         full_download_url = "%s%s?key=%s" % ( self.url, download_path, self.galaxy_interactor.api_key )
         download_response = get_request( full_download_url )
         self._assert_status_code_is( download_response, 200 )
+
+        def history_names():
+            history_index = self._get( "histories" )
+            return map( lambda h: h[ "name" ], history_index.json() )
+
+        import_name = "imported from archive: for_export"
+        assert import_name not in history_names()
+
+        import_data = dict( archive_source=full_download_url, archive_type="url" )
+        import_response = self._post( "histories", data=import_data )
+
+        self._assert_status_code_is( import_response, 200 )
+        found = False
+        while not found:
+            time.sleep( .1 )
+            if import_name in history_names():
+                found = True
+        assert found, "%s not in history names %s" % ( import_name, history_names() )

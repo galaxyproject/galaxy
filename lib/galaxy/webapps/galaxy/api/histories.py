@@ -19,6 +19,7 @@ from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.base.controller import UsesHistoryMixin
 from galaxy.web.base.controller import UsesTagsMixin
 from galaxy.web.base.controller import ExportsHistoryMixin
+from galaxy.web.base.controller import ImportsHistoryMixin
 from galaxy.web import url_for
 
 import logging
@@ -26,7 +27,7 @@ log = logging.getLogger( __name__ )
 
 
 class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin,
-                           ExportsHistoryMixin ):
+                           ExportsHistoryMixin, ImportsHistoryMixin ):
 
     @expose_api_anonymous
     def index( self, trans, deleted='False', **kwd ):
@@ -176,6 +177,9 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin,
         :rtype:     dict
         :returns:   element view of new history
         """
+        if self.__create_via_import( payload ):
+            return self.__import_archive( trans, payload )
+
         hist_name = None
         if payload.get( 'name', None ):
             hist_name = restore_text( payload['name'] )
@@ -393,6 +397,14 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin,
             raise exceptions.MessageException( "Export not available or not yet ready." )
 
         return self.serve_ready_history_export( trans, jeha )
+
+    def __create_via_import( self, payload ):
+        return "archive_source" in payload
+
+    def __import_archive( self, trans, payload ):
+        archive_type = payload.get( "archive_type", "url" )
+        archive_source = payload[ "archive_source" ]
+        self.queue_history_import( trans, archive_type=archive_type, archive_source=archive_source )
 
     def _validate_and_parse_update_payload( self, payload ):
         """

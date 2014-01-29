@@ -16,7 +16,13 @@ class ImportHistoryToolAction( ToolAction ):
         job = trans.app.model.Job()
         session = trans.get_galaxy_session()
         job.session_id = session and session.id
-        job.history_id = trans.history.id
+        if history:
+            history_id = history.id
+        elif trans.history:
+            history_id = trans.history.id
+        else:
+            history_id = None
+        job.history_id = history_id
         job.tool_id = tool.id
         job.user_id = trans.user.id
         start_job_state = job.state #should be job.states.NEW
