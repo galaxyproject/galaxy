@@ -21,10 +21,9 @@ from galaxy.datatypes.data import Data
 from galaxy.jobs.actions.post import ActionBox
 from galaxy.model.item_attrs import UsesItemRatings
 from galaxy.model.mapping import desc
-from galaxy.tools.parameters import RuntimeValue, visit_input_values
+from galaxy.tools.parameters import visit_input_values
 from galaxy.tools.parameters.basic import DataToolParameter, DrillDownSelectToolParameter, SelectToolParameter, UnvalidatedValue
 from galaxy.tools.parameters.grouping import Conditional, Repeat
-from galaxy.util.json import to_json_string
 from galaxy.util.odict import odict
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.util.topsort import CycleError, topsort, topsort_levels
@@ -33,7 +32,7 @@ from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesStor
 from galaxy.web.framework import form
 from galaxy.web.framework.helpers import grids, time_ago
 from galaxy.web.framework.helpers import to_unicode
-from galaxy.workflow.modules import module_factory, ToolModule
+from galaxy.workflow.modules import module_factory
 
 
 class StoredWorkflowListGrid( grids.Grid ):
@@ -69,6 +68,7 @@ class StoredWorkflowListGrid( grids.Grid ):
         grids.GridOperation( "Sharing", condition=( lambda item: not item.deleted ), async_compatible=False ),
         grids.GridOperation( "Delete", condition=( lambda item: item.deleted ), async_compatible=True ),
     ]
+
     def apply_query_filter( self, trans, query, **kwargs ):
         return query.filter_by( user=trans.user, deleted=False )
 
@@ -110,7 +110,7 @@ class StoredWorkflowAllPublishedGrid( grids.Grid ):
 
     def apply_query_filter( self, trans, query, **kwargs ):
         # A public workflow is published, has a slug, and is not deleted.
-        return query.filter( self.model_class.published==True ).filter( self.model_class.slug != None ).filter( self.model_class.deleted == False )
+        return query.filter( self.model_class.published == True ).filter( self.model_class.slug != None ).filter( self.model_class.deleted == False )
 
 
 # Simple SGML parser to get all content in a single tag.
@@ -184,8 +184,8 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             trans.sa_session.flush()
 
         return trans.fill_template( "workflow/list.mako",
-                                    workflows = workflows,
-                                    shared_by_others = shared_by_others )
+                                    workflows=workflows,
+                                    shared_by_others=shared_by_others )
 
     @web.expose
     @web.require_login( "use Galaxy workflows" )
@@ -206,8 +206,8 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             .order_by( desc( model.StoredWorkflow.table.c.update_time ) ) \
             .all()
         return trans.fill_template( "workflow/list_for_run.mako",
-                                    workflows = workflows,
-                                    shared_by_others = shared_by_others )
+                                    workflows=workflows,
+                                    shared_by_others=shared_by_others )
 
     @web.expose
     def list_published( self, trans, **kwargs ):
@@ -238,7 +238,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
     def display(self, trans, stored_workflow):
         """ Base workflow display """
         if stored_workflow is None:
-           raise web.httpexceptions.HTTPNotFound()
+            raise web.httpexceptions.HTTPNotFound()
         # Security check raises error if user cannot access workflow.
         self.security_check( trans, stored_workflow, False, True )
         # Get data for workflow's steps.
@@ -257,7 +257,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                 user_item_rating = 0
         ave_item_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, stored_workflow )
         return trans.fill_template_mako( "workflow/display.mako", item=stored_workflow, item_data=stored_workflow.latest_workflow.steps,
-                                            user_item_rating = user_item_rating, ave_item_rating=ave_item_rating, num_ratings=num_ratings )
+                                            user_item_rating=user_item_rating, ave_item_rating=ave_item_rating, num_ratings=num_ratings )
 
     @web.expose
     def get_item_content_async( self, trans, id ):
@@ -273,7 +273,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         stored.annotation = self.get_item_annotation_str( trans.sa_session, stored.user, stored )
         for step in stored.latest_workflow.steps:
             step.annotation = self.get_item_annotation_str( trans.sa_session, stored.user, step )
-        return trans.stream_template_mako( "/workflow/item_content.mako", item = stored, item_data = stored.latest_workflow.steps )
+        return trans.stream_template_mako( "/workflow/item_content.mako", item=stored, item_data=stored.latest_workflow.steps )
 
     @web.expose
     @web.require_login( "use Galaxy workflows" )
@@ -283,8 +283,8 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         stored = self.get_stored_workflow( trans, id )
         if email:
             other = trans.sa_session.query( model.User ) \
-                                    .filter( and_( model.User.table.c.email==email,
-                                                   model.User.table.c.deleted==False ) ) \
+                                    .filter( and_( model.User.table.c.email == email,
+                                                   model.User.table.c.deleted == False ) ) \
                                     .first()
             if not other:
                 mtype = "error"
@@ -307,8 +307,8 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                 trans.set_message( "Workflow '%s' shared with user '%s'" % ( stored.name, other.email ) )
                 return trans.response.send_redirect( url_for( controller='workflow', action='sharing', id=id ) )
         return trans.fill_template( "/ind_share_base.mako",
-                                    message = msg,
-                                    messagetype = mtype,
+                                    message=msg,
+                                    messagetype=mtype,
                                     item=stored,
                                     email=email,
                                     use_panels=use_panels )
@@ -415,7 +415,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             stored.latest_workflow.name = san_new_name
             trans.sa_session.flush()
             # For current workflows grid:
-            trans.set_message ( "Workflow renamed to '%s'." % new_name )
+            trans.set_message( "Workflow renamed to '%s'." % new_name )
             return self.list( trans )
             # For new workflows grid:
             #message = "Workflow renamed to '%s'." % new_name
@@ -469,7 +469,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         stored = self.get_stored_workflow( trans, id )
 
         # Only set if importable value would change; this prevents a change in the update_time unless attribute really changed.
-        importable = accessible in ['True', 'true', 't', 'T'];
+        importable = accessible in ['True', 'true', 't', 'T']
         if stored and stored.importable != importable:
             if importable:
                 self._make_item_accessible( trans.sa_session, stored )
@@ -528,7 +528,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         annotation_obj = self.get_item_annotation_obj( trans.sa_session, stored.user, stored )
         if annotation_obj:
             self.add_item_annotation( trans.sa_session, trans.get_user(), new_stored, annotation_obj.annotation )
-        new_stored.copy_tags_from(trans.user,stored)
+        new_stored.copy_tags_from(trans.user, stored)
         if not owner:
             new_stored.name += " shared by '%s'" % stored.user.email
         new_stored.user = user
@@ -618,7 +618,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         } )
         module.update_state( incoming )
 
-        if type=='tool':
+        if type == 'tool':
             return {
                 'tool_state': module.get_state(),
                 'data_inputs': module.get_data_inputs(),
@@ -703,10 +703,10 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                     'data_inputs': [],
                     'data_outputs': [],
                     'form_html': invalid_tool_form_html,
-                    'annotation' : annotation_str,
-                    'input_connections' : {},
-                    'post_job_actions' : {},
-                    'workflow_outputs' : []
+                    'annotation': annotation_str,
+                    'input_connections': {},
+                    'post_job_actions': {},
+                    'workflow_outputs': []
                 }
                 # Position
                 step_dict['position'] = step.position
@@ -742,10 +742,11 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             }
             # Connections
             input_connections = step.input_connections
-            multiple_input = {} # Boolean value indicating if this can be mutliple
+            multiple_input = {}  # Boolean value indicating if this can be mutliple
             if step.type is None or step.type == 'tool':
                 # Determine full (prefixed) names of valid input datasets
                 data_input_names = {}
+
                 def callback( input, value, prefixed_name, prefixed_label ):
                     if isinstance( input, DataToolParameter ):
                         data_input_names[ prefixed_name ] = True
@@ -757,9 +758,11 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                 # post_job_actions
                 pja_dict = {}
                 for pja in step.post_job_actions:
-                    pja_dict[pja.action_type+pja.output_name] = dict(action_type = pja.action_type,
-                                            output_name = pja.output_name,
-                                            action_arguments = pja.action_arguments)
+                    pja_dict[pja.action_type + pja.output_name] = dict(
+                        action_type=pja.action_type,
+                        output_name=pja.output_name,
+                        action_arguments=pja.action_arguments
+                    )
                 step_dict['post_job_actions'] = pja_dict
                 #workflow outputs
                 outputs = []
@@ -824,9 +827,9 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             step.position = step_dict['position']
             module = module_factory.from_dict( trans, step_dict )
             module.save_to_step( step )
-            if step_dict.has_key('workflow_outputs'):
+            if 'workflow_outputs' in step_dict:
                 for output_name in step_dict['workflow_outputs']:
-                    m = model.WorkflowOutput(workflow_step = step, output_name = output_name)
+                    m = model.WorkflowOutput(workflow_step=step, output_name=output_name)
                     trans.sa_session.add(m)
             if step.tool_errors:
                 # DBTODO Check for conditional inputs here.
@@ -843,7 +846,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             # Input connections
             for input_name, conns in step.temp_input_connections.iteritems():
                 if conns:
-                    conn_dicts = conns if isinstance(conns,list) else [conns]
+                    conn_dicts = conns if isinstance(conns, list) else [ conns ]
                     for conn_dict in conn_dicts:
                         conn = model.WorkflowStepConnection()
                         conn.input_step = step
@@ -1050,7 +1053,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                         # This may not be ideal...
                         workflow_data = uploaded_file.read()
                     else:
-                        message= 'You attempted to upload an empty file.'
+                        message = 'You attempted to upload an empty file.'
                         status = 'error'
             if workflow_data:
                 # Convert incoming workflow data from json
@@ -1155,13 +1158,14 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             ext_to_class_name[k] = c.__module__ + "." + c.__name__
             classes.append( c )
         class_to_classes = dict()
+
         def visit_bases( types, cls ):
             for base in cls.__bases__:
                 if issubclass( base, Data ):
                     types.add( base.__module__ + "." + base.__name__ )
                 visit_bases( types, base )
         for c in classes:
-            n =  c.__module__ + "." + c.__name__
+            n = c.__module__ + "." + c.__name__
             types = set( [ n ] )
             visit_bases( types, c )
             class_to_classes[ n ] = dict( ( t, True ) for t in types )
@@ -1180,7 +1184,8 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                         "workflow/build_from_current_history.mako",
                         jobs=jobs,
                         warnings=warnings,
-                        history=history )
+                        history=history
+            )
         else:
             # Ensure job_ids and dataset_ids are lists (possibly empty)
             if job_ids is None:
@@ -1213,7 +1218,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                 assert job_id in jobs_by_id, "Attempt to create workflow with job not connected to current history"
                 job = jobs_by_id[ job_id ]
                 tool = trans.app.toolbox.get_tool( job.tool_id )
-                param_values = job.get_param_values( trans.app, ignore_errors=True ) #If a tool was updated and e.g. had a text value changed to an integer, we don't want a traceback here
+                param_values = job.get_param_values( trans.app, ignore_errors=True )  # If a tool was updated and e.g. had a text value changed to an integer, we don't want a traceback here
                 associations = cleanup_param_values( tool.inputs, param_values )
                 step = model.WorkflowStep()
                 step.type = 'tool'
@@ -1248,8 +1253,8 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             for i, steps_at_level in enumerate( levorder ):
                 for j, index in enumerate( steps_at_level ):
                     step = steps[ index ]
-                    step.position = dict( top = ( base_pos + 120 * j ),
-                                          left = ( base_pos + 220 * i ) )
+                    step.position = dict( top=( base_pos + 120 * j ),
+                                          left=( base_pos + 220 * i ) )
             # Store it
             stored = model.StoredWorkflow()
             stored.user = user
@@ -1289,7 +1294,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         # has_errors = False
         saved_history = None
         if history_id is not None:
-            saved_history = trans.get_history();
+            saved_history = trans.get_history()
             try:
                 decoded_history_id = trans.security.decode_id( history_id )
                 history = trans.sa_session.query(trans.app.model.History).get(decoded_history_id)
@@ -1301,12 +1306,12 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                 error("Malformed history id ( %s ) specified, unable to decode." % str( history_id ))
             except:
                 error("That history does not exist.")
-        try: # use a try/finally block to restore the user's current history
+        try:  # use a try/finally block to restore the user's current history
             if kwargs:
                 # If kwargs were provided, the states for each step should have
                 # been POSTed
                 # List to gather values for the template
-                invocations=[]
+                invocations = []
                 for (kwargs, multi_input_keys) in _expand_multiple_inputs(kwargs, mode=multiple_input_mode):
                     for step in workflow.steps:
                         step.upgrade_messages = {}
@@ -1373,6 +1378,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                             job = None
                             if step.type == 'tool' or step.type is None:
                                 tool = trans.app.toolbox.get_tool( step.tool_id )
+
                                 # Connect up
                                 def callback( input, value, prefixed_name, prefixed_label ):
                                     replacement = None
@@ -1466,7 +1472,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                                                 steps=[],
                                                 workflow=stored,
                                                 hide_fixed_params=hide_fixed_params,
-                                                missing_tools = missing_tools)
+                                                missing_tools=missing_tools)
             # Render the form
             stored.annotation = self.get_item_annotation_str( trans.sa_session, trans.user, stored )
             return trans.fill_template(
@@ -1526,7 +1532,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                             else:
                                 outputs.remove(existing_output.output_name)
                     for outputname in outputs:
-                        m = model.WorkflowOutput(workflow_step_id = int(step.id), output_name = outputname)
+                        m = model.WorkflowOutput(workflow_step_id=int(step.id), output_name=outputname)
                         trans.sa_session.add(m)
         # Prepare each step
         trans.sa_session.flush()
@@ -1563,7 +1569,8 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                     workflow=stored,
                     has_upgrade_messages=has_upgrade_messages,
                     errors=errors,
-                    incoming=kwargs )
+                    incoming=kwargs
+        )
 
     @web.expose
     def configure_menu( self, trans, workflow_ids=None ):
@@ -1609,225 +1616,6 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                                         shared_by_others=shared_by_others,
                                         ids_in_menu=ids_in_menu )
 
-    def _workflow_to_dict( self, trans, stored ):
-        """
-        Converts a workflow to a dict of attributes suitable for exporting.
-        """
-        workflow = stored.latest_workflow
-        workflow_annotation = self.get_item_annotation_obj( trans.sa_session, trans.user, stored )
-        annotation_str = ""
-        if workflow_annotation:
-            annotation_str = workflow_annotation.annotation
-        # Pack workflow data into a dictionary and return
-        data = {}
-        data['a_galaxy_workflow'] = 'true' # Placeholder for identifying galaxy workflow
-        data['format-version'] = "0.1"
-        data['name'] = workflow.name
-        data['annotation'] = annotation_str
-        data['steps'] = {}
-        # For each step, rebuild the form and encode the state
-        for step in workflow.steps:
-            # Load from database representation
-            module = module_factory.from_workflow_step( trans, step )
-            if not module:
-                return None
-            # Get user annotation.
-            step_annotation = self.get_item_annotation_obj(trans.sa_session, trans.user, step )
-            annotation_str = ""
-            if step_annotation:
-                annotation_str = step_annotation.annotation
-            # Step info
-            step_dict = {
-                'id': step.order_index,
-                'type': module.type,
-                'tool_id': module.get_tool_id(),
-                'tool_version' : step.tool_version,
-                'name': module.get_name(),
-                'tool_state': module.get_state( secure=False ),
-                'tool_errors': module.get_errors(),
-                ## 'data_inputs': module.get_data_inputs(),
-                ## 'data_outputs': module.get_data_outputs(),
-                'annotation' : annotation_str
-            }
-            # Add post-job actions to step dict.
-            if module.type == 'tool':
-                pja_dict = {}
-                for pja in step.post_job_actions:
-                    pja_dict[pja.action_type+pja.output_name] = dict( action_type = pja.action_type,
-                                                                      output_name = pja.output_name,
-                                                                      action_arguments = pja.action_arguments )
-                step_dict[ 'post_job_actions' ] = pja_dict
-            # Data inputs
-            step_dict['inputs'] = []
-            if module.type == "data_input":
-                # Get input dataset name; default to 'Input Dataset'
-                name = module.state.get( 'name', 'Input Dataset')
-                step_dict['inputs'].append( { "name" : name, "description" : annotation_str } )
-            else:
-                # Step is a tool and may have runtime inputs.
-                for name, val in module.state.inputs.items():
-                    input_type = type( val )
-                    if input_type == RuntimeValue:
-                        step_dict['inputs'].append( { "name" : name, "description" : "runtime parameter for tool %s" % module.get_name() } )
-                    elif input_type == dict:
-                        # Input type is described by a dict, e.g. indexed parameters.
-                        for partname, partval in val.items():
-                            if type( partval ) == RuntimeValue:
-                                step_dict['inputs'].append( { "name" : name, "description" : "runtime parameter for tool %s" % module.get_name() } )
-            # User outputs
-            step_dict['user_outputs'] = []
-            """
-            module_outputs = module.get_data_outputs()
-            step_outputs = trans.sa_session.query( WorkflowOutput ).filter( step=step )
-            for output in step_outputs:
-                name = output.output_name
-                annotation = ""
-                for module_output in module_outputs:
-                    if module_output.get( 'name', None ) == name:
-                        output_type = module_output.get( 'extension', '' )
-                        break
-                data['outputs'][name] = { 'name' : name, 'annotation' : annotation, 'type' : output_type }
-            """
-
-            # All step outputs
-            step_dict['outputs'] = []
-            if type( module ) is ToolModule:
-                for output in module.get_data_outputs():
-                    step_dict['outputs'].append( { 'name' : output['name'], 'type' : output['extensions'][0] } )
-            # Connections
-            input_connections = step.input_connections
-            if step.type is None or step.type == 'tool':
-                # Determine full (prefixed) names of valid input datasets
-                data_input_names = {}
-                def callback( input, value, prefixed_name, prefixed_label ):
-                    if isinstance( input, DataToolParameter ):
-                        data_input_names[ prefixed_name ] = True
-
-                # FIXME: this updates modules silently right now; messages from updates should be provided.
-                module.check_and_update_state()
-                visit_input_values( module.tool.inputs, module.state.inputs, callback )
-                # Filter
-                # FIXME: this removes connection without displaying a message currently!
-                input_connections = [ conn for conn in input_connections if conn.input_name in data_input_names ]
-            # Encode input connections as dictionary
-            input_conn_dict = {}
-            unique_input_names = set( [conn.input_name for conn in input_connections] )
-            for input_name in unique_input_names:
-                input_conn_dict[ input_name ] = \
-                    [ dict( id=conn.output_step.order_index, output_name=conn.output_name ) for conn in input_connections if conn.input_name == input_name ]
-            # Preserve backward compatability. Previously Galaxy
-            # assumed input connections would be dictionaries not
-            # lists of dictionaries, so replace any singleton list
-            # with just the dictionary so that workflows exported from
-            # newer Galaxy instances can be used with older Galaxy
-            # instances if they do no include multiple input
-            # tools. This should be removed at some point. Mirrored
-            # hack in _workflow_from_dict should never be removed so
-            # existing workflow exports continue to function.
-            for input_name, input_conn in dict(input_conn_dict).iteritems():
-                if len(input_conn) == 1:
-                    input_conn_dict[input_name] = input_conn[0]
-            step_dict['input_connections'] = input_conn_dict
-            # Position
-            step_dict['position'] = step.position
-            # Add to return value
-            data['steps'][step.order_index] = step_dict
-        return data
-
-    def _workflow_from_dict( self, trans, data, source=None, add_to_menu=False ):
-        """
-        Creates a workflow from a dict. Created workflow is stored in the database and returned.
-        """
-        # Put parameters in workflow mode
-        trans.workflow_building_mode = True
-        # Create new workflow from incoming dict
-        workflow = model.Workflow()
-        # If there's a source, put it in the workflow name.
-        if source:
-            name = "%s (imported from %s)" % ( data['name'], source )
-        else:
-            name = data['name']
-        workflow.name = name
-        # Assume no errors until we find a step that has some
-        workflow.has_errors = False
-        # Create each step
-        steps = []
-        # The editor will provide ids for each step that we don't need to save,
-        # but do need to use to make connections
-        steps_by_external_id = {}
-        # Keep track of tools required by the workflow that are not available in
-        # the local Galaxy instance.  Each tuple in the list of missing_tool_tups
-        # will be ( tool_id, tool_name, tool_version ).
-        missing_tool_tups = []
-        # First pass to build step objects and populate basic values
-        for key, step_dict in data[ 'steps' ].iteritems():
-            # Create the model class for the step
-            step = model.WorkflowStep()
-            steps.append( step )
-            steps_by_external_id[ step_dict['id' ] ] = step
-            # FIXME: Position should be handled inside module
-            step.position = step_dict['position']
-            module = module_factory.from_dict( trans, step_dict, secure=False )
-            module.save_to_step( step )
-            if module.type == 'tool' and module.tool is None:
-                # A required tool is not available in the local Galaxy instance.
-                missing_tool_tup = ( step_dict[ 'tool_id' ], step_dict[ 'name' ], step_dict[ 'tool_version' ] )
-                if missing_tool_tup not in missing_tool_tups:
-                    missing_tool_tups.append( missing_tool_tup )
-                # Save the entire step_dict in the unused config field, be parsed later
-                # when we do have the too when we do have the tool
-                step.config = to_json_string(step_dict)
-            if step.tool_errors:
-                workflow.has_errors = True
-            # Stick this in the step temporarily
-            step.temp_input_connections = step_dict['input_connections']
-            # Save step annotation.
-            annotation = step_dict[ 'annotation' ]
-            if annotation:
-                annotation = sanitize_html( annotation, 'utf-8', 'text/html' )
-                self.add_item_annotation( trans.sa_session, trans.get_user(), step, annotation )
-        # Second pass to deal with connections between steps
-        for step in steps:
-            # Input connections
-            for input_name, conn_list in step.temp_input_connections.iteritems():
-                if not conn_list:
-                    continue
-                if not isinstance(conn_list, list):  # Older style singleton connection
-                    conn_list = [conn_list]
-                for conn_dict in conn_list:
-                    conn = model.WorkflowStepConnection()
-                    conn.input_step = step
-                    conn.input_name = input_name
-                    conn.output_name = conn_dict['output_name']
-                    conn.output_step = steps_by_external_id[ conn_dict['id'] ]
-            del step.temp_input_connections
-
-        # Order the steps if possible
-        attach_ordered_steps( workflow, steps )
-
-        # Connect up
-        stored = model.StoredWorkflow()
-        stored.name = workflow.name
-        workflow.stored_workflow = stored
-        stored.latest_workflow = workflow
-        stored.user = trans.user
-        if data[ 'annotation' ]:
-            self.add_item_annotation( trans.sa_session, stored.user, stored, data[ 'annotation' ] )
-
-        # Persist
-        trans.sa_session.add( stored )
-        trans.sa_session.flush()
-
-        if add_to_menu:
-            if trans.user.stored_workflow_menu_entries == None:
-                trans.user.stored_workflow_menu_entries = []
-            menuEntry = model.StoredWorkflowMenuEntry()
-            menuEntry.stored_workflow = stored
-            trans.user.stored_workflow_menu_entries.append( menuEntry )
-            trans.sa_session.flush()
-
-        return stored, missing_tool_tups
-
     def _workflow_to_svg_canvas( self, trans, stored ):
         workflow = stored.latest_workflow
         data = []
@@ -1839,8 +1627,8 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         in_pos = {}
         out_pos = {}
         margin = 5
-        line_px = 16 # how much spacing between input/outputs
-        widths = {} # store px width for boxes of each step
+        line_px = 16  # how much spacing between input/outputs
+        widths = {}  # store px width for boxes of each step
         max_width, max_x, max_y = 0, 0, 0
 
         for step in workflow.steps:
@@ -1871,7 +1659,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
 
             y += 45
             for di in module.get_data_inputs():
-                cur_y = y+count*line_px
+                cur_y = y + count * line_px
                 if step.order_index not in in_pos:
                     in_pos[step.order_index] = {}
                 in_pos[step.order_index][di['name']] = (x, cur_y)
@@ -1879,12 +1667,11 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                 count += 1
                 max_len = max(max_len, len(di['label']))
 
-
             if len(module.get_data_inputs()) > 0:
                 y += 15
 
             for do in module.get_data_outputs():
-                cur_y = y+count*line_px
+                cur_y = y + count * line_px
                 if step.order_index not in out_pos:
                     out_pos[step.order_index] = {}
                 out_pos[step.order_index][do['name']] = (x, cur_y)
@@ -1892,7 +1679,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                 count += 1
                 max_len = max(max_len, len(do['name']))
 
-            widths[step.order_index] = max_len*5.5
+            widths[step.order_index] = max_len * 5.5
             max_x = max(max_x, step.position['left'])
             max_y = max(max_y, step.position['top'])
             max_width = max(max_width, widths[step.order_index])
@@ -1900,7 +1687,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         for step_dict in data:
             width = widths[step_dict['id']]
             x, y = step_dict['position']['left'], step_dict['position']['top']
-            boxes.append( svgfig.Rect(x-margin, y, x+width-margin, y+30, fill="#EBD9B2").SVG() )
+            boxes.append( svgfig.Rect(x - margin, y, x + width - margin, y + 30, fill="#EBD9B2").SVG() )
             box_height = (len(step_dict['data_inputs']) + len(step_dict['data_outputs'])) * line_px + margin
 
             # Draw separator line
@@ -1929,8 +1716,8 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
 
         return canvas
 
-## ---- Utility methods -------------------------------------------------------
 
+## ---- Utility methods -------------------------------------------------------
 def attach_ordered_steps( workflow, steps ):
     ordered_steps = order_workflow_steps( steps )
     if ordered_steps:
@@ -1941,6 +1728,7 @@ def attach_ordered_steps( workflow, steps ):
     else:
         workflow.has_cycles = True
         workflow.steps = steps
+
 
 def edgelist_for_workflow_steps( steps ):
     """
@@ -1955,6 +1743,7 @@ def edgelist_for_workflow_steps( steps ):
             edges.append( ( steps_to_index[conn.output_step], steps_to_index[conn.input_step] ) )
     return edges
 
+
 def order_workflow_steps( steps ):
     """
     Perform topological sort of the steps, return ordered or None
@@ -1964,13 +1753,14 @@ def order_workflow_steps( steps ):
         if not step.position or not 'left' in step.position or not 'top' in step.position:
             position_data_available = False
     if position_data_available:
-        steps.sort(cmp=lambda s1,s2: cmp( math.sqrt(s1.position['left']**2 + s1.position['top']**2), math.sqrt(s2.position['left']**2 + s2.position['top']**2)))
+        steps.sort(cmp=lambda s1, s2: cmp( math.sqrt(s1.position['left'] ** 2 + s1.position['top'] ** 2), math.sqrt(s2.position['left'] ** 2 + s2.position['top'] ** 2)))
     try:
         edges = edgelist_for_workflow_steps( steps )
         node_order = topsort( edges )
         return [ steps[i] for i in node_order ]
     except CycleError:
         return None
+
 
 def order_workflow_steps_with_levels( steps ):
     try:
@@ -1987,6 +1777,7 @@ class FakeJob( object ):
     def __init__( self, dataset ):
         self.is_fake = True
         self.id = "fake_%s" % dataset.id
+
 
 def get_job_dict( trans ):
     """
@@ -2019,6 +1810,7 @@ def get_job_dict( trans ):
                 jobs[ job ] = [ ( assoc.name, dataset ) ]
     return jobs, warnings
 
+
 def cleanup_param_values( inputs, values ):
     """
     Remove 'Data' values from `param_values`, along with metadata cruft,
@@ -2029,6 +1821,7 @@ def cleanup_param_values( inputs, values ):
     if 'dbkey' in values:
         del values['dbkey']
     root_values = values
+
     # Recursively clean data inputs and dynamic selects
     def cleanup( prefix, inputs, values ):
         for key, input in inputs.items():
@@ -2041,7 +1834,7 @@ def cleanup_param_values( inputs, values ):
                 # HACK: Nested associations are not yet working, but we
                 #       still need to clean them up so we can serialize
                 # if not( prefix ):
-                if tmp: #this is false for a non-set optional dataset
+                if tmp:  # this is false for a non-set optional dataset
                     if not isinstance(tmp, list):
                         associations.append( ( tmp.hid, prefix + key ) )
                     else:
@@ -2065,6 +1858,7 @@ def cleanup_param_values( inputs, values ):
                 cleanup( "%s%s|" % ( prefix, key ), input.cases[current_case].inputs, group_values )
     cleanup( "", inputs, values )
     return associations
+
 
 def _build_workflow_on_str(instance_ds_names):
     # Returns suffix for new histories based on multi input iteration

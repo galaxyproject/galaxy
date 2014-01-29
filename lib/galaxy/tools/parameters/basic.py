@@ -1653,7 +1653,7 @@ class DataToolParameter( ToolParameter ):
                             field.add_option( "%s: (as %s) %s" % ( hid, target_ext, hda_name ), hda.id, selected )
                 # Also collect children via association object
                 dataset_collector( hda.children, hid )
-        dataset_collector( history.active_datasets, None )
+        dataset_collector( history.active_datasets_children_and_roles, None )
         some_data = bool( field.options )
         if some_data:
             if value is None or len( field.options ) == 1:
@@ -1693,11 +1693,6 @@ class DataToolParameter( ToolParameter ):
                 pass  # no valid options
 
         def dataset_collector( datasets ):
-            def is_convertable( dataset ):
-                target_ext, converted_dataset = dataset.find_conversion_destination( self.formats )
-                if target_ext is not None:
-                    return True
-                return False
             for i, data in enumerate( datasets ):
                 if data.visible and not data.deleted and data.state not in [data.states.ERROR, data.states.DISCARDED]:
                     is_valid = False
@@ -1714,7 +1709,7 @@ class DataToolParameter( ToolParameter ):
                     most_recent_dataset.append(data)
                 # Also collect children via association object
                 dataset_collector( data.children )
-        dataset_collector( history.datasets )
+        dataset_collector( history.active_datasets_children_and_roles )
         most_recent_dataset.reverse()
         if already_used is not None:
             for val in most_recent_dataset:

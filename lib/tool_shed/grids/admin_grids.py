@@ -135,9 +135,8 @@ class UserGrid( grids.Grid ):
         grids.GridColumnFilter( "Purged", args=dict( purged=True ) ),
         grids.GridColumnFilter( "All", args=dict( deleted='All' ) )
     ]
-    num_rows_per_page = 50
-    preserve_state = False
-    use_paging = True
+
+    use_paging = False
 
     def get_current_item( self, trans, **kwargs ):
         return trans.user
@@ -149,20 +148,20 @@ class RoleGrid( grids.Grid ):
     class NameColumn( grids.TextColumn ):
 
         def get_value( self, trans, grid, role ):
-            return role.name
+            return str( role.name )
 
 
     class DescriptionColumn( grids.TextColumn ):
 
         def get_value( self, trans, grid, role ):
             if role.description:
-                return role.description
+                return str( role.description )
             return ''
 
 
     class TypeColumn( grids.TextColumn ):
         def get_value( self, trans, grid, role ):
-            return role.type
+            return str( role.type )
 
 
     class StatusColumn( grids.GridColumn ):
@@ -181,6 +180,14 @@ class RoleGrid( grids.Grid ):
             return 0
 
 
+    class RepositoriesColumn( grids.GridColumn ):
+
+        def get_value( self, trans, grid, role ):
+            if role.repositories:
+                return len( role.repositories )
+            return 0
+
+
     class UsersColumn( grids.GridColumn ):
 
         def get_value( self, trans, grid, role ):
@@ -195,20 +202,16 @@ class RoleGrid( grids.Grid ):
     columns = [
         NameColumn( "Name",
                     key="name",
-                    link=( lambda item: dict( operation="Manage users and groups", id=item.id ) ),
+                    link=( lambda item: dict( operation="Manage role associations", id=item.id ) ),
                     attach_popup=True,
                     filterable="advanced" ),
         DescriptionColumn( "Description",
                            key='description',
                            attach_popup=False,
                            filterable="advanced" ),
-        TypeColumn( "Type",
-                    key='type',
-                    attach_popup=False,
-                    filterable="advanced" ),
         GroupsColumn( "Groups", attach_popup=False ),
+        RepositoriesColumn( "Repositories", attach_popup=False ),
         UsersColumn( "Users", attach_popup=False ),
-        StatusColumn( "Status", attach_popup=False ),
         # Columns that are valid for filtering but are not visible.
         grids.DeletedColumn( "Deleted",
                              key="deleted",
@@ -216,7 +219,7 @@ class RoleGrid( grids.Grid ):
                              filterable="advanced" )
     ]
     columns.append( grids.MulticolFilterColumn( "Search",
-                                                cols_to_filter=[ columns[0], columns[1], columns[2] ],
+                                                cols_to_filter=[ columns[0] ],
                                                 key="free-text-search",
                                                 visible=False,
                                                 filterable="standard" ) )
@@ -224,20 +227,23 @@ class RoleGrid( grids.Grid ):
         grids.GridAction( "Add new role",
                           dict( controller='admin', action='roles', operation='create' ) )
     ]
+    # Repository admin roles currently do not have any operations since they are managed automatically based
+    # on other events.  For example, if a repository is renamed, its associated admin role is automatically
+    # renamed accordingly and if a repository is deleted its associated admin role is automatically deleted.
     operations = [ grids.GridOperation( "Rename",
-                                        condition=( lambda item: not item.deleted ),
+                                        condition=( lambda item: not item.deleted and not item.is_repository_admin_role ),
                                         allow_multiple=False,
                                         url_args=dict( action="rename_role" ) ),
                    grids.GridOperation( "Delete",
-                                        condition=( lambda item: not item.deleted ),
+                                        condition=( lambda item: not item.deleted and not item.is_repository_admin_role ),
                                         allow_multiple=True,
                                         url_args=dict( action="mark_role_deleted" ) ),
                    grids.GridOperation( "Undelete",
-                                        condition=( lambda item: item.deleted ),
+                                        condition=( lambda item: item.deleted and not item.is_repository_admin_role ),
                                         allow_multiple=True,
                                         url_args=dict( action="undelete_role" ) ),
                    grids.GridOperation( "Purge",
-                                        condition=( lambda item: item.deleted ),
+                                        condition=( lambda item: item.deleted and not item.is_repository_admin_role ),
                                         allow_multiple=True,
                                         url_args=dict( action="purge_role" ) ) ]
     standard_filters = [
@@ -245,9 +251,8 @@ class RoleGrid( grids.Grid ):
         grids.GridColumnFilter( "Deleted", args=dict( deleted=True ) ),
         grids.GridColumnFilter( "All", args=dict( deleted='All' ) )
     ]
-    num_rows_per_page = 50
-    preserve_state = False
-    use_paging = True
+
+    use_paging = False
 
     def apply_query_filter( self, trans, query, **kwd ):
         return query.filter( model.Role.type != model.Role.types.PRIVATE )
@@ -259,7 +264,7 @@ class GroupGrid( grids.Grid ):
     class NameColumn( grids.TextColumn ):
 
         def get_value( self, trans, grid, group ):
-            return group.name
+            return str( group.name )
 
 
     class StatusColumn( grids.GridColumn ):
@@ -291,6 +296,7 @@ class GroupGrid( grids.Grid ):
     default_sort_key = "name"
     columns = [
         NameColumn( "Name",
+                    key="name",
                     link=( lambda item: dict( operation="Manage users and roles", id=item.id ) ),
                     attach_popup=True ),
         UsersColumn( "Users", attach_popup=False ),
@@ -303,7 +309,7 @@ class GroupGrid( grids.Grid ):
                              filterable="advanced" )
     ]
     columns.append( grids.MulticolFilterColumn( "Search",
-                                                cols_to_filter=[ columns[0], columns[1], columns[2] ],
+                                                cols_to_filter=[ columns[0] ],
                                                 key="free-text-search",
                                                 visible=False,
                                                 filterable="standard" ) )
@@ -332,9 +338,8 @@ class GroupGrid( grids.Grid ):
         grids.GridColumnFilter( "Deleted", args=dict( deleted=True ) ),
         grids.GridColumnFilter( "All", args=dict( deleted='All' ) )
     ]
-    num_rows_per_page = 50
-    preserve_state = False
-    use_paging = True
+
+    use_paging = False
 
 
 class ManageCategoryGrid( CategoryGrid ):
@@ -503,6 +508,7 @@ class RepositoryMetadataGrid( grids.Grid ):
     model_class = model.RepositoryMetadata
     template='/webapps/tool_shed/repository/grid.mako'
     default_sort_key = "name"
+    use_hide_message = False
     columns = [
         IdColumn( "Id",
                   visible=False,
@@ -533,9 +539,7 @@ class RepositoryMetadataGrid( grids.Grid ):
                                         confirm="Repository metadata records cannot be recovered after they are deleted. Click OK to delete the selected items." ) ]
     standard_filters = []
     default_filter = {}
-    num_rows_per_page = 50
-    preserve_state = False
-    use_paging = True
+    use_paging = False
 
     def build_initial_query( self, trans, **kwd ):
         return trans.sa_session.query( model.RepositoryMetadata ) \

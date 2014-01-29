@@ -50,7 +50,7 @@ class LibrariesController( BaseAPIController ):
         for library in query:
             item = library.to_dict( view='element' )
             item['url'] = url_for( route, id=trans.security.encode_id( library.id ) )
-            item['id'] = 'F' + trans.security.encode_id( item['id'] )
+            item['id'] = trans.security.encode_id( item['id'] )
             item['root_folder_id'] = 'F' + trans.security.encode_id( item['root_folder_id'] )
             libraries.append( item )
         return libraries

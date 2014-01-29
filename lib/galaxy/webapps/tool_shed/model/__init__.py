@@ -40,10 +40,6 @@ class User( object, Dictifiable ):
                     roles.append( role )
         return roles
 
-    def set_password_cleartext( self, cleartext ):
-        """Set 'self.password' to the digest of 'cleartext'."""
-        self.password = new_secure_hash( text_type=cleartext )
-
     def check_password( self, cleartext ):
         """Check if 'cleartext' matches 'self.password' when hashed."""
         return self.password == new_secure_hash( text_type=cleartext )
@@ -51,14 +47,18 @@ class User( object, Dictifiable ):
     def get_disk_usage( self, nice_size=False ):
         return 0
 
+    @property
+    def nice_total_disk_usage( self ):
+        return 0
+
     def set_disk_usage( self, bytes ):
         pass
 
     total_disk_usage = property( get_disk_usage, set_disk_usage )
 
-    @property
-    def nice_total_disk_usage( self ):
-        return 0
+    def set_password_cleartext( self, cleartext ):
+        """Set 'self.password' to the digest of 'cleartext'."""
+        self.password = new_secure_hash( text_type=cleartext )
 
 
 class Group( object, Dictifiable ):
@@ -74,19 +74,26 @@ class Role( object, Dictifiable ):
     dict_collection_visible_keys = ( 'id', 'name' )
     dict_element_visible_keys = ( 'id', 'name', 'description', 'type' )
     private_id = None
-    types = Bunch(
-        PRIVATE = 'private',
-        SYSTEM = 'system',
-        USER = 'user',
-        ADMIN = 'admin',
-        SHARING = 'sharing'
-    )
+    types = Bunch( PRIVATE = 'private',
+                   SYSTEM = 'system',
+                   USER = 'user',
+                   ADMIN = 'admin',
+                   SHARING = 'sharing' )
 
     def __init__( self, name="", description="", type="system", deleted=False ):
         self.name = name
         self.description = description
         self.type = type
         self.deleted = deleted
+    
+    @property
+    def is_repository_admin_role( self ):
+        # A repository admin role must always be associated with a repository. The mapper returns an
+        # empty list for those roles that have no repositories.  This method will require changes if
+        # new features are introduced that results in more than one role per repository.
+        if self.repositories:
+            return True
+        return False
 
 
 class UserGroupAssociation( object ):
@@ -104,6 +111,12 @@ class UserRoleAssociation( object ):
 class GroupRoleAssociation( object ):
     def __init__( self, group, role ):
         self.group = group
+        self.role = role
+
+
+class RepositoryRoleAssociation( object ):
+    def __init__( self, repository, role ):
+        self.repository = repository
         self.role = role
 
 
@@ -131,17 +144,18 @@ class GalaxySession( object ):
 
 
 class Repository( object, Dictifiable ):
-    dict_collection_visible_keys = ( 'id', 'name', 'type', 'description', 'user_id', 'private', 'deleted', 'times_downloaded', 'deprecated' )
-    dict_element_visible_keys = ( 'id', 'name', 'type', 'description', 'long_description', 'user_id', 'private', 'deleted', 'times_downloaded',
-                                 'deprecated' )
+    dict_collection_visible_keys = ( 'id', 'name', 'type', 'description', 'user_id', 'private', 'deleted',
+                                     'times_downloaded', 'deprecated' )
+    dict_element_visible_keys = ( 'id', 'name', 'type', 'description', 'long_description', 'user_id', 'private',
+                                  'deleted', 'times_downloaded', 'deprecated' )
     file_states = Bunch( NORMAL = 'n',
                          NEEDS_MERGING = 'm',
                          MARKED_FOR_REMOVAL = 'r',
                          MARKED_FOR_ADDITION = 'a',
                          NOT_TRACKED = '?' )
 
-    def __init__( self, id=None, name=None, type=None, description=None, long_description=None, user_id=None, private=False, deleted=None,
-                  email_alerts=None, times_downloaded=0, deprecated=False ):
+    def __init__( self, id=None, name=None, type=None, description=None, long_description=None, user_id=None, private=False,
+                  deleted=None, email_alerts=None, times_downloaded=0, deprecated=False ):
         self.id = id
         self.name = name or "Unnamed repository"
         self.type = type
@@ -154,13 +168,23 @@ class Repository( object, Dictifiable ):
         self.times_downloaded = times_downloaded
         self.deprecated = deprecated
 
+    @property
+    def admin_role( self ):
+        admin_role_name = '%s_%s_admin' % ( str( self.name ), str( self.user.username ) )
+        for rra in self.roles:
+            role = rra.role
+            if str( role.name ) == admin_role_name:
+                return role
+        raise Exception( 'Repository %s owned by %s is not associated with a required administrative role.' % \
+            ( str( self.name ), str( self.user.username ) ) )
+
     def allow_push( self, app ):
         repo = hg.repository( ui.ui(), self.repo_path( app ) )
         return repo.ui.config( 'web', 'allow_push' )
 
     def can_change_type( self, app ):
-        # Allow changing the type only if the repository has no contents, has never been installed, or has never been changed from
-        # the default type.
+        # Allow changing the type only if the repository has no contents, has never been installed, or has
+        # never been changed from the default type.
         if self.is_new( app ):
             return True
         if self.times_downloaded == 0:

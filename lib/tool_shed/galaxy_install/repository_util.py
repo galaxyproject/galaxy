@@ -596,7 +596,8 @@ def install_tool_shed_repository( trans, tool_shed_repository, repo_info_dict, t
             installed_tool_dependencies = common_install_util.handle_tool_dependencies( app=trans.app,
                                                                                         tool_shed_repository=tool_shed_repository,
                                                                                         tool_dependencies_config=tool_dependencies_config,
-                                                                                        tool_dependencies=tool_shed_repository.tool_dependencies )
+                                                                                        tool_dependencies=tool_shed_repository.tool_dependencies,
+                                                                                        from_install_manager=False )
             suc.remove_dir( work_dir )
         suc.update_tool_shed_repository_status( trans.app,
                                                 tool_shed_repository,
@@ -841,7 +842,8 @@ def repair_tool_shed_repository( trans, repository, repo_info_dict ):
             installed_tool_dependencies = common_install_util.handle_tool_dependencies( app=trans.app,
                                                                                         tool_shed_repository=repository,
                                                                                         tool_dependencies_config=tool_dependencies_config,
-                                                                                        tool_dependencies=repository.tool_dependencies )
+                                                                                        tool_dependencies=repository.tool_dependencies,
+                                                                                        from_install_manager=False )
             for installed_tool_dependency in installed_tool_dependencies:
                 if installed_tool_dependency.status in [ trans.install_model.ToolDependency.installation_status.ERROR ]:
                     repair_dict = add_repair_dict_entry( repository.name, installed_tool_dependency.error_message )

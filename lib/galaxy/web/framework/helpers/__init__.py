@@ -28,7 +28,8 @@ def time_ago( x ):
     if (datetime.utcnow() - x) > delta: # Greater than a week difference
         return x.strftime("%b %d, %Y")
     else:
-        return date.distance_of_time_in_words( x, datetime.utcnow() ).replace("about", "~") + " ago"
+        date_array = date.distance_of_time_in_words( x, datetime.utcnow() ).replace(",", "").split(" ")
+        return "~%s %s ago" % (date_array[0], date_array[1])
 
 def iff( a, b, c ):
     """
@@ -57,7 +58,7 @@ def css( *args ):
 
     Cache-bust with time that server started running on
     """
-    return "\n".join( [ stylesheet_link( "/static/style/" + name + ".css?v=%s" % server_starttime ) for name in args ] )
+    return "\n".join( [ stylesheet_link( url_for( "/static/style/%s.css?v=%s" % (name, server_starttime) ) ) for name in args ] )
 
 def js_helper( prefix, *args ):
     """
@@ -66,21 +67,21 @@ def js_helper( prefix, *args ):
 
     Cache-bust with time that server started running on
     """
-    return "\n".join( [ javascript_link( prefix + name + ".js?v=%s" % server_starttime ) for name in args ] )
+    return "\n".join( [ javascript_link( url_for( "/%s%s.js?v=%s" % (prefix, name, server_starttime ) ) ) for name in args ] )
 
 def js( *args ):
     """
     Take a prefix and list of javascript names and return appropriate
     string of script tags.
     """
-    return js_helper( '/static/scripts/', *args )
+    return js_helper( 'static/scripts/', *args )
 
 def templates( *args ):
     """
     Take a list of template names (no extension) and return appropriate
     string of script tags.
     """
-    return js_helper( '/static/scripts/templates/compiled/', *args )
+    return js_helper( 'static/scripts/templates/compiled/', *args )
 
 # Hashes
 

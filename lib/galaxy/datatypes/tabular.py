@@ -275,7 +275,7 @@ class Tabular( data.Text ):
             cursor = f.read(1)
         return to_json_string( { 'ck_data': util.unicodify( ck_data ), 'ck_index': ck_index + 1 } )
 
-    def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, chunk=None):
+    def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, chunk=None, **kwd):
         preview = util.string_as_bool( preview )
         if chunk:
             return self.get_chunk(trans, dataset, chunk)

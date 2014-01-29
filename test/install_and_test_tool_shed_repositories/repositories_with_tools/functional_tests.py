@@ -342,6 +342,8 @@ def main():
     if not os.path.isdir( galaxy_test_tmp_dir ):
         os.mkdir( galaxy_test_tmp_dir )
     # Set up the configuration files for the Galaxy instance.
+    galaxy_shed_tool_path = os.environ.get( 'GALAXY_INSTALL_TEST_SHED_TOOL_PATH',
+                                            tempfile.mkdtemp( dir=galaxy_test_tmp_dir, prefix='shed_tools' ) )
     shed_tool_data_table_conf_file = os.environ.get( 'GALAXY_INSTALL_TEST_SHED_TOOL_DATA_TABLE_CONF',
                                                      os.path.join( galaxy_test_tmp_dir, 'test_shed_tool_data_table_conf.xml' ) )
     galaxy_tool_data_table_conf_file = os.environ.get( 'GALAXY_INSTALL_TEST_TOOL_DATA_TABLE_CONF',
@@ -377,7 +379,6 @@ def main():
     galaxy_file_path = os.path.join( galaxy_db_path, 'files' )
     new_repos_path = tempfile.mkdtemp( dir=galaxy_test_tmp_dir )
     galaxy_tempfiles = tempfile.mkdtemp( dir=galaxy_test_tmp_dir )
-    galaxy_shed_tool_path = tempfile.mkdtemp( dir=galaxy_test_tmp_dir, prefix='shed_tools' )
     galaxy_migrated_tool_path = tempfile.mkdtemp( dir=galaxy_test_tmp_dir )
     # Set up the tool dependency path for the Galaxy instance.
     tool_dependency_dir = os.environ.get( 'GALAXY_INSTALL_TEST_TOOL_DEPENDENCY_DIR', None )
@@ -578,15 +579,22 @@ def remove_tests( app ):
                 # Revisit this code if at some point we notice that Twill re-runs tests that should have been deleted.
                 # Undoubtedly the following if statement will need to be enhanced to find the tool id in question. For
                 # example, the following or is required because Twill replaces some spaces with underscores in test names.
-                if app_tool_id == tool_id or app_tool_id.replace( '_', ' ' ) == tool_id.replace( '_', ' ' ):
-                    tools_to_delete_by_id.append( tool_id )
+                if app_tool_id == tool_id:
+                    print 'Setting tool id %s for deletion from app.toolbox[ tools_by_id ].' % str( app_tool_id )
+                    tools_to_delete_by_id.append( app_tool_id )
+                else:
+                    reset_spaces_app_tool_id = app_tool_id.replace( '_', ' ' )
+                    reset_spaces_tool_id = tool_id.replace( '_', ' ' )
+                    if reset_spaces_app_tool_id == reset_spaces_tool_id:
+                        print 'Setting tool id %s for deletion from app.toolbox[ tools_by_id ].' % str( app_tool_id )
+                        tools_to_delete_by_id.append( app_tool_id )                        
     # Delete the discovered twill-generated tests.
     for key in tests_to_delete:
         if key in test_toolbox.__dict__:
-            log.debug( 'Deleting test %s from test_toolbox.' % str( key ) )
+            print 'Deleting test %s from test_toolbox.' % str( key )
             del test_toolbox.__dict__[ key ]
     for tool_id in tools_to_delete_by_id:
-        log.debug( 'Deleting tool id %s from app.toolbox[ tools_by_id ].' % str( tool_id ) )
+        print 'Deleting tool id %s from app.toolbox[ tools_by_id ].' % str( tool_id )
         del app.toolbox.tools_by_id[ tool_id ]
 
 def test_repository_tools( app, repository, repository_dict, tool_test_results_dicts, tool_test_results_dict,

@@ -727,6 +727,8 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
             assert self.app.config.remote_user_header in self.environ, \
                 "use_remote_user is set but %s header was not provided" % self.app.config.remote_user_header
             remote_user_email = self.environ[ self.app.config.remote_user_header ]
+            if getattr( self.app.config, "normalize_remote_user_email", False ):
+                remote_user_email = remote_user_email.lower()
             if galaxy_session:
                 # An existing session, make sure correct association exists
                 if galaxy_session.user is None:
@@ -854,7 +856,8 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         """
         if not self.app.config.use_remote_user:
             return None
-
+        if getattr( self.app.config, "normalize_remote_user_email", False ):
+            remote_user_email = remote_user_email.lower()
         user = self.sa_session.query( self.app.model.User ) \
                               .filter( self.app.model.User.table.c.email==remote_user_email ) \
                               .first()

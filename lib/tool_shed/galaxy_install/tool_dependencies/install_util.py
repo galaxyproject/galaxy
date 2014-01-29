@@ -171,7 +171,7 @@ def get_updated_changeset_revisions_from_tool_shed( app, tool_shed_url, name, ow
     return text
 
 
-def handle_complex_repository_dependency_for_package( app, elem, package_name, package_version, tool_shed_repository ):
+def handle_complex_repository_dependency_for_package( app, elem, package_name, package_version, tool_shed_repository, from_install_manager=False ):
     """
     Inspect the repository defined by a complex repository dependency definition and take certain steps to enable installation
     of the received package name and version to proceed.  The received elem is the <repository> tag set which defines the complex
@@ -202,21 +202,37 @@ def handle_complex_repository_dependency_for_package( app, elem, package_name, p
                                                                   tool_dependency_version=package_version )
         # Define this dependent repository's tool dependency installation directory that will contain the env.sh file with a path to the
         # required repository's installed tool dependency package.
-        dependent_install_dir = tool_dependency_util.get_tool_dependency_install_dir( app=app,
-                                                                                      repository_name=tool_shed_repository.name,
-                                                                                      repository_owner=tool_shed_repository.owner,
-                                                                                      repository_changeset_revision=tool_shed_repository.installed_changeset_revision,
-                                                                                      tool_dependency_type='package',
-                                                                                      tool_dependency_name=package_name,
-                                                                                      tool_dependency_version=package_version )
+        dependent_install_dir = \
+            tool_dependency_util.get_tool_dependency_install_dir( app=app,
+                                                                  repository_name=tool_shed_repository.name,
+                                                                  repository_owner=tool_shed_repository.owner,
+                                                                  repository_changeset_revision=tool_shed_repository.installed_changeset_revision,
+                                                                  tool_dependency_type='package',
+                                                                  tool_dependency_name=package_name,
+                                                                  tool_dependency_version=package_version )
         if os.path.exists( dependent_install_dir ):
-            # Notice that we'll throw away the following tool_dependency if it can be installed.
-            tool_dependency, can_install_tool_dependency = tool_dependency_util.sync_database_with_file_system( app,
-                                                                                                                tool_shed_repository,
-                                                                                                                package_name,
-                                                                                                                package_version,
-                                                                                                                dependent_install_dir,
-                                                                                                                tool_dependency_type='package' )
+            # The install manager handles tool migration stages and the sync_database_with_file_system() method handles two
+            # scenarios: (1) where a Galaxy file system environment related to installed tool shed repositories and tool dependencies
+            # has somehow (over time )gotten out of sync with the Galaxy database tables associated with these installed items, and
+            # (2) the Tool Shed's install and test framework which installs repositories in 2 stages, those of type
+            # tool_dependency_definition followed by those containing valid tools and tool functional test components.  Neither of
+            # these scenarios apply when the install manager is running.
+            if from_install_manager:
+                can_install_tool_dependency = True
+            else:
+                # Notice that we'll throw away the following tool_dependency if it can be installed.
+                tool_dependency, can_install_tool_dependency = \
+                    tool_dependency_util.sync_database_with_file_system( app,
+                                                                         tool_shed_repository,
+                                                                         package_name,
+                                                                         package_version,
+                                                                         dependent_install_dir,
+                                                                         tool_dependency_type='package' )
+                if not can_install_tool_dependency:
+                    log.debug( "Tool dependency %s version %s cannot be installed (it was probably previously installed), " % \
+                        ( str( tool_dependency.name, str( tool_dependency.version ) ) ) )
+                    log.debug( "so appending it to the list of handled tool dependencies." )
+                    handled_tool_dependencies.append( tool_dependency )
         else:
             can_install_tool_dependency = True
         if can_install_tool_dependency:
@@ -260,8 +276,6 @@ def handle_complex_repository_dependency_for_package( app, elem, package_name, p
                                                                                             package_version=package_version,
                                                                                             tool_dependencies_config=config_to_use )
             suc.remove_file( tmp_filename )
-        else:
-            handled_tool_dependencies.append( tool_dependency )
     else:
         message = "Unable to locate required tool shed repository named %s owned by %s with revision %s." % \
             ( str( required_repository_name ), str( required_repository_owner ), str( default_required_repository_changeset_revision ) )
@@ -285,7 +299,7 @@ def install_and_build_package_via_fabric( app, tool_dependency, actions_dict ):
     tool_dependency = tool_dependency_util.mark_tool_dependency_installed( app, tool_dependency )
     return tool_dependency
 
-def install_package( app, elem, tool_shed_repository, tool_dependencies=None ):
+def install_package( app, elem, tool_shed_repository, tool_dependencies=None, from_install_manager=False ):
     # The value of tool_dependencies is a partial or full list of ToolDependency records associated with the tool_shed_repository.
     sa_session = app.install_model.context
     tool_dependency = None
@@ -300,7 +314,8 @@ def install_package( app, elem, tool_shed_repository, tool_dependencies=None ):
                                                                                          package_elem,
                                                                                          package_name,
                                                                                          package_version,
-                                                                                         tool_shed_repository )
+                                                                                         tool_shed_repository,
+                                                                                         from_install_manager=from_install_manager )
                 for rd_tool_dependency in rd_tool_dependencies:
                     if rd_tool_dependency.status == app.install_model.ToolDependency.installation_status.ERROR:
                         # We'll log the error here, but continue installing packages since some may not require this dependency.
@@ -315,16 +330,28 @@ def install_package( app, elem, tool_shed_repository, tool_dependencies=None ):
                                                                                     tool_dependency_type='package',
                                                                                     tool_dependency_name=package_name,
                                                                                     tool_dependency_version=package_version )
-                can_install_tool_dependency = True
                 if os.path.exists( install_dir ):
-                    # Notice that we'll throw away the following tool_dependency if it can be installed.
-                    tool_dependency, can_install_tool_dependency = \
-                        tool_dependency_util.sync_database_with_file_system( app,
-                                                                             tool_shed_repository,
-                                                                             package_name,
-                                                                             package_version,
-                                                                             install_dir,
-                                                                             tool_dependency_type='package' )
+                    # The install manager handles tool migration stages and the sync_database_with_file_system() method handles two
+                    # scenarios: (1) where a Galaxy file system environment related to installed tool shed repositories and tool dependencies
+                    # has somehow (over time )gotten out of sync with the Galaxy database tables associated with these installed items, and
+                    # (2) the Tool Shed's install and test framework which installs repositories in 2 stages, those of type
+                    # tool_dependency_definition followed by those containing valid tools and tool functional test components.  Neither of
+                    # these scenarios apply when the install manager is running.
+                    if from_install_manager:
+                        can_install_tool_dependency = True
+                    else:
+                        # Notice that we'll throw away the following tool_dependency if it can be installed.
+                        tool_dependency, can_install_tool_dependency = \
+                            tool_dependency_util.sync_database_with_file_system( app,
+                                                                                 tool_shed_repository,
+                                                                                 package_name,
+                                                                                 package_version,
+                                                                                 install_dir,
+                                                                                 tool_dependency_type='package' )
+                        if not can_install_tool_dependency:
+                            log.debug( "Tool dependency %s version %s cannot be installed (it was probably previously installed), so returning it." % \
+                                ( str( tool_dependency.name, str( tool_dependency.version ) ) ) )
+                            return tool_dependency
                 else:
                     can_install_tool_dependency = True
                 if can_install_tool_dependency:

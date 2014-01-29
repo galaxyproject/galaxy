@@ -68,6 +68,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
     my_writable_repositories_with_test_install_errors_grid = repository_grids.MyWritableRepositoriesWithTestInstallErrorsGrid()
     repositories_by_user_grid = repository_grids.RepositoriesByUserGrid()
     repositories_i_own_grid = repository_grids.RepositoriesIOwnGrid()
+    repositories_i_can_administer_grid = repository_grids.RepositoriesICanAdministerGrid()
     repositories_in_category_grid = repository_grids.RepositoriesInCategoryGrid()
     repositories_missing_tool_test_components_grid = repository_grids.RepositoriesMissingToolTestComponentsGrid()
     repositories_with_failing_tool_tests_grid = repository_grids.RepositoriesWithFailingToolTestsGrid()
@@ -351,8 +352,9 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
 
     @web.expose
     def browse_repositories( self, trans, **kwd ):
-        # We add params to the keyword dict in this method in order to rename the param with an "f-" prefix, simulating filtering by clicking a search
-        # link.  We have to take this approach because the "-" character is illegal in HTTP requests.
+        # We add params to the keyword dict in this method in order to rename the param with an "f-" prefix,
+        # simulating filtering by clicking a search link.  We have to take this approach because the "-"
+        # character is illegal in HTTP requests.
         if 'operation' in kwd:
             operation = kwd[ 'operation' ].lower()
             if operation == "view_or_manage_repository":
@@ -432,6 +434,32 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             user = suc.get_user( trans, user_id )
             self.repositories_by_user_grid.title = "Repositories owned by %s" % user.username
         return self.repositories_by_user_grid( trans, **kwd )
+
+    @web.expose
+    def browse_repositories_i_can_administer( self, trans, **kwd ):
+        if 'operation' in kwd:
+            operation = kwd[ 'operation' ].lower()
+            if operation == "view_or_manage_repository":
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='view_or_manage_repository',
+                                                                  **kwd ) )
+            elif operation == "repositories_by_user":
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='browse_repositories_by_user',
+                                                                  **kwd ) )
+            elif operation in [ 'mark as deprecated', 'mark as not deprecated' ]:
+                kwd[ 'mark_deprecated' ] = operation == 'mark as deprecated'
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='deprecate',
+                                                                  **kwd ) )
+        selected_changeset_revision, repository = suc.get_repository_from_refresh_on_change( trans, **kwd )
+        if repository:
+            return trans.response.send_redirect( web.url_for( controller='repository',
+                                                              action='browse_repositories',
+                                                              operation='view_or_manage_repository',
+                                                              id=trans.security.encode_id( repository.id ),
+                                                              changeset_revision=selected_changeset_revision ) )
+        return self.repositories_i_can_administer_grid( trans, **kwd )
 
     @web.expose
     def browse_repositories_i_own( self, trans, **kwd ):
@@ -921,8 +949,8 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         status = kwd.get( 'status', 'done' )
         categories = suc.get_categories( trans )
         if not categories:
-            message = 'No categories have been configured in this instance of the Galaxy Tool Shed.  ' + \
-                'An administrator needs to create some via the Administrator control panel before creating repositories.',
+            message = 'No categories have been configured in this instance of the Galaxy Tool Shed.  '
+            message += 'An administrator needs to create some via the Administrator control panel before creating repositories.',
             status = 'error'
             return trans.response.send_redirect( web.url_for( controller='repository',
                                                               action='browse_repositories',
@@ -1741,8 +1769,9 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         owner = kwd.get( 'owner', None )
         changeset_revision = kwd.get( 'changeset_revision', None )
         repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
-        # TODO: We're currently returning the tool_dependencies.xml file that is available on disk.  We need to enhance this process
-        # to retrieve older versions of the tool-dependencies.xml file from the repository manafest.
+        # TODO: We're currently returning the tool_dependencies.xml file that is available on disk.  We need
+        # to enhance this process to retrieve older versions of the tool-dependencies.xml file from the repository
+        #manafest.
         repo_dir = repository.repo_path( trans.app )
         # Get the tool_dependencies.xml file from disk.
         tool_dependencies_config = suc.get_config_from_disk( suc.TOOL_DEPENDENCY_DEFINITION_FILENAME, repo_dir )
@@ -1951,6 +1980,9 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         # See if there are any RepositoryMetadata records since menu items require them.
         repository_metadata = trans.sa_session.query( trans.model.RepositoryMetadata ).first()
         current_user = trans.user
+        # TODO: move the following to some in-memory register so these queries can be done once
+        # at startup.  The in-memory registe can then be managed during the current session.
+        can_administer_repositories = False
         has_reviewed_repositories = False
         has_deprecated_repositories = False
         if current_user:
@@ -1964,6 +1996,16 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                 if repository.deprecated:
                     has_deprecated_repositories = True
                     break
+            # See if the current user can administer any repositories, but only if not an admin user.
+            if not trans.user_is_admin():
+                if current_user.active_repositories:
+                    can_administer_repositories = True
+                else:
+                    for repository in trans.sa_session.query( trans.model.Repository ) \
+                                                      .filter( trans.model.Repository.table.c.deleted == False ):
+                        if trans.app.security_agent.user_can_administer_repository( current_user, repository ):
+                            can_administer_repositories = True
+                            break
         # Route in may have been from a sharable URL, in whcih case we'll have a user_id and possibly a name
         # The received user_id will be the id of the repository owner.
         user_id = kwd.get( 'user_id', None )
@@ -1971,6 +2013,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         changeset_revision = kwd.get( 'changeset_revision', None )
         return trans.fill_template( '/webapps/tool_shed/index.mako',
                                     repository_metadata=repository_metadata,
+                                    can_administer_repositories=can_administer_repositories,
                                     has_reviewed_repositories=has_reviewed_repositories,
                                     has_deprecated_repositories=has_deprecated_repositories,
                                     user_id=user_id,
@@ -2116,9 +2159,8 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         user = trans.user
         if kwd.get( 'edit_repository_button', False ):
             flush_needed = False
-            # TODO: add a can_manage in the security agent.
-            if not ( user.email == repository.user.email or trans.user_is_admin() ):
-                message = "You are not the owner of this repository, so you cannot manage it."
+            if not ( trans.user_is_admin() or trans.app.security_agent.user_can_administer_repository( user, repository ) ):
+                message = "You are not the owner of this repository, so you cannot administer it."
                 return trans.response.send_redirect( web.url_for( controller='repository',
                                                                   action='view_repository',
                                                                   id=id,
@@ -2145,6 +2187,12 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                     # Change the entry in the repository's hgrc file.
                     hgrc_file = os.path.join( repo_dir, '.hg', 'hgrc' )
                     repository_maintenance_util.change_repository_name_in_hgrc_file( hgrc_file, repo_name )
+                    # Rename the repository's admin role to match the new repository name.
+                    repository_admin_role = repository.admin_role
+                    repository_admin_role.name = \
+                        repository_maintenance_util.get_repository_admin_role_name( str( repo_name ),
+                                                                                    str( repository.user.username ) )
+                    trans.sa_session.add( repository_admin_role )
                     repository.name = repo_name
                     flush_needed = True
             elif repository.times_downloaded != 0 and repo_name != repository.name:
@@ -2345,6 +2393,55 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                     status=status )
 
     @web.expose
+    @web.require_login( "manage repository administrators" )
+    def manage_repository_admins( self, trans, id, **kwd ):
+        message = kwd.get( 'message', ''  )
+        status = kwd.get( 'status', 'done' )
+        repository = suc.get_repository_in_tool_shed( trans, id )
+        changeset_revision = kwd.get( 'changeset_revision', repository.tip( trans.app ) )
+        metadata = None
+        if changeset_revision != suc.INITIAL_CHANGELOG_HASH:
+            repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
+            if repository_metadata:
+                metadata = repository_metadata.metadata
+            else:
+                # There is no repository_metadata defined for the changeset_revision, so see if it was defined
+                # in a previous changeset in the changelog.
+                repo_dir = repository.repo_path( trans.app )
+                repo = hg.repository( suc.get_configured_ui(), repo_dir )
+                previous_changeset_revision = \
+                    suc.get_previous_metadata_changeset_revision( repository,
+                                                                  repo,
+                                                                  changeset_revision,
+                                                                  downloadable=False )
+                if previous_changeset_revision != suc.INITIAL_CHANGELOG_HASH:
+                    repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans,
+                                                                                             id,
+                                                                                             previous_changeset_revision )
+                    if repository_metadata:
+                        metadata = repository_metadata.metadata
+        role = repository.admin_role
+        associations_dict = repository_maintenance_util.handle_role_associations( trans, role, repository, **kwd )
+        in_users = associations_dict.get( 'in_users', [] )
+        out_users = associations_dict.get( 'out_users', [] )
+        in_groups = associations_dict.get( 'in_groups', [] )
+        out_groups = associations_dict.get( 'out_groups', [] )
+        message = associations_dict.get( 'message', '' )
+        status = associations_dict.get( 'status', 'done' )
+        return trans.fill_template( '/webapps/tool_shed/role/role.mako',
+                                    in_admin_controller=False,
+                                    repository=repository,
+                                    metadata=metadata,
+                                    changeset_revision=changeset_revision,
+                                    role=role,
+                                    in_users=in_users,
+                                    out_users=out_users,
+                                    in_groups=in_groups,
+                                    out_groups=out_groups,
+                                    message=message,
+                                    status=status )
+
+    @web.expose
     @web.require_login( "review repository revision" )
     def manage_repository_reviews_of_revision( self, trans, **kwd ):
         return trans.response.send_redirect( web.url_for( controller='repository_review',
@@ -2369,6 +2466,10 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                     kwd[ 'message' ] = 'You must be logged in to set email alerts.'
                     kwd[ 'status' ] = 'error'
                     del kwd[ 'operation' ]
+            elif operation == "view_or_manage_repository":
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='view_or_manage_repository',
+                                                                  **kwd ) )
         self.email_alerts_repository_grid.title = "Set email alerts for repository changes"
         return self.email_alerts_repository_grid( trans, **kwd )
 
@@ -2669,9 +2770,8 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
     @web.expose
     @web.require_login( "set email alerts" )
     def set_email_alerts( self, trans, **kwd ):
-        # Set email alerts for selected repositories
-        # This method is called from multiple grids, so
-        # the caller must be passed.
+        """Set email alerts for selected repositories."""
+        # This method is called from multiple grids, so the caller must be passed.
         caller = kwd[ 'caller' ]
         user = trans.user
         if user:
@@ -3025,8 +3125,10 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         repository_id = kwd.get( 'id', None )
         if repository_id:
             repository = suc.get_repository_in_tool_shed( trans, repository_id )
+            user = trans.user
             if repository:
-                if trans.user_is_admin() or repository.user == trans.user:
+                if user is not None and ( trans.user_is_admin() or \
+                                          trans.app.security_agent.user_can_administer_repository( user, repository ) ):
                     return trans.response.send_redirect( web.url_for( controller='repository',
                                                                       action='manage_repository',
                                                                       **kwd ) )

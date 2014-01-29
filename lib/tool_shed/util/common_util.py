@@ -91,9 +91,9 @@ def check_tool_tag_set( elem, migrated_tool_configs_dict, missing_tool_configs_d
     file_path = elem.get( 'file', None )
     if file_path:
         path, name = os.path.split( file_path )
-        if name in migrated_tool_configs_dict:
-            tool_dependencies = migrated_tool_configs_dict[ name ]
-            missing_tool_configs_dict[ name ] = tool_dependencies
+        for migrated_tool_config in migrated_tool_configs_dict.keys():
+            if migrated_tool_config in [ file_path, name ]:
+                missing_tool_configs_dict[ name ] = migrated_tool_configs_dict[ migrated_tool_config ]
     return missing_tool_configs_dict
 
 def get_non_shed_tool_panel_configs( app ):

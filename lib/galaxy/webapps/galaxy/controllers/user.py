@@ -1083,7 +1083,8 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                 else:
                     chars = string.letters + string.digits
                     new_pass = ""
-                    for i in range(15):
+                    reset_password_length = getattr( trans.app.config, "reset_password_length", 15 )
+                    for i in range(reset_password_length):
                         new_pass = new_pass + random.choice(chars)
                     host = trans.request.host.split(':')[0]
                     if host == 'localhost':

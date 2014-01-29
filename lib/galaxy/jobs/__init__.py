@@ -789,8 +789,8 @@ class JobWrapper( object ):
         # If the job was deleted, call tool specific fail actions (used for e.g. external metadata) and clean up
         if self.tool:
             self.tool.job_failed( self, message, exception )
-        if self.app.config.cleanup_job == 'always' or (self.app.config.cleanup_job == 'onsuccess' and job.state == job.states.DELETED):
-            self.cleanup()
+        delete_files = self.app.config.cleanup_job == 'always' or (self.app.config.cleanup_job == 'onsuccess' and job.state == job.states.DELETED)
+        self.cleanup( delete_files=delete_files )
 
     def pause( self, job=None, message=None ):
         if job is None:
@@ -883,11 +883,10 @@ class JobWrapper( object ):
 
         # We set final_job_state to use for dataset management, but *don't* set
         # job.state until after dataset collection to prevent history issues
-        if job.states.ERROR != job.state:
-            if ( self.check_tool_output( stdout, stderr, tool_exit_code, job )):
-                final_job_state = job.states.OK
-            else:
-                final_job_state = job.states.ERROR
+        if ( self.check_tool_output( stdout, stderr, tool_exit_code, job ) ):
+            final_job_state = job.states.OK
+        else:
+            final_job_state = job.states.ERROR
 
         if self.version_string_cmd:
             version_filename = self.get_version_string_path()
@@ -1067,22 +1066,26 @@ class JobWrapper( object ):
         self.sa_session.flush()
 
         log.debug( 'job %d ended' % self.job_id )
-        if self.app.config.cleanup_job == 'always' or ( not stderr and self.app.config.cleanup_job == 'onsuccess' ):
-            self.cleanup()
+        delete_files = self.app.config.cleanup_job == 'always' or ( job.state == job.states.OK and self.app.config.cleanup_job == 'onsuccess' )
+        self.cleanup( delete_files=delete_files )
 
     def check_tool_output( self, stdout, stderr, tool_exit_code, job ):
         return check_output( self.tool, stdout, stderr, tool_exit_code, job )
 
-    def cleanup( self ):
-        # remove temporary files
+    def cleanup( self, delete_files=True ):
+        # At least one of these tool cleanup actions (job import), is needed
+        # for thetool to work properly, that is why one might want to run
+        # cleanup but not delete files.
         try:
-            for fname in self.extra_filenames:
-                os.remove( fname )
-            self.external_output_metadata.cleanup_external_metadata( self.sa_session )
+            if delete_files:
+                for fname in self.extra_filenames:
+                    os.remove( fname )
+                self.external_output_metadata.cleanup_external_metadata( self.sa_session )
             galaxy.tools.imp_exp.JobExportHistoryArchiveWrapper( self.job_id ).cleanup_after_job( self.sa_session )
             galaxy.tools.imp_exp.JobImportHistoryArchiveWrapper( self.app, self.job_id ).cleanup_after_job()
             galaxy.tools.genome_index.GenomeIndexToolWrapper( self.job_id ).postprocessing( self.sa_session, self.app )
-            self.app.object_store.delete(self.get_job(), base_dir='job_work', entire_dir=True, dir_only=True, extra_dir=str(self.job_id))
+            if delete_files:
+                self.app.object_store.delete(self.get_job(), base_dir='job_work', entire_dir=True, dir_only=True, extra_dir=str(self.job_id))
         except:
             log.exception( "Unable to cleanup job %d" % self.job_id )
 
@@ -1520,8 +1523,8 @@ class TaskWrapper(JobWrapper):
         # if the job was deleted, don't finish it
         if task.state == task.states.DELETED:
             # Job was deleted by an administrator
-            if self.app.config.cleanup_job in ( 'always', 'onsuccess' ):
-                self.cleanup()
+            delete_files = self.app.config.cleanup_job in ( 'always', 'onsuccess' )
+            self.cleanup( delete_files=delete_files )
             return
         elif task.state == task.states.ERROR:
             self.fail( task.info )

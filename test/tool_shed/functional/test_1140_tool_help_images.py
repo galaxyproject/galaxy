@@ -109,10 +109,10 @@ class TestToolHelpImages( ShedTwillTestCase ):
         In the center tool panel, look for the image string similar to the following string where the
         encoded_repository_id is previously determined as the installed ToolShedRepository id:
 
-        src="/admin_toolshed/static/images/<id>/count_modes.png"
+        src="admin_toolshed/static/images/<id>/count_modes.png"
         '''
         repository = self.test_db_util.get_installed_repository_by_name_owner( repository_name, common.test_user_1_name )
-        image_path = 'src="/admin_toolshed/static/images/%s/count_modes.png"' % self.security.encode_id( repository.id )
+        image_path = 'src="admin_toolshed/static/images/%s/count_modes.png"' % self.security.encode_id( repository.id )
         # The repository uploaded in this test should only define one tool, which should be the tool that contains a link to an image.
         repository_metadata = repository.metadata
         tool_id = repository_metadata[ 'tools' ][ 0 ][ 'guid' ]

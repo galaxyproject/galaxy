@@ -116,21 +116,38 @@ return Backbone.View.extend(
     showOperation: function(id) {
         this.$operations.find('#' + id).show();
     },
-        
+    
+    // set operation
+    setOperation: function(id, callback) {
+        var $el = this.$operations.find('#' + id);
+        $el.off('click');
+        $el.on('click', callback);
+    },
+    
+    // label
+    label: function(new_label) {
+        var $el = this.$el.find('#label');
+        if (new_label) {
+            $el.html(new_label);
+        }
+        return $el.html();
+    },
+    
     // fill regular modal template
     template: function(options) {
         var tmpl =  '<div class="toolForm">';
         
-        if (options.label) {
-            tmpl +=     '<div id="title" class="toolFormTitle" style="padding-bottom: 7px;">' +
+        if (options.label || options.icon) {
+            tmpl +=     '<div id="title" class="toolFormTitle" style="overflow:hidden;">' +
                             '<div id="operations" style="float: right;"></div>' +
-                            '<div>';
+                            '<div style="overflow: hidden">';
                             
             if (options.icon)
-                tmpl +=         '<i style="font-size: 1.2em" class="icon fa ' + options.icon + '">&nbsp;</i>';
+                tmpl +=         '<i style="padding-top: 3px; float: left; font-size: 1.2em" class="icon fa ' + options.icon + '">&nbsp;</i>';
         
-            tmpl +=             options.label +
-                            '</div>' +
+            tmpl +=             '<div id="label" style="padding-top: 2px; float: left;">' + options.label + '</div>';
+            
+            tmpl +=         '</div>' +
                         '</div>';
         }
         tmpl +=         '<div id="body" class="toolFormBody">';

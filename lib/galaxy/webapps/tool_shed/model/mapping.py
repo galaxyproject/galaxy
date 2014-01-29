@@ -74,6 +74,13 @@ GroupRoleAssociation.table = Table( "group_role_association", metadata,
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ) )
 
+RepositoryRoleAssociation.table = Table( "repository_role_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "repository_id", Integer, ForeignKey( "repository.id" ), index=True ),
+    Column( "role_id", Integer, ForeignKey( "role.id" ), index=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ) )
+
 GalaxySession.table = Table( "galaxy_session", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
@@ -203,8 +210,17 @@ mapper( Group, Group.table,
 
 mapper( Role, Role.table,
     properties=dict(
-        users=relation( UserRoleAssociation ),
-        groups=relation( GroupRoleAssociation ) ) )
+        repositories=relation( RepositoryRoleAssociation,
+                               primaryjoin=( ( Role.table.c.id == RepositoryRoleAssociation.table.c.role_id ) & ( RepositoryRoleAssociation.table.c.repository_id == Repository.table.c.id ) ) ),
+        users=relation( UserRoleAssociation,
+                        primaryjoin=( ( Role.table.c.id == UserRoleAssociation.table.c.role_id ) & ( UserRoleAssociation.table.c.user_id == User.table.c.id ) ) ),
+        groups=relation( GroupRoleAssociation,
+                         primaryjoin=( ( Role.table.c.id == GroupRoleAssociation.table.c.role_id ) & ( GroupRoleAssociation.table.c.group_id == Group.table.c.id ) ) ) ) )
+
+mapper( RepositoryRoleAssociation, RepositoryRoleAssociation.table,
+    properties=dict(
+        repository=relation( Repository ),
+        role=relation( Role ) ) )
 
 mapper( UserGroupAssociation, UserGroupAssociation.table,
     properties=dict( user=relation( User, backref = "groups" ),
@@ -245,6 +261,7 @@ mapper( Repository, Repository.table,
                                          order_by=desc( RepositoryMetadata.table.c.update_time ) ),
         metadata_revisions=relation( RepositoryMetadata,
                                      order_by=desc( RepositoryMetadata.table.c.update_time ) ),
+        roles=relation( RepositoryRoleAssociation ),
         reviews=relation( RepositoryReview,
                           primaryjoin=( ( Repository.table.c.id == RepositoryReview.table.c.repository_id ) ) ),
         reviewers=relation( User,

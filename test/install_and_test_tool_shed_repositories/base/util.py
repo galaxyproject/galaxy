@@ -753,16 +753,19 @@ def populate_dependency_install_containers( app, repository, repository_identifi
             owner = str( missing_repository_dependency.owner )
             changeset_revision = str( missing_repository_dependency.changeset_revision )
             error_message = unicodify( missing_repository_dependency.error_message )
-            print 'Revision %s of repository %s owned by %s:\n%s' % ( changeset_revision, name, owner, error_message )
+            print 'Revision %s of repository %s owned by %s has the following installation error:' % ( changeset_revision, name, owner )
+            # Use log.debug here instead of print because print will throw UnicodeEncodeError exceptions.
+            log.debug( '%s' % error_message )
+            identity_tup = ( name, owner, changeset_revision )
+            processed_repositories_with_installation_error = \
+                install_and_test_statistics_dict.get( 'repositories_with_installation_error', [] )
+            if identity_tup not in processed_repositories_with_installation_error:
+                install_and_test_statistics_dict[ 'repositories_with_installation_error' ].append( identity_tup )
             missing_repository_dependency_info_dict = dict( tool_shed=tool_shed,
                                                             name=name,
                                                             owner=owner,
                                                             changeset_revision=changeset_revision,
                                                             error_message=error_message )
-            processed_repositories_with_installation_error = \
-                install_and_test_statistics_dict.get( 'repositories_with_installation_error', [] )
-            if missing_repository_dependency_info_dict not in processed_repositories_with_installation_error:
-                install_and_test_statistics_dict[ 'repositories_with_installation_error' ].append( missing_repository_dependency_info_dict )
             tool_test_results_dict[ 'installation_errors' ][ 'repository_dependencies' ].append( missing_repository_dependency_info_dict )
     if repository.missing_tool_dependencies:
         print 'The following tool dependencies for revision %s of repository %s owned by %s have installation errors:' % \
@@ -774,15 +777,18 @@ def populate_dependency_install_containers( app, repository, repository_identifi
             type = str( missing_tool_dependency.type )
             version = str( missing_tool_dependency.version )
             error_message = unicodify( missing_tool_dependency.error_message )
-            print 'Version %s of tool dependency %s %s:\n%s' % ( version, type, name, error_message )
+            print 'Version %s of tool dependency %s %s has the following installation error:' % ( version, type, name )
+            # Use log.debug here instead of print because print will throw UnicodeEncodeError exceptions.
+            log.debug( '%s' % error_message )
+            identity_tup = ( name, type, version )
+            processed_tool_dependencies_with_installation_error = \
+                install_and_test_statistics_dict.get( 'tool_dependencies_with_installation_error', [] )
+            if identity_tup not in processed_tool_dependencies_with_installation_error:
+                install_and_test_statistics_dict[ 'tool_dependencies_with_installation_error' ].append( identity_tup )
             missing_tool_dependency_info_dict = dict( type=type,
                                                       name=name,
                                                       version=version,
                                                       error_message=error_message )
-            processed_tool_dependencies_with_installation_error = \
-                install_and_test_statistics_dict.get( 'tool_dependencies_with_installation_error', [] )
-            if missing_tool_dependency_info_dict not in processed_tool_dependencies_with_installation_error:
-                install_and_test_statistics_dict[ 'tool_dependencies_with_installation_error' ].append( missing_tool_dependency_info_dict )
             tool_test_results_dict[ 'installation_errors' ][ 'tool_dependencies' ].append( missing_tool_dependency_info_dict )
     if repository.installed_repository_dependencies:
         print 'The following repository dependencies for revision %s of repository %s owned by %s are installed:' % \
@@ -870,25 +876,39 @@ def populate_install_containers_for_repository_dependencies( app, repository, re
                     ( changeset_revision, name, owner )
                 print 'due to the following error getting tool_test_results:\n%s' % str( error_message )
             else:
-                # Check the required repository's time_last_tested value to see if its tool_test_results column
-                # has been updated within the past 12 hours.  The RepositoryMetadata class's to_dict() method
-                # returns the value of time_last_tested in datetime.isoformat().
-                twenty_hours_ago = ( datetime.utcnow() - timedelta( hours=20 ) ).isoformat()
+                # The assumption is that the Tool SHed's install and test framework is executed no more than once per 24 hour
+                # period, so check the required repository's time_last_tested value to see if its tool_test_results column
+                # has been updated within the past 20 hours to allow for differing test run times (some may be slower than
+                # others).  The RepositoryMetadata class's to_dict() method returns the value of time_last_tested in
+                # datetime.isoformat().
                 time_last_tested, error_message = get_time_last_tested( galaxy_tool_shed_url, required_repository_metadata_id )
-                if time_last_tested is not None and time_last_tested < twenty_hours_ago:
-                    print 'The install containers for version %s of repository dependency %s owned by %s have been ' % \
-                        ( changeset_revision, name, owner )
-                    print 'populated within the past 20 hours (likely in this test run), so skipping this check.'
-                    continue
-                elif time_last_tested is None:
+                print 'Value of time_last_tested: %s' % str( time_last_tested )
+                if time_last_tested is None:
                     print 'The time_last_tested column value is None for version %s of repository dependency %s owned by %s.' % \
                         ( changeset_revision, name, owner )
-                elif time_last_tested < twenty_hours_ago:
-                    print 'Version %s of repository dependency %s owned by %s was last tested less than 20 hours ago.' % \
-                        ( changeset_revision, name, owner )
                 else:
-                    print 'Version %s of repository dependency %s owned by %s was last tested more than 20 hours ago.' % \
-                        ( changeset_revision, name, owner )
+                    twenty_hours_ago = ( datetime.utcnow() - timedelta( hours=20 ) ).isoformat()
+                    print 'Value of twenty_hours_ago: %s' % str( twenty_hours_ago )
+                    # This is counter intuitive because the following check is on strings like this: '2014-01-21T19:46:06.953741',
+                    # so if "time_last_tested > twenty_hours_ago" is True, then it implies that the time_last_tested column
+                    # was actually updated less than 20 hours ago, and should not be updated again because we're likely processing
+                    # another dependent repository, many of which can have the same repository dependency.  
+                    try:
+                        # Be very conservative here.  Our default behavior will be to assume containers have not been populated
+                        # during the current test run.
+                        already_populated = time_last_tested > twenty_hours_ago
+                    except Exception, e:
+                        log.exception( 'Error attempting to set already_populated: %s' % str( e ) )
+                        already_populated = False
+                    print 'Value of already_populated: %s' % str( already_populated )
+                    if already_populated:
+                        print 'The install containers for version %s of repository dependency %s owned by %s have been ' % \
+                            ( changeset_revision, name, owner )
+                        print 'populated within the past 20 hours (likely in this test run), so skipping this check.'
+                        continue
+                    else:
+                        print 'Version %s of repository dependency %s owned by %s was last tested more than 20 hours ago.' % \
+                            ( changeset_revision, name, owner )
                 # Inspect the tool_test_results_dict for the last test run to see if it has not yet been populated.
                 if len( tool_test_results_dicts ) == 0:
                     tool_test_results_dict = {}
@@ -977,27 +997,27 @@ def print_install_and_test_results( install_stage_type, install_and_test_statist
         print "# Repository revisions processed: %s" % str( total_repositories_processed )
         if successful_repository_installations:
             print "# ----------------------------------------------------------------------------------"
-            print "# The following revisions were successfully installed:"
+            print "# The following %d revisions were successfully installed:" % len( successful_repository_installations )
             display_repositories_by_owner( successful_repository_installations )
         if repositories_with_installation_error:
             print "# ----------------------------------------------------------------------------------"
-            print "# The following revisions have installation errors:"
+            print "# The following %d revisions have installation errors:" % len( repositories_with_installation_error )
             display_repositories_by_owner( repositories_with_installation_error )
         if successful_tool_dependency_installations:
             print "# ----------------------------------------------------------------------------------"
-            print "# The following tool dependencies were successfully installed:"
+            print "# The following %d tool dependencies were successfully installed:" % len( successful_tool_dependency_installations )
             display_tool_dependencies_by_name( successful_tool_dependency_installations )
         if tool_dependencies_with_installation_error:
             print "# ----------------------------------------------------------------------------------"
-            print "# The following tool dependencies have installation errors:"
+            print "# The following %d tool dependencies have installation errors:" % len( tool_dependencies_with_installation_error )
             display_tool_dependencies_by_name( tool_dependencies_with_installation_error )
         if all_tests_passed:
             print '# ----------------------------------------------------------------------------------'
-            print "# The following revisions successfully passed all functional tests:"
+            print "# The following %d revisions successfully passed all functional tests:" % len( all_tests_passed )
             display_repositories_by_owner( all_tests_passed )
         if at_least_one_test_failed:
             print '# ----------------------------------------------------------------------------------'
-            print "# The following revisions failed at least 1 functional test:"
+            print "# The following %d revisions failed at least 1 functional test:" % len( at_least_one_test_failed )
             display_repositories_by_owner( at_least_one_test_failed )
         print "####################################################################################"
 

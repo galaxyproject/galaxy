@@ -440,7 +440,8 @@ class InstallManager( object ):
             installed_tool_dependencies = common_install_util.handle_tool_dependencies( app=self.app,
                                                                                         tool_shed_repository=tool_shed_repository,
                                                                                         tool_dependencies_config=tool_dependencies_config,
-                                                                                        tool_dependencies=tool_dependencies )
+                                                                                        tool_dependencies=tool_dependencies,
+                                                                                        from_install_manager=True )
             for installed_tool_dependency in installed_tool_dependencies:
                 if installed_tool_dependency.status == self.app.install_model.ToolDependency.installation_status.ERROR:
                     print '\nThe following error occurred from the InstallManager while installing tool dependency ', installed_tool_dependency.name, ':'

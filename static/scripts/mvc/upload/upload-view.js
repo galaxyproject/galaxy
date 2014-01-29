@@ -93,7 +93,8 @@ var ProgressButton = Backbone.View.extend({
                     '<div class="progress">' +
                         '<div class="progress-bar"></div>' +
                     '</div>' +
-                    '<div id="label" class="label" style="position: absolute; top: 0px; width: inherit; text-align: center;"><div class="fa ' + options.icon + '"></div>&nbsp;' + options.label + '</div>' +
+                    '<div id="label" class="label">' +
+                        '<div class="fa ' + options.icon + '"></div>&nbsp;' + options.label + '</div>' +
                 '</div>';
     }
 });
@@ -262,8 +263,7 @@ return Backbone.View.extend(
                 },
                 height              : '400',
                 width               : '900',
-                bindClosingEvents   : true,
-                bindEscKey          : false
+                closing_events   : true
             });
         
             // set element
@@ -372,7 +372,6 @@ return Backbone.View.extend(
         tool_input = {};
         tool_input['dbkey'] = genome;
         tool_input['file_type'] = file_type;
-        tool_input['files_0|NAME'] = file_name;
         tool_input['files_0|type'] = 'upload_dataset';
         tool_input['files_0|url_paste'] = url_paste;
         tool_input['space_to_tabs'] = space_to_tabs;

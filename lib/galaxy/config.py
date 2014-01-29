@@ -58,7 +58,7 @@ class Configuration( object ):
         self.openid_consumer_cache_path = resolve_path( kwargs.get( "openid_consumer_cache_path", "database/openid_consumer_cache" ), self.root )
         self.cookie_path = kwargs.get( "cookie_path", "/" )
         self.genome_data_path = kwargs.get( "genome_data_path", "tool-data/genome" )
-        self.rsync_url = kwargs.get( "rsync_url", "rsync://scofield.bx.psu.edu/indexes" )
+        self.rsync_url = kwargs.get( "rsync_url", "rsync://datacache.galaxyproject.org/indexes" )
         # Galaxy OpenID settings
         self.enable_openid = string_as_bool( kwargs.get( 'enable_openid', False ) )
         self.openid_config = kwargs.get( 'openid_config_file', 'openid_conf.xml' )
@@ -122,6 +122,7 @@ class Configuration( object ):
         self.id_secret = kwargs.get( "id_secret", "USING THE DEFAULT IS NOT SECURE!" )
         self.retry_metadata_internally = string_as_bool( kwargs.get( "retry_metadata_internally", "True" ) )
         self.use_remote_user = string_as_bool( kwargs.get( "use_remote_user", "False" ) )
+        self.normalize_remote_user_email = string_as_bool( kwargs.get( "normalize_remote_user_email", "False" ) )
         self.remote_user_maildomain = kwargs.get( "remote_user_maildomain", None )
         self.remote_user_header = kwargs.get( "remote_user_header", 'HTTP_REMOTE_USER' )
         self.remote_user_logout_href = kwargs.get( "remote_user_logout_href", None )
@@ -151,6 +152,7 @@ class Configuration( object ):
             h, m, s = [ int( v ) for v in self.job_walltime.split( ':' ) ]
             self.job_walltime_delta = timedelta( 0, s, 0, 0, m, h )
         self.admin_users = kwargs.get( "admin_users", "" )
+        self.reset_password_length = int( kwargs.get('reset_password_length', '15') )
         self.mailing_join_addr = kwargs.get('mailing_join_addr',"galaxy-announce-join@bx.psu.edu")
         self.error_email_to = kwargs.get( 'error_email_to', None )
         self.activation_email = kwargs.get( 'activation_email', None )

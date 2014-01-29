@@ -6,9 +6,9 @@ return Backbone.Model.extend(
 {
     // options
     optionsDefault : {
-        limit : 20,
+        limit : 500,
         pace  : 1000,
-        max   : 5
+        max   : 2
     },
 
     // list

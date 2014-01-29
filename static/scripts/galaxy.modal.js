@@ -152,11 +152,13 @@ var GalaxyModal = Backbone.View.extend(
         // bind additional closing events
         if (this.options.closing_events) {
             // bind the ESC key to hide() function
-            $(document).on('keyup', function(e) {
-                if (e.keyCode == 27) {
-                    self.hide();
-                }
-            });
+            if (!this.options.buttons.Pause){ // don't bind for the upload modal because of the side effects with system modal for file choosing
+                $(document).on('keyup', function(e) {
+                    if (e.keyCode == 27) {
+                        self.hide();
+                    }
+                });
+            }
             
             // hide modal if background is clicked
             this.$el.find('.modal-backdrop').on('click', function() { self.hide(); });

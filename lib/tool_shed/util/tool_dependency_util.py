@@ -43,7 +43,9 @@ def add_installation_directories_to_tool_dependencies( trans, tool_dependencies 
     return tool_dependencies
 
 def create_or_update_tool_dependency( app, tool_shed_repository, name, version, type, status, set_status=True ):
-    # Called from Galaxy (never the tool shed) when a new repository is being installed or when an uninstalled repository is being reinstalled.
+    """Create or update a tool_dependency record in the Galaxy database."""
+    # Called from Galaxy (never the tool shed) when a new repository is being installed or when an uninstalled
+    # repository is being reinstalled.
     context = app.install_model.context
     # First see if an appropriate tool_dependency record exists for the received tool_shed_repository.
     if version:
@@ -51,7 +53,8 @@ def create_or_update_tool_dependency( app, tool_shed_repository, name, version, 
     else:
         tool_dependency = get_tool_dependency_by_name_type_repository( app, tool_shed_repository, name, type )
     if tool_dependency:
-        # In some cases we should not override the current status of an existing tool_dependency, so do so only if set_status is True.
+        # In some cases we should not override the current status of an existing tool_dependency, so do so only
+        # if set_status is True.
         if set_status:
             if str( tool_dependency.status ) != str( status ):
                 debug_msg = 'Updating an existing record for version %s of tool dependency %s for revision %s of repository %s ' % \
@@ -581,8 +584,15 @@ def sync_database_with_file_system( app, tool_shed_repository, tool_dependency_n
     """
     # This method should be reached very rarely.  It implies that either the Galaxy environment became corrupted (i.e.,
     # the database records for installed tool dependencies is not synchronized with tool dependencies on disk) or the Tool
-    # Shed's install and test framework is running.
-    sa_session = app.install_model.context.current
+    # Shed's install and test framework is running.  The Tool Shed's install and test framework which installs repositories
+    # in 2 stages, those of type tool_dependency_definition followed by those containing valid tools and tool functional
+    # test components.
+    log.debug( "Synchronizing the database with the file system..." )
+    try:
+        log.debug( "The value of app.config.running_functional_tests is: %s" % str( app.config.running_functional_tests ) )
+    except:
+        pass
+    sa_session = app.install_model.context
     can_install_tool_dependency = False
     tool_dependency = get_tool_dependency_by_name_version_type_repository( app,
                                                                            tool_shed_repository,
@@ -616,9 +626,9 @@ def sync_database_with_file_system( app, tool_shed_repository, tool_dependency_n
                 # tool dependencies are not deleted by default, from the "install and test" framework..
                 tool_dependency.status = app.install_model.ToolDependency.installation_status.INSTALLED
             else:
-                error_message = 'The installation directory for this tool dependency had contents, but the database had no record. '
+                error_message = 'The installation directory for this tool dependency had contents but the database had no record. '
                 error_message += 'The installation log may show this tool dependency to be correctly installed, but due to the '
-                error_message += 'missing database record, it is automatically set to Error.'
+                error_message += 'missing database record it is now being set to Error.'
                 tool_dependency.status = app.install_model.ToolDependency.installation_status.ERROR
                 tool_dependency.error_message = error_message
         else:
@@ -635,6 +645,11 @@ def sync_database_with_file_system( app, tool_shed_repository, tool_dependency_n
             can_install_tool_dependency = True
         sa_session.add( tool_dependency )
         sa_session.flush()
+    try:
+        log.debug( "Returning from sync_database_with_file_system with tool_dependency %s, can_install_tool_dependency %s." % \
+            ( str( tool_dependency.name ), str( can_install_tool_dependency ) ) )
+    except Exception, e:
+        log.debug( str( e ) )
     return tool_dependency, can_install_tool_dependency
 
 def tool_dependency_is_orphan( type, name, version, tools ):
