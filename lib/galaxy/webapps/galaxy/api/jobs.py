@@ -22,7 +22,7 @@ class JobController( BaseAPIController, UsesHistoryDatasetAssociationMixin, Uses
     @expose_api
     def index( self, trans, **kwd ):
         """
-        index( trans, state=None )
+        index( trans, state=None, tool_id=None, history_id=None )
         * GET /api/jobs:
             return jobs for current user
 
@@ -30,6 +30,12 @@ class JobController( BaseAPIController, UsesHistoryDatasetAssociationMixin, Uses
         :param  state: limit listing of jobs to those that match one of the included states. If none, all are returned.
         Valid Galaxy job states include:
                 'new', 'upload', 'waiting', 'queued', 'running', 'ok', 'error', 'paused', 'deleted', 'deleted_new'
+
+        :type   tool_id: string or list
+        :param  tool_id: limit listing of jobs to those that match one of the included tool_ids. If none, all are returned.
+
+        :type   history_id: string
+        :param  history_id: limit listing of jobs to those that match the history_id. If none, all are returned.
 
         :rtype:     list
         :returns:   list of dictionaries containing summary job information
@@ -47,6 +53,24 @@ class JobController( BaseAPIController, UsesHistoryDatasetAssociationMixin, Uses
                 for s in state:
                     t.append(  trans.app.model.Job.state == s )
                 query = query.filter( or_( *t ) )
+
+        tool_id = kwd.get( 'tool_id', None )
+        if tool_id is not None:
+            if isinstance( tool_id, basestring ):
+                query = query.filter( trans.app.model.Job.tool_id.like('%' + tool_id + '%') )
+            elif isinstance( tool_id, list ):
+                t = []
+                for s in tool_id:
+                    t.append(  trans.app.model.Job.tool_id.like('%' + s + '%') )
+                query = query.filter( or_( *t ) )
+
+        history_id = kwd.get( 'history_id', None )
+        if history_id is not None:
+            try:
+                decoded_history_id = trans.security.decode_id(history_id)
+                query = query.filter( trans.app.model.Job.history_id == decoded_history_id )
+            except:
+                raise exceptions.ObjectAttributeInvalidException()
 
         out = []
         for job in query.order_by(
