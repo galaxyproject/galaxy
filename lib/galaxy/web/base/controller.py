@@ -596,6 +596,15 @@ class ExportsHistoryMixin:
         history_exp_tool.execute( trans, incoming=params, set_output_hid=True )
 
 
+class ImportsHistoryMixin:
+
+    def queue_history_import( self, trans, archive_type, archive_source ):
+        # Run job to do import.
+        history_imp_tool = trans.app.toolbox.get_tool( '__IMPORT_HISTORY__' )
+        incoming = { '__ARCHIVE_SOURCE__' : archive_source, '__ARCHIVE_TYPE__' : archive_type }
+        history_imp_tool.execute( trans, incoming=incoming )
+
+
 class UsesHistoryDatasetAssociationMixin:
     """
     Mixin for controllers that use HistoryDatasetAssociation objects.

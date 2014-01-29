@@ -14,6 +14,7 @@ from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import error, url_for
 from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesHistoryDatasetAssociationMixin, UsesHistoryMixin
 from galaxy.web.base.controller import ExportsHistoryMixin
+from galaxy.web.base.controller import ImportsHistoryMixin
 from galaxy.web.base.controller import ERROR, INFO, SUCCESS, WARNING
 from galaxy.web.framework.helpers import grids, iff, time_ago
 
@@ -188,7 +189,8 @@ class HistoryAllPublishedGrid( grids.Grid ):
         return query.filter( self.model_class.published == True ).filter( self.model_class.slug != None ).filter( self.model_class.deleted == False )
 
 class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesItemRatings,
-                         UsesHistoryMixin, UsesHistoryDatasetAssociationMixin, ExportsHistoryMixin ):
+                         UsesHistoryMixin, UsesHistoryDatasetAssociationMixin, ExportsHistoryMixin,
+                         ImportsHistoryMixin ):
     @web.expose
     def index( self, trans ):
         return ""
@@ -669,10 +671,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                     # TODO: add support for importing via a file.
                     #.add_input( "file", "Archived History File", "archive_file", value=None, error=None )
                                 )
-        # Run job to do import.
-        history_imp_tool = trans.app.toolbox.get_tool( '__IMPORT_HISTORY__' )
-        incoming = { '__ARCHIVE_SOURCE__' : archive_source, '__ARCHIVE_TYPE__' : archive_type }
-        history_imp_tool.execute( trans, incoming=incoming )
+        self.queue_history_import( trans, archive_type=archive_type, archive_source=archive_source )
         return trans.show_message( "Importing history from '%s'. \
                                     This history will be visible when the import is complete" % archive_source )
 
