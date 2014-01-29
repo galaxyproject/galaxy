@@ -154,6 +154,11 @@ def app_factory( global_conf, **kwargs ):
     webapp.mapper.connect( "set_as_current", "/api/histories/{id}/set_as_current",
         controller="histories", action="set_as_current", conditions=dict( method=["POST"] ) )
 
+    webapp.mapper.connect( "history_archive_export", "/api/histories/{id}/exports",
+        controller="histories", action="archive_export", conditions=dict( method=[ "PUT" ] ) )
+    webapp.mapper.connect( "history_archive_download", "/api/histories/{id}/exports/{jeha_id}",
+        controller="histories", action="archive_download", conditions=dict( method=[ "GET" ] ) )
+
     webapp.mapper.connect( "create_api_key", "/api/users/:user_id/api_key",
         controller="users", action="api_key", user_id=None, conditions=dict( method=["POST"] ) )
 

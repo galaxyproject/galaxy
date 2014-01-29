@@ -14,7 +14,8 @@ class ImportHistoryToolAction( ToolAction ):
         # Create job.
         #
         job = trans.app.model.Job()
-        job.session_id = trans.get_galaxy_session().id
+        session = trans.get_galaxy_session()
+        job.session_id = session and session.id
         job.history_id = trans.history.id
         job.tool_id = tool.id
         job.user_id = trans.user.id
@@ -76,8 +77,13 @@ class ExportHistoryToolAction( ToolAction ):
         # Create the job and output dataset objects
         #
         job = trans.app.model.Job()
-        job.session_id = trans.get_galaxy_session().id
-        job.history_id = trans.history.id
+        session = trans.get_galaxy_session()
+        job.session_id = session and session.id
+        if history:
+            history_id = history.id
+        else:
+            history_id = trans.history.id
+        job.history_id = history_id
         job.tool_id = tool.id
         if trans.user:
             # If this is an actual user, run the job as that individual.  Otherwise we're running as guest.

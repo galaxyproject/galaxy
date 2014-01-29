@@ -593,7 +593,7 @@ class ExportsHistoryMixin:
             'include_deleted': include_deleted
         }
 
-        history_exp_tool.execute( trans, incoming=params, set_output_hid=True )
+        history_exp_tool.execute( trans, incoming=params, history=history, set_output_hid=True )
 
 
 class ImportsHistoryMixin:

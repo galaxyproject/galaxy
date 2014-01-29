@@ -8,21 +8,25 @@ import pkg_resources
 pkg_resources.require( "Paste" )
 from paste.httpexceptions import HTTPBadRequest, HTTPForbidden, HTTPInternalServerError, HTTPException
 
+from galaxy import exceptions
 from galaxy import web
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
+from galaxy.web import _future_expose_api_raw as expose_api_raw
 from galaxy.util import string_as_bool
 from galaxy.util import restore_text
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.base.controller import UsesHistoryMixin
 from galaxy.web.base.controller import UsesTagsMixin
+from galaxy.web.base.controller import ExportsHistoryMixin
 from galaxy.web import url_for
 
 import logging
 log = logging.getLogger( __name__ )
 
 
-class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin ):
+class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin,
+                           ExportsHistoryMixin ):
 
     @expose_api_anonymous
     def index( self, trans, deleted='False', **kwd ):
@@ -328,6 +332,67 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin ):
             return { 'error': str( exception ) }
 
         return changed
+
+    @expose_api
+    def archive_export( self, trans, id, **kwds ):
+        """
+        export_archive( self, trans, id, payload )
+        * PUT /api/histories/{id}/exports:
+            start job (if needed) to create history export for corresponding
+            history.
+
+        :type   id:     str
+        :param  id:     the encoded id of the history to undelete
+
+        :rtype:     dict
+        :returns:   object containing url to fetch export from.
+        """
+        # PUT instead of POST because multiple requests should just result
+        # in one object being created.
+        history_id = id
+        history = self.get_history( trans, history_id, check_ownership=False, check_accessible=True )
+        jeha = history.latest_export
+        up_to_date = jeha and jeha.up_to_date
+        if not up_to_date:
+            # Need to create new JEHA + job.
+            gzip = kwds.get( "gzip", True )
+            include_hidden = kwds.get( "include_hidden", False )
+            include_deleted = kwds.get( "include_deleted", False )
+            self.queue_history_export( trans, history, gzip=gzip, include_hidden=include_hidden, include_deleted=include_deleted )
+
+        if up_to_date and jeha.ready:
+            jeha_id = trans.security.encode_id( jeha.id )
+            return dict( download_url=url_for( "history_archive_download", id=history_id, jeha_id=jeha_id ) )
+        else:
+            # Valid request, just resource is not ready yet.
+            trans.response.status = "202 Accepted"
+            return ''
+
+    @expose_api_raw
+    def archive_download( self, trans, id, jeha_id, **kwds ):
+        """
+        export_download( self, trans, id, jeha_id )
+        * GET /api/histories/{id}/exports/{jeha_id}:
+            If ready and available, return raw contents of exported history.
+            Use/poll "PUT /api/histories/{id}/exports" to initiate the creation
+            of such an export - when ready that route will return 200 status
+            code (instead of 202) with a JSON dictionary containing a
+            `download_url`.
+        """
+        # Seems silly to put jeha_id in here, but want GET to be immuatable?
+        # and this is being accomplished this way.
+        history = self.get_history( trans, id, check_ownership=False, check_accessible=True )
+        matching_exports = filter( lambda e: trans.security.encode_id( e.id ) == jeha_id, history.exports )
+        if not matching_exports:
+            raise exceptions.ObjectNotFound()
+
+        jeha = matching_exports[ 0 ]
+        if not jeha.ready:
+            # User should not have been given this URL, PUT export should have
+            # return a 202.
+            raise exceptions.MessageException( "Export not available or not yet ready." )
+
+        return self.serve_ready_history_export( trans, jeha )
 
     def _validate_and_parse_update_payload( self, payload ):
         """
