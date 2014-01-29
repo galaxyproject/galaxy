@@ -1067,8 +1067,7 @@ class JobWrapper( object ):
         self.sa_session.flush()
 
         log.debug( 'job %d ended' % self.job_id )
-        # TODO: Also fix "not stderr" below, use final_job_state.
-        delete_files = self.app.config.cleanup_job == 'always' or ( not stderr and self.app.config.cleanup_job == 'onsuccess' )
+        delete_files = self.app.config.cleanup_job == 'always' or ( job.state == job.states.OK and self.app.config.cleanup_job == 'onsuccess' )
         self.cleanup( delete_files=delete_files )
 
     def check_tool_output( self, stdout, stderr, tool_exit_code, job ):
