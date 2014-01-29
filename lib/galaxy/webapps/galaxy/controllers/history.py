@@ -704,24 +704,17 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         #
         # If history has already been exported and it has not changed since export, stream it.
         #
-        jeha = trans.sa_session.query( model.JobExportHistoryArchive ).filter_by( history=history ) \
-                .order_by( model.JobExportHistoryArchive.id.desc() ).first()
-        if jeha and ( jeha.job.state not in [ model.Job.states.ERROR, model.Job.states.DELETED ] ) \
-           and jeha.job.update_time > history.update_time:
-            if jeha.job.state == model.Job.states.OK:
-                # Stream archive.
-                valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-                hname = history.name
-                hname = ''.join(c in valid_chars and c or '_' for c in hname)[0:150]
-                hname = "Galaxy-History-%s.tar" % ( hname )
+        jeha = history.latest_export
+        if jeha and jeha.up_to_date:
+            if jeha.ready:
                 if jeha.compressed:
-                    hname += ".gz"
                     trans.response.set_content_type( 'application/x-gzip' )
                 else:
                     trans.response.set_content_type( 'application/x-tar' )
-                trans.response.headers["Content-Disposition"] = 'attachment; filename="%s"' % ( hname )
+                disposition = 'attachment; filename="%s"' % jeha.export_name
+                trans.response.headers["Content-Disposition"] = disposition
                 return open( trans.app.object_store.get_filename( jeha.dataset ) )
-            elif jeha.job.state in [ model.Job.states.RUNNING, model.Job.states.QUEUED, model.Job.states.WAITING ]:
+            elif jeha.preparing:
                 return trans.show_message( "Still exporting history %(n)s; please check back soon. Link: <a href='%(s)s'>%(s)s</a>" \
                         % ( { 'n' : history.name, 's' : url_for( controller='history', action="export_archive", id=id, qualified=True ) } ) )
 

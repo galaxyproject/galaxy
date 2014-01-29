@@ -647,6 +647,7 @@ class JobExternalOutputMetadata( object ):
             return self.library_dataset_dataset_association
         return None
 
+
 class JobExportHistoryArchive( object ):
     def __init__( self, job=None, history=None, dataset=None, compressed=False, \
                   history_attrs_filename=None, datasets_attrs_filename=None,
@@ -658,6 +659,35 @@ class JobExportHistoryArchive( object ):
         self.history_attrs_filename = history_attrs_filename
         self.datasets_attrs_filename = datasets_attrs_filename
         self.jobs_attrs_filename = jobs_attrs_filename
+
+    @property
+    def up_to_date( self ):
+        """ Return False, if a new export should be generated for corresponding
+        history.
+        """
+        job = self.job
+        return job.state not in [ Job.states.ERROR, Job.states.DELETED ] \
+           and job.update_time > self.history.update_time
+
+    @property
+    def ready( self ):
+        return self.job.state == Job.states.OK
+
+    @property
+    def preparing( self ):
+        return self.job.state in [ Job.states.RUNNING, Job.states.QUEUED, Job.states.WAITING ]
+
+    @property
+    def export_name( self ):
+        # Stream archive.
+        valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+        hname = self.history.name
+        hname = ''.join(c in valid_chars and c or '_' for c in hname)[0:150]
+        hname = "Galaxy-History-%s.tar" % ( hname )
+        if self.compressed:
+            hname += ".gz"
+        return hname
+
 
 class JobImportHistoryArchive( object ):
     def __init__( self, job=None, history=None, archive_dir=None ):
@@ -873,6 +903,11 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
             changed[ key ] = new_val
 
         return changed
+
+    @property
+    def latest_export( self ):
+        exports = self.exports
+        return exports and exports[ 0 ]
 
     @property
     def get_disk_size_bytes( self ):
