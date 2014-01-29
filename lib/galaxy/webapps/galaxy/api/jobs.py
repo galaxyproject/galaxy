@@ -131,7 +131,7 @@ class JobController( BaseAPIController, UsesHistoryDatasetAssociationMixin, Uses
                         raise exceptions.ObjectNotFound( "Dataset %s not found" % ( v[ 'id' ] ) )
                     input_data[k] = dataset.dataset_id
             else:
-                input_param[k] = json.dumps( v )
+                input_param[k] = json.dumps( str(v) )
 
         query = trans.sa_session.query( trans.app.model.Job ).filter(
             trans.app.model.Job.tool_id == tool_id,
