@@ -6,11 +6,17 @@ usage: %prog archive_source dest_dir
     --[url|file] source type, either a URL or a file.
 """
 
-import sys, optparse, tarfile, tempfile, urllib2, math
+import sys
+import optparse
+import tarfile
+import tempfile
+import urllib2
+import math
 
 # Set max size of archive/file that will be handled to be 100 GB. This is
 # arbitrary and should be adjusted as needed.
 MAX_SIZE = 100 * math.pow( 2, 30 )
+
 
 def url_to_file( url, dest_file ):
     """
@@ -18,7 +24,7 @@ def url_to_file( url, dest_file ):
     """
     try:
         url_reader = urllib2.urlopen( url )
-        CHUNK = 10 * 1024 # 10k
+        CHUNK = 10 * 1024  # 10k
         total = 0
         fp = open( dest_file, 'wb')
         while True:
@@ -34,6 +40,7 @@ def url_to_file( url, dest_file ):
     except Exception, e:
         print "Exception getting file from URL: %s" % e, sys.stderr
         return None
+
 
 def unpack_archive( archive_file, dest_dir ):
     """

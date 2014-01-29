@@ -11,14 +11,16 @@ from paste.httpexceptions import HTTPBadRequest, HTTPForbidden, HTTPInternalServ
 from galaxy import web
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
-from galaxy.util import string_as_bool, restore_text
-from galaxy.util.sanitize_html import sanitize_html
-from galaxy.web.base.controller import BaseAPIController, UsesHistoryMixin, UsesTagsMixin
+from galaxy.util import string_as_bool
+from galaxy.util import restore_text
+from galaxy.web.base.controller import BaseAPIController
+from galaxy.web.base.controller import UsesHistoryMixin
+from galaxy.web.base.controller import UsesTagsMixin
 from galaxy.web import url_for
-from galaxy.model.orm import desc
 
 import logging
 log = logging.getLogger( __name__ )
+
 
 class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin ):
 
@@ -46,14 +48,14 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin ):
                 histories = self.get_user_histories( trans, user=trans.user, only_deleted=deleted )
                 #for history in query:
                 for history in histories:
-                    item = history.to_dict(value_mapper={'id':trans.security.encode_id})
+                    item = history.to_dict(value_mapper={'id': trans.security.encode_id})
                     item['url'] = url_for( 'history', id=trans.security.encode_id( history.id ) )
                     rval.append( item )
 
             elif trans.galaxy_session.current_history:
                 #No user, this must be session authentication with an anonymous user.
                 history = trans.galaxy_session.current_history
-                item = history.to_dict(value_mapper={'id':trans.security.encode_id})
+                item = history.to_dict(value_mapper={'id': trans.security.encode_id})
                 item['url'] = url_for( 'history', id=trans.security.encode_id( history.id ) )
                 rval.append(item)
 
@@ -257,7 +259,7 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin ):
             log.exception( 'Histories API, delete: uncaught HTTPInternalServerError: %s, %s\n%s',
                            history_id, str( kwd ), str( http_server_err ) )
             raise
-        except HTTPException, http_exc:
+        except HTTPException:
             raise
         except Exception, exc:
             log.exception( 'Histories API, delete: uncaught exception: %s, %s\n%s',
