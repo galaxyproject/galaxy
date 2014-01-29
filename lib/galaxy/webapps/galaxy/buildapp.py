@@ -228,6 +228,12 @@ def app_factory( global_conf, **kwargs ):
                             path_prefix='/api/libraries/:library_id',
                             parent_resources=dict( member_name='library', collection_name='libraries' ) )
     
+    webapp.mapper.resource( 'job', 
+                            'jobs', 
+                            path_prefix='/api' )
+    webapp.mapper.connect( 'job_search', '/api/jobs/search', controller='jobs', action='search', conditions=dict( method=['POST'] ) )
+
+
     _add_item_extended_metadata_controller( webapp,
                                name_prefix="library_dataset_",
                                path_prefix='/api/libraries/:library_id/contents/:library_content_id' )
