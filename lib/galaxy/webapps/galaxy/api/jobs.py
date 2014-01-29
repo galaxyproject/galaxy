@@ -7,7 +7,6 @@ API operations on a jobs.
 from sqlalchemy import or_, and_
 from sqlalchemy.orm import aliased
 import json
-from galaxy import web
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.base.controller import UsesHistoryDatasetAssociationMixin
@@ -20,7 +19,7 @@ log = logging.getLogger( __name__ )
 
 class JobController( BaseAPIController, UsesHistoryDatasetAssociationMixin, UsesLibraryMixinItems ):
 
-    @web.expose_api
+    @expose_api
     def index( self, trans, **kwd ):
         """
         index( trans, state=None )
@@ -56,7 +55,7 @@ class JobController( BaseAPIController, UsesHistoryDatasetAssociationMixin, Uses
             out.append( self.encode_all_ids( trans, job.to_dict( 'collection' ), True ) )
         return out
 
-    @web.expose_api
+    @expose_api
     def show( self, trans, id, **kwd ):
         """
         show( trans, id )
@@ -124,13 +123,10 @@ class JobController( BaseAPIController, UsesHistoryDatasetAssociationMixin, Uses
         for k, v in inputs.items():
             if isinstance( v, dict ):
                 if 'id' in v:
-                    try:
-                        if 'src' not in v or v[ 'src' ] == 'hda':
-                            dataset = self.get_dataset( trans, v['id'], check_ownership=False, check_accessible=True )
-                        else:
-                            dataset = self.get_library_dataset_dataset_association( trans, v['id'] )
-                    except Exception, e:
-                        return { "error" : str( e ) }
+                    if 'src' not in v or v[ 'src' ] == 'hda':
+                        dataset = self.get_dataset( trans, v['id'], check_ownership=False, check_accessible=True )
+                    else:
+                        dataset = self.get_library_dataset_dataset_association( trans, v['id'] )
                     if dataset is None:
                         raise exceptions.ObjectNotFound( "Dataset %s not found" % ( v[ 'id' ] ) )
                     input_data[k] = dataset.dataset_id
