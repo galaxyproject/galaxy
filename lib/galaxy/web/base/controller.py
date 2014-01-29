@@ -562,6 +562,40 @@ class UsesHistoryMixin( SharableItemSecurityMixin ):
         return changed
 
 
+class ExportsHistoryMixin:
+
+    def serve_ready_history_export( self, trans, jeha ):
+        assert jeha.ready
+        if jeha.compressed:
+            trans.response.set_content_type( 'application/x-gzip' )
+        else:
+            trans.response.set_content_type( 'application/x-tar' )
+        disposition = 'attachment; filename="%s"' % jeha.export_name
+        trans.response.headers["Content-Disposition"] = disposition
+        return open( trans.app.object_store.get_filename( jeha.dataset ) )
+
+    def queue_history_export( self, trans, history, gzip=True, include_hidden=False, include_deleted=False ):
+        # Convert options to booleans.
+        #
+        if isinstance( gzip, basestring ):
+            gzip = ( gzip in [ 'True', 'true', 'T', 't' ] )
+        if isinstance( include_hidden, basestring ):
+            include_hidden = ( include_hidden in [ 'True', 'true', 'T', 't' ] )
+        if isinstance( include_deleted, basestring ):
+            include_deleted = ( include_deleted in [ 'True', 'true', 'T', 't' ] )
+
+        # Run job to do export.
+        history_exp_tool = trans.app.toolbox.get_tool( '__EXPORT_HISTORY__' )
+        params = {
+            'history_to_export': history,
+            'compress': gzip,
+            'include_hidden': include_hidden,
+            'include_deleted': include_deleted
+        }
+
+        history_exp_tool.execute( trans, incoming=params, set_output_hid=True )
+
+
 class UsesHistoryDatasetAssociationMixin:
     """
     Mixin for controllers that use HistoryDatasetAssociation objects.

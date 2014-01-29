@@ -13,6 +13,7 @@ from galaxy.util.odict import odict
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import error, url_for
 from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesHistoryDatasetAssociationMixin, UsesHistoryMixin
+from galaxy.web.base.controller import ExportsHistoryMixin
 from galaxy.web.base.controller import ERROR, INFO, SUCCESS, WARNING
 from galaxy.web.framework.helpers import grids, iff, time_ago
 
@@ -187,7 +188,7 @@ class HistoryAllPublishedGrid( grids.Grid ):
         return query.filter( self.model_class.published == True ).filter( self.model_class.slug != None ).filter( self.model_class.deleted == False )
 
 class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesItemRatings,
-                         UsesHistoryMixin, UsesHistoryDatasetAssociationMixin ):
+                         UsesHistoryMixin, UsesHistoryDatasetAssociationMixin, ExportsHistoryMixin ):
     @web.expose
     def index( self, trans ):
         return ""
@@ -679,16 +680,6 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
     def export_archive( self, trans, id=None, gzip=True, include_hidden=False, include_deleted=False ):
         """ Export a history to an archive. """
         #
-        # Convert options to booleans.
-        #
-        if isinstance( gzip, basestring ):
-            gzip = ( gzip in [ 'True', 'true', 'T', 't' ] )
-        if isinstance( include_hidden, basestring ):
-            include_hidden = ( include_hidden in [ 'True', 'true', 'T', 't' ] )
-        if isinstance( include_deleted, basestring ):
-            include_deleted = ( include_deleted in [ 'True', 'true', 'T', 't' ] )
-
-        #
         # Get history to export.
         #
         if id:
@@ -707,25 +698,12 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         jeha = history.latest_export
         if jeha and jeha.up_to_date:
             if jeha.ready:
-                if jeha.compressed:
-                    trans.response.set_content_type( 'application/x-gzip' )
-                else:
-                    trans.response.set_content_type( 'application/x-tar' )
-                disposition = 'attachment; filename="%s"' % jeha.export_name
-                trans.response.headers["Content-Disposition"] = disposition
-                return open( trans.app.object_store.get_filename( jeha.dataset ) )
+                return self.serve_ready_history_export( trans, jeha )
             elif jeha.preparing:
                 return trans.show_message( "Still exporting history %(n)s; please check back soon. Link: <a href='%(s)s'>%(s)s</a>" \
                         % ( { 'n' : history.name, 's' : url_for( controller='history', action="export_archive", id=id, qualified=True ) } ) )
 
-        # Run job to do export.
-        history_exp_tool = trans.app.toolbox.get_tool( '__EXPORT_HISTORY__' )
-        params = {
-            'history_to_export' : history,
-            'compress' : gzip,
-            'include_hidden' : include_hidden,
-            'include_deleted' : include_deleted }
-        history_exp_tool.execute( trans, incoming = params, set_output_hid = True )
+        self.queue_history_export( trans, history, gzip=gzip, include_hidden=include_hidden, include_deleted=include_deleted )
         url = url_for( controller='history', action="export_archive", id=id, qualified=True )
         return trans.show_message( "Exporting History '%(n)s'. Use this link to download \
                                     the archive or import it to another Galaxy server: \
