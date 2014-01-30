@@ -236,7 +236,7 @@ class DefaultToolAction( object ):
             if not chrom_info:
                 # Default to built-in build.
                 chrom_info = os.path.join( trans.app.config.len_file_path, "%s.len" % input_dbkey )
-            incoming[ "chromInfo" ] = chrom_info
+            incoming[ "chromInfo" ] = os.path.abspath( chrom_info )
         inp_data.update( db_datasets )
 
         # Determine output dataset permission/roles list
