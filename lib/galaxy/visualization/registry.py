@@ -41,23 +41,18 @@ def getattr_recursive( item, attr_key, *args ):
 
     NOTE: also searches dictionaries
     """
-    #print '\n\t getattr_recursive:', item, attr_key
     using_default = len( args ) >= 1
     default = args[0] if using_default else None
-    #print '\t defaults:', using_default, default
 
     for attr_key in attr_key.split( '.' ):
         try:
-            #print '\t\t attr:', attr_key, 'item:', item
             if isinstance( item, dict ):
                 item = item.__getitem__( attr_key )
             else:
                 item = getattr( item, attr_key )
 
         except ( KeyError, AttributeError ), err:
-            #print '\t\t error:', err
             if using_default:
-                #print '\t\t\t default:', default
                 return default
             raise
 
@@ -77,7 +72,6 @@ def hasattr_recursive( item, attr_key ):
         attr_key = last_key
 
     try:
-        #print '\t\t attr:', attr_key, 'item:', item
         if isinstance( item, dict ):
             return item.__contains__( attr_key )
         else:
@@ -87,6 +81,7 @@ def hasattr_recursive( item, attr_key ):
         return False
 
     return True
+
 
 # ------------------------------------------------------------------- the registry
 class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
@@ -118,7 +113,7 @@ class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
         super( VisualizationsRegistry, self ).__init__( app, 'visualizations', **kwargs )
         # what to use to parse query strings into resources/vars for the template
         self.resource_parser = ResourceParser()
-        log.debug( '%s loaded', str( self ) )
+        #log.debug( '%s loaded', str( self ) )
 
     def is_plugin( self, plugin_path ):
         """
@@ -265,8 +260,6 @@ class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
         #precondition: the target_object should be usable by the visualization (accrd. to data_sources)
         # convert params using vis.data_source.to_params
         params = self.get_url_params( trans, target_object, param_data )
-        #for param in params:
-        #    print param
 
         # we want existing visualizations to work as normal but still be part of the registry (without mod'ing)
         #   so generate their urls differently
@@ -294,12 +287,8 @@ class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
             # assign takes precedence (goes last, overwrites)?
             #NOTE this is only one level
 
-            #print 'target_object:', target_object
-            #print 'target_attr:', target_attr
-
             if target_attr and hasattr_recursive( target_object, target_attr ):
                 params[ to_param_name ] = getattr_recursive( target_object, target_attr )
-                #print 'params[ %s ]:' %( to_param_name ), params[ to_param_name ]
 
             if assign:
                 params[ to_param_name ] = assign
@@ -394,7 +383,6 @@ class VisualizationsConfigParser( object ):
         returned[ 'name' ] = xml_tree.attrib.get( 'name', None )
         if not returned[ 'name' ]:
             raise ParsingException( 'visualization needs a name attribute' )
-        print returned[ 'name' ]
 
         # a (for now) text description of what the visualization does
         description = xml_tree.find( 'description' )
@@ -532,7 +520,7 @@ class DataSourceParser( object ):
             raise ParsingException( 'data_source entry requires a model_class' )
 
         if xml_tree.text not in self.ALLOWED_MODEL_CLASSES:
-            log.debug( 'available data_source model_classes: %s' %( str( self.ALLOWED_MODEL_CLASSES ) ) )
+            #log.debug( 'available data_source model_classes: %s' %( str( self.ALLOWED_MODEL_CLASSES ) ) )
             raise ParsingException( 'Invalid data_source model_class: %s' %( xml_tree.text ) )
 
         # look up the model from the model module returning an empty data_source if not found
@@ -760,6 +748,7 @@ class ResourceParser( object ):
 
         If param is required and not present, raises a `KeyError`.
         """
+        #log.debug( 'parse_parameter_dictionary, query_params:\n%s', query_params )
         # first parse any params from any visualizations that were passed
         query_params = self.get_params_from_visualization_param( trans, controller, param_config_dict, query_params )
 
@@ -842,8 +831,8 @@ class ResourceParser( object ):
         return self.parse_parameter( trans, param_config, default )
 
     def get_params_from_visualization_param( self, trans, controller, param_config_dict, query_params ):
-        log.debug( 'parse_visualization_params: %s', param_config_dict )
-        log.debug( '                          : %s', query_params )
+        #log.debug( 'parse_visualization_params: %s', param_config_dict )
+        #log.debug( '                          : %s', query_params )
 
         # first, find the visualization in the parameters if any
         visualization = None
@@ -854,25 +843,25 @@ class ResourceParser( object ):
                 if query_val is None:
                     continue
 
-                log.debug( 'found visualization param: %s, %s', param_name, query_val )
+                #log.debug( 'found visualization param: %s, %s', param_name, query_val )
                 visualization = self.parse_parameter( trans, controller, param_config, query_val )
                 if visualization:
                     break
 
         # if no vis is found, can't get any new params from it: return the original query_params
         if not visualization:
-            log.debug( 'visualization not found' )
+            #log.debug( 'visualization not found' )
             return query_params
-        log.debug( 'found visualization: %s', visualization )
+        #log.debug( 'found visualization: %s', visualization )
 
         # next, attempt to copy any params from the visualizations config
         visualization_config = visualization.latest_revision.config
-        log.debug( '\t config: %s', visualization_config )
+        #log.debug( '\t config: %s', visualization_config )
         params_from_visualization = {}
         for param_name, param_config in param_config_dict.items():
             if param_name in visualization_config:
                 params_from_visualization[ param_name ] = visualization_config[ param_name ]
-        log.debug( 'params_from_visualization: %s', params_from_visualization )
+        #log.debug( 'params_from_visualization: %s', params_from_visualization )
 
         # layer the query_params over the params from the visualization, returning the combined
         params_from_visualization.update( query_params )
@@ -926,7 +915,7 @@ class ResourceParser( object ):
         #TODO: subclass here?
         elif param_type == 'visualization':
             encoded_visualization_id = query_param
-            log.debug( 'visualization param, id : %s', encoded_visualization_id )
+            #log.debug( 'visualization param, id : %s', encoded_visualization_id )
             #TODO:?? some fallback if there's no get_X in controller that's passed?
             parsed_param = controller.get_visualization( trans, encoded_visualization_id,
                 check_ownership=False, check_accessible=True )
@@ -948,5 +937,4 @@ class ResourceParser( object ):
             dbkey = query_param
             parsed_param = galaxy.util.sanitize_html.sanitize_html( dbkey, 'utf-8' )
 
-        #print ( '%s, %s -> %s, %s' %( param_type, query_param, str( type( parsed_param ) ), parsed_param ) )
         return parsed_param

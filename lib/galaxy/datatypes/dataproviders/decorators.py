@@ -18,6 +18,7 @@ DataProvider related decorators.
 
 from functools import wraps
 #from types import MethodType
+import urllib2
 import copy
 
 import logging
@@ -143,8 +144,9 @@ def _parse_query_string_settings( query_kwargs, settings=None ):
         'int'   : int,
         'float' : float,
         'bool'  : bool,
-        'list:str'  : lambda s: list_from_query_string( s ),
-        'list:int'  : lambda s: [ int( i ) for i in list_from_query_string( s ) ],
+        'list:str'      : lambda s: list_from_query_string( s ),
+        'list:escaped'  : lambda s: [ urllib2.unquote( e ) for e in list_from_query_string( s ) ],
+        'list:int'      : lambda s: [ int( i ) for i in list_from_query_string( s ) ],
     }
     settings = settings or {}
     # yay! yet another set of query string parsers! <-- sarcasm

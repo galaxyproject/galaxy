@@ -62,7 +62,7 @@ class PluginManager( object ):
         :param  skip_bad_plugins:    whether to skip plugins that cause
             exceptions when loaded or to raise that exception
         """
-        log.debug( 'PluginManager.init: %s, %s', directories_setting, kwargs )
+        #log.debug( 'PluginManager.init: %s, %s', directories_setting, kwargs )
         self.directories = []
         self.skip_bad_plugins = skip_bad_plugins
         self.plugins = odict.odict()
