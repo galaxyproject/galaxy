@@ -735,6 +735,8 @@ def populate_dependency_install_containers( app, repository, repository_identifi
     repository_name = str( repository.name )
     repository_owner = str( repository.owner )
     repository_changeset_revision = str( repository.changeset_revision )
+    print 'Populating dependency install containers for revision %s of repository %s owned by %s.' % \
+        ( repository_changeset_revision, repository_name, repository_owner )
     processed_successful_repository_installations = install_and_test_statistics_dict.get( 'successful_repository_installations', [] )
     if repository_identifier_tup not in processed_successful_repository_installations:
         install_and_test_statistics_dict[ 'successful_repository_installations' ].append( repository_identifier_tup )
@@ -844,12 +846,17 @@ def populate_install_containers_for_repository_dependencies( app, repository, re
     repository_name = str( repository.name )
     repository_owner = str( repository.owner )
     repository_changeset_revision = str( repository.changeset_revision )
+    print 'Potentially populating install containers for repository dependencies of revision %s of repository %s owned by %s.' % \
+        ( repository_changeset_revision, repository_name, repository_owner )
     repository_dependencies_dicts, error_message = get_repository_dependencies_dicts( galaxy_tool_shed_url, repository_metadata_id )
     if error_message:
-        print 'Cannot check or populate repository dependency install containers for version %s of repository %s owned by %s ' % \
+        print 'Cannot check or populate repository dependency install containers for revision %s of repository %s owned by %s ' % \
             ( repository_changeset_revision, repository_name, repository_owner )
         print 'due to the following error getting repository_dependencies_dicts:\n%s' % str( error_message )
     else:
+        if not repository_dependencies_dicts:
+            print 'Revision %s of repository %s owned by %s has no repository dependencies.' % \
+                ( repository_changeset_revision, repository_name, repository_owner )
         for repository_dependencies_dict in repository_dependencies_dicts:
             if not isinstance( repository_dependencies_dict, dict ):
                 print 'Skipping invalid repository_dependencies_dict: %s' % str( repository_dependencies_dict )
@@ -951,7 +958,7 @@ def populate_install_containers_for_repository_dependencies( app, repository, re
                                                                                   can_update_tool_shed )
                         print 'Result of inserting tool_test_results for revision %s of repository %s owned by %s:\n%s' % \
                             ( changeset_revision, name, owner, str( response_dict ) )
-                        print'============================================================='
+                        print'\n============================================================='
                     else:
                         # The required repository's installation failed.
                         tool_test_results_dict[ 'installation_errors' ][ 'current_repository' ] = str( required_repository.error_message )
@@ -965,7 +972,7 @@ def populate_install_containers_for_repository_dependencies( app, repository, re
                                                                                   can_update_tool_shed )
                         print 'Result of inserting tool_test_results for revision %s of repository %s owned by %s:\n%s' % \
                             ( changeset_revision, name, owner, str( response_dict ) )
-                        print'============================================================='
+                        print'\n============================================================='
                 else:
                     print 'Cannot retrieve revision %s of required repository %s owned by %s from the database ' % \
                         ( changeset_revision, name, owner )
@@ -1056,7 +1063,7 @@ def save_test_results_for_changeset_revision( url, tool_test_results_dicts, tool
             name = str( name )
             owner = str( owner )
             changeset_revision = str( changeset_revision )
-            print '============================================================='
+            print '\n============================================================='
             print 'Inserting the following into tool_test_results for revision %s of repository %s owned by %s:\n%s' % \
                 ( changeset_revision, name, owner, str( tool_test_results_dict ) )
             print 'Updating tool_test_results for repository_metadata id %s.' % metadata_revision_id

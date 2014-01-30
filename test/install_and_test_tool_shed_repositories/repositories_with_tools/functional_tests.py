@@ -251,6 +251,19 @@ def install_and_test_repositories( app, galaxy_shed_tools_dict, galaxy_shed_tool
                                                                                                repository_identifier_tup,
                                                                                                install_and_test_statistics_dict,
                                                                                                tool_test_results_dict )
+                        if params.get( 'test_install_error', False ):
+                            # The repository was successfully installed, but one or more dependencies had installation errors,
+                            # so we'll populate the test result containers since we cannot execute any tests.
+                            response_dict = \
+                                install_and_test_base_util.save_test_results_for_changeset_revision( install_and_test_base_util.galaxy_tool_shed_url,
+                                                                                                     tool_test_results_dicts,
+                                                                                                     tool_test_results_dict,
+                                                                                                     repository_dict,
+                                                                                                     params,
+                                                                                                     can_update_tool_shed )
+                            print 'Result of inserting tool_test_results for revision %s of repository %s owned by %s:\n%s' % \
+                                ( changeset_revision, name, owner, str( response_dict ) )
+                            print'\n============================================================='
                         # Populate the installation containers (success or error) for the repository's immediate repository
                         # dependencies whose containers are not yet populated.
                         install_and_test_base_util.populate_install_containers_for_repository_dependencies( app,
@@ -266,6 +279,10 @@ def install_and_test_repositories( app, galaxy_shed_tools_dict, galaxy_shed_tool
                             print 'Cannot execute tests for tools in revision %s of repository %s owned by %s ' % \
                                 ( changeset_revision, name, owner )
                             print 'because one or more dependencies has installation errors.'
+                            # The repository was installed successfully, but one or more dependencies had installation errors.  Since
+                            # we cannot test the tools due to these errors, we'll remove tests and tools were created during the repository
+                            # installation process so nose will not discover them and attempt to execute them.
+                            remove_tests( app )
                         else:
                             print 'Revision %s of repository %s owned by %s installed successfully, so running tool tests.' % \
                                 ( changeset_revision, name, owner )
@@ -279,6 +296,9 @@ def install_and_test_repositories( app, galaxy_shed_tools_dict, galaxy_shed_tool
                                                          from_json_string( file( galaxy_shed_tools_dict, 'r' ).read() ) )
                             # If the repository has a test-data directory we write the generated shed_tools_dict to a temporary
                             # file so the functional test framework can find it.
+                            # TODO: Eliminate the need for this shed_tools_dict since it grows large over the course of each test run.
+                            # If it cannot be eliminated altogether, reinitialize it with each new repository install so at this point
+                            # it contains only entries for the current repository dependency hierarchy being tested.
                             file( galaxy_shed_tools_dict, 'w' ).write( to_json_string( shed_tools_dict ) )
                             print 'Saved generated shed_tools_dict to %s\nContents: %s' % ( galaxy_shed_tools_dict, shed_tools_dict )
                             try:
@@ -605,6 +625,7 @@ def test_repository_tools( app, repository, repository_dict, tool_test_results_d
     owner = str( repository.owner )
     changeset_revision = str( repository.changeset_revision )
     repository_identifier_tup = ( name, owner, changeset_revision )
+    print 'Testing tools contained in revision %s of repository %s owned by %s.' % ( changeset_revision, name, owner )
     # Generate the test methods for this installed repository. We need to pass testing_shed_tools=True here
     # or twill will look in $GALAXY_HOME/test-data for test data, which may result in missing or invalid test
     # files.
