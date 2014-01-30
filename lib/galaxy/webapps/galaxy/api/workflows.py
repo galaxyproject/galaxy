@@ -214,19 +214,12 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin):
                 step.state = step.module.state
 
                 # Update step parameters as directed by payload's parameter mapping.
-                if step.tool_id in param_map:
-                    param_dict = param_map[ step.tool_id ]
-                    step_id = param_dict.get( 'step_id', '' )
-
+                param_dict = param_map.get(str(step.id), param_map.get(step.tool_id))
+                if param_dict is not None:
                     # Backward compatibility: convert param/value dict to new 'name': 'value' format.
                     if 'param' in param_dict and 'value' in param_dict:
                         param_dict[ param_dict['param'] ] = param_dict['value']
-
-                    # Update step if there's no step id (i.e. all steps with tool are
-                    # updated) or update if step ids match.
-                    if not step_id or ( step_id and int( step_id ) == step.id ):
-                        for name, value in param_dict.items():
-                            step.state.inputs[ name ] = value
+                    step.state.inputs.update(param_dict)
 
                 if step.tool_errors:
                     trans.response.status = 400
