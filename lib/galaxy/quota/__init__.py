@@ -138,7 +138,11 @@ class QuotaAgent( NoQuotaAgent ):
         # get the usage, if it wasn't passed
         if usage is False:
             usage = self.get_usage( trans, user, history )
-        return min( ( int( float( usage ) / quota * 100 ), 100 ) )
+        try:
+            return min( ( int( float( usage ) / quota * 100 ), 100 ) )
+        except ZeroDivisionError:
+            return 100
+
 
     def set_entity_quota_associations( self, quotas=[], users=[], groups=[], delete_existing_assocs=True ):
         for quota in quotas:
