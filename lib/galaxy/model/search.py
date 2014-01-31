@@ -407,7 +407,8 @@ class WorkflowView(ViewQueryBaseClass):
     FIELDS = {
         'name': ViewField('name', sqlalchemy_field=(StoredWorkflow, "name")),
         'id': ViewField('id', sqlalchemy_field=(StoredWorkflow, "id"), id_decode=True),
-        'tag': ViewField('tag', handler=workflow_tag_handler)
+        'tag': ViewField('tag', handler=workflow_tag_handler),
+        'deleted': ViewField('deleted', sqlalchemy_field=(StoredWorkflow, "deleted")),
     }
 
     def search(self, trans):
