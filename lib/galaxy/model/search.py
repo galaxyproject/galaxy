@@ -376,7 +376,8 @@ class HistoryView(ViewQueryBaseClass):
         'name': ViewField('name', sqlalchemy_field=(History, "name")),
         'id': ViewField('id', sqlalchemy_field=(History, "id"), id_decode=True),
         'tag': ViewField("tag", handler=history_handle_tag),
-        'annotation': ViewField("annotation", handler=history_handle_annotation)
+        'annotation': ViewField("annotation", handler=history_handle_annotation),
+        'deleted': ViewField('deleted', sqlalchemy_field=(History, "deleted"))
     }
 
     def search(self, trans):
