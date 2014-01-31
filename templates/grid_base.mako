@@ -97,7 +97,7 @@
         'url'                           : url(dict())
     }
 
-    # add refresh frames
+    ## add refresh frames
     if refresh_frames:
         self.grid_config['refresh_frames'] = refresh_frames
 
