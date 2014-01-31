@@ -104,6 +104,7 @@ class HistoryListGrid( grids.Grid ):
     preserve_state = False
     use_async = True
     use_paging = True
+    info_text = "Histories that have been deleted for more than a time period specified by the Galaxy administrator(s) may be permanently deleted."
 
     def get_current_item( self, trans, **kwargs ):
         return trans.get_history()

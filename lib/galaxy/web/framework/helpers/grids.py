@@ -41,6 +41,7 @@ class Grid( object ):
     cur_sort_key_pref_name = ".sort_key"
     pass_through_operations = {}
     legend = None
+    info_text = None
     def __init__( self ):
         # Determine if any multiple row operations are defined
         self.has_multiple_item_operations = False
@@ -286,6 +287,7 @@ class Grid( object ):
                                     url = url,
                                     status = status,
                                     message = message,
+                                    info_text=self.info_text,
                                     use_panels=self.use_panels,
                                     use_hide_message=self.use_hide_message,
                                     advanced_search=self.advanced_search,
