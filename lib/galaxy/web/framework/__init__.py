@@ -37,6 +37,7 @@ import mako.template
 import mako.lookup
 import mako.runtime
 
+pkg_resources.require( "pytz" ) # Used by Babel.
 pkg_resources.require( "Babel" )
 from babel.support import Translations
 from babel import Locale, UnknownLocaleError
