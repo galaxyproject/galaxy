@@ -548,16 +548,16 @@ return {
                 if (size < 20) {
                     size = 20;
                 }
-                // +4 to account for search icon/button.
+                // +4 to account for space after placeholder
                 size = size + 4;
             }
             
             // print input field for column
             tmpl +=                 '<span class="search-box">' +
                                         '<input class="search-box-input" id="input-' + column_key + '-filter" name="f-' + column_key + '" type="text" placeholder="' + value + '" size="' + size + '"/>' +
-                                        //'<button type="submit" style="background: transparent; border: none; padding: 4px; margin: 0px;">' +
-                                        //    '<i class="fa fa-plus-circle" style="font-size: 1.2em;"></i>' +
-                                        //'</button>' +
+                                        '<button type="submit" style="background: transparent; border: none; padding: 4px; margin: 0px;">' +
+                                            '<i class="fa fa-plus-circle"></i>' +
+                                        '</button>' +
                                     '</span>' +
                                 '</form>';
         } else {
