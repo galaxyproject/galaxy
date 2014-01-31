@@ -63,7 +63,7 @@ return Backbone.View.extend({
         // update div contents
         this.$el.find('#grid-table-header').html(Templates.header(options));
         this.$el.find('#grid-table-body').html(Templates.body(options));
-        this.$el.find('#grid-table-footer').html(Templates.footer(this.grid, options));
+        this.$el.find('#grid-table-footer').html(Templates.footer(options));
         
         // update message
         if (options.message) {
