@@ -43,7 +43,7 @@ class SearchController( BaseAPIController, SharableItemSecurityMixin ):
                         elif type( item ) in [ trans.app.model.Job ]:
                             if item.used_id == trans.user or trans.user_is_admin():
                                 append = True
-                        elif type( item ) in [ trans.app.model.Page ]:
+                        elif type( item ) in [ trans.app.model.Page, trans.app.model.StoredWorkflow ]:
                             try:
                                 if self.security_check( trans, item, False, True):
                                     append = True
