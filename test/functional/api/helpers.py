@@ -3,7 +3,11 @@ from json import dumps
 from json import loads
 from pkg_resources import resource_string
 
+# Simple workflow that takes an input and call cat wrapper on it.
 workflow_str = resource_string( __name__, "test_workflow_1.ga" )
+# Simple workflow that takes an input and filters with random lines twice in a
+# row - first grabbing 8 lines at random and then 6.
+workflow_random_x2_str = resource_string( __name__, "test_workflow_2.ga" )
 
 
 class TestsDatasets:
@@ -68,8 +72,8 @@ class WorkflowPopulator( object ):
     def __init__( self, api_test_case ):
         self.api_test_case = api_test_case
 
-    def load_workflow( self, name, add_pja=False ):
-        workflow = loads( workflow_str )
+    def load_workflow( self, name, content=workflow_str, add_pja=False ):
+        workflow = loads( content )
         workflow[ "name" ] = name
         if add_pja:
             tool_step = workflow[ "steps" ][ "2" ]
@@ -79,6 +83,9 @@ class WorkflowPopulator( object ):
                 action_arguments=dict( newname="the_new_name" ),
             )
         return workflow
+
+    def load_random_x2_workflow( self, name ):
+        return self.load_workflow( name, content=workflow_random_x2_str )
 
     def simple_workflow( self, name, **create_kwds ):
         workflow = self.load_workflow( name )

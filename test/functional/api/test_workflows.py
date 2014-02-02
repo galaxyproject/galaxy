@@ -67,6 +67,31 @@ class WorkflowsApiTestCase( api.ApiTestCase, TestsDatasets ):
         self._assert_status_code_is( run_workflow_response, 200 )
         self._wait_for_history( history_id, assert_ok=True )
 
+    def test_run_replace_params_by_tool( self ):
+        workflow_request, history_id = self._setup_random_x2_workflow( "test_for_replace_tool_params" )
+        workflow_request[ "parameters" ] = dumps( dict( random_lines1=dict( num_lines=5 ) ) )
+        run_workflow_response = self._post( "workflows", data=workflow_request )
+        self._assert_status_code_is( run_workflow_response, 200 )
+        self._wait_for_history( history_id, assert_ok=True )
+        # Would be 8 and 6 without modification
+        self.__assert_lines_hid_line_count_is( history_id, 2, 5 )
+        self.__assert_lines_hid_line_count_is( history_id, 3, 5 )
+
+    def test_run_replace_params_by_steps( self ):
+        workflow_request, history_id = self._setup_random_x2_workflow( "test_for_replace_step_params" )
+        workflow_summary_response = self._get( "workflows/%s" % workflow_request[ "workflow_id" ] )
+        self._assert_status_code_is( workflow_summary_response, 200 )
+        steps = workflow_summary_response.json()[ "steps" ]
+        last_step_id = str( max( map( int, steps.keys() ) ) )
+        params = dumps( { last_step_id: dict( num_lines=5 ) } )
+        workflow_request[ "parameters" ] = params
+        run_workflow_response = self._post( "workflows", data=workflow_request )
+        self._assert_status_code_is( run_workflow_response, 200 )
+        self._wait_for_history( history_id, assert_ok=True )
+        # Would be 8 and 6 without modification
+        self.__assert_lines_hid_line_count_is( history_id, 2, 8 )
+        self.__assert_lines_hid_line_count_is( history_id, 3, 5 )
+
     def test_pja_import_export( self ):
         workflow = self.workflow_populator.load_workflow( name="test_for_pja_import", add_pja=True )
         uploaded_workflow_id = self.workflow_populator.create_workflow( workflow )
@@ -94,9 +119,7 @@ class WorkflowsApiTestCase( api.ApiTestCase, TestsDatasets ):
 
     def _setup_workflow_run( self, workflow ):
         uploaded_workflow_id = self.workflow_populator.create_workflow( workflow )
-        workflow_show_resposne = self._get( "workflows/%s" % uploaded_workflow_id )
-        self._assert_status_code_is( workflow_show_resposne, 200 )
-        workflow_inputs = workflow_show_resposne.json()[ "inputs" ]
+        workflow_inputs = self._workflow_inputs( uploaded_workflow_id )
         step_1 = step_2 = None
         for key, value in workflow_inputs.iteritems():
             label = value[ "label" ]
@@ -117,12 +140,44 @@ class WorkflowsApiTestCase( api.ApiTestCase, TestsDatasets ):
         )
         return workflow_request, history_id
 
+    def _setup_random_x2_workflow( self, name ):
+        workflow = self.workflow_populator.load_random_x2_workflow( name )
+        uploaded_workflow_id = self.workflow_populator.create_workflow( workflow )
+        workflow_inputs = self._workflow_inputs( uploaded_workflow_id )
+        key = workflow_inputs.keys()[ 0 ]
+        history_id = self._new_history()
+        ten_lines = "\n".join( map( str, range( 10 ) ) )
+        hda1 = self._new_dataset( history_id, content=ten_lines )
+        workflow_request = dict(
+            history="hist_id=%s" % history_id,
+            workflow_id=uploaded_workflow_id,
+            ds_map=dumps( {
+                key: self._ds_entry(hda1),
+            } ),
+        )
+        return workflow_request, history_id
+
+    def _workflow_inputs( self, uploaded_workflow_id ):
+        workflow_show_resposne = self._get( "workflows/%s" % uploaded_workflow_id )
+        self._assert_status_code_is( workflow_show_resposne, 200 )
+        workflow_inputs = workflow_show_resposne.json()[ "inputs" ]
+        return workflow_inputs
+
     def _ds_entry( self, hda ):
         return dict( src="hda", id=hda[ "id" ] )
 
     def _assert_user_has_workflow_with_name( self, name ):
         names = self.__workflow_names()
         assert name in names, "No workflows with name %s in users workflows <%s>" % ( name, names )
+
+    def __assert_lines_hid_line_count_is( self, history, hid, lines ):
+        contents_url = "histories/%s/contents" % history
+        history_contents_response = self._get( contents_url )
+        self._assert_status_code_is( history_contents_response, 200 )
+        hda_summary = filter( lambda hc: hc[ "hid" ] == hid, history_contents_response.json() )[ 0 ]
+        hda_info_response = self._get( "%s/%s" % ( contents_url, hda_summary[ "id" ] ) )
+        self._assert_status_code_is( hda_info_response, 200 )
+        self.assertEquals( hda_info_response.json()[ "metadata_data_lines" ], lines )
 
     def __workflow_names( self ):
         index_response = self._get( "workflows" )
