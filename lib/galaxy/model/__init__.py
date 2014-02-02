@@ -2448,8 +2448,8 @@ class UCI( object ):
 
 class StoredWorkflow( object, Dictifiable):
 
-    dict_collection_visible_keys = ( 'id', 'name', 'published' )
-    dict_element_visible_keys = ( 'id', 'name', 'published' )
+    dict_collection_visible_keys = ( 'id', 'name', 'published', 'deleted' )
+    dict_element_visible_keys = ( 'id', 'name', 'published', 'deleted' )
 
     def __init__( self ):
         self.id = None
