@@ -2643,13 +2643,7 @@ class SharableMixin:
                 item_name = item.name
             elif hasattr( item, 'title' ):
                 item_name = item.title
-            # Replace whitespace with '-'
-            slug_base = re.sub( "\s+", "-", item_name.lower() )
-            # Remove all non-alphanumeric characters.
-            slug_base = re.sub( "[^a-zA-Z0-9\-]", "", slug_base )
-            # Remove trailing '-'.
-            if slug_base.endswith('-'):
-                slug_base = slug_base[:-1]
+            slug_base = util.ready_name_for_url( item_name.lower() )
         else:
             slug_base = cur_slug
 

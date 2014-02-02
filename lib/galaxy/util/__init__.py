@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Utility functions used systemwide.
 
@@ -389,6 +390,28 @@ def sanitize_for_filename( text, default=None ):
             return sanitize_for_filename( str( unique_id() ) )
         return default
     return out
+
+
+def ready_name_for_url( raw_name ):
+    """ General method to convert a string (i.e. object name) to a URL-ready
+    slug.
+
+    >>> ready_name_for_url( "My Cool Object" )
+    'My-Cool-Object'
+    >>> ready_name_for_url( "!My Cool Object!" )
+    'My-Cool-Object'
+    >>> ready_name_for_url( "Hello₩◎ґʟⅾ" )
+    'Hello'
+    """
+
+    # Replace whitespace with '-'
+    slug_base = re.sub( "\s+", "-", raw_name )
+    # Remove all non-alphanumeric characters.
+    slug_base = re.sub( "[^a-zA-Z0-9\-]", "", slug_base )
+    # Remove trailing '-'.
+    if slug_base.endswith('-'):
+        slug_base = slug_base[:-1]
+    return slug_base
 
 
 def in_directory( file, directory ):

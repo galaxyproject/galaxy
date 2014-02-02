@@ -27,6 +27,7 @@ from galaxy.datatypes.metadata import MetadataCollection
 from galaxy.model.item_attrs import Dictifiable, UsesAnnotations
 from galaxy.security import get_permitted_actions
 from galaxy.util import is_multi_byte, nice_size, Params, restore_text, send_mail
+from galaxy.util import ready_name_for_url
 from galaxy.util.bunch import Bunch
 from galaxy.util.hash_util import new_secure_hash
 from galaxy.util.directory_hash import directory_hash_id
@@ -680,9 +681,7 @@ class JobExportHistoryArchive( object ):
     @property
     def export_name( self ):
         # Stream archive.
-        valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-        hname = self.history.name
-        hname = ''.join(c in valid_chars and c or '_' for c in hname)[0:150]
+        hname = ready_name_for_url( self.history.name )
         hname = "Galaxy-History-%s.tar" % ( hname )
         if self.compressed:
             hname += ".gz"
