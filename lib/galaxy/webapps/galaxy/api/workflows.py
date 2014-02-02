@@ -28,7 +28,7 @@ def _update_step_parameters(step, param_map):
       PARAM_MAP = {STEP_ID: PARAM_DICT, ...}
       PARAM_DICT = {NAME: VALUE, ...}
 
-    For backwards compatibility, the following (deprecated) formats is
+    For backwards compatibility, the following (deprecated) format is
     also supported for ``param_map``::
 
       PARAM_MAP = {TOOL_ID: PARAM_DICT, ...}
