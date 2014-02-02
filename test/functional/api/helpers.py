@@ -1,5 +1,9 @@
 import time
 from json import dumps
+from json import loads
+from pkg_resources import resource_string
+
+workflow_str = resource_string( __name__, "test_workflow_1.ga" )
 
 
 class TestsDatasets:
@@ -56,3 +60,35 @@ class TestsDatasets:
             history_id=history_id,
             **kwds
         )
+
+
+class WorkflowPopulator( object ):
+    # Impulse is to make this a Mixin, but probably better as an object.
+
+    def __init__( self, api_test_case ):
+        self.api_test_case = api_test_case
+
+    def load_workflow( self, name, add_pja=False ):
+        workflow = loads( workflow_str )
+        workflow[ "name" ] = name
+        if add_pja:
+            tool_step = workflow[ "steps" ][ "2" ]
+            tool_step[ "post_job_actions" ][ "RenameDatasetActionout_file1" ] = dict(
+                action_type="RenameDatasetAction",
+                output_name="out_file1",
+                action_arguments=dict( newname="the_new_name" ),
+            )
+        return workflow
+
+    def simple_workflow( self, name, **create_kwds ):
+        workflow = self.load_workflow( name )
+        return self.create_workflow( workflow, **create_kwds )
+
+    def create_workflow( self, workflow, **create_kwds ):
+        data = dict(
+            workflow=dumps( workflow ),
+            **create_kwds
+        )
+        upload_response = self.api_test_case._post( "workflows/upload", data=data )
+        uploaded_workflow_id = upload_response.json()[ "id" ]
+        return uploaded_workflow_id
