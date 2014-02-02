@@ -71,6 +71,19 @@ def set_datatypes_registry( d_registry ):
     datatypes_registry = d_registry
 
 
+class HasName:
+
+    def get_display_name( self ):
+        """
+        These objects have a name attribute can be either a string or a unicode
+        object. If string, convert to unicode object assuming 'utf-8' format.
+        """
+        name = self.name
+        if isinstance(name, str):
+            name = unicode(name, 'utf-8')
+        return name
+
+
 class User( object, Dictifiable ):
     use_pbkdf2 = True
     """
@@ -716,7 +729,7 @@ class UserGroupAssociation( object ):
         self.user = user
         self.group = group
 
-class History( object, Dictifiable, UsesAnnotations ):
+class History( object, Dictifiable, UsesAnnotations, HasName ):
 
     dict_collection_visible_keys = ( 'id', 'name', 'published', 'deleted' )
     dict_element_visible_keys = ( 'id', 'name', 'published', 'deleted', 'genome_build', 'purged' )
@@ -822,16 +835,6 @@ class History( object, Dictifiable, UsesAnnotations ):
     def activatable_datasets( self ):
         # This needs to be a list
         return [ hda for hda in self.datasets if not hda.dataset.deleted ]
-
-    def get_display_name( self ):
-        """
-        History name can be either a string or a unicode object.
-        If string, convert to unicode object assuming 'utf-8' format.
-        """
-        history_name = self.name
-        if isinstance(history_name, str):
-            history_name = unicode(history_name, 'utf-8')
-        return history_name
 
     def to_dict( self, view='collection', value_mapper = None ):
 
@@ -1604,7 +1607,7 @@ class DatasetInstance( object ):
 
         return msg
 
-class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations ):
+class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations, HasName ):
     """
     Resource class that creates a relation between a dataset and a user history.
     """
@@ -1733,17 +1736,6 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations )
                 assoc.clear( purge = purge )
         for assoc in self.implicitly_converted_parent_datasets:
             assoc.clear( purge = purge, delete_dataset = False )
-
-    def get_display_name( self ):
-        """
-        Return the name of this HDA in either ascii or utf-8 encoding.
-        """
-        # Name can be either a string or a unicode object.
-        #   If string, convert to unicode object assuming 'utf-8' format.
-        hda_name = self.name
-        if isinstance(hda_name, str):
-            hda_name = unicode(hda_name, 'utf-8')
-        return hda_name
 
     def get_access_roles( self, trans ):
         """
@@ -1878,7 +1870,7 @@ class HistoryDatasetAssociationSubset( object ):
         self.subset = subset
         self.location = location
 
-class Library( object, Dictifiable ):
+class Library( object, Dictifiable, HasName ):
     permitted_actions = get_permitted_actions( filter='LIBRARY' )
     dict_collection_visible_keys = ( 'id', 'name' )
     dict_element_visible_keys = ( 'id', 'deleted', 'name', 'description', 'synopsis', 'root_folder_id' )
@@ -1939,15 +1931,8 @@ class Library( object, Dictifiable ):
             if lp.action == trans.app.security_agent.permitted_actions.LIBRARY_ACCESS.action:
                 roles.append( lp.role )
         return roles
-    def get_display_name( self ):
-        # Library name can be either a string or a unicode object. If string,
-        # convert to unicode object assuming 'utf-8' format.
-        name = self.name
-        if isinstance( name, str ):
-            name = unicode( name, 'utf-8' )
-        return name
 
-class LibraryFolder( object, Dictifiable ):
+class LibraryFolder( object, Dictifiable, HasName ):
     dict_element_visible_keys = ( 'id', 'parent_id', 'name', 'description', 'item_count', 'genome_build', 'update_time' )
     def __init__( self, name=None, description=None, item_count=0, order_id=None ):
         self.name = name or "Unnamed folder"
@@ -2012,13 +1997,7 @@ class LibraryFolder( object, Dictifiable ):
     def activatable_library_datasets( self ):
          # This needs to be a list
         return [ ld for ld in self.datasets if ld.library_dataset_dataset_association and not ld.library_dataset_dataset_association.dataset.deleted ]
-    def get_display_name( self ):
-        # Library folder name can be either a string or a unicode object. If string,
-        # convert to unicode object assuming 'utf-8' format.
-        name = self.name
-        if isinstance( name, str ):
-            name = unicode( name, 'utf-8' )
-        return name
+
     def to_dict( self, view='collection' ):
         rval = super( LibraryFolder, self ).to_dict( view=view )
         info_association, inherited = self.get_info_association()
@@ -2129,7 +2108,7 @@ class LibraryDataset( object ):
             rval['metadata_' + name] = val
         return rval
 
-class LibraryDatasetDatasetAssociation( DatasetInstance ):
+class LibraryDatasetDatasetAssociation( DatasetInstance, HasName ):
     def __init__( self,
                   copied_from_history_dataset_association=None,
                   copied_from_library_dataset_dataset_association=None,
@@ -2304,15 +2283,6 @@ class LibraryDatasetDatasetAssociation( DatasetInstance ):
     def templates_json( self, use_name=False ):
         return json.dumps( self.templates_dict( use_name=use_name ) )
 
-    def get_display_name( self ):
-        """
-        LibraryDatasetDatasetAssociation name can be either a string or a unicode object.
-        If string, convert to unicode object assuming 'utf-8' format.
-        """
-        ldda_name = self.name
-        if isinstance( ldda_name, str ):
-            ldda_name = unicode( ldda_name, 'utf-8' )
-        return ldda_name
 
 class ExtendedMetadata( object ):
     def __init__(self, data):
