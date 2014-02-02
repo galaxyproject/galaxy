@@ -19,6 +19,39 @@ from galaxy.jobs.actions.post import ActionBox
 log = logging.getLogger(__name__)
 
 
+def _update_step_parameters(step, param_map):
+    """
+    Update ``step`` parameters based on the user-provided ``param_map`` dict.
+
+    ``param_map`` should be structured as follows::
+
+      PARAM_MAP = {STEP_ID: PARAM_DICT, ...}
+      PARAM_DICT = {NAME: VALUE, ...}
+
+    For backwards compatibility, the following (deprecated) formats is
+    also supported for ``param_map``::
+
+      PARAM_MAP = {TOOL_ID: PARAM_DICT, ...}
+
+    in which case PARAM_DICT affects all steps with the given tool id.
+    If both by-tool-id and by-step-id specifications are used, the
+    latter takes precedence.
+
+    Finally (again, for backwards compatibility), PARAM_DICT can also
+    be specified as::
+
+      PARAM_DICT = {'param': NAME, 'value': VALUE}
+
+    Note that this format allows only one parameter to be set per step.
+    """
+    param_dict = param_map.get(step.tool_id, {}).copy()
+    param_dict.update(param_map.get(str(step.id), {}))
+    if param_dict:
+        if 'param' in param_dict and 'value' in param_dict:
+            param_dict[param_dict['param']] = param_dict['value']
+        step.state.inputs.update(param_dict)
+
+
 class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin):
 
     @web.expose_api
@@ -212,15 +245,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin):
                 # are not persisted so we need to do it every time)
                 step.module.add_dummy_datasets( connections=step.input_connections )
                 step.state = step.module.state
-
-                # Update step parameters as directed by payload's parameter mapping.
-                param_dict = param_map.get(str(step.id), param_map.get(step.tool_id))
-                if param_dict is not None:
-                    # Backward compatibility: convert param/value dict to new 'name': 'value' format.
-                    if 'param' in param_dict and 'value' in param_dict:
-                        param_dict[ param_dict['param'] ] = param_dict['value']
-                    step.state.inputs.update(param_dict)
-
+                _update_step_parameters(step, param_map)
                 if step.tool_errors:
                     trans.response.status = 400
                     return "Workflow cannot be run because of validation errors in some steps: %s" % step_errors
