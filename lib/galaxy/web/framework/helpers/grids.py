@@ -132,7 +132,7 @@ class Grid( object ):
                         if len( column_filter ) == 1:
                             column_filter = column_filter[0]
                     # Interpret ',' as a separator for multiple terms.
-                    elif isinstance( column_filter, basestring ) and column_filter.find(',') != -1:
+                    if isinstance( column_filter, basestring ) and column_filter.find(',') != -1:
                         column_filter = column_filter.split(',')
                         
                     # Check if filter is empty
