@@ -105,6 +105,7 @@ class Grid( object ):
                     column_filter = kwargs.get( "f-" + column.key )
                 elif column.key in base_filter:
                     column_filter = base_filter.get( column.key )
+                
                 # Method (1) combines a mix of strings and lists of strings into a single string and (2) attempts to de-jsonify all strings.
                 def from_json_string_recurse(item):
                     decoded_list = []
@@ -131,15 +132,24 @@ class Grid( object ):
                         if len( column_filter ) == 1:
                             column_filter = column_filter[0]
                     # Interpret ',' as a separator for multiple terms.
-                    if isinstance( column_filter, basestring ) and column_filter.find(',') != -1:
+                    elif isinstance( column_filter, basestring ) and column_filter.find(',') != -1:
                         column_filter = column_filter.split(',')
-                    # If filter criterion is empty, do nothing.
-                    if column_filter == '':
-                        continue
+                        
+                    # Check if filter is empty
+                    if isinstance( column_filter, list ):
+                        # Remove empty strings from filter list
+                        column_filter = [x for x in column_filter if x != '']
+                        if len(column_filter) == 0:
+                            continue;
+                    elif isinstance(column_filter, basestring):
+                        # If filter criterion is empty, do nothing.
+                        if column_filter == '':
+                            continue
+                    
                     # Update query.
                     query = column.filter( trans, trans.user, query, column_filter )
                     # Upate current filter dict.
-                    #Column filters are rendered in various places, sanitize them all here.
+                    # Column filters are rendered in various places, sanitize them all here.
                     cur_filter_dict[ column.key ] = sanitize_text(column_filter)
                     # Carry filter along to newly generated urls; make sure filter is a string so
                     # that we can encode to UTF-8 and thus handle user input to filters.
@@ -200,10 +210,7 @@ class Grid( object ):
             if page_num == 0:
                 # Show all rows in page.
                 total_num_rows = query.count()
-                # persistent page='all'
                 page_num = 1
-                #page_num = 'all'
-                #extra_url_args['page'] = page_num
                 num_pages = 1
             else:
                 # Show a limited number of rows. Before modifying query, get the total number of rows that query

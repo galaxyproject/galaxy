@@ -37,8 +37,8 @@ return Backbone.Model.extend({
             if (cur_val === null || cur_val === undefined) {
                 new_val = value;
             } 
-            else if (typeof(cur_val) == "string") {
-                if (cur_val == "All") {
+            else if (typeof(cur_val) == 'string') {
+                if (cur_val == 'All') {
                     new_val = value;
                 } else {
                     // Replace string with array.
@@ -70,29 +70,16 @@ return Backbone.Model.extend({
             return false;            
         }
 
-        var removed = true;
-        if (typeof(cur_val) === "string") {
-            if (cur_val == "All") {
-                // Unexpected. Throw error?
-                removed = false;
-            } 
-            else {
-                // Remove condition.
-                delete this.attributes.filters[key];
-            }
-        }
-        else {
-            // Filter contains an array of conditions.
+        if (typeof(cur_val) === 'string') {
+            // overwrite/remove condition.
+            this.attributes.filters[key] = '';
+        } else {
+            // filter contains an array of conditions.
             var condition_index = _.indexOf(cur_val, condition);
             if (condition_index !== -1) {
-                cur_val.splice(condition_index, 1);
-            }
-            else {
-                removed = false;
+                cur_val[condition_index] = '';
             }
         }
-
-        return removed;
     },
 
     /**
