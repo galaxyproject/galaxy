@@ -97,9 +97,11 @@ return Backbone.View.extend({
             self._refreshGenome();
         });
         this.model.on('remove', function() {
+            self._destroyExtensionInfo();
             self.remove();
         });
         this.app.collection.on('reset', function() {
+            self._destroyExtensionInfo();
             self.remove();
         });
     },
@@ -263,10 +265,16 @@ return Backbone.View.extend({
         // remove popup
         var self = this
         this.popover_timeout = setTimeout(function() {
-            self.$el.find('#extension_info').popover('destroy');
+            self._destroyExtensionInfo();
         }, this.options.timeout);
     },
     
+    // attach file info popup
+    _destroyExtensionInfo : function()
+    {
+        this.$el.find('#extension_info').popover('destroy');
+    },
+            
     // template
     _template: function(options)
     {
