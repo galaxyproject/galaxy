@@ -292,7 +292,7 @@ return Backbone.View.extend({
         for (key in self.app.select_extension)
             tmpl +=             '<option value="' + self.app.select_extension[key][1] + '">' + self.app.select_extension[key][0] + '</option>';
         tmpl +=             '</select>' +
-                            '&nbsp;<i id="extension_info" class="fa fa-question" style="cursor: pointer;"/>' +
+                            '&nbsp;<i id="extension_info" class="fa fa-search" style="cursor: pointer;"/>' +
                         '</td>';                        
 
         // add genome selector
