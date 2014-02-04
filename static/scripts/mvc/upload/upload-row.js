@@ -1,11 +1,12 @@
 // dependencies
-define(['mvc/upload/upload-model'], function(UploadModel) {
+define(['mvc/upload/upload-model', 'mvc/upload/upload-extensions'], function(UploadModel, UploadExtensions) {
 
 // item view
 return Backbone.View.extend({
     // options
     options: {
-        padding : 8
+        padding : 8,
+        timeout : 2000
     },
     
     // states
@@ -46,6 +47,10 @@ return Backbone.View.extend({
                 self.app.collection.remove(self.model);
             }
         });
+        
+        // handle mouse over
+        it.find('#extension_info').on('mouseover' , function() { self._showExtensionInfo(); })
+                                  .on('mouseleave', function() { self._hideExtensionInfo(); });
 
         // handle text editing event
         it.find('#text-content').on('keyup', function() {
@@ -70,6 +75,7 @@ return Backbone.View.extend({
         // handle extension selection
         it.find('#extension').on('change', function(e) {
             self.model.set('extension', $(e.target).val());
+            self.$el.find('#extension_info').popover('destroy');
         });
         
         // handle space to tabs button
@@ -139,7 +145,7 @@ return Backbone.View.extend({
     // genome
     _refreshGenome: function()
     {
-        // write error message
+        // update genome info on screen
         var genome = this.model.get('genome');
         this.$el.find('#genome').val(genome);
     },
@@ -226,6 +232,41 @@ return Backbone.View.extend({
         return '<strong>' + (Math.round(size) / 10) + '</strong> ' + unit;
     },
     
+    // attach file info popup
+    _showExtensionInfo : function()
+    {
+        // initialize
+        var self = this;
+        var $el = $(this.el).find('#extension_info');
+        var extension = this.model.get('extension');
+        var title = $(this.el).find('#extension').find('option:selected').text();
+        
+        // create popup
+        $el.popover({
+            html: true,
+            title: title,
+            content: UploadExtensions(extension),
+            placement: 'bottom',
+            container: self.$el.parent()
+        });
+        
+        // show popup
+        $el.popover('show');
+        
+        // clear previous timers
+        clearTimeout(this.popover_timeout);
+    },
+
+    // attach file info popup
+    _hideExtensionInfo : function()
+    {
+        // remove popup
+        var self = this
+        this.popover_timeout = setTimeout(function() {
+            self.$el.find('#extension_info').popover('destroy');
+        }, this.options.timeout);
+    },
+    
     // template
     _template: function(options)
     {
@@ -251,6 +292,7 @@ return Backbone.View.extend({
         for (key in self.app.select_extension)
             tmpl +=             '<option value="' + self.app.select_extension[key][1] + '">' + self.app.select_extension[key][0] + '</option>';
         tmpl +=             '</select>' +
+                            '&nbsp;<i id="extension_info" class="fa fa-question" style="cursor: pointer;"/>' +
                         '</td>';                        
 
         // add genome selector

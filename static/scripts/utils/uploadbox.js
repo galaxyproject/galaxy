@@ -12,7 +12,7 @@
         url             : '',
         paramname       : 'content',
         maxfilesize     : 2048,
-        maxfilenumber   : 20,
+        maxfilenumber   : 50,
         dragover        : function() {},
         dragleave       : function() {},
         announce        : function() {},
