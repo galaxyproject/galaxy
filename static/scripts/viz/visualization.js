@@ -1,6 +1,28 @@
 define( ["libs/underscore", "mvc/data", "viz/trackster/util", "utils/config"], function(_, data_mod, util_mod, config_mod) {
 
 /**
+ * Mixin for returning custom JSON representation from toJSON. Class attribute to_json_keys defines a set of attributes 
+ * to include in the representation; to_json_mappers defines mappers for returned objects.
+ */
+var CustomToJSON = {
+    /**
+     * Returns JSON representation of object using to_json_keys and to_json_mappers.
+     */
+    toJSON: function() {
+        var self = this,
+            json = {};
+        _.each(self.constructor.to_json_keys, function(k) {
+            var val = self.get(k);
+            if (k in self.constructor.to_json_mappers) {
+                val = self.constructor.to_json_mappers[k](val, self);
+            }
+            json[k] = val;
+        });
+        return json;
+    }
+};
+
+/**
  * Model, view, and controller objects for Galaxy visualization framework.
  *
  * Models have no references to views, instead using events to indicate state 
@@ -872,7 +894,10 @@ var BrowserBookmarkCollection = Backbone.Collection.extend({
  * A track of data in a genome visualization.
  */
 // TODO: rename to Track and merge with Trackster's Track object.
-var BackboneTrack = Backbone.Model.extend({
+var BackboneTrack = Backbone.Model.extend(CustomToJSON).extend({
+    defaults: {
+        mode: 'Auto'
+    },
 
     initialize: function(options) {
         this.set('dataset', new data_mod.Dataset(options.dataset));
@@ -883,7 +908,7 @@ var BackboneTrack = Backbone.Model.extend({
 
         // Set up some minimal config.
         this.get('config').add( [
-            { key: 'name', value: this.get('name') },
+            { key: 'name', value: this.get('dataset').get('name') },
             { key: 'color' }
         ] );
 
@@ -899,6 +924,34 @@ var BackboneTrack = Backbone.Model.extend({
             dataset: this.get('dataset'),
             init_data: preloaded_data
         }));
+    }
+},
+{
+    // This definition matches that produced by to_dict() methods in tracks.js
+    to_json_keys: [
+        'track_type',
+        'dataset',
+        'prefs',
+        'mode',
+        'filters',
+        'tool_state'
+    ],
+    to_json_mappers: {
+        prefs: function(p, self) {
+            if (_.size(p) === 0) {
+                p = {
+                    name: self.get('config').get('name').get('value'),
+                    color: self.get('config').get('color').get('value')
+                };
+            }
+            return p;
+        },
+        dataset: function(d) {
+            return {
+                id: d.id,
+                hda_ldda: d.get('hda_ldda')
+            };
+        }
     }
 });
 
@@ -938,25 +991,55 @@ var Visualization = Backbone.Model.extend({
 /**
  * A visualization of genome data.
  */
-var GenomeVisualization = Visualization.extend({
+var GenomeVisualization = Visualization.extend(CustomToJSON).extend({
     defaults: _.extend({}, Visualization.prototype.defaults, {
         dbkey: '',
-        tracks: null,
+        drawables: null,
         bookmarks: null,
         viewport: null
     }),
 
     initialize: function(options) {
-        this.set('tracks', new BackboneTrackCollection(options.tracks));
+        // Replace drawables with tracks.
+        this.set('drawables', new BackboneTrackCollection(options.tracks));
+        this.set('config', config_mod.ConfigSettingCollection.from_config_dict(options.prefs || {}));
+        
+        // Clear track and data definitions to avoid storing large objects.
+        this.unset('tracks');
+        this.get('drawables').each(function(d) {
+            d.unset('preloaded_data');
+        });
     },
 
     /**
      * Add a track or array of tracks to the visualization.
      */
     add_tracks: function(tracks) {
-        this.get('tracks').add(tracks);
+        this.get('drawables').add(tracks);
     }
-});
+},
+{
+    // This definition matches that produced by to_dict() methods in tracks.js
+    to_json_keys: [
+        'view',
+        'viewport',
+        'bookmarks'
+    ],
+
+    to_json_mappers: {
+        'view': function(dummy, self) {
+            return {
+                obj_type: 'View',
+                prefs: {
+                    name: self.get('title'),
+                    content_visible: true
+                },
+                drawables: self.get('drawables')
+            };
+        }
+    }
+}
+);
 
 /**
  * Configuration data for a Trackster track.

@@ -143,8 +143,8 @@ var CircsterView = Backbone.View.extend({
         this.chords_views = null;
 
         // When tracks added to/removed from model, update view.
-        this.model.get('tracks').on('add', this.add_track, this);
-        this.model.get('tracks').on('remove', this.remove_track, this);
+        this.model.get('drawables').on('add', this.add_track, this);
+        this.model.get('drawables').on('remove', this.remove_track, this);
         this.get_circular_tracks();
     },
 
@@ -154,7 +154,7 @@ var CircsterView = Backbone.View.extend({
      * Returns tracks to be rendered using circular view.
      */
     get_circular_tracks: function() {
-        return this.model.get('tracks').filter(function(track) {
+        return this.model.get('drawables').filter(function(track) {
             return track.get('track_type') !== 'DiagonalHeatmapTrack';
         });
     },
@@ -163,7 +163,7 @@ var CircsterView = Backbone.View.extend({
      * Returns tracks to be rendered using chords view.
      */
     get_chord_tracks: function() {
-        return this.model.get('tracks').filter(function(track) {
+        return this.model.get('drawables').filter(function(track) {
             return track.get('track_type') === 'DiagonalHeatmapTrack';
         });
     },
@@ -992,41 +992,36 @@ var Circster = Backbone.View.extend(
     
         // setup menu
         var menu = create_icon_buttons_menu([
-        {   icon_class: 'plus-button', title: 'Add tracks', on_click: function()
+        {
+            icon_class: 'plus-button', title: 'Add tracks', on_click: function()
             {
                 visualization.select_datasets(galaxy_config.root + "visualization/list_current_history_datasets", galaxy_config.root + "api/datasets", vis.get('dbkey'), function(tracks)
                 {
                     vis.add_tracks(tracks);
                 });
             }
-        },{
+        },
+        {
             icon_class: 'disk--arrow', title: 'Save', on_click: function()
             {
                 // show saving dialog box
                 Galaxy.modal.show({title: "Saving...", body: "progress" });
      
-                // link configuration
-                var view = galaxy_config.app.viz_config;
-                
                 // send to server
                 $.ajax({
                     url: galaxy_config.root + "visualization/save",
                     type: "POST",
                     dataType: "json",
                     data: {
-                        'id'        : view.vis_id,
-                        'title'     : view.title,
-                        'dbkey'     : view.dbkey,
+                        'id'        : vis.get('vis_id'),
+                        'title'     : vis.get('title'),
+                        'dbkey'     : vis.get('dbkey'),
                         'type'      : 'trackster',
-                        'vis_json'  : JSON.stringify(view)
+                        'vis_json'  : JSON.stringify(vis)
                     }
                 }).success(function(vis_info) {
                     Galaxy.modal.hide();
-                    view.vis_id = vis_info.vis_id;
-                    view.has_changes = false;
-            
-                    // needed to set URL when first saving a visualization
-                    window.history.pushState({}, "", vis_info.url + window.location.hash);
+                    vis.set('vis_id', vis_info.vis_id);
                 }).error(function() {
                     // show dialog
                     Galaxy.modal.show({
@@ -1036,7 +1031,8 @@ var Circster = Backbone.View.extend(
                     });
                 });
             }
-        },{
+        },
+        {
             icon_class: 'cross-circle', title: 'Close', on_click: function()
             {
                 window.location = galaxy_config.root + "visualization/list";
