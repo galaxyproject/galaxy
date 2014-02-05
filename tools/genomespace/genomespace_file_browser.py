@@ -166,7 +166,7 @@ def download_from_genomespace_file_browser( json_parameter_file, genomespace_sit
             while filename in used_filenames:
                 filename = "-%s" % filename
             used_filenames.append( filename )
-            output_filename = os.path.join( datasource_params['__new_file_path__'],  'primary_%i_%s_visible_%s' % ( hda_id, filename, galaxy_ext ) )
+            output_filename = os.path.join( os.getcwd(),  'primary_%i_%s_visible_%s' % ( hda_id, filename, galaxy_ext ) )
             
             metadata_dict = dict( type = 'new_primary_dataset',
                                 base_dataset_id = dataset_id,
