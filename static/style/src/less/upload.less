@@ -1,16 +1,14 @@
 .progress-button {
-    position: absolute;
-    width: 100px;
-    right: 10px;
-    top: 5px;
+    position: relative;
+    width: 31px;
+    height: 21px;
+    top: -4px;
     cursor: pointer;
-    height: 20px;
-    border: 1px solid @input-border;
     -moz-border-radius: @border-radius-base;
     border-radius: @border-radius-base;
 
     .progress {
-        height: 18px;
+        height: 21px;
     }
 
     .progress-bar-danger {
@@ -19,7 +17,6 @@
 
     .progress-bar-success {
         background: @state-success-bg;
-        border : 0px;
     }
 
     .progress-bar-info {
@@ -36,10 +33,11 @@
     
     .label {
         position: absolute;
-        top: 0px;
+        top: 2px;
         width: inherit;
         text-align: center;
         line-height: 19px;
+        font-size: 1.2em;
     }
 }
 

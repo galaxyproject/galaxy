@@ -1250,14 +1250,14 @@ label{font-weight:normal}
 .galaxy-frame .frame .f-close{right:5px;top:3px}
 .galaxy-frame .frame .f-pin{left:6px;top:3px}
 .galaxy-frame .frame .f-resize{background:#fff;width:16px;height:16px;color:#2c3143;right:0px;bottom:0px;text-align:center;line-height:16px;border:0px}
-.progress-button{position:absolute;width:100px;right:10px;top:5px;cursor:pointer;height:20px;border:1px solid #aaa;-moz-border-radius:3px;border-radius:3px}.progress-button .progress{height:18px}
+.progress-button{position:relative;width:31px;height:21px;top:-4px;cursor:pointer;-moz-border-radius:3px;border-radius:3px}.progress-button .progress{height:21px}
 .progress-button .progress-bar-danger{background:#f9c7c5}
-.progress-button .progress-bar-success{background:#aff1af;border:0px}
+.progress-button .progress-bar-success{background:#aff1af}
 .progress-button .progress-bar-info{background:#ffc}
 .progress-button .progress-bar-notransition{-webkit-transition:none;-moz-transition:none;-ms-transition:none;-o-transition:none;transition:none}
-.progress-button .label{position:absolute;top:0px;width:inherit;text-align:center;line-height:19px}
+.progress-button .label{position:absolute;top:2px;width:inherit;text-align:center;line-height:19px;font-size:1.2em}
 .upload-info{font-weight:normal;text-align:center}
-.upload-box{width:100%;height:95%;text-align:center;overflow:scroll;font-size:12px;line-height:1.33;-moz-border-radius:5px;border-radius:5px;border:1px dashed #bfbfbf;padding:10px;overflow-x:hidden;-ms-overflow-style:none}.upload-box .popover{max-width:600px;width:auto}
+.upload-box{width:100%;height:95%;text-align:center;overflow:scroll;font-size:12px;line-height:1.33;-moz-border-radius:5px;border-radius:5px;border:1px dashed #bfbfbf;padding:10px;overflow-x:hidden;-ms-overflow-style:none}.upload-box .popover{max-width:500px;width:auto}
 .upload-box .table{width:100%}
 .upload-box .table th{text-align:center;white-space:nowrap}
 .upload-box .table td{margin:0px;paddign:0px}

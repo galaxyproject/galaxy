@@ -89,12 +89,17 @@ var ProgressButton = Backbone.View.extend({
     
     // template
     _template: function(options) {
-        return  '<div class="progress-button">' +
-                    '<div class="progress">' +
-                        '<div class="progress-bar"></div>' +
+        return  '<div style="float: right">' +
+                    '<div class="progress-button">' +
+                        '<div class="progress">' +
+                            '<div class="progress-bar"></div>' +
+                        '</div>' +
+                        '<div id="label" class="label">' +
+                            '<a class="panel-header-button" href="javascript:void(0)">' +
+                                '<span class="fa fa-upload"></span>' +
+                            '</a>' +
+                        '</div>' +
                     '</div>' +
-                    '<div id="label" class="label">' +
-                        '<div class="fa ' + options.icon + '"></div>&nbsp;' + options.label + '</div>' +
                 '</div>';
     }
 });
