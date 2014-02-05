@@ -9,11 +9,10 @@ from sqlalchemy import desc, or_
 from galaxy import exceptions
 from galaxy import util
 from galaxy import web
-from galaxy.tools.parameters import visit_input_values, DataToolParameter
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web.base.controller import BaseAPIController, url_for, UsesStoredWorkflowMixin
 from galaxy.workflow.modules import module_factory
-from galaxy.jobs.actions.post import ActionBox
+from galaxy.workflow.run import invoke
 
 
 log = logging.getLogger(__name__)
@@ -237,6 +236,14 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin):
         rval = {}
         for step in workflow.steps:
             step_errors = None
+            input_connections_by_name = {}
+            for conn in step.input_connections:
+                input_name = conn.input_name
+                if not input_name in input_connections_by_name:
+                    input_connections_by_name[input_name] = []
+                input_connections_by_name[input_name].append(conn)
+            step.input_connections_by_name = input_connections_by_name
+
             if step.type == 'tool' or step.type is None:
                 step.module = module_factory.from_workflow_step( trans, step )
                 # Check for missing parameters
@@ -259,50 +266,30 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin):
                     return "Workflow cannot be run because an expected input step '%s' has no input dataset." % step.id
                 step.module = module_factory.from_workflow_step( trans, step )
                 step.state = step.module.get_runtime_state()
-            step.input_connections_by_name = dict( ( conn.input_name, conn ) for conn in step.input_connections )
 
         # Run each step, connecting outputs to inputs
-        workflow_invocation = self.app.model.WorkflowInvocation()
-        workflow_invocation.workflow = workflow
         outputs = util.odict.odict()
         rval['history'] = trans.security.encode_id(history.id)
         rval['outputs'] = []
 
         replacement_dict = payload.get('replacement_params', {})
 
-        for step in workflow.steps:
-            job = None
-            if step.type == 'tool' or step.type is None:
-                tool = self.app.toolbox.get_tool( step.tool_id )
-
-                def callback( input, value, prefixed_name, prefixed_label ):
-                    if isinstance( input, DataToolParameter ):
-                        if prefixed_name in step.input_connections_by_name:
-                            conn = step.input_connections_by_name[ prefixed_name ]
-                            return outputs[ conn.output_step.id ][ conn.output_name ]
-                visit_input_values( tool.inputs, step.state.inputs, callback )
-                job, out_data = tool.execute( trans, step.state.inputs, history=history)
-                outputs[ step.id ] = out_data
-
-                for pja in step.post_job_actions:
-                    if pja.action_type in ActionBox.immediate_actions:
-                        ActionBox.execute(trans.app, trans.sa_session, pja, job, replacement_dict=replacement_dict)
-                    else:
-                        job.add_post_job_action(pja)
-
-                for v in out_data.itervalues():
-                    rval['outputs'].append(trans.security.encode_id(v.id))
-            else:
-                #This is an input step.  Use the dataset inputs from ds_map.
-                job, out_data = step.module.execute( trans, step.state)
-                outputs[step.id] = out_data
-                outputs[step.id]['output'] = ds_map[str(step.id)]['hda']
-            workflow_invocation_step = self.app.model.WorkflowInvocationStep()
-            workflow_invocation_step.workflow_invocation = workflow_invocation
-            workflow_invocation_step.workflow_step = step
-            workflow_invocation_step.job = job
-        trans.sa_session.add( workflow_invocation )
+        outputs = invoke(
+            trans=trans,
+            workflow=workflow,
+            target_history=history,
+            replacement_dict=replacement_dict,
+            ds_map=ds_map,
+        )
         trans.sa_session.flush()
+
+        # Build legacy output - should probably include more information from
+        # outputs.
+        for step in workflow.steps:
+            if step.type == 'tool' or step.type is None:
+                for v in outputs[ step.id ].itervalues():
+                    rval[ 'outputs' ].append( trans.security.encode_id( v.id ) )
+
         return rval
 
     @web.expose_api
