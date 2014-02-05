@@ -1373,6 +1373,13 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                         workflow_invocation = model.WorkflowInvocation()
                         workflow_invocation.workflow = workflow
                         outputs = odict()
+
+                        # Build replacement dict for this workflow execution.
+                        replacement_dict = {}
+                        for k, v in kwargs.iteritems():
+                            if k.startswith('wf_parm|'):
+                                replacement_dict[k[8:]] = v
+
                         for i, step in enumerate( workflow.steps ):
                             # Execute module
                             job = None
@@ -1401,10 +1408,6 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                                 # Create new PJA associations with the created job, to be run on completion.
                                 # PJA Parameter Replacement (only applies to immediate actions-- rename specifically, for now)
                                 # Pass along replacement dict with the execution of the PJA so we don't have to modify the object.
-                                replacement_dict = {}
-                                for k, v in kwargs.iteritems():
-                                    if k.startswith('wf_parm|'):
-                                        replacement_dict[k[8:]] = v
                                 for pja in step.post_job_actions:
                                     if pja.action_type in ActionBox.immediate_actions:
                                         ActionBox.execute(trans.app, trans.sa_session, pja, job, replacement_dict)

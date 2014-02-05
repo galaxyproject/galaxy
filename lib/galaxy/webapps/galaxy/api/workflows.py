@@ -267,6 +267,9 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin):
         outputs = util.odict.odict()
         rval['history'] = trans.security.encode_id(history.id)
         rval['outputs'] = []
+
+        replacement_dict = payload.get('replacement_params', {})
+
         for step in workflow.steps:
             job = None
             if step.type == 'tool' or step.type is None:
@@ -281,11 +284,9 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin):
                 job, out_data = tool.execute( trans, step.state.inputs, history=history)
                 outputs[ step.id ] = out_data
 
-                # Do post-job actions.
-                replacement_params = payload.get('replacement_params', {})
                 for pja in step.post_job_actions:
                     if pja.action_type in ActionBox.immediate_actions:
-                        ActionBox.execute(trans.app, trans.sa_session, pja, job, replacement_dict=replacement_params)
+                        ActionBox.execute(trans.app, trans.sa_session, pja, job, replacement_dict=replacement_dict)
                     else:
                         job.add_post_job_action(pja)
 
