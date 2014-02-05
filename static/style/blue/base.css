@@ -1605,46 +1605,46 @@ div.permissionContainer{padding-left:20px}
 .history-panel .dataset:last-child{border-width:1px 0px 1px 0px}
 .history-panel .empty-history-message{display:none;margin:0px 10px 0px 10px}
 .history-panel .tag-button{display:inline-block;height:20px;margin:2px 2px 0px 0px;border:1px solid grey;border-radius:3px 10px 10px 3px;padding:2px 4px 2px 4px;background-color:#EEE;line-height:13px}.history-panel .tag-button .tag-name{margin-right:2px}
-.dataset{border:1px solid #bfbfbf}.dataset .vertical-spacing{margin-bottom:8px}
-.dataset .info-section{border-radius:3px;border:1px solid rgba(153,153,153,0.30000000000000004);padding:4px}
-.dataset .dataset-padding{padding:6px 10px 6px 8px}
-.dataset [class$=messagesmall]{margin:6px 10px 2px 8px;font-size:90%}
-.dataset .help-text{font-weight:normal;color:#555}
-.dataset .dataset-selector{float:left;display:none;width:0px;margin:0 0 -6px 0;padding:5px 0 2px 8px;cursor:pointer;vertical-align:middle}
-.dataset .dataset-title-bar{cursor:pointer;outline:none;padding:6px 10px 6px 8px}
-.dataset .dataset-title-bar .dataset-title{display:inline;font-weight:bold;text-decoration:underline;word-wrap:break-word;word-break:break-all;line-height:16px}
-.dataset .dataset-primary-actions{display:inline-block;float:right;margin:6px 10px 0}.dataset .dataset-primary-actions .icon-btn:not(:last-child){margin:0px;border-radius:0px;border-right:none}
-.dataset .dataset-primary-actions .icon-btn:first-child{margin-right:0px;border-top-left-radius:3px;border-bottom-left-radius:3px}
-.dataset .dataset-primary-actions .icon-btn:last-child{margin-left:0px;border-radius:0px 3px 3px 0px}
-.dataset .dataset-primary-actions .icon-btn{margin-left:2px}
-.dataset .dataset-body{display:none;padding:6px 10px 6px 8px}.dataset .dataset-body [class$=messagesmall]{margin:0px 0px 8px 0px}
-.dataset .dataset-body label{margin:0px;padding:0px;font-weight:normal}
-.dataset .dataset-body .prompt{font-weight:normal;color:#555}
-.dataset .dataset-body .prompt:after{content:':'}
-.dataset .dataset-body .dataset-summary{margin-bottom:8px}.dataset .dataset-body .dataset-summary .dataset-blurb{margin-bottom:2px}
-.dataset .dataset-body .dataset-summary .dataset-datatype,.dataset .dataset-body .dataset-summary .dataset-dbkey{display:inline}.dataset .dataset-body .dataset-summary .dataset-datatype .value,.dataset .dataset-body .dataset-summary .dataset-dbkey .value{font-weight:bold}
-.dataset .dataset-body .dataset-summary .dataset-datatype .value:after{content:',';font-weight:normal;color:#555}
-.dataset .dataset-body .dataset-summary .dataset-dbkey:after{content:' ';display:block;margin-bottom:8px}
-.dataset .dataset-body .dataset-summary .dataset-info{border-radius:3px;border:1px solid rgba(153,153,153,0.30000000000000004);padding:4px}.dataset .dataset-body .dataset-summary .dataset-info .value{white-space:pre-line}
-.dataset .dataset-body .dataset-summary .job-error-text{border-radius:3px;border:1px solid rgba(153,153,153,0.30000000000000004);padding:4px;overflow:auto;white-space:pre}
-.dataset .dataset-body .dataset-actions .left{display:inline-block;float:left}.dataset .dataset-body .dataset-actions .left .icon-btn:not(:last-child){margin:0px;border-radius:0px;border-right:none}
-.dataset .dataset-body .dataset-actions .left .icon-btn:first-child{margin-right:0px;border-top-left-radius:3px;border-bottom-left-radius:3px}
-.dataset .dataset-body .dataset-actions .left .icon-btn:last-child{margin-left:0px;border-radius:0px 3px 3px 0px}
-.dataset .dataset-body .dataset-actions .left .icon-btn{margin-right:2px}
-.dataset .dataset-body .dataset-actions .left:not(:empty){margin-bottom:8px}
-.dataset .dataset-body .dataset-actions .right{float:right}.dataset .dataset-body .dataset-actions .right .icon-btn{margin-left:2px}
-.dataset .dataset-body .tags-display{display:none;margin-bottom:8px}.dataset .dataset-body .tags-display .select2-container{min-width:0px}.dataset .dataset-body .tags-display .select2-container .select2-choices{border-radius:3px}
-.dataset .dataset-body .annotation-display{display:none;margin-bottom:8px}.dataset .dataset-body .annotation-display .annotation{border-radius:3px;border:1px solid rgba(153,153,153,0.30000000000000004);padding:4px;white-space:pre-line}
-.dataset .dataset-body .annotation-display .annotation:empty{height:22px}
-.dataset .dataset-body .annotation-display .annotation:empty:after{position:relative;top:-4px;font-size:10px;font-style:italic;color:grey;content:'Click here to edit annotation'}
-.dataset .dataset-body .annotation-display textarea{margin:0px 0px 2px 0px;display:block;border-radius:3px;width:100%}
-.dataset .dataset-body .dataset-display-applications .display-application:last-child{margin-bottom:8px}
-.dataset .dataset-body .dataset-peek{margin-bottom:8px}.dataset .dataset-body .dataset-peek pre.peek{width:100%;margin:0px;border-radius:3px;background:white;color:black;font-size:10px;overflow:auto}.dataset .dataset-body .dataset-peek pre.peek th{color:white;background:#5f6990}
-.dataset .dataset-body .dataset-peek pre.peek table,.dataset .dataset-body .dataset-peek pre.peek th,.dataset .dataset-body .dataset-peek pre.peek tr,.dataset .dataset-body .dataset-peek pre.peek td{font-family:Monaco,Menlo,Consolas,"Courier New",monospace;font-size:10px}
-.dataset .icon-btn-group{display:inline-block}.dataset .icon-btn-group .icon-btn:not(:last-child){margin:0px;border-radius:0px;border-right:none}
-.dataset .icon-btn-group .icon-btn:first-child{margin-right:0px;border-top-left-radius:3px;border-bottom-left-radius:3px}
-.dataset .icon-btn-group .icon-btn:last-child{margin-left:0px;border-radius:0px 3px 3px 0px}
-.dataset .state-icon{font-family:FontAwesome;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;display:inline-block;vertical-align:middle;width:16px;height:16px;line-height:16px;text-align:center;font-size:16px}
+.dataset.hda{border:1px solid #bfbfbf}.dataset.hda .vertical-spacing{margin-bottom:8px}
+.dataset.hda .info-section{border-radius:3px;border:1px solid rgba(153,153,153,0.30000000000000004);padding:4px}
+.dataset.hda .dataset-padding{padding:6px 10px 6px 8px}
+.dataset.hda [class$=messagesmall]{margin:6px 10px 2px 8px;font-size:90%}
+.dataset.hda .help-text{font-weight:normal;color:#555}
+.dataset.hda .dataset-selector{float:left;display:none;width:0px;margin:0 0 -6px 0;padding:5px 0 2px 8px;cursor:pointer;vertical-align:middle}
+.dataset.hda .dataset-title-bar{cursor:pointer;outline:none;padding:6px 10px 6px 8px}
+.dataset.hda .dataset-title-bar .dataset-title{display:inline;font-weight:bold;text-decoration:underline;word-wrap:break-word;word-break:break-all;line-height:16px}
+.dataset.hda .dataset-primary-actions{display:inline-block;float:right;margin:6px 10px 0}.dataset.hda .dataset-primary-actions .icon-btn:not(:last-child){margin:0px;border-radius:0px;border-right:none}
+.dataset.hda .dataset-primary-actions .icon-btn:first-child{margin-right:0px;border-top-left-radius:3px;border-bottom-left-radius:3px}
+.dataset.hda .dataset-primary-actions .icon-btn:last-child{margin-left:0px;border-radius:0px 3px 3px 0px}
+.dataset.hda .dataset-primary-actions .icon-btn{margin-left:2px}
+.dataset.hda .dataset-body{display:none;padding:6px 10px 6px 8px}.dataset.hda .dataset-body [class$=messagesmall]{margin:0px 0px 8px 0px}
+.dataset.hda .dataset-body label{margin:0px;padding:0px;font-weight:normal}
+.dataset.hda .dataset-body .prompt{font-weight:normal;color:#555}
+.dataset.hda .dataset-body .prompt:after{content:':'}
+.dataset.hda .dataset-body .dataset-summary{margin-bottom:8px}.dataset.hda .dataset-body .dataset-summary .dataset-blurb{margin-bottom:2px}
+.dataset.hda .dataset-body .dataset-summary .dataset-datatype,.dataset.hda .dataset-body .dataset-summary .dataset-dbkey{display:inline}.dataset.hda .dataset-body .dataset-summary .dataset-datatype .value,.dataset.hda .dataset-body .dataset-summary .dataset-dbkey .value{font-weight:bold}
+.dataset.hda .dataset-body .dataset-summary .dataset-datatype .value:after{content:',';font-weight:normal;color:#555}
+.dataset.hda .dataset-body .dataset-summary .dataset-dbkey:after{content:' ';display:block;margin-bottom:8px}
+.dataset.hda .dataset-body .dataset-summary .dataset-info{border-radius:3px;border:1px solid rgba(153,153,153,0.30000000000000004);padding:4px}.dataset.hda .dataset-body .dataset-summary .dataset-info .value{white-space:pre-line}
+.dataset.hda .dataset-body .dataset-summary .job-error-text{border-radius:3px;border:1px solid rgba(153,153,153,0.30000000000000004);padding:4px;overflow:auto;white-space:pre}
+.dataset.hda .dataset-body .dataset-actions .left{display:inline-block;float:left}.dataset.hda .dataset-body .dataset-actions .left .icon-btn:not(:last-child){margin:0px;border-radius:0px;border-right:none}
+.dataset.hda .dataset-body .dataset-actions .left .icon-btn:first-child{margin-right:0px;border-top-left-radius:3px;border-bottom-left-radius:3px}
+.dataset.hda .dataset-body .dataset-actions .left .icon-btn:last-child{margin-left:0px;border-radius:0px 3px 3px 0px}
+.dataset.hda .dataset-body .dataset-actions .left .icon-btn{margin-right:2px}
+.dataset.hda .dataset-body .dataset-actions .left:not(:empty){margin-bottom:8px}
+.dataset.hda .dataset-body .dataset-actions .right{float:right}.dataset.hda .dataset-body .dataset-actions .right .icon-btn{margin-left:2px}
+.dataset.hda .dataset-body .tags-display{display:none;margin-bottom:8px}.dataset.hda .dataset-body .tags-display .select2-container{min-width:0px}.dataset.hda .dataset-body .tags-display .select2-container .select2-choices{border-radius:3px}
+.dataset.hda .dataset-body .annotation-display{display:none;margin-bottom:8px}.dataset.hda .dataset-body .annotation-display .annotation{border-radius:3px;border:1px solid rgba(153,153,153,0.30000000000000004);padding:4px;white-space:pre-line}
+.dataset.hda .dataset-body .annotation-display .annotation:empty{height:22px}
+.dataset.hda .dataset-body .annotation-display .annotation:empty:after{position:relative;top:-4px;font-size:10px;font-style:italic;color:grey;content:'Click here to edit annotation'}
+.dataset.hda .dataset-body .annotation-display textarea{margin:0px 0px 2px 0px;display:block;border-radius:3px;width:100%}
+.dataset.hda .dataset-body .dataset-display-applications .display-application:last-child{margin-bottom:8px}
+.dataset.hda .dataset-body .dataset-peek{margin-bottom:8px}.dataset.hda .dataset-body .dataset-peek pre.peek{width:100%;margin:0px;border-radius:3px;background:white;color:black;font-size:10px;overflow:auto}.dataset.hda .dataset-body .dataset-peek pre.peek th{color:white;background:#5f6990}
+.dataset.hda .dataset-body .dataset-peek pre.peek table,.dataset.hda .dataset-body .dataset-peek pre.peek th,.dataset.hda .dataset-body .dataset-peek pre.peek tr,.dataset.hda .dataset-body .dataset-peek pre.peek td{font-family:Monaco,Menlo,Consolas,"Courier New",monospace;font-size:10px}
+.dataset.hda .icon-btn-group{display:inline-block}.dataset.hda .icon-btn-group .icon-btn:not(:last-child){margin:0px;border-radius:0px;border-right:none}
+.dataset.hda .icon-btn-group .icon-btn:first-child{margin-right:0px;border-top-left-radius:3px;border-bottom-left-radius:3px}
+.dataset.hda .icon-btn-group .icon-btn:last-child{margin-left:0px;border-radius:0px 3px 3px 0px}
+.dataset.hda .state-icon{font-family:FontAwesome;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;display:inline-block;vertical-align:middle;width:16px;height:16px;line-height:16px;text-align:center;font-size:16px}
 .state-icon-error{background-color:white;border-radius:8px}.state-icon-error:before{font-size:20px;line-height:16px;color:red;content:"\f057"}
 .state-icon-running{-webkit-animation:spin 2s infinite linear;-moz-animation:spin 2s infinite linear;-o-animation:spin 2s infinite linear;animation:spin 2s infinite linear}@-moz-keyframes spin{0%{-moz-transform:rotate(0deg)} 100%{-moz-transform:rotate(359deg)}}@-webkit-keyframes spin{0%{-webkit-transform:rotate(0deg)} 100%{-webkit-transform:rotate(359deg)}}@-o-keyframes spin{0%{-o-transform:rotate(0deg)} 100%{-o-transform:rotate(359deg)}}@-ms-keyframes spin{0%{-ms-transform:rotate(0deg)} 100%{-ms-transform:rotate(359deg)}}@keyframes spin{0%{transform:rotate(0deg)} 100%{transform:rotate(359deg)}}.state-icon-running:before{content:"\f110"}
 .state-icon-upload{overflow:hidden}.state-icon-upload:before{display:inline-block;-webkit-animation:eclipse 2s infinite linear;-moz-animation:eclipse 2s infinite linear;-o-animation:eclipse 2s infinite linear;animation:eclipse 2s infinite linear;content:"\f062"}@-moz-keyframes eclipse{0%{-moz-transform:translate(0, 16px)} 100%{-moz-transform:translate(0, -16px)}}@-webkit-keyframes eclipse{0%{-webkit-transform:translate(0, 16px)} 100%{-webkit-transform:translate(0, -16px)}}@-o-keyframes eclipse{0%{-o-transform:translate(0, 16px)} 100%{-o-transform:translate(0, -16px)}}@-ms-keyframes eclipse{0%{-ms-transform:translate(0, 16px)} 100%{-ms-transform:translate(0, -16px)}}@keyframes eclipse{0%{transform:translate(0, 16px)} 100%{transform:translate(0, -16px)}}
