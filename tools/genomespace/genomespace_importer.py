@@ -189,7 +189,7 @@ def download_from_genomespace_importer( username, token, json_parameter_file, ge
             while filename in used_filenames:
                 filename = "-%s" % filename
             used_filenames.append( filename )
-            target_output_filename = os.path.join( datasource_params['__new_file_path__'],  'primary_%i_%s_visible_%s' % ( hda_id, filename, file_type ) )
+            target_output_filename = os.path.join( os.getcwd(),  'primary_%i_%s_visible_%s' % ( hda_id, filename, file_type ) )
             shutil.move( output_filename, target_output_filename )
             metadata_parameter_file.write( "%s\n" % json.dumps( dict( type = 'new_primary_dataset',
                                      base_dataset_id = base_dataset_id,
