@@ -413,7 +413,9 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                 if not ids:
                     message = "Select a history to unshare"
                     return self.shared_list_grid( trans, status='error', message=message, **kwargs )
-                histories = [ self.get_history( trans, history_id ) for history_id in ids ]
+                # No need to check security, association below won't yield a
+                # hit if this user isn't having the history shared with her.
+                histories = [ self.get_history( trans, history_id, check_ownership=False ) for history_id in ids ]
                 for history in histories:
                     # Current user is the user with which the histories were shared
                     association = trans.sa_session.query( trans.app.model.HistoryUserShareAssociation ).filter_by( user=trans.user, history=history ).one()
