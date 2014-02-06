@@ -659,11 +659,12 @@ class UsesHistoryDatasetAssociationMixin:
                                check_ownership=False, check_accessible=False )
 
         if check_accessible:
-            if not trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), hda.dataset ):
+            if( not trans.user_is_admin()
+            and not trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), hda.dataset ) ):
                 error( "You are not allowed to access this dataset" )
 
-                if check_state and hda.state == trans.model.Dataset.states.UPLOAD:
-                    error( "Please wait until this dataset finishes uploading before attempting to view it." )
+            if check_state and hda.state == trans.model.Dataset.states.UPLOAD:
+                error( "Please wait until this dataset finishes uploading before attempting to view it." )
         return hda
 
     def get_history_dataset_association_from_ids( self, trans, id, history_id ):
@@ -688,8 +689,6 @@ class UsesHistoryDatasetAssociationMixin:
             hda = self.get_history_dataset_association( trans, history, id,
                 check_ownership=True, check_accessible=True )
         return hda
-
-
 
     def get_hda_list( self, trans, hda_ids, check_ownership=True, check_accessible=False, check_state=True ):
         """
