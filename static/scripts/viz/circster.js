@@ -1,4 +1,4 @@
-define(["utils/utils", "libs/underscore", "libs/d3", "viz/visualization"], function(utils, _, d3, visualization) {
+define(["utils/utils", "libs/underscore", "libs/d3", "viz/visualization", "utils/config"], function(utils, _, d3, visualization, config) {
 
 // Load needed CSS.
 utils.cssLoadFile("static/style/circster.css");
@@ -133,9 +133,7 @@ var CircsterView = Backbone.View.extend({
     className: 'circster',
     
     initialize: function(options) {
-        this.total_gap = options.total_gap;
         this.genome = options.genome;
-        this.dataset_arc_height = options.dataset_arc_height;
         this.track_gap = 10;
         this.label_arc_height = 50;
         this.scale = 1;
@@ -145,7 +143,10 @@ var CircsterView = Backbone.View.extend({
         // When tracks added to/removed from model, update view.
         this.model.get('drawables').on('add', this.add_track, this);
         this.model.get('drawables').on('remove', this.remove_track, this);
-        this.get_circular_tracks();
+
+        // When config settings change, update view.
+        var vis_config = this.model.get('config');
+        vis_config.get('arc_dataset_height').on('change:value', this.update_track_bounds, this);
     },
 
     // HACKs: using track_type for circular/chord distinction in the functions below for now.
@@ -172,22 +173,22 @@ var CircsterView = Backbone.View.extend({
      * Returns a list of circular tracks' radius bounds.
      */
     get_tracks_bounds: function() {
-        var circular_tracks = this.get_circular_tracks();
-            dataset_arc_height = this.dataset_arc_height,
+        var circular_tracks = this.get_circular_tracks(),
+            dataset_arc_height = this.model.get('config').get_value('arc_dataset_height'),
             min_dimension = Math.min(this.$el.width(), this.$el.height()),
             // Compute radius start based on model, will be centered 
             // and fit entirely inside element by default.
             radius_start = min_dimension / 2 -
-                            circular_tracks.length * (this.dataset_arc_height + this.track_gap) -
+                            circular_tracks.length * (dataset_arc_height + this.track_gap) -
                             (this.label_arc_height + this.track_gap),
 
             // Compute range of track starting radii.
-            tracks_start_radii = d3.range(radius_start, min_dimension / 2, this.dataset_arc_height + this.track_gap);
+            tracks_start_radii = d3.range(radius_start, min_dimension / 2, dataset_arc_height + this.track_gap);
 
         // Map from track start to bounds.
         var self = this;
         return _.map(tracks_start_radii, function(radius) {
-            return [radius, radius + self.dataset_arc_height];
+            return [radius, radius + dataset_arc_height];
         });
     },
     
@@ -196,11 +197,11 @@ var CircsterView = Backbone.View.extend({
      */
     render: function() {
         var self = this,
-            dataset_arc_height = this.dataset_arc_height,
             width = self.$el.width(),
             height = self.$el.height(),
             circular_tracks = this.get_circular_tracks(),
             chords_tracks = this.get_chord_tracks(),
+            total_gap = self.model.get('config').get_value('total_gap'),
             tracks_bounds = this.get_tracks_bounds(),
 
             // Set up SVG element.
@@ -249,7 +250,7 @@ var CircsterView = Backbone.View.extend({
                     track: track,
                     radius_bounds: tracks_bounds[index],
                     genome: self.genome,
-                    total_gap: self.total_gap
+                    total_gap: total_gap
                 });
             
             view.render();
@@ -265,7 +266,7 @@ var CircsterView = Backbone.View.extend({
                 track: track,
                 radius_bounds: tracks_bounds[0],
                 genome: self.genome,
-                total_gap: self.total_gap
+                total_gap: total_gap
             });
 
             view.render();
@@ -288,7 +289,7 @@ var CircsterView = Backbone.View.extend({
             track: new CircsterLabelTrack(),
             radius_bounds: track_bounds,
             genome: self.genome,
-            total_gap: self.total_gap
+            total_gap: total_gap
         });
         
         this.label_track_view.render();
@@ -298,6 +299,8 @@ var CircsterView = Backbone.View.extend({
      * Render a single track on the outside of the current visualization.
      */
     add_track: function(new_track) {
+        var total_gap = this.model.get('config').get_value('total_gap');
+
         if (new_track.get('track_type') === 'DiagonalHeatmapTrack') {
             // Added chords track.
             var innermost_radius_bounds = this.circular_views[0].radius_bounds,
@@ -306,7 +309,7 @@ var CircsterView = Backbone.View.extend({
                     track: new_track,
                     radius_bounds: innermost_radius_bounds,
                     genome: this.genome,
-                    total_gap: this.total_gap
+                    total_gap: total_gap
                 });
                 new_view.render();
                 this.chords_views.push(new_view);
@@ -332,7 +335,7 @@ var CircsterView = Backbone.View.extend({
                     track: new_track,
                     radius_bounds: new_track_bounds[track_index],
                     genome: this.genome,
-                    total_gap: this.total_gap
+                    total_gap: total_gap
                 });
             track_view.render();
             this.circular_views.push(track_view);
@@ -353,6 +356,14 @@ var CircsterView = Backbone.View.extend({
         this.circular_views.splice(options.index, 1);
         track_view.$el.remove();
         
+        // Recompute and update track bounds.
+        var new_track_bounds = this.get_tracks_bounds();
+        _.each(this.circular_views, function(track_view, i) {
+            track_view.update_radius_bounds(new_track_bounds[i]);
+        });
+    },
+
+    update_track_bounds: function() {
         // Recompute and update track bounds.
         var new_track_bounds = this.get_tracks_bounds();
         _.each(this.circular_views, function(track_view, i) {
@@ -630,7 +641,7 @@ var CircsterTrackView = Backbone.View.extend({
         var chroms_info = this.genome.get_chroms_info(),
             pie_layout = d3.layout.pie().value(function(d) { return d.len; }).sort(null),
             init_arcs = pie_layout(chroms_info),
-            gap_per_chrom = this.total_gap / chroms_info.length,
+            gap_per_chrom = 2 * Math.PI * this.total_gap / chroms_info.length,
             chrom_arcs = _.map(init_arcs, function(arc, index) {
                 // For short chroms, endAngle === startAngle.
                 var new_endAngle = arc.endAngle - gap_per_chrom;
@@ -969,22 +980,25 @@ var Circster = Backbone.View.extend(
 {
     initialize: function ()
     {
-        // configure visualization
+        // -- Configure visualization --
         var genome = new visualization.Genome(galaxy_config.app.genome),
-        vis = new visualization.GenomeVisualization(galaxy_config.app.viz_config),
-        viz_view = new CircsterView(
-        {
-            // view pane
-            el                  : $('#center .unified-panel-body'),
-            
-            // gaps are difficult to set because it very dependent on chromosome size and organization.
-            total_gap           : 2 * Math.PI * 0.4,
-            genome              : genome,
-            model               : vis,
-            dataset_arc_height  : 25
-        });
+            vis = new visualization.GenomeVisualization(galaxy_config.app.viz_config);
+
+        // Add Circster-specific config options.
+        vis.get('config').add([
+            { key: 'arc_dataset_height', label: 'Arc Dataset Height', type: 'int', value: 25, view: 'circster' },
+            { key: 'total_gap', label: 'Gap [0-1]', type: 'float', value: 0.4, view: 'circster', hidden: true }
+        ]);
+
+        var viz_view = new CircsterView(
+            {
+                // view pane
+                el                  : $('#center .unified-panel-body'),
+                genome              : genome,
+                model               : vis
+            });
         
-        // render vizualization
+        // Render vizualization
         viz_view.render();
         
         // setup title
@@ -999,6 +1013,15 @@ var Circster = Backbone.View.extend(
                 {
                     vis.add_tracks(tracks);
                 });
+            }
+        },
+        {
+            icon_class: 'gear', title: 'Settings', on_click: function()
+            {
+                var view = new config.ConfigSettingCollectionView({
+                    collection: vis.get('config')
+                });
+                view.render_in_modal('Configure Visualization');
             }
         },
         {
