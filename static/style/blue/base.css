@@ -1594,7 +1594,7 @@ div.permissionContainer{padding-left:20px}
 .history-panel .dataset .dataset-body .dataset-summary .dataset-datatype,.history-panel .dataset .dataset-body .dataset-summary .dataset-dbkey{display:inline}.history-panel .dataset .dataset-body .dataset-summary .dataset-datatype .value,.history-panel .dataset .dataset-body .dataset-summary .dataset-dbkey .value{font-weight:bold}
 .history-panel .dataset .dataset-body .dataset-summary .dataset-datatype .value:after{content:',';font-weight:normal;color:#555}
 .history-panel .dataset .dataset-body .dataset-summary .dataset-dbkey:after{content:' ';display:block;margin-bottom:8px}
-.history-panel .dataset .dataset-body .dataset-summary .dataset-info{border-radius:3px;border:1px solid rgba(153,153,153,0.30000000000000004);padding:4px}.history-panel .dataset .dataset-body .dataset-summary .dataset-info .value{white-space:pre-line}
+.history-panel .dataset .dataset-body .dataset-summary .dataset-info{border-radius:3px;border:1px solid rgba(153,153,153,0.30000000000000004);padding:4px;overflow:auto}.history-panel .dataset .dataset-body .dataset-summary .dataset-info .value{white-space:pre-line}
 .history-panel .dataset .dataset-body .dataset-summary .job-error-text{border-radius:3px;border:1px solid rgba(153,153,153,0.30000000000000004);padding:4px;overflow:auto;white-space:pre}
 .history-panel .dataset .dataset-body .dataset-actions .left{display:inline-block;float:left}.history-panel .dataset .dataset-body .dataset-actions .left .icon-btn:not(:last-child){margin:0px;border-radius:0px;border-right:none}
 .history-panel .dataset .dataset-body .dataset-actions .left .icon-btn:first-child{margin-right:0px;border-top-left-radius:3px;border-bottom-left-radius:3px}

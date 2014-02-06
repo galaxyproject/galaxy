@@ -1826,7 +1826,7 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations, 
                      update_time = hda.update_time.isoformat(),
                      data_type = hda.ext,
                      genome_build = hda.dbkey,
-                     misc_info = hda.info,
+                     misc_info = hda.info.strip() if isinstance( hda.info, basestring ) else hda.info,
                      misc_blurb = hda.blurb )
 
         # add tags string list
