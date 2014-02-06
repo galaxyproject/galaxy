@@ -602,9 +602,9 @@ use_interactive = True
 #remote_user_logout_href = None
 
 # If your proxy and/or authentication source does not normalize e-mail
-# addresses or user names being passed to Galaxy - enable the following option
-# to force these to lower case.
-#normalize_remote_user_email = True  
+# addresses or user names being passed to Galaxy - set the following option
+# to True to force these to lower case.
+#normalize_remote_user_email = False
 
 # Administrative users - set this to a comma-separated list of valid Galaxy
 # users (email addresses).  These users will have access to the Admin section
