@@ -10,14 +10,20 @@
             <a title="Use this tab to change how the chart is drawn"
                href="#chart-control" data-toggle="tab" >Chart Controls</a>
         </li>
-        {{! both stats and chart start as disabled since there's no info yet }}
+        {{! chart starts as disabled since there's no info yet }}
         <li class="disabled">
             <a title="This tab will display the chart"
                href="#chart-display" data-toggle="tab">Chart</a>
         </li>
+        {{! ... }}
+        <li class="file-controls">
+<!--            <button class="copy-btn btn btn-default"
+                    title="Save this as a new visualization">Save to new</button>-->
+            <button class="save-btn btn btn-default">Save</button>
+        </li>
     </ul>
 
-    {{! data form, chart config form, stats, and chart all get their own tab }}
+    {{! data form, chart config form, chart all get their own tab }}
     <div class="tab-content">
         {{! ---------------------------- tab for data settings form }}
         <div id="data-control" class="scatterplot-config-control tab-pane active">

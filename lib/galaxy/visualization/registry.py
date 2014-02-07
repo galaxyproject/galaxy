@@ -223,7 +223,7 @@ class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
     def is_object_applicable( self, trans, target_object, data_source_tests ):
         """
         Run a visualization's data_source tests to find out if
-        it be applied to the target_object.
+        it can be applied to the target_object.
         """
         #log.debug( 'is_object_applicable( self, trans, %s, %s )', target_object, data_source_tests )
         for test in data_source_tests:
@@ -306,9 +306,9 @@ class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
 
         Both `params` and `param_modifiers` default to an empty dictionary.
         """
-        visualization = self.plugins.get( visualization_name )
-        expected_params = visualization.config.get( 'params', {} )
-        param_modifiers = visualization.config.get( 'param_modifiers', {} )
+        plugin = self.plugins.get( visualization_name )
+        expected_params = plugin.config.get( 'params', {} )
+        param_modifiers = plugin.config.get( 'param_modifiers', {} )
         return ( expected_params, param_modifiers )
 
     def query_dict_to_resources( self, trans, controller, visualization_name, query_dict ):
@@ -321,6 +321,16 @@ class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
         resources = self.resource_parser.parse_parameter_dictionary(
             trans, controller, param_confs, query_dict, param_modifiers )
         return resources
+
+    def query_dict_to_config( self, trans, controller, visualization_name, query_dict ):
+        """
+        Given a query string dict (i.e. kwargs) from a controller action, parse
+        and return any key/value pairs found in the plugin's `params` section.
+        """
+        plugin = self.plugins.get( visualization_name )
+        param_confs = plugin.config.get( 'params', {} )
+        config = self.resource_parser.parse_config( trans, controller, param_confs, query_dict )
+        return config
 
 
 # ------------------------------------------------------------------- parsing the config file
@@ -559,37 +569,38 @@ class DataSourceParser( object ):
 
         for test_elem in xml_tree_list:
             test_type = test_elem.get( 'type', 'eq' )
-            test_result = test_elem.text
+            test_result = test_elem.text.strip() if test_elem.text else None
             if not test_type or not test_result:
                 log.warn( 'Skipping test. Needs both type attribute and text node to be parsed: '
                         + '%s, %s' %( test_type, test_elem.text ) )
                 continue
+            test_result = test_result.strip()
 
             # test_attr can be a dot separated chain of object attributes (e.g. dataset.datatype) - convert to list
             #TODO: too dangerous - constrain these to some allowed list
             #TODO: does this err if no test_attr - it should...
             test_attr = test_elem.get( 'test_attr' )
             test_attr = test_attr.split( self.ATTRIBUTE_SPLIT_CHAR ) if isinstance( test_attr, str ) else []
+            #log.debug( 'test_type: %s, test_attr: %s, test_result: %s', test_type, test_attr, test_result )
+
             # build a lambda function that gets the desired attribute to test
             getter = self._build_getattr_lambda( test_attr )
-
             # result type should tell the registry how to convert the result before the test
             test_result_type = test_elem.get( 'result_type', 'string' )
 
             # test functions should be sent an object to test, and the parsed result expected from the test
-
-            # is test_attr attribute an instance of result
             if   test_type == 'isinstance':
+                # is test_attr attribute an instance of result
                 #TODO: wish we could take this further but it would mean passing in the datatypes_registry
                 test_fn = lambda o, result: isinstance( getter( o ), result )
 
-            # does the object itself have a datatype attr and does that datatype have the given dataprovider
             elif test_type == 'has_dataprovider':
+                # does the object itself have a datatype attr and does that datatype have the given dataprovider
                 test_fn = lambda o, result: (     hasattr( getter( o ), 'has_dataprovider' )
                                               and getter( o ).has_dataprovider( result ) )
 
-            # default to simple (string) equilavance (coercing the test_attr to a string)
             else:
+                # default to simple (string) equilavance (coercing the test_attr to a string)
                 test_fn = lambda o, result: str( getter( o ) ) == result
 
             tests.append({
@@ -737,6 +748,16 @@ class ResourceParser( object ):
     The keys used to store the new values can optionally be re-mapped to
     new keys (e.g. dataset_id="NNN" -> hda=<HistoryDatasetAsscoation>).
     """
+    primitive_parsers = {
+        'str'   : lambda param: galaxy.util.sanitize_html.sanitize_html( param, 'utf-8' ),
+        'bool'  : lambda param: galaxy.util.string_as_bool( param ),
+        'int'   : lambda param: int( param ),
+        'float' : lambda param: float( param ),
+        #'date'  : lambda param: ,
+        'json'  : ( lambda param: galaxy.util.json.from_json_string(
+                        galaxy.util.sanitize_html.sanitize_html( param ) ) ),
+    }
+
     #TODO: kinda torn as to whether this belongs here or in controllers.visualization
     #   taking the (questionable) design path of passing a controller in
     #       (which is the responsible party for getting model, etc. resources )
@@ -749,8 +770,6 @@ class ResourceParser( object ):
         If param is required and not present, raises a `KeyError`.
         """
         #log.debug( 'parse_parameter_dictionary, query_params:\n%s', query_params )
-        # first parse any params from any visualizations that were passed
-        query_params = self.get_params_from_visualization_param( trans, controller, param_config_dict, query_params )
 
         # parse the modifiers first since they modify the params coming next
         #TODO: this is all really for hda_ldda - which we could replace with model polymorphism
@@ -782,11 +801,42 @@ class ResourceParser( object ):
             if resource == None:
                 if param_config[ 'required' ]:
                     raise KeyError( 'required param %s not found in URL' %( param_name ) )
-                resource = self.parse_parameter_default( trans, param_config )
+                resource = self.parse_parameter_default( trans, controller, param_config )
 
             resources[ var_name_in_template ] = resource
 
         return resources
+
+    def parse_config( self, trans, controller, param_config_dict, query_params ):
+        """
+        Return `query_params` dict parsing only JSON serializable params.
+        Complex params such as models, etc. are left as the original query value.
+        Keys in `query_params` not found in the `param_config_dict` will not be
+        returned.
+        """
+        #log.debug( 'parse_config, query_params:\n%s', query_params )
+        config = {}
+        for param_name, param_config in param_config_dict.items():
+            config_val = query_params.get( param_name, None )
+            if config_val is not None and param_config[ 'type' ] in self.primitive_parsers:
+                try:
+                    config_val = self.parse_parameter( trans, controller, param_config, config_val )
+
+                except Exception, exception:
+                    log.warn( 'Exception parsing visualization param from query: '
+                            + '%s, %s, (%s) %s' %( param_name, config_val, str( type( exception ) ), str( exception ) ))
+                    config_val = None
+
+            # here - we've either had no value in the query_params or there was a failure to parse
+            #   so: if there's a default and it's not None, add it to the config
+            if config_val is None:
+                if param_config.get( 'default', None ) is None:
+                    continue
+                config_val = self.parse_parameter_default( trans, controller, param_config )
+
+            config[ param_name ] = config_val
+
+        return config
 
     #TODO: I would LOVE to rip modifiers out completely
     def parse_parameter_modifiers( self, trans, controller, param_modifiers, query_params ):
@@ -811,11 +861,11 @@ class ResourceParser( object ):
                     target_modifiers[ modifier_name ] = modifier
                 else:
                     #TODO: required attr?
-                    target_modifiers[ modifier_name ] = self.parse_parameter_default( trans, modifier_config )
+                    target_modifiers[ modifier_name ] = self.parse_parameter_default( trans, controller, modifier_config )
 
         return parsed_modifiers
 
-    def parse_parameter_default( self, trans, param_config ):
+    def parse_parameter_default( self, trans, controller, param_config ):
         """
         Parse any default values for the given param, defaulting the default
         to `None`.
@@ -828,46 +878,8 @@ class ResourceParser( object ):
         # otherwise, parse (currently param_config['default'] is a string just like query param and needs to be parsed)
         #   this saves us the trouble of parsing the default when the config file is read
         #   (and adding this code to the xml parser)
-        return self.parse_parameter( trans, param_config, default )
+        return self.parse_parameter( trans, controller, param_config, default )
 
-    def get_params_from_visualization_param( self, trans, controller, param_config_dict, query_params ):
-        #log.debug( 'parse_visualization_params: %s', param_config_dict )
-        #log.debug( '                          : %s', query_params )
-
-        # first, find the visualization in the parameters if any
-        visualization = None
-        #precondition: assume one visualization
-        for param_name, param_config in param_config_dict.items():
-            if param_config.get( 'type' ) == 'visualization':
-                query_val = query_params.get( param_name )
-                if query_val is None:
-                    continue
-
-                #log.debug( 'found visualization param: %s, %s', param_name, query_val )
-                visualization = self.parse_parameter( trans, controller, param_config, query_val )
-                if visualization:
-                    break
-
-        # if no vis is found, can't get any new params from it: return the original query_params
-        if not visualization:
-            #log.debug( 'visualization not found' )
-            return query_params
-        #log.debug( 'found visualization: %s', visualization )
-
-        # next, attempt to copy any params from the visualizations config
-        visualization_config = visualization.latest_revision.config
-        #log.debug( '\t config: %s', visualization_config )
-        params_from_visualization = {}
-        for param_name, param_config in param_config_dict.items():
-            if param_name in visualization_config:
-                params_from_visualization[ param_name ] = visualization_config[ param_name ]
-        #log.debug( 'params_from_visualization: %s', params_from_visualization )
-
-        # layer the query_params over the params from the visualization, returning the combined
-        params_from_visualization.update( query_params )
-        return params_from_visualization
-
-#TODO: make parse_visualization separate
     def parse_parameter( self, trans, controller, expected_param_data, query_param,
                          recurse=True, param_modifiers=None ):
         """
@@ -892,24 +904,11 @@ class ResourceParser( object ):
                 parsed_param.append( self._parse_param( trans, expected_param_data, query_param, recurse=False ) )
             return parsed_param
 
-        primitive_parsers = {
-            'str'   : lambda param: galaxy.util.sanitize_html.sanitize_html( param, 'utf-8' ),
-            'bool'  : lambda param: galaxy.util.string_as_bool( param ),
-            'int'   : lambda param: int( param ),
-            'float' : lambda param: float( param ),
-            #'date'  : lambda param: ,
-            'json'  : ( lambda param: galaxy.util.json.from_json_string(
-                            galaxy.util.sanitize_html.sanitize_html( param ) ) ),
-        }
-        parser = primitive_parsers.get( param_type, None )
-        if parser:
+        if param_type in self.primitive_parsers:
             #TODO: what about param modifiers on primitives?
-            parsed_param = parser( query_param )
+            parsed_param = self.primitive_parsers[ param_type ]( query_param )
 
-        #TODO: constrain_to
-        # this gets complicated - for strings - relatively simple but still requires splitting and using in
-        # for more complicated cases (ints, json) this gets weird quick
-        #TODO:?? remove?
+        #TODO: constrain_to: this gets complicated - remove?
 
         # db models
         #TODO: subclass here?
