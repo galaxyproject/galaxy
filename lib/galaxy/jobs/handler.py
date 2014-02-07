@@ -107,7 +107,7 @@ class JobHandlerQueue( object ):
             if job.tool_id not in self.app.toolbox.tools_by_id:
                 log.warning( "(%s) Tool '%s' removed from tool config, unable to recover job" % ( job.id, job.tool_id ) )
                 JobWrapper( job, self ).fail( 'This tool was disabled before the job completed.  Please contact your Galaxy administrator.' )
-            if job.job_runner_name is not None and job.job_runner_external_id is None:
+            elif job.job_runner_name is not None and job.job_runner_external_id is None:
                 # This could happen during certain revisions of Galaxy where a runner URL was persisted before the job was dispatched to a runner.
                 log.debug( "(%s) Job runner assigned but no external ID recorded, adding to the job handler queue" % job.id )
                 job.job_runner_name = None
