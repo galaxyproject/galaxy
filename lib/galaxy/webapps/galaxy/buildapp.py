@@ -127,6 +127,7 @@ def app_factory( global_conf, **kwargs ):
     webapp.mapper.resource( 'form', 'forms', path_prefix='/api' )
     webapp.mapper.resource( 'request_type', 'request_types', path_prefix='/api' )
     webapp.mapper.resource( 'role', 'roles', path_prefix='/api' )
+    webapp.mapper.resource( 'ftp_file', 'ftp_files', path_prefix='/api' )
     webapp.mapper.resource( 'group', 'groups', path_prefix='/api' )
     webapp.mapper.resource_with_deleted( 'quota', 'quotas', path_prefix='/api' )
     webapp.mapper.connect( '/api/tools/{id:.+?}', action='show', controller="tools" )

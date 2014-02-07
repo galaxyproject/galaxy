@@ -1,117 +1,36 @@
 // dependencies
 define(["galaxy.modal",
         "utils/utils",
+        "mvc/upload/upload-button",
         "mvc/upload/upload-model",
         "mvc/upload/upload-row",
+        "mvc/upload/upload-ftp",
+        "mvc/ui.popover",
         "mvc/ui",
         "utils/uploadbox"],
        
         function(   Modal,
                     Utils,
+                    UploadButton,
                     UploadModel,
-                    UploadItem
+                    UploadItem,
+                    UploadFtp,
+                    Popover
                 ) {
-
-// create model
-var ProgressButtonModel = Backbone.Model.extend({
-    defaults: {
-        percentage  : 0,
-        icon        : 'fa-circle',
-        label       : '',
-        status      : ''
-    }
-});
-
-// progress bar button on ui
-var ProgressButton = Backbone.View.extend({
-    // model
-    model : null,
-
-    // initialize
-    initialize : function(model) {
-        // link this
-        var self = this;
-        
-        // create model
-        this.model = model;
-        
-        // get options
-        this.options = this.model.attributes;
-            
-        // create new element
-        this.setElement(this._template(this.options));
-        
-        // add event
-        $(this.el).on('click', this.options.onclick);
-        
-        // add tooltip
-        if (this.options.tooltip) {
-            $(this.el).tooltip({title: this.options.tooltip, placement: 'bottom'});
-        }
-        
-        // events
-        this.model.on('change:percentage', function() {
-            self._percentage(self.model.get('percentage'));
-        });
-        this.model.on('change:status', function() {
-            self._status(self.model.get('status'));
-        });
-        
-        // unload event
-        var self = this;
-        $(window).on('beforeunload', function() {
-            var text = "";
-            if (self.options.onunload) {
-                text = self.options.onunload();
-            }
-            if (text != "") {
-                return text;
-            }
-        });
-    },
-    
-    // set status
-    _status: function(value) {
-        var $el = this.$el.find('.progress-bar');
-        $el.removeClass();
-        $el.addClass('progress-bar');
-        $el.addClass('progress-bar-notransition');
-        if (value != '') {
-            $el.addClass('progress-bar-' + value);
-        }
-    },
-    
-    // set percentage
-    _percentage: function(value) {
-        var $el = this.$el.find('.progress-bar');
-        $el.css({ width : value + '%' });
-    },
-    
-    // template
-    _template: function(options) {
-        return  '<div style="float: right">' +
-                    '<div class="progress-button">' +
-                        '<div class="progress">' +
-                            '<div class="progress-bar"></div>' +
-                        '</div>' +
-                        '<div id="label" class="label">' +
-                            '<a class="panel-header-button" href="javascript:void(0)">' +
-                                '<span class="fa fa-upload"></span>' +
-                            '</a>' +
-                        '</div>' +
-                    '</div>' +
-                '</div>';
-    }
-});
 
 // galaxy upload
 return Backbone.View.extend(
 {
+    // options
+    options : {
+        nginx_upload_path : ''
+    },
+    
     // own modal
     modal : null,
     
     // button
-    button_show : null,
+    ui_button : null,
     
     // jquery uploadbox plugin
     uploadbox: null,
@@ -131,6 +50,9 @@ return Backbone.View.extend(
     // collection
     collection : new UploadModel.Collection(),
     
+    // ftp file viewer
+    ftp : null,
+    
     // counter
     counter : {
         // stats
@@ -140,36 +62,29 @@ return Backbone.View.extend(
         running     : 0,
         
         // reset stats
-        reset : function()
-        {
+        reset : function() {
             this.announce = this.success = this.error = this.running = 0;
         }
     },
-    
-    // options
-    options : {
-        nginx_upload_path : ''
-    },
-    
+                
     // initialize
-    initialize : function(options)
-    {
+    initialize : function(options) {
         // link this
         var self = this;
             
         // wait for galaxy history panel (workaround due to the use of iframes)
-        if (!Galaxy.currHistoryPanel || !Galaxy.currHistoryPanel.model)
-        {
+        if (!Galaxy.currHistoryPanel || !Galaxy.currHistoryPanel.model) {
             window.setTimeout(function() { self.initialize() }, 500)
             return;
         }
         
         // check if logged in
-        if (!Galaxy.currUser.get('id'))
+        if (!Galaxy.currUser.get('id')) {
             return;
+        }
             
         // create model
-        this.button_show = new ProgressButtonModel({
+        this.ui_button = new UploadButton.Model({
             icon        : 'fa-upload',
             tooltip     : 'Download from URL or upload files from disk',
             label       : 'Load Data',
@@ -186,7 +101,7 @@ return Backbone.View.extend(
         });
         
         // define location
-        $('#left .unified-panel-header-inner').append((new ProgressButton(this.button_show)).$el);
+        $('#left .unified-panel-header-inner').append((new UploadButton.View(this.ui_button)).$el);
         
         // load extension
         var self = this;
@@ -242,33 +157,29 @@ return Backbone.View.extend(
     //
     
     // show/hide upload frame
-    _eventShow : function (e)
-    {
+    _eventShow : function (e) {
         // prevent default
         e.preventDefault();
-        // stop propagation of event (for click-outside-of-modal-to-close functionality)
-        e.stopPropagation();
         
         // create modal
-        if (!this.modal)
-        {
+        if (!this.modal) {
             // make modal
             var self = this;
-            this.modal = new Modal.GalaxyModal(
-            {
+            this.modal = new Modal.GalaxyModal({
                 title   : 'Download data directly from web or upload files from your disk',
                 body    : this._template('upload-box', 'upload-info'),
                 buttons : {
-                    'Choose files'    : function() {self.uploadbox.select()},
-                    'Create file'     : function() {self._eventCreate()},
-                    'Start'           : function() {self._eventStart()},
-                    'Pause'           : function() {self._eventStop()},
-                    'Reset'           : function() {self._eventReset()},
-                    'Close'           : function() {self.modal.hide()},
+                    'Choose local file' : function() {self.uploadbox.select()},
+                    'Choose FTP file'   : function() {self._eventFtp()},
+                    'Create new file'   : function() {self._eventCreate()},
+                    'Start'             : function() {self._eventStart()},
+                    'Pause'             : function() {self._eventStop()},
+                    'Reset'             : function() {self._eventReset()},
+                    'Close'             : function() {self.modal.hide()},
                 },
                 height              : '400',
                 width               : '900',
-                closing_events   : true
+                closing_events      : true
             });
         
             // set element
@@ -276,8 +187,7 @@ return Backbone.View.extend(
             
             // file upload
             var self = this;
-            this.uploadbox = this.$el.uploadbox(
-            {
+            this.uploadbox = this.$el.uploadbox({
                 announce        : function(index, file, message) { self._eventAnnounce(index, file, message) },
                 initialize      : function(index, file, message) { return self._eventInitialize(index, file, message) },
                 progress        : function(index, file, message) { self._eventProgress(index, file, message) },
@@ -288,6 +198,17 @@ return Backbone.View.extend(
             
             // setup info
             this._updateScreen();
+            
+            // add ftp file viewer
+            if (this.options.ftp_upload_dir && this.options.ftp_upload_site) {
+                var button = this.modal.getButton('Choose FTP file');
+                this.ftp = new Popover.View({
+                    title       : 'FTP files',
+                    container   : button
+                });
+            } else {
+                this.modal.hideButton('Choose FTP file');
+            }
         }
         
         // show modal
@@ -299,8 +220,7 @@ return Backbone.View.extend(
     //
     
     // remove item from upload list
-    _eventRemove : function(item)
-    {
+    _eventRemove : function(item) {
         // update status
         var status = item.get('status');
                 
@@ -325,8 +245,7 @@ return Backbone.View.extend(
     //
     
     // a new file has been dropped/selected through the uploadbox plugin
-    _eventAnnounce : function(index, file, message)
-    {
+    _eventAnnounce : function(index, file, message) {
         // update counter
         this.counter.announce++;
         
@@ -337,22 +256,23 @@ return Backbone.View.extend(
         var upload_item = new UploadItem(this, {
             id          : index,
             file_name   : file.name,
-            file_size   : file.size
+            file_size   : file.size,
+            file_mode   : file.mode,
+            file_path   : file.path
         });
         
         // add to collection
         this.collection.add(upload_item.model);
         
         // add upload item element to table
-        $(this.el).find('tbody:last').append(upload_item.$el);
+        $(this.el).find('tbody:first').append(upload_item.$el);
         
         // render
         upload_item.render();
     },
     
     // the uploadbox plugin is initializing the upload for this file
-    _eventInitialize : function(index, file, message)
-    {
+    _eventInitialize : function(index, file, message) {
         // get element
         var it = this.collection.get(index);
         
@@ -360,26 +280,38 @@ return Backbone.View.extend(
         it.set('status', 'running');
     
         // get configuration
-        var file_type       = it.get('extension');
         var file_name       = it.get('file_name');
+        var file_path       = it.get('file_path');
+        var file_mode       = it.get('file_mode');
+        var extension       = it.get('extension');
         var genome          = it.get('genome');
         var url_paste       = it.get('url_paste');
         var space_to_tabs   = it.get('space_to_tabs');
+        var to_posix_lines  = it.get('to_posix_lines');
         
         // validate
         if (!url_paste && !(file.size > 0))
             return null;
             
         // configure uploadbox
-        this.uploadbox.configure({url : this.options.nginx_upload_path, paramname : "files_0|file_data"});
+        this.uploadbox.configure({url : this.options.nginx_upload_path});
+        
+        // configure file mode
+        if (file_mode == 'ftp') {
+            this.uploadbox.configure({paramname : ''});
+        } else {
+            this.uploadbox.configure({paramname : 'files_0|file_data'});
+        }
         
         // configure tool
         tool_input = {};
         tool_input['dbkey'] = genome;
-        tool_input['file_type'] = file_type;
+        tool_input['file_type'] = extension;
         tool_input['files_0|type'] = 'upload_dataset';
         tool_input['files_0|url_paste'] = url_paste;
+        tool_input['files_0|ftp_files'] = file_path;
         tool_input['space_to_tabs'] = space_to_tabs;
+        tool_input['to_posix_lines'] = to_posix_lines;
         
         // setup data
         data = {};
@@ -392,19 +324,17 @@ return Backbone.View.extend(
     },
     
     // progress
-    _eventProgress : function(index, file, percentage)
-    {
+    _eventProgress : function(index, file, percentage) {
         // set progress for row
         var it = this.collection.get(index);
         it.set('percentage', percentage);
         
         // update ui button
-        this.button_show.set('percentage', this._upload_percentage(percentage, file.size));
+        this.ui_button.set('percentage', this._upload_percentage(percentage, file.size));
     },
     
     // success
-    _eventSuccess : function(index, file, message)
-    {
+    _eventSuccess : function(index, file, message) {
         // update status
         var it = this.collection.get(index);
         it.set('status', 'success');
@@ -413,7 +343,7 @@ return Backbone.View.extend(
         var file_size = it.get('file_size');
         
         // update ui button
-        this.button_show.set('percentage', this._upload_percentage(100, file_size));
+        this.ui_button.set('percentage', this._upload_percentage(100, file_size));
         
         // update completed
         this.upload_completed += file_size * 100;
@@ -430,8 +360,7 @@ return Backbone.View.extend(
     },
     
     // error
-    _eventError : function(index, file, message)
-    {
+    _eventError : function(index, file, message) {
         // get element
         var it = this.collection.get(index);
         
@@ -440,8 +369,8 @@ return Backbone.View.extend(
         it.set('info', message);
         
         // update ui button
-        this.button_show.set('percentage', this._upload_percentage(100, file.size));
-        this.button_show.set('status', 'danger');
+        this.ui_button.set('percentage', this._upload_percentage(100, file.size));
+        this.ui_button.set('status', 'danger');
         
         // update completed
         this.upload_completed += file.size * 100;
@@ -472,10 +401,27 @@ return Backbone.View.extend(
     // events triggered by this view
     //
 
-    // create (pseudo) file
+    _eventFtp: function() {
+        // check if popover is visible
+        if (!this.ftp.visible) {
+            // show popover
+            this.ftp.empty();
+            this.ftp.append((new UploadFtp(this)).$el);
+            this.ftp.show();
+        } else {
+            // hide popover
+            this.ftp.hide();
+        }
+    },
+
+    // create a new file
     _eventCreate : function ()
     {
-        this.uploadbox.add([{ name : 'New File', size : -1 }]);
+        this.uploadbox.add([{
+            name    : 'New File',
+            size    : 0,
+            mode    : 'new'
+        }]);
     },
 
     // start upload process
@@ -498,8 +444,8 @@ return Backbone.View.extend(
         });
         
         // reset progress
-        this.button_show.set('percentage', 0);
-        this.button_show.set('status', 'success');
+        this.ui_button.set('percentage', 0);
+        this.ui_button.set('status', 'success');
         
         // backup current history
         this.current_history = Galaxy.currHistoryPanel.model.get('id');
@@ -520,7 +466,7 @@ return Backbone.View.extend(
         }
 
         // show upload has paused
-        this.button_show.set('status', 'info');
+        this.ui_button.set('status', 'info');
 
         // request pause
         this.uploadbox.stop();
@@ -547,13 +493,12 @@ return Backbone.View.extend(
             this.uploadbox.reset();
             
             // reset button
-            this.button_show.set('percentage', 0);
+            this.ui_button.set('percentage', 0);
         }
     },
     
     // set screen
-    _updateScreen: function ()
-    {
+    _updateScreen: function () {
         /*
             update on screen info
         */
@@ -600,18 +545,20 @@ return Backbone.View.extend(
         // select upload button
         if (this.counter.running == 0)
         {
-            this.modal.enableButton('Choose files');
-            this.modal.enableButton('Create file');
+            this.modal.enableButton('Choose local file');
+            this.modal.enableButton('Choose FTP file');
+            this.modal.enableButton('Create new file');
         } else {
-            this.modal.disableButton('Choose files');
-            this.modal.disableButton('Create file');
+            this.modal.disableButton('Choose local file');
+            this.modal.disableButton('Choose FTP file');
+            this.modal.disableButton('Create new file');
         }
         
         // table visibility
         if (this.counter.announce + this.counter.success + this.counter.error > 0)
-            $(this.el).find('table').show();
+            $(this.el).find('#upload-table').show();
         else
-            $(this.el).find('table').hide();
+            $(this.el).find('#upload-table').hide();
     },
 
     // calculate percentage of all queued uploads
@@ -620,17 +567,16 @@ return Backbone.View.extend(
     },
 
     // load html template
-    _template: function(id, idInfo)
-    {
+    _template: function(id, idInfo) {
         return  '<div id="' + id + '" class="upload-box">' +
-                    '<table class="table table-striped" style="display: none;">' +
+                    '<table id="upload-table" class="table table-striped" style="display: none;">' +
                         '<thead>' +
                             '<tr>' +
                                 '<th>Name</th>' +
                                 '<th>Size</th>' +
                                 '<th>Type</th>' +
                                 '<th>Genome</th>' +
-                                '<th>Space&#8594;Tab</th>' +
+                                '<th>Settings</th>' +
                                 '<th>Status</th>' +
                                 '<th></th>' +
                             '</tr>' +

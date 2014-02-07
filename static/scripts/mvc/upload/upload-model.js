@@ -7,9 +7,16 @@ var Model = Backbone.Model.extend({
         extension       : 'auto',
         genome          : '?',
         url_paste       : '',
-        space_to_tabs   : false,
         status          : 'init',
-        info            : null
+        info            : null,
+        file_mode       : 'local',
+        file_size       : 0,
+        file_type       : null,
+        file_path       : '',
+        
+        // settings
+        space_to_tabs   : false,
+        to_posix_lines  : true
     }
 });
 

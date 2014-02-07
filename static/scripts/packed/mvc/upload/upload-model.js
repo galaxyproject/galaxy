@@ -1,1 +1,1 @@
-define([],function(){var b=Backbone.Model.extend({defaults:{extension:"auto",genome:"?",url_paste:"",space_to_tabs:false,status:"init",info:null}});var a=Backbone.Collection.extend({model:b});return{Model:b,Collection:a}});
+define([],function(){var b=Backbone.Model.extend({defaults:{extension:"auto",genome:"?",url_paste:"",status:"init",info:null,file_mode:"local",file_size:0,file_type:null,file_path:"",space_to_tabs:false,to_posix_lines:true}});var a=Backbone.Collection.extend({model:b});return{Model:b,Collection:a}});

@@ -556,7 +556,7 @@ return {
             tmpl +=                 '<span class="search-box">' +
                                         '<input class="search-box-input" id="input-' + column_key + '-filter" name="f-' + column_key + '" type="text" placeholder="' + value + '" size="' + size + '"/>' +
                                         '<button type="submit" style="background: transparent; border: none; padding: 4px; margin: 0px;">' +
-                                            '<i class="fa fa-plus-circle"></i>' +
+                                            '<i class="fa fa-search"></i>' +
                                         '</button>' +
                                     '</span>' +
                                 '</form>';

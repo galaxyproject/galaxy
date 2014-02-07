@@ -123,6 +123,10 @@
             if (queue_running)
                 return;
   
+            // backup queue index
+            var current_index = queue_index;
+  
+            // add files to queue
             for (var i = 0; i < files.length; i++)
             {
                 // check
@@ -136,11 +140,14 @@
                 queue[index] = files[i];
   
                 // announce
-                opts.announce(index, queue[index], "");
+                opts.announce(index, queue[index], '');
   
                 // increase counter
                 queue_length++;
             }
+  
+            // return
+            return current_index;
         }
 
         // remove entry from queue
@@ -183,12 +190,15 @@
             // remove from queue
             remove(index)
   
-            // identify maximum file size
+            // collect file details
             var filesize = file.size;
+            var filemode = file.mode;
+  
+            // identify maximum file size
             var maxfilesize = 1048576 * opts.maxfilesize;
   
-            // check file size
-            if (filesize < maxfilesize)
+            // check file size, unless its an ftp file
+            if (filesize < maxfilesize || file.mode == 'ftp')
             {
                 // get parameters
                 var data = opts.initialize(index, file);
