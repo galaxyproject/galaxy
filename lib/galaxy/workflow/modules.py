@@ -152,6 +152,7 @@ class InputDataModule( WorkflowModule ):
             .add_text( "name", "Name", value=self.state['name'] )
         return self.trans.fill_template( "workflow/editor_generic_form.mako",
                                          module=self, form=form )
+
     def get_state( self, secure=True ):
         return to_json_string( self.state )
 
@@ -168,11 +169,11 @@ class InputDataModule( WorkflowModule ):
         return state
 
     def encode_runtime_state( self, trans, state ):
-        fake_tool = Bunch( inputs = self.get_runtime_inputs() )
+        fake_tool = Bunch( inputs=self.get_runtime_inputs() )
         return state.encode( fake_tool, trans.app )
 
     def decode_runtime_state( self, trans, string ):
-        fake_tool = Bunch( inputs = self.get_runtime_inputs() )
+        fake_tool = Bunch( inputs=self.get_runtime_inputs() )
         state = galaxy.tools.DefaultToolState()
         state.decode( string, fake_tool, trans.app )
         return state
@@ -221,7 +222,7 @@ class ToolModule( WorkflowModule ):
         module.state = galaxy.tools.DefaultToolState()
         if module.tool is not None:
             if d.get('tool_version', 'Unspecified') != module.get_tool_version():
-                module.version_changes.append("%s: using version '%s' instead of version '%s' indicated in this workflow." % (tool_id, d.get('tool_version', 'Unspecified'), module.get_tool_version()) )
+                module.version_changes.append( "%s: using version '%s' instead of version '%s' indicated in this workflow." % ( tool_id, d.get( 'tool_version', 'Unspecified' ), module.get_tool_version() ) )
             module.state.decode( d[ "tool_state" ], module.tool, module.trans.app, secure=secure )
         module.errors = d.get( "tool_errors", None )
         module.post_job_actions = d.get( "post_job_actions", {} )
@@ -329,7 +330,7 @@ class ToolModule( WorkflowModule ):
         data_inputs = None
         for name, tool_output in self.tool.outputs.iteritems():
             if tool_output.format_source != None:
-                formats = [ 'input' ] # default to special name "input" which remove restrictions on connections
+                formats = [ 'input' ]  # default to special name "input" which remove restrictions on connections
                 if data_inputs == None:
                     data_inputs = self.get_data_inputs()
                 # find the input parameter referenced by format_source
