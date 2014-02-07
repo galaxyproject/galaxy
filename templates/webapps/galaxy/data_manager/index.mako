@@ -19,7 +19,7 @@
             <ul>
             %for data_manager_id, data_manager in data_managers.data_managers.iteritems():
                 <li>
-                    <a href="${ h.url_for( 'tool_runner?tool_id=%s' % ( data_manager.tool.id ) ) }"><strong>${ data_manager.name | h }</strong></a> - ${ data_manager.description | h }
+                    <a href="${ h.url_for( controller='tool_runner', action='index', tool_id=data_manager.tool.id ) }"><strong>${ data_manager.name | h }</strong></a> - ${ data_manager.description | h }
                 </li>
                 <p/>
             %endfor
