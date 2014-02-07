@@ -777,7 +777,7 @@ class GridOperation( object ):
             return dict( operation=self.label, id=item.id )
     def allowed( self, item ):
         if self.condition:
-            return self.condition( item )
+            return bool(self.condition( item ))
         else:
             return True
 
