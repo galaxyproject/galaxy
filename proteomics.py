@@ -3,11 +3,14 @@ Proteomics format classes
 """
 import logging
 import re
-from galaxy.datatypes.data import *
-from galaxy.datatypes.xml import *
+import binascii
+
 from galaxy.datatypes.sniff import *
-from galaxy.datatypes.binary import *
-from galaxy.datatypes.interval import *
+from galaxy.datatypes.data import Text
+from galaxy.datatypes.xml import GenericXml
+from galaxy.datatypes.binary import Binary
+from galaxy.datatypes.tabular import Tabular
+from galaxy.datatypes.interval import Gff
 
 log = logging.getLogger(__name__)
 
@@ -53,13 +56,46 @@ class Xls( Binary ):
         except:
             return "Binary xls file (%s)" % ( data.nice_size( dataset.get_size() ) )
 
-class ProteomicsXml(GenericXml):
+class IdpDB( Binary ):
+    file_ext = "idpDB"
+
+if hasattr(Binary, 'register_unsniffable_binary_ext'):
+    Binary.register_unsniffable_binary_ext('idpDB')
+
+
+class PepXmlReport( Tabular ):
+    """pepxml converted to tabular report"""
+    file_ext = "tsv"
+
+    def __init__(self, **kwd):
+        Tabular.__init__( self, **kwd )
+        self.column_names = ['Protein', 'Peptide', 'Assumed Charge', 'Neutral Pep Mass (calculated)', 'Neutral Mass', 'Retention Time', 'Start Scan', 'End Scan', 'Search Engine', 'PeptideProphet Probability', 'Interprophet Probabaility']
+
+    def display_peek( self, dataset ):
+        """Returns formated html of peek"""
+        return Tabular.make_html_table( self, dataset, column_names=self.column_names )
+
+
+class ProtXmlReport( Tabular ):
+    """protxml converted to tabular report"""
+    file_ext = "tsv"
+    comment_lines = 1
+    
+    def __init__(self, **kwd):
+        Tabular.__init__( self, **kwd )
+        self.column_names = ["Entry Number", "Group Probability", "Protein", "Protein Link", "Protein Probability", "Percent Coverage", "Number of Unique Peptides", "Total Independent Spectra", "Percent Share of Spectrum ID's", "Description", "Protein Molecular Weight", "Protein Length", "Is Nondegenerate Evidence", "Weight", "Precursor Ion Charge", "Peptide sequence", "Peptide Link", "NSP Adjusted Probability", "Initial Probability", "Number of Total Termini", "Number of Sibling Peptides Bin", "Number of Instances", "Peptide Group Designator", "Is Evidence?"]
+
+    def display_peek( self, dataset ):
+        """Returns formated html of peek"""
+        return Tabular.make_html_table( self, dataset, column_names=self.column_names )
+
+class ProteomicsXml( GenericXml ):
     """ An enhanced XML datatype used to reuse code across several
     proteomic/mass-spec datatypes. """
 
     def sniff(self, filename):
         """ Determines whether the file is the correct XML type. """
-        with open(filename, 'r') as contents:            
+        with open(filename, 'r') as contents:
             while True:
                 line = contents.readline()
                 if line == None or not line.startswith('<?'):
@@ -76,12 +112,13 @@ class ProteomicsXml(GenericXml):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
 
+
 class PepXml(ProteomicsXml):
     """pepXML data"""
     file_ext = "pepxml"
     blurb = 'pepXML data'
     root = "msms_pipeline_analysis"
-    
+
 
 class MzML(ProteomicsXml):
     """mzML data"""
@@ -99,7 +136,7 @@ class ProtXML(ProteomicsXml):
 
 class MzXML(ProteomicsXml):
     """mzXML data"""
-    file_ext = "mzXML"
+    file_ext = "mzxml"
     blurb = "mzXML Mass Spectrometry data"
     root = "mzXML"
 
@@ -108,10 +145,10 @@ class MzIdentML(ProteomicsXml):
     file_ext = "mzid"
     blurb = "XML identified peptides and proteins."
     root = "MzIdentML"
-    
+
 
 class TraML(ProteomicsXml):
-    file_ext = "traML"
+    file_ext = "traml"
     blurb = "TraML transition list"
     root = "TraML"
 
@@ -121,7 +158,25 @@ class MzQuantML(ProteomicsXml):
     blurb = "XML quantification data"
     root = "MzQuantML"
 
- 
+
+class ConsensusXML(ProteomicsXml):
+    file_ext = "consensusxml"
+    blurb = "OpenMS multiple LC-MS map alignment file"
+    root = "consensusXML"
+
+
+class FeatureXML(ProteomicsXml):
+    file_ext = "featurexml"
+    blurb = "OpenMS feature file"
+    root = "featureMap"
+
+
+class IdXML(ProteomicsXml):
+    file_ext = "idxml"
+    blurb = "OpenMS identification file"
+    root = "IdXML"
+
+
 class Mgf( Text ):
     """Mascot Generic Format data"""
     file_ext = "mgf"
@@ -135,7 +190,6 @@ class Mgf( Text ):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
 
-
     def sniff( self, filename ):
         mgf_begin_ions = "BEGIN IONS"
         max_lines=100
@@ -146,8 +200,8 @@ class Mgf( Text ):
                 return True
             if i>max_lines:
                 return False
-            
-                
+
+
 class MascotDat( Text ):
     """Mascot search results """
     file_ext = "mascotdat"
@@ -206,10 +260,10 @@ class RAW( Binary ):
 
 
 if hasattr(Binary, 'register_sniffable_binary_format'):
-    Binary.register_sniffable_binary_format('RAW', 'RAW', RAW)
+    Binary.register_sniffable_binary_format('raw', 'raw', RAW)
 
 
-class Msp(Text):
+class Msp( Text ):
     """ Output of NIST MS Search Program chemdata.nist.gov/mass-spc/ftp/mass-spc/PepLib.pdf """
     file_ext = "msp"
     
@@ -267,10 +321,9 @@ class Ms2(Text):
         return True
 
 # unsniffable binary format, should do something about this
-class XHunterAslFormat(Binary):
+class XHunterAslFormat( Binary ):
     """ Annotated Spectra in the HLF format http://www.thegpm.org/HUNTER/format_2006_09_15.html """
     file_ext = "hlf"
-
 
 if hasattr(Binary, 'register_unsniffable_binary_ext'):
     Binary.register_unsniffable_binary_ext('hlf')
