@@ -150,7 +150,7 @@ class AdminActions( object ):
         message += ', '.join( names )
         return message
 
-    def _undelete_quota( self, quota ):
+    def _undelete_quota( self, quota, params ):
         quotas = util.listify( quota )
         names = []
         for q in quotas:
