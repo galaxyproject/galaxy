@@ -225,9 +225,9 @@ var ConfigSettingCollectionView = Backbone.View.extend({
         var self = this,
             cancel_fn = function() { Galaxy.modal.hide(); $(window).unbind("keypress.check_enter_esc"); },
             ok_fn = function() {
-                self.update_from_form();
                 Galaxy.modal.hide();
                 $(window).unbind("keypress.check_enter_esc");
+                self.update_from_form();
             },
             check_enter_esc = function(e) {
                 if ((e.keyCode || e.which) === 27) { // Escape key
