@@ -75,7 +75,7 @@ class GFFFeature( GFFInterval ):
         # Preference for name: GTF, GFF3, GFF.
         for attr_name in [
                            # GTF:
-                           'transcript_id', 'gene_id',
+                           'gene_id', 'transcript_id',
                            # GFF3:
                            'ID', 'id',
                            # GFF (TODO):
