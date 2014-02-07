@@ -134,7 +134,6 @@ var CircsterView = Backbone.View.extend({
     
     initialize: function(options) {
         this.genome = options.genome;
-        this.track_gap = 10;
         this.label_arc_height = 50;
         this.scale = 1;
         this.circular_views = null;
@@ -147,6 +146,7 @@ var CircsterView = Backbone.View.extend({
         // When config settings change, update view.
         var vis_config = this.model.get('config');
         vis_config.get('arc_dataset_height').on('change:value', this.update_track_bounds, this);
+        vis_config.get('track_gap').on('change:value', this.update_track_bounds, this);
     },
 
     // HACKs: using track_type for circular/chord distinction in the functions below for now.
@@ -175,16 +175,20 @@ var CircsterView = Backbone.View.extend({
     get_tracks_bounds: function() {
         var circular_tracks = this.get_circular_tracks(),
             dataset_arc_height = this.model.get('config').get_value('arc_dataset_height'),
-            min_dimension = Math.min(this.$el.width(), this.$el.height()),
+            track_gap = this.model.get('config').get_value('track_gap'),
+            // Subtract 20 to make sure chrom labels are on screen.
+            min_dimension = Math.min(this.$el.width(), this.$el.height()) - 20,
             // Compute radius start based on model, will be centered 
             // and fit entirely inside element by default.
             radius_start = min_dimension / 2 -
-                            circular_tracks.length * (dataset_arc_height + this.track_gap) -
-                            (this.label_arc_height + this.track_gap),
+                            circular_tracks.length * (dataset_arc_height + track_gap) +
+                            // Add track_gap back in because no gap is needed for last track.
+                            track_gap -
+                            this.label_arc_height,
 
             // Compute range of track starting radii.
-            tracks_start_radii = d3.range(radius_start, min_dimension / 2, dataset_arc_height + this.track_gap);
-
+            tracks_start_radii = d3.range(radius_start, min_dimension / 2, dataset_arc_height + track_gap);
+            
         // Map from track start to bounds.
         var self = this;
         return _.map(tracks_start_radii, function(radius) {
@@ -317,7 +321,7 @@ var CircsterView = Backbone.View.extend({
         else {
             // Added circular track.
 
-            // Recompute and update track bounds.
+            // Recompute and update circular track bounds.
             var new_track_bounds = this.get_tracks_bounds();
             _.each(this.circular_views, function(track_view, i) {
                 track_view.update_radius_bounds(new_track_bounds[i]);
@@ -341,9 +345,13 @@ var CircsterView = Backbone.View.extend({
             this.circular_views.push(track_view);
 
             // Update label track.
+            /*
+            FIXME: should never have to update label track because vis always expands to fit area 
+            within label track.
             var track_bounds = new_track_bounds[ new_track_bounds.length-1 ];
             track_bounds[1] = track_bounds[0];
             this.label_track_view.update_radius_bounds(track_bounds);
+            */
         }
     },
 
@@ -369,6 +377,12 @@ var CircsterView = Backbone.View.extend({
         _.each(this.circular_views, function(track_view, i) {
             track_view.update_radius_bounds(new_track_bounds[i]);
         });
+
+        // Update chords tracks.
+        _.each(this.chords_views, function(track_view) {
+            track_view.update_radius_bounds(new_track_bounds[0]);
+        });
+        
     }
 });
 
@@ -381,11 +395,11 @@ var CircsterTrackView = Backbone.View.extend({
     /* ----------------------- Public Methods ------------------------- */
 
     initialize: function(options) {
-        this.bg_stroke = 'ccc';
+        this.bg_stroke = 'ddd';
         // Fill color when loading data.
-        this.loading_bg_fill = '000';
+        this.loading_bg_fill = 'ffc';
         // Fill color when data has been loaded.
-        this.bg_fill = 'ccc';
+        this.bg_fill = 'ddd';
         this.total_gap = options.total_gap;
         this.track = options.track;
         this.radius_bounds = options.radius_bounds;
@@ -898,7 +912,7 @@ var CircsterBigWigTrackView = CircsterQuantitativeTrackView.extend({
 
         // For max, use 98% quantile in attempt to avoid very large values. However, this max may be 0 
         // for sparsely populated data, so use max in that case.
-        return [ _.min(values), this._quantile(values, 0.98) || _.max(values) ];
+        return [ _.min(values), this._quantile(values, 0.5) || _.max(values) ];
     }
 });
 
@@ -987,6 +1001,7 @@ var Circster = Backbone.View.extend(
         // Add Circster-specific config options.
         vis.get('config').add([
             { key: 'arc_dataset_height', label: 'Arc Dataset Height', type: 'int', value: 25, view: 'circster' },
+            { key: 'track_gap', label: 'Gap Between Tracks', type: 'int', value: 5, view: 'circster' },
             { key: 'total_gap', label: 'Gap [0-1]', type: 'float', value: 0.4, view: 'circster', hidden: true }
         ]);
 
