@@ -309,9 +309,13 @@ return Backbone.View.extend(
         tool_input['file_type'] = extension;
         tool_input['files_0|type'] = 'upload_dataset';
         tool_input['files_0|url_paste'] = url_paste;
-        tool_input['files_0|ftp_files'] = file_path;
         tool_input['space_to_tabs'] = space_to_tabs;
         tool_input['to_posix_lines'] = to_posix_lines;
+        
+        // add ftp file path
+        if (file_mode == 'ftp') {
+            tool_input['files_0|ftp_files'] = file_path;
+        }
         
         // setup data
         data = {};
