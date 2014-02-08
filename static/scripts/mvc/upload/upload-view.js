@@ -105,7 +105,7 @@ return Backbone.View.extend(
         
         // load extension
         var self = this;
-        Utils.jsonFromUrl(galaxy_config.root + "api/datatypes",
+        Utils.jsonFromUrl(galaxy_config.root + "api/datatypes?upload_only=True",
             function(datatypes) {
                 for (key in datatypes)
                     self.select_extension.push([datatypes[key], datatypes[key]]);

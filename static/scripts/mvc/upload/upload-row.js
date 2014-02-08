@@ -16,8 +16,7 @@ define(['utils/utils',
 return Backbone.View.extend({
     // options
     options: {
-        padding : 8,
-        timeout : 2000
+        padding : 8
     },
     
     // states
@@ -324,16 +323,6 @@ return Backbone.View.extend({
         }
     },
 
-    // attach file info popup
-    _hideExtensionInfo : function()
-    {
-        // remove popup
-        var self = this
-        this.popover_timeout = setTimeout(function() {
-            self._destroyExtensionInfo();
-        }, this.options.timeout);
-    },
-    
     // attach file info popup
     _destroyExtensionInfo : function()
     {
