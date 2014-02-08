@@ -137,7 +137,7 @@ return Backbone.View.extend({
                     '<span class="upload-icon fa fa-hdd-o"/>' +
                     '<span id="upload-ftp-disk"/>' +
                 '</span>' +
-                '<table class="grid">' +
+                '<table class="grid" style="float: left;">' +
                     '<thead>' +
                         '<tr>' +
                             '<th></th>' +
