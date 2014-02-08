@@ -219,12 +219,14 @@
         {
             // construct form data
             var formData = new FormData();
-            for (var key in data)
+            for (var key in data) {
                 formData.append(key, data[key]);
+            }
   
             // check file size
-            if (file.size > 0)
+            if (file.size > 0 && opts.paramname) {
                 formData.append(opts.paramname, file, file.name);
+            }
   
             // prepare request
             xhr = new XMLHttpRequest();

@@ -296,26 +296,33 @@ return Backbone.View.extend(
         // configure uploadbox
         this.uploadbox.configure({url : this.options.nginx_upload_path});
         
-        // configure file mode
-        if (file_mode == 'ftp') {
-            this.uploadbox.configure({paramname : ''});
-        } else {
-            this.uploadbox.configure({paramname : 'files_0|file_data'});
-        }
-        
         // configure tool
         tool_input = {};
+        
+        // local files
+        if (file_mode == 'local') {
+            this.uploadbox.configure({paramname : 'files_0|file_data'});
+        } else {
+            this.uploadbox.configure({paramname : null});
+        }
+        
+        // new files
+        if (file_mode == 'new') {
+            tool_input['files_0|url_paste'] = url_paste;
+        }
+        
+        // files from ftp
+        if (file_mode == 'ftp') {
+            // add to tool configuration
+            tool_input['files_0|ftp_files'] = file_path;
+        }
+        
+        // add common configuration
         tool_input['dbkey'] = genome;
         tool_input['file_type'] = extension;
         tool_input['files_0|type'] = 'upload_dataset';
-        tool_input['files_0|url_paste'] = url_paste;
         tool_input['space_to_tabs'] = space_to_tabs;
         tool_input['to_posix_lines'] = to_posix_lines;
-        
-        // add ftp file path
-        if (file_mode == 'ftp') {
-            tool_input['files_0|ftp_files'] = file_path;
-        }
         
         // setup data
         data = {};
@@ -341,8 +348,8 @@ return Backbone.View.extend(
     _eventSuccess : function(index, file, message) {
         // update status
         var it = this.collection.get(index);
-        it.set('status', 'success');
         it.set('percentage', 100);
+        it.set('status', 'success');
         
         // file size
         var file_size = it.get('file_size');
@@ -370,9 +377,9 @@ return Backbone.View.extend(
         var it = this.collection.get(index);
         
         // update status
+        it.set('percentage', 100);
         it.set('status', 'error');
         it.set('info', message);
-        it.set('percentage', 100);
         
         // update ui button
         this.ui_button.set('percentage', this._upload_percentage(100, file.size));
