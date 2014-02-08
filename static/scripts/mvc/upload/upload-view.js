@@ -342,6 +342,7 @@ return Backbone.View.extend(
         // update status
         var it = this.collection.get(index);
         it.set('status', 'success');
+        it.set('percentage', 100);
         
         // file size
         var file_size = it.get('file_size');
@@ -371,6 +372,7 @@ return Backbone.View.extend(
         // update status
         it.set('status', 'error');
         it.set('info', message);
+        it.set('percentage', 100);
         
         // update ui button
         this.ui_button.set('percentage', this._upload_percentage(100, file.size));

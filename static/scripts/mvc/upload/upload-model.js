@@ -13,6 +13,7 @@ var Model = Backbone.Model.extend({
         file_size       : 0,
         file_type       : null,
         file_path       : '',
+        percentage      : 0,
         
         // settings
         space_to_tabs   : false,
