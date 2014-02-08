@@ -67,7 +67,6 @@ var View = Backbone.View.extend({
         $el.addClass('progress-bar-notransition');
         if (value != '') {
             $el.addClass('progress-bar-' + value);
-            console.log($el);
         }
     },
     
