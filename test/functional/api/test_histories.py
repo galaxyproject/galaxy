@@ -68,3 +68,5 @@ class HistoriesApiTestCase( api.ApiTestCase, TestsDatasets ):
             if import_name in history_names():
                 found = True
         assert found, "%s not in history names %s" % ( import_name, history_names() )
+
+    #TODO: (CE) test_create_from_copy

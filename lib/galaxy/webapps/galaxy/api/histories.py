@@ -170,35 +170,64 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin,
 
         :type   payload: dict
         :param  payload: (optional) dictionary structure containing:
-            * name:     the new history's name
-            * current:  if passed, set the new history to be the user's 'current'
-                        history
+            * name:             the new history's name
+            * current:          if passed, set the new history to be the user's
+                                'current' history
+            * history_id:       the id of the history to copy
+            * archive_source:   the url that will generate the archive to import
+            * archive_type:     'url' (default)
 
         :rtype:     dict
         :returns:   element view of new history
         """
-        if self.__create_via_import( payload ):
-            return self.__import_archive( trans, payload )
+    def __create_via_import( self, payload ):
+        return
+
+    def __import_archive( self, trans, archive_type, archive_source ):
 
         hist_name = None
         if payload.get( 'name', None ):
             hist_name = restore_text( payload['name'] )
-        new_history = trans.app.model.History( user=trans.user, name=hist_name )
+        #TODO: possibly default to True here - but favor explicit for now (and backwards compat)
+        set_as_current = string_as_bool( payload[ 'current' ] ) if 'current' in payload else False
+        copy_this_history_id = payload.get( 'history_id', None )
+
+        if "archive_source" in payload:
+            archive_source = payload[ "archive_source" ]
+            archive_type = payload.get( "archive_type", "url" )
+            self.queue_history_import( trans, archive_type=archive_type, archive_source=archive_source )
+            trans.response.status = 201
+            return {}
+
+        new_history = None
+        # if a history id was passed, copy that history
+        if copy_this_history_id:
+            try:
+                original_history = self.get_history( trans, copy_this_history_id,
+                                                     check_ownership=False, check_accessible=True )
+            except HTTPBadRequest, bad_request:
+                trans.response.status = 403
+                #TODO: it's either that or parse each possible detail to it's own status code
+                return { 'error': bad_request.detail or 'Bad request' }
+
+            hist_name = hist_name or ( "Copy of '%s'" % original_history.name )
+            new_history = original_history.copy( name=hist_name, target_user=trans.user )
+
+        # otherwise, create a new empty history
+        else:
+            new_history = trans.app.model.History( user=trans.user, name=hist_name )
+
+        item = {}
 
         trans.sa_session.add( new_history )
         trans.sa_session.flush()
-        #item = new_history.to_dict(view='element', value_mapper={'id':trans.security.encode_id})
+
         item = self.get_history_dict( trans, new_history )
         item['url'] = url_for( 'history', id=item['id'] )
 
-        #TODO: possibly default to True here - but favor explicit for now (and backwards compat)
-        current = string_as_bool( payload[ 'current' ] ) if 'current' in payload else False
-        if current:
+        if set_as_current:
             trans.history = new_history
 
-        #TODO: copy own history
-        #TODO: import an importable history
-        #TODO: import from archive
         return item
 
     @web.expose_api
@@ -397,14 +426,6 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin,
             raise exceptions.MessageException( "Export not available or not yet ready." )
 
         return self.serve_ready_history_export( trans, jeha )
-
-    def __create_via_import( self, payload ):
-        return "archive_source" in payload
-
-    def __import_archive( self, trans, payload ):
-        archive_type = payload.get( "archive_type", "url" )
-        archive_source = payload[ "archive_source" ]
-        self.queue_history_import( trans, archive_type=archive_type, archive_source=archive_source )
 
     def _validate_and_parse_update_payload( self, payload ):
         """
