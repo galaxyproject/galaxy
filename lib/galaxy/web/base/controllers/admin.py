@@ -6,8 +6,8 @@ from galaxy.util import inflector
 from galaxy.web.form_builder import CheckboxField
 from string import punctuation as PUNCTUATION
 
-
 log = logging.getLogger( __name__ )
+
 
 class Admin( object ):
     # Override these
@@ -27,7 +27,7 @@ class Admin( object ):
         message = kwd.get( 'message', ''  )
         status = kwd.get( 'status', 'done' )
         if trans.webapp.name == 'galaxy':
-            installed_repositories = trans.sa_session.query( trans.model.ToolShedRepository ).first()
+            installed_repositories = trans.install_model.context.query( trans.install_model.ToolShedRepository ).first()
             installing_repository_ids = get_ids_of_tool_shed_repositories_being_installed( trans, as_string=True )
             return trans.fill_template( '/webapps/galaxy/admin/index.mako',
                                         installed_repositories=installed_repositories,
@@ -38,6 +38,7 @@ class Admin( object ):
             return trans.fill_template( '/webapps/tool_shed/admin/index.mako',
                                         message=message,
                                         status=status )
+
     @web.expose
     @web.require_admin
     def center( self, trans, **kwd ):
@@ -51,6 +52,7 @@ class Admin( object ):
             return trans.fill_template( '/webapps/tool_shed/admin/center.mako',
                                         message=message,
                                         status=status )
+
     @web.expose
     @web.require_admin
     def reload_tool( self, trans, **kwd ):
@@ -67,13 +69,14 @@ class Admin( object ):
                                     toolbox=toolbox,
                                     message=message,
                                     status=status )
+
     @web.expose
     @web.require_admin
     def tool_versions( self, trans, **kwd ):
         if 'message' not in kwd or not kwd[ 'message' ]:
             kwd[ 'message' ] = 'Tool ids for tools that are currently loaded into the tool panel are highlighted in green (click to display).'
         return self.tool_version_list_grid( trans, **kwd )
-    # Galaxy Role Stuff
+
     @web.expose
     @web.require_admin
     def roles( self, trans, **kwargs ):
@@ -91,10 +94,14 @@ class Admin( object ):
                 return self.purge_role( trans, **kwargs )
             if operation == "manage users and groups":
                 return self.manage_users_and_groups_for_role( trans, **kwargs )
+            if operation == "manage role associations":
+                # This is currently used only in the Tool Shed.
+                return self.manage_role_associations( trans, **kwargs )
             if operation == "rename":
                 return self.rename_role( trans, **kwargs )
         # Render the list view
         return self.role_list_grid( trans, **kwargs )
+
     @web.expose
     @web.require_admin
     def create_role( self, trans, **kwd ):
@@ -169,6 +176,7 @@ class Admin( object ):
                                     create_group_for_role_checked=create_group_for_role_checked,
                                     message=message,
                                     status=status )
+
     @web.expose
     @web.require_admin
     def rename_role( self, trans, **kwd ):
@@ -210,6 +218,7 @@ class Admin( object ):
                                     role=role,
                                     message=message,
                                     status=status )
+
     @web.expose
     @web.require_admin
     def manage_users_and_groups_for_role( self, trans, **kwd ):
@@ -302,6 +311,7 @@ class Admin( object ):
                                     library_dataset_actions=library_dataset_actions,
                                     message=message,
                                     status=status )
+
     @web.expose
     @web.require_admin
     def mark_role_deleted( self, trans, **kwd ):
@@ -324,6 +334,7 @@ class Admin( object ):
                                                    action='roles',
                                                    message=util.sanitize_text( message ),
                                                    status='done' ) )
+
     @web.expose
     @web.require_admin
     def undelete_role( self, trans, **kwd ):
@@ -355,6 +366,7 @@ class Admin( object ):
                                                    action='roles',
                                                    message=util.sanitize_text( message ),
                                                    status='done' ) )
+
     @web.expose
     @web.require_admin
     def purge_role( self, trans, **kwd ):
@@ -408,7 +420,6 @@ class Admin( object ):
                                                    message=util.sanitize_text( message ),
                                                    status='done' ) )
 
-    # Galaxy Group Stuff
     @web.expose
     @web.require_admin
     def groups( self, trans, **kwargs ):
@@ -430,6 +441,7 @@ class Admin( object ):
                 return self.rename_group( trans, **kwargs )
         # Render the list view
         return self.group_list_grid( trans, **kwargs )
+
     @web.expose
     @web.require_admin
     def rename_group( self, trans, **kwd ):
@@ -469,6 +481,7 @@ class Admin( object ):
                                     group=group,
                                     message=message,
                                     status=status )
+
     @web.expose
     @web.require_admin
     def manage_users_and_roles_for_group( self, trans, **kwd ):
@@ -513,6 +526,7 @@ class Admin( object ):
                                     out_users=out_users,
                                     message=message,
                                     status=status )
+
     @web.expose
     @web.require_admin
     def create_group( self, trans, **kwd ):
@@ -588,6 +602,7 @@ class Admin( object ):
                                     create_role_for_group_checked=create_role_for_group_checked,
                                     message=message,
                                     status=status )
+
     @web.expose
     @web.require_admin
     def mark_group_deleted( self, trans, **kwd ):
@@ -611,6 +626,7 @@ class Admin( object ):
                                                    action='groups',
                                                    message=util.sanitize_text( message ),
                                                    status='done' ) )
+
     @web.expose
     @web.require_admin
     def undelete_group( self, trans, **kwd ):
@@ -642,6 +658,7 @@ class Admin( object ):
                                                    action='groups',
                                                    message=util.sanitize_text( message ),
                                                    status='done' ) )
+
     @web.expose
     @web.require_admin
     def purge_group( self, trans, **kwd ):
@@ -678,13 +695,13 @@ class Admin( object ):
                                                    message=util.sanitize_text( message ),
                                                    status='done' ) )
 
-    # Galaxy User Stuff
     @web.expose
     @web.require_admin
     def create_new_user( self, trans, **kwd ):
         return trans.response.send_redirect( web.url_for( controller='user',
                                                           action='create',
                                                           cntrller='admin' ) )
+
     @web.expose
     @web.require_admin
     def reset_user_password( self, trans, **kwd ):
@@ -730,6 +747,7 @@ class Admin( object ):
                                     users=users,
                                     password='',
                                     confirm='' )
+
     @web.expose
     @web.require_admin
     def mark_user_deleted( self, trans, **kwd ):
@@ -752,6 +770,7 @@ class Admin( object ):
                                                    action='users',
                                                    message=util.sanitize_text( message ),
                                                    status='done' ) )
+
     @web.expose
     @web.require_admin
     def undelete_user( self, trans, **kwd ):
@@ -783,6 +802,7 @@ class Admin( object ):
                                                    action='users',
                                                    message=util.sanitize_text( message ),
                                                    status='done' ) )
+
     @web.expose
     @web.require_admin
     def purge_user( self, trans, **kwd ):
@@ -850,6 +870,7 @@ class Admin( object ):
                                                    action='users',
                                                    message=util.sanitize_text( message ),
                                                    status='done' ) )
+
     @web.expose
     @web.require_admin
     def users( self, trans, **kwd ):
@@ -888,6 +909,7 @@ class Admin( object ):
                 self.user_list_grid.operations.append( self.purge_operation )
         # Render the list view
         return self.user_list_grid( trans, **kwd )
+
     @web.expose
     @web.require_admin
     def name_autocomplete_data( self, trans, q=None, limit=None, timestamp=None ):
@@ -896,6 +918,7 @@ class Admin( object ):
         for user in trans.sa_session.query( trans.app.model.User ).filter_by( deleted=False ).filter( func.lower( trans.app.model.User.email ).like( q.lower() + "%" ) ):
             ac_data = ac_data + user.email + "\n"
         return ac_data
+
     @web.expose
     @web.require_admin
     def manage_roles_and_groups_for_user( self, trans, **kwd ):
@@ -968,6 +991,7 @@ class Admin( object ):
                                     out_groups=out_groups,
                                     message=message,
                                     status=status )
+
     @web.expose
     @web.require_admin
     def memdump( self, trans, ids = 'None', sorts = 'None', pages = 'None', new_id = None, new_sort = None, **kwd ):
@@ -1067,17 +1091,17 @@ class Admin( object ):
 
 def get_ids_of_tool_shed_repositories_being_installed( trans, as_string=False ):
     installing_repository_ids = []
-    new_status = trans.model.ToolShedRepository.installation_status.NEW
-    cloning_status = trans.model.ToolShedRepository.installation_status.CLONING
-    setting_tool_versions_status = trans.model.ToolShedRepository.installation_status.SETTING_TOOL_VERSIONS
-    installing_dependencies_status = trans.model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES
-    loading_datatypes_status = trans.model.ToolShedRepository.installation_status.LOADING_PROPRIETARY_DATATYPES
-    for tool_shed_repository in trans.sa_session.query( trans.model.ToolShedRepository ) \
-                                                .filter( or_( trans.model.ToolShedRepository.status == new_status,
-                                                              trans.model.ToolShedRepository.status == cloning_status,
-                                                              trans.model.ToolShedRepository.status == setting_tool_versions_status,
-                                                              trans.model.ToolShedRepository.status == installing_dependencies_status,
-                                                              trans.model.ToolShedRepository.status == loading_datatypes_status ) ):
+    new_status = trans.install_model.ToolShedRepository.installation_status.NEW
+    cloning_status = trans.install_model.ToolShedRepository.installation_status.CLONING
+    setting_tool_versions_status = trans.install_model.ToolShedRepository.installation_status.SETTING_TOOL_VERSIONS
+    installing_dependencies_status = trans.install_model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES
+    loading_datatypes_status = trans.install_model.ToolShedRepository.installation_status.LOADING_PROPRIETARY_DATATYPES
+    for tool_shed_repository in trans.install_model.context.query( trans.install_model.ToolShedRepository ) \
+                                                .filter( or_( trans.install_model.ToolShedRepository.status == new_status,
+                                                              trans.install_model.ToolShedRepository.status == cloning_status,
+                                                              trans.install_model.ToolShedRepository.status == setting_tool_versions_status,
+                                                              trans.install_model.ToolShedRepository.status == installing_dependencies_status,
+                                                              trans.install_model.ToolShedRepository.status == loading_datatypes_status ) ):
         installing_repository_ids.append( trans.security.encode_id( tool_shed_repository.id ) )
     if as_string:
         return ','.join( installing_repository_ids )
@@ -1089,12 +1113,14 @@ def get_user( trans, user_id ):
     if not user:
         return trans.show_error_message( "User not found for id (%s)" % str( user_id ) )
     return user
+
 def get_user_by_username( trans, username ):
     """Get a user from the database by username"""
     # TODO: Add exception handling here.
     return trans.sa_session.query( trans.model.User ) \
                            .filter( trans.model.User.table.c.username == username ) \
                            .one()
+
 def get_role( trans, id ):
     """Get a Role from the database by id."""
     # Load user from database
@@ -1103,6 +1129,7 @@ def get_role( trans, id ):
     if not role:
         return trans.show_error_message( "Role not found for id (%s)" % str( id ) )
     return role
+
 def get_group( trans, id ):
     """Get a Group from the database by id."""
     # Load user from database
@@ -1111,6 +1138,7 @@ def get_group( trans, id ):
     if not group:
         return trans.show_error_message( "Group not found for id (%s)" % str( id ) )
     return group
+
 def get_quota( trans, id ):
     """Get a Quota from the database by id."""
     # Load user from database

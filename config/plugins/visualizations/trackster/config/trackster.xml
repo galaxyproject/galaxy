@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
-<visualization name="trackster">
+<visualization name="Trackster">
     <!--not tested yet -->
     <data_sources>
         <data_source>
@@ -26,5 +26,5 @@
     <!-- template_root and template are currently ignored for the 'built-in' visualizations -->
     <template_root>webapps/galaxy/visualization/tracks</template_root>
     <template>browser.mako</template>
-    <render_location>_top</render_location>
+    <render_target>_top</render_target>
 </visualization>

@@ -2,24 +2,46 @@
 Utility functions used systemwide.
 
 """
-import logging, threading, random, string, re, binascii, pickle, time, datetime, math, re, os, sys, tempfile, stat, grp, smtplib, errno, shutil
+
+from __future__ import absolute_import
+
+import binascii
+import errno
+import grp
+import json
+import logging
+import os
+import pickle
+import random
+import re
+import shutil
+import smtplib
+import stat
+import string
+import sys
+import tempfile
+import threading
+
 from email.MIMEText import MIMEText
 
 from os.path import relpath
 from hashlib import md5
+from itertools import izip
 
 from galaxy import eggs
-import pkg_resources
 
-pkg_resources.require( 'docutils' )
+eggs.require( 'docutils' )
 import docutils.core
 import docutils.writers.html4css1
 
-pkg_resources.require( 'elementtree' )
+eggs.require( 'elementtree' )
 from elementtree import ElementTree, ElementInclude
 
-pkg_resources.require( "wchartype" )
+eggs.require( "wchartype" )
 import wchartype
+
+from .inflection import Inflector, English
+inflector = Inflector(English)
 
 log   = logging.getLogger(__name__)
 _lock = threading.RLock()
@@ -31,21 +53,15 @@ DATABASE_MAX_STRING_SIZE_PRETTY = '32K'
 
 gzip_magic = '\037\213'
 bz2_magic = 'BZh'
-DEFAULT_ENCODING = 'utf-8'
+DEFAULT_ENCODING = os.environ.get('GALAXY_DEFAULT_ENCODING', 'utf-8')
 NULL_CHAR = '\000'
 BINARY_CHARS = [ NULL_CHAR ]
-
-from inflection import Inflector, English
-inflector = Inflector(English)
-
-pkg_resources.require( "simplejson" )
-import simplejson
 
 def is_multi_byte( chars ):
     for char in chars:
         try:
             char = unicode( char )
-        except UnicodeDecodeError, e:
+        except UnicodeDecodeError:
             # Probably binary
             return False
         if wchartype.is_asian( char ) or \
@@ -137,6 +153,11 @@ def parse_xml(fname):
     ElementInclude.include(root)
     return tree
 
+
+def parse_xml_string(xml_string):
+    tree = ElementTree.fromstring(xml_string)
+    return tree
+
 def xml_to_string( elem, pretty=False ):
     """Returns a string from an xml tree"""
     if pretty:
@@ -177,9 +198,9 @@ def xml_element_to_dict( elem ):
                 sub_elem_dict[ key ].append( value )
         for key, value in sub_elem_dict.iteritems():
             if len( value ) == 1:
-                rval[ elem.tag ][ k ] = value[0]
+                rval[ elem.tag ][ key ] = value[0]
             else:
-                rval[ elem.tag ][ k ] = value
+                rval[ elem.tag ][ key ] = value
     if elem.attrib:
         for key, value in elem.attrib.iteritems():
             rval[ elem.tag ][ "@%s" % key ] = value
@@ -287,8 +308,8 @@ def shrink_string_by_size( value, size, join_by="..", left_larger=True, beginnin
 
 def pretty_print_json(json_data, is_json_string=False):
     if is_json_string:
-        json_data = simplejson.loads(json_data)
-    return simplejson.dumps(json_data, sort_keys=True, indent=4 * ' ')
+        json_data = json.loads(json_data)
+    return json.dumps(json_data, sort_keys=True, indent=4 * ' ')
 
 # characters that are valid
 valid_chars  = set(string.letters + string.digits + " -=_.()/+*^,:?!")
@@ -368,6 +389,20 @@ def sanitize_for_filename( text, default=None ):
             return sanitize_for_filename( str( unique_id() ) )
         return default
     return out
+
+
+def in_directory( file, directory ):
+    """
+    Return true, if the common prefix of both is equal to directory
+    e.g. /a/b/c/d.rst and directory is /a/b, the common prefix is /a/b
+    """
+
+    # Make both absolute.
+    directory = os.path.abspath( directory )
+    file = os.path.abspath( file )
+
+    return os.path.commonprefix( [ file, directory ] ) == directory
+
 
 class Params( object ):
     """
@@ -737,7 +772,7 @@ def mkstemp_ln( src, prefix='mkstemp_ln_' ):
         name = names.next()
         file = os.path.join(dir, prefix + name)
         try:
-            linked_path = os.link( src, file )
+            os.link( src, file )
             return (os.path.abspath(file))
         except OSError, e:
             if e.errno == errno.EEXIST:
@@ -931,6 +966,15 @@ def move_merge( source, target ):
     else:
         return shutil.move( source, target )
 
+
+def safe_str_cmp(a, b):
+    if len(a) != len(b):
+        return False
+    rv = 0
+    for x, y in izip(a, b):
+        rv |= ord(x) ^ ord(y)
+    return rv == 0
+
 galaxy_root_path = os.path.join(__path__[0], "..","..","..")
 
 # The dbnames list is used in edit attributes and the upload tool
@@ -946,5 +990,5 @@ def galaxy_directory():
     return os.path.abspath(galaxy_root_path)
 
 if __name__ == '__main__':
-    import doctest, sys
+    import doctest
     doctest.testmod(sys.modules[__name__], verbose=False)

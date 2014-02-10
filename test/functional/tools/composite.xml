@@ -1,0 +1,20 @@
+<tool id="composite" version="1.0.0">
+  <command>cat '$input.extra_files_path/Sequences' > $output</command>
+  <inputs>
+    <param name="input" type="data" format="velvet" label="Velvet Dataset" help="Prepared by velveth."/>
+  </inputs>
+  <outputs>
+    <data format="txt" name="output" label="${tool.name} on ${on_string}: LastGraph">
+    </data>
+  </outputs>
+  <tests>
+    <test>
+      <param name="input" value="velveth_test1/output.html" ftype="velvet" >
+        <composite_data value='velveth_test1/Sequences' ftype="Sequences"/>
+        <composite_data value='velveth_test1/Roadmaps' ftype="Roadmaps"/>
+        <composite_data value='velveth_test1/Log'/>
+      </param>
+      <output name="unused_reads_fasta" file="velveth_test1/Sequences" compare="diff"/>
+    </test>
+  </tests>
+</tool>

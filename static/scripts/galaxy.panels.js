@@ -11,7 +11,7 @@ var ensure_dd_helper = function () {
 
 // Panels
 
-var MIN_PANEL_WIDTH = 150,
+var MIN_PANEL_WIDTH = 160,
     MAX_PANEL_WIDTH = 800;
 
 var Panel = function( options ) {

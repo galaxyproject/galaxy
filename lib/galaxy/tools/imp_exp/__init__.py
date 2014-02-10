@@ -1,4 +1,4 @@
-import os, shutil, logging, tempfile, simplejson
+import os, shutil, logging, tempfile, json
 from galaxy import model
 from galaxy.tools.parameters.basic import UnvalidatedValue
 from galaxy.web.framework.helpers import to_unicode
@@ -226,13 +226,13 @@ class JobImportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
                     self.sa_session.add( imported_job )
                     self.sa_session.flush()
 
-                    class HistoryDatasetAssociationIDEncoder( simplejson.JSONEncoder ):
+                    class HistoryDatasetAssociationIDEncoder( json.JSONEncoder ):
                         """ Custom JSONEncoder for a HistoryDatasetAssociation that encodes an HDA as its ID. """
                         def default( self, obj ):
                             """ Encode an HDA, default encoding for everything else. """
                             if isinstance( obj, model.HistoryDatasetAssociation ):
                                 return obj.id
-                            return simplejson.JSONEncoder.default( self, obj )
+                            return json.JSONEncoder.default( self, obj )
 
                     # Set parameters. May be useful to look at metadata.py for creating parameters.
                     # TODO: there may be a better way to set parameters, e.g.:
@@ -311,7 +311,7 @@ class JobExportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
                     del metadata[ name ]
             return metadata
 
-        class HistoryDatasetAssociationEncoder( simplejson.JSONEncoder ):
+        class HistoryDatasetAssociationEncoder( json.JSONEncoder ):
             """ Custom JSONEncoder for a HistoryDatasetAssociation. """
             def default( self, obj ):
                 """ Encode an HDA, default encoding for everything else. """
@@ -337,7 +337,7 @@ class JobExportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
                     }
                 if isinstance( obj, UnvalidatedValue ):
                     return obj.__str__()
-                return simplejson.JSONEncoder.default( self, obj )
+                return json.JSONEncoder.default( self, obj )
 
         #
         # Create attributes/metadata files for export.

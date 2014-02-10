@@ -5,33 +5,19 @@ are encapsulated here.
 import logging
 log = logging.getLogger( __name__ )
 
-import sys
-import datetime
-
 from galaxy.webapps.tool_shed.model import *
+import galaxy.webapps.tool_shed.model
 from galaxy.model.orm import *
 from galaxy.model.custom_types import *
-from galaxy.util.bunch import Bunch
-from galaxy.model.orm import dialect_to_egg
+from galaxy.model.orm.engine_factory import build_engine
+from galaxy.model.orm.now import now
+from galaxy.model.base import ModelMapping
 import galaxy.webapps.tool_shed.util.shed_statistics as shed_statistics
 import galaxy.webapps.tool_shed.util.hgweb_config
 from galaxy.webapps.tool_shed.security import CommunityRBACAgent
 
 metadata = MetaData()
-context = Session = scoped_session( sessionmaker( autoflush=False, autocommit=True ) )
 
-# For backward compatibility with "context.current"
-context.current = Session
-
-# NOTE REGARDING TIMESTAMPS:
-#   It is currently difficult to have the timestamps calculated by the
-#   database in a portable way, so we're doing it in the client. This
-#   also saves us from needing to postfetch on postgres. HOWEVER: it
-#   relies on the client's clock being set correctly, so if clustering
-#   web servers, use a time server to ensure synchronization
-
-# Return the current time in UTC without any timezone information
-now = datetime.datetime.utcnow
 
 APIKeys.table = Table( "api_keys", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -84,6 +70,13 @@ UserRoleAssociation.table = Table( "user_role_association", metadata,
 GroupRoleAssociation.table = Table( "group_role_association", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "group_id", Integer, ForeignKey( "galaxy_group.id" ), index=True ),
+    Column( "role_id", Integer, ForeignKey( "role.id" ), index=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ) )
+
+RepositoryRoleAssociation.table = Table( "repository_role_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "repository_id", Integer, ForeignKey( "repository.id" ), index=True ),
     Column( "role_id", Integer, ForeignKey( "role.id" ), index=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ) )
@@ -217,8 +210,17 @@ mapper( Group, Group.table,
 
 mapper( Role, Role.table,
     properties=dict(
-        users=relation( UserRoleAssociation ),
-        groups=relation( GroupRoleAssociation ) ) )
+        repositories=relation( RepositoryRoleAssociation,
+                               primaryjoin=( ( Role.table.c.id == RepositoryRoleAssociation.table.c.role_id ) & ( RepositoryRoleAssociation.table.c.repository_id == Repository.table.c.id ) ) ),
+        users=relation( UserRoleAssociation,
+                        primaryjoin=( ( Role.table.c.id == UserRoleAssociation.table.c.role_id ) & ( UserRoleAssociation.table.c.user_id == User.table.c.id ) ) ),
+        groups=relation( GroupRoleAssociation,
+                         primaryjoin=( ( Role.table.c.id == GroupRoleAssociation.table.c.role_id ) & ( GroupRoleAssociation.table.c.group_id == Group.table.c.id ) ) ) ) )
+
+mapper( RepositoryRoleAssociation, RepositoryRoleAssociation.table,
+    properties=dict(
+        repository=relation( Repository ),
+        role=relation( Role ) ) )
 
 mapper( UserGroupAssociation, UserGroupAssociation.table,
     properties=dict( user=relation( User, backref = "groups" ),
@@ -259,6 +261,7 @@ mapper( Repository, Repository.table,
                                          order_by=desc( RepositoryMetadata.table.c.update_time ) ),
         metadata_revisions=relation( RepositoryMetadata,
                                      order_by=desc( RepositoryMetadata.table.c.update_time ) ),
+        roles=relation( RepositoryRoleAssociation ),
         reviews=relation( RepositoryReview,
                           primaryjoin=( ( Repository.table.c.id == RepositoryReview.table.c.repository_id ) ) ),
         reviewers=relation( User,
@@ -307,43 +310,21 @@ mapper( RepositoryCategoryAssociation, RepositoryCategoryAssociation.table,
         category=relation( Category ),
         repository=relation( Repository ) ) )
 
-def guess_dialect_for_url( url ):
-    return (url.split(':', 1))[0]
-
-def load_egg_for_url( url ):
-    # Load the appropriate db module
-    dialect = guess_dialect_for_url( url )
-    try:
-        egg = dialect_to_egg[dialect]
-        try:
-            pkg_resources.require( egg )
-            log.debug( "%s egg successfully loaded for %s dialect" % ( egg, dialect ) )
-        except:
-            # If the module's in the path elsewhere (i.e. non-egg), it'll still load.
-            log.warning( "%s egg not found, but an attempt will be made to use %s anyway" % ( egg, dialect ) )
-    except KeyError:
-        # Let this go, it could possibly work with db's we don't support
-        log.error( "database_connection contains an unknown SQLAlchemy database dialect: %s" % dialect )
 
 def init( file_path, url, engine_options={}, create_tables=False ):
     """Connect mappings to the database"""
-    # Load the appropriate db module
-    load_egg_for_url( url )
     # Create the database engine
-    engine = create_engine( url, **engine_options )
+    engine = build_engine( url, engine_options )
     # Connect the metadata to the database.
     metadata.bind = engine
-    # Clear any existing contextual sessions and reconfigure
-    Session.remove()
-    Session.configure( bind=engine )
-    # Create tables if needed
+
+    result = ModelMapping([galaxy.webapps.tool_shed.model], engine=engine)
+
     if create_tables:
         metadata.create_all()
-    # Pack everything into a bunch
-    result = Bunch( **globals() )
-    result.engine = engine
-    result.session = Session
+
     result.create_tables = create_tables
+
     # Load local tool shed security policy
     result.security_agent = CommunityRBACAgent( result )
     result.shed_counter = shed_statistics.ShedCounter( result )

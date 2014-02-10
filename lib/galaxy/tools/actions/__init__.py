@@ -3,7 +3,8 @@ import galaxy.tools
 
 from galaxy.exceptions import ObjectInvalid
 from galaxy.model import LibraryDatasetDatasetAssociation
-from galaxy.tools.parameters import DataToolParameter, SelectToolParameter
+from galaxy.tools.parameters import DataToolParameter
+from galaxy.tools.parameters import SelectToolParameter
 from galaxy.tools.parameters.grouping import Conditional, Repeat
 from galaxy.util.json import from_json_string
 from galaxy.util.json import to_json_string
@@ -15,6 +16,7 @@ from galaxy.web import url_for
 import logging
 log = logging.getLogger( __name__ )
 
+
 class ToolAction( object ):
     """
     The actions to be taken when a tool is run (after parameters have
@@ -22,6 +24,7 @@ class ToolAction( object ):
     """
     def execute( self, tool, trans, incoming={}, set_output_hid=True ):
         raise TypeError("Abstract method")
+
 
 class DefaultToolAction( object ):
     """Default tool action is to run an external command"""
@@ -33,8 +36,10 @@ class DefaultToolAction( object ):
         of the DataToolParameter type.
         """
         input_datasets = dict()
-        def visitor( prefix, input, value, parent = None ):
-            def process_dataset( data, formats = None ):
+
+        def visitor( prefix, input, value, parent=None ):
+
+            def process_dataset( data, formats=None ):
                 if not data:
                     return data
                 if formats is None:
@@ -48,11 +53,11 @@ class DefaultToolAction( object ):
                             data = converted_dataset
                         else:
                             #run converter here
-                            new_data = data.datatype.convert_dataset( trans, data, target_ext, return_output = True, visible = False ).values()[0]
+                            new_data = data.datatype.convert_dataset( trans, data, target_ext, return_output=True, visible=False ).values()[0]
                             new_data.hid = data.hid
                             new_data.name = data.name
                             trans.sa_session.add( new_data )
-                            assoc = trans.app.model.ImplicitlyConvertedDatasetAssociation( parent = data, file_type = target_ext, dataset = new_data, metadata_safe = False )
+                            assoc = trans.app.model.ImplicitlyConvertedDatasetAssociation( parent=data, file_type=target_ext, dataset=new_data, metadata_safe=False )
                             trans.sa_session.add( assoc )
                             trans.sa_session.flush()
                             data = new_data
@@ -77,17 +82,17 @@ class DefaultToolAction( object ):
                                 input_datasets[ prefix + conversion_name + str( i + 1 ) ] = new_data
                                 conversions.append( ( conversion_name, new_data ) )
                             else:
-                                raise Exception, 'A path for explicit datatype conversion has not been found: %s --/--> %s' % ( input_datasets[ prefix + input.name + str( i + 1 ) ].extension, conversion_extensions )
+                                raise Exception('A path for explicit datatype conversion has not been found: %s --/--> %s' % ( input_datasets[ prefix + input.name + str( i + 1 ) ].extension, conversion_extensions ) )
                         if parent:
                             parent[input.name][i] = input_datasets[ prefix + input.name + str( i + 1 ) ]
                             for conversion_name, conversion_data in conversions:
                                 #allow explicit conversion to be stored in job_parameter table
-                                parent[ conversion_name ][i] = conversion_data.id #a more robust way to determine JSONable value is desired
+                                parent[ conversion_name ][i] = conversion_data.id  # a more robust way to determine JSONable value is desired
                         else:
                             param_values[input.name][i] = input_datasets[ prefix + input.name + str( i + 1 ) ]
                             for conversion_name, conversion_data in conversions:
                                 #allow explicit conversion to be stored in job_parameter table
-                                param_values[ conversion_name ][i] = conversion_data.id #a more robust way to determine JSONable value is desired
+                                param_values[ conversion_name ][i] = conversion_data.id  # a more robust way to determine JSONable value is desired
                 else:
                     input_datasets[ prefix + input.name ] = process_dataset( value )
                     conversions = []
@@ -97,14 +102,14 @@ class DefaultToolAction( object ):
                             input_datasets[ prefix + conversion_name ] = new_data
                             conversions.append( ( conversion_name, new_data ) )
                         else:
-                            raise Exception, 'A path for explicit datatype conversion has not been found: %s --/--> %s' % ( input_datasets[ prefix + input.name ].extension, conversion_extensions )
+                            raise Exception( 'A path for explicit datatype conversion has not been found: %s --/--> %s' % ( input_datasets[ prefix + input.name ].extension, conversion_extensions ) )
                     target_dict = parent
                     if not target_dict:
                         target_dict = param_values
                     target_dict[ input.name ] = input_datasets[ prefix + input.name ]
                     for conversion_name, conversion_data in conversions:
                         #allow explicit conversion to be stored in job_parameter table
-                        target_dict[ conversion_name ] = conversion_data.id #a more robust way to determine JSONable value is desired
+                        target_dict[ conversion_name ] = conversion_data.id  # a more robust way to determine JSONable value is desired
         tool.visit_inputs( param_values, visitor )
         return input_datasets
 
@@ -130,6 +135,7 @@ class DefaultToolAction( object ):
                 else:
                     copy_from_dict[ key ] = value
             return copy_from_dict
+
         def make_list_copy( from_list ):
             new_list = []
             for value in from_list:
@@ -140,32 +146,33 @@ class DefaultToolAction( object ):
                 else:
                     new_list.append( value )
             return new_list
-        def wrap_values( inputs, input_values, skip_missing_values = False ):
+
+        def wrap_values( inputs, input_values, skip_missing_values=False ):
             # Wrap tool inputs as necessary
             for input in inputs.itervalues():
                 if input.name not in input_values and skip_missing_values:
                     continue
                 if isinstance( input, Repeat ):
                     for d in input_values[ input.name ]:
-                        wrap_values( input.inputs, d, skip_missing_values = skip_missing_values )
+                        wrap_values( input.inputs, d, skip_missing_values=skip_missing_values )
                 elif isinstance( input, Conditional ):
                     values = input_values[ input.name ]
                     current = values[ "__current_case__" ]
-                    wrap_values( input.cases[current].inputs, values, skip_missing_values = skip_missing_values )
+                    wrap_values( input.cases[current].inputs, values, skip_missing_values=skip_missing_values )
                 elif isinstance( input, DataToolParameter ) and input.multiple:
                     input_values[ input.name ] = \
                         galaxy.tools.DatasetListWrapper( input_values[ input.name ],
-                                                         datatypes_registry = trans.app.datatypes_registry,
-                                                         tool = tool,
-                                                         name = input.name )
+                                                         datatypes_registry=trans.app.datatypes_registry,
+                                                         tool=tool,
+                                                         name=input.name )
                 elif isinstance( input, DataToolParameter ):
                     input_values[ input.name ] = \
                         galaxy.tools.DatasetFilenameWrapper( input_values[ input.name ],
-                                                             datatypes_registry = trans.app.datatypes_registry,
-                                                             tool = tool,
-                                                             name = input.name )
+                                                             datatypes_registry=trans.app.datatypes_registry,
+                                                             tool=tool,
+                                                             name=input.name )
                 elif isinstance( input, SelectToolParameter ):
-                    input_values[ input.name ] = galaxy.tools.SelectToolParameterWrapper( input, input_values[ input.name ], tool.app, other_values = incoming )
+                    input_values[ input.name ] = galaxy.tools.SelectToolParameterWrapper( input, input_values[ input.name ], tool.app, other_values=incoming )
                 else:
                     input_values[ input.name ] = galaxy.tools.InputValueWrapper( input, input_values[ input.name ], incoming )
 
@@ -183,7 +190,7 @@ class DefaultToolAction( object ):
         input_dbkey = incoming.get( "dbkey", "?" )
         for name, data in inp_data.items():
             if not data:
-                data = NoneDataset( datatypes_registry = trans.app.datatypes_registry )
+                data = NoneDataset( datatypes_registry=trans.app.datatypes_registry )
                 continue
 
             # Convert LDDA to an HDA.
@@ -191,7 +198,7 @@ class DefaultToolAction( object ):
                 data = data.to_history_dataset_association( None )
                 inp_data[name] = data
 
-            else: # HDA
+            else:  # HDA
                 if data.hid:
                     input_names.append( 'data %s' % data.hid )
             input_ext = data.ext
@@ -206,26 +213,30 @@ class DefaultToolAction( object ):
             db_datasets[ "chromInfo" ] = db_dataset
             incoming[ "chromInfo" ] = db_dataset.file_name
         else:
-            # -- Get chrom_info from either a custom or built-in build. --
+            # -- Get chrom_info (len file) from either a custom or built-in build. --
 
             chrom_info = None
             if trans.user and ( 'dbkeys' in trans.user.preferences ) and ( input_dbkey in from_json_string( trans.user.preferences[ 'dbkeys' ] ) ):
                 # Custom build.
                 custom_build_dict = from_json_string( trans.user.preferences[ 'dbkeys' ] )[ input_dbkey ]
-                # HACK: the attempt to get chrom_info below will trigger the 
+                # HACK: the attempt to get chrom_info below will trigger the
                 # fasta-to-len converter if the dataset is not available or,
-                # which will in turn create a recursive loop when 
+                # which will in turn create a recursive loop when
                 # running the fasta-to-len tool. So, use a hack in the second
                 # condition below to avoid getting chrom_info when running the
                 # fasta-to-len converter.
                 if 'fasta' in custom_build_dict and tool.id != 'CONVERTER_fasta_to_len':
+                    # Build is defined by fasta; get len file, which is obtained from converting fasta.
                     build_fasta_dataset = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( custom_build_dict[ 'fasta' ] )
                     chrom_info = build_fasta_dataset.get_converted_dataset( trans, 'len' ).file_name
-
+                elif 'len' in custom_build_dict:
+                    # Build is defined by len file, so use it.
+                    chrom_info = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( custom_build_dict[ 'len' ] ).file_name
+                    
             if not chrom_info:
                 # Default to built-in build.
                 chrom_info = os.path.join( trans.app.config.len_file_path, "%s.len" % input_dbkey )
-            incoming[ "chromInfo" ] = chrom_info
+            incoming[ "chromInfo" ] = os.path.abspath( chrom_info )
         inp_data.update( db_datasets )
 
         # Determine output dataset permission/roles list
@@ -248,7 +259,7 @@ class DefaultToolAction( object ):
             on_text = ""
         # Add the dbkey to the incoming parameters
         incoming[ "dbkey" ] = input_dbkey
-        params = None #wrapped params are used by change_format action and by output.label; only perform this wrapping once, as needed
+        params = None  # wrapped params are used by change_format action and by output.label; only perform this wrapping once, as needed
         # Keep track of parent / child relationships, we'll create all the
         # datasets first, then create the associations
         parent_to_child_pairs = []
@@ -258,10 +269,10 @@ class DefaultToolAction( object ):
             for filter in output.filters:
                 try:
                     if not eval( filter.text.strip(), globals(), incoming ):
-                        break #do not create this dataset
+                        break  # do not create this dataset
                 except Exception, e:
                     log.debug( 'Dataset output filter failed: %s' % e )
-            else: #all filters passed
+            else:  # all filters passed
                 if output.parent:
                     parent_to_child_pairs.append( ( output.parent, name ) )
                     child_dataset_names.add( name )
@@ -291,7 +302,7 @@ class DefaultToolAction( object ):
                     if output.change_format:
                         if params is None:
                             params = make_dict_copy( incoming )
-                            wrap_values( tool.inputs, params, skip_missing_values = not tool.check_values )
+                            wrap_values( tool.inputs, params, skip_missing_values=not tool.check_values )
                         for change_elem in output.change_format:
                             for when_elem in change_elem.findall( 'when' ):
                                 check = when_elem.get( 'input', None )
@@ -300,9 +311,9 @@ class DefaultToolAction( object ):
                                         if '$' not in check:
                                             #allow a simple name or more complex specifications
                                             check = '${%s}' % check
-                                        if str( fill_template( check, context = params ) ) == when_elem.get( 'value', None ):
+                                        if str( fill_template( check, context=params ) ) == when_elem.get( 'value', None ):
                                             ext = when_elem.get( 'format', ext )
-                                    except: #bad tag input value; possibly referencing a param within a different conditional when block or other nonexistent grouping construct
+                                    except:  # bad tag input value; possibly referencing a param within a different conditional when block or other nonexistent grouping construct
                                         continue
                                 else:
                                     check = when_elem.get( 'input_dataset', None )
@@ -348,7 +359,7 @@ class DefaultToolAction( object ):
                         # <outputs>
                         #     <data format="input" name="output" label="Blat on ${<input_param>.name}" />
                         # </outputs>
-                        wrap_values( tool.inputs, params, skip_missing_values = not tool.check_values )
+                        wrap_values( tool.inputs, params, skip_missing_values=not tool.check_values )
                     #tool (only needing to be set once) and on_string (set differently for each label) are overwritten for each output dataset label being determined
                     params['tool'] = tool
                     params['on_string'] = on_text
@@ -356,7 +367,7 @@ class DefaultToolAction( object ):
                 else:
                     if params is None:
                         params = make_dict_copy( incoming )
-                        wrap_values( tool.inputs, params, skip_missing_values = not tool.check_values )
+                        wrap_values( tool.inputs, params, skip_missing_values=not tool.check_values )
                     data.name = self._get_default_data_name( data, tool, on_text=on_text, trans=trans, incoming=incoming, history=history, params=params, job_params=job_params )
                 # Store output
                 out_data[ name ] = data
@@ -369,10 +380,10 @@ class DefaultToolAction( object ):
                 trans.sa_session.flush()
         # Add all the top-level (non-child) datasets to the history unless otherwise specified
         for name in out_data.keys():
-            if name not in child_dataset_names and name not in incoming: #don't add children; or already existing datasets, i.e. async created
+            if name not in child_dataset_names and name not in incoming:  # don't add children; or already existing datasets, i.e. async created
                 data = out_data[ name ]
                 if set_output_history:
-                    history.add_dataset( data, set_hid = set_output_hid )
+                    history.add_dataset( data, set_hid=set_output_hid )
                 trans.sa_session.add( data )
                 trans.sa_session.flush()
         # Add all the children to their parents

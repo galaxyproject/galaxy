@@ -28,11 +28,8 @@
         }
     %endif
     %if 'history' in refresh_frames:
-        if ( parent.frames && parent.frames.galaxy_history ) {
-            parent.frames.galaxy_history.location.href="${h.url_for( controller='root', action='history')}";
-            if ( parent.force_right_panel ) {
-                parent.force_right_panel( 'show' );
-            }
+        if( top.Galaxy && top.Galaxy.currHistoryPanel ){
+            top.Galaxy.currHistoryPanel.loadCurrentHistory();
         }
     %endif
     %if 'tools' in refresh_frames:

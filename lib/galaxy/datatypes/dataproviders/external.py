@@ -3,12 +3,12 @@ Data providers that iterate over a source that is not in memory
 or not in a file.
 """
 
-import subprocess
-import urllib, urllib2
-import gzip
-
 import base
+import gzip
 import line
+import subprocess
+import tempfile
+import urllib, urllib2
 
 _TODO = """
 YAGNI: ftp, image, cryptos, sockets

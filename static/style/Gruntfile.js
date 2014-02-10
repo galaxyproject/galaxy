@@ -5,11 +5,11 @@ module.exports = function(grunt) {
   
   var theme = grunt.option( 'theme', 'blue' );
 
-  var out = 'blue'
-  var lessFiles = [ 'base', 'autocomplete_tagging', 'embed_item', 'iphone', 'masthead', 'library', 'trackster' ];
+  var out = 'blue';
+  var lessFiles = [ 'base', 'autocomplete_tagging', 'embed_item', 'iphone', 'masthead', 'library', 'trackster', 'circster' ];
 
-  var _ = grunt.util._; 
-  var fmt = _.sprintf; 
+  var _ = grunt.util._;
+  var fmt = _.sprintf;
 
   // Project configuration.
   grunt.initConfig({

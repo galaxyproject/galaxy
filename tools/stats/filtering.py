@@ -174,6 +174,8 @@ mapped_str = {
     '__ge__': '>=',
     '__sq__': '\'',
     '__dq__': '"',
+    '__ob__': '[',
+    '__cb__': ']',
 }
 for key, value in mapped_str.items():
     cond_text = cond_text.replace( key, value )

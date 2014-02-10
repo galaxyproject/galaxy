@@ -62,7 +62,13 @@ class UploadController( BaseUIController ):
                 uploaded_directory = tempfile.mkdtemp()
                 repo_url = 'http%s' % url[ len( 'hg' ): ]
                 repo_url = repo_url.encode( 'ascii', 'replace' )
-                commands.clone( suc.get_configured_ui(), repo_url, uploaded_directory )
+                try:
+                    commands.clone( suc.get_configured_ui(), repo_url, uploaded_directory )
+                except Exception, e:
+                    message = 'Error uploading via mercurial clone: %s' % suc.to_html_string( str( e ) )
+                    status = 'error'
+                    suc.remove_dir( uploaded_directory )
+                    uploaded_directory = None
             elif url:
                 valid_url = True
                 try:
@@ -123,7 +129,7 @@ class UploadController( BaseUIController ):
                         self.upload_directory( trans, repository, uploaded_directory, upload_point, remove_repo_files_not_in_tar, commit_message, new_repo_alert )
                 else:
                     if ( isgzip or isbz2 ) and uncompress_file:
-                        uploaded_file_filename = commit_util.uncompress( repository, uploaded_file_name, uploaded_file_filename, isgzip, isbz2 )
+                        uploaded_file_filename = commit_util.uncompress( repository, uploaded_file_name, uploaded_file_filename, isgzip=isgzip, isbz2=isbz2 )
                     if repository.type == rt_util.TOOL_DEPENDENCY_DEFINITION and uploaded_file_filename != suc.TOOL_DEPENDENCY_DEFINITION_FILENAME:
                         ok = False
                         message = 'Repositories of type <b>Tool dependency definition</b> can only contain a single file named <b>tool_dependencies.xml</b>.'
@@ -135,8 +141,14 @@ class UploadController( BaseUIController ):
                         # Move some version of the uploaded file to the load_point within the repository hierarchy.
                         if uploaded_file_filename in [ suc.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME ]:
                             # Inspect the contents of the file to see if changeset_revision values are missing and if so, set them appropriately.
-                            altered, root_elem = commit_util.handle_repository_dependencies_definition( trans, uploaded_file_name, unpopulate=False )
-                            if altered:
+                            altered, root_elem, error_message = commit_util.handle_repository_dependencies_definition( trans,
+                                                                                                                       uploaded_file_name,
+                                                                                                                       unpopulate=False )
+                            if error_message:
+                                ok = False
+                                message = error_message
+                                status = 'error'
+                            elif altered:
                                 tmp_filename = xml_util.create_and_write_tmp_file( root_elem )
                                 shutil.move( tmp_filename, full_path )
                             else:
@@ -157,26 +169,31 @@ class UploadController( BaseUIController ):
                                     shutil.move( uploaded_file_name, full_path )
                         else:
                             shutil.move( uploaded_file_name, full_path )
-                        # See if any admin users have chosen to receive email alerts when a repository is updated.  If so, check every uploaded file to ensure
-                        # content is appropriate.
-                        check_contents = commit_util.check_file_contents_for_email_alerts( trans )
-                        if check_contents and os.path.isfile( full_path ):
-                            content_alert_str = commit_util.check_file_content_for_html_and_images( full_path )
-                        else:
-                            content_alert_str = ''
-                        commands.add( repo.ui, repo, full_path )
-                        # Convert from unicode to prevent "TypeError: array item must be char"
-                        full_path = full_path.encode( 'ascii', 'replace' )
-                        commands.commit( repo.ui, repo, full_path, user=trans.user.username, message=commit_message )
-                        if full_path.endswith( 'tool_data_table_conf.xml.sample' ):
-                            # Handle the special case where a tool_data_table_conf.xml.sample file is being uploaded by parsing the file and adding new entries
-                            # to the in-memory trans.app.tool_data_tables dictionary.
-                            error, error_message = tool_util.handle_sample_tool_data_table_conf_file( trans.app, full_path )
-                            if error:
-                                message = '%s<br/>%s' % ( message, error_message )
-                        # See if the content of the change set was valid.
-                        admin_only = len( repository.downloadable_revisions ) != 1
-                        suc.handle_email_alerts( trans, repository, content_alert_str=content_alert_str, new_repo_alert=new_repo_alert, admin_only=admin_only )
+                        if ok:
+                            # See if any admin users have chosen to receive email alerts when a repository is updated.  If so, check every uploaded file to ensure
+                            # content is appropriate.
+                            check_contents = commit_util.check_file_contents_for_email_alerts( trans )
+                            if check_contents and os.path.isfile( full_path ):
+                                content_alert_str = commit_util.check_file_content_for_html_and_images( full_path )
+                            else:
+                                content_alert_str = ''
+                            commands.add( repo.ui, repo, full_path )
+                            # Convert from unicode to prevent "TypeError: array item must be char"
+                            full_path = full_path.encode( 'ascii', 'replace' )
+                            commands.commit( repo.ui, repo, full_path, user=trans.user.username, message=commit_message )
+                            if full_path.endswith( 'tool_data_table_conf.xml.sample' ):
+                                # Handle the special case where a tool_data_table_conf.xml.sample file is being uploaded by parsing the file and adding new entries
+                                # to the in-memory trans.app.tool_data_tables dictionary.
+                                error, error_message = tool_util.handle_sample_tool_data_table_conf_file( trans.app, full_path )
+                                if error:
+                                    message = '%s<br/>%s' % ( message, error_message )
+                            # See if the content of the change set was valid.
+                            admin_only = len( repository.downloadable_revisions ) != 1
+                            suc.handle_email_alerts( trans,
+                                                     repository,
+                                                     content_alert_str=content_alert_str,
+                                                     new_repo_alert=new_repo_alert,
+                                                     admin_only=admin_only )
                 if ok:
                     # Update the repository files for browsing.
                     suc.update_repository( repo )
@@ -221,7 +238,6 @@ class UploadController( BaseUIController ):
                             # or some other problem.  Tool dependency definitions can define orphan tool dependencies (no relationship to any tools contained in the repository),
                             # so warning messages are important because orphans are always valid.  The repository owner must be warned in case they did not intend to define an
                             # orphan dependency, but simply provided incorrect information (tool shed, name owner, changeset_revision) for the definition.
-                            # Handle messaging for orphan tool dependencies.
                             orphan_message = tool_dependency_util.generate_message_for_orphan_tool_dependencies( trans, repository, metadata_dict )
                             if orphan_message:
                                 message += orphan_message
@@ -238,6 +254,8 @@ class UploadController( BaseUIController ):
                         status = 'error'
                     # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
                     tool_util.reset_tool_data_tables( trans.app )
+                    if uploaded_directory:
+                        suc.remove_dir( uploaded_directory )
                     trans.response.send_redirect( web.url_for( controller='repository',
                                                                action='browse_repository',
                                                                id=repository_id,
@@ -245,6 +263,8 @@ class UploadController( BaseUIController ):
                                                                message=message,
                                                                status=status ) )
                 else:
+                    if uploaded_directory:
+                        suc.remove_dir( uploaded_directory )
                     status = 'error'
                 # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
                 tool_util.reset_tool_data_tables( trans.app )
@@ -288,8 +308,12 @@ class UploadController( BaseUIController ):
                     uploaded_file_name = os.path.abspath( os.path.join( root, uploaded_file ) )
                     if os.path.split( uploaded_file_name )[ -1 ] == suc.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME:
                         # Inspect the contents of the file to see if changeset_revision values are missing and if so, set them appropriately.
-                        altered, root_elem = commit_util.handle_repository_dependencies_definition( trans, uploaded_file_name, unpopulate=False )
-                        if altered:
+                        altered, root_elem, error_message = commit_util.handle_repository_dependencies_definition( trans,
+                                                                                                                   uploaded_file_name,
+                                                                                                                   unpopulate=False )
+                        if error_message:
+                            return False, error_message, [], '', [], []
+                        elif altered:
                             tmp_filename = xml_util.create_and_write_tmp_file( root_elem )
                             shutil.move( tmp_filename, uploaded_file_name )
                     elif os.path.split( uploaded_file_name )[ -1 ] == suc.TOOL_DEPENDENCY_DEFINITION_FILENAME:
@@ -351,8 +375,12 @@ class UploadController( BaseUIController ):
                 uploaded_file_name = os.path.join( full_path, filename )
                 if os.path.split( uploaded_file_name )[ -1 ] == suc.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME:
                     # Inspect the contents of the file to see if changeset_revision values are missing and if so, set them appropriately.
-                    altered, root_elem = commit_util.handle_repository_dependencies_definition( trans, uploaded_file_name, unpopulate=False )
-                    if altered:
+                    altered, root_elem, error_message = commit_util.handle_repository_dependencies_definition( trans,
+                                                                                                               uploaded_file_name,
+                                                                                                               unpopulate=False )
+                    if error_message:
+                        return False, error_message, [], '', [], []
+                    elif altered:
                         tmp_filename = xml_util.create_and_write_tmp_file( root_elem )
                         shutil.move( tmp_filename, uploaded_file_name )
                 elif os.path.split( uploaded_file_name )[ -1 ] == suc.TOOL_DEPENDENCY_DEFINITION_FILENAME:

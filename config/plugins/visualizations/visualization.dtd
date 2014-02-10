@@ -1,9 +1,16 @@
 <!-- each visualization must have a template (all other elements are optional) -->
-<!ELEMENT visualization (data_sources*,params*,template_root*,template,link_text*,render_location*)>
-<!-- visualization name (e.g. 'trackster', 'scatterplot', etc.) is required -->
+<!ELEMENT visualization (description*,data_sources*,params*,template_root*,template,render_target*)>
+<!-- visualization
+        name: the title/display name of the visualization (e.g. 'Trackster', 'Fastq Stats', etc.) REQUIRED
+        disabled: if included (value does not matter), this attribute will prevent the visualization being loaded
+-->
 <!ATTLIST visualization
     name        CDATA #REQUIRED
+    disabled    CDATA #IMPLIED
 >
+
+<!ELEMENT description (#PCDATA)>
+<!-- a text description of what the visualization does -->
 
 <!ELEMENT data_sources (data_source*)>
 <!-- data sources are elements that describe what objects (HDAs, LDDAs, Job, User, etc.)
@@ -121,10 +128,8 @@
 <!ELEMENT template_root (#PCDATA)>
 <!-- template: the template used to render the visualization. REQUIRED -->
 <!ELEMENT template (#PCDATA)>
-<!-- link_text: the text component of an html anchor displayed when the registry builds the link information -->
-<!ELEMENT link_text (#PCDATA)>
-<!-- render_location: used as the target attribute of the link to the visualization.
+<!-- render_target: used as the target attribute of the link to the visualization.
       Can be 'galaxy_main', '_top', '_blank'. DEFAULT: 'galaxy_main'
 -->
 <!-- TODO: rename -> render_target -->
-<!ELEMENT render_location (#PCDATA)>
+<!ELEMENT render_target (#PCDATA)>

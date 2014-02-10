@@ -216,7 +216,7 @@ ${h.templates(
 )}
 
 ${h.js(
-    "mvc/visualizations/scatterplotControlForm",
+    "mvc/visualization/scatterplotControlForm",
 )}
 
 <script type="text/javascript">

@@ -1,16 +1,13 @@
+import logging
 from galaxy.web.base.controller import BaseUIController
-from galaxy import web, util
 from galaxy.web.base.controllers.admin import Admin
+from galaxy import util
+from galaxy import web
 from galaxy.util import inflector
 import tool_shed.util.shed_util_common as suc
 import tool_shed.util.metadata_util as metadata_util
+from tool_shed.util import repository_maintenance_util
 import tool_shed.grids.admin_grids as admin_grids
-
-from galaxy import eggs
-eggs.require( 'mercurial' )
-from mercurial import hg
-
-import logging
 
 log = logging.getLogger( __name__ )
 
@@ -27,7 +24,7 @@ class AdminController( BaseUIController, Admin ):
     @web.expose
     @web.require_admin
     def browse_repositories( self, trans, **kwd ):
-        # We add params to the keyword dict in this method in order to rename the param
+        # We add parameters to the keyword dict in this method in order to rename the param
         # with an "f-" prefix, simulating filtering by clicking a search link.  We have
         # to take this approach because the "-" character is illegal in HTTP requests.
         if 'operation' in kwd:
@@ -166,6 +163,11 @@ class AdminController( BaseUIController, Admin ):
                         for repository_metadata in repository.downloadable_revisions:
                             repository_metadata.downloadable = False
                             trans.sa_session.add( repository_metadata )
+                        # Mark the repository admin role as deleted.
+                        repository_admin_role = repository.admin_role
+                        if repository_admin_role is not None:
+                            repository_admin_role.deleted = True
+                            trans.sa_session.add( repository_admin_role )
                         repository.deleted = True
                         trans.sa_session.add( repository )
                         trans.sa_session.flush()
@@ -295,6 +297,33 @@ class AdminController( BaseUIController, Admin ):
 
     @web.expose
     @web.require_admin
+    def manage_role_associations( self, trans, **kwd ):
+        """Manage users, groups and repositories associated with a role."""
+        role_id = kwd.get( 'id', None )
+        role = repository_maintenance_util.get_role_by_id( trans, role_id )
+        # We currently only have a single role associated with a repository, the repository admin role.
+        repository_role_association = role.repositories[ 0 ]
+        repository = repository_role_association.repository
+        associations_dict = repository_maintenance_util.handle_role_associations( trans, role, repository, **kwd )
+        in_users = associations_dict.get( 'in_users', [] )
+        out_users = associations_dict.get( 'out_users', [] )
+        in_groups = associations_dict.get( 'in_groups', [] )
+        out_groups = associations_dict.get( 'out_groups', [] )
+        message = associations_dict.get( 'message', '' )
+        status = associations_dict.get( 'status', 'done' )
+        return trans.fill_template( '/webapps/tool_shed/role/role.mako',
+                                    in_admin_controller=True,
+                                    repository=repository,
+                                    role=role,
+                                    in_users=in_users,
+                                    out_users=out_users,
+                                    in_groups=in_groups,
+                                    out_groups=out_groups,
+                                    message=message,
+                                    status=status )
+
+    @web.expose
+    @web.require_admin
     def reset_metadata_on_selected_repositories_in_tool_shed( self, trans, **kwd ):
         if 'reset_metadata_on_selected_repositories_button' in kwd:
             message, status = metadata_util.reset_metadata_on_selected_repositories( trans, **kwd )
@@ -322,13 +351,19 @@ class AdminController( BaseUIController, Admin ):
                 repository = suc.get_repository_in_tool_shed( trans, repository_id )
                 if repository:
                     if repository.deleted:
-                        # Inspect all repository_metadata records to determine those that are installable, and mark them accordingly.
+                        # Inspect all repository_metadata records to determine those that are installable, and mark
+                        # them accordingly.
                         for repository_metadata in repository.metadata_revisions:
                             metadata = repository_metadata.metadata
                             if metadata:
                                 if metadata_util.is_downloadable( metadata ):
                                     repository_metadata.downloadable = True
                                     trans.sa_session.add( repository_metadata )
+                        # Mark the repository admin role as not deleted.
+                        repository_admin_role = repository.admin_role
+                        if repository_admin_role is not None:
+                            repository_admin_role.deleted = False
+                            trans.sa_session.add( repository_admin_role )
                         repository.deleted = False
                         trans.sa_session.add( repository )
                         trans.sa_session.flush()

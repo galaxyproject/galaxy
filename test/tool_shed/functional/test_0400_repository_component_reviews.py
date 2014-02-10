@@ -1,6 +1,4 @@
 from tool_shed.base.twilltestcase import ShedTwillTestCase, common, os
-import tool_shed.base.test_db_util as test_db_util
-
 repository_name = 'filtering_0400'
 repository_description = 'Galaxy filtering tool for test 0400'
 repository_long_description = 'Long description of Galaxy filtering tool for test 0400'
@@ -35,6 +33,7 @@ repository_long_description = 'Long description of Galaxy filtering tool for tes
 27. Verify that the functional tests component review displays correctly.
 '''
 
+
 class TestRepositoryComponentReviews( ShedTwillTestCase ):
     '''Test repository component review features.'''
     def test_0000_initiate_users( self ):
@@ -46,19 +45,19 @@ class TestRepositoryComponentReviews( ShedTwillTestCase ):
         """
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        test_user_1 = test_db_util.get_user( common.test_user_1_email )
+        test_user_1 = self.test_db_util.get_user( common.test_user_1_email )
         assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_1_email
-        test_user_1_private_role = test_db_util.get_private_role( test_user_1 )
+        test_user_1_private_role = self.test_db_util.get_private_role( test_user_1 )
         self.logout()
         self.login( email=common.test_user_2_email, username=common.test_user_2_name )
-        test_user_2 = test_db_util.get_user( common.test_user_2_email )
+        test_user_2 = self.test_db_util.get_user( common.test_user_2_email )
         assert test_user_2 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_2_email
-        test_user_2_private_role = test_db_util.get_private_role( test_user_2 )
+        test_user_2_private_role = self.test_db_util.get_private_role( test_user_2 )
         self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
-        admin_user = test_db_util.get_user( common.admin_email )
+        admin_user = self.test_db_util.get_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
-        admin_user_private_role = test_db_util.get_private_role( admin_user )
+        admin_user_private_role = self.test_db_util.get_private_role( admin_user )
     def test_0005_grant_reviewer_role( self ):
         '''Grant the repository reviewer role to test_user_2.'''
         """
@@ -66,8 +65,8 @@ class TestRepositoryComponentReviews( ShedTwillTestCase ):
         We now have an admin user (admin_user) and two non-admin users (test_user_1 and test_user_2). Grant the repository 
         reviewer role to test_user_2, who will not be the owner of the reviewed repositories.
         """
-        reviewer_role = test_db_util.get_role_by_name( 'Repository Reviewer' )
-        test_user_2 = test_db_util.get_user( common.test_user_2_email )
+        reviewer_role = self.test_db_util.get_role_by_name( 'Repository Reviewer' )
+        test_user_2 = self.test_db_util.get_user( common.test_user_2_email )
         self.grant_role_to_user( test_user_2, reviewer_role )
     def test_0010_verify_repository_review_components( self ):
         '''Ensure that the required review components exist.'''
@@ -119,7 +118,7 @@ class TestRepositoryComponentReviews( ShedTwillTestCase ):
         """
         self.logout()
         self.login( email=common.test_user_2_email, username=common.test_user_2_name )
-        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         # The create_repository_review method takes a dict( component label=review contents ). 
         # If review_contents is empty, it marks that component as not applicable. The review 
         # contents dict should have the structure:
@@ -139,8 +138,8 @@ class TestRepositoryComponentReviews( ShedTwillTestCase ):
         """
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
-        user = test_db_util.get_user( common.test_user_2_email )
+        repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        user = self.test_db_util.get_user( common.test_user_2_email )
         strings_displayed = [ 'Data types', 'not_applicable' ]
         strings_not_displayed = [ 'Functional tests', 'README', 'Repository dependencies', 'Tool dependencies', 'Tools', 'Workflows' ]
         self.verify_repository_reviews( repository, reviewer=user, strings_displayed=strings_displayed )
@@ -156,8 +155,8 @@ class TestRepositoryComponentReviews( ShedTwillTestCase ):
         """
         self.logout()
         self.login( email=common.test_user_2_email, username=common.test_user_2_name )
-        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
-        user = test_db_util.get_user( common.test_user_2_email )
+        repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        user = self.test_db_util.get_user( common.test_user_2_email )
         # The create_repository_review method takes a dict( component label=review contents ). 
         # If review_contents is empty, it marks that component as not applicable. The review 
         # contents dict should have the structure:
@@ -184,8 +183,8 @@ class TestRepositoryComponentReviews( ShedTwillTestCase ):
         """
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
-        user = test_db_util.get_user( common.test_user_2_email )
+        repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        user = self.test_db_util.get_user( common.test_user_2_email )
         strings_displayed=[ 'Functional tests', 'Functional tests missing', 'no' ]
         strings_not_displayed = [ 'README', 'Repository dependencies', 'Tool dependencies', 'Tools', 'Workflows' ]
         self.verify_repository_reviews( repository, reviewer=user, strings_displayed=strings_displayed )
@@ -201,8 +200,8 @@ class TestRepositoryComponentReviews( ShedTwillTestCase ):
         """
         self.logout()
         self.login( email=common.test_user_2_email, username=common.test_user_2_name )
-        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
-        user = test_db_util.get_user( common.test_user_2_email )
+        repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        user = self.test_db_util.get_user( common.test_user_2_email )
         # The create_repository_review method takes a dict( component label=review contents ). 
         # If review_contents is empty, it marks that component as not applicable. The review 
         # contents dict should have the structure:
@@ -222,8 +221,8 @@ class TestRepositoryComponentReviews( ShedTwillTestCase ):
         """
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
-        user = test_db_util.get_user( common.test_user_2_email )
+        repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        user = self.test_db_util.get_user( common.test_user_2_email )
         strings_displayed=[ 'README', 'not_applicable' ]
         strings_not_displayed = [ 'Repository dependencies', 'Tool dependencies', 'Tools', 'Workflows' ]
         self.verify_repository_reviews( repository, reviewer=user, strings_displayed=strings_displayed )
@@ -240,8 +239,8 @@ class TestRepositoryComponentReviews( ShedTwillTestCase ):
         """
         self.logout()
         self.login( email=common.test_user_2_email, username=common.test_user_2_name )
-        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
-        user = test_db_util.get_user( common.test_user_2_email )
+        repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        user = self.test_db_util.get_user( common.test_user_2_email )
         # The create_repository_review method takes a dict( component label=review contents ). 
         # If review_contents is empty, it marks that component as not applicable. The review 
         # contents dict should have the structure:
@@ -262,8 +261,8 @@ class TestRepositoryComponentReviews( ShedTwillTestCase ):
         """
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
-        user = test_db_util.get_user( common.test_user_2_email )
+        repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        user = self.test_db_util.get_user( common.test_user_2_email )
         strings_displayed=[ 'Repository dependencies', 'not_applicable' ]
         strings_not_displayed = [ 'Tool dependencies', 'Tools', 'Workflows' ]
         self.verify_repository_reviews( repository, reviewer=user, strings_displayed=strings_displayed )
@@ -281,8 +280,8 @@ class TestRepositoryComponentReviews( ShedTwillTestCase ):
         """
         self.logout()
         self.login( email=common.test_user_2_email, username=common.test_user_2_name )
-        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
-        user = test_db_util.get_user( common.test_user_2_email )
+        repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        user = self.test_db_util.get_user( common.test_user_2_email )
         # The create_repository_review method takes a dict( component label=review contents ). 
         # If review_contents is empty, it marks that component as not applicable. The review 
         # contents dict should have the structure:
@@ -303,8 +302,8 @@ class TestRepositoryComponentReviews( ShedTwillTestCase ):
         """
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
-        user = test_db_util.get_user( common.test_user_2_email )
+        repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        user = self.test_db_util.get_user( common.test_user_2_email )
         strings_displayed=[ 'Tool dependencies', 'not_applicable' ]
         strings_not_displayed = [ 'Tools', 'Workflows' ]
         self.verify_repository_reviews( repository, reviewer=user, strings_displayed=strings_displayed )
@@ -324,8 +323,8 @@ class TestRepositoryComponentReviews( ShedTwillTestCase ):
         """
         self.logout()
         self.login( email=common.test_user_2_email, username=common.test_user_2_name )
-        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
-        user = test_db_util.get_user( common.test_user_2_email )
+        repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        user = self.test_db_util.get_user( common.test_user_2_email )
         # The create_repository_review method takes a dict( component label=review contents ). 
         # If review_contents is empty, it marks that component as not applicable. The review 
         # contents dict should have the structure:
@@ -336,7 +335,7 @@ class TestRepositoryComponentReviews( ShedTwillTestCase ):
         #   private: yes/no
         # }
         review_contents_dict = { 'Tools': dict( rating=5, comment='Excellent tool, easy to use.', approved='yes', private='no' ) }
-        self.review_repository( repository, review_contents_dict, test_db_util.get_user( common.test_user_2_email ) )
+        self.review_repository( repository, review_contents_dict, self.test_db_util.get_user( common.test_user_2_email ) )
     def test_0075_verify_tools_review( self ):
         '''Verify that the tools component review displays correctly.'''
         """
@@ -346,8 +345,8 @@ class TestRepositoryComponentReviews( ShedTwillTestCase ):
         """
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
-        user = test_db_util.get_user( common.test_user_2_email )
+        repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        user = self.test_db_util.get_user( common.test_user_2_email )
         strings_displayed=[ 'Tools', 'yes', 'Excellent tool, easy to use.' ]
         strings_not_displayed = [ 'Workflows' ]
         self.verify_repository_reviews( repository, reviewer=user, strings_displayed=strings_displayed )
@@ -367,8 +366,8 @@ class TestRepositoryComponentReviews( ShedTwillTestCase ):
         """
         self.logout()
         self.login( email=common.test_user_2_email, username=common.test_user_2_name )
-        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
-        user = test_db_util.get_user( common.test_user_2_email )
+        repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        user = self.test_db_util.get_user( common.test_user_2_email )
         # The create_repository_review method takes a dict( component label=review contents ). 
         # If review_contents is empty, it marks that component as not applicable. The review 
         # contents dict should have the structure:
@@ -389,8 +388,8 @@ class TestRepositoryComponentReviews( ShedTwillTestCase ):
         """
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
-        user = test_db_util.get_user( common.test_user_2_email )
+        repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        user = self.test_db_util.get_user( common.test_user_2_email )
         strings_displayed=[ 'Workflows', 'not_applicable' ]
         self.verify_repository_reviews( repository, reviewer=user, strings_displayed=strings_displayed )
     def test_0090_upload_readme_file( self ):
@@ -402,8 +401,8 @@ class TestRepositoryComponentReviews( ShedTwillTestCase ):
         """
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
-        user = test_db_util.get_user( common.test_user_2_email )
+        repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        user = self.test_db_util.get_user( common.test_user_2_email )
         self.upload_file( repository, 
                           filename='readme.txt',
                           filepath=None,
@@ -424,8 +423,8 @@ class TestRepositoryComponentReviews( ShedTwillTestCase ):
         """
         self.logout()
         self.login( email=common.test_user_2_email, username=common.test_user_2_name )
-        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
-        user = test_db_util.get_user( common.test_user_2_email )
+        repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        user = self.test_db_util.get_user( common.test_user_2_email )
         # Get the last changeset revision that has a review associated with it.
         last_review = self.get_last_reviewed_revision_by_user( user, repository )
         if last_review is None:
@@ -453,8 +452,8 @@ class TestRepositoryComponentReviews( ShedTwillTestCase ):
         """
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
-        user = test_db_util.get_user( common.test_user_2_email )
+        repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        user = self.test_db_util.get_user( common.test_user_2_email )
         strings_displayed = [ 'README', 'yes', 'Clear and concise readme file, a true pleasure to read.' ]
         self.verify_repository_reviews( repository, reviewer=user, strings_displayed=strings_displayed )
     def test_0105_upload_test_data( self ):
@@ -466,8 +465,8 @@ class TestRepositoryComponentReviews( ShedTwillTestCase ):
         the last dowloadable revision, but the last repository review will still be associated with the 
         last dowloadable revision hash.
         """
-        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
-        user = test_db_util.get_user( common.test_user_2_email )
+        repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        user = self.test_db_util.get_user( common.test_user_2_email )
         self.upload_file( repository, 
                           filename='filtering/filtering_test_data.tar',
                           filepath=None,
@@ -487,8 +486,8 @@ class TestRepositoryComponentReviews( ShedTwillTestCase ):
         """
         self.logout()
         self.login( email=common.test_user_2_email, username=common.test_user_2_name )
-        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
-        user = test_db_util.get_user( common.test_user_2_email )
+        repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        user = self.test_db_util.get_user( common.test_user_2_email )
         # Get the changeset immediately prior to the tip, and pass it to the create review method.
         last_review = self.get_last_reviewed_revision_by_user( user, repository )
         # The create_repository_review method takes a dict( component label=review contents ). 
@@ -514,8 +513,8 @@ class TestRepositoryComponentReviews( ShedTwillTestCase ):
         """
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
-        user = test_db_util.get_user( common.test_user_2_email )
+        repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        user = self.test_db_util.get_user( common.test_user_2_email )
         strings_displayed=[ 'Functional tests', 'yes', 'A good set of functional tests.' ]
         self.verify_repository_reviews( repository, reviewer=user, strings_displayed=strings_displayed )
     def test_0120_upload_new_tool_version( self ):
@@ -527,8 +526,8 @@ class TestRepositoryComponentReviews( ShedTwillTestCase ):
         """
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
-        user = test_db_util.get_user( common.test_user_2_email )
+        repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        user = self.test_db_util.get_user( common.test_user_2_email )
         self.upload_file( repository, 
                           filename='filtering/filtering_2.2.0.tar',
                           filepath=None,
@@ -547,8 +546,8 @@ class TestRepositoryComponentReviews( ShedTwillTestCase ):
         """
         self.logout()
         self.login( email=common.test_user_2_email, username=common.test_user_2_name )
-        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
-        user = test_db_util.get_user( common.test_user_2_email )
+        repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        user = self.test_db_util.get_user( common.test_user_2_email )
         last_review = self.get_last_reviewed_revision_by_user( user, repository )
         # Something needs to change so that the review will save.
         # The create_repository_review method takes a dict( component label=review contents ). 
@@ -574,8 +573,8 @@ class TestRepositoryComponentReviews( ShedTwillTestCase ):
         """
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
-        user = test_db_util.get_user( common.test_user_2_email )
+        repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        user = self.test_db_util.get_user( common.test_user_2_email )
         strings_displayed = [ 'Data types', 'Functional tests', 'yes', 'A good set of functional tests.', 'README', 'yes', 'Workflows', 'Tools' ]
         strings_displayed.extend( [ 'Clear and concise readme file, a true pleasure to read.', 'Tool dependencies', 'not_applicable' ] )
         strings_displayed.extend( [ 'Repository dependencies', 'Version 2.2.0 does the impossible and improves this tool.'  ] )

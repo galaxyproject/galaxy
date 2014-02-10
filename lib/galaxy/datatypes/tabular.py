@@ -275,7 +275,7 @@ class Tabular( data.Text ):
             cursor = f.read(1)
         return to_json_string( { 'ck_data': util.unicodify( ck_data ), 'ck_index': ck_index + 1 } )
 
-    def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, chunk=None):
+    def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, chunk=None, **kwd):
         preview = util.string_as_bool( preview )
         if chunk:
             return self.get_chunk(trans, dataset, chunk)
@@ -652,7 +652,7 @@ class Vcf( Tabular ):
 
     MetadataElement( name="columns", default=10, desc="Number of columns", readonly=True, visible=False )
     MetadataElement( name="column_types", default=['str','int','str','str','str','int','str','list','str','str'], param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False )
-    MetadataElement( name="viz_filter_cols", desc="Score column for visualization", default=[5], param=metadata.ColumnParameter, multiple=True, visible=False )
+    MetadataElement( name="viz_filter_cols", desc="Score column for visualization", default=[5], param=metadata.ColumnParameter, optional=True, multiple=True, visible=False )
     MetadataElement( name="sample_names", default=[], desc="Sample names", readonly=True, visible=False, optional=True, no_value=[] )
 
     def sniff( self, filename ):

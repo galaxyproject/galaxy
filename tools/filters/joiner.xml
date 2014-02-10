@@ -51,7 +51,7 @@
   </inputs>
   <configfiles>
     <configfile name="fill_options_file">&lt;%
-import simplejson
+import json
 %&gt;
 #set $__fill_options = {}
 #if $fill_empty_columns['fill_empty_columns_switch'] == 'fill_empty':
@@ -72,7 +72,7 @@ import simplejson
         #end for
     #end if
 #end if
-${simplejson.dumps( __fill_options )}
+${json.dumps( __fill_options )}
     </configfile>
   </configfiles>
   <outputs>

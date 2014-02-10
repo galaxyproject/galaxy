@@ -2,6 +2,8 @@ import os, gzip, re, gzip, zipfile, binascii, bz2, imghdr
 from galaxy import util
 from StringIO import StringIO
 
+HTML_CHECK_LINES = 100
+
 try:
     import Image as PIL
 except ImportError:
@@ -32,9 +34,11 @@ def check_html( file_path, chunk=None ):
     regexp1 = re.compile( "<A\s+[^>]*HREF[^>]+>", re.I )
     regexp2 = re.compile( "<IFRAME[^>]*>", re.I )
     regexp3 = re.compile( "<FRAMESET[^>]*>", re.I )
-    regexp4 = re.compile( "<META[^>]*>", re.I )
+    regexp4 = re.compile( "<META[\W][^>]*>", re.I )
     regexp5 = re.compile( "<SCRIPT[^>]*>", re.I )
     lineno = 0
+    # TODO: Potentially reading huge lines into string here, this should be
+    # reworked.
     for line in temp:
         lineno += 1
         matches = regexp1.search( line ) or regexp2.search( line ) or regexp3.search( line ) or regexp4.search( line ) or regexp5.search( line )
@@ -42,7 +46,7 @@ def check_html( file_path, chunk=None ):
             if chunk is None:
                 temp.close()
             return True
-        if lineno > 100:
+        if HTML_CHECK_LINES and (lineno > HTML_CHECK_LINES):
             break
     if chunk is None:
         temp.close()

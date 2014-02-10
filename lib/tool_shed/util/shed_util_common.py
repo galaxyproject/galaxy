@@ -122,12 +122,12 @@ def build_tool_dependencies_select_field( trans, tool_shed_repository, name, mul
     tool_dependencies_select_field = SelectField( name=name, multiple=multiple, display=display )
     for tool_dependency in tool_shed_repository.tool_dependencies:
         if uninstalled_only:
-            if tool_dependency.status not in [ trans.model.ToolDependency.installation_status.NEVER_INSTALLED,
-                                               trans.model.ToolDependency.installation_status.UNINSTALLED ]:
+            if tool_dependency.status not in [ trans.install_model.ToolDependency.installation_status.NEVER_INSTALLED,
+                                               trans.install_model.ToolDependency.installation_status.UNINSTALLED ]:
                 continue
         else:
-            if tool_dependency.status in [ trans.model.ToolDependency.installation_status.NEVER_INSTALLED,
-                                           trans.model.ToolDependency.installation_status.UNINSTALLED ]:
+            if tool_dependency.status in [ trans.install_model.ToolDependency.installation_status.NEVER_INSTALLED,
+                                           trans.install_model.ToolDependency.installation_status.UNINSTALLED ]:
                 continue
         option_label = '%s version %s' % ( str( tool_dependency.name ), str( tool_dependency.version ) )
         option_value = trans.security.encode_id( tool_dependency.id )
@@ -157,8 +157,8 @@ def check_or_update_tool_shed_status_for_installed_repository( trans, repository
         ok = True
         if tool_shed_status_dict != repository.tool_shed_status:
             repository.tool_shed_status = tool_shed_status_dict
-            trans.sa_session.add( repository )
-            trans.sa_session.flush()
+            trans.install_model.context.add( repository )
+            trans.install_model.context.flush()
             updated = True
     else:
         ok = False
@@ -235,32 +235,29 @@ def create_or_update_tool_shed_repository( app, name, description, installed_cha
     """
     # The received value for dist_to_shed will be True if the InstallManager is installing a repository that contains tools or datatypes that used
     # to be in the Galaxy distribution, but have been moved to the main Galaxy tool shed.
-    log.debug( "Adding new row (or updating an existing row) for repository '%s' in the tool_shed_repository table, status set to '%s'." % ( str( name ), str( status ) ) )
     if current_changeset_revision is None:
         # The current_changeset_revision is not passed if a repository is being installed for the first time.  If a previously installed repository
         # was later uninstalled, this value should be received as the value of that change set to which the repository had been updated just prior
         # to it being uninstalled.
         current_changeset_revision = installed_changeset_revision
-    sa_session = app.model.context.current
+    context = app.install_model.context
     tool_shed = get_tool_shed_from_clone_url( repository_clone_url )
     if not owner:
         owner = get_repository_owner_from_clone_url( repository_clone_url )
     includes_datatypes = 'datatypes' in metadata_dict
-    if status in [ app.model.ToolShedRepository.installation_status.DEACTIVATED ]:
+    if status in [ app.install_model.ToolShedRepository.installation_status.DEACTIVATED ]:
         deleted = True
         uninstalled = False
-    elif status in [ app.model.ToolShedRepository.installation_status.UNINSTALLED ]:
+    elif status in [ app.install_model.ToolShedRepository.installation_status.UNINSTALLED ]:
         deleted = True
         uninstalled = True
     else:
         deleted = False
         uninstalled = False
-    tool_shed_repository = get_tool_shed_repository_by_shed_name_owner_installed_changeset_revision( app,
-                                                                                                     tool_shed,
-                                                                                                     name,
-                                                                                                     owner,
-                                                                                                     installed_changeset_revision )
+    tool_shed_repository = \
+        get_tool_shed_repository_by_shed_name_owner_installed_changeset_revision( app, tool_shed, name, owner, installed_changeset_revision )
     if tool_shed_repository:
+        log.debug( "Updating an existing row for repository '%s' in the tool_shed_repository table, status set to '%s'." % ( str( name ), str( status ) ) )
         tool_shed_repository.description = description
         tool_shed_repository.changeset_revision = current_changeset_revision
         tool_shed_repository.ctx_rev = ctx_rev
@@ -270,21 +267,23 @@ def create_or_update_tool_shed_repository( app, name, description, installed_cha
         tool_shed_repository.uninstalled = uninstalled
         tool_shed_repository.status = status
     else:
-        tool_shed_repository = app.model.ToolShedRepository( tool_shed=tool_shed,
-                                                             name=name,
-                                                             description=description,
-                                                             owner=owner,
-                                                             installed_changeset_revision=installed_changeset_revision,
-                                                             changeset_revision=current_changeset_revision,
-                                                             ctx_rev=ctx_rev,
-                                                             metadata=metadata_dict,
-                                                             includes_datatypes=includes_datatypes,
-                                                             dist_to_shed=dist_to_shed,
-                                                             deleted=deleted,
-                                                             uninstalled=uninstalled,
-                                                             status=status )
-    sa_session.add( tool_shed_repository )
-    sa_session.flush()
+        log.debug( "Adding new row for repository '%s' in the tool_shed_repository table, status set to '%s'." % ( str( name ), str( status ) ) )
+        tool_shed_repository = \
+            app.install_model.ToolShedRepository( tool_shed=tool_shed,
+                                                  name=name,
+                                                  description=description,
+                                                  owner=owner,
+                                                  installed_changeset_revision=installed_changeset_revision,
+                                                  changeset_revision=current_changeset_revision,
+                                                  ctx_rev=ctx_rev,
+                                                  metadata=metadata_dict,
+                                                  includes_datatypes=includes_datatypes,
+                                                  dist_to_shed=dist_to_shed,
+                                                  deleted=deleted,
+                                                  uninstalled=uninstalled,
+                                                  status=status )
+    context.add( tool_shed_repository )
+    context.flush()
     return tool_shed_repository
 
 def extract_components_from_tuple( repository_components_tuple ):
@@ -560,12 +559,65 @@ def get_current_repository_metadata_for_changeset_revision( trans, repository, c
             return repository_metadata
     return None
 
+def get_dependent_downloadable_revisions( trans, repository_metadata ):
+    """
+    Return all repository_metadata records that are downloadable and that depend upon the received
+    repository_metadata record.
+    """
+    # This method is called only from the tool shed.
+    rm_changeset_revision = repository_metadata.changeset_revision
+    rm_repository = repository_metadata.repository
+    rm_repository_name = str( rm_repository.name )
+    rm_repository_owner = str( rm_repository.user.username )
+    dependent_downloadable_revisions = []
+    for repository in trans.sa_session.query( trans.model.Repository ) \
+                                      .filter( and_( trans.model.Repository.table.c.id != rm_repository.id,
+                                                     trans.model.Repository.table.c.deleted == False,
+                                                     trans.model.Repository.table.c.deprecated == False ) ):
+        downloadable_revisions = repository.downloadable_revisions
+        if downloadable_revisions:
+            for downloadable_revision in downloadable_revisions:
+                if downloadable_revision.has_repository_dependencies:
+                    metadata = downloadable_revision.metadata
+                    if metadata:
+                        repository_dependencies_dict = metadata.get( 'repository_dependencies', {} )
+                        repository_dependencies_tups = repository_dependencies_dict.get( 'repository_dependencies', [] )
+                        for repository_dependencies_tup in repository_dependencies_tups:
+                            tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
+                                common_util.parse_repository_dependency_tuple( repository_dependencies_tup )
+                            if name == rm_repository_name and owner == rm_repository_owner:
+                                # We've discovered a repository revision that depends upon the repository associated
+                                # with the received repository_metadata record, but we need to make sure it depends
+                                # upon the revision.
+                                if changeset_revision == rm_changeset_revision:
+                                    dependent_downloadable_revisions.append( downloadable_revision )
+                                else:
+                                    # Make sure the defined changeset_revision is current.
+                                    defined_repository_metadata = \
+                                        trans.sa_session.query( trans.model.RepositoryMetadata ) \
+                                                        .filter( trans.model.RepositoryMetadata.table.c.changeset_revision == changeset_revision ) \
+                                                        .first()
+                                    if defined_repository_metadata is None:
+                                        # The defined changeset_revision is not associated with a repository_metadata
+                                        # record, so updates must be necessary.
+                                        defined_repository = get_repository_by_name_and_owner( trans.app, name, owner )
+                                        defined_repo_dir = defined_repository.repo_path( trans.app )
+                                        defined_repo = hg.repository( get_configured_ui(), defined_repo_dir )
+                                        updated_changeset_revision = \
+                                            get_next_downloadable_changeset_revision( defined_repository,
+                                                                                      defined_repo,
+                                                                                      changeset_revision )
+                                        if updated_changeset_revision == rm_changeset_revision:
+                                            dependent_downloadable_revisions.append( downloadable_revision )
+    return dependent_downloadable_revisions
+
 def get_file_context_from_ctx( ctx, filename ):
     """Return the mercurial file context for a specified file."""
-    # We have to be careful in determining if we found the correct file because multiple files with the same name may be in different directories
-    # within ctx if the files were moved within the change set.  For example, in the following ctx.files() list, the former may have been moved to
-    # the latter: ['tmap_wrapper_0.0.19/tool_data_table_conf.xml.sample', 'tmap_wrapper_0.3.3/tool_data_table_conf.xml.sample'].  Another scenario
-    # is that the file has been deleted.
+    # We have to be careful in determining if we found the correct file because multiple files with
+    # the same name may be in different directories within ctx if the files were moved within the change
+    # set.  For example, in the following ctx.files() list, the former may have been moved to the latter: 
+    # ['tmap_wrapper_0.0.19/tool_data_table_conf.xml.sample', 'tmap_wrapper_0.3.3/tool_data_table_conf.xml.sample'].
+    # Another scenario is that the file has been deleted.
     deleted = False
     filename = strip_path( filename )
     for ctx_file in ctx.files():
@@ -595,17 +647,17 @@ def get_file_type_str( changeset_revision, file_type ):
 
 def get_ids_of_tool_shed_repositories_being_installed( trans, as_string=False ):
     installing_repository_ids = []
-    new_status = trans.model.ToolShedRepository.installation_status.NEW
-    cloning_status = trans.model.ToolShedRepository.installation_status.CLONING
-    setting_tool_versions_status = trans.model.ToolShedRepository.installation_status.SETTING_TOOL_VERSIONS
-    installing_dependencies_status = trans.model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES
-    loading_datatypes_status = trans.model.ToolShedRepository.installation_status.LOADING_PROPRIETARY_DATATYPES
-    for tool_shed_repository in trans.sa_session.query( trans.model.ToolShedRepository ) \
-                                                .filter( or_( trans.model.ToolShedRepository.status == new_status,
-                                                              trans.model.ToolShedRepository.status == cloning_status,
-                                                              trans.model.ToolShedRepository.status == setting_tool_versions_status,
-                                                              trans.model.ToolShedRepository.status == installing_dependencies_status,
-                                                              trans.model.ToolShedRepository.status == loading_datatypes_status ) ):
+    new_status = trans.install_model.ToolShedRepository.installation_status.NEW
+    cloning_status = trans.install_model.ToolShedRepository.installation_status.CLONING
+    setting_tool_versions_status = trans.install_model.ToolShedRepository.installation_status.SETTING_TOOL_VERSIONS
+    installing_dependencies_status = trans.install_model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES
+    loading_datatypes_status = trans.install_model.ToolShedRepository.installation_status.LOADING_PROPRIETARY_DATATYPES
+    for tool_shed_repository in trans.install_model.context.query( trans.install_model.ToolShedRepository ) \
+                                                .filter( or_( trans.install_model.ToolShedRepository.status == new_status,
+                                                              trans.install_model.ToolShedRepository.status == cloning_status,
+                                                              trans.install_model.ToolShedRepository.status == setting_tool_versions_status,
+                                                              trans.install_model.ToolShedRepository.status == installing_dependencies_status,
+                                                              trans.install_model.ToolShedRepository.status == loading_datatypes_status ) ):
         installing_repository_ids.append( trans.security.encode_id( tool_shed_repository.id ) )
     if as_string:
         return ','.join( installing_repository_ids )
@@ -613,7 +665,7 @@ def get_ids_of_tool_shed_repositories_being_installed( trans, as_string=False ):
 
 def get_installed_tool_shed_repository( trans, id ):
     """Get a tool shed repository record from the Galaxy database defined by the id."""
-    return trans.sa_session.query( trans.model.ToolShedRepository ).get( trans.security.decode_id( id ) )
+    return trans.install_model.context.query( trans.install_model.ToolShedRepository ).get( trans.security.decode_id( id ) )
 
 def get_latest_changeset_revision( trans, repository, repo ):
     repository_tip = repository.tip( trans.app )
@@ -672,8 +724,8 @@ def get_named_tmpfile_from_ctx( ctx, filename, dir ):
 
 def get_next_downloadable_changeset_revision( repository, repo, after_changeset_revision ):
     """
-    Return the installable changeset_revision in the repository changelog after the changeset to which after_changeset_revision refers.  If there
-    isn't one, return None.
+    Return the installable changeset_revision in the repository changelog after the changeset to which
+    after_changeset_revision refers.  If there isn't one, return None.
     """
     changeset_revisions = get_ordered_metadata_changeset_revisions( repository, repo, downloadable=True )
     if len( changeset_revisions ) == 1:
@@ -693,10 +745,11 @@ def get_next_downloadable_changeset_revision( repository, repo, after_changeset_
 
 def get_next_prior_import_or_install_required_dict_entry( prior_required_dict, processed_tsr_ids ):
     """
-    This method is used in the Tool Shed when exporting a repository and it's dependencies, and in Galaxy when a repository and it's dependencies
-    are being installed.  The order in which the prior_required_dict is processed is critical in order to ensure that the ultimate repository import
-    or installation order is correctly defined.  This method determines the next key / value pair from the received prior_required_dict that should
-    be processed.
+    This method is used in the Tool Shed when exporting a repository and it's dependencies, and in Galaxy
+    when a repository and it's dependencies are being installed.  The order in which the prior_required_dict
+    is processed is critical in order to ensure that the ultimate repository import or installation order is
+    correctly defined.  This method determines the next key / value pair from the received prior_required_dict
+    that should be processed.
     """
     # Return the first key / value pair that is not yet processed and whose value is an empty list.
     for key, value in prior_required_dict.items():
@@ -704,7 +757,8 @@ def get_next_prior_import_or_install_required_dict_entry( prior_required_dict, p
             continue
         if not value:
             return key
-    # Return the first key / value pair that is not yet processed and whose ids in value are all included in processed_tsr_ids.
+    # Return the first key / value pair that is not yet processed and whose ids in value are all included
+    # in processed_tsr_ids.
     for key, value in prior_required_dict.items():
         if key in processed_tsr_ids:
             continue
@@ -715,7 +769,8 @@ def get_next_prior_import_or_install_required_dict_entry( prior_required_dict, p
                 break
         if all_contained:
             return key
-    # Return the first key / value pair that is not yet processed.  Hopefully this is all that is necessary at this point.
+    # Return the first key / value pair that is not yet processed.  Hopefully this is all that is necessary
+    # at this point.
     for key, value in prior_required_dict.items():
         if key in processed_tsr_ids:
             continue
@@ -739,7 +794,7 @@ def get_or_create_tool_shed_repository( trans, tool_shed, name, owner, changeset
                                                             ctx_rev=ctx_rev,
                                                             repository_clone_url=repository_clone_url,
                                                             metadata_dict={},
-                                                            status=trans.model.ToolShedRepository.installation_status.NEW,
+                                                            status=trans.install_model.ToolShedRepository.installation_status.NEW,
                                                             current_changeset_revision=None,
                                                             owner=owner,
                                                             dist_to_shed=False )
@@ -810,9 +865,10 @@ def get_prior_import_or_install_required_dict( trans, tsr_ids, repo_info_dicts )
 
 def get_query_for_setting_metadata_on_repositories( trans, my_writable=False, order=True ):
     """
-    Return a query containing repositories for resetting metadata.  This method is called from both the Tool Shed and Galaxy.  The
-    my_writable parameter is ignored unless called from the Tool Shed, and the order parameter is used for displaying the list of
-    repositories ordered alphabetically for display on a page.  When called from wither the Tool Shed or Galaxy API, order is False.
+    Return a query containing repositories for resetting metadata.  This method is called from both the
+    Tool Shed and Galaxy.  The my_writable parameter is ignored unless called from the Tool Shed, and the
+    order parameter is used for displaying the list of repositories ordered alphabetically for display on
+    a page.  When called from either the Tool Shed or Galaxy API, order is False.
     """
     if trans.webapp.name == 'tool_shed':
         # When called from the Tool Shed API, the metadata is reset on all repositories of type tool_dependency_definition in addition
@@ -857,13 +913,20 @@ def get_query_for_setting_metadata_on_repositories( trans, my_writable=False, or
     else:
         # We're in Galaxy.
         if order:
-            return trans.sa_session.query( trans.model.ToolShedRepository ) \
-                                   .filter( trans.model.ToolShedRepository.table.c.uninstalled == False ) \
-                                   .order_by( trans.model.ToolShedRepository.table.c.name,
-                                              trans.model.ToolShedRepository.table.c.owner )
+            return trans.install_model.context.query( trans.install_model.ToolShedRepository ) \
+                                   .filter( trans.install_model.ToolShedRepository.table.c.uninstalled == False ) \
+                                   .order_by( trans.install_model.ToolShedRepository.table.c.name,
+                                              trans.install_model.ToolShedRepository.table.c.owner )
         else:
-            return trans.sa_session.query( trans.model.ToolShedRepository ) \
-                                   .filter( trans.model.ToolShedRepository.table.c.uninstalled == False )
+            return trans.install_model.context.query( trans.install_model.ToolShedRepository ) \
+                                   .filter( trans.install_model.ToolShedRepository.table.c.uninstalled == False )
+
+def get_readable_ctx_date( ctx ):
+    """Convert the date of the changeset (the received ctx) to a human-readable date."""
+    t, tz = ctx.date()
+    date = datetime( *gmtime( float( t ) - tz )[ :6 ] )
+    ctx_date = date.strftime( "%Y-%m-%d" )
+    return ctx_date
 
 def get_repo_info_tuple_contents( repo_info_tuple ):
     """Take care in handling the repo_info_tuple as it evolves over time as new tool shed features are introduced."""
@@ -891,30 +954,30 @@ def get_repository_and_repository_dependencies_from_repo_info_dict( trans, repo_
 def get_repository_by_id( trans, id ):
     """Get a repository from the database via id."""
     if trans.webapp.name == 'galaxy':
-        return trans.sa_session.query( trans.model.ToolShedRepository ).get( trans.security.decode_id( id ) )
+        return trans.install_model.context.query( trans.install_model.ToolShedRepository ).get( trans.security.decode_id( id ) )
     else:
         return trans.sa_session.query( trans.model.Repository ).get( trans.security.decode_id( id ) )
 
 def get_repository_by_name( app, name ):
     """Get a repository from the database via name."""
-    sa_session = app.model.context.current
+    repository_query = __repository_query( app )
     if app.name == 'galaxy':
-        return sa_session.query( app.model.ToolShedRepository ).filter_by( name=name ).first()
+        return repository_query.filter_by( name=name ).first()
     else:
-        return sa_session.query( app.model.Repository ).filter_by( name=name ).first()
+        return repository_query.filter_by( name=name ).first()
 
 def get_repository_by_name_and_owner( app, name, owner ):
     """Get a repository from the database via name and owner"""
-    sa_session = app.model.context.current
+    repository_query = __repository_query( app )
     if app.name == 'galaxy':
-        return sa_session.query( app.model.ToolShedRepository ) \
-                         .filter( and_( app.model.ToolShedRepository.table.c.name == name,
-                                        app.model.ToolShedRepository.table.c.owner == owner ) ) \
+        return repository_query \
+                         .filter( and_( app.install_model.ToolShedRepository.table.c.name == name,
+                                        app.install_model.ToolShedRepository.table.c.owner == owner ) ) \
                          .first()
     # We're in the tool shed.
     user = get_user_by_username( app, owner )
     if user:
-        return sa_session.query( app.model.Repository ) \
+        return repository_query \
                          .filter( and_( app.model.Repository.table.c.name == name,
                                         app.model.Repository.table.c.user_id == user.id ) ) \
                          .first()
@@ -946,7 +1009,10 @@ def get_repository_dependency_types( repository_dependencies ):
     return has_repository_dependencies, has_repository_dependencies_only_if_compiling_contained_td
 
 def get_repository_for_dependency_relationship( app, tool_shed, name, owner, changeset_revision ):
-    """Return an installed tool_shed_repository database record that is defined by either the current changeset revision or the installed_changeset_revision."""
+    """
+    Return an installed tool_shed_repository database record that is defined by either the current changeset
+    revision or the installed_changeset_revision.
+    """
     # This method is used only in Galaxy, not the tool shed.
     if tool_shed.endswith( '/' ):
         tool_shed = tool_shed.rstrip( '/' )
@@ -1038,6 +1104,11 @@ def get_repository_from_refresh_on_change( trans, **kwd ):
                 return v, repository
     # This should never be reached - raise an exception?
     return v, None
+
+def get_repository_heads( repo ):
+    """Return current repository heads, which are changesets with no child changesets."""
+    heads = [ repo[ h ] for h in repo.heads( None ) ]
+    return heads
 
 def get_repository_ids_requiring_prior_import_or_install( trans, tsr_ids, repository_dependencies ):
     """
@@ -1139,21 +1210,33 @@ def get_reversed_changelog_changesets( repo ):
         reversed_changelog.insert( 0, changeset )
     return reversed_changelog
 
-def get_revision_label( trans, repository, changeset_revision ):
-    """Return a string consisting of the human read-able changeset rev and the changeset revision string."""
+def get_revision_label( trans, repository, changeset_revision, include_date=True ):
+    """
+    Return a string consisting of the human read-able changeset rev and the changeset revision string
+    which includes the revision date if the receive include_date is True.
+    """
     repo = hg.repository( get_configured_ui(), repository.repo_path( trans.app ) )
     ctx = get_changectx_for_changeset( repo, changeset_revision )
     if ctx:
-        return "%s:%s" % ( str( ctx.rev() ), changeset_revision )
+        return get_revision_label_from_ctx( ctx, include_date=include_date )
     else:
         return "-1:%s" % changeset_revision
 
-def get_rev_label_from_changeset_revision( repo, changeset_revision ):
-    """Given a changeset revision hash, return two strings, the changeset rev and the changeset revision hash."""
+def get_revision_label_from_ctx( ctx, include_date=True ):
+    if include_date:
+        return '%s:%s <i><font color="#666666">(%s)</font></i>' % \
+            ( str( ctx.rev() ), str( ctx ), str( get_readable_ctx_date( ctx ) ) )
+    return '%s:%s' % ( str( ctx.rev() ), str( ctx ) )
+
+def get_rev_label_from_changeset_revision( repo, changeset_revision, include_date=True ):
+    """
+    Given a changeset revision hash, return two strings, the changeset rev and the changeset revision hash
+    which includes the revision date if the receive include_date is True.
+    """
     ctx = get_changectx_for_changeset( repo, changeset_revision )
     if ctx:
         rev = '%04d' % ctx.rev()
-        label = "%s:%s" % ( str( ctx.rev() ), changeset_revision )
+        label = get_revision_label_from_ctx( ctx, include_date=include_date )
     else:
         rev = '-1'
         label = "-1:%s" % changeset_revision
@@ -1217,36 +1300,36 @@ def get_tool_shed_from_clone_url( repository_clone_url ):
 def get_tool_shed_repository_by_id( trans, repository_id ):
     """Return a tool shed repository database record defined by the id."""
     # This method is used only in Galaxy, not the tool shed.
-    return trans.sa_session.query( trans.model.ToolShedRepository ) \
-                           .filter( trans.model.ToolShedRepository.table.c.id == trans.security.decode_id( repository_id ) ) \
-                           .first()
+    return trans.install_model.context.query( trans.install_model.ToolShedRepository ) \
+                                      .filter( trans.install_model.ToolShedRepository.table.c.id == trans.security.decode_id( repository_id ) ) \
+                                      .first()
 
 def get_tool_shed_repository_by_shed_name_owner_changeset_revision( app, tool_shed, name, owner, changeset_revision ):
     """Return a tool shed repository database record defined by the combination of a tool_shed, repository name, repository owner and current changeet_revision."""
     # This method is used only in Galaxy, not the tool shed.
-    sa_session = app.model.context.current
+    repository_query = __repository_query( app )
     if tool_shed.find( '//' ) > 0:
         tool_shed = tool_shed.split( '//' )[1]
     tool_shed = tool_shed.rstrip( '/' )
-    return sa_session.query( app.model.ToolShedRepository ) \
-                     .filter( and_( app.model.ToolShedRepository.table.c.tool_shed == tool_shed,
-                                    app.model.ToolShedRepository.table.c.name == name,
-                                    app.model.ToolShedRepository.table.c.owner == owner,
-                                    app.model.ToolShedRepository.table.c.changeset_revision == changeset_revision ) ) \
+    return repository_query \
+                     .filter( and_( app.install_model.ToolShedRepository.table.c.tool_shed == tool_shed,
+                                    app.install_model.ToolShedRepository.table.c.name == name,
+                                    app.install_model.ToolShedRepository.table.c.owner == owner,
+                                    app.install_model.ToolShedRepository.table.c.changeset_revision == changeset_revision ) ) \
                      .first()
 
 def get_tool_shed_repository_by_shed_name_owner_installed_changeset_revision( app, tool_shed, name, owner, installed_changeset_revision ):
     """Return a tool shed repository database record defined by the combination of a tool_shed, repository name, repository owner and installed_changeet_revision."""
     # This method is used only in Galaxy, not the tool shed.
-    sa_session = app.model.context.current
+    repository_query = __repository_query( app )
     if tool_shed.find( '//' ) > 0:
         tool_shed = tool_shed.split( '//' )[1]
     tool_shed = tool_shed.rstrip( '/' )
-    return sa_session.query( app.model.ToolShedRepository ) \
-                     .filter( and_( app.model.ToolShedRepository.table.c.tool_shed == tool_shed,
-                                    app.model.ToolShedRepository.table.c.name == name,
-                                    app.model.ToolShedRepository.table.c.owner == owner,
-                                    app.model.ToolShedRepository.table.c.installed_changeset_revision == installed_changeset_revision ) ) \
+    return repository_query \
+                     .filter( and_( app.install_model.ToolShedRepository.table.c.tool_shed == tool_shed,
+                                    app.install_model.ToolShedRepository.table.c.name == name,
+                                    app.install_model.ToolShedRepository.table.c.owner == owner,
+                                    app.install_model.ToolShedRepository.table.c.installed_changeset_revision == installed_changeset_revision ) ) \
                      .first()
 
 def get_tool_shed_status_for_installed_repository( app, repository ):
@@ -1294,45 +1377,45 @@ def get_tool_shed_repository_status_label( trans, tool_shed_repository=None, nam
                                                                                                              changeset_revision )
     if tool_shed_repository:
         status_label = tool_shed_repository.status
-        if tool_shed_repository.status in [ trans.model.ToolShedRepository.installation_status.CLONING,
-                                            trans.model.ToolShedRepository.installation_status.SETTING_TOOL_VERSIONS,
-                                            trans.model.ToolShedRepository.installation_status.INSTALLING_REPOSITORY_DEPENDENCIES,
-                                            trans.model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES,
-                                            trans.model.ToolShedRepository.installation_status.LOADING_PROPRIETARY_DATATYPES ]:
-            bgcolor = trans.model.ToolShedRepository.states.INSTALLING
-        elif tool_shed_repository.status in [ trans.model.ToolShedRepository.installation_status.NEW,
-                                              trans.model.ToolShedRepository.installation_status.UNINSTALLED ]:
-            bgcolor = trans.model.ToolShedRepository.states.UNINSTALLED
-        elif tool_shed_repository.status in [ trans.model.ToolShedRepository.installation_status.ERROR ]:
-            bgcolor = trans.model.ToolShedRepository.states.ERROR
-        elif tool_shed_repository.status in [ trans.model.ToolShedRepository.installation_status.DEACTIVATED ]:
-            bgcolor = trans.model.ToolShedRepository.states.WARNING
-        elif tool_shed_repository.status in [ trans.model.ToolShedRepository.installation_status.INSTALLED ]:
+        if tool_shed_repository.status in [ trans.install_model.ToolShedRepository.installation_status.CLONING,
+                                            trans.install_model.ToolShedRepository.installation_status.SETTING_TOOL_VERSIONS,
+                                            trans.install_model.ToolShedRepository.installation_status.INSTALLING_REPOSITORY_DEPENDENCIES,
+                                            trans.install_model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES,
+                                            trans.install_model.ToolShedRepository.installation_status.LOADING_PROPRIETARY_DATATYPES ]:
+            bgcolor = trans.install_model.ToolShedRepository.states.INSTALLING
+        elif tool_shed_repository.status in [ trans.install_model.ToolShedRepository.installation_status.NEW,
+                                              trans.install_model.ToolShedRepository.installation_status.UNINSTALLED ]:
+            bgcolor = trans.install_model.ToolShedRepository.states.UNINSTALLED
+        elif tool_shed_repository.status in [ trans.install_model.ToolShedRepository.installation_status.ERROR ]:
+            bgcolor = trans.install_model.ToolShedRepository.states.ERROR
+        elif tool_shed_repository.status in [ trans.install_model.ToolShedRepository.installation_status.DEACTIVATED ]:
+            bgcolor = trans.install_model.ToolShedRepository.states.WARNING
+        elif tool_shed_repository.status in [ trans.install_model.ToolShedRepository.installation_status.INSTALLED ]:
             if tool_shed_repository.repository_dependencies_being_installed:
-                bgcolor = trans.model.ToolShedRepository.states.WARNING
-                status_label = '%s, %s' % ( status_label, trans.model.ToolShedRepository.installation_status.INSTALLING_REPOSITORY_DEPENDENCIES )
+                bgcolor = trans.install_model.ToolShedRepository.states.WARNING
+                status_label = '%s, %s' % ( status_label, trans.install_model.ToolShedRepository.installation_status.INSTALLING_REPOSITORY_DEPENDENCIES )
             elif tool_shed_repository.missing_repository_dependencies:
-                bgcolor = trans.model.ToolShedRepository.states.WARNING
+                bgcolor = trans.install_model.ToolShedRepository.states.WARNING
                 status_label = '%s, missing repository dependencies' % status_label
             elif tool_shed_repository.tool_dependencies_being_installed:
-                bgcolor = trans.model.ToolShedRepository.states.WARNING
-                status_label = '%s, %s' % (status_label, trans.model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES )
+                bgcolor = trans.install_model.ToolShedRepository.states.WARNING
+                status_label = '%s, %s' % (status_label, trans.install_model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES )
             elif tool_shed_repository.missing_tool_dependencies:
-                bgcolor = trans.model.ToolShedRepository.states.WARNING
+                bgcolor = trans.install_model.ToolShedRepository.states.WARNING
                 status_label = '%s, missing tool dependencies' % status_label
             else:
-                bgcolor = trans.model.ToolShedRepository.states.OK
+                bgcolor = trans.install_model.ToolShedRepository.states.OK
         else:
-            bgcolor = trans.model.ToolShedRepository.states.ERROR
+            bgcolor = trans.install_model.ToolShedRepository.states.ERROR
     else:
-        bgcolor = trans.model.ToolShedRepository.states.WARNING
+        bgcolor = trans.install_model.ToolShedRepository.states.WARNING
         status_label = '%s, unknown status' % status_label
     return '<div class="count-box state-color-%s">%s</div>' % ( bgcolor, status_label )
 
 def get_updated_changeset_revisions( trans, name, owner, changeset_revision ):
     """
-    Return a string of comma-separated changeset revision hashes for all available updates to the received changeset revision for the repository
-    defined by the received name and owner.
+    Return a string of comma-separated changeset revision hashes for all available updates to the received changeset
+    revision for the repository defined by the received name and owner.
     """
     repository = get_repository_by_name_and_owner( trans.app, name, owner )
     repo_dir = repository.repo_path( trans.app )
@@ -1352,8 +1435,8 @@ def get_updated_changeset_revisions( trans, name, owner, changeset_revision ):
 
 def get_url_from_tool_shed( app, tool_shed ):
     """
-    The value of tool_shed is something like: toolshed.g2.bx.psu.edu.  We need the URL to this tool shed, which is something like:
-    http://toolshed.g2.bx.psu.edu/
+    The value of tool_shed is something like: toolshed.g2.bx.psu.edu.  We need the URL to this tool shed, which is
+    something like: http://toolshed.g2.bx.psu.edu/
     """
     for shed_name, shed_url in app.tool_shed_registry.tool_sheds.items():
         if shed_url.find( tool_shed ) >= 0:
@@ -1415,9 +1498,6 @@ def handle_email_alerts( trans, repository, content_alert_str='', new_repo_alert
             email_from = 'galaxy-no-reply@' + trans.request.host.split( ':' )[0]
         tip_changeset = repo.changelog.tip()
         ctx = repo.changectx( tip_changeset )
-        t, tz = ctx.date()
-        date = datetime( *gmtime( float( t ) - tz )[:6] )
-        display_date = date.strftime( "%Y-%m-%d" )
         try:
             username = ctx.user().split()[0]
         except:
@@ -1428,6 +1508,7 @@ def handle_email_alerts( trans, repository, content_alert_str='', new_repo_alert
             template = new_repo_email_alert_template
         else:
             template = email_alert_template
+        display_date = get_readable_ctx_date( ctx )
         admin_body = string.Template( template ).safe_substitute( host=trans.request.host,
                                                                   sharable_link=sharable_link,
                                                                   repository_name=repository.name,
@@ -1515,23 +1596,35 @@ def open_repository_files_folder( trans, folder_path ):
     return folder_contents
 
 def pretty_print( dict=None ):
-    if dict:
-        return json.to_json_string( dict, sort_keys=True, indent=4 * ' ' )
+    if dict is not None:
+        return json.to_json_string( dict, sort_keys=True, indent=4 )
 
 def remove_dir( dir ):
     """Attempt to remove a directory from disk."""
-    if os.path.exists( dir ):
-        try:
-            shutil.rmtree( dir )
-        except:
-            pass
+    if dir:
+        if os.path.exists( dir ):
+            try:
+                shutil.rmtree( dir )
+            except:
+                pass
+
+def remove_file( file_name ):
+    """Attempt to remove a file from disk."""
+    if file_name:
+        if os.path.exists( file_name ):
+            try:
+                os.remove( file_name )
+            except:
+                pass
 
 def repository_was_previously_installed( trans, tool_shed_url, repository_name, repo_info_tuple ):
     """
-    Find out if a repository is already installed into Galaxy - there are several scenarios where this is necessary.  For example, this method
-    will handle the case where the repository was previously installed using an older changeset_revsion, but later the repository was updated
-    in the tool shed and now we're trying to install the latest changeset revision of the same repository instead of updating the one that was
-    previously installed.  We'll look in the database instead of on disk since the repository may be currently uninstalled.
+    Find out if a repository is already installed into Galaxy - there are several scenarios where this
+    is necessary.  For example, this method will handle the case where the repository was previously
+    installed using an older changeset_revsion, but later the repository was updated in the tool shed
+    and now we're trying to install the latest changeset revision of the same repository instead of
+    updating the one that was previously installed.  We'll look in the database instead of on disk since
+    the repository may be currently uninstalled.
     """
     description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = \
         get_repo_info_tuple_contents( repo_info_tuple )
@@ -1544,8 +1637,8 @@ def repository_was_previously_installed( trans, tool_shed_url, repository_name, 
                                                                                                      changeset_revision )
     if tool_shed_repository:
         return tool_shed_repository, changeset_revision
-    # Get all previous changeset revisions from the tool shed for the repository back to, but excluding, the previous valid changeset
-    # revision to see if it was previously installed using one of them.
+    # Get all previous changeset revisions from the tool shed for the repository back to, but excluding,
+    # the previous valid changeset revision to see if it was previously installed using one of them.
     url = url_join( tool_shed_url,
                     'repository/previous_changeset_revisions?galaxy_url=%s&name=%s&owner=%s&changeset_revision=%s' % \
                     ( url_for( '/', qualified=True ), repository_name, repository_owner, changeset_revision ) )
@@ -1578,10 +1671,10 @@ def reset_previously_installed_repository( trans, repository ):
     repository.deleted = False
     repository.tool_shed_status = None
     repository.uninstalled = False
-    repository.status = trans.model.ToolShedRepository.installation_status.NEW
+    repository.status = trans.install_model.ToolShedRepository.installation_status.NEW
     repository.error_message = None
-    trans.sa_session.add( repository )
-    trans.sa_session.flush()
+    trans.install_model.context.add( repository )
+    trans.install_model.context.flush()
 
 def reversed_lower_upper_bounded_changelog( repo, excluded_lower_bounds_changeset_revision, included_upper_bounds_changeset_revision ):
     """
@@ -1619,7 +1712,7 @@ def set_image_paths( app, encoded_repository_id, text ):
     """
     if text:
         if app.name == 'galaxy':
-            route_to_images = '/admin_toolshed/static/images/%s' % encoded_repository_id
+            route_to_images = 'admin_toolshed/static/images/%s' % encoded_repository_id
         else:
             # We're in the tool shed.
             route_to_images = '/repository/static/images/%s' % encoded_repository_id
@@ -1760,12 +1853,12 @@ def update_repository( repo, ctx_rev=None ):
 
 def update_tool_shed_repository_status( app, tool_shed_repository, status, error_message=None ):
     """Update the status of a tool shed repository in the process of being installed into Galaxy."""
-    sa_session = app.model.context.current
+    context = app.install_model.context
     tool_shed_repository.status = status
     if error_message:
         tool_shed_repository.error_message = str( error_message )
-    sa_session.add( tool_shed_repository )
-    sa_session.flush()
+    context.add( tool_shed_repository )
+    context.flush()
 
 def url_join( *args ):
     """Return a valid URL produced by appending a base URL and a set of request parameters."""
@@ -1773,3 +1866,10 @@ def url_join( *args ):
     for arg in args:
         parts.append( arg.strip( '/' ) )
     return '/'.join( parts )
+
+def __repository_query( app ):
+    if app.name == "galaxy":
+        query = app.install_model.context.query( app.install_model.ToolShedRepository )
+    else:
+        query = app.model.context.query( app.model.Repository )
+    return query

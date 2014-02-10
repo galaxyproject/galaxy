@@ -7,6 +7,7 @@ from galaxy import web
 from galaxy.datatypes.data import nice_size
 from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
 from galaxy.model.orm import and_, eagerload_all, func
+from galaxy import util
 from galaxy.util import Params
 from galaxy.util.odict import odict
 from galaxy.util.sanitize_html import sanitize_html
@@ -30,21 +31,18 @@ class HistoryListGrid( grids.Grid ):
         def get_value( self, trans, grid, history ):
             state_count_dict = self.get_hda_state_counts( trans, history )
 
-            rval = []
+            rval = ''
             for state in ( 'ok', 'running', 'queued', 'error' ):
                 count = state_count_dict.get( state, 0 )
                 if count:
-                    rval.append( '<div class="count-box state-color-%s">%s</div>' % ( state, count ) )
-                else:
-                    rval.append( '' )
+                    rval += '<div class="count-box state-color-%s">%s</div> ' % (state, count)
             return rval
-
 
     class HistoryListNameColumn( NameColumn ):
         def get_link( self, trans, grid, history ):
             link = None
             if not history.deleted:
-                link = dict( operation="Switch", id=history.id, use_panels=grid.use_panels )
+                link = dict( operation="Switch", id=history.id, use_panels=grid.use_panels, async_compatible=True )
             return link
 
 
@@ -72,7 +70,7 @@ class HistoryListGrid( grids.Grid ):
     default_sort_key = "-update_time"
     columns = [
         HistoryListNameColumn( "Name", key="name", attach_popup=True, filterable="advanced" ),
-        DatasetsByStateColumn( "Datasets", key="datasets_by_state", ncells=4, sortable=False ),
+        DatasetsByStateColumn( "Datasets", key="datasets_by_state", sortable=False, nowrap=True),
         grids.IndividualTagsColumn( "Tags", key="tags", model_tag_association_class=model.HistoryTagAssociation, \
                                     filterable="advanced", grid_name="HistoryListGrid" ),
         grids.SharingStatusColumn( "Sharing", key="sharing", filterable="advanced", sortable=False ),
@@ -88,10 +86,10 @@ class HistoryListGrid( grids.Grid ):
         key="free-text-search", visible=False, filterable="standard" )
                 )
     operations = [
-        grids.GridOperation( "Switch", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False ),
+        grids.GridOperation( "Switch", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=True ),
         grids.GridOperation( "View", allow_multiple=False ),
         grids.GridOperation( "Share or Publish", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False ),
-        grids.GridOperation( "Rename", condition=( lambda item: not item.deleted ), async_compatible=False  ),
+        grids.GridOperation( "Rename", condition=( lambda item: not item.deleted ), async_compatible=False, inbound=True  ),
         grids.GridOperation( "Delete", condition=( lambda item: not item.deleted ), async_compatible=True ),
         grids.GridOperation( "Delete Permanently", condition=( lambda item: not item.purged ), confirm="History contents will be removed from disk, this cannot be undone.  Continue?", async_compatible=True ),
         grids.GridOperation( "Undelete", condition=( lambda item: item.deleted and not item.purged ), async_compatible=True ),
@@ -118,13 +116,11 @@ class SharedHistoryListGrid( grids.Grid ):
     # Custom column types
     class DatasetsByStateColumn( grids.GridColumn ):
         def get_value( self, trans, grid, history ):
-            rval = []
+            rval = ''
             for state in ( 'ok', 'running', 'queued', 'error' ):
                 total = sum( 1 for d in history.active_datasets if d.state == state )
                 if total:
-                    rval.append( '<div class="count-box state-color-%s">%s</div>' % ( state, total ) )
-                else:
-                    rval.append( '' )
+                    rval += '<div class="count-box state-color-%s">%s</div>' % ( state, total )
             return rval
 
     class SharedByColumn( grids.GridColumn ):
@@ -138,7 +134,7 @@ class SharedHistoryListGrid( grids.Grid ):
     default_filter = {}
     columns = [
         grids.GridColumn( "Name", key="name", attach_popup=True ), # link=( lambda item: dict( operation="View", id=item.id ) ), attach_popup=True ),
-        DatasetsByStateColumn( "Datasets", ncells=4, sortable=False ),
+        DatasetsByStateColumn( "Datasets", sortable=False ),
         grids.GridColumn( "Created", key="create_time", format=time_ago ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
         SharedByColumn( "Shared by", key="user_id" )
@@ -382,7 +378,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         galaxy_session = trans.get_galaxy_session()
         try:
             association = trans.sa_session.query( trans.app.model.GalaxySessionToHistoryAssociation ) \
-                                          .filter_by( session_id=galaxy_session.id, history_id=trans.security.decode_id( new_history.id ) ) \
+                                          .filter_by( session_id=galaxy_session.id, history_id=new_history.id ) \
                                           .first()
         except:
             association = None
@@ -417,7 +413,9 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                 if not ids:
                     message = "Select a history to unshare"
                     return self.shared_list_grid( trans, status='error', message=message, **kwargs )
-                histories = [ self.get_history( trans, history_id ) for history_id in ids ]
+                # No need to check security, association below won't yield a
+                # hit if this user isn't having the history shared with her.
+                histories = [ self.get_history( trans, history_id, check_ownership=False ) for history_id in ids ]
                 for history in histories:
                     # Current user is the user with which the histories were shared
                     association = trans.sa_session.query( trans.app.model.HistoryUserShareAssociation ).filter_by( user=trans.user, history=history ).one()
@@ -814,6 +812,9 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         else:
             referer_message = "<a href='%s'>go to Galaxy's start page</a>" % url_for( '/' )
 
+        # include activatable/deleted datasets when copying?
+        include_deleted = util.string_as_bool( kwd.get( 'include_deleted', False ) )
+
         # Do import.
         if not id:
             return trans.show_error_message( "You must specify a history you want to import.<br>You can %s." % referer_message, use_panels=True )
@@ -827,7 +828,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             #dan: I can import my own history.
             #if import_history.user_id == user.id:
             #    return trans.show_error_message( "You cannot import your own history.<br>You can %s." % referer_message, use_panels=True )
-            new_history = import_history.copy( target_user=user )
+            new_history = import_history.copy( target_user=user, activatable=include_deleted )
             new_history.name = "imported: " + new_history.name
             new_history.user_id = user.id
             galaxy_session = trans.get_galaxy_session()
@@ -843,9 +844,12 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             # Set imported history to be user's current history.
             trans.set_history( new_history )
             return trans.show_ok_message(
-                message="""History "%s" has been imported. <br>You can <a href="%s">start using this history</a> or %s."""
-                % ( new_history.name, web.url_for( '/' ), referer_message ), use_panels=True )
+                message="""History "%s" has been imported. <br>You can <a href="%s" onclick="parent.window.location='%s';">start using this history</a> or %s."""
+                % ( new_history.name, web.url_for( '/' ), web.url_for( '/' ), referer_message ), use_panels=True )
+
         elif not user_history or not user_history.datasets or confirm:
+            #TODO:?? should anon-users be allowed to include deleted datasets when importing?
+            #new_history = import_history.copy( activatable=include_deleted )
             new_history = import_history.copy()
             new_history.name = "imported: " + new_history.name
             new_history.user_id = None
@@ -868,8 +872,9 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             history. <br>You can <a href="%s">continue and import this history</a> or %s.
             """ % ( web.url_for(controller='history', action='imp',  id=id, confirm=True, referer=trans.request.referer ), referer_message ), use_panels=True )
 
+    # Replaced with view (below) but kept (available via manual URL editing) for now
     @web.expose
-    def view( self, trans, id=None, show_deleted=False, use_panels=True ):
+    def original_view( self, trans, id=None, show_deleted=False, use_panels=True ):
         """View a history. If a history is importable, then it is viewable by any user."""
         # Get history to view.
         if not id:
@@ -890,11 +895,65 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             use_panels = galaxy.util.string_as_bool( use_panels )
         except:
             pass # already a bool
-        return trans.stream_template_mako( "history/view.mako",
+        return trans.stream_template_mako( "history/original_view.mako",
                                            history = history_to_view,
                                            datasets = datasets,
                                            show_deleted = show_deleted,
                                            use_panels = use_panels )
+
+    @web.expose
+    def view( self, trans, id=None, show_deleted=False, show_hidden=False, use_panels=True ):
+        """
+        View a history. If a history is importable, then it is viewable by any user.
+        """
+        # Get history to view.
+        if not id:
+            return trans.show_error_message( "You must specify a history you want to view." )
+
+        show_deleted = galaxy.util.string_as_bool( show_deleted )
+        show_hidden  = galaxy.util.string_as_bool( show_hidden )
+        use_panels   = galaxy.util.string_as_bool( use_panels )
+
+        history_dictionary = {}
+        hda_dictionaries   = []
+        try:
+            history_to_view = self.get_history( trans, id, False )
+            if not history_to_view:
+                return trans.show_error_message( "The specified history does not exist." )
+
+            # Admin users can view any history
+            if( ( history_to_view.user != trans.user )
+            and ( not trans.user_is_admin()  )
+            and ( not history_to_view.importable ) ):
+                #TODO: no check for shared with
+                return trans.show_error_message( "Either you are not allowed to view this history"
+                                               + " or the owner of this history has not made it accessible." )
+
+            hdas = self.get_history_datasets( trans, history_to_view, show_deleted=True, show_hidden=True )
+            for hda in hdas:
+                hda_dict = {}
+                try:
+                    hda_dict = self.get_hda_dict( trans, hda )
+
+                except Exception, exc:
+                    # don't fail entire list if hda err's, record and move on
+                    log.error( 'Error bootstrapping hda %d: %s', hda.id, str( exc ), exc_info=True )
+                    hda_dict = self.get_hda_dict_with_error( trans, hda, str( exc ) )
+
+                hda_dictionaries.append( hda_dict )
+
+            # re-use the hdas above to get the history data...
+            history_dictionary = self.get_history_dict( trans, history_to_view, hda_dictionaries=hda_dictionaries )
+
+        except Exception, exc:
+            user_id = str( trans.user.id ) if trans.user else '(anonymous)'
+            log.exception( 'Error bootstrapping history for user %s: %s', user_id, str( exc ) )
+            history_dictionary[ 'error' ] = ( 'An error occurred getting the history data from the server. '
+                                            + 'Please contact a Galaxy administrator if the problem persists.' )
+
+        return trans.fill_template_mako( "history/view.mako",
+            history=history_dictionary, hdas=hda_dictionaries,
+            show_deleted=show_deleted, show_hidden=show_hidden, use_panels=use_panels )
 
     @web.expose
     def display_by_username_and_slug( self, trans, username, slug ):
@@ -1243,8 +1302,9 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                                         cannot_change[ send_to_user ][ history ].append( hda )
         return can_change, cannot_change, no_change_needed, unique_no_change_needed, send_to_err
 
-    def _share_histories( self, trans, user, send_to_err, histories={} ):
+    def _share_histories( self, trans, user, send_to_err, histories=None ):
         # histories looks like: { userA: [ historyX, historyY ], userB: [ historyY ] }
+        histories = histories or {}
         msg = ""
         sent_to_emails = []
         for send_to_user in histories.keys():

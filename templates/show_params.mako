@@ -109,7 +109,7 @@
         encoded_hda_id = trans.security.encode_id( hda.id )
         %>
         <tr><td>Name:</td><td>${hda.name | h}</td></tr>
-        <tr><td>Created:</td><td>${hda.create_time.strftime("%b %d, %Y")}</td></tr>
+        <tr><td>Created:</td><td>${hda.create_time.strftime(trans.app.config.pretty_datetime_format)}</td></tr>
         ##      <tr><td>Copied from another history?</td><td>${hda.source_library_dataset}</td></tr>
         <tr><td>Filesize:</td><td>${nice_size(hda.dataset.file_size)}</td></tr>
         <tr><td>Dbkey:</td><td>${hda.dbkey | h}</td></tr>
@@ -141,9 +141,9 @@
         % if params_objects and tool:
             ${ inputs_recursive( tool.inputs, params_objects, depth=1, upgrade_messages=upgrade_messages ) }
         %elif params_objects is None:
-            <tr><td colspan="2">Unable to load parameters.</td></tr>
+            <tr><td colspan="3">Unable to load parameters.</td></tr>
         % else:
-            <tr><td colspan="2">No parameters.</td></tr>
+            <tr><td colspan="3">No parameters.</td></tr>
         % endif
     </tbody>
 </table>

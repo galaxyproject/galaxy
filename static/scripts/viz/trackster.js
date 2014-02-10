@@ -7,7 +7,7 @@ var browser_router  = null;
 require(
 [
     // load js libraries
-    'utils/galaxy.utils',
+    'utils/utils',
     'libs/jquery/jstorage',
     'libs/jquery/jquery.event.drag',
     'libs/jquery/jquery.event.hover',
@@ -29,7 +29,7 @@ require(
 });
 
 // trackster viewer
-define( ["libs/backbone/backbone-relational", "viz/visualization", "viz/trackster_ui"],
+define( ["libs/backbone/backbone", "viz/visualization", "viz/trackster_ui"],
         function(backbone, visualization, trackster_ui)
 {
 

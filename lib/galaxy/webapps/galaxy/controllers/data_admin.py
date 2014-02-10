@@ -1,14 +1,13 @@
-import sys, ftplib
+import ftplib
+import json
+import sys
 from galaxy import model, util
 from galaxy.jobs import transfer_manager
-from galaxy.web.base.controller import *
-from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy.model.orm import *
+from galaxy.web.base.controller import *
+from galaxy.web.framework.helpers import grids, iff, time_ago
 from library_common import get_comptypes, lucene_search, whoosh_search
 
-import pkg_resources
-pkg_resources.require("simplejson")
-import simplejson
 
 # Older py compatibility
 try:
@@ -161,7 +160,7 @@ class DataAdmin( BaseUIController ):
         gname = deferred.params[ 'intname' ]
         indexers = ', '.join( deferred.params[ 'indexes' ] )
         jobs = self._get_jobs( deferred, trans )
-        jsonjobs = simplejson.dumps( jobs )
+        jsonjobs = json.dumps( jobs )
         return trans.fill_template( '/admin/data_admin/download_status.mako', name=gname, indexers=indexers, mainjob=jobid, jobs=jobs, jsonjobs=jsonjobs )
 
     @web.expose
@@ -173,7 +172,7 @@ class DataAdmin( BaseUIController ):
         jobid = params.get( 'jobid', '' )
         job = sa_session.query( model.DeferredJob ).filter_by( id=jobid ).first()
         jobs = self._get_jobs( job, trans )
-        return trans.fill_template( '/admin/data_admin/ajax_status.mako', json=simplejson.dumps( jobs ) )
+        return trans.fill_template( '/admin/data_admin/ajax_status.mako', json=json.dumps( jobs ) )
 
     def _get_job( self, jobid, jobtype, trans ):
         sa = trans.app.model.context.current

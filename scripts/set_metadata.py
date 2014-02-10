@@ -10,7 +10,11 @@ import logging
 logging.basicConfig()
 log = logging.getLogger( __name__ )
 
-import os, sys, cPickle
+import cPickle
+import json
+import os
+import sys
+
 # ensure supported version
 from check_python import check_python
 try:
@@ -19,21 +23,20 @@ except:
     sys.exit(1)
 
 new_path = [ os.path.join( os.getcwd(), "lib" ) ]
-new_path.extend( sys.path[1:] ) # remove scripts/ from the path
+new_path.extend( sys.path[ 1: ] )  # remove scripts/ from the path
 sys.path = new_path
 
 from galaxy import eggs
 import pkg_resources
-pkg_resources.require("simplejson")
-import simplejson
-import galaxy.model.mapping #need to load this before we unpickle, in order to setup properties assigned by the mappers
-galaxy.model.Job() #this looks REAL stupid, but it is REQUIRED in order for SA to insert parameters into the classes defined by the mappers --> it appears that instantiating ANY mapper'ed class would suffice here
+import galaxy.model.mapping  # need to load this before we unpickle, in order to setup properties assigned by the mappers
+galaxy.model.Job()  # this looks REAL stupid, but it is REQUIRED in order for SA to insert parameters into the classes defined by the mappers --> it appears that instantiating ANY mapper'ed class would suffice here
 from galaxy.util import stringify_dictionary_keys
 from galaxy.util.json import from_json_string
 from sqlalchemy.orm import clear_mappers
 from galaxy.objectstore import build_object_store_from_config
 from galaxy import config
 import ConfigParser
+
 
 def __main__():
     file_path = sys.argv.pop( 1 )
@@ -45,7 +48,7 @@ def __main__():
     config_file_name = sys.argv.pop( 1 )
     if not os.path.isabs( config_file_name ):
         config_file_name = os.path.join( config_root, config_file_name )
-    
+
     # Set up reference to object store
     # First, read in the main config file for Galaxy; this is required because
     # the object store configuration is stored there
@@ -65,7 +68,7 @@ def __main__():
     universe_config = config.Configuration(**conf_dict)
     object_store = build_object_store_from_config(universe_config)
     galaxy.model.Dataset.object_store = object_store
-    
+
     # Set up datatypes registry
     datatypes_config = sys.argv.pop( 1 )
     datatypes_registry = galaxy.datatypes.registry.Registry()
@@ -89,32 +92,32 @@ def __main__():
         filename_out = fields.pop( 0 )
         filename_results_code = fields.pop( 0 )
         dataset_filename_override = fields.pop( 0 )
-        #Need to be careful with the way that these parameters are populated from the filename splitting, 
-        #because if a job is running when the server is updated, any existing external metadata command-lines 
+        # Need to be careful with the way that these parameters are populated from the filename splitting,
+        # because if a job is running when the server is updated, any existing external metadata command-lines
         #will not have info about the newly added override_metadata file
         if fields:
             override_metadata = fields.pop( 0 )
         else:
             override_metadata = None
         try:
-            dataset = cPickle.load( open( filename_in ) ) #load DatasetInstance
+            dataset = cPickle.load( open( filename_in ) )  # load DatasetInstance
             if dataset_filename_override:
                 dataset.dataset.external_filename = dataset_filename_override
             if ext_override.get( dataset.dataset.id, None ):
                 dataset.extension = ext_override[ dataset.dataset.id ]
-            #Metadata FileParameter types may not be writable on a cluster node, and are therefore temporarily substituted with MetadataTempFiles
+            # Metadata FileParameter types may not be writable on a cluster node, and are therefore temporarily substituted with MetadataTempFiles
             if override_metadata:
-                override_metadata = simplejson.load( open( override_metadata ) )
+                override_metadata = json.load( open( override_metadata ) )
                 for metadata_name, metadata_file_override in override_metadata:
                     if galaxy.datatypes.metadata.MetadataTempFile.is_JSONified_value( metadata_file_override ):
                         metadata_file_override = galaxy.datatypes.metadata.MetadataTempFile.from_JSON( metadata_file_override )
                     setattr( dataset.metadata, metadata_name, metadata_file_override )
-            kwds = stringify_dictionary_keys( simplejson.load( open( filename_kwds ) ) )#load kwds; need to ensure our keywords are not unicode
+            kwds = stringify_dictionary_keys( json.load( open( filename_kwds ) ) )  # load kwds; need to ensure our keywords are not unicode
             dataset.datatype.set_meta( dataset, **kwds )
-            dataset.metadata.to_JSON_dict( filename_out ) # write out results of set_meta
-            simplejson.dump( ( True, 'Metadata has been set successfully' ), open( filename_results_code, 'wb+' ) ) #setting metadata has succeeded
+            dataset.metadata.to_JSON_dict( filename_out )  # write out results of set_meta
+            json.dump( ( True, 'Metadata has been set successfully' ), open( filename_results_code, 'wb+' ) )  # setting metadata has succeeded
         except Exception, e:
-            simplejson.dump( ( False, str( e ) ), open( filename_results_code, 'wb+' ) ) #setting metadata has failed somehow
+            json.dump( ( False, str( e ) ), open( filename_results_code, 'wb+' ) )  # setting metadata has failed somehow
     clear_mappers()
     # Shut down any additional threads that might have been created via the ObjectStore
     object_store.shutdown()

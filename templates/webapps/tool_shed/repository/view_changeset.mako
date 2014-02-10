@@ -49,13 +49,15 @@ ${render_tool_shed_repository_actions( repository=repository )}
 %endif
 <div class="toolForm">
     <%
+        from tool_shed.util.shed_util_common import get_readable_ctx_date
+        changeset_revision_date = get_readable_ctx_date( ctx )
         if can_download:
-            title_str = 'Changeset %s:%s' % ( ctx.rev(), ctx )
+            title_str = 'Changeset <b>%s:%s</b> <i>(%s)</i>' % ( ctx.rev(), ctx, changeset_revision_date )
         else:
-            title_str = '%s changeset %s:%s' % ( repository.name, ctx.rev(), ctx )
+            title_str = '%s changeset <b>%s:%s</b> <i>(%s)</i>' % ( repository.name, ctx.rev(), ctx, changeset_revision_date )
     %>
     <div class="toolFormTitle">
-        ${title_str | h}
+        ${title_str}
     </div>
     <div class="toolFormBody">
         <table class="grid">
@@ -63,10 +65,10 @@ ${render_tool_shed_repository_actions( repository=repository )}
                 <tr>
                     <td>
                         %if prev:
-                            <a class="action-button" href="${h.url_for( controller='repository', action='view_changeset', id=trans.security.encode_id( repository.id ), ctx_str=ctx_parent )}">Previous changeset ${prev | h}</a>
+                            <a class="action-button" href="${h.url_for( controller='repository', action='view_changeset', id=trans.security.encode_id( repository.id ), ctx_str=ctx_parent )}">Previous changeset ${prev}</a>
                         %endif
                         %if next:
-                            <a class="action-button" href="${h.url_for( controller='repository', action='view_changeset', id=trans.security.encode_id( repository.id ), ctx_str=ctx_child )}">Next changeset ${next | h}</a>
+                            <a class="action-button" href="${h.url_for( controller='repository', action='view_changeset', id=trans.security.encode_id( repository.id ), ctx_str=ctx_child )}">Next changeset ${next}</a>
                         %endif
                     </td>
                 </tr>

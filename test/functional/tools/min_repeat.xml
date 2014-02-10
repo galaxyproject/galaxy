@@ -1,0 +1,27 @@
+<tool id="min_repeat" name="min_repeat">
+    <command>
+        cat #for $q in $queries# ${q.input} #end for# > $out_file1 ;
+        cat #for $q in $queries2# ${q.input2} #end for# > $out_file2
+    </command>
+    <inputs>
+        <repeat name="queries" title="Dataset" min="1">
+            <param name="input" type="data" label="Select" />
+        </repeat>
+        <repeat name="queries2" title="Dataset" min="1">
+            <param name="input2" type="data" label="Select" />
+        </repeat>
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="txt" />
+        <data name="out_file2" format="txt" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="input" value="simple_line.txt"/>
+            <param name="input" value="simple_line.txt"/>
+            <param name="input2" value="simple_line_alternative.txt"/>
+            <output name="out_file1" file="simple_line_x2.txt"/>
+            <output name="out_file2" file="simple_line_alternative.txt"/>
+        </test>
+    </tests>
+</tool>

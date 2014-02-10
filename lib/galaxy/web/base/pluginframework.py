@@ -119,7 +119,7 @@ class PluginManager( object ):
             try:
                 plugin = self.load_plugin( plugin_path )
                 if not plugin:
-                    log.warn( '%s, plugin load failed: %s. Skipping...', self, plugin_path )
+                    log.warn( '%s, plugin load failed or disabled: %s. Skipping...', self, plugin_path )
                 #NOTE: prevent silent, implicit overwrite here (two plugins in two diff directories)
                 #TODO: overwriting may be desired
                 elif plugin.name in self.plugins:
@@ -146,7 +146,7 @@ class PluginManager( object ):
         # due to the ordering of listdir, there is an implicit plugin loading order here
         # could instead explicitly list on/off in master config file
         for directory in self.directories:
-            for plugin_dir in os.listdir( directory ):
+            for plugin_dir in sorted( os.listdir( directory ) ):
                 plugin_path = os.path.join( directory, plugin_dir )
                 if self.is_plugin( plugin_path ):
                     yield plugin_path

@@ -20,11 +20,6 @@
         <columns>value, name, path</columns>
         <file path="tool-data/blastdb_p.loc" />
     </table>
-    <!-- Locations of indexes in the Bowtie2 mapper format -->
-    <table name="bowtie2_indexes" comment_char="#">
-        <columns>value, dbkey, name, path</columns>
-        <file path="tool-data/bowtie2_indices.loc" />
-    </table>
     <!-- Locations of indexes in the BWA mapper format -->
     <table name="bwa_indexes" comment_char="#">
         <columns>value, dbkey, name, path</columns>
@@ -74,26 +69,6 @@
     <table name="srma_indexes" comment_char="#">
         <columns>value, dbkey, name, path</columns>
         <file path="tool-data/picard_index.loc" />
-    </table>
-    <!-- Locations of indexes in the Bowtie mapper format for TopHat to use -->
-    <table name="tophat_indexes" comment_char="#">
-        <columns>value, dbkey, name, path</columns>
-        <file path="tool-data/bowtie_indices.loc" />
-    </table>
-    <!-- Locations of indexes in the Bowtie color-space mapper format for TopHat to use -->
-    <table name="tophat_indexes_color" comment_char="#">
-        <columns>value, dbkey, name, path</columns>
-        <file path="tool-data/bowtie_indices_color.loc" />
-    </table>
-    <!-- Locations of indexes in the Bowtie2 mapper format for TopHat2 to use -->
-    <table name="tophat2_indexes" comment_char="#">
-        <columns>value, dbkey, name, path</columns>
-        <file path="tool-data/bowtie2_indices.loc" />
-    </table>
-    <!-- Locations of configurations in the CCAT peak/region caller format -->
-    <table name="ccat_configurations" comment_char="#">
-        <columns>value, name, path</columns>
-        <file path="tool-data/ccat_configurations.loc" />
     </table>
     <!-- Location of Mosaik files -->
     <table name="mosaik_indexes" comment_char="#">

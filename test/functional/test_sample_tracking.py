@@ -3,6 +3,8 @@ from galaxy.model.orm import *
 from base.twilltestcase import *
 from base.test_db_util import *
 
+
+# TODO: Functional tests start failing at 025, fix or eliminate rest of tests.
 class TestFormsAndSampleTracking( TwillTestCase ):
     # ====== Setup Users, Groups & Roles required for this test suite ========= 
     def test_000_initiate_users( self ):

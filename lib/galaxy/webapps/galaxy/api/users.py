@@ -4,15 +4,17 @@ API operations on User objects.
 import logging
 from paste.httpexceptions import HTTPBadRequest, HTTPNotImplemented
 from galaxy import util, web
-from galaxy.web.base.controller import BaseAPIController, url_for
+from galaxy.web.base.controller import BaseAPIController, UsesTagsMixin
+from galaxy.web.base.controller import CreatesUsersMixin
+from galaxy.web.base.controller import CreatesApiKeysMixin
 
 log = logging.getLogger( __name__ )
 
 
-class UserAPIController( BaseAPIController ):
+class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, CreatesApiKeysMixin ):
 
     @web.expose_api
-    def index( self, trans, deleted='False', **kwd ):
+    def index( self, trans, deleted='False', f_email=None, **kwd ):
         """
         GET /api/users
         GET /api/users/deleted
@@ -21,28 +23,22 @@ class UserAPIController( BaseAPIController ):
         rval = []
         query = trans.sa_session.query( trans.app.model.User )
         deleted = util.string_as_bool( deleted )
+        if f_email:
+            query = query.filter(trans.app.model.User.email.like("%%%s%%" % f_email))
         if deleted:
-            route = 'deleted_user'
             query = query.filter( trans.app.model.User.table.c.deleted == True )
             # only admins can see deleted users
             if not trans.user_is_admin():
                 return []
-
         else:
-            route = 'user'
             query = query.filter( trans.app.model.User.table.c.deleted == False )
             # special case: user can see only their own user
             if not trans.user_is_admin():
                 item = trans.user.to_dict( value_mapper={ 'id': trans.security.encode_id } )
-                item['url'] = url_for( route, id=item['id'] )
-                item['quota_percent'] = trans.app.quota_agent.get_percent( trans=trans )
                 return [item]
-
         for user in query:
             item = user.to_dict( value_mapper={ 'id': trans.security.encode_id } )
             #TODO: move into api_values
-            item['quota_percent'] = trans.app.quota_agent.get_percent( trans=trans )
-            item['url'] = url_for( route, id=item['id'] )
             rval.append( item )
         return rval
 
@@ -79,6 +75,9 @@ class UserAPIController( BaseAPIController ):
                 raise HTTPBadRequest( detail='Invalid user id ( %s ) specified' % id )
         item = user.to_dict( view='element', value_mapper={ 'id': trans.security.encode_id,
                                                                   'total_disk_usage': float } )
+
+        # add a list of tags used by the user (as strings)
+        item[ 'tags_used' ] = self.get_user_tags_used( trans, user=user )
         #TODO: move into api_values (needs trans, tho - can we do that with api_keys/@property??)
         #TODO: works with other users (from admin)??
         item['quota_percent'] = trans.app.quota_agent.get_percent( trans=trans )
@@ -94,11 +93,27 @@ class UserAPIController( BaseAPIController ):
             raise HTTPNotImplemented( detail='User creation is not allowed in this Galaxy instance' )
         if trans.app.config.use_remote_user and trans.user_is_admin():
             user = trans.get_or_create_remote_user(remote_user_email=payload['remote_user_email'])
-            item = user.to_dict( view='element', value_mapper={ 'id': trans.security.encode_id,
-                                                                      'total_disk_usage': float } )
+        elif trans.user_is_admin():
+            username = payload[ 'username' ]
+            email = payload[ 'email' ]
+            password = payload[ 'password' ]
+            user = self.create_user( trans=trans, email=email, username=username, password=password )
         else:
             raise HTTPNotImplemented()
+        item = user.to_dict( view='element', value_mapper={ 'id': trans.security.encode_id,
+                                                            'total_disk_usage': float } )
         return item
+
+    @web.expose_api
+    @web.require_admin
+    def api_key( self, trans, user_id, **kwd ):
+        """
+        POST /api/users/{encoded_user_id}/api_key
+        Creates a new API key for specified user.
+        """
+        user = self.get_user( trans, user_id )
+        key = self.create_api_key( trans, user )
+        return key
 
     @web.expose_api
     def update( self, trans, **kwd ):

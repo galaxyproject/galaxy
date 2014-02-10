@@ -1,3 +1,24 @@
+<%
+    hda_dict = trans.security.encode_dict_ids( hda.to_dict() )
+
+    config = query_args
+    title  = "Scatterplot of '" + hda.name + "'"
+    info   = hda.info
+
+    visualization = context.get( 'visualization' )
+    if visualization is not None:
+        config = visualization.latest_revision.config
+        config.update( query_args )
+        title  = visualization.title
+        info   = config.get( 'description', info )
+
+    config[ 'type' ] = 'scatterplot'
+
+    # optionally bootstrap data from dprov
+    ##data = list( hda.datatype.dataset_column_dataprovider( hda, limit=10000 ) )
+%>
+## ----------------------------------------------------------------------------
+
 <!DOCTYPE HTML>
 <html>
 <head>
@@ -13,55 +34,44 @@
 ## ----------------------------------------------------------------------------
 <script type="text/javascript" src="/static/scripts/libs/jquery/jquery.js"></script>
 <script type="text/javascript" src="/static/scripts/libs/jquery/jquery.migrate.js"></script>
+<script type="text/javascript" src="/static/scripts/libs/jquery/jquery-ui.js"></script>
+<script type="text/javascript" src="/static/scripts/libs/bootstrap.js"></script>
 <script type="text/javascript" src="/static/scripts/libs/underscore.js"></script>
 <script type="text/javascript" src="/static/scripts/libs/backbone/backbone.js"></script>
-<script type="text/javascript" src="/static/scripts/libs/backbone/backbone-relational.js"></script>
 <script type="text/javascript" src="/static/scripts/libs/handlebars.runtime.js"></script>
 <script type="text/javascript" src="/static/scripts/libs/d3.js"></script>
-<script type="text/javascript" src="/static/scripts/libs/bootstrap.js"></script>
-<script type="text/javascript" src="/static/scripts/libs/jquery/jquery-ui.js"></script>
-<script type="text/javascript" src="/static/scripts/utils/LazyDataLoader.js"></script>
+
 <script type="text/javascript" src="/static/scripts/mvc/base-mvc.js"></script>
+<script type="text/javascript" src="/static/scripts/mvc/visualization/visualization-model.js"></script>
 
-<script type="text/javascript" src="/plugins/visualizations/scatterplot/static/scatterplot.js"></script>
-
+<script type="text/javascript" src="/plugins/visualizations/scatterplot/static/scatterplot-edit.js"></script>
 </head>
 
 ## ----------------------------------------------------------------------------
 <body>
 %if not embedded:
 ## dataset info: only show if on own page
-<div id="chart-header" class="header">
-    <h2 class="title">Scatterplot of '${hda.name}'</h2>
-    <p class="subtitle">${hda.info}</p>
+<div class="chart-header">
+    <h2>${title}</h2>
+    <p>${info}</p>
 </div>
-%endif
 
-<div id="scatterplot" class="scatterplot-control-form"></div>
-
+<div class="scatterplot-editor"></div>
 <script type="text/javascript">
 $(function(){
-    var hda             = ${h.to_json_string( trans.security.encode_dict_ids( hda.to_dict() ) )},
-        querySettings   = ${h.to_json_string( query_args )},
-        chartConfig     = _.extend( querySettings, {
-            containerSelector : '#chart',
-            //TODO: move to ScatterplotControlForm.initialize
-            marginTop   : ( querySettings.marginTop > 20 )?( querySettings.marginTop ):( 20 ),
-
-            xColumn     : querySettings.xColumn,
-            yColumn     : querySettings.yColumn,
-            idColumn    : querySettings.idColumn
-        });
-    //console.debug( querySettings );
-
-    var settingsForm = new ScatterplotControlForm({
-        dataset         : hda,
-        apiDatasetsURL  : "${h.url_for( controller='/api/datasets', action='index' )}",
-        el              : $( '#scatterplot' ),
-        chartConfig     : chartConfig
-    }).render();
-
+    var model   = new ScatterplotModel( ${h.to_json_string( config )} ),
+        hdaJson = ${h.to_json_string( hda_dict )},
+        editor  = new ScatterplotConfigEditor({
+            el      : $( '.scatterplot-editor' ).attr( 'id', 'scatterplot-editor-hda-' + hdaJson.id ),
+            model   : model,
+            dataset : hdaJson
+        }).render();
+    window.editor = editor;
+    // uncomment to auto render for development
+    //$( '.render-button:visible' ).click();
 });
+
 </script>
+%endif
 
 </body>

@@ -1,7 +1,17 @@
-from base.twilltestcase import *
-from base.test_db_util import *
+from base.twilltestcase import TwillTestCase
+from base.test_db_util import (
+    get_user,
+    get_private_role,
+    get_latest_history_for_user,
+    get_latest_hda,
+)
+
+history1 = None
+admin_user = None
+
 
 class TestTags( TwillTestCase ):
+
     # TODO: Add more functional test coverage for tags
     def test_000_initiate_users( self ):
         """Ensuring all required user accounts exist"""

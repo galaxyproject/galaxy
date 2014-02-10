@@ -263,8 +263,6 @@
                         folder_label = "%s<i> - installation of these additional repositories is required</i>" % folder_label
                     if trans.webapp.name == 'galaxy':
                         col_span_str = 'colspan="4"'
-                elif folder.label == 'Installation errors':
-                    folder_label = "%s<i> - no functional tests were run for any tools in this changeset revision</i>" % folder_label
                 elif folder.label == 'Invalid repository dependencies':
                     folder_label = "%s<i> - click the repository dependency to see why it is invalid</i>" % folder_label
                 elif folder.label == 'Invalid tool dependencies':
@@ -392,26 +390,31 @@
             ${render_missing_test_component( missing_test_component, pad, my_row, row_counter )}
         %endfor
     %endif
-    %if folder.installation_errors:
-        %for installation_error in folder.installation_errors:
-            ${render_folder( installation_error, pad, my_row, row_counter )}
-        %endfor
-    %endif
     %if folder.tool_dependency_installation_errors:
         %for tool_dependency_installation_error in folder.tool_dependency_installation_errors:
             ${render_tool_dependency_installation_error( tool_dependency_installation_error, pad, my_row, row_counter )}
         %endfor
-    %endif 
+    %endif
+    %if folder.tool_dependency_successful_installations:
+        %for tool_dependency_successful_installation in folder.tool_dependency_successful_installations:
+            ${render_tool_dependency_successful_installation( tool_dependency_successful_installation, pad, my_row, row_counter )}
+        %endfor
+    %endif
     %if folder.repository_installation_errors:
         %for repository_installation_error in folder.repository_installation_errors:
             ${render_repository_installation_error( repository_installation_error, pad, my_row, row_counter, is_current_repository=False )}
         %endfor
-    %endif 
+    %endif
     %if folder.current_repository_installation_errors:
         %for repository_installation_error in folder.current_repository_installation_errors:
             ${render_repository_installation_error( repository_installation_error, pad, my_row, row_counter, is_current_repository=True )}
         %endfor
-    %endif 
+    %endif
+    %if folder.repository_successful_installations:
+        %for repository_successful_installation in folder.repository_successful_installations:
+            ${render_repository_successful_installation( repository_successful_installation, pad, my_row, row_counter )}
+        %endfor
+    %endif
 </%def>
 
 <%def name="render_datatype( datatype, pad, parent, row_counter, row_is_header=False )">
@@ -603,9 +606,9 @@
 </%def>
 
 <%def name="render_repository_dependency( repository_dependency, pad, parent, row_counter, row_is_header=False )">
-                
     <%
         from galaxy.util import asbool
+        from tool_shed.util.shed_util_common import get_repository_by_name_and_owner
         encoded_id = trans.security.encode_id( repository_dependency.id )
         if trans.webapp.name == 'galaxy':
             if repository_dependency.tool_shed_repository_id:
@@ -623,14 +626,15 @@
             prior_installation_required_str = " <i>(prior install required)</i>"
         else:
             prior_installation_required_str = ""
-
         if trans.webapp.name == 'galaxy':
             if row_is_header:
                 cell_type = 'th'
             else:
                 cell_type = 'td'
         else:
+            # We're in the tool shed.
             cell_type = 'td'
+            rd = get_repository_by_name_and_owner( trans.app, repository_name, repository_owner )
     %>
     <tr class="datasetRow"
         %if parent is not None:
@@ -658,7 +662,11 @@
             </${cell_type}>
         %else:
             <td style="padding-left: ${pad+20}px;">
-                Repository <b>${repository_name | h}</b> revision <b>${changeset_revision | h}</b> owned by <b>${repository_owner | h}</b>${prior_installation_required_str}
+                %if rd:
+                    <a class="view-info" href="${h.url_for( controller='repository', action='view_or_manage_repository', id=trans.security.encode_id( rd.id ), changeset_revision=changeset_revision )}">Repository <b>${repository_name | h}</b> revision <b>${changeset_revision | h}</b> owned by <b>${repository_owner | h}</b></a>${prior_installation_required_str}
+                %else:
+                    Repository <b>${repository_name | h}</b> revision <b>${changeset_revision | h}</b> owned by <b>${repository_owner | h}</b>${prior_installation_required_str}
+                %endif
             </td>
         %endif
     </tr>
@@ -685,16 +693,16 @@
 
 <%def name="render_tool_dependency_installation_error( installation_error, pad, parent, row_counter, row_is_header=False )">
     <%
+        from galaxy.util import unicodify
         encoded_id = trans.security.encode_id( installation_error.id )
     %>
-    ${render_table_wrap_style( "td_install_error_table" )}
     <tr class="datasetRow"
         %if parent is not None:
             parent="${parent}"
         %endif
         id="libraryItem-rtdie-${encoded_id}">
         <td style="padding-left: ${pad+20}px;">
-            <table id="td_install_error_table">
+            <table id="test_environment">
                 <tr bgcolor="#FFFFCC">
                     <th>Type</th><th>Name</th><th>Version</th>
                 </tr>
@@ -704,7 +712,37 @@
                     <td>${installation_error.version | h}</td>
                 </tr>
                 <tr><th>Error</th></tr>
-                <tr><td colspan="3">${installation_error.error_message | h}</td></tr>
+                <tr><td colspan="3">${unicodify( installation_error.error_message ) | h}</td></tr>
+            </table>
+        </td>
+    </tr>
+    <%
+        my_row = row_counter.count
+        row_counter.increment()
+    %>
+</%def>
+
+<%def name="render_tool_dependency_successful_installation( successful_installation, pad, parent, row_counter, row_is_header=False )">
+    <%
+        encoded_id = trans.security.encode_id( successful_installation.id )
+    %>
+    <tr class="datasetRow"
+        %if parent is not None:
+            parent="${parent}"
+        %endif
+        id="libraryItem-rtdsi-${encoded_id}">
+        <td style="padding-left: ${pad+20}px;">
+            <table id="test_environment">
+                <tr bgcolor="#FFFFCC">
+                    <th>Type</th><th>Name</th><th>Version</th>
+                </tr>
+                <tr>
+                    <td>${successful_installation.name | h}</td>
+                    <td>${successful_installation.type | h}</td>
+                    <td>${successful_installation.version | h}</td>
+                </tr>
+                <tr><th>Installation directory</th></tr>
+                <tr><td colspan="3">${successful_installation.installation_directory | h}</td></tr>
             </table>
         </td>
     </tr>
@@ -716,16 +754,16 @@
 
 <%def name="render_repository_installation_error( installation_error, pad, parent, row_counter, row_is_header=False, is_current_repository=False )">
     <%
+        from galaxy.util import unicodify
         encoded_id = trans.security.encode_id( installation_error.id )
     %>
-    ${render_table_wrap_style( "rd_install_error_table" )}
     <tr class="datasetRow"
         %if parent is not None:
             parent="${parent}"
         %endif
         id="libraryItem-rrie-${encoded_id}">
         <td style="padding-left: ${pad+20}px;">
-            <table id="rd_install_error_table">
+            <table id="test_environment">
                 %if not is_current_repository:
                     <tr bgcolor="#FFFFCC">
                         <th>Tool shed</th><th>Name</th><th>Owner</th><th>Changeset revision</th>
@@ -738,7 +776,38 @@
                     </tr>
                 %endif
                 <tr><th>Error</th></tr>
-                <tr><td colspan="4">${installation_error.error_message | h}</td></tr>
+                <tr><td colspan="4">${unicodify( installation_error.error_message ) | h}</td></tr>
+            </table>
+        </td>
+    </tr>
+    <%
+        my_row = row_counter.count
+        row_counter.increment()
+    %>
+</%def>
+
+<%def name="render_repository_successful_installation( successful_installation, pad, parent, row_counter, row_is_header=False, is_current_repository=False )">
+    <%
+        encoded_id = trans.security.encode_id( successful_installation.id )
+    %>
+    <tr class="datasetRow"
+        %if parent is not None:
+            parent="${parent}"
+        %endif
+        id="libraryItem-rrsi-${encoded_id}">
+        <td style="padding-left: ${pad+20}px;">
+            <table id="test_environment">
+                %if not is_current_repository:
+                    <tr bgcolor="#FFFFCC">
+                        <th>Tool shed</th><th>Name</th><th>Owner</th><th>Changeset revision</th>
+                    </tr>
+                    <tr>
+                        <td>${successful_installation.tool_shed | h}</td>
+                        <td>${successful_installation.name | h}</td>
+                        <td>${successful_installation.owner | h}</td>
+                        <td>${successful_installation.changeset_revision | h}</td>
+                    </tr>
+                %endif
             </table>
         </td>
     </tr>
@@ -818,7 +887,7 @@
                             <a class="action-button" href="${h.url_for( controller='repository', action='view_tool_metadata', repository_id=trans.security.encode_id( tool.repository_id ), changeset_revision=tool.changeset_revision, tool_id=tool.tool_id, render_repository_actions_for=render_repository_actions_for )}">View tool metadata</a>
                         </div>
                     %else:
-                        %if tool.repository_installation_status == trans.model.ToolShedRepository.installation_status.INSTALLED:
+                        %if tool.repository_installation_status == trans.install_model.ToolShedRepository.installation_status.INSTALLED:
                             <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='view_tool_metadata', repository_id=trans.security.encode_id( tool.repository_id ), changeset_revision=tool.changeset_revision, tool_id=tool.tool_id )}">${tool.name | h}</a>
                         %else:
                             ${tool.name | h}
@@ -858,11 +927,11 @@
             %if row_is_header:
                 ${tool_dependency.name | h}
             %elif trans.webapp.name == 'galaxy' and tool_dependency.tool_dependency_id:
-                %if tool_dependency.repository_id and tool_dependency.installation_status in [ trans.model.ToolDependency.installation_status.INSTALLED ]:
+                %if tool_dependency.repository_id and tool_dependency.installation_status in [ trans.install_model.ToolDependency.installation_status.INSTALLED ]:
                     <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='browse_tool_dependency', id=trans.security.encode_id( tool_dependency.tool_dependency_id ) )}">
                         ${tool_dependency.name | h}
                     </a>
-                %elif tool_dependency.installation_status not in [ trans.model.ToolDependency.installation_status.UNINSTALLED ]:
+                %elif tool_dependency.installation_status not in [ trans.install_model.ToolDependency.installation_status.UNINSTALLED ]:
                     <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='manage_repository_tool_dependencies', tool_dependency_ids=trans.security.encode_id( tool_dependency.tool_dependency_id ) )}">
                         ${tool_dependency.name}
                     </a>
@@ -886,18 +955,6 @@
         <${cell_type}>
             %if trans.webapp.name == 'galaxy':
                 ${tool_dependency.installation_status | h}
-            %else:
-                %if row_is_header:
-                    ${tool_dependency.is_orphan | h}
-                %else:
-                    <%
-                        if string_as_bool( str( tool_dependency.is_orphan ) ):
-                            is_orphan = 'yes'
-                        else:
-                            is_orphan = 'no'
-                    %>
-                    ${is_orphan | h}
-                %endif
             %endif
         </${cell_type}>
     </tr>
@@ -916,7 +973,7 @@
         id="libraryItem-rte-${encoded_id}">
         <td style="padding-left: ${pad+20}px;">
             <table class="grid" id="test_environment">
-                <tr><td><b>Time tested:</b> ${test_environment.time_last_tested | h}</td></tr>
+                <tr><td><b>Time tested:</b> ${test_environment.time_tested | h}</td></tr>
                 <tr><td><b>System:</b> ${test_environment.system | h}</td></tr>
                 <tr><td><b>Architecture:</b> ${test_environment.architecture | h}</td></tr>
                 <tr><td><b>Python version:</b> ${test_environment.python_version | h}</td></tr>

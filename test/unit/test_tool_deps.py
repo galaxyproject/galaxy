@@ -42,9 +42,10 @@ def test_tool_dependencies():
         dependency = dm.find_dep( "dep1", None )
         assert dependency.version == "2.0"
 
-        ## Test default will not be fallen back upon by default
+        ## Test default resolve will be fall back on default package dependency
+        ## when using the default resolver.
         dependency = dm.find_dep( "dep1", "2.1" )
-        assert dependency == INDETERMINATE_DEPENDENCY
+        assert dependency.version == "2.0"  # 2.0 is defined as default_version
 
 
 TEST_REPO_USER = "devteam"
@@ -293,7 +294,7 @@ def test_uses_tool_shed_dependencies():
 
 def test_config_module_defaults():
     with __parse_resolvers('''<dependency_resolvers>
-  <modules />
+  <modules prefetch="false" />
 </dependency_resolvers>
 ''') as dependency_resolvers:
         module_resolver = dependency_resolvers[0]

@@ -1,6 +1,4 @@
 from tool_shed.base.twilltestcase import ShedTwillTestCase, common, os
-import tool_shed.base.test_db_util as test_db_util
-
 repository_name = 'bed_to_gff_0130'
 repository_description = "Converter: BED to GFF"
 repository_long_description = "Convert bed to gff"
@@ -14,7 +12,6 @@ category_description = 'Test 0130 Datatype Converters'
 3) Make sure the bed_to_gff_converter tool is not displayed in the tool panel.
 '''
 
-
 class TestDatatypeConverters( ShedTwillTestCase ):
     '''Test features related to datatype converters.'''
     
@@ -22,19 +19,19 @@ class TestDatatypeConverters( ShedTwillTestCase ):
         """Create necessary user accounts."""
         self.galaxy_logout()
         self.galaxy_login( email=common.admin_email, username=common.admin_username )
-        galaxy_admin_user = test_db_util.get_galaxy_user( common.admin_email )
+        galaxy_admin_user = self.test_db_util.get_galaxy_user( common.admin_email )
         assert galaxy_admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
-        galaxy_admin_user_private_role = test_db_util.get_galaxy_private_role( galaxy_admin_user )
+        galaxy_admin_user_private_role = self.test_db_util.get_galaxy_private_role( galaxy_admin_user )
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        test_user_1 = test_db_util.get_user( common.test_user_1_email )
+        test_user_1 = self.test_db_util.get_user( common.test_user_1_email )
         assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % test_user_1_email
-        test_user_1_private_role = test_db_util.get_private_role( test_user_1 )
+        test_user_1_private_role = self.test_db_util.get_private_role( test_user_1 )
         self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
-        admin_user = test_db_util.get_user( common.admin_email )
+        admin_user = self.test_db_util.get_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % admin_email
-        admin_user_private_role = test_db_util.get_private_role( admin_user )
+        admin_user_private_role = self.test_db_util.get_private_role( admin_user )
 
     def test_0005_create_bed_to_gff_repository( self ):
         '''Create and populate bed_to_gff_0130.'''
@@ -68,7 +65,7 @@ class TestDatatypeConverters( ShedTwillTestCase ):
         '''
         self.galaxy_logout()
         self.galaxy_login( email=common.admin_email, username=common.admin_username )
-        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         preview_strings_displayed = [ repository.name, self.get_repository_tip( repository ) ]
         strings_displayed = [ 'Choose the configuration file' ] 
         strings_not_displayed = [ 'tool panel section' ]
@@ -89,6 +86,6 @@ class TestDatatypeConverters( ShedTwillTestCase ):
         The previous tool panel section for a tool is only recorded in the metadata when a repository is uninstalled,
         so we have to uninstall it first, then verify that it was not assigned a tool panel section.
         '''
-        repository = test_db_util.get_installed_repository_by_name_owner( repository_name, common.test_user_1_name )
-        self.uninstall_repository( repository, remove_from_disk=True )
+        repository = self.test_db_util.get_installed_repository_by_name_owner( repository_name, common.test_user_1_name )
+        self.uninstall_repository( repository )
         self.verify_installed_repository_no_tool_panel_section( repository )

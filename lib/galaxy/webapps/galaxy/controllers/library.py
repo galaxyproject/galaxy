@@ -76,6 +76,17 @@ class Library( BaseUIController ):
 
     library_list_grid = LibraryListGrid()
 
+    
+    @web.expose
+    def list( self, trans, **kwd ):
+        params = util.Params( kwd )
+        # define app configuration for generic mako template
+        app = {
+            'jscript'       : "galaxy.library"
+        }
+        # fill template
+        return trans.fill_template('galaxy.panels.mako', config = {'app' : app})
+
     @web.expose
     def index( self, trans, **kwd ):
         params = util.Params( kwd )
