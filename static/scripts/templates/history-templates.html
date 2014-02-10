@@ -44,8 +44,12 @@
         <div class="annotation-display"></div>
 
         <div class="history-dataset-actions">
-            <button class="history-select-all-datasets-btn btn btn-default"
-                    data-mode="select">{{#local}}Select all{{/local}}</button>
+            <div class="btn-group">
+                <button class="history-select-all-datasets-btn btn btn-default"
+                        data-mode="select">{{#local}}All{{/local}}</button>
+                <button class="history-deselect-all-datasets-btn btn btn-default"
+                        data-mode="select">{{#local}}None{{/local}}</button>
+            </div>
             <button class="history-dataset-action-popup-btn btn btn-default"
                     >{{#local}}For all selected{{/local}}...</button>
         </div>
@@ -96,6 +100,17 @@
         <div class="quota-message errormessage">
             {{#local}}You are over your disk quota{{/local}}.
             {{#local}}Tool execution is on hold until your disk usage drops below your allocated quota{{/local}}.
+        </div>
+
+        <div class="history-dataset-actions">
+            <div class="btn-group">
+                <button class="history-select-all-datasets-btn btn btn-default"
+                        data-mode="select">{{#local}}All{{/local}}</button>
+                <button class="history-deselect-all-datasets-btn btn btn-default"
+                        data-mode="select">{{#local}}None{{/local}}</button>
+            </div>
+            <button class="history-dataset-action-popup-btn btn btn-default"
+                    >{{#local}}For all selected{{/local}}...</button>
         </div>
 
     </div>{{! end history-controls }}

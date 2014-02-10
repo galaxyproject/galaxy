@@ -57,9 +57,10 @@
 }
 .icon-btn.disabled {
     background-color: transparent;
-    color: @icon-btn-bg;
+    color: @icon-btn-border;
 }
 
+// ---------------------------------------------------------------------------- search bar
 .search-input {
     .search-query {
         width           : 100%;
@@ -84,6 +85,7 @@
         color       : @link-color;
     }
 }
+
 // ---------------------------------------------------------------------------- panel header buttons
 #history-refresh-button,
 #history-options-button {
@@ -177,7 +179,8 @@
         .dataset-body {
             display: none;
             // background-color: fadeout( white, 70% );
-            .dataset-padding;
+            //.dataset-padding;
+            padding: 0px @spacing-right @spacing-bottom @spacing-left;
 
             [class$=messagesmall] {
                 margin: 0px 0px 8px 0px;

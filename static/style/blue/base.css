@@ -1577,7 +1577,7 @@ div.permissionContainer{padding-left:20px}
 .workflow-invocation-complete{border:solid 1px #6A6;border-left-width:5px;margin:10px 0;padding-left:5px}
 .icon-btn{display:inline-block;height:22px;width:22px;text-align:center;line-height:19px;font-size:1.2em;border-radius:3px;border:1px solid #bfbfbf;background-color:#f2f2f2;color:#333;cursor:pointer}
 .icon-btn:hover{background-color:white;color:maroon}
-.icon-btn.disabled{background-color:transparent;color:#f2f2f2}
+.icon-btn.disabled{background-color:transparent;color:#bfbfbf}
 .search-input .search-query{width:100%;padding-right:24px}
 .search-input .search-clear,.search-input .search-loading{position:relative;display:inline-block;float:right;margin-top:-23px;margin-right:4px;font-size:1.4em;line-height:23px;color:grey}
 .search-input .search-clear:hover{color:#303030}
@@ -1594,7 +1594,7 @@ div.permissionContainer{padding-left:20px}
 .history-panel .dataset .dataset-primary-actions .icon-btn:first-child{margin-right:0px;border-top-left-radius:3px;border-bottom-left-radius:3px}
 .history-panel .dataset .dataset-primary-actions .icon-btn:last-child{margin-left:0px;border-radius:0px 3px 3px 0px}
 .history-panel .dataset .dataset-primary-actions .icon-btn{margin-left:2px}
-.history-panel .dataset .dataset-body{display:none;padding:6px 10px 6px 8px}.history-panel .dataset .dataset-body [class$=messagesmall]{margin:0px 0px 8px 0px}
+.history-panel .dataset .dataset-body{display:none;padding:0 10px 6px 8px}.history-panel .dataset .dataset-body [class$=messagesmall]{margin:0px 0px 8px 0px}
 .history-panel .dataset .dataset-body label{margin:0px;padding:0px;font-weight:normal}
 .history-panel .dataset .dataset-body .prompt{font-weight:normal;color:#555}
 .history-panel .dataset .dataset-body .prompt:after{content:':'}
