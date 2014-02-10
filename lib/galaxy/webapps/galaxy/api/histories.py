@@ -180,11 +180,6 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin,
         :rtype:     dict
         :returns:   element view of new history
         """
-    def __create_via_import( self, payload ):
-        return
-
-    def __import_archive( self, trans, archive_type, archive_source ):
-
         hist_name = None
         if payload.get( 'name', None ):
             hist_name = restore_text( payload['name'] )
