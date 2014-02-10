@@ -1183,7 +1183,7 @@ class Dataset( object ):
         self.total_size = self.file_size or 0
         if self.object_store.exists(self, extra_dir=self._extra_files_path or "dataset_%d_files" % self.id, dir_only=True):
             for root, dirs, files in os.walk( self.extra_files_path ):
-                self.total_size += sum( [ os.path.getsize( os.path.join( root, file ) ) for file in files ] )
+                self.total_size += sum( [ os.path.getsize( os.path.join( root, file ) ) for file in files if os.path.exists( os.path.join( root, file ) ) ] )
     def has_data( self ):
         """Detects whether there is any data"""
         return self.get_size() > 0
