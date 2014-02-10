@@ -23,6 +23,9 @@
 // galaxy sub-components
 @import "frame.less";
 @import "upload.less";
+@import "ui.less";
+@import "library.less";
+@import "toastr.less";
 
 // Mixins
 
@@ -421,7 +424,7 @@ div.unified-panel-body {
     .iconbar
     {
         position            : absolute;
-        top                 : 5px;
+        top                 : 6px;
         right               : 110px;
         cursor              : pointer;
         color               : @gray-light;
@@ -431,6 +434,8 @@ div.unified-panel-body {
         {
             float           : left;
             margin          : 0px 10px;
+            height          : 26px;
+            font-size       : 11px;
         }
 
         .symbol .number
@@ -440,12 +445,12 @@ div.unified-panel-body {
             font-family     : @font-family-sans-serif;
             position        : relative;
             left            : 23px;
-            top             : -16px;
+            top             : -12px;
         }
         
         .toggle
         {
-            color           : #BCC800;
+            color           : gold;
         }
     }
 }
@@ -721,7 +726,7 @@ input[type="submit"], button {
   color: @gray;
   border: 1px solid @input-border;
   padding-left: 14px !important;
-  padding-right: 14px !important;
+  padding-right: 14px;
   margin-bottom: 0; // remove the default margin on all inputs
   .border-radius(14px);
   max-width: auto;

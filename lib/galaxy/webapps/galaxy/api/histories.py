@@ -8,19 +8,28 @@ import pkg_resources
 pkg_resources.require( "Paste" )
 from paste.httpexceptions import HTTPBadRequest, HTTPForbidden, HTTPInternalServerError, HTTPException
 
+from galaxy import exceptions
 from galaxy import web
-from galaxy.util import string_as_bool, restore_text
-from galaxy.util.sanitize_html import sanitize_html
-from galaxy.web.base.controller import BaseAPIController, UsesHistoryMixin, UsesTagsMixin
+from galaxy.web import _future_expose_api as expose_api
+from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
+from galaxy.web import _future_expose_api_raw as expose_api_raw
+from galaxy.util import string_as_bool
+from galaxy.util import restore_text
+from galaxy.web.base.controller import BaseAPIController
+from galaxy.web.base.controller import UsesHistoryMixin
+from galaxy.web.base.controller import UsesTagsMixin
+from galaxy.web.base.controller import ExportsHistoryMixin
+from galaxy.web.base.controller import ImportsHistoryMixin
 from galaxy.web import url_for
-from galaxy.model.orm import desc
 
 import logging
 log = logging.getLogger( __name__ )
 
-class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin ):
 
-    @web.expose_api_anonymous
+class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin,
+                           ExportsHistoryMixin, ImportsHistoryMixin ):
+
+    @expose_api_anonymous
     def index( self, trans, deleted='False', **kwd ):
         """
         index( trans, deleted='False' )
@@ -41,23 +50,22 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin ):
         deleted = string_as_bool( deleted )
         try:
             if trans.user:
-                query = ( trans.sa_session.query( trans.app.model.History )
-                            .filter_by( user=trans.user, deleted=deleted )
-                            .order_by( desc( trans.app.model.History.table.c.update_time ) )
-                            .all() )
-                for history in query:
-                    item = history.to_dict(value_mapper={'id':trans.security.encode_id})
+                histories = self.get_user_histories( trans, user=trans.user, only_deleted=deleted )
+                #for history in query:
+                for history in histories:
+                    item = history.to_dict(value_mapper={'id': trans.security.encode_id})
                     item['url'] = url_for( 'history', id=trans.security.encode_id( history.id ) )
                     rval.append( item )
 
             elif trans.galaxy_session.current_history:
                 #No user, this must be session authentication with an anonymous user.
                 history = trans.galaxy_session.current_history
-                item = history.to_dict(value_mapper={'id':trans.security.encode_id})
+                item = history.to_dict(value_mapper={'id': trans.security.encode_id})
                 item['url'] = url_for( 'history', id=trans.security.encode_id( history.id ) )
                 rval.append(item)
 
         except Exception, e:
+            raise
             rval = "Error in history API"
             log.error( rval + ": %s" % str(e) )
             trans.response.status = 500
@@ -65,7 +73,6 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin ):
 
     @web.expose_api_anonymous
     def show( self, trans, id, deleted='False', **kwd ):
-        # oh, sphinx - you bastard
         """
         show( trans, id, deleted='False' )
         * GET /api/histories/{id}:
@@ -120,7 +127,7 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin ):
         return history_data
 
     @web.expose_api
-    def set_as_current( self, trans, id, *kwd ):
+    def set_as_current( self, trans, id, **kwd ):
         """
         set_as_current( trans, id, **kwd )
         * POST /api/histories/{id}/set_as_current:
@@ -154,7 +161,7 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin ):
 
         return history_data
 
-    @web.expose_api
+    @expose_api
     def create( self, trans, payload, **kwd ):
         """
         create( trans, payload )
@@ -163,32 +170,64 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin ):
 
         :type   payload: dict
         :param  payload: (optional) dictionary structure containing:
-            * name:     the new history's name
-            * current:  if passed, set the new history to be the user's 'current'
-                        history
+            * name:             the new history's name
+            * current:          if passed, set the new history to be the user's
+                                'current' history
+            * history_id:       the id of the history to copy
+            * archive_source:   the url that will generate the archive to import
+            * archive_type:     'url' (default)
 
         :rtype:     dict
         :returns:   element view of new history
         """
+    def __create_via_import( self, payload ):
+        return
+
+    def __import_archive( self, trans, archive_type, archive_source ):
+
         hist_name = None
         if payload.get( 'name', None ):
             hist_name = restore_text( payload['name'] )
-        new_history = trans.app.model.History( user=trans.user, name=hist_name )
+        #TODO: possibly default to True here - but favor explicit for now (and backwards compat)
+        set_as_current = string_as_bool( payload[ 'current' ] ) if 'current' in payload else False
+        copy_this_history_id = payload.get( 'history_id', None )
+
+        if "archive_source" in payload:
+            archive_source = payload[ "archive_source" ]
+            archive_type = payload.get( "archive_type", "url" )
+            self.queue_history_import( trans, archive_type=archive_type, archive_source=archive_source )
+            trans.response.status = 201
+            return {}
+
+        new_history = None
+        # if a history id was passed, copy that history
+        if copy_this_history_id:
+            try:
+                original_history = self.get_history( trans, copy_this_history_id,
+                                                     check_ownership=False, check_accessible=True )
+            except HTTPBadRequest, bad_request:
+                trans.response.status = 403
+                #TODO: it's either that or parse each possible detail to it's own status code
+                return { 'error': bad_request.detail or 'Bad request' }
+
+            hist_name = hist_name or ( "Copy of '%s'" % original_history.name )
+            new_history = original_history.copy( name=hist_name, target_user=trans.user )
+
+        # otherwise, create a new empty history
+        else:
+            new_history = trans.app.model.History( user=trans.user, name=hist_name )
+
+        item = {}
 
         trans.sa_session.add( new_history )
         trans.sa_session.flush()
-        #item = new_history.to_dict(view='element', value_mapper={'id':trans.security.encode_id})
+
         item = self.get_history_dict( trans, new_history )
         item['url'] = url_for( 'history', id=item['id'] )
 
-        #TODO: possibly default to True here - but favor explicit for now (and backwards compat)
-        current = string_as_bool( payload[ 'current' ] ) if 'current' in payload else False
-        if current:
+        if set_as_current:
             trans.history = new_history
 
-        #TODO: copy own history
-        #TODO: import an importable history
-        #TODO: import from archive
         return item
 
     @web.expose_api
@@ -257,7 +296,7 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin ):
             log.exception( 'Histories API, delete: uncaught HTTPInternalServerError: %s, %s\n%s',
                            history_id, str( kwd ), str( http_server_err ) )
             raise
-        except HTTPException, http_exc:
+        except HTTPException:
             raise
         except Exception, exc:
             log.exception( 'Histories API, delete: uncaught exception: %s, %s\n%s',
@@ -327,6 +366,67 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin ):
 
         return changed
 
+    @expose_api
+    def archive_export( self, trans, id, **kwds ):
+        """
+        export_archive( self, trans, id, payload )
+        * PUT /api/histories/{id}/exports:
+            start job (if needed) to create history export for corresponding
+            history.
+
+        :type   id:     str
+        :param  id:     the encoded id of the history to undelete
+
+        :rtype:     dict
+        :returns:   object containing url to fetch export from.
+        """
+        # PUT instead of POST because multiple requests should just result
+        # in one object being created.
+        history_id = id
+        history = self.get_history( trans, history_id, check_ownership=False, check_accessible=True )
+        jeha = history.latest_export
+        up_to_date = jeha and jeha.up_to_date
+        if not up_to_date:
+            # Need to create new JEHA + job.
+            gzip = kwds.get( "gzip", True )
+            include_hidden = kwds.get( "include_hidden", False )
+            include_deleted = kwds.get( "include_deleted", False )
+            self.queue_history_export( trans, history, gzip=gzip, include_hidden=include_hidden, include_deleted=include_deleted )
+
+        if up_to_date and jeha.ready:
+            jeha_id = trans.security.encode_id( jeha.id )
+            return dict( download_url=url_for( "history_archive_download", id=history_id, jeha_id=jeha_id ) )
+        else:
+            # Valid request, just resource is not ready yet.
+            trans.response.status = "202 Accepted"
+            return ''
+
+    @expose_api_raw
+    def archive_download( self, trans, id, jeha_id, **kwds ):
+        """
+        export_download( self, trans, id, jeha_id )
+        * GET /api/histories/{id}/exports/{jeha_id}:
+            If ready and available, return raw contents of exported history.
+            Use/poll "PUT /api/histories/{id}/exports" to initiate the creation
+            of such an export - when ready that route will return 200 status
+            code (instead of 202) with a JSON dictionary containing a
+            `download_url`.
+        """
+        # Seems silly to put jeha_id in here, but want GET to be immuatable?
+        # and this is being accomplished this way.
+        history = self.get_history( trans, id, check_ownership=False, check_accessible=True )
+        matching_exports = filter( lambda e: trans.security.encode_id( e.id ) == jeha_id, history.exports )
+        if not matching_exports:
+            raise exceptions.ObjectNotFound()
+
+        jeha = matching_exports[ 0 ]
+        if not jeha.ready:
+            # User should not have been given this URL, PUT export should have
+            # return a 202.
+            raise exceptions.MessageException( "Export not available or not yet ready." )
+
+        return self.serve_ready_history_export( trans, jeha )
+
     def _validate_and_parse_update_payload( self, payload ):
         """
         Validate and parse incomming data payload for a history.
@@ -344,34 +444,16 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin ):
             'id', 'model_class', 'nice_size', 'contents_url', 'purged', 'tags',
             'state', 'state_details', 'state_ids'
         )
-
         validated_payload = {}
         for key, val in payload.items():
-            # TODO: lots of boilerplate here, but overhead on abstraction is equally onerous
-            if   key == 'name':
-                if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
-                    raise ValueError( 'name must be a string or unicode: %s' %( str( type( val ) ) ) )
-                validated_payload[ 'name' ] = sanitize_html( val, 'utf-8' )
-                #TODO:?? if sanitized != val: log.warn( 'script kiddie' )
-            elif key == 'deleted':
-                if not isinstance( val, bool ):
-                    raise ValueError( 'deleted must be a boolean: %s' %( str( type( val ) ) ) )
-                validated_payload[ 'deleted' ] = val
-            elif key == 'published':
-                if not isinstance( val, bool ):
-                    raise ValueError( 'published must be a boolean: %s' %( str( type( val ) ) ) )
-                validated_payload[ 'published' ] = val
-            elif key == 'genome_build':
-                if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
-                    raise ValueError( 'genome_build must be a string: %s' %( str( type( val ) ) ) )
-                validated_payload[ 'genome_build' ] = sanitize_html( val, 'utf-8' )
-            elif key == 'annotation':
-                if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
-                    raise ValueError( 'annotation must be a string or unicode: %s' %( str( type( val ) ) ) )
-                validated_payload[ 'annotation' ] = sanitize_html( val, 'utf-8' )
+            if val is None:
+                continue
+            if key in ( 'name', 'genome_build', 'annotation' ):
+                validated_payload[ key ] = self.validate_and_sanitize_basestring( key, val )
+            if key in ( 'deleted', 'published' ):
+                validated_payload[ key ] = self.validate_boolean( key, val )
             elif key == 'tags':
-                if isinstance( val, list ):
-                    validated_payload[ 'tags' ] = [ sanitize_html( t, 'utf-8' ) for t in val ]
+                validated_payload[ key ] = self.validate_and_sanitize_basestring_list( key, val )
             elif key not in valid_but_uneditable_keys:
                 pass
                 #log.warn( 'unknown key: %s', str( key ) )

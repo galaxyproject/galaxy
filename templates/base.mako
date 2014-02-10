@@ -2,6 +2,7 @@
 <!DOCTYPE HTML>
 <html>
     <!--base.mako-->
+    ${self.init()}
     <head>
         <title>${self.title()}</title>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
@@ -9,13 +10,16 @@
         ${self.stylesheets()}
         ${self.javascripts()}
     </head>
-    <body>
+    <body class="inbound">
         ${next.body()}
     </body>
 </html>
 
 ## Default title
 <%def name="title()"></%def>
+
+## Default init
+<%def name="init()"></%def>
 
 ## Default stylesheets
 <%def name="stylesheets()">
@@ -43,10 +47,10 @@
         "libs/bootstrap",
         "libs/underscore",
         "libs/backbone/backbone",
-        "libs/backbone/backbone-relational",
         "libs/handlebars.runtime",
         "galaxy.base",
-        "mvc/ui"
+        "mvc/ui",
+        'libs/require'
     )}
 
     <script type="text/javascript">
@@ -65,6 +69,15 @@
             error   : function(){},
             assert  : function(){}
         };
+
+        ## configure require
+        require.config({
+            baseUrl: "${h.url_for('/static/scripts') }",
+            shim: {
+                "libs/underscore": { exports: "_" },
+                "libs/backbone/backbone": { exports: "Backbone" }
+            }
+        });
     </script>
 
     %if not form_input_auto_focus is UNDEFINED and form_input_auto_focus:

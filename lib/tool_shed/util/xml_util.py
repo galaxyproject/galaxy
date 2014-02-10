@@ -46,8 +46,8 @@ def create_and_write_tmp_file( elems, use_indent=False ):
 
 def create_element( tag, attributes=None, sub_elements=None ):
     """
-    Create a new element whose tag is the value of the received tag, and whose attributes are all key / value pairs in the received the attributes
-    and sub_elements.
+    Create a new element whose tag is the value of the received tag, and whose attributes are all
+    key / value pairs in the received the attributes and sub_elements.
     """
     if tag:
         elem = XmlET.Element( tag )
@@ -56,14 +56,15 @@ def create_element( tag, attributes=None, sub_elements=None ):
             for k, v in attributes.items():
                 elem.set( k, v )
         if sub_elements:
-            # The received attributes is an odict as well.  These handle information that tends to be long text including paragraphs (e.g.,
-            # description and long_description.
+            # The received attributes is an odict as well.  These handle information that tends to be
+            # long text including paragraphs (e.g., description and long_description.
             for k, v in sub_elements.items():
                 # Don't include fields that are blank.
                 if v:
                     sub_elem = XmlET.SubElement( elem, k )
                     if isinstance( v, list ):
-                        # If the sub_elem is a list, then it must be a list of tuples where the first item is the tag and the second item is the text value.
+                        # If the sub_elem is a list, then it must be a list of tuples where the first
+                        # item is the tag and the second item is the text value.
                         for v_tuple in v:
                             if len( v_tuple ) == 2:
                                 v_tag = v_tuple[ 0 ]
@@ -79,9 +80,11 @@ def create_element( tag, attributes=None, sub_elements=None ):
 
 def indent( elem, level=0 ):
     """
-    Prints an XML tree with each node indented according to its depth.  This method is used to print the shed tool config (e.g., shed_tool_conf.xml
-    from the in-memory list of config_elems because each config_elem in the list may be a hierarchical structure that was not created using the
-    parse_xml() method below, and so will not be properly written with xml.etree.ElementTree.tostring() without manually indenting the tree first.
+    Prints an XML tree with each node indented according to its depth.  This method is used to print the
+    shed tool config (e.g., shed_tool_conf.xml from the in-memory list of config_elems because each config_elem
+    in the list may be a hierarchical structure that was not created using the parse_xml() method below,
+    and so will not be properly written with xml.etree.ElementTree.tostring() without manually indenting
+    the tree first.
     """
     i = "\n" + level * "    "
     if len( elem ):
@@ -125,7 +128,8 @@ def parse_xml( file_name ):
 def xml_to_string( elem, encoding='utf-8', use_indent=False, level=0 ):
     if elem is not None:
         if use_indent:
-            # We were called from suc.config_elems_to_xml_file(), so set the level to 1 since level 0 is the <toolbox> tag set.
+            # We were called from suc.config_elems_to_xml_file(), so set the level to 1 since level 0
+            # is the <toolbox> tag set.
             indent( elem, level=level )
         if using_python_27:
             xml_str = '%s\n' % xml.etree.ElementTree.tostring( elem, encoding=encoding, method="xml" )

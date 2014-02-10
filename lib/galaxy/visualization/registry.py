@@ -19,8 +19,6 @@ log = logging.getLogger( __name__ )
 
 __TODO__ = """
 BUGS:
-    anon users clicking a viz link gets 'must be' msg in galaxy_main (w/ masthead)
-        should not show visualizations (no icon)?
     newick files aren't being sniffed prop? - datatype is txt
 
 have parsers create objects instead of dicts
@@ -29,14 +27,61 @@ allow data_sources with no model_class but have tests (isAdmin, etc.)
 some confused vocabulary in docs, var names
 tests:
     anding, grouping, not
-    has_dataprovider
     user is admin
 data_sources:
     lists of
-add description element to visualization.
-
 user_pref for ordering/ex/inclusion of particular visualizations
 """
+
+# ------------------------------------------------------------------- misc
+#TODO: move to utils?
+def getattr_recursive( item, attr_key, *args ):
+    """
+    Allows dot member notation in attribute name when getting an item's attribute.
+
+    NOTE: also searches dictionaries
+    """
+    using_default = len( args ) >= 1
+    default = args[0] if using_default else None
+
+    for attr_key in attr_key.split( '.' ):
+        try:
+            if isinstance( item, dict ):
+                item = item.__getitem__( attr_key )
+            else:
+                item = getattr( item, attr_key )
+
+        except ( KeyError, AttributeError ), err:
+            if using_default:
+                return default
+            raise
+
+    return item
+
+def hasattr_recursive( item, attr_key ):
+    """
+    Allows dot member notation in attribute name when getting an item's attribute.
+
+    NOTE: also searches dictionaries
+    """
+    if '.' in attr_key:
+        attr_key, last_key = attr_key.rsplit( '.', 1 )
+        item = getattr_recursive( item, attr_key, None )
+        if item is None:
+            return False
+        attr_key = last_key
+
+    try:
+        if isinstance( item, dict ):
+            return item.__contains__( attr_key )
+        else:
+            return hasattr( item, attr_key )
+
+    except ( KeyError, AttributeError ), err:
+        return False
+
+    return True
+
 
 # ------------------------------------------------------------------- the registry
 class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
@@ -68,7 +113,7 @@ class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
         super( VisualizationsRegistry, self ).__init__( app, 'visualizations', **kwargs )
         # what to use to parse query strings into resources/vars for the template
         self.resource_parser = ResourceParser()
-        log.debug( '%s loaded', str( self ) )
+        #log.debug( '%s loaded', str( self ) )
 
     def is_plugin( self, plugin_path ):
         """
@@ -141,34 +186,36 @@ class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
         `visualization_name` if it's applicable to `target_object` or
         `None` if it's not.
         """
+        #log.debug( 'VisReg.get_visualization: %s, %s', visualization_name, target_object )
         visualization = self.plugins.get( visualization_name, None )
         if not visualization:
             return None
 
         data_sources = visualization.config[ 'data_sources' ]
         for data_source in data_sources:
+            #log.debug( 'data_source: %s', data_source )
             # currently a model class is required
             model_class = data_source[ 'model_class' ]
+            #log.debug( '\t model_class: %s', model_class )
             if not isinstance( target_object, model_class ):
                 continue
+            #log.debug( '\t passed model_class' )
 
             # tests are optional - default is the above class test
             tests = data_source[ 'tests' ]
             if tests and not self.is_object_applicable( trans, target_object, tests ):
                 continue
+            #log.debug( '\t passed tests' )
 
             param_data = data_source[ 'to_params' ]
             url = self.get_visualization_url( trans, target_object, visualization_name, param_data )
-            link_text = visualization.config.get( 'link_text', None )
-            if not link_text:
-                # default to visualization name, titlecase, and replace underscores
-                link_text = visualization_name.title().replace( '_', ' ' )
-            render_location = visualization.config.get( 'render_location' )
+            display_name = visualization.config.get( 'name', None )
+            render_target = visualization.config.get( 'render_target', 'galaxy_main' )
             # remap some of these vars for direct use in ui.js, PopupMenu (e.g. text->html)
             return {
                 'href'  : url,
-                'html'  : link_text,
-                'target': render_location
+                'html'  : display_name,
+                'target': render_target
             }
 
         return None
@@ -176,7 +223,7 @@ class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
     def is_object_applicable( self, trans, target_object, data_source_tests ):
         """
         Run a visualization's data_source tests to find out if
-        it be applied to the target_object.
+        it can be applied to the target_object.
         """
         #log.debug( 'is_object_applicable( self, trans, %s, %s )', target_object, data_source_tests )
         for test in data_source_tests:
@@ -199,8 +246,9 @@ class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
 
             #NOTE: tests are OR'd, if any test passes - the visualization can be applied
             if test_fn( target_object, test_result ):
-                #log.debug( 'test passed' )
+                #log.debug( '\t test passed' )
                 return True
+
         return False
 
     def get_visualization_url( self, trans, target_object, visualization_name, param_data ):
@@ -238,13 +286,16 @@ class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
             # one or the other is needed
             # assign takes precedence (goes last, overwrites)?
             #NOTE this is only one level
-            if target_attr and hasattr( target_object, target_attr ):
-                params[ to_param_name ] = getattr( target_object, target_attr )
+
+            if target_attr and hasattr_recursive( target_object, target_attr ):
+                params[ to_param_name ] = getattr_recursive( target_object, target_attr )
+
             if assign:
                 params[ to_param_name ] = assign
 
         #NOTE!: don't expose raw ids: encode id, _id
         if params:
+#TODO: double encodes if from config
             params = trans.security.encode_dict_ids( params )
         return params
 
@@ -255,9 +306,9 @@ class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
 
         Both `params` and `param_modifiers` default to an empty dictionary.
         """
-        visualization = self.plugins.get( visualization_name )
-        expected_params = visualization.config.get( 'params', {} )
-        param_modifiers = visualization.config.get( 'param_modifiers', {} )
+        plugin = self.plugins.get( visualization_name )
+        expected_params = plugin.config.get( 'params', {} )
+        param_modifiers = plugin.config.get( 'param_modifiers', {} )
         return ( expected_params, param_modifiers )
 
     def query_dict_to_resources( self, trans, controller, visualization_name, query_dict ):
@@ -270,6 +321,16 @@ class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
         resources = self.resource_parser.parse_parameter_dictionary(
             trans, controller, param_confs, query_dict, param_modifiers )
         return resources
+
+    def query_dict_to_config( self, trans, controller, visualization_name, query_dict ):
+        """
+        Given a query string dict (i.e. kwargs) from a controller action, parse
+        and return any key/value pairs found in the plugin's `params` section.
+        """
+        plugin = self.plugins.get( visualization_name )
+        param_confs = plugin.config.get( 'params', {} )
+        config = self.resource_parser.parse_config( trans, controller, param_confs, query_dict )
+        return config
 
 
 # ------------------------------------------------------------------- parsing the config file
@@ -293,7 +354,7 @@ class VisualizationsConfigParser( object ):
             -- what provides the data
             -- what information needs to be added to the query string
     """
-    VALID_RENDER_LOCATIONS = [ 'galaxy_main', '_top', '_blank' ]
+    VALID_RENDER_TARGETS = [ 'galaxy_main', '_top', '_blank' ]
 
     def __init__( self, debug=False ):
         self.debug = debug
@@ -306,7 +367,7 @@ class VisualizationsConfigParser( object ):
     def parse_file( self, xml_filepath ):
         """
         Parse the given XML file for visualizations data.
-        :returns: tuple of ( `visualization_name`, `visualization` )
+        :returns: visualization config dictionary
         """
         try:
             xml_tree = galaxy.util.parse_xml( xml_filepath )
@@ -323,6 +384,19 @@ class VisualizationsConfigParser( object ):
         given `xml_tree` for a visualization.
         """
         returned = {}
+
+        # allow manually turning off a vis by checking for a disabled property
+        if 'disabled' in xml_tree.attrib:
+            return None
+
+        # a text display name for end user links
+        returned[ 'name' ] = xml_tree.attrib.get( 'name', None )
+        if not returned[ 'name' ]:
+            raise ParsingException( 'visualization needs a name attribute' )
+
+        # a (for now) text description of what the visualization does
+        description = xml_tree.find( 'description' )
+        returned[ 'description' ] = description.text.strip() if description is not None else None
 
         # data_sources are the kinds of objects/data associated with the visualization
         #   e.g. views on HDAs can use this to find out what visualizations are applicable to them
@@ -381,14 +455,14 @@ class VisualizationsConfigParser( object ):
         if link_text != None and link_text.text:
             returned[ 'link_text' ] = link_text
 
-        # render_location: where in the browser to open the rendered visualization
+        # render_target: where in the browser to open the rendered visualization
         # defaults to: galaxy_main
-        render_location = xml_tree.find( 'render_location' )
-        if( ( render_location != None and render_location.text )
-        and ( render_location.text in self.VALID_RENDER_LOCATIONS ) ):
-            returned[ 'render_location' ] = render_location.text
+        render_target = xml_tree.find( 'render_target' )
+        if( ( render_target != None and render_target.text )
+        and ( render_target.text in self.VALID_RENDER_TARGETS ) ):
+            returned[ 'render_target' ] = render_target.text
         else:
-            returned[ 'render_location' ] = 'galaxy_main'
+            returned[ 'render_target' ] = 'galaxy_main'
         # consider unifying the above into it's own element and parsing method
 
         return returned
@@ -407,6 +481,7 @@ class DataSourceParser( object ):
     # these are the allowed classes to associate visualizations with (as strings)
     #   any model_class element not in this list will throw a parsing ParsingExcepion
     ALLOWED_MODEL_CLASSES = [
+        'Visualization',
         'HistoryDatasetAssociation',
         'LibraryDatasetDatasetAssociation'
     ]
@@ -455,7 +530,7 @@ class DataSourceParser( object ):
             raise ParsingException( 'data_source entry requires a model_class' )
 
         if xml_tree.text not in self.ALLOWED_MODEL_CLASSES:
-            log.debug( 'available data_source model_classes: %s' %( str( self.ALLOWED_MODEL_CLASSES ) ) )
+            #log.debug( 'available data_source model_classes: %s' %( str( self.ALLOWED_MODEL_CLASSES ) ) )
             raise ParsingException( 'Invalid data_source model_class: %s' %( xml_tree.text ) )
 
         # look up the model from the model module returning an empty data_source if not found
@@ -477,7 +552,7 @@ class DataSourceParser( object ):
             return lambda o: getattr( o, next_attr_name )
 
         # recursive case
-        return lambda o: getattr( self._build_getattr_lambda( attr_name_list[:-1] ), next_attr_name )
+        return lambda o: getattr( self._build_getattr_lambda( attr_name_list[:-1] )( o ), next_attr_name )
 
     def parse_tests( self, xml_tree_list ):
         """
@@ -493,37 +568,39 @@ class DataSourceParser( object ):
             return tests
 
         for test_elem in xml_tree_list:
-            test_type = test_elem.get( 'type' )
-            test_result = test_elem.text
+            test_type = test_elem.get( 'type', 'eq' )
+            test_result = test_elem.text.strip() if test_elem.text else None
             if not test_type or not test_result:
                 log.warn( 'Skipping test. Needs both type attribute and text node to be parsed: '
                         + '%s, %s' %( test_type, test_elem.text ) )
                 continue
+            test_result = test_result.strip()
 
             # test_attr can be a dot separated chain of object attributes (e.g. dataset.datatype) - convert to list
             #TODO: too dangerous - constrain these to some allowed list
             #TODO: does this err if no test_attr - it should...
             test_attr = test_elem.get( 'test_attr' )
             test_attr = test_attr.split( self.ATTRIBUTE_SPLIT_CHAR ) if isinstance( test_attr, str ) else []
+            #log.debug( 'test_type: %s, test_attr: %s, test_result: %s', test_type, test_attr, test_result )
+
             # build a lambda function that gets the desired attribute to test
             getter = self._build_getattr_lambda( test_attr )
-
             # result type should tell the registry how to convert the result before the test
-            test_result_type = test_elem.get( 'result_type' ) or 'string'
+            test_result_type = test_elem.get( 'result_type', 'string' )
 
             # test functions should be sent an object to test, and the parsed result expected from the test
-            # is test_attr attribute an instance of result
             if   test_type == 'isinstance':
+                # is test_attr attribute an instance of result
                 #TODO: wish we could take this further but it would mean passing in the datatypes_registry
                 test_fn = lambda o, result: isinstance( getter( o ), result )
 
-            # does the object itself have a datatype attr and does that datatype have the given dataprovider
             elif test_type == 'has_dataprovider':
+                # does the object itself have a datatype attr and does that datatype have the given dataprovider
                 test_fn = lambda o, result: (     hasattr( getter( o ), 'has_dataprovider' )
                                               and getter( o ).has_dataprovider( result ) )
 
-            # default to simple (string) equilavance (coercing the test_attr to a string)
             else:
+                # default to simple (string) equilavance (coercing the test_attr to a string)
                 test_fn = lambda o, result: str( getter( o ) ) == result
 
             tests.append({
@@ -671,6 +748,16 @@ class ResourceParser( object ):
     The keys used to store the new values can optionally be re-mapped to
     new keys (e.g. dataset_id="NNN" -> hda=<HistoryDatasetAsscoation>).
     """
+    primitive_parsers = {
+        'str'   : lambda param: galaxy.util.sanitize_html.sanitize_html( param, 'utf-8' ),
+        'bool'  : lambda param: galaxy.util.string_as_bool( param ),
+        'int'   : lambda param: int( param ),
+        'float' : lambda param: float( param ),
+        #'date'  : lambda param: ,
+        'json'  : ( lambda param: galaxy.util.json.from_json_string(
+                        galaxy.util.sanitize_html.sanitize_html( param ) ) ),
+    }
+
     #TODO: kinda torn as to whether this belongs here or in controllers.visualization
     #   taking the (questionable) design path of passing a controller in
     #       (which is the responsible party for getting model, etc. resources )
@@ -682,6 +769,8 @@ class ResourceParser( object ):
 
         If param is required and not present, raises a `KeyError`.
         """
+        #log.debug( 'parse_parameter_dictionary, query_params:\n%s', query_params )
+
         # parse the modifiers first since they modify the params coming next
         #TODO: this is all really for hda_ldda - which we could replace with model polymorphism
         params_that_modify_other_params = self.parse_parameter_modifiers(
@@ -712,11 +801,42 @@ class ResourceParser( object ):
             if resource == None:
                 if param_config[ 'required' ]:
                     raise KeyError( 'required param %s not found in URL' %( param_name ) )
-                resource = self.parse_parameter_default( trans, param_config )
+                resource = self.parse_parameter_default( trans, controller, param_config )
 
             resources[ var_name_in_template ] = resource
 
         return resources
+
+    def parse_config( self, trans, controller, param_config_dict, query_params ):
+        """
+        Return `query_params` dict parsing only JSON serializable params.
+        Complex params such as models, etc. are left as the original query value.
+        Keys in `query_params` not found in the `param_config_dict` will not be
+        returned.
+        """
+        #log.debug( 'parse_config, query_params:\n%s', query_params )
+        config = {}
+        for param_name, param_config in param_config_dict.items():
+            config_val = query_params.get( param_name, None )
+            if config_val is not None and param_config[ 'type' ] in self.primitive_parsers:
+                try:
+                    config_val = self.parse_parameter( trans, controller, param_config, config_val )
+
+                except Exception, exception:
+                    log.warn( 'Exception parsing visualization param from query: '
+                            + '%s, %s, (%s) %s' %( param_name, config_val, str( type( exception ) ), str( exception ) ))
+                    config_val = None
+
+            # here - we've either had no value in the query_params or there was a failure to parse
+            #   so: if there's a default and it's not None, add it to the config
+            if config_val is None:
+                if param_config.get( 'default', None ) is None:
+                    continue
+                config_val = self.parse_parameter_default( trans, controller, param_config )
+
+            config[ param_name ] = config_val
+
+        return config
 
     #TODO: I would LOVE to rip modifiers out completely
     def parse_parameter_modifiers( self, trans, controller, param_modifiers, query_params ):
@@ -741,11 +861,11 @@ class ResourceParser( object ):
                     target_modifiers[ modifier_name ] = modifier
                 else:
                     #TODO: required attr?
-                    target_modifiers[ modifier_name ] = self.parse_parameter_default( trans, modifier_config )
+                    target_modifiers[ modifier_name ] = self.parse_parameter_default( trans, controller, modifier_config )
 
         return parsed_modifiers
 
-    def parse_parameter_default( self, trans, param_config ):
+    def parse_parameter_default( self, trans, controller, param_config ):
         """
         Parse any default values for the given param, defaulting the default
         to `None`.
@@ -758,7 +878,7 @@ class ResourceParser( object ):
         # otherwise, parse (currently param_config['default'] is a string just like query param and needs to be parsed)
         #   this saves us the trouble of parsing the default when the config file is read
         #   (and adding this code to the xml parser)
-        return self.parse_parameter( trans, param_config, default )
+        return self.parse_parameter( trans, controller, param_config, default )
 
     def parse_parameter( self, trans, controller, expected_param_data, query_param,
                          recurse=True, param_modifiers=None ):
@@ -784,29 +904,17 @@ class ResourceParser( object ):
                 parsed_param.append( self._parse_param( trans, expected_param_data, query_param, recurse=False ) )
             return parsed_param
 
-        primitive_parsers = {
-            'str'   : lambda param: galaxy.util.sanitize_html.sanitize_html( param, 'utf-8' ),
-            'bool'  : lambda param: galaxy.util.string_as_bool( param ),
-            'int'   : lambda param: int( param ),
-            'float' : lambda param: float( param ),
-            #'date'  : lambda param: ,
-            'json'  : ( lambda param: galaxy.util.json.from_json_string(
-                            galaxy.util.sanitize_html.sanitize_html( param ) ) ),
-        }
-        parser = primitive_parsers.get( param_type, None )
-        if parser:
+        if param_type in self.primitive_parsers:
             #TODO: what about param modifiers on primitives?
-            parsed_param = parser( query_param )
+            parsed_param = self.primitive_parsers[ param_type ]( query_param )
 
-        #TODO: constrain_to
-        # this gets complicated - for strings - relatively simple but still requires splitting and using in
-        # for more complicated cases (ints, json) this gets weird quick
-        #TODO:?? remove?
+        #TODO: constrain_to: this gets complicated - remove?
 
         # db models
         #TODO: subclass here?
         elif param_type == 'visualization':
             encoded_visualization_id = query_param
+            #log.debug( 'visualization param, id : %s', encoded_visualization_id )
             #TODO:?? some fallback if there's no get_X in controller that's passed?
             parsed_param = controller.get_visualization( trans, encoded_visualization_id,
                 check_ownership=False, check_accessible=True )
@@ -828,5 +936,4 @@ class ResourceParser( object ):
             dbkey = query_param
             parsed_param = galaxy.util.sanitize_html.sanitize_html( dbkey, 'utf-8' )
 
-        #print ( '%s, %s -> %s, %s' %( param_type, query_param, str( type( parsed_param ) ), parsed_param ) )
         return parsed_param

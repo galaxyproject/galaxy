@@ -15,7 +15,7 @@ class UpdateManager( object ):
 
     def __init__( self, app ):
         self.app = app
-        self.sa_session = self.app.model.context.current
+        self.context = self.app.install_model.context
         # Ideally only one Galaxy server process should be able to check for repository updates.
         self.running = True
         self.sleeper = Sleeper()
@@ -29,19 +29,19 @@ class UpdateManager( object ):
             # Make a call to the tool shed for each installed repository to get the latest status information in the tool shed for the
             # repository.  This information includes items like newer installable repository revisions, current revision updates, whether
             # the repository revision is the latest installable revision, and whether the repository has been deprecated in the tool shed.
-            for repository in self.sa_session.query( self.app.model.ToolShedRepository ) \
-                                             .filter( self.app.model.ToolShedRepository.table.c.deleted == False ):
+            for repository in self.context.query( self.app.install_model.ToolShedRepository ) \
+                                          .filter( self.app.install_model.ToolShedRepository.table.c.deleted == False ):
                 tool_shed_status_dict = suc.get_tool_shed_status_for_installed_repository( self.app, repository )
                 if tool_shed_status_dict:
                     if tool_shed_status_dict != repository.tool_shed_status:
                         repository.tool_shed_status = tool_shed_status_dict
-                        self.sa_session.flush()
+                        self.context.flush()
                 else:
                     # The received tool_shed_status_dict is an empty dictionary, so coerce to None.
                     tool_shed_status_dict = None
                     if tool_shed_status_dict != repository.tool_shed_status:
                         repository.tool_shed_status = tool_shed_status_dict
-                        self.sa_session.flush()
+                        self.context.flush()
             self.sleeper.sleep( self.seconds_to_sleep )
         log.info( 'Update manager restarter shutting down...' )
 

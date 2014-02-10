@@ -1,14 +1,20 @@
-import pkg_resources
+"""
+Galaxy web framework helpers
+"""
 
-pkg_resources.require( "WebHelpers" )
-from webhelpers import date, stylesheet_link_tag, javascript_include_tag, url_for
-
-from galaxy.util.json import to_json_string
-from galaxy.util import hash_util
-from datetime import datetime, timedelta
 import time
-
 from cgi import escape
+from datetime import datetime, timedelta
+from galaxy import eggs
+from galaxy.util import hash_util
+from galaxy.util.json import to_json_string
+eggs.require( "MarkupSafe" ) #required by WebHelpers
+eggs.require( "WebHelpers" )
+from webhelpers import date
+from webhelpers.html.tags import stylesheet_link, javascript_link
+
+eggs.require( "Routes" )
+from routes import url_for
 
 server_starttime = int(time.time())
 
@@ -22,9 +28,13 @@ def time_ago( x ):
     if (datetime.utcnow() - x) > delta: # Greater than a week difference
         return x.strftime("%b %d, %Y")
     else:
-        return date.distance_of_time_in_words( x, datetime.utcnow() ).replace("about", "~") + " ago"
+        date_array = date.distance_of_time_in_words( x, datetime.utcnow() ).replace(",", "").split(" ")
+        return "~%s %s ago" % (date_array[0], date_array[1])
 
 def iff( a, b, c ):
+    """
+    Ternary shortcut
+    """
     if a:
         return b
     else:
@@ -48,7 +58,7 @@ def css( *args ):
 
     Cache-bust with time that server started running on
     """
-    return "\n".join( [ stylesheet_link_tag( "/static/style/" + name + ".css?v=%s" % server_starttime ) for name in args ] )
+    return "\n".join( [ stylesheet_link( url_for( "/static/style/%s.css?v=%s" % (name, server_starttime) ) ) for name in args ] )
 
 def js_helper( prefix, *args ):
     """
@@ -57,21 +67,21 @@ def js_helper( prefix, *args ):
 
     Cache-bust with time that server started running on
     """
-    return "\n".join( [ javascript_include_tag( prefix + name + ".js?v=%s" % server_starttime ) for name in args ] )
+    return "\n".join( [ javascript_link( url_for( "/%s%s.js?v=%s" % (prefix, name, server_starttime ) ) ) for name in args ] )
 
 def js( *args ):
     """
     Take a prefix and list of javascript names and return appropriate
     string of script tags.
     """
-    return js_helper( '/static/scripts/', *args )
+    return js_helper( 'static/scripts/', *args )
 
 def templates( *args ):
     """
     Take a list of template names (no extension) and return appropriate
     string of script tags.
     """
-    return js_helper( '/static/scripts/templates/compiled/', *args )
+    return js_helper( 'static/scripts/templates/compiled/', *args )
 
 # Hashes
 

@@ -6,7 +6,6 @@ import pkg_resources
 pkg_resources.require( "bx-python" )
 
 import sys, os, tempfile
-import traceback
 import fileinput
 from warnings import warn
 
@@ -18,7 +17,8 @@ from bx.intervals.operations import quicksect
 def stop_err(msg):
     sys.stderr.write(msg)
     sys.exit()
-    
+
+
 def counter(node, start, end, sort_col):
     global full, blk_len, blk_list
     if node.start < start:
@@ -31,14 +31,14 @@ def counter(node, start, end, sort_col):
             blk_len += int(node.other[sort_col+2])
         if node.left and node.left.maxend > start:
             counter(node.left, start, end, sort_col)
-        if node.right: 
+        if node.right:
             counter(node.right, start, end, sort_col)
     elif node.start > end:
-        if node.left: 
+        if node.left:
             counter(node.left, start, end, sort_col)
-            
 
-infile = sys.argv[1]  
+
+infile = sys.argv[1]
 fout = open(sys.argv[2],'w')
 int_file = sys.argv[3]
 if int_file != "None": #User has specified an interval file
@@ -48,9 +48,9 @@ if int_file != "None": #User has specified an interval file
         chr_col_i, start_col_i, end_col_i, strand_col_i = parse_cols_arg( sys.argv[5] )
     except:
         stop_err("Unable to open input Interval file")
-        
-def main():
 
+
+def main():
     for i, line in enumerate( file ( infile )):
         line = line.rstrip('\r\n')
         if len( line )>0 and not line.startswith( '#' ):
@@ -86,8 +86,7 @@ def main():
             break
         except:
             continue
-        
-        
+    
     fin = open(infile, 'r')
     skipped = 0
     
@@ -98,7 +97,7 @@ def main():
             os.system(cmdline)
         except:
             stop_err("Encountered error while sorting the input file.")
-        print >>fout, "#Block\t%s_InsRate\t%s_InsRate\t%s_InsRate\t%s_DelRate\t%s_DelRate\t%s_DelRate" %(species[0],species[1],species[2],species[0],species[1],species[2])
+        print >> fout, "#Block\t%s_InsRate\t%s_InsRate\t%s_InsRate\t%s_DelRate\t%s_DelRate\t%s_DelRate" % ( species[0], species[1], species[2], species[0], species[1], species[2] )
         prev_bnum = -1
         sorted_infile.seek(0)
         for line in sorted_infile.readlines():
@@ -112,16 +111,16 @@ def main():
                     if prev_bnum != -1:
                         irate = []
                         drate = []
-                        for i,elem in enumerate(inserts):
+                        for i, elem in enumerate(inserts):
                             try:
-                                irate.append(str("%.2e" %(inserts[i]/blen[i])))
+                                irate.append(str("%.2e" % (inserts[i]/blen[i])))
                             except:
                                 irate.append('0')
                             try:
-                                drate.append(str("%.2e" %(deletes[i]/blen[i])))
+                                drate.append(str("%.2e" % (deletes[i]/blen[i])))
                             except:
                                 drate.append('0')
-                        print >>fout, "%s\t%s\t%s" %(prev_bnum, '\t'.join(irate) , '\t'.join(drate))
+                        print >> fout, "%s\t%s\t%s" % ( prev_bnum, '\t'.join(irate) , '\t'.join(drate) )
                     inserts = [0.0, 0.0, 0.0]
                     deletes = [0.0, 0.0, 0.0]
                     blen = []
@@ -134,24 +133,23 @@ def main():
                     inserts[sp_ind] += 1
                 elif elems[1].endswith('delete'):
                     deletes[sp_ind] += 1
-                prev_bnum = new_bnum 
+                prev_bnum = new_bnum
             except Exception, ei:
                 #print >>sys.stderr, ei
                 continue
         irate = []
         drate = []
-        for i,elem in enumerate(inserts):
+        for i, elem in enumerate(inserts):
             try:
-                irate.append(str("%.2e" %(inserts[i]/blen[i])))
+                irate.append(str("%.2e" % (inserts[i]/blen[i])))
             except:
                 irate.append('0')
             try:
-                drate.append(str("%.2e" %(deletes[i]/blen[i])))
+                drate.append(str("%.2e" % (deletes[i]/blen[i])))
             except:
                 drate.append('0')
-        print >>fout, "%s\t%s\t%s" %(prev_bnum, '\t'.join(irate) , '\t'.join(drate))
+        print >> fout, "%s\t%s\t%s" % ( prev_bnum, '\t'.join(irate) , '\t'.join(drate) )
         sys.exit()
-    
     
     inf = open(infile, 'r')
     start_met = False
@@ -163,14 +161,14 @@ def main():
         try:
             assert int(elems[0])
             assert len(elems) == 18
-            if dbkey_i not in elems[1]: 
-                if not(start_met):   
+            if dbkey_i not in elems[1]:
+                if not(start_met):
                     continue
                 else:
                     sp_end = n
                     break
             else:
-                print >>sp_file, line
+                print >> sp_file, line
                 if not(start_met):
                     start_met = True
                     sp_start = n
@@ -201,7 +199,7 @@ def main():
     for item in indel:
         if type( item ) is GenomicInterval:
             indelTree.insert( item, indel.linenum, item.fields )
-    result=[]
+    result = []
     
     global full, blk_len, blk_list
     for interval in win:
@@ -213,14 +211,14 @@ def main():
             chrom = interval.chrom
             start = int(interval.start)
             end = int(interval.end)
-            if start > end: 
+            if start > end:
                 warn( "Interval start after end!" )
-            ins_chr = "%s.%s_insert" %(dbkey_i,chrom)
-            del_chr = "%s.%s_delete" %(dbkey_i,chrom)
+            ins_chr = "%s.%s_insert" % ( dbkey_i, chrom )
+            del_chr = "%s.%s_delete" % ( dbkey_i, chrom )
             irate = 0
             drate = 0
             if ins_chr not in indelTree.chroms and del_chr not in indelTree.chroms:
-                pass    
+                pass
             else:
                 if ins_chr in indelTree.chroms:
                     full = 0.0
@@ -242,8 +240,9 @@ def main():
                 
             interval.fields.append(str("%.2e" %irate))
             interval.fields.append(str("%.2e" %drate))
-            print >>fout, "\t".join(interval.fields)
+            print >> fout, "\t".join(interval.fields)
             fout.flush()
 
+
 if __name__ == "__main__":
-    main()    
+    main()

@@ -53,7 +53,6 @@
         'libs/bootstrap',
         'libs/underscore',
         'libs/backbone/backbone',
-        'libs/backbone/backbone-relational',
         'libs/handlebars.runtime',
         'galaxy.base',
         'libs/require',
@@ -89,18 +88,8 @@
             baseUrl: "${h.url_for('/static/scripts') }",
             shim: {
                 "libs/underscore": { exports: "_" },
-                "libs/backbone/backbone": { exports: "Backbone" },
-                "libs/backbone/backbone-relational": ["libs/backbone/backbone"]
+                "libs/backbone/backbone": { exports: "Backbone" }
             }
-        });
-        
-        ## load galaxy js-modules
-        require(['galaxy.master', 'galaxy.frame', 'galaxy.modal', 'galaxy.upload'], function(master, frame, modal, upload)
-        {
-            Galaxy.master = new master.GalaxyMaster();
-            Galaxy.frame_manager = new frame.GalaxyFrameManager();
-            Galaxy.modal = new modal.GalaxyModal();
-            ##Galaxy.upload = new upload.GalaxyUpload();
         });
     </script>
 </%def>
@@ -127,21 +116,30 @@
     
     </script>
     ## Handle AJAX (actually hidden iframe) upload tool
-    <![if !IE]>
     <script type="text/javascript">
         var upload_form_error = function( msg ) {
-            if ( ! $("iframe#galaxy_main").contents().find("body").find("div[class='errormessage']").size() ) {
-                $("iframe#galaxy_main").contents().find("body").prepend( '<div class="errormessage" name="upload_error">' + msg + '</div><p/>' );
-            } else {
-                $("iframe#galaxy_main").contents().find("body").find("div[class='errormessage']").text( msg );
+            var $galaxy_mainBody = $("iframe#galaxy_main").contents().find("body"),
+                $errMsg = $galaxy_mainBody.find( 'div.errormessage' );
+            if ( !$errMsg.size() ){
+                $errMsg = $( '<div/>' ).addClass( 'errormessage' ).prependTo( $galaxy_mainBody );
+            }
+            $errMsg.text( msg );
+        }
+
+        var uploads_in_progress = 0;
+        function decrementUploadsInProgress(){
+            uploads_in_progress -= 1;
+            if( uploads_in_progress === 0 ){
+                window.onbeforeunload = null;
             }
         }
-        var uploads_in_progress = 0;
         jQuery( function() {
             $("iframe#galaxy_main").load( function() {
-                $(this).contents().find("form").each( function() { 
+                $(this).contents().find("form").each( function() {
                     if ( $(this).find("input[galaxy-ajax-upload]").length > 0 ){
-                        $(this).submit( function() {
+                        var $form = $( this );
+
+                        $(this).submit( function( event ) {
                             // Only bother using a hidden iframe if there's a file (e.g. big data) upload
                             var file_upload = false;
                             $(this).find("input[galaxy-ajax-upload]").each( function() {
@@ -155,11 +153,26 @@
                             // Make a synchronous request to create the datasets first
                             var async_datasets;
                             var upload_error = false;
+
+                            //NOTE: in order for upload.py to match the datasets created below, we'll move the js File
+                            //  object's name into the file_data field (not in the form only for what we send to
+                            //  upload_async_create)
+                            var formData = $( this ).serializeArray();
+                            var name = function(){
+                                var $fileInput = $form.find( 'input[name="files_0|file_data"]' );
+                                if( /msie/.test( navigator.userAgent.toLowerCase() ) ){
+                                    return $fileInput.val().replace( 'C:\\fakepath\\', '' );
+                                } else {
+                                    return $fileInput.get( 0 ).files[0].name;
+                                }
+                            }
+                            formData.push({ name: "files_0|file_data", value: name });
+
                             $.ajax( {
                                 async:      false,
                                 type:       "POST",
                                 url:        "${h.url_for(controller='/tool_runner', action='upload_async_create')}",
-                                data:       $(this).formSerialize(),
+                                data:       formData,
                                 dataType:   "json",
                                 success:    function(array_obj, status) {
                                                 if (array_obj.length > 0) {
@@ -180,6 +193,10 @@
                                                 }
                                             }
                             } );
+
+                            // show the dataset we created above in the history panel
+                            Galaxy && Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.refreshHdas();
+
                             if (upload_error == true) {
                                 return false;
                             } else {
@@ -187,16 +204,20 @@
                                 $(this).append("<input type='hidden' name='ajax_upload' value='true'>");
                             }
                             // iframe submit is required for nginx (otherwise the encoding is wrong)
-                            $(this).ajaxSubmit( { iframe:   true,
-                                                  complete: function (xhr, stat) {
-                                                                uploads_in_progress--;
-                                                                if (uploads_in_progress == 0) {
-                                                                    window.onbeforeunload = null;
-                                                                }
-                                                            }
-                                                 } );
+                            $(this).ajaxSubmit({
+                                //iframe: true,
+                                error: function( xhr, msg, status ){
+                                    decrementUploadsInProgress();
+                                },
+                                success: function ( response, x, y, z ) {
+                                    decrementUploadsInProgress();
+                                }
+                            });
                             uploads_in_progress++;
-                            window.onbeforeunload = function() { return "Navigating away from the Galaxy analysis interface will interrupt the file upload(s) currently in progress.  Do you really want to do this?"; }
+                            window.onbeforeunload = function() {
+                                return "Navigating away from the Galaxy analysis interface will interrupt the "
+                                        + "file upload(s) currently in progress.  Do you really want to do this?";
+                            }
                             if ( $(this).find("input[name='folder_id']").val() != undefined ) {
                                 var library_id = $(this).find("input[name='library_id']").val();
                                 var show_deleted = $(this).find("input[name='show_deleted']").val();
@@ -208,6 +229,7 @@
                             } else {
                                 $("iframe#galaxy_main").attr("src","${h.url_for(controller='tool_runner', action='upload_async_message')}");
                             }
+                            event.preventDefault();
                             return false;
                         });
                     }
@@ -215,7 +237,6 @@
             });
         });
     </script>
-    <![endif]>
 </%def>
 
 ## Masthead
@@ -313,24 +334,24 @@
                 <div id="left">
                     ${self.left_panel()}
                     <div class="unified-panel-footer">
-                        <div class="panel-collapse"></span></div>
+                        <div class="panel-collapse"></div>
                         <div class="drag"></div>
                     </div>
-                </div>
+                </div><!--end left-->
             %endif
-            <div id="center">
+            <div id="center" class="inbound">
                 ${self.center_panel()}
-            </div>
+            </div><!--end center-->
             %if self.has_right_panel:
                 <div id="right">
                     ${self.right_panel()}
                     <div class="unified-panel-footer">
-                        <div class="panel-collapse right"></span></div>
+                        <div class="panel-collapse right"></div>
                         <div class="drag"></div>
                     </div>
-                </div>
+                </div><!--end right-->
             %endif
-        </div>
+        </div><!--end everything-->
         ## Allow other body level elements
     </body>
     ## Scripts can be loaded later since they progressively add features to

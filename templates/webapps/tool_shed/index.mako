@@ -97,7 +97,7 @@
                         <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_categories' )}">Browse by category</a>
                     </div>
                     %if trans.user:
-                        %if trans.user.active_repositories:
+                        %if trans.user.active_repositories or can_administer_repositories:
                             <div class="toolSectionPad"></div>
                             <div class="toolSectionTitle">
                                 Repositories I Can Change
@@ -105,6 +105,11 @@
                             <div class="toolTitle">
                                 <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_repositories_i_own' )}">Repositories I own</a>
                             </div>
+                            %if can_administer_repositories:
+                                <div class="toolTitle">
+                                    <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_repositories_i_can_administer' )}">Repositories I can administer</a>
+                                </div>
+                            %endif
                             %if has_reviewed_repositories:
                                 <div class="toolTitle">
                                     <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_repositories', operation='reviewed_repositories_i_own' )}">Reviewed repositories I own</a>
@@ -147,9 +152,9 @@
                         <div class="toolTitle">
                             <a target="galaxy_main" href="${h.url_for( controller='repository', action='create_repository' )}">Create new repository</a>
                         </div>
-                        ##<div class="toolTitle">
-                        ##    <a target="galaxy_main" href="${h.url_for( controller='repository', action='import_capsule' )}">Import repository capsule</a>
-                        ##</div>
+                        <div class="toolTitle">
+                            <a target="galaxy_main" href="${h.url_for( controller='repository', action='upload_capsule' )}">Import repository capsule</a>
+                        </div>
                         %if can_review_repositories:
                             <div class="toolSectionPad"></div>
                             <div class="toolSectionTitle">

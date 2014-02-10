@@ -116,7 +116,6 @@
                     "libs/underscore": { exports: "_" },
                     "libs/d3": { exports: "d3" },
                     "libs/backbone/backbone": { exports: "Backbone" },
-                    "libs/backbone/backbone-relational": ["libs/backbone/backbone"]
                 }
         });
 

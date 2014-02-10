@@ -1,30 +1,43 @@
-import pkg_resources
-pkg_resources.require( "twill==0.9" )
-
-import StringIO, os, filecmp, time, unittest, urllib, logging, difflib, tarfile, zipfile, tempfile, re, shutil, subprocess
+import difflib
+import filecmp
+import logging
+import os
+import re
 import pprint
+import shutil
+import StringIO
+import subprocess
+import tarfile
+import tempfile
+import time
+import unittest
+import urllib
+import zipfile
 
-import twill
-import twill.commands as tc
-from twill.other_packages._mechanize_dist import ClientForm
-pkg_resources.require( "elementtree" )
-pkg_resources.require( "MarkupSafe" )
-from markupsafe import escape
-from elementtree import ElementTree
 from galaxy.web import security
 from galaxy.web.framework.helpers import iff
 from galaxy.util.json import from_json_string
 from base.asserts import verify_assertions
 
-buffer = StringIO.StringIO()
+from galaxy import eggs
+eggs.require( "elementtree" )
+eggs.require( 'twill' )
+
+from elementtree import ElementTree
+
+import twill
+import twill.commands as tc
+from twill.other_packages._mechanize_dist import ClientForm
 
 #Force twill to log to a buffer -- FIXME: Should this go to stdout and be captured by nose?
-twill.set_output(buffer)
-tc.config('use_tidy', 0)
+buffer = StringIO.StringIO()
+twill.set_output( buffer )
+tc.config( 'use_tidy', 0 )
 
 # Dial ClientCookie logging down (very noisy)
 logging.getLogger( "ClientCookie.cookies" ).setLevel( logging.WARNING )
 log = logging.getLogger( __name__ )
+
 
 class TwillTestCase( unittest.TestCase ):
 
@@ -46,10 +59,10 @@ class TwillTestCase( unittest.TestCase ):
             self.shed_tools_dict = {}
         self.keepOutdir = os.environ.get( 'GALAXY_TEST_SAVE', '' )
         if self.keepOutdir > '':
-           try:
-               os.makedirs(self.keepOutdir)
-           except:
-               pass
+            try:
+                os.makedirs(self.keepOutdir)
+            except:
+                pass
         self.home()
 
     # Functions associated with files
@@ -83,7 +96,7 @@ class TwillTestCase( unittest.TestCase ):
                 diff_lines = get_lines_diff( diff )
                 if diff_lines > allowed_diff_count:
                     diff_slice = diff[0:40]
-                    #FIXME: This pdf stuff is rather special cased and has not been updated to consider lines_diff 
+                    #FIXME: This pdf stuff is rather special cased and has not been updated to consider lines_diff
                     #due to unknown desired behavior when used in conjunction with a non-zero lines_diff
                     #PDF forgiveness can probably be handled better by not special casing by __extension__ here
                     #and instead using lines_diff or a regular expression matching
@@ -109,13 +122,13 @@ class TwillTestCase( unittest.TestCase ):
                                         break
                                 if not valid_diff:
                                     invalid_diff_lines += 1
-                        log.info('## files diff on %s and %s lines_diff=%d, found diff = %d, found pdf invalid diff = %d' % (file1,file2,allowed_diff_count,diff_lines,invalid_diff_lines))
+                        log.info('## files diff on %s and %s lines_diff=%d, found diff = %d, found pdf invalid diff = %d' % (file1, file2, allowed_diff_count, diff_lines, invalid_diff_lines))
                         if invalid_diff_lines > allowed_diff_count:
                             # Print out diff_slice so we can see what failed
                             print "###### diff_slice ######"
                             raise AssertionError( "".join( diff_slice ) )
                     else:
-                        log.info('## files diff on %s and %s lines_diff=%d, found diff = %d' % (file1,file2,allowed_diff_count,diff_lines))
+                        log.info('## files diff on %s and %s lines_diff=%d, found diff = %d' % (file1, file2, allowed_diff_count, diff_lines))
                         for line in diff_slice:
                             for char in line:
                                 if ord( char ) > 128:
@@ -124,7 +137,7 @@ class TwillTestCase( unittest.TestCase ):
 
     def files_re_match( self, file1, file2, attributes=None ):
         """Checks the contents of 2 files for differences using re.match"""
-        local_file = open( file1, 'U' ).readlines() #regex file
+        local_file = open( file1, 'U' ).readlines()  # regex file
         history_data = open( file2, 'U' ).readlines()
         assert len( local_file ) == len( history_data ), 'Data File and Regular Expression File contain a different number of lines (%s != %s)\nHistory Data (first 40 lines):\n%s' % ( len( local_file ), len( history_data ), ''.join( history_data[:40] ) )
         if attributes is None:
@@ -139,11 +152,11 @@ class TwillTestCase( unittest.TestCase ):
                 line_diff_count += 1
                 diffs.append( 'Regular Expression: %s\nData file         : %s' % ( local_file[i].rstrip( '\r\n' ),  history_data[i].rstrip( '\r\n' ) ) )
             if line_diff_count > lines_diff:
-                raise AssertionError, "Regular expression did not match data file (allowed variants=%i):\n%s" % ( lines_diff, "".join( diffs ) )
+                raise AssertionError( "Regular expression did not match data file (allowed variants=%i):\n%s" % ( lines_diff, "".join( diffs ) ) )
 
     def files_re_match_multiline( self, file1, file2, attributes=None ):
         """Checks the contents of 2 files for differences using re.match in multiline mode"""
-        local_file = open( file1, 'U' ).read() #regex file
+        local_file = open( file1, 'U' ).read()  # regex file
         if attributes is None:
             attributes = {}
         if attributes.get( 'sort', False ):
@@ -157,7 +170,7 @@ class TwillTestCase( unittest.TestCase ):
 
     def files_contains( self, file1, file2, attributes=None ):
         """Checks the contents of file2 for substrings found in file1, on a per-line basis"""
-        local_file = open( file1, 'U' ).readlines() #regex file
+        local_file = open( file1, 'U' ).readlines()  # regex file
         #TODO: allow forcing ordering of contains
         history_data = open( file2, 'U' ).read()
         lines_diff = int( attributes.get( 'lines_diff', 0 ) )
@@ -167,7 +180,7 @@ class TwillTestCase( unittest.TestCase ):
             if contains not in history_data:
                 line_diff_count += 1
             if line_diff_count > lines_diff:
-                raise AssertionError, "Failed to find '%s' in history data. (lines_diff=%i):\n" % ( contains, lines_diff )
+                raise AssertionError( "Failed to find '%s' in history data. (lines_diff=%i):\n" % ( contains, lines_diff ) )
 
     def get_filename( self, filename, shed_tool_id=None ):
         if shed_tool_id and self.shed_tools_dict:
@@ -183,14 +196,14 @@ class TwillTestCase( unittest.TestCase ):
         filename = os.path.join( *path )
         file(filename, 'wt').write(buffer.getvalue())
 
-    def upload_file( self, filename, ftype='auto', dbkey='unspecified (?)', space_to_tab=False, metadata=None, composite_data=None, shed_tool_id=None ):
+    def upload_file( self, filename, ftype='auto', dbkey='unspecified (?)', space_to_tab=False, metadata=None, composite_data=None, name=None, shed_tool_id=None, wait=True ):
         """
         Uploads a file.  If shed_tool_id has a value, we're testing tools migrated from the distribution to the tool shed,
         so the tool-data directory of test data files is contained in the installed tool shed repository.
         """
         self.visit_url( "%s/tool_runner?tool_id=upload1" % self.url )
-        try: 
-            self.refresh_form( "file_type", ftype ) #Refresh, to support composite files
+        try:
+            self.refresh_form( "file_type", ftype )  # Refresh, to support composite files
             tc.fv( "tool_form", "dbkey", dbkey )
             if metadata:
                 for elem in metadata:
@@ -204,19 +217,26 @@ class TwillTestCase( unittest.TestCase ):
                 filename = self.get_filename( filename, shed_tool_id=shed_tool_id )
                 tc.formfile( "tool_form", "file_data", filename )
                 tc.fv( "tool_form", "space_to_tab", space_to_tab )
+                if name:
+                    # NAME is a hidden form element, so the following prop must
+                    # set to use it.
+                    tc.config("readonly_controls_writeable", 1)
+                    tc.fv( "tool_form", "NAME", name )
             tc.submit( "runtool_btn" )
             self.home()
         except AssertionError, err:
             errmsg = "Uploading file resulted in the following exception.  Make sure the file (%s) exists.  " % filename
             errmsg += str( err )
             raise AssertionError( errmsg )
+        if not wait:
+            return
         # Make sure every history item has a valid hid
         hids = self.get_hids_in_history()
         for hid in hids:
             try:
-                valid_hid = int( hid )
+                int( hid )
             except:
-                raise AssertionError, "Invalid hid (%s) created when uploading file %s" % ( hid, filename )
+                raise AssertionError( "Invalid hid (%s) created when uploading file %s" % ( hid, filename ) )
         # Wait for upload processing to finish (TODO: this should be done in each test case instead)
         self.wait()
 
@@ -224,28 +244,28 @@ class TwillTestCase( unittest.TestCase ):
         """Pasted data in the upload utility"""
         self.visit_page( "tool_runner/index?tool_id=upload1" )
         try: 
-            tc.fv( "1", "file_type", ftype )
-            tc.fv( "1", "dbkey", dbkey )
-            tc.fv( "1", "url_paste", url_paste )
+            self.refresh_form( "file_type", ftype ) #Refresh, to support composite files
+            tc.fv( "tool_form", "dbkey", dbkey )
+            tc.fv( "tool_form", "url_paste", url_paste )
             tc.submit( "runtool_btn" )
             self.home()
         except Exception, e:
             errmsg = "Problem executing upload utility using url_paste: %s" % str( e )
-            raise AssertionError( e )
+            raise AssertionError( errmsg )
         # Make sure every history item has a valid hid
         hids = self.get_hids_in_history()
         for hid in hids:
             try:
-                valid_hid = int( hid )
+                int( hid )
             except:
-                raise AssertionError, "Invalid hid (%s) created when pasting %s" % ( hid, url_paste )
+                raise AssertionError( "Invalid hid (%s) created when pasting %s" % ( hid, url_paste ) )
         # Wait for upload processing to finish (TODO: this should be done in each test case instead)
         self.wait()
 
     def json_from_url( self, url ):
         self.visit_url( url )
         return from_json_string( self.last_page() )
-        
+
     # Functions associated with histories
     def get_history_from_api( self, encoded_history_id=None ):
         if encoded_history_id is None:
@@ -255,7 +275,7 @@ class TwillTestCase( unittest.TestCase ):
 
     def get_latest_history( self ):
         return self.json_from_url( '/api/histories' )[ 0 ]
-    
+
     def find_hda_by_dataset_name( self, name, history=None ):
         if history is None:
             history = self.get_history_from_api()
@@ -269,7 +289,7 @@ class TwillTestCase( unittest.TestCase ):
         self.visit_page( "history" )
         page = self.last_page()
         if page.find( 'error' ) > -1:
-            raise AssertionError('Errors in the history for user %s' % self.user )
+            raise AssertionError( 'Errors in the history for user %s' % self.user )
 
     def check_history_for_string( self, patt, show_deleted=False ):
         """Breaks patt on whitespace and searches for each element seperately in the history"""
@@ -315,12 +335,13 @@ class TwillTestCase( unittest.TestCase ):
             self.visit_page( "history?show_deleted=False" )
         else:
             self.visit_page( "history" )
+        json_data = {}
         try:
             tc.find( pattern, flags=( 'm' if multiline else '' ) )
             # twill stores the regex match in a special stack variable
             match = twill.namespaces.get_twill_glocals()[1][ '__match__' ]
             json_data = from_json_string( match )
-            assert check_fn( json_data ), 'failed check_fn: %s' %( check_fn.func_name )
+            assert check_fn( json_data ), 'failed check_fn: %s' % ( check_fn.func_name )
 
         except Exception, exc:
             log.error( exc, exc_info=True )
@@ -374,6 +395,7 @@ class TwillTestCase( unittest.TestCase ):
         num_deleted = len( id.split( ',' ) )
         self.home()
         self.visit_page( "history/list?operation=delete&id=%s" % ( id ) )
+
         check_str = 'Deleted %d %s' % ( num_deleted, iff( num_deleted != 1, "histories", "history" ) )
         self.check_page_for_string( check_str )
         self.home()
@@ -423,7 +445,7 @@ class TwillTestCase( unittest.TestCase ):
             if active_datasets:
                 self.check_page_for_string( 'Create</a> a new empty history' )
                 self.check_page_for_string( 'Construct workflow</a> from current history' )
-                self.check_page_for_string( 'Copy</a> current history' ) 
+                self.check_page_for_string( 'Copy</a> current history' )
             self.check_page_for_string( 'Share</a> current history' )
             self.check_page_for_string( 'Change default permissions</a> for current history' )
             if histories_shared_by_others:
@@ -447,7 +469,7 @@ class TwillTestCase( unittest.TestCase ):
     def rename_history( self, id, old_name, new_name ):
         """Rename an existing history"""
         self.home()
-        self.visit_page( "history/rename?id=%s&name=%s" %( id, new_name ) )
+        self.visit_page( "history/rename?id=%s&name=%s" % ( id, new_name ) )
         check_str = 'History: %s renamed to: %s' % ( old_name, urllib.unquote( new_name ) )
         self.check_page_for_string( check_str )
         self.home()
@@ -476,6 +498,7 @@ class TwillTestCase( unittest.TestCase ):
             for check_str in action_strings_displayed:
                 self.check_page_for_string( check_str )
             tc.fv( 'share_restricted', 'action', action )
+
             tc.submit( "share_restricted_button" )
             for check_str in action_strings_displayed_after_submit:
                 self.check_page_for_string( check_str )
@@ -495,6 +518,7 @@ class TwillTestCase( unittest.TestCase ):
             # If we have an action, then we are sharing datasets with users that do not have access permissions on them
             tc.fv( 'share_restricted', 'action', action )
             tc.submit( "share_restricted_button" )
+
             for check_str in action_strings_displayed:
                 self.check_page_for_string( check_str )
         self.home()
@@ -518,28 +542,29 @@ class TwillTestCase( unittest.TestCase ):
         self.home()
         self.visit_page( "history/list" )
         self.check_page_for_string( 'Saved Histories' )
-        self.check_page_for_string( '<input type="checkbox" name="id" value=' )
         self.check_page_for_string( 'operation=Rename' )
         self.check_page_for_string( 'operation=Switch' )
         self.check_page_for_string( 'operation=Delete' )
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
         self.home()
+
     def view_stored_deleted_histories( self, strings_displayed=[] ):
         self.home()
         self.visit_page( "history/list?f-deleted=True" )
         self.check_page_for_string( 'Saved Histories' )
-        self.check_page_for_string( '<input type="checkbox" name="id" value=' )
         self.check_page_for_string( 'operation=Undelete' )
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
         self.home()
+
     def view_shared_histories( self, strings_displayed=[] ):
         self.home()
         self.visit_page( "history/list_shared" )
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
         self.home()
+
     def copy_history( self, history_id, copy_choice, strings_displayed=[], strings_displayed_after_submit=[] ):
         self.home()
         self.visit_page( "history/copy?id=%s" % history_id )
@@ -550,6 +575,7 @@ class TwillTestCase( unittest.TestCase ):
         for check_str in strings_displayed_after_submit:
             self.check_page_for_string( check_str )
         self.home()
+
     def make_accessible_via_link( self, history_id, strings_displayed=[], strings_displayed_after_submit=[] ):
         self.home()
         self.visit_page( "history/list?operation=share+or+publish&id=%s" % history_id )
@@ -562,6 +588,7 @@ class TwillTestCase( unittest.TestCase ):
         for check_str in strings_displayed_after_submit:
             self.check_page_for_string( check_str )
         self.home()
+
     def disable_access_via_link( self, history_id, strings_displayed=[], strings_displayed_after_submit=[] ):
         self.home()
         self.visit_page( "history/list?operation=share+or+publish&id=%s" % history_id )
@@ -574,6 +601,7 @@ class TwillTestCase( unittest.TestCase ):
         for check_str in strings_displayed_after_submit:
             self.check_page_for_string( check_str )
         self.home()
+
     def import_history_via_url( self, history_id, email, strings_displayed_after_submit=[] ):
         self.home()
         self.visit_page( "history/imp?&id=%s" % history_id )
@@ -584,9 +612,13 @@ class TwillTestCase( unittest.TestCase ):
     # Functions associated with datasets (history items) and meta data
     def _get_job_stream_output( self, hda_id, stream, format ):
         self.visit_page( "datasets/%s/%s" % ( self.security.encode_id( hda_id ), stream ) )
+
         output = self.last_page()
+        return self._format_stream( output, stream, format )
+
+    def _format_stream( self, output, stream, format ):
         if format:
-            msg =  "---------------------- >> begin tool %s << -----------------------\n" % stream
+            msg = "---------------------- >> begin tool %s << -----------------------\n" % stream
             msg += output + "\n"
             msg += "----------------------- >> end tool %s << ------------------------\n" % stream
         else:
@@ -609,43 +641,48 @@ class TwillTestCase( unittest.TestCase ):
         """Looks for 'patt' in the edit page when editing a dataset"""
         data_list = self.get_history_as_data_list()
         self.assertTrue( data_list )
-        if hid is None: # take last hid
+        if hid is None:  # take last hid
             elem = data_list[-1]
             hid = int( elem.get('hid') )
         self.assertTrue( hid )
         self.visit_page( "dataset/edit?hid=%s" % hid )
         for subpatt in patt.split():
             tc.find(subpatt)
+
     def delete_history_item( self, hda_id, strings_displayed=[] ):
         """Deletes an item from a history"""
         try:
             hda_id = int( hda_id )
         except:
-            raise AssertionError, "Invalid hda_id '%s' - must be int" % hda_id
+            raise AssertionError( "Invalid hda_id '%s' - must be int" % hda_id )
         self.visit_url( "%s/datasets/%s/delete?show_deleted_on_refresh=False" % ( self.url, self.security.encode_id( hda_id ) ) )
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
+
     def undelete_history_item( self, hda_id, strings_displayed=[] ):
         """Un-deletes a deleted item in a history"""
         try:
             hda_id = int( hda_id )
         except:
-            raise AssertionError, "Invalid hda_id '%s' - must be int" % hda_id
+            raise AssertionError( "Invalid hda_id '%s' - must be int" % hda_id )
         self.visit_url( "%s/datasets/%s/undelete" % ( self.url, self.security.encode_id( hda_id ) ) )
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
+
     def display_history_item( self, hda_id, strings_displayed=[] ):
         """Displays a history item - simulates eye icon click"""
         self.visit_url( '%s/datasets/%s/display/' % ( self.url, self.security.encode_id( hda_id ) ) )
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
         self.home()
+
     def view_history( self, history_id, strings_displayed=[] ):
         """Displays a history for viewing"""
         self.visit_url( '%s/history/view?id=%s' % ( self.url, self.security.encode_id( history_id ) ) )
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
         self.home()
+
     def edit_hda_attribute_info( self, hda_id, new_name='', new_info='', new_dbkey='', new_startcol='',
                                  strings_displayed=[], strings_not_displayed=[] ):
         """Edit history_dataset_association attribute information"""
@@ -673,14 +710,16 @@ class TwillTestCase( unittest.TestCase ):
         for check_str in strings_not_displayed:
             try:
                 self.check_page_for_string( check_str )
-                raise AssertionError, "String (%s) incorrectly displayed on Edit Attributes page." % check_str
+                raise AssertionError( "String (%s) incorrectly displayed on Edit Attributes page." % check_str )
             except:
                 pass
         self.home()
+
     def check_hda_attribute_info( self, hda_id, strings_displayed=[] ):
         """Edit history_dataset_association attribute information"""
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
+
     def auto_detect_metadata( self, hda_id ):
         """Auto-detect history_dataset_association metadata"""
         self.home()
@@ -695,6 +734,7 @@ class TwillTestCase( unittest.TestCase ):
             self.check_page_for_string( 'Attributes updated' )
         #self.check_page_for_string( 'Attributes updated' )
         self.home()
+
     def convert_format( self, hda_id, target_type ):
         """Convert format of history_dataset_association"""
         self.home()
@@ -703,8 +743,9 @@ class TwillTestCase( unittest.TestCase ):
         tc.fv( 'convert_data', 'target_type', target_type )
         tc.submit( 'convert_data' )
         self.check_page_for_string( 'The file conversion of Convert BED to GFF on data' )
-        self.wait() #wait for the format convert tool to finish before returning
+        self.wait()  # wait for the format convert tool to finish before returning
         self.home()
+
     def change_datatype( self, hda_id, datatype ):
         """Change format of history_dataset_association"""
         self.home()
@@ -714,6 +755,7 @@ class TwillTestCase( unittest.TestCase ):
         tc.submit( 'change' )
         self.check_page_for_string( 'Changed the type of dataset' )
         self.home()
+
     def copy_history_item( self, source_dataset_id=None, target_history_id=None, all_target_history_ids=[],
                            deleted_history_ids=[] ):
         """
@@ -730,10 +772,10 @@ class TwillTestCase( unittest.TestCase ):
         for id in deleted_history_ids:
             try:
                 self.check_page_for_string( id )
-                raise AssertionError, "deleted history id %d displayed in list of target histories" % id
+                raise AssertionError( "deleted history id %d displayed in list of target histories" % id )
             except:
                 pass
-        
+
         tc.fv( '1', 'target_history_id', target_history_id )
         tc.submit( 'do_copy' )
         check_str = '1 dataset copied to 1 history'
@@ -760,17 +802,17 @@ class TwillTestCase( unittest.TestCase ):
 
     def makeTfname(self, fname=None):
         """safe temp name - preserve the file extension for tools that interpret it"""
-        suffix = os.path.split(fname)[-1] # ignore full path
-        fd,temp_prefix = tempfile.mkstemp(prefix='tmp',suffix=suffix)
+        suffix = os.path.split(fname)[-1]  # ignore full path
+        fd, temp_prefix = tempfile.mkstemp(prefix='tmp', suffix=suffix)
         return temp_prefix
 
     def verify_dataset_correctness( self, filename, hid=None, wait=True, maxseconds=120, attributes=None, shed_tool_id=None ):
         """Verifies that the attributes and contents of a history item meet expectations"""
         if wait:
-            self.wait( maxseconds=maxseconds ) #wait for job to finish
+            self.wait( maxseconds=maxseconds )  # wait for job to finish
         data_list = self.get_history_as_data_list()
         self.assertTrue( data_list )
-        if hid is None: # take last hid
+        if hid is None:  # take last hid
             elem = data_list[-1]
             hid = str( elem.get('hid') )
         else:
@@ -792,69 +834,83 @@ class TwillTestCase( unittest.TestCase ):
                 if ext != test_ext:
                     raise AssertionError( errmsg )
         else:
-            self.home()
-            self.visit_page( "display?hid=" + hid )
+            # See not in controllers/root.py about encoded_id.
+            hda_id = self.security.encode_id( elem.get( 'id' ) )
+            self.verify_hid( filename, hid=hid, hda_id=hda_id, attributes=attributes, shed_tool_id=shed_tool_id)
+
+    def verify_hid( self, filename, hda_id, attributes, shed_tool_id, hid="", dataset_fetcher=None):
+        dataset_fetcher = dataset_fetcher or self.__default_dataset_fetcher()
+        data = dataset_fetcher( hda_id )
+        if attributes is not None and attributes.get( "assert_list", None ) is not None:
+            try:
+                verify_assertions(data, attributes["assert_list"])
+            except AssertionError, err:
+                errmsg = 'History item %s different than expected\n' % (hid)
+                errmsg += str( err )
+                raise AssertionError( errmsg )
+        if filename is not None:
+            local_name = self.get_filename( filename, shed_tool_id=shed_tool_id )
+            temp_name = self.makeTfname(fname=filename)
+            file( temp_name, 'wb' ).write( data )
+
+            # if the server's env has GALAXY_TEST_SAVE, save the output file to that dir
+            if self.keepOutdir:
+                ofn = os.path.join( self.keepOutdir, os.path.basename( local_name ) )
+                log.debug( 'keepoutdir: %s, ofn: %s', self.keepOutdir, ofn )
+                try:
+                    shutil.copy( temp_name, ofn )
+                except Exception, exc:
+                    error_log_msg = ( 'TwillTestCase could not save output file %s to %s: ' % ( temp_name, ofn ) )
+                    error_log_msg += str( exc )
+                    log.error( error_log_msg, exc_info=True )
+                else:
+                    log.debug('## GALAXY_TEST_SAVE=%s. saved %s' % ( self.keepOutdir, ofn ) )
+            try:
+                if attributes is None:
+                    attributes = {}
+                compare = attributes.get( 'compare', 'diff' )
+                if attributes.get( 'ftype', None ) == 'bam':
+                    local_fh, temp_name = self._bam_to_sam( local_name, temp_name )
+                    local_name = local_fh.name
+                extra_files = attributes.get( 'extra_files', None )
+                if compare == 'diff':
+                    self.files_diff( local_name, temp_name, attributes=attributes )
+                elif compare == 're_match':
+                    self.files_re_match( local_name, temp_name, attributes=attributes )
+                elif compare == 're_match_multiline':
+                    self.files_re_match_multiline( local_name, temp_name, attributes=attributes )
+                elif compare == 'sim_size':
+                    delta = attributes.get('delta', '100')
+                    s1 = len(data)
+                    s2 = os.path.getsize(local_name)
+                    if abs(s1 - s2) > int(delta):
+                        raise Exception( 'Files %s=%db but %s=%db - compare (delta=%s) failed' % (temp_name, s1, local_name, s2, delta) )
+                elif compare == "contains":
+                    self.files_contains( local_name, temp_name, attributes=attributes )
+                else:
+                    raise Exception( 'Unimplemented Compare type: %s' % compare )
+                if extra_files:
+                    self.verify_extra_files_content( extra_files, hda_id, shed_tool_id=shed_tool_id, dataset_fetcher=dataset_fetcher )
+            except AssertionError, err:
+                errmsg = 'History item %s different than expected, difference (using %s):\n' % ( hid, compare )
+                errmsg += "( %s v. %s )\n" % ( local_name, temp_name )
+                errmsg += str( err )
+                raise AssertionError( errmsg )
+            finally:
+                os.remove( temp_name )
+
+    def __default_dataset_fetcher( self ):
+        def fetcher( hda_id, filename=None ):
+            if filename is None:
+                page_url = "display?encoded_id=%s" % hda_id
+                self.home()  # I assume this is not needed.
+            else:
+                page_url = "datasets/%s/display/%s" % ( hda_id, filename )
+            self.visit_page( page_url )
             data = self.last_page()
-            if attributes is not None and attributes.get( "assert_list", None ) is not None:
-                try:
-                    verify_assertions(data, attributes["assert_list"])
-                except AssertionError, err:
-                    errmsg = 'History item %s different than expected\n' % (hid)
-                    errmsg += str( err )
-                    raise AssertionError( errmsg )
-            if filename is not None:
-                local_name = self.get_filename( filename, shed_tool_id=shed_tool_id )
-                temp_name = self.makeTfname(fname = filename)
-                file( temp_name, 'wb' ).write( data )
-                
-                # if the server's env has GALAXY_TEST_SAVE, save the output file to that dir
-                if self.keepOutdir:
-                    ofn = os.path.join( self.keepOutdir, os.path.basename( local_name ) )
-                    log.debug( 'keepoutdir: %s, ofn: %s', self.keepOutdir, ofn )
-                    try:
-                        shutil.copy( temp_name, ofn )
-                    except Exception, exc:
-                        error_log_msg  = ( 'TwillTestCase could not save output file %s to %s: ' % ( temp_name, ofn ) )
-                        error_log_msg += str( exc )
-                        log.error( error_log_msg, exc_info=True )
-                    else:
-                        log.debug('## GALAXY_TEST_SAVE=%s. saved %s' % ( self.keepOutdir, ofn ) )
-                        
-                try:
-                    # have to nest try-except in try-finally to handle 2.4
-                    try:
-                        if attributes is None:
-                            attributes = {}
-                        compare = attributes.get( 'compare', 'diff' )
-                        if attributes.get( 'ftype', None ) == 'bam':
-                            local_fh, temp_name = self._bam_to_sam( local_name, temp_name )
-                            local_name = local_fh.name
-                        extra_files = attributes.get( 'extra_files', None )
-                        if compare == 'diff':
-                            self.files_diff( local_name, temp_name, attributes=attributes )
-                        elif compare == 're_match':
-                            self.files_re_match( local_name, temp_name, attributes=attributes )
-                        elif compare == 're_match_multiline':
-                            self.files_re_match_multiline( local_name, temp_name, attributes=attributes )
-                        elif compare == 'sim_size':
-                            delta = attributes.get('delta','100')
-                            s1 = len(data)
-                            s2 = os.path.getsize(local_name)
-                            if abs(s1-s2) > int(delta):
-                                raise Exception, 'Files %s=%db but %s=%db - compare (delta=%s) failed' % (temp_name,s1,local_name,s2,delta)
-                        elif compare == "contains":
-                            self.files_contains( local_name, temp_name, attributes=attributes )
-                        else:
-                            raise Exception, 'Unimplemented Compare type: %s' % compare
-                        if extra_files:
-                            self.verify_extra_files_content( extra_files, elem.get( 'id' ), shed_tool_id=shed_tool_id )
-                    except AssertionError, err:
-                        errmsg = 'History item %s different than expected, difference (using %s):\n' % ( hid, compare )
-                        errmsg += "( %s v. %s )\n" % ( local_name, temp_name )
-                        errmsg += str( err )
-                        raise AssertionError( errmsg )
-                finally:
-                    os.remove( temp_name )
+            return data
+
+        return fetcher
 
     def _bam_to_sam( self, local_name, temp_name ):
         temp_local = tempfile.NamedTemporaryFile( suffix='.sam', prefix='local_bam_converted_to_sam_' )
@@ -867,7 +923,7 @@ class TwillTestCase( unittest.TestCase ):
         os.remove( temp_name )
         return temp_local, temp_temp
 
-    def verify_extra_files_content( self, extra_files, hda_id, shed_tool_id=None ):
+    def verify_extra_files_content( self, extra_files, hda_id, dataset_fetcher, shed_tool_id=None ):
         files_list = []
         for extra_type, extra_value, extra_name, extra_attributes in extra_files:
             if extra_type == 'file':
@@ -876,46 +932,44 @@ class TwillTestCase( unittest.TestCase ):
                 for filename in os.listdir( self.get_filename( extra_value, shed_tool_id=shed_tool_id ) ):
                     files_list.append( ( filename, os.path.join( extra_value, filename ), extra_attributes ) )
             else:
-                raise ValueError, 'unknown extra_files type: %s' % extra_type
+                raise ValueError( 'unknown extra_files type: %s' % extra_type )
         for filename, filepath, attributes in files_list:
-            self.verify_composite_datatype_file_content( filepath, hda_id, base_name=filename, attributes=attributes, shed_tool_id=shed_tool_id )
-        
-    def verify_composite_datatype_file_content( self, file_name, hda_id, base_name=None, attributes=None, shed_tool_id=None ):
+            self.verify_composite_datatype_file_content( filepath, hda_id, base_name=filename, attributes=attributes, dataset_fetcher=dataset_fetcher, shed_tool_id=shed_tool_id )
+
+    def verify_composite_datatype_file_content( self, file_name, hda_id, base_name=None, attributes=None, dataset_fetcher=None, shed_tool_id=None ):
+        dataset_fetcher = dataset_fetcher or self.__default_dataset_fetcher()
         local_name = self.get_filename( file_name, shed_tool_id=shed_tool_id )
         if base_name is None:
             base_name = os.path.split(file_name)[-1]
-        temp_name = self.makeTfname(fname = base_name)
-        self.visit_url( "%s/datasets/%s/display/%s" % ( self.url, self.security.encode_id( hda_id ), base_name ) )
-        data = self.last_page()
+        temp_name = self.makeTfname(fname=base_name)
+        data = dataset_fetcher( hda_id, base_name )
         file( temp_name, 'wb' ).write( data )
         if self.keepOutdir > '':
-            ofn = os.path.join(self.keepOutdir,base_name)
-            shutil.copy(temp_name,ofn)
-            log.debug('## GALAXY_TEST_SAVE=%s. saved %s' % (self.keepOutdir,ofn))
+            ofn = os.path.join(self.keepOutdir, base_name)
+            shutil.copy(temp_name, ofn)
+            log.debug('## GALAXY_TEST_SAVE=%s. saved %s' % (self.keepOutdir, ofn))
         try:
-            # have to nest try-except in try-finally to handle 2.4
-            try:
-                if attributes is None:
-                    attributes = {}
-                compare = attributes.get( 'compare', 'diff' )
-                if compare == 'diff':
-                    self.files_diff( local_name, temp_name, attributes=attributes )
-                elif compare == 're_match':
-                    self.files_re_match( local_name, temp_name, attributes=attributes )
-                elif compare == 're_match_multiline':
-                    self.files_re_match_multiline( local_name, temp_name, attributes=attributes )
-                elif compare == 'sim_size':
-                    delta = attributes.get('delta','100')
-                    s1 = len(data)
-                    s2 = os.path.getsize(local_name)
-                    if abs(s1-s2) > int(delta):
-                       raise Exception, 'Files %s=%db but %s=%db - compare (delta=%s) failed' % (temp_name,s1,local_name,s2,delta)
-                else:
-                    raise Exception, 'Unimplemented Compare type: %s' % compare
-            except AssertionError, err:
-                errmsg = 'Composite file (%s) of History item %s different than expected, difference (using %s):\n' % ( base_name, hda_id, compare )
-                errmsg += str( err )
-                raise AssertionError( errmsg )
+            if attributes is None:
+                attributes = {}
+            compare = attributes.get( 'compare', 'diff' )
+            if compare == 'diff':
+                self.files_diff( local_name, temp_name, attributes=attributes )
+            elif compare == 're_match':
+                self.files_re_match( local_name, temp_name, attributes=attributes )
+            elif compare == 're_match_multiline':
+                self.files_re_match_multiline( local_name, temp_name, attributes=attributes )
+            elif compare == 'sim_size':
+                delta = attributes.get('delta', '100')
+                s1 = len(data)
+                s2 = os.path.getsize(local_name)
+                if abs(s1 - s2) > int(delta):
+                    raise Exception( 'Files %s=%db but %s=%db - compare (delta=%s) failed' % (temp_name, s1, local_name, s2, delta) )
+            else:
+                raise Exception( 'Unimplemented Compare type: %s' % compare )
+        except AssertionError, err:
+            errmsg = 'Composite file (%s) of History item %s different than expected, difference (using %s):\n' % ( base_name, hda_id, compare )
+            errmsg += str( err )
+            raise AssertionError( errmsg )
         finally:
             os.remove( temp_name )
 
@@ -925,7 +979,7 @@ class TwillTestCase( unittest.TestCase ):
         return True
 
     def is_binary( self, filename ):
-        temp = open( filename, "U" ) # why is this not filename? Where did temp_name come from
+        temp = open( filename, "U" )  # why is this not filename? Where did temp_name come from
         lineno = 0
         for line in temp:
             lineno += 1
@@ -949,7 +1003,7 @@ class TwillTestCase( unittest.TestCase ):
 
     # Functions associated with user accounts
     def create( self, cntrller='user', email='test@bx.psu.edu', password='testuser', username='admin-user', redirect='' ):
-        # HACK: don't use panels because late_javascripts() messes up the twill browser and it 
+        # HACK: don't use panels because late_javascripts() messes up the twill browser and it
         # can't find form fields (and hence user can't be logged in).
         self.visit_url( "%s/user/create?cntrller=%s&use_panels=False" % ( self.url, cntrller ) )
         tc.fv( 'registration', 'email', email )
@@ -980,6 +1034,7 @@ class TwillTestCase( unittest.TestCase ):
                     except:
                         pass
         return previously_created, username_taken, invalid_username
+
     def create_user_with_info( self, email, password, username, user_info_values, user_type_fd_id='', cntrller='user',
                                strings_displayed=[], strings_displayed_after_submit=[] ):
         # This method creates a new user with associated info
@@ -998,6 +1053,7 @@ class TwillTestCase( unittest.TestCase ):
         for check_str in strings_displayed:
             self.check_page_for_string( check_str)
         tc.submit( "create_user_button" )
+
     def edit_user_info( self, cntrller='user', id='', new_email='', new_username='', password='', new_password='',
                         info_values=[], strings_displayed=[], strings_displayed_after_submit=[] ):
         if cntrller == 'admin':
@@ -1021,51 +1077,53 @@ class TwillTestCase( unittest.TestCase ):
             tc.submit( "change_password_button" )
         if info_values:
             for index, ( field_name, info_value ) in enumerate( info_values ):
-                field_index = index + 1
                 tc.fv( "user_info", field_name, info_value )
             tc.submit( "edit_user_info_button" )
         for check_str in strings_displayed_after_submit:
             self.check_page_for_string( check_str )
         self.home()
+
     def user_set_default_permissions( self, cntrller='user', permissions_out=[], permissions_in=[], role_id='2' ):
-        # role.id = 2 is Private Role for test2@bx.psu.edu 
-        # NOTE: Twill has a bug that requires the ~/user/permissions page to contain at least 1 option value 
+        # role.id = 2 is Private Role for test2@bx.psu.edu
+        # NOTE: Twill has a bug that requires the ~/user/permissions page to contain at least 1 option value
         # in each select list or twill throws an exception, which is: ParseError: OPTION outside of SELECT
-        # Due to this bug, we'll bypass visiting the page, and simply pass the permissions on to the 
+        # Due to this bug, we'll bypass visiting the page, and simply pass the permissions on to the
         # /user/set_default_permissions method.
         url = "user/set_default_permissions?cntrller=%s&update_roles_button=Save&id=None" % cntrller
         for po in permissions_out:
             key = '%s_out' % po
-            url ="%s&%s=%s" % ( url, key, str( role_id ) )
+            url = "%s&%s=%s" % ( url, key, str( role_id ) )
         for pi in permissions_in:
             key = '%s_in' % pi
-            url ="%s&%s=%s" % ( url, key, str( role_id ) )
+            url = "%s&%s=%s" % ( url, key, str( role_id ) )
         self.visit_url( "%s/%s" % ( self.url, url ) )
         self.check_page_for_string( 'Default new history permissions have been changed.' )
         self.home()
-    def history_set_default_permissions( self, permissions_out=[], permissions_in=[], role_id=3 ): # role.id = 3 is Private Role for test3@bx.psu.edu 
-        # NOTE: Twill has a bug that requires the ~/user/permissions page to contain at least 1 option value 
+
+    def history_set_default_permissions( self, permissions_out=[], permissions_in=[], role_id=3 ):  # role.id = 3 is Private Role for test3@bx.psu.edu
+        # NOTE: Twill has a bug that requires the ~/user/permissions page to contain at least 1 option value
         # in each select list or twill throws an exception, which is: ParseError: OPTION outside of SELECT
-        # Due to this bug, we'll bypass visiting the page, and simply pass the permissions on to the 
+        # Due to this bug, we'll bypass visiting the page, and simply pass the permissions on to the
         # /user/set_default_permissions method.
         url = "root/history_set_default_permissions?update_roles_button=Save&id=None&dataset=True"
         for po in permissions_out:
             key = '%s_out' % po
-            url ="%s&%s=%s" % ( url, key, str( role_id ) )
+            url = "%s&%s=%s" % ( url, key, str( role_id ) )
         for pi in permissions_in:
             key = '%s_in' % pi
-            url ="%s&%s=%s" % ( url, key, str( role_id ) )
+            url = "%s&%s=%s" % ( url, key, str( role_id ) )
         self.home()
         self.visit_url( "%s/%s" % ( self.url, url ) )
         self.check_page_for_string( 'Default history permissions have been changed.' )
         self.home()
+
     def login( self, email='test@bx.psu.edu', password='testuser', username='admin-user', redirect='' ):
         # test@bx.psu.edu is configured as an admin user
         previously_created, username_taken, invalid_username = \
             self.create( email=email, password=password, username=username, redirect=redirect )
         if previously_created:
             # The acount has previously been created, so just login.
-            # HACK: don't use panels because late_javascripts() messes up the twill browser and it 
+            # HACK: don't use panels because late_javascripts() messes up the twill browser and it
             # can't find form fields (and hence user can't be logged in).
             self.visit_url( "%s/user/login?use_panels=False" % self.url )
             self.submit_form( 1, 'login_button', email=email, redirect=redirect, password=password )
@@ -1075,7 +1133,7 @@ class TwillTestCase( unittest.TestCase ):
         self.visit_page( "user/logout" )
         self.check_page_for_string( "You have been logged out" )
         self.home()
-    
+
     # Functions associated with browsers, cookies, HTML forms and page visits
 
     def check_for_strings( self, strings_displayed=[], strings_not_displayed=[] ):
@@ -1087,15 +1145,15 @@ class TwillTestCase( unittest.TestCase ):
                 self.check_string_not_in_page( string )
 
     def check_page_for_string( self, patt ):
-        """Looks for 'patt' in the current browser page"""        
+        """Looks for 'patt' in the current browser page"""
         page = self.last_page()
         if page.find( patt ) == -1:
             fname = self.write_temp_file( page )
             errmsg = "no match to '%s'\npage content written to '%s'" % ( patt, fname )
             raise AssertionError( errmsg )
-        
+
     def check_string_count_in_page( self, patt, min_count ):
-        """Checks the number of 'patt' occurrences in the current browser page"""        
+        """Checks the number of 'patt' occurrences in the current browser page"""
         page = self.last_page()
         patt_count = page.count( patt )
         # The number of occurrences of patt in the page should be at least min_count
@@ -1104,15 +1162,15 @@ class TwillTestCase( unittest.TestCase ):
             fname = self.write_temp_file( page )
             errmsg = "%i occurrences of '%s' found instead of %i.\npage content written to '%s' " % ( min_count, patt, patt_count, fname )
             raise AssertionError( errmsg )
-            
+
     def check_string_not_in_page( self, patt ):
-        """Checks to make sure 'patt' is NOT in the page."""        
+        """Checks to make sure 'patt' is NOT in the page."""
         page = self.last_page()
         if page.find( patt ) != -1:
             fname = self.write_temp_file( page )
             errmsg = "string (%s) incorrectly displayed in page.\npage content written to '%s'" % ( patt, fname )
             raise AssertionError( errmsg )
-        
+
     def check_page(self, strings_displayed, strings_displayed_count, strings_not_displayed):
         """Checks a page for strings displayed, not displayed and number of occurrences of a string"""
         for check_str in strings_displayed:
@@ -1122,7 +1180,6 @@ class TwillTestCase( unittest.TestCase ):
         for check_str in strings_not_displayed:
             self.check_string_not_in_page( check_str )
 
-    
     def write_temp_file( self, content, suffix='.html' ):
         fd, fname = tempfile.mkstemp( suffix=suffix, prefix='twilltestcase-' )
         f = os.fdopen( fd, "w" )
@@ -1174,49 +1231,50 @@ class TwillTestCase( unittest.TestCase ):
         for i, control in enumerate( f.controls ):
             formcontrols.append( "control %d: %s" % ( i, str( control ) ) )
         for i, control in enumerate( f.controls ):
-           if not hc_prefix in str( control ):
-              try:
-                #check if a repeat element needs to be added
-                if control.name is not None:
-                    if control.name not in kwd and control.name.endswith( '_add' ):
-                        #control name doesn't exist, could be repeat
-                        repeat_startswith = control.name[0:-4]
-                        if repeat_startswith and not [ c_name for c_name in controls.keys() if c_name.startswith( repeat_startswith ) ] and [ c_name for c_name in kwd.keys() if c_name.startswith( repeat_startswith ) ]:
-                            tc.submit( control.name )
+            if not hc_prefix in str( control ):
+                try:
+                    #check if a repeat element needs to be added
+                    if control.name is not None:
+                        if control.name not in kwd and control.name.endswith( '_add' ):
+                            #control name doesn't exist, could be repeat
+                            repeat_startswith = control.name[0:-4]
+                            if repeat_startswith and not [ c_name for c_name in controls.keys() if c_name.startswith( repeat_startswith ) ] and [ c_name for c_name in kwd.keys() if c_name.startswith( repeat_startswith ) ]:
+                                tc.browser.clicked( f, control )
+                                tc.submit( control.name )
+                                return self.submit_form( form_no=form_no, button=button, **kwd )
+                    # Check for refresh_on_change attribute, submit a change if required
+                    if hasattr( control, 'attrs' ) and 'refresh_on_change' in control.attrs.keys():
+                        changed = False
+                        # For DataToolParameter, control.value is the HDA id, but kwd contains the filename.
+                        # This loop gets the filename/label for the selected values.
+                        item_labels = [ item.attrs[ 'label' ] for item in control.get_items() if item.selected ]
+                        for value in kwd[ control.name ]:
+                            if value not in control.value and True not in [ value in item_label for item_label in item_labels ]:
+                                changed = True
+                                break
+                        if changed:
+                            # Clear Control and set to proper value
+                            control.clear()
+                            # kwd[control.name] should be a singlelist
+                            for elem in kwd[ control.name ]:
+                                tc.fv( f.name, control.name, str( elem ) )
+                            # Create a new submit control, allows form to refresh, instead of going to next page
+                            control = ClientForm.SubmitControl( 'SubmitControl', '___refresh_grouping___', {'name': 'refresh_grouping'} )
+                            control.add_to_form( f )
+                            control.fixup()
+                            # Submit for refresh
+                            tc.submit( '___refresh_grouping___' )
                             return self.submit_form( form_no=form_no, button=button, **kwd )
-                # Check for refresh_on_change attribute, submit a change if required
-                if hasattr( control, 'attrs' ) and 'refresh_on_change' in control.attrs.keys():
-                    changed = False
-                    # For DataToolParameter, control.value is the HDA id, but kwd contains the filename. 
-                    # This loop gets the filename/label for the selected values.
-                    item_labels = [ item.attrs[ 'label' ] for item in control.get_items() if item.selected ] 
-                    for value in kwd[ control.name ]:
-                        if value not in control.value and True not in [ value in item_label for item_label in item_labels ]:
-                            changed = True
-                            break
-                    if changed:
-                        # Clear Control and set to proper value
-                        control.clear()
-                        # kwd[control.name] should be a singlelist
-                        for elem in kwd[ control.name ]:
-                            tc.fv( f.name, control.name, str( elem ) )
-                        # Create a new submit control, allows form to refresh, instead of going to next page
-                        control = ClientForm.SubmitControl( 'SubmitControl', '___refresh_grouping___', {'name':'refresh_grouping'} )
-                        control.add_to_form( f )
-                        control.fixup()
-                        # Submit for refresh
-                        tc.submit( '___refresh_grouping___' )
-                        return self.submit_form( form_no=form_no, button=button, **kwd )
-              except Exception, e:
-                log.exception( "In submit_form, continuing, but caught exception." )
-                for formcontrol in formcontrols:
-                    log.debug( formcontrol )
-                continue
-              controls[ control.name ] = control
+                except Exception:
+                    log.exception( "In submit_form, continuing, but caught exception." )
+                    for formcontrol in formcontrols:
+                        log.debug( formcontrol )
+                    continue
+                controls[ control.name ] = control
         # No refresh_on_change attribute found in current form, so process as usual
         for control_name, control_value in kwd.items():
             if control_name not in controls:
-                continue # these cannot be handled safely - cause the test to barf out
+                continue  # these cannot be handled safely - cause the test to barf out
             if not isinstance( control_value, list ):
                 control_value = [ control_value ]
             control = controls[ control_name ]
@@ -1245,8 +1303,16 @@ class TwillTestCase( unittest.TestCase ):
                                     control.get( name=elem ).selected = True
                         else:
                             for elem in control_value:
-                                control.get( name=elem ).selected = True
-                    else: # control.is_of_kind( "singlelist" )
+                                try:
+                                    # Doubt this case would ever work, but want
+                                    # to preserve backward compat.
+                                    control.get( name=elem ).selected = True
+                                except Exception:
+                                    # ... anyway this is really what we want to
+                                    # do, probably even want to try the len(
+                                    # elem ) > 30 check below.
+                                    control.get( label=elem ).selected = True
+                    else:  # control.is_of_kind( "singlelist" )
                         for elem in control_value:
                             try:
                                 tc.fv( f.name, control.name, str( elem ) )
@@ -1297,15 +1363,16 @@ class TwillTestCase( unittest.TestCase ):
             control.clear()
             tc.fv( f.name, control.name, value )
             # Create a new submit control, allows form to refresh, instead of going to next page
-            control = ClientForm.SubmitControl( 'SubmitControl', '___refresh_grouping___', {'name':'refresh_grouping'} )
+            control = ClientForm.SubmitControl( 'SubmitControl', '___refresh_grouping___', {'name': 'refresh_grouping'} )
             control.add_to_form( f )
             control.fixup()
             # Submit for refresh
             tc.submit( '___refresh_grouping___' )
+
     def visit_page( self, page ):
         # tc.go("./%s" % page)
         if not page.startswith( "/" ):
-            page = "/" + page 
+            page = "/" + page
         tc.go( self.url + page )
         tc.code( 200 )
 
@@ -1318,11 +1385,13 @@ class TwillTestCase( unittest.TestCase ):
         tool_id = tool_id.replace(" ", "+")
         """Runs the tool 'tool_id' and passes it the key/values from the *kwd"""
         self.visit_url( "%s/tool_runner/index?tool_id=%s" % (self.url, tool_id) )
+        # Must click somewhere in tool_form, to disambiguate what form
+        # is being targetted.
+        tc.browser.clicked( tc.browser.get_form( 'tool_form' ), None )
         if repeat_name is not None:
             repeat_button = '%s_add' % repeat_name
             # Submit the "repeat" form button to add an input)
             tc.submit( repeat_button )
-            print "button '%s' clicked" % repeat_button
         tc.find( 'runtool_btn' )
         self.submit_form( **kwd )
 
@@ -1333,9 +1402,9 @@ class TwillTestCase( unittest.TestCase ):
         galaxy_url = urllib.quote_plus( "%s/tool_runner/index?" % self.url )
         self.visit_url( "http://genome.ucsc.edu/cgi-bin/hgTables?GALAXY_URL=%s&hgta_compressType=none&tool_id=%s&%s" % ( galaxy_url, tool_id, track_string ) )
         tc.fv( "mainForm", "hgta_doTopSubmit", "get output" )
-        self.submit_form( button="get output" )#, **track_params )
+        self.submit_form( button="get output" )
         tc.fv( 2, "hgta_doGalaxyQuery", "Send query to Galaxy" )
-        self.submit_form( button="Send query to Galaxy" )#, **output_params ) #AssertionError: Attempting to set field 'fbQual' to value '['whole']' in form 'None' threw exception: no matching forms! control: <RadioControl(fbQual=[whole, upstreamAll, endAll])>
+        self.submit_form( button="Send query to Galaxy" )
 
     def get_running_datasets( self ):
         self.visit_url( '/api/histories' )
@@ -1349,28 +1418,32 @@ class TwillTestCase( unittest.TestCase ):
                 return True
         return False
 
-    def wait( self, maxseconds=120 ):
+    def wait( self, **kwds ):
         """Waits for the tools to finish"""
+        return self.wait_for(lambda: self.get_running_datasets(), **kwds)
+
+    def wait_for( self, func, **kwd ):
         sleep_amount = 0.1
         slept = 0
-        self.home()
-        while slept <= maxseconds:
-            if self.get_running_datasets():
+        walltime_exceeded = 86400
+        while slept <= walltime_exceeded:
+            result = func()
+            if result:
                 time.sleep( sleep_amount )
                 slept += sleep_amount
                 sleep_amount *= 2
-                if slept + sleep_amount > maxseconds:
-                    sleep_amount = maxseconds - slept # don't overshoot maxseconds
+                if slept + sleep_amount > walltime_exceeded:
+                    sleep_amount = walltime_exceeded - slept  # don't overshoot maxseconds
             else:
                 break
-        assert slept < maxseconds
+        assert slept < walltime_exceeded, 'Tool run exceeded reasonable walltime of 24 hours, terminating.'
 
     # Dataset Security stuff
     # Tests associated with users
     def create_new_account_as_admin( self, email='test4@bx.psu.edu', password='testuser',
                                      username='regular-user4', redirect='' ):
         """Create a new account for another user"""
-        # HACK: don't use panels because late_javascripts() messes up the twill browser and it 
+        # HACK: don't use panels because late_javascripts() messes up the twill browser and it
         # can't find form fields (and hence user can't be logged in).
         self.visit_url( "%s/user/create?cntrller=admin" % self.url )
         self.submit_form( 1, 'create_user_button', email=email, redirect=redirect, password=password, confirm=password, username=username )
@@ -1406,6 +1479,7 @@ class TwillTestCase( unittest.TestCase ):
         tc.submit( "reset_user_password_button" )
         self.check_page_for_string( "Passwords reset for 1 user." )
         self.home()
+
     def mark_user_deleted( self, user_id, email='' ):
         """Mark a user as deleted"""
         self.home()
@@ -1413,6 +1487,7 @@ class TwillTestCase( unittest.TestCase ):
         check_str = "Deleted 1 users"
         self.check_page_for_string( check_str )
         self.home()
+
     def undelete_user( self, user_id, email='' ):
         """Undelete a user"""
         self.home()
@@ -1420,6 +1495,7 @@ class TwillTestCase( unittest.TestCase ):
         check_str = "Undeleted 1 users"
         self.check_page_for_string( check_str )
         self.home()
+
     def purge_user( self, user_id, email ):
         """Purge a user account"""
         self.home()
@@ -1427,6 +1503,7 @@ class TwillTestCase( unittest.TestCase ):
         check_str = "Purged 1 users"
         self.check_page_for_string( check_str )
         self.home()
+
     def manage_roles_and_groups_for_user( self, user_id, in_role_ids=[], out_role_ids=[],
                                           in_group_ids=[], out_group_ids=[], strings_displayed=[] ):
         self.home()
@@ -1445,12 +1522,13 @@ class TwillTestCase( unittest.TestCase ):
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
         self.home()
-
     # Tests associated with roles
+
     def browse_roles( self, strings_displayed=[] ):
         self.visit_url( '%s/admin/roles' % self.url )
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
+
     def create_role( self,
                      name='Role One',
                      description="This is Role One",
@@ -1485,6 +1563,7 @@ class TwillTestCase( unittest.TestCase ):
         self.visit_url( "%s/admin/roles" % self.url )
         self.check_page_for_string( name )
         self.home()
+
     def rename_role( self, role_id, name='Role One Renamed', description='This is Role One Re-described' ):
         """Rename a role"""
         self.home()
@@ -1494,6 +1573,7 @@ class TwillTestCase( unittest.TestCase ):
         tc.fv( "1", "description", description )
         tc.submit( "rename_role_button" )
         self.home()
+
     def mark_role_deleted( self, role_id, role_name ):
         """Mark a role as deleted"""
         self.home()
@@ -1501,6 +1581,7 @@ class TwillTestCase( unittest.TestCase ):
         check_str = "Deleted 1 roles:  %s" % role_name
         self.check_page_for_string( check_str )
         self.home()
+
     def undelete_role( self, role_id, role_name ):
         """Undelete an existing role"""
         self.home()
@@ -1508,6 +1589,7 @@ class TwillTestCase( unittest.TestCase ):
         check_str = "Undeleted 1 roles:  %s" % role_name
         self.check_page_for_string( check_str )
         self.home()
+
     def purge_role( self, role_id, role_name ):
         """Purge an existing role"""
         self.home()
@@ -1515,6 +1597,7 @@ class TwillTestCase( unittest.TestCase ):
         check_str = "Purged 1 roles:  %s" % role_name
         self.check_page_for_string( check_str )
         self.home()
+
     def associate_users_and_groups_with_role( self, role_id, role_name, user_ids=[], group_ids=[] ):
         self.home()
         url = "%s/admin/role?id=%s&role_members_edit_button=Save" % ( self.url, role_id )
@@ -1545,10 +1628,12 @@ class TwillTestCase( unittest.TestCase ):
         self.visit_url( "%s/admin/groups" % self.url )
         self.check_page_for_string( name )
         self.home()
+
     def browse_groups( self, strings_displayed=[] ):
         self.visit_url( '%s/admin/groups' % self.url )
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
+
     def rename_group( self, group_id, name='Group One Renamed' ):
         """Rename a group"""
         self.home()
@@ -1557,6 +1642,7 @@ class TwillTestCase( unittest.TestCase ):
         tc.fv( "1", "name", name )
         tc.submit( "rename_group_button" )
         self.home()
+
     def associate_users_and_roles_with_group( self, group_id, group_name, user_ids=[], role_ids=[] ):
         self.home()
         url = "%s/admin/manage_users_and_roles_for_group?id=%s&group_roles_users_edit_button=Save" % ( self.url, group_id )
@@ -1568,6 +1654,7 @@ class TwillTestCase( unittest.TestCase ):
         check_str = "Group '%s' has been updated with %d associated roles and %d associated users" % ( group_name, len( role_ids ), len( user_ids ) )
         self.check_page_for_string( check_str )
         self.home()
+
     def mark_group_deleted( self, group_id, group_name ):
         """Mark a group as deleted"""
         self.home()
@@ -1575,6 +1662,7 @@ class TwillTestCase( unittest.TestCase ):
         check_str = "Deleted 1 groups:  %s" % group_name
         self.check_page_for_string( check_str )
         self.home()
+
     def undelete_group( self, group_id, group_name ):
         """Undelete an existing group"""
         self.home()
@@ -1582,6 +1670,7 @@ class TwillTestCase( unittest.TestCase ):
         check_str = "Undeleted 1 groups:  %s" % group_name
         self.check_page_for_string( check_str )
         self.home()
+
     def purge_group( self, group_id, group_name ):
         """Purge an existing group"""
         self.home()
@@ -1625,7 +1714,7 @@ class TwillTestCase( unittest.TestCase ):
                 if num_options == 0:
                     # Default to 2 options
                     num_options = 2
-                for index2 in range( 1, num_options+1 ):
+                for index2 in range( 1, num_options + 1 ):
                     tc.submit( "addoption_0" )
                 # Add contents to the new options fields
                 for index2 in range( num_options ):
@@ -1641,6 +1730,7 @@ class TwillTestCase( unittest.TestCase ):
         for check_str in strings_displayed_after_submit:
             self.check_page_for_string( check_str )
         self.home()
+
     def edit_form( self, id, form_type='', new_form_name='', new_form_desc='', field_dicts=[], field_index=0,
                    strings_displayed=[], strings_not_displayed=[], strings_displayed_after_submit=[] ):
         """Edit form details; name and description"""
@@ -1768,10 +1858,10 @@ class TwillTestCase( unittest.TestCase ):
         url = "request_type/request_type_permissions?id=%s&update_roles_button=Save" % ( request_type_id )
         for po in permissions_out:
             key = '%s_out' % po
-            url ="%s&%s=%s" % ( url, key, role_ids_str )
+            url = "%s&%s=%s" % ( url, key, role_ids_str )
         for pi in permissions_in:
             key = '%s_in' % pi
-            url ="%s&%s=%s" % ( url, key, role_ids_str )
+            url = "%s&%s=%s" % ( url, key, role_ids_str )
         self.home()
         self.visit_url( "%s/%s" % ( self.url, url ) )
         check_str = "Permissions updated for request type '%s'" % request_type_name
@@ -2077,7 +2167,7 @@ class TwillTestCase( unittest.TestCase ):
         for check_str in strings_not_displayed:
             try:
                 self.check_page_for_string( check_str )
-                raise AssertionError, "String (%s) incorrectly displayed when browing library." % check_str
+                raise AssertionError( "String (%s) incorrectly displayed when browing library." % check_str )
             except:
                 pass
     def browse_libraries_regular_user( self, strings_displayed=[], strings_not_displayed=[] ):
@@ -2087,7 +2177,7 @@ class TwillTestCase( unittest.TestCase ):
         for check_str in strings_not_displayed:
             try:
                 self.check_page_for_string( check_str )
-                raise AssertionError, "String (%s) incorrectly displayed when browing library." % check_str
+                raise AssertionError( "String (%s) incorrectly displayed when browing library." % check_str )
             except:
                 pass
     def browse_library( self, cntrller, library_id, show_deleted=False, strings_displayed=[], strings_not_displayed=[] ):
@@ -2097,7 +2187,7 @@ class TwillTestCase( unittest.TestCase ):
         for check_str in strings_not_displayed:
             try:
                 self.check_page_for_string( check_str )
-                raise AssertionError, "String (%s) incorrectly displayed when browing library." % check_str
+                raise AssertionError( "String (%s) incorrectly displayed when browing library." % check_str )
             except:
                 pass
     def create_library( self, name='Library One', description='This is Library One', synopsis='Synopsis for Library One' ):
@@ -2153,10 +2243,10 @@ class TwillTestCase( unittest.TestCase ):
         url = "library_common/library_permissions?id=%s&cntrller=%s&update_roles_button=Save" % ( library_id, cntrller )
         for po in permissions_out:
             key = '%s_out' % po
-            url ="%s&%s=%s" % ( url, key, role_ids_str )
+            url = "%s&%s=%s" % ( url, key, role_ids_str )
         for pi in permissions_in:
             key = '%s_in' % pi
-            url ="%s&%s=%s" % ( url, key, role_ids_str )
+            url = "%s&%s=%s" % ( url, key, role_ids_str )
         self.home()
         self.visit_url( "%s/%s" % ( self.url, url ) )
         check_str = "Permissions updated for library '%s'." % library_name
@@ -2205,7 +2295,7 @@ class TwillTestCase( unittest.TestCase ):
         for check_str in strings_not_displayed:
             try:
                 self.check_page_for_string( check_str )
-                raise AssertionError, "String (%s) incorrectly displayed." % check_str
+                raise AssertionError( "String (%s) incorrectly displayed." % check_str )
             except:
                 pass
         if template_refresh_field_contents:
@@ -2224,7 +2314,7 @@ class TwillTestCase( unittest.TestCase ):
         for check_str in strings_not_displayed_after_submit:
             try:
                 self.check_page_for_string( check_str )
-                raise AssertionError, "String (%s) incorrectly displayed." % check_str
+                raise AssertionError( "String (%s) incorrectly displayed." % check_str )
             except:
                 pass
         self.home()
@@ -2298,10 +2388,10 @@ class TwillTestCase( unittest.TestCase ):
             ( self.url, cntrller, library_id, folder_id, id )
         for po in permissions_out:
             key = '%s_out' % po
-            url ="%s&%s=%s" % ( url, key, role_ids_str )
+            url = "%s&%s=%s" % ( url, key, role_ids_str )
         for pi in permissions_in:
             key = '%s_in' % pi
-            url ="%s&%s=%s" % ( url, key, role_ids_str )
+            url = "%s&%s=%s" % ( url, key, role_ids_str )
         if permissions_in or permissions_out:
             url += "&update_roles_button=Save"
             self.visit_url( url )
@@ -2319,7 +2409,7 @@ class TwillTestCase( unittest.TestCase ):
         for check_str in strings_not_displayed:
             try:
                 self.check_page_for_string( check_str )
-                raise AssertionError, "String (%s) should not have been displayed on ldda info page." % check_str
+                raise AssertionError( "String (%s) should not have been displayed on ldda info page." % check_str )
             except:
                 pass
         self.home()
@@ -2351,7 +2441,7 @@ class TwillTestCase( unittest.TestCase ):
         for check_str in strings_not_displayed:
             try:
                 self.check_page_for_string( check_str )
-                raise AssertionError, "String (%s) should not have been displayed on ldda Edit Attributes page." % check_str
+                raise AssertionError( "String (%s) should not have been displayed on ldda Edit Attributes page." % check_str )
             except:
                 pass
         self.home()

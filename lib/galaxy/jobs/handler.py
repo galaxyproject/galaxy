@@ -11,7 +11,8 @@ from Queue import Queue, Empty
 from sqlalchemy.sql.expression import and_, or_, select, func
 
 from galaxy import model
-from galaxy.jobs import Sleeper, JobWrapper, TaskWrapper, JobDestination
+from galaxy.util.sleeper import Sleeper
+from galaxy.jobs import JobWrapper, TaskWrapper, JobDestination
 
 log = logging.getLogger( __name__ )
 
@@ -106,7 +107,7 @@ class JobHandlerQueue( object ):
             if job.tool_id not in self.app.toolbox.tools_by_id:
                 log.warning( "(%s) Tool '%s' removed from tool config, unable to recover job" % ( job.id, job.tool_id ) )
                 JobWrapper( job, self ).fail( 'This tool was disabled before the job completed.  Please contact your Galaxy administrator.' )
-            if job.job_runner_name is not None and job.job_runner_external_id is None:
+            elif job.job_runner_name is not None and job.job_runner_external_id is None:
                 # This could happen during certain revisions of Galaxy where a runner URL was persisted before the job was dispatched to a runner.
                 log.debug( "(%s) Job runner assigned but no external ID recorded, adding to the job handler queue" % job.id )
                 job.job_runner_name = None
@@ -564,7 +565,7 @@ class JobHandlerStopQueue( object ):
 class DefaultJobDispatcher( object ):
     def __init__( self, app ):
         self.app = app
-        self.job_runners = self.app.job_config.get_job_runner_plugins()
+        self.job_runners = self.app.job_config.get_job_runner_plugins( self.app.config.server_name )
         # Once plugins are loaded, all job destinations that were created from
         # URLs can have their URL params converted to the destination's param
         # dict by the plugin.

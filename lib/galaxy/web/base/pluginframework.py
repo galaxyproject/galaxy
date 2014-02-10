@@ -62,7 +62,7 @@ class PluginManager( object ):
         :param  skip_bad_plugins:    whether to skip plugins that cause
             exceptions when loaded or to raise that exception
         """
-        log.debug( 'PluginManager.init: %s, %s', directories_setting, kwargs )
+        #log.debug( 'PluginManager.init: %s, %s', directories_setting, kwargs )
         self.directories = []
         self.skip_bad_plugins = skip_bad_plugins
         self.plugins = odict.odict()
@@ -119,7 +119,7 @@ class PluginManager( object ):
             try:
                 plugin = self.load_plugin( plugin_path )
                 if not plugin:
-                    log.warn( '%s, plugin load failed: %s. Skipping...', self, plugin_path )
+                    log.warn( '%s, plugin load failed or disabled: %s. Skipping...', self, plugin_path )
                 #NOTE: prevent silent, implicit overwrite here (two plugins in two diff directories)
                 #TODO: overwriting may be desired
                 elif plugin.name in self.plugins:
@@ -146,7 +146,7 @@ class PluginManager( object ):
         # due to the ordering of listdir, there is an implicit plugin loading order here
         # could instead explicitly list on/off in master config file
         for directory in self.directories:
-            for plugin_dir in os.listdir( directory ):
+            for plugin_dir in sorted( os.listdir( directory ) ):
                 plugin_path = os.path.join( directory, plugin_dir )
                 if self.is_plugin( plugin_path ):
                     yield plugin_path
@@ -374,6 +374,8 @@ class PageServingPluginManager( PluginManager ):
     DEFAULT_TEMPLATE_COLLECTION_SIZE = 10
     #: default encoding of plugin templates
     DEFAULT_TEMPLATE_ENCODING = 'utf-8'
+    #: name of files to search for additional template lookup directories
+    additional_template_paths_config_filename = 'additional_template_paths.xml'
 
     def __init__( self, app, base_url, template_cache_dir=None, **kwargs ):
         """
@@ -389,8 +391,41 @@ class PageServingPluginManager( PluginManager ):
         """
         self.base_url = base_url
         self.template_cache_dir = template_cache_dir
+        self.additional_template_paths = []
 
         super( PageServingPluginManager, self ).__init__( app, **kwargs )
+
+    def load_configuration( self ):
+        """
+        Load framework wide configuration, including:
+            additional template lookup directories
+        """
+        for directory in self.directories:
+            possible_path = os.path.join( directory, self.additional_template_paths_config_filename )
+            if os.path.exists( possible_path ):
+                added_paths = self.parse_additional_template_paths( possible_path, directory )
+                self.additional_template_paths.extend( added_paths )
+
+    def parse_additional_template_paths( self, config_filepath, base_directory ):
+        """
+        Parse an XML config file at `config_filepath` for template paths
+        (relative to `base_directory`) to add to each plugin's template lookup.
+
+        Allows having a set of common templates for import/inheritance in
+        plugin templates.
+
+        :type   config_filepath:    string
+        :param  config_filepath:    filesystem path to the config file
+        :type   base_directory:     string
+        :param  base_directory:     path prefixed to new, relative template paths
+        """
+        additional_paths = []
+        xml_tree = util.parse_xml( config_filepath )
+        paths_list = xml_tree.getroot()
+        for rel_path_elem in paths_list.findall( 'path' ):
+            if rel_path_elem.text is not None:
+                additional_paths.append( os.path.join( base_directory, rel_path_elem.text ) )
+        return additional_paths
 
     def is_plugin( self, plugin_path ):
         """
@@ -518,7 +553,11 @@ class PageServingPluginManager( PluginManager ):
         """
         if not plugin.serves_templates:
             return None
-        template_lookup = self._create_mako_template_lookup( self.template_cache_dir, plugin.template_path )
+        template_lookup_paths = plugin.template_path
+        if self.additional_template_paths:
+            template_lookup_paths = [ template_lookup_paths ] + self.additional_template_paths
+        #log.debug( 'template_lookup_paths: %s', template_lookup_paths )
+        template_lookup = self._create_mako_template_lookup( self.template_cache_dir, template_lookup_paths )
         return template_lookup
 
     def _create_mako_template_lookup( self, cache_dir, paths,

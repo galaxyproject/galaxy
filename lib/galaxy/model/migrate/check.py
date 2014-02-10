@@ -57,7 +57,7 @@ def create_or_verify_database( url, galaxy_config_file, engine_options={}, app=N
         migrate_to_current_version( engine, db_schema )
 
     meta = MetaData( bind=engine )
-    if getattr( app.config, 'database_auto_migrate', False ):
+    if app and getattr( app.config, 'database_auto_migrate', False ):
         migrate()
         return
 

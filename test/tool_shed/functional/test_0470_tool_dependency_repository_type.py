@@ -1,5 +1,4 @@
 from tool_shed.base.twilltestcase import ShedTwillTestCase, common, os
-import tool_shed.base.test_db_util as test_db_util
 
 import logging
 log = logging.getLogger( __name__ )
@@ -50,6 +49,7 @@ emboss_repository_long_description = "Galaxy wrappers for Emboss version 5.0.0 t
 10. Reset metadata on the emboss_5 repository. It should now have only it's tip as the installable revision.
 '''
 
+
 class TestEnvironmentInheritance( ShedTwillTestCase ):
     '''Test referencing environment variables that were defined in a separate tool dependency.'''
     
@@ -57,20 +57,20 @@ class TestEnvironmentInheritance( ShedTwillTestCase ):
         """Create necessary user accounts and login as an admin user."""
         self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
-        admin_user = test_db_util.get_user( common.admin_email )
+        admin_user = self.test_db_util.get_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
-        admin_user_private_role = test_db_util.get_private_role( admin_user )
+        admin_user_private_role = self.test_db_util.get_private_role( admin_user )
         self.create_category( name=category_name, description=category_description )
         self.logout()
         self.login( email=common.test_user_2_email, username=common.test_user_2_name )
-        test_user_2 = test_db_util.get_user( common.test_user_2_email )
+        test_user_2 = self.test_db_util.get_user( common.test_user_2_email )
         assert test_user_2 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_2_email
-        test_user_2_private_role = test_db_util.get_private_role( test_user_2 )
+        test_user_2_private_role = self.test_db_util.get_private_role( test_user_2 )
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        test_user_1 = test_db_util.get_user( common.test_user_1_email )
+        test_user_1 = self.test_db_util.get_user( common.test_user_1_email )
         assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_1_email
-        test_user_1_private_role = test_db_util.get_private_role( test_user_1 )
+        test_user_1_private_role = self.test_db_util.get_private_role( test_user_1 )
         
     def test_0005_create_libx11_repository( self ):
         '''Create and populate package_x11_client_1_5_proto_7_0_0470.'''
@@ -80,7 +80,7 @@ class TestEnvironmentInheritance( ShedTwillTestCase ):
         Create and populate a repository named package_x11_client_1_5_proto_7_0 that contains only a single file named tool_dependencies.xml.
         Keep the repository type as the default "Unrestricted".
         '''
-        category = test_db_util.get_category_by_name( category_name )
+        category = self.test_db_util.get_category_by_name( category_name )
         repository = self.get_or_create_repository( name=package_libx11_repository_name, 
                                                     description=package_libx11_repository_description, 
                                                     long_description=package_libx11_repository_long_description, 
@@ -107,7 +107,7 @@ class TestEnvironmentInheritance( ShedTwillTestCase ):
         above package_x11_client_1_5_proto_7_0 repository. Upload the tool_dependencues.xml file such that it does not have a changeset_revision
         defined so it will get automatically populated.
         '''
-        category = test_db_util.get_category_by_name( category_name )
+        category = self.test_db_util.get_category_by_name( category_name )
         repository = self.get_or_create_repository( name=package_emboss_repository_name, 
                                                     description=package_emboss_repository_description, 
                                                     long_description=package_emboss_repository_long_description, 
@@ -134,7 +134,7 @@ class TestEnvironmentInheritance( ShedTwillTestCase ):
         on the package_emboss_5_0_0 repository above. Upload the tool_dependencies.xml file such that it does not have a change set_revision defined 
         so it will get automatically populated.
         '''
-        category = test_db_util.get_category_by_name( category_name )
+        category = self.test_db_util.get_category_by_name( category_name )
         repository = self.get_or_create_repository( name=emboss_repository_name, 
                                                     description=emboss_repository_description, 
                                                     long_description=emboss_repository_long_description, 
@@ -158,7 +158,7 @@ class TestEnvironmentInheritance( ShedTwillTestCase ):
         This is step 4 - Add a comment to the tool_dependencies.xml file to be uploaded to the package_x11_client_1_5_prot_7_0 repository, creating
         a new installable changeset revision at the repository tip.
         '''
-        package_x11_repository = test_db_util.get_repository_by_name_and_owner( package_libx11_repository_name, common.test_user_1_name )
+        package_x11_repository = self.test_db_util.get_repository_by_name_and_owner( package_libx11_repository_name, common.test_user_1_name )
         # Upload the tool dependency definition to the package_x11_client_1_5_proto_7_0_0470 repository.
         self.upload_file( package_x11_repository, 
                           filename='emboss/libx11_proto/second_tool_dependency/tool_dependencies.xml', 
@@ -178,7 +178,7 @@ class TestEnvironmentInheritance( ShedTwillTestCase ):
         the change set_revision attribute so that it gets automatically populated when uploaded. After uploading the file,
         the package_emboss_5_0_0 repository should have 2 installable changeset revisions.
         '''
-        package_emboss_repository = test_db_util.get_repository_by_name_and_owner( package_emboss_repository_name, common.test_user_1_name )
+        package_emboss_repository = self.test_db_util.get_repository_by_name_and_owner( package_emboss_repository_name, common.test_user_1_name )
         # Populate package_emboss_5_0_0_0470 with updated tool dependency definition.
         self.upload_file( package_emboss_repository, 
                           filename='emboss/emboss_5_0_0/second_tool_dependency/tool_dependencies.xml', 
@@ -198,7 +198,7 @@ class TestEnvironmentInheritance( ShedTwillTestCase ):
         changeset_revision attribute so that it gets automatically populated when uploaded. After uploading the file,
         the emboss5 repository should have 2 installable metadata revisions.
         '''
-        emboss_repository = test_db_util.get_repository_by_name_and_owner( emboss_repository_name, common.test_user_1_name )
+        emboss_repository = self.test_db_util.get_repository_by_name_and_owner( emboss_repository_name, common.test_user_1_name )
         # Populate package_emboss_5_0_0_0470 with updated tool dependency definition.
         self.upload_file( emboss_repository, 
                           filename='emboss/0470_files/tool_dependencies.xml', 
@@ -216,7 +216,7 @@ class TestEnvironmentInheritance( ShedTwillTestCase ):
         '''
         This is step 7 - Change the repository type of the package_x11_client_1_5_proto_7_0 repository to be tool_dependency_definition.
         '''
-        package_x11_repository = test_db_util.get_repository_by_name_and_owner( package_libx11_repository_name, common.test_user_1_name )
+        package_x11_repository = self.test_db_util.get_repository_by_name_and_owner( package_libx11_repository_name, common.test_user_1_name )
         self.edit_repository_information( package_x11_repository, repository_type='tool_dependency_definition' )
         
     def test_0040_modify_package_emboss_repository_type( self ):
@@ -224,7 +224,7 @@ class TestEnvironmentInheritance( ShedTwillTestCase ):
         '''
         This is step 8 - Change the repository type of the package_emboss_5_0_0 repository to be tool_dependency_definition.
         '''
-        package_emboss_repository = test_db_util.get_repository_by_name_and_owner( package_emboss_repository_name, common.test_user_1_name )
+        package_emboss_repository = self.test_db_util.get_repository_by_name_and_owner( package_emboss_repository_name, common.test_user_1_name )
         self.edit_repository_information( package_emboss_repository, repository_type='tool_dependency_definition' )
         
     def test_0045_reset_repository_metadata( self ):
@@ -233,8 +233,8 @@ class TestEnvironmentInheritance( ShedTwillTestCase ):
         This is step 9 - Reset metadata on the package_emboss_5_0_0 and package_x11_client_1_5_proto_7_0 repositories. They should
         now have only their tip as the installable revision.
         '''
-        package_emboss_repository = test_db_util.get_repository_by_name_and_owner( package_emboss_repository_name, common.test_user_1_name )
-        package_x11_repository = test_db_util.get_repository_by_name_and_owner( package_libx11_repository_name, common.test_user_1_name )
+        package_emboss_repository = self.test_db_util.get_repository_by_name_and_owner( package_emboss_repository_name, common.test_user_1_name )
+        package_x11_repository = self.test_db_util.get_repository_by_name_and_owner( package_libx11_repository_name, common.test_user_1_name )
         self.reset_repository_metadata( package_emboss_repository )
         self.reset_repository_metadata( package_x11_repository )
         assert len( package_emboss_repository.metadata_revisions ) == 1, 'Repository package_emboss_5_0_0 has %d installable revisions, expected 1.' % \
@@ -247,7 +247,7 @@ class TestEnvironmentInheritance( ShedTwillTestCase ):
         '''
         This is step 10 - Reset metadata on the emboss_5 repository. It should now have only it's tip as the installable revision.
         '''
-        emboss_repository = test_db_util.get_repository_by_name_and_owner( emboss_repository_name, common.test_user_1_name )
+        emboss_repository = self.test_db_util.get_repository_by_name_and_owner( emboss_repository_name, common.test_user_1_name )
         self.reset_repository_metadata( emboss_repository )
         assert len( emboss_repository.metadata_revisions ) == 1, 'Repository emboss_5 has %d installable revisions, expected 1.' % \
             len( emboss_repository.metadata_revisions )

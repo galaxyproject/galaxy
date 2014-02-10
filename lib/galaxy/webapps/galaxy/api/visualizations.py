@@ -10,7 +10,7 @@ pkg_resources.require( 'SQLAlchemy >= 0.4' )
 from sqlalchemy import or_
 
 from galaxy import web, util
-from galaxy.web.base.controller import BaseAPIController, UsesVisualizationMixin
+from galaxy.web.base.controller import BaseAPIController, UsesVisualizationMixin, SharableMixin
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.exceptions import ( ItemAccessibilityException, ItemDeletionException, ItemOwnershipException,
                                 MessageException )
@@ -20,7 +20,7 @@ from galaxy.web import url_for
 import logging
 log = logging.getLogger( __name__ )
 
-class VisualizationsController( BaseAPIController, UsesVisualizationMixin, UsesAnnotations ):
+class VisualizationsController( BaseAPIController, UsesVisualizationMixin, SharableMixin, UsesAnnotations ):
     """
     RESTful controller for interactions with visualizations.
     """
@@ -122,9 +122,10 @@ class VisualizationsController( BaseAPIController, UsesVisualizationMixin, UsesA
 
             else:
                 payload = self._validate_and_parse_payload( payload )
+                vis_type = payload.pop( 'type', False )
                 payload[ 'save' ] = True
-                # create needs defaults like wizard needs food - generate defaults - this will err if given a weird key?
-                visualization = self.create_visualization( trans, **payload )
+                # generate defaults - this will err if given a weird key?
+                visualization = self.create_visualization( trans, vis_type, **payload )
 
             rval = { 'id' : trans.security.encode_id( visualization.id ) }
 
@@ -175,8 +176,11 @@ class VisualizationsController( BaseAPIController, UsesVisualizationMixin, UsesA
             or  ( dbkey != visualization.latest_revision.dbkey )
             or  ( util.json.to_json_string( config ) != util.json.to_json_string( latest_config ) ) ):
                 revision = self.add_visualization_revision( trans, visualization, config, title, dbkey )
-                #TODO: need to somehow get what changed here?
-                rval = { 'id' : revision.id }
+                rval = { 'id' : id, 'revision' : revision.id }
+
+            #TODO: allow updating vis title & slug
+            #visualization.title = title
+            #trans.sa_session.flush()
 
         except ( ItemAccessibilityException, ItemDeletionException ), exception:
             trans.response.status = 403
@@ -217,11 +221,20 @@ class VisualizationsController( BaseAPIController, UsesVisualizationMixin, UsesA
         #TODO: deleted
         #TODO: importable
 
+        # must have a type (I've taken this to be the visualization name)
+        if 'type' not in payload:
+            raise ValueError( "key/value 'type' is required" )
+
         validated_payload = {}
         for key, val in payload.items():
-            if   key == 'config':
+            #TODO: validate types in VALID_TYPES/registry names at the mixin/model level?
+            if  key == 'type':
+                if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
+                    raise ValueError( '%s must be a string or unicode: %s' %( key, str( type( val ) ) ) )
+                val = util.sanitize_html.sanitize_html( val, 'utf-8' )
+            elif key == 'config':
                 if not isinstance( val, dict ):
-                    raise ValueError( '%s must be a dictionary (JSON): %s' %( key, str( type( val ) ) ) )
+                    raise ValueError( '%s must be a dictionary: %s' %( key, str( type( val ) ) ) )
 
             elif key == 'annotation':
                 if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
@@ -235,21 +248,16 @@ class VisualizationsController( BaseAPIController, UsesVisualizationMixin, UsesA
                     raise ValueError( '%s must be a string or unicode: %s' %( key, str( type( val ) ) ) )
                 val = util.sanitize_html.sanitize_html( val, 'utf-8' )
             elif key == 'slug':
-                if not isinstance( val, str ):
+                if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
                     raise ValueError( '%s must be a string: %s' %( key, str( type( val ) ) ) )
                 val = util.sanitize_html.sanitize_html( val, 'utf-8' )
-            elif key == 'type':
-                if not isinstance( val, str ):
-                    raise ValueError( '%s must be a string: %s' %( key, str( type( val ) ) ) )
-                val = util.sanitize_html.sanitize_html( val, 'utf-8' )
-                #TODO: validate types in VALID_TYPES/registry names at the mixin/model level?
             elif key == 'dbkey':
                 if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
                     raise ValueError( '%s must be a string or unicode: %s' %( key, str( type( val ) ) ) )
                 val = util.sanitize_html.sanitize_html( val, 'utf-8' )
 
-            elif key not in valid_but_uneditable_keys:
-                raise AttributeError( 'unknown key: %s' %( str( key ) ) )
+            #elif key not in valid_but_uneditable_keys:
+            #    raise AttributeError( 'unknown key: %s' %( str( key ) ) )
 
             validated_payload[ key ] = val
         return validated_payload

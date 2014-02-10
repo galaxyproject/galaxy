@@ -7,10 +7,11 @@ usage: %prog input size out_file
    -l, --cols=N,N,N,N: Columns for chrom, start, end, strand in file
 """
 
-import sys, re, os
+import sys
 
 from galaxy import eggs
-import pkg_resources; pkg_resources.require( "bx-python" )
+import pkg_resources
+pkg_resources.require( "bx-python" )
 from bx.cookbook import doc_optparse
 from galaxy.tools.util.galaxyops import *
 
@@ -18,7 +19,8 @@ def stop_err( msg ):
     sys.stderr.write( msg )
     sys.exit()
 
-def main():   
+
+def main():
     # Parsing Command Line here
     options, args = doc_optparse.parse( __doc__ )
     
@@ -28,8 +30,6 @@ def main():
         winsize = int(winsize)
         offset = int(offset)
         makesliding = int(makesliding)
-        if strand_col_1 <= 0:
-            strand = "+"        #if strand is not defined, default it to +
     except:
         stop_err( "Data issue, click the pencil icon in the history item to correct the metadata attributes of the input dataset." )
     
@@ -46,8 +46,6 @@ def main():
         if line and line[0:1] != "#":
             try:
                 elems = line.split('\t')
-                if strand_col_1 != -1:
-                    strand = elems[strand_col_1]
                 start = int(elems[start_col_1])
                 end = int(elems[end_col_1])
                 if makesliding == 0:
@@ -74,12 +72,13 @@ def main():
     
     fo.close()
 
-    if makesliding == 1:                
-        print 'Window size=%d, Sliding=Yes, Offset=%d' %(winsize, offset)
+    if makesliding == 1:
+        print 'Window size=%d, Sliding=Yes, Offset=%d' % ( winsize, offset )
     else:
-        print 'Window size=%d, Sliding=No' %(winsize)
+        print 'Window size=%d, Sliding=No' % (winsize)
     if skipped_lines > 0:
-        print 'Skipped %d invalid lines starting with #%d: "%s"' % ( skipped_lines, first_invalid_line, invalid_line )             
-    
+        print 'Skipped %d invalid lines starting with #%d: "%s"' % ( skipped_lines, first_invalid_line, invalid_line )
+
+
 if __name__ == "__main__":
     main()

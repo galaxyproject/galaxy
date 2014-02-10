@@ -78,7 +78,7 @@ class FilteredLineDataProvider( base.LimitedOffsetDataProvider ):
                 line = line.strip( '\n' )
             if not self.provide_blank and line == '':
                 return None
-            elif line.startswith( self.comment_char ):
+            elif self.comment_char and line.startswith( self.comment_char ):
                 return None
 
         return super( FilteredLineDataProvider, self ).filter( line )
@@ -94,7 +94,7 @@ class RegexLineDataProvider( FilteredLineDataProvider ):
     the line it is considered valid and will be provided).
     """
     settings = {
-        'regex_list'    : 'list:str',
+        'regex_list'    : 'list:escaped',
         'invert'        : 'bool',
     }
 

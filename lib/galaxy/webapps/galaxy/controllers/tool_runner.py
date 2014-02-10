@@ -6,6 +6,7 @@ import logging
 import galaxy.util
 from galaxy import web
 from galaxy.tools import DefaultToolState
+from galaxy.tools import DataSourceTool
 from galaxy.tools.actions import upload_common
 from galaxy.tools.parameters import params_to_incoming
 from galaxy.tools.parameters import visit_input_values
@@ -232,6 +233,35 @@ class ToolRunner( BaseUIController ):
                                     tool_id_version_message=tool_id_version_message,
                                     **vars )
 
+    @web.expose
+    def data_source_redirect( self, trans, tool_id=None ):
+        """
+        Redirects a user accessing a Data Source tool to its target action link.
+        This method will subvert mix-mode content blocking in several browsers when
+        accessing non-https data_source tools from an https galaxy server.
+        
+        Tested as working on Safari 7.0 and FireFox 26
+        Subverting did not work on Chrome 31
+        """
+        if tool_id is None:
+            return trans.response.send_redirect( url_for( controller="root", action="welcome" ) )
+        tool_version_select_field, tools, tool = self.__get_tool_components( tool_id,
+                                                                             tool_version=None,
+                                                                             get_loaded_tools_by_lineage=False,
+                                                                             set_selected=False )
+        # No tool matching the tool id, display an error (shouldn't happen)
+        if not tool:
+            log.error( "data_source_redirect called with tool id '%s' but no such tool exists", tool_id )
+            trans.log_event( "Tool id '%s' does not exist" % tool_id )
+            trans.response.status = 404
+            return "Tool '%s' does not exist, kwd=%s " % ( tool_id, kwd )
+        
+        if isinstance( tool, DataSourceTool ):
+            link = url_for( tool.action, **tool.get_static_param_values( trans ) )
+        else:
+            link = url_for( controller='tool_runner', tool_id=tool.id )
+        return trans.response.send_redirect( link )
+    
     @web.expose
     def redirect( self, trans, redirect_url=None, **kwd ):
         if not redirect_url:

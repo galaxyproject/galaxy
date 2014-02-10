@@ -6,9 +6,10 @@ module.exports = function(grunt) {
         pkg: grunt.file.readJSON( 'package.json' ),
 
         handlebars: {
+            // compile all hb templates into a single file in the build dir
             compile: {
                 options: {
-                    namespace: 'Templates',
+                    namespace: 'scatterplot',
                     processName : function( filepath ){
                         return filepath.match( /\w*\.handlebars/ )[0].replace( '.handlebars', '' );
                     }
@@ -20,6 +21,7 @@ module.exports = function(grunt) {
         },
 
         concat: {
+            // concat the template file and any js files in the src dir into a single file in the build dir
             options: {
                 separator: ';\n'
             },
@@ -31,16 +33,19 @@ module.exports = function(grunt) {
         },
 
         uglify: {
+            // uglify the concat single file directly into the static dir
             options: {
+                //mangle      : false,
+                //beautify    : true
             },
             dist: {
                 src : 'build/scatterplot-concat.js',
-                // uglify directly into static dir
-                dest: 'static/scatterplot.js'
+                dest: 'static/scatterplot-edit.js'
             }
         },
 
         watch: {
+            // watch for changes in the src dir
             files: [ 'src/**.js', 'src/handlebars/*.handlebars' ],
             tasks: [ 'default' ]
         }
@@ -52,5 +57,6 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks( 'grunt-contrib-watch' );
 
     grunt.registerTask( 'default', [ 'handlebars', 'concat', 'uglify' ]);
-    grunt.registerTask( 'watch',   [ 'handlebars', 'concat', 'uglify', 'watch' ]);
+    // you can run grunt watch directly:
+    //  grunt watch
 };

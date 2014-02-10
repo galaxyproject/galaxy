@@ -1,9 +1,10 @@
 from __future__ import absolute_import
 
 import os
+import copy
 
 from sqlalchemy import desc, or_, and_
-from paste.httpexceptions import HTTPNotFound
+from paste.httpexceptions import HTTPNotFound, HTTPBadRequest
 
 from galaxy import model, web
 from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
@@ -13,6 +14,9 @@ from galaxy import util
 from galaxy.datatypes.interval import Bed
 from galaxy.util.json import from_json_string
 from galaxy.util.sanitize_html import sanitize_html
+from galaxy.util import bunch
+from galaxy import util
+from galaxy.visualization import registry
 from galaxy.visualization.genomes import decode_dbkey
 from galaxy.visualization.data_providers.phyloviz import PhylovizDataProvider
 from galaxy.visualization.genomes import GenomeRegion
@@ -21,6 +25,27 @@ from .library import LibraryListGrid
 
 import logging
 log = logging.getLogger( __name__ )
+
+# -- Misc.
+class OpenObject( dict ):
+    #TODO: move to util.data_structures
+    """
+    A dict that allows assignment and attribute retrieval using the dot
+    operator.
+
+    If an attribute isn't contained in the dict `None` is returned (no
+    KeyError).
+    JSON-serializable.
+    """
+    def __getitem__( self, key ):
+        if key not in self:
+            return None
+        return super( OpenObject, self ).__getitem__( key )
+
+    def __getattr__( self, key ):
+        return self.__getitem__( key )
+
+
 
 #
 # -- Grids --
@@ -56,7 +81,7 @@ class HistorySelectionGrid( grids.Grid ):
     datasets_action = 'list_history_datasets'
     datasets_param = "f-history"
     columns = [
-        NameColumn( "History Name", key="name", filterable="standard" ),
+        NameColumn( "History Name", key="name", filterable="standard", inbound=True ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago, visible=False ),
         DbKeyPlaceholderColumn( "Dbkey", key="dbkey", model_class=model.HistoryDatasetAssociation, visible=False )
     ]
@@ -77,7 +102,7 @@ class LibrarySelectionGrid( LibraryListGrid ):
     datasets_action = 'list_library_datasets'
     datasets_param = "f-library"
     columns = [
-        NameColumn( "Library Name", key="name", filterable="standard" )
+        NameColumn( "Library Name", key="name", filterable="standard", inbound=True  )
     ]
     num_rows_per_page = 10
     use_async = True
@@ -86,15 +111,19 @@ class LibrarySelectionGrid( LibraryListGrid ):
 class DbKeyColumn( grids.GridColumn ):
     """ Column for filtering by and displaying dataset dbkey. """
     def filter( self, trans, user, query, dbkey ):
-        """ Filter by dbkey; datasets without a dbkey are returned as well. """
-        # use raw SQL b/c metadata is a BLOB
+        """ Filter by dbkey. """
+        # Use raw SQL b/c metadata is a BLOB.
         dbkey_user, dbkey = decode_dbkey( dbkey )
         dbkey = dbkey.replace("'", "\\'")
-        return query.filter( or_( \
-                                or_( "metadata like '%%\"dbkey\": [\"%s\"]%%'" % dbkey, "metadata like '%%\"dbkey\": \"%s\"%%'" % dbkey ), \
-                                or_( "metadata like '%%\"dbkey\": [\"?\"]%%'", "metadata like '%%\"dbkey\": \"?\"%%'" ) \
-                                )
-                            )
+        return query.filter( or_( "metadata like '%%\"dbkey\": [\"%s\"]%%'" % dbkey, "metadata like '%%\"dbkey\": \"%s\"%%'" % dbkey ) )
+
+        #Use this query when datasets with matching dbkey *or* no dbkey can be added to the visualization.
+        #return query.filter( or_( \
+        #                        or_( "metadata like '%%\"dbkey\": [\"%s\"]%%'" % dbkey, "metadata like '%%\"dbkey\": \"%s\"%%'" % dbkey ), \
+        #                        or_( "metadata like '%%\"dbkey\": [\"?\"]%%'", "metadata like '%%\"dbkey\": \"?\"%%'" ) \
+        #                        )
+        #                    )
+        
 
 class HistoryColumn( grids.GridColumn ):
     """ Column for filtering by history id. """
@@ -143,11 +172,11 @@ class TracksterSelectionGrid( grids.Grid ):
     # Grid definition.
     title = "Insert into visualization"
     template = "/tracks/add_to_viz.mako"
-    async_template = "/page/select_items_grid_async.mako"
     model_class = model.Visualization
     default_sort_key = "-update_time"
     use_async = True
     use_paging = False
+    show_item_checkboxes = True
     columns = [
         grids.TextColumn( "Title", key="title", model_class=model.Visualization, filterable="standard" ),
         grids.TextColumn( "Dbkey", key="dbkey", model_class=model.Visualization ),
@@ -164,12 +193,14 @@ class VisualizationListGrid( grids.Grid ):
         """
         Returns dictionary used to create item link.
         """
-        controller = "visualization"
-        action = item.type
-        if item.type == "phyloviz":
-            controller = "phyloviz"
-            action = "visualization"
-        return dict( controller=controller, action=action, id=item.id )
+        url_kwargs = dict( controller='visualization', id=item.id )
+        #TODO: hack to build link to saved visualization - need trans in this function instead in order to do
+        #link_data = trans.app.visualizations_registry.get_visualizations( trans, item )
+        if item.type in registry.VisualizationsRegistry.BUILT_IN_VISUALIZATIONS:
+            url_kwargs[ 'action' ] = item.type
+        else:
+            url_kwargs[ 'action' ] = 'saved'
+        return url_kwargs
 
     # Grid definition
     title = "Saved Visualizations"
@@ -178,6 +209,7 @@ class VisualizationListGrid( grids.Grid ):
     default_filter = dict( title="All", deleted="False", tags="All", sharing="All" )
     columns = [
         grids.TextColumn( "Title", key="title", attach_popup=True, link=get_url_args ),
+        #TODO: should use display name when available
         grids.TextColumn( "Type", key="type" ),
         grids.TextColumn( "Dbkey", key="dbkey" ),
         grids.IndividualTagsColumn( "Tags", key="tags", model_tag_association_class=model.VisualizationTagAssociation, filterable="advanced", grid_name="VisualizationListGrid" ),
@@ -192,15 +224,15 @@ class VisualizationListGrid( grids.Grid ):
         key="free-text-search", visible=False, filterable="standard" )
                 )
     global_actions = [
-        grids.GridAction( "Create new visualization", dict( action='create' ) )
+        grids.GridAction( "Create new visualization", dict( action='create' ), inbound=True )
     ]
     operations = [
         grids.GridOperation( "Open", allow_multiple=False, url_args=get_url_args ),
         grids.GridOperation( "Open in Circster", allow_multiple=False, condition=( lambda item: item.type == 'trackster' ), url_args=dict( action='circster' ) ),
-        grids.GridOperation( "Edit Attributes", allow_multiple=False, url_args=dict( action='edit') ),
-        grids.GridOperation( "Copy", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False, url_args=dict( action='copy') ),
+        grids.GridOperation( "Edit Attributes", allow_multiple=False, url_args=dict( action='edit'), inbound=True),
+        grids.GridOperation( "Copy", allow_multiple=False, condition=( lambda item: not item.deleted )),
         grids.GridOperation( "Share or Publish", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False ),
-        grids.GridOperation( "Delete", condition=( lambda item: not item.deleted ), async_compatible=True, confirm="Are you sure you want to delete this visualization?" ),
+        grids.GridOperation( "Delete", condition=( lambda item: not item.deleted ), confirm="Are you sure you want to delete this visualization?" ),
     ]
     def apply_query_filter( self, trans, query, **kwargs ):
         return query.filter_by( user=trans.user, deleted=False )
@@ -323,6 +355,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
     @web.expose
     @web.require_login( "use Galaxy visualizations", use_panels=True )
     def list( self, trans, *args, **kwargs ):
+        
         # Handle operation
         if 'operation' in kwargs and 'id' in kwargs:
             session = trans.sa_session
@@ -334,6 +367,8 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
                     item.deleted = True
                 if operation == "share or publish":
                     return self.sharing( trans, **kwargs )
+                if operation == "copy":
+                    self.copy( trans, **kwargs )
             session.flush()
 
         # Build list of visualizations shared with user.
@@ -346,8 +381,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
             .all()
 
         return trans.fill_template( "visualization/list.mako", grid=self._user_list_grid( trans, *args, **kwargs ), shared_by_others=shared_by_others )
-
-
+    
     #
     # -- Functions for operating on visualizations. --
     #
@@ -360,7 +394,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
 
     @web.expose
     @web.require_login()
-    def copy(self, trans, id, *args, **kwargs):
+    def copy(self, trans, id, **kwargs):
         visualization = self.get_visualization( trans, id, check_ownership=False )
         user = trans.get_user()
         owner = ( visualization.user == user )
@@ -377,7 +411,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
 
         # Display the management page
         trans.set_message( 'Created new visualization with name "%s"' % copied_viz.title )
-        return self.list( trans )
+        return
 
     @web.expose
     @web.require_login( "use Galaxy visualizations" )
@@ -620,7 +654,6 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
         Save a visualization; if visualization does not have an ID, a new
         visualization is created. Returns JSON of visualization.
         """
-
         # Get visualization attributes from kwargs or from config.
         vis_config = from_json_string( vis_json )
         vis_type = type or vis_config[ 'type' ]
@@ -683,10 +716,45 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
     #
     # Visualizations.
     #
+    @web.expose
+    @web.require_login( "use Galaxy visualizations", use_panels=True )
+    def saved( self, trans, id=None, revision=None, type=None, config=None, title=None, **kwargs ):
+        """
+        """
+        DEFAULT_VISUALIZATION_NAME = 'Unnamed Visualization'
+
+        # post to saved in order to save a visualization
+        #TODO: re-route this one to clear up signature
+        if trans.request.method == 'POST':
+            if type is None or config is None:
+                return HTTPBadRequest( 'A visualization type and config are required to save a visualization' )
+            if isinstance( config, basestring ):
+                config = from_json_string( config )
+            title = title or DEFAULT_VISUALIZATION_NAME
+            #TODO: allow saving to (updating) a specific revision - should be part of UsesVisualization
+            #TODO: would be easier if this returned the visualization directly
+            returned = self.save_visualization( trans, config, type, id, title )
+
+            # redirect to GET to prevent annoying 'Do you want to post again?' dialog on page reload
+            render_url = web.url_for( controller='visualization', action='saved', id=returned.get( 'vis_id' ) )
+            return trans.response.send_redirect( render_url )
+
+        if id is None:
+            return HTTPBadRequest( 'A valid visualization id is required to load a visualization' )
+
+        # render the saved visualization by passing to render, sending latest revision config
+        #TODO: allow loading a specific revision - should be part of UsesVisualization
+        visualization = self.get_visualization( trans, id, check_ownership=True, check_accessible=False )
+        config = copy.copy( visualization.latest_revision.config )
+
+        # re-add title to kwargs for passing to render
+        if title:
+            kwargs[ 'title' ] = title
+        return self.render( trans, visualization.type, visualization, config=config, **kwargs )
 
     @web.expose
     @web.require_login( "use Galaxy visualizations", use_panels=True )
-    def render( self, trans, visualization_name, embedded=None, **kwargs ):
+    def render( self, trans, visualization_name, visualization=None, config=None, embedded=None, **kwargs ):
         """
         Render the appropriate visualization template, parsing the `kwargs`
         into appropriate variables and resources (such as ORM models)
@@ -694,6 +762,8 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
 
         URL: /visualization/show/{visualization_name}
         """
+        config = config or {}
+
         # validate name vs. registry
         registry = trans.app.visualizations_registry
         if not registry:
@@ -705,20 +775,32 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
 
         returned = None
         try:
-            # convert query string to resources for template based on registry config
-            #NOTE: passing in controller to keep resource lookup within the controller's responsibilities
-            #   (and not the ResourceParser)
-            resources = registry.query_dict_to_resources( trans, self, visualization_name, kwargs )
+            # get the config for passing to the template from the kwargs dict, parsed using the plugin's params setting
+            config_from_kwargs = registry.query_dict_to_config( trans, self, visualization_name, kwargs )
+            config.update( config_from_kwargs )
+            config = OpenObject( **config )
+            # further parse config to resources (models, etc.) used in template based on registry config
+            resources = registry.query_dict_to_resources( trans, self, visualization_name, config )
+
+            # if a saved visualization, pass in the encoded visualization id or None if a new render
+            encoded_visualization_id = None
+            if visualization:
+                encoded_visualization_id = trans.security.encode_id( visualization.id )
+
+            visualization_display_name = plugin.config[ 'name' ]
+            title = visualization.latest_revision.title if visualization else kwargs.get( 'title', None )
 
             # look up template and render
             template_path = plugin.config[ 'template' ]
             returned = registry.fill_template( trans, plugin, template_path,
-                visualization_name=visualization_name, query_args=kwargs,
-                embedded=embedded, shared_vars={}, **resources )
-            #NOTE: passing *unparsed* kwargs as query_args
-            #NOTE: shared_vars is a dictionary for shared data in the template
+                visualization_name=visualization_name, visualization_display_name=visualization_display_name,
+                title=title, saved_visualization=visualization, visualization_id=encoded_visualization_id,
+                embedded=embedded, query=kwargs, vars={}, config=config, **resources )
+            #NOTE: passing *unparsed* kwargs as query
+            #NOTE: vars is a dictionary for shared data in the template
             #   this feels hacky to me but it's what mako recommends:
             #   http://docs.makotemplates.org/en/latest/runtime.html
+            #TODO: should vars contain all the passed in arguments? is that even necessary?
             #TODO: embedded
 
         except Exception, exception:
@@ -892,22 +974,35 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
                                          query_args=kwargs )
 
     @web.expose
-    def phyloviz( self, trans, dataset_id, tree_index=0, **kwargs ):
-        # Get HDA.
-        hda = self.get_dataset( trans, dataset_id, check_ownership=False, check_accessible=True )
+    def phyloviz( self, trans, id=None, dataset_id=None, tree_index=0, **kwargs ):
+        config = None
+        data = None
 
-        # Get data.
+        # if id, then this is a saved visualization; get it's config and the dataset_id from there
+        if id:
+            visualization = self.get_visualization( trans, id )
+            config = self.get_visualization_config( trans, visualization )
+            dataset_id = config.get( 'dataset_id', None )
+
+        # get the hda if we can, then it's data using the phyloviz parsers
+        if dataset_id:
+            hda = self.get_dataset( trans, dataset_id, check_ownership=False, check_accessible=True )
+        else:
+            return trans.show_message( "Phyloviz couldn't find a dataset_id" )
+
         pd = PhylovizDataProvider( original_dataset=hda )
-        config = pd.get_data( tree_index=tree_index )
+        data = pd.get_data( tree_index=tree_index )
 
-        config["title"] = hda.display_name()
-        config["ext"] = hda.datatype.file_ext
-        config["dataset_id"] = dataset_id
-        config["treeIndex"] = tree_index
-        config["saved_visualization"] = False
-
-        # Return viz.
-        return trans.fill_template_mako( "visualization/phyloviz.mako", data = config[ "data" ], config=config )
+        # ensure at least a default configuration (gen. an new/unsaved visualization)
+        if not config:
+            config = {
+                'dataset_id': dataset_id,
+                'title'     : hda.display_name(),
+                'ext'       : hda.datatype.file_ext,
+                'treeIndex' : tree_index,
+                'saved_visualization' : False
+            }
+        return trans.fill_template_mako( "visualization/phyloviz.mako", data=data, config=config )
 
     @web.json
     def bookmarks_from_dataset( self, trans, hda_id=None, ldda_id=None ):

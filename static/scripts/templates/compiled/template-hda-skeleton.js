@@ -49,7 +49,7 @@ function program6(depth0,data) {
 function program7(depth0,data) {
   
   var buffer = "", stack1, options;
-  buffer += "\n            <div class=\"warningmessagesmall\"><strong>\n                ";
+  buffer += "\n            <div class=\"dataset-purged-msg warningmessagesmall\"><strong>\n                ";
   options = {hash:{},inverse:self.noop,fn:self.program(8, program8, data),data:data};
   if (stack1 = helpers.local) { stack1 = stack1.call(depth0, options); }
   else { stack1 = depth0.local; stack1 = typeof stack1 === functionType ? stack1.apply(depth0) : stack1; }
@@ -67,15 +67,13 @@ function program8(depth0,data) {
 function program10(depth0,data) {
   
   var buffer = "", stack1, options;
-  buffer += "\n            <div class=\"warningmessagesmall\"><strong>\n                ";
+  buffer += "\n            <div class=\"dataset-deleted-msg warningmessagesmall\"><strong>\n                ";
   options = {hash:{},inverse:self.noop,fn:self.program(11, program11, data),data:data};
   if (stack1 = helpers.local) { stack1 = stack1.call(depth0, options); }
   else { stack1 = depth0.local; stack1 = typeof stack1 === functionType ? stack1.apply(depth0) : stack1; }
   if (!helpers.local) { stack1 = blockHelperMissing.call(depth0, stack1, options); }
   if(stack1 || stack1 === 0) { buffer += stack1; }
-  buffer += "\n                "
-    + "\n                "
-    + "\n                Click <a href=\"javascript:void(0);\" class=\"dataset-undelete\">here</a> to undelete it\n                or <a href=\"javascript:void(0);\" class=\"dataset-purge\">here</a> to immediately remove it from disk\n            </strong></div>\n            ";
+  buffer += "\n            </strong></div>\n            ";
   return buffer;
   }
 function program11(depth0,data) {
@@ -87,14 +85,13 @@ function program11(depth0,data) {
 function program13(depth0,data) {
   
   var buffer = "", stack1, options;
-  buffer += "\n        <div class=\"warningmessagesmall\"><strong>\n            ";
+  buffer += "\n        <div class=\"dataset-hidden-msg warningmessagesmall\"><strong>\n            ";
   options = {hash:{},inverse:self.noop,fn:self.program(14, program14, data),data:data};
   if (stack1 = helpers.local) { stack1 = stack1.call(depth0, options); }
   else { stack1 = depth0.local; stack1 = typeof stack1 === functionType ? stack1.apply(depth0) : stack1; }
   if (!helpers.local) { stack1 = blockHelperMissing.call(depth0, stack1, options); }
   if(stack1 || stack1 === 0) { buffer += stack1; }
-  buffer += "\n            "
-    + "\n            Click <a href=\"javascript:void(0);\" class=\"dataset-unhide\">here</a> to unhide it\n        </strong></div>\n        ";
+  buffer += "\n        </strong></div>\n        ";
   return buffer;
   }
 function program14(depth0,data) {
@@ -112,7 +109,8 @@ function program14(depth0,data) {
   buffer += "\n\n        ";
   stack1 = helpers.unless.call(depth0, depth0.visible, {hash:{},inverse:self.noop,fn:self.program(13, program13, data),data:data});
   if(stack1 || stack1 === 0) { buffer += stack1; }
-  buffer += "\n    </div>\n\n    <div class=\"dataset-primary-actions\"></div>\n    <div class=\"dataset-title-bar clear\">\n        <span class=\"dataset-state-icon state-icon\"></span>\n        <div class=\"dataset-title\">\n            <span class=\"hda-hid\">";
+  buffer += "\n    </div>\n\n    <div class=\"dataset-selector\"><span class=\"fa fa-2x fa-square-o\"></span></div>\n    <div class=\"dataset-primary-actions\"></div>\n    "
+    + "\n    <div class=\"dataset-title-bar clear\" tabindex=\"0\">\n        <span class=\"dataset-state-icon state-icon\"></span>\n        <div class=\"dataset-title\">\n            <span class=\"hda-hid\">";
   if (stack1 = helpers.hid) { stack1 = stack1.call(depth0, {hash:{},data:data}); }
   else { stack1 = depth0.hid; stack1 = typeof stack1 === functionType ? stack1.apply(depth0) : stack1; }
   buffer += escapeExpression(stack1)

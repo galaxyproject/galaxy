@@ -333,10 +333,10 @@
         can_update = False
         if query.count():
             for tool_shed_repository in query:
-                if tool_shed_repository.status not in [ trans.model.ToolShedRepository.installation_status.INSTALLED,
-                                                        trans.model.ToolShedRepository.installation_status.ERROR,
-                                                        trans.model.ToolShedRepository.installation_status.DEACTIVATED,
-                                                        trans.model.ToolShedRepository.installation_status.UNINSTALLED ]:
+                if tool_shed_repository.status not in [ trans.install_model.ToolShedRepository.installation_status.INSTALLED,
+                                                        trans.install_model.ToolShedRepository.installation_status.ERROR,
+                                                        trans.install_model.ToolShedRepository.installation_status.DEACTIVATED,
+                                                        trans.install_model.ToolShedRepository.installation_status.UNINSTALLED ]:
                     can_update = True
                     break
     %>

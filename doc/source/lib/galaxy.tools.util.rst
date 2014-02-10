@@ -9,14 +9,6 @@ util Package
     :undoc-members:
     :show-inheritance:
 
-:mod:`hyphy_util` Module
-------------------------
-
-.. automodule:: galaxy.tools.util.hyphy_util
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 :mod:`maf_utilities` Module
 ---------------------------
 

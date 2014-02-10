@@ -2,15 +2,13 @@
 Galaxy Metadata
 
 """
-from galaxy import eggs
-eggs.require("simplejson")
 
 import copy
 import cPickle
+import json
 import logging
 import os
 import shutil
-import simplejson
 import sys
 import tempfile
 import weakref
@@ -130,7 +128,7 @@ class MetadataCollection( object ):
     def from_JSON_dict( self, filename ):
         dataset = self.parent
         log.debug( 'loading metadata from file for: %s %s' % ( dataset.__class__.__name__, dataset.id ) )
-        JSONified_dict = simplejson.load( open( filename ) )
+        JSONified_dict = json.load( open( filename ) )
         for name, spec in self.spec.items():
             if name in JSONified_dict:
                 dataset._metadata[ name ] = spec.param.from_external_value( JSONified_dict[ name ], dataset )
@@ -146,7 +144,7 @@ class MetadataCollection( object ):
         for name, spec in self.spec.items():
             if name in dataset_meta_dict:
                 meta_dict[ name ] = spec.param.to_external_value( dataset_meta_dict[ name ] )
-        simplejson.dump( meta_dict, open( filename, 'wb+' ) )
+        json.dump( meta_dict, open( filename, 'wb+' ) )
 
     def __getstate__( self ):
         return None #cannot pickle a weakref item (self._parent), when data._metadata_collection is None, it will be recreated on demand
@@ -456,7 +454,7 @@ class ListParameter( MetadataParameter ):
 class DictParameter( MetadataParameter ):
 
     def to_string( self, value ):
-        return  simplejson.dumps( value )
+        return  json.dumps( value )
 
 
 class PythonObjectParameter( MetadataParameter ):
@@ -594,7 +592,7 @@ class MetadataTempFile( object ):
     @classmethod
     def cleanup_from_JSON_dict_filename( cls, filename ):
         try:
-            for key, value in simplejson.load( open( filename ) ).items():
+            for key, value in json.load( open( filename ) ).items():
                 if cls.is_JSONified_value( value ):
                     value = cls.from_JSON( value )
                 if isinstance( value, cls ) and os.path.exists( value.file_name ):
@@ -686,10 +684,10 @@ class JobExternalOutputMetadataWrapper( object ):
                 #file to store a 'return code' indicating the results of the set_meta() call
                 #results code is like (True/False - if setting metadata was successful/failed , exception or string of reason of success/failure )
                 metadata_files.filename_results_code = abspath( tempfile.NamedTemporaryFile( dir = tmp_dir, prefix = "metadata_results_%s_" % key ).name )
-                simplejson.dump( ( False, 'External set_meta() not called' ), open( metadata_files.filename_results_code, 'wb+' ) ) # create the file on disk, so it cannot be reused by tempfile (unlikely, but possible)
+                json.dump( ( False, 'External set_meta() not called' ), open( metadata_files.filename_results_code, 'wb+' ) ) # create the file on disk, so it cannot be reused by tempfile (unlikely, but possible)
                 #file to store kwds passed to set_meta()
                 metadata_files.filename_kwds = abspath( tempfile.NamedTemporaryFile( dir = tmp_dir, prefix = "metadata_kwds_%s_" % key ).name )
-                simplejson.dump( kwds, open( metadata_files.filename_kwds, 'wb+' ), ensure_ascii=True )
+                json.dump( kwds, open( metadata_files.filename_kwds, 'wb+' ), ensure_ascii=True )
                 #existing metadata file parameters need to be overridden with cluster-writable file locations
                 metadata_files.filename_override_metadata = abspath( tempfile.NamedTemporaryFile( dir = tmp_dir, prefix = "metadata_override_%s_" % key ).name )
                 open( metadata_files.filename_override_metadata, 'wb+' ) # create the file on disk, so it cannot be reused by tempfile (unlikely, but possible)
@@ -699,7 +697,7 @@ class JobExternalOutputMetadataWrapper( object ):
                         metadata_temp = MetadataTempFile()
                         shutil.copy( dataset.metadata.get( meta_key, None ).file_name, metadata_temp.file_name )
                         override_metadata.append( ( meta_key, metadata_temp.to_JSON() ) )
-                simplejson.dump( override_metadata, open( metadata_files.filename_override_metadata, 'wb+' ) )
+                json.dump( override_metadata, open( metadata_files.filename_override_metadata, 'wb+' ) )
                 #add to session and flush
                 sa_session.add( metadata_files )
                 sa_session.flush()
@@ -711,7 +709,7 @@ class JobExternalOutputMetadataWrapper( object ):
         metadata_files = self.get_output_filenames_by_dataset( dataset, sa_session )
         if not metadata_files:
             return False # this file doesn't exist
-        rval, rstring = simplejson.load( open( metadata_files.filename_results_code ) )
+        rval, rstring = json.load( open( metadata_files.filename_results_code ) )
         if not rval:
             log.debug( 'setting metadata externally failed for %s %s: %s' % ( dataset.__class__.__name__, dataset.id, rstring ) )
         return rval

@@ -20,12 +20,12 @@
 //@icon-btn-border:   transparent;
 
 // big & dark style
-@icon-btn-size:     20px;
+@icon-btn-size:     22px;
 @icon-btn-margin:   2px;
-@icon-btn-color:    #555;
+@icon-btn-color:    @btn-default-color;
 //@icon-btn-bg:       transparent;
-@icon-btn-bg:       rgba( 0, 0, 0, 0.05 );
-@icon-btn-border:   rgba( 0, 0, 0, 0.1 );
+@icon-btn-bg:       @btn-default-bg;
+@icon-btn-border:   @btn-default-border;
 
 .icon-btn {
     display : inline-block;
@@ -34,13 +34,14 @@
     // center the icon
     text-align: center;
     line-height: @icon-btn-size - 3;
+    font-size: 1.2em;
+
     // colors and borders
     border-radius: 3px;
     border: 1px solid @icon-btn-border;
     background-color: @icon-btn-bg;
     color           : @icon-btn-color;
 
-    font-size: 1.2em;
     cursor: pointer;
 
     // tweaks
@@ -56,9 +57,319 @@
 }
 .icon-btn.disabled {
     background-color: transparent;
-    color: @icon-btn-bg;
+    color: @icon-btn-border;
 }
 
+// ---------------------------------------------------------------------------- search bar
+.search-input {
+    .search-query {
+        width           : 100%;
+        padding-right   : 24px;
+    }
+    .search-clear,
+    .search-loading {
+        // it places the icons on the right of the bar (and puts the lotion on its skin)
+        position    : relative;
+        display     : inline-block;
+
+        float       : right;
+        margin-top  : -23px;
+        margin-right : 4px;
+
+        font-size   : 1.4em;
+        line-height : 23px;
+        color       : grey;
+    }
+
+    .search-clear:hover {
+        color       : @link-color;
+    }
+}
+
+// ---------------------------------------------------------------------------- panel header buttons
+#history-refresh-button,
+#history-options-button {
+    display : inline-block;
+    height  : @icon-btn-size;
+    width   : @icon-btn-size;
+    text-align  : center;
+    line-height : @icon-btn-size - 3;
+    font-size   : 1.2em;
+
+    padding: 0px;
+}
+
+
+// ---------------------------------------------------------------------------- datasets
+//TODO: scope to history panels until embedded item .dataset is changed
+.history-panel {
+    .dataset {
+        border: 1px solid @border-default-color;
+
+        // body mixins
+        @vertical-gap: 8px;
+        .vertical-spacing {
+            margin-bottom: @vertical-gap;
+        }
+        .info-section {
+            border-radius: 3px;
+            border: 1px solid fadeout( @layout-border-color, 70% );
+            //background-color: fadeout( white, 60% );
+            padding: 4px;
+        }
+        @spacing-top     : 6px;
+        @spacing-right   : 10px;
+        @spacing-bottom  : 6px;
+        @spacing-left    : 8px;
+        .dataset-padding {
+            padding: @spacing-top @spacing-right @spacing-bottom @spacing-left;
+        }
+
+        [class$=messagesmall] {
+            margin: @spacing-top @spacing-right ( @spacing-bottom - 4 ) @spacing-left;
+            font-size: 90%;
+        }
+
+        .help-text {
+            font-weight: normal;
+            // font-style: italic;
+            // font-size: 90%;
+            color: #555;
+        }
+
+        .dataset-selector {
+            float: left;
+            // always initially hidden and zero width
+            display: none;
+            width: 0px;
+            //HACK: neg. on the bottom due to padding-bottom in title-bar - very tweakish
+            margin: 0px 0px -@spacing-bottom 0px;
+            padding: ( @spacing-top - 1 ) 0px 2px @spacing-left;
+            cursor: pointer;
+            //text-align: center;
+            vertical-align: middle;
+        }
+
+        .dataset-title-bar {
+            cursor: pointer;
+            outline: none;
+            .dataset-padding;
+
+            .dataset-state-icon {
+            }
+            .dataset-title {
+                display: inline;
+                font-weight: bold;
+                text-decoration: underline;
+                word-wrap: break-word;
+                word-break: break-all;
+                line-height: 16px;
+            }
+        }
+
+        .dataset-primary-actions {
+            .icon-btn-group();
+            float: right;
+            margin: @spacing-top @spacing-right 0;
+            .icon-btn {
+                margin-left: @icon-btn-margin;
+            }
+        }
+
+        .dataset-body {
+            display: none;
+            // background-color: fadeout( white, 70% );
+            //.dataset-padding;
+            padding: 0px @spacing-right @spacing-bottom @spacing-left;
+
+            [class$=messagesmall] {
+                margin: 0px 0px 8px 0px;
+            }
+
+            label {
+                margin: 0px;
+                padding: 0px;
+                font-weight: normal;
+            }
+            .prompt {
+                .help-text;
+            }
+            .prompt:after {
+                content: ':';
+            }
+
+            .dataset-summary {
+                .dataset-blurb {
+                    margin-bottom: 2px;
+                }
+                .dataset-datatype, .dataset-dbkey {
+                    display: inline;
+                    .value {
+                        font-weight: bold;
+                    }
+                }
+                .dataset-datatype .value:after {
+                    content: ',';
+                    .help-text;
+                }
+                .dataset-dbkey:after {
+                    content: ' ';
+                    display: block;
+                    .vertical-spacing;
+                }
+                .dataset-info {
+                    .info-section;
+                    overflow: auto;
+                    .value {
+                        white-space: pre-line;
+                    }
+                }
+
+                .job-error-text {
+                    .info-section;
+                    overflow: auto;
+                    white-space: pre;
+                }
+
+                // handle the last vertical gap in the parent as summary is used in other states as well (w/o info)
+                .vertical-spacing;
+            }
+
+            .dataset-actions {
+                .left {
+                    .icon-btn-group();
+                    float: left;
+                    .icon-btn {
+                        margin-right: @icon-btn-margin;
+                    }
+                    //.icon-btn-group {
+                    //    margin-right: @icon-btn-margin;
+                    //    .icon-btn {
+                    //        margin-right: 0;
+                    //    }
+                    //}
+                    &:not(:empty) {
+                        // can't use :empty on dataset-actions - will always have left & right, so
+                        //  add gap to left (more likely to have children)
+                        .vertical-spacing;
+                    }
+                }
+                .right {
+                    float: right;
+                    .icon-btn {
+                        margin-left: @icon-btn-margin;
+                    }
+                }
+            }
+
+            //TODO: move these out
+            .tags-display {
+                display: none;
+                .vertical-spacing;
+                .select2-container {
+                    min-width: 0px;
+                    .select2-choices {
+                        border-radius: 3px;
+                    }
+                }
+            }
+            .annotation-display {
+                display: none;
+                .vertical-spacing;
+                .annotation {
+                    .info-section;
+                    white-space: pre-line;
+                }
+                .annotation:empty {
+                    height: @icon-btn-size;
+                }
+                // fake placeholder for editable text annotation
+                .annotation:empty:after {
+                    position: relative;
+                    top: -4px;
+                    font-size: 10px;
+                    font-style: italic;
+                    color: grey;
+                    content : 'Click here to edit annotation';
+                }
+                textarea {
+                    margin: 0px 0px 2px 0px;
+                    display: block;
+                    border-radius: 3px;
+                    width: 100%;
+                }
+            }
+
+            .dataset-display-applications {
+                .display-application:last-child {
+                    .vertical-spacing;
+                }
+            }
+
+            .dataset-peek {
+                .vertical-spacing;
+                pre.peek {
+                    width: 100%;
+                    margin: 0px;
+                    border-radius: 3px;
+                    background: white;
+                    color: black;
+                    font-size: 10px;
+                    overflow: auto;
+                    th {
+                        color: white;
+                        background: @panel-primary-heading-bg;
+                    }
+                    table, th, tr, td {
+                        font-family: @font-family-monospace;
+                        font-size: 10px;
+                    }
+                }
+            }
+        }
+
+        .icon-btn-group {
+            display: inline-block;
+            .icon-btn:not(:last-child) {
+                margin: 0px;
+                border-radius: 0px;
+                border-right: none;
+            }
+            .icon-btn:first-child {
+                margin-right: 0px;
+                border-top-left-radius: 3px;
+                border-bottom-left-radius: 3px;
+            }
+            .icon-btn:last-child {
+                margin-left: 0px;
+                border-radius: 0px 3px 3px 0px;
+            }
+        }
+
+    }
+
+    .dataset .state-icon {
+        .fa-icon;
+        display: inline-block;
+        vertical-align: middle;
+        width: 16px;
+        height: 16px;
+        line-height: 16px;
+        text-align: center;
+        font-size: 16px;
+    }
+}
+
+.state-icon-error {
+    background-color: white;
+    border-radius: 8px;
+    &:before {
+        font-size: 20px;
+        line-height: 16px;
+        color: red;
+        content: @fa-var-times-circle;
+    }
+}
 
 // ---------------------------------------------------------------------------- history
 .history-panel {
@@ -80,11 +391,24 @@
     }
     .message-container [class$=message] {
         margin: 0px;
+        margin-bottom: 8px;
     }
 
     .history-controls {
         margin: 10px;
         padding: 0px;
+
+        .history-search-controls {
+            .history-search-input {
+                //margin-right: 22px;
+            }
+            //.history-search-advanced {
+            //    margin-top  : -21px;
+            //    float       : right;
+            //}
+            display: none;
+            padding: 0px 0px 8px 0px;
+        }
 
         .history-title {
             margin-bottom: 4px;
@@ -94,9 +418,10 @@
             font-weight: bold;
         }
         .history-title input {
-            font-weight: bold;
+            width: 100%;
             // keep the text in position
             margin: -2px 0px -2px -4px;
+            font-weight: bold;
         }
 
         .history-subtitle {
@@ -126,8 +451,6 @@
                 margin: 0px;
                 padding: 0px;
                 font-weight: normal;
-                font-style: italic;
-                font-size: 90%;
                 color: #555;
             }
             label:after {
@@ -148,15 +471,40 @@
         .annotation-display {
             .annotation {
                 border-radius: 3px;
-                border: 1px solid fadout( @layout-border-color, 50% );
+                border: 1px solid fadeout( @layout-border-color, 50% );
                 padding: 4px;
                 white-space: pre-line;
+            }
+            .annotation:empty {
+                height: @icon-btn-size;
+            }
+            // fake placeholder for editable text annotation
+            .annotation:empty:after {
+                position: relative;
+                top: -4px;
+                font-size: 10px;
+                font-style: italic;
+                color: grey;
+                content : 'Click here to edit annotation';
             }
             textarea {
                 margin: 0px 0px 2px 0px;
                 display: block;
                 border-radius: 3px;
                 width: 100%;
+            }
+        }
+
+        .history-dataset-actions {
+            display: none;
+            .clear;
+            .btn {
+                padding-top: 2px;
+                padding-bottom: 2px;
+                font-size: 90%;
+            }
+            .history-dataset-action-popup-btn {
+                float: right;
             }
         }
     }
@@ -190,237 +538,6 @@
         .tag-name {
             margin-right: 2px;
         }
-    }
-}
-
-// ---------------------------------------------------------------------------- datasets
-.dataset {
-    border: 1px solid @border-default-color;
-
-    // body mixins
-    @vertical-gap: 8px;
-    .vertical-spacing {
-        margin-bottom: @vertical-gap;
-    }
-    .info-section {
-        border-radius: 3px;
-        border: 1px solid fadeout( @layout-border-color, 70% );
-        //background-color: fadeout( white, 60% );
-        padding: 4px;
-    }
-    @spacing-top     : 6px;
-    @spacing-right   : 10px;
-    @spacing-bottom  : 6px;
-    @spacing-left    : 8px;
-    .dataset-padding {
-        padding: @spacing-top @spacing-right @spacing-bottom @spacing-left;
-    }
-
-    [class$=messagesmall] {
-        margin: @spacing-top @spacing-right ( @spacing-bottom - 4 ) @spacing-left;
-        font-size: 90%;
-    }
-
-    .dataset-title-bar {
-        cursor: pointer;
-        .dataset-padding;
-        .dataset-state-icon {
-            //display: inline-block;
-            //vertical-align: middle;
-            //line-height: 16px;
-            //width: 16px;
-            //height: 16px;
-            //background-position: 0 1px;
-            //background-repeat: no-repeat;
-        }
-        .dataset-title {
-            display: inline;
-            font-weight: bold;
-            text-decoration: underline;
-            word-break: normal;
-            line-height: 16px;
-        }
-    }
-
-    .dataset-primary-actions {
-        float: right;
-        margin: @spacing-top @spacing-right 0;
-        .icon-btn {
-            margin-left: @icon-btn-margin;
-        }
-    }
-
-    .dataset-body {
-        display: none;
-        background-color: fadeout( white, 70% );
-        .dataset-padding;
-
-        [class$=messagesmall] {
-            margin: 0px 0px 8px 0px;
-        }
-
-        label {
-            margin: 0px;
-            padding: 0px;
-            font-weight: normal;
-        }
-        .prompt {
-            font-weight: normal;
-            font-style: italic;
-            font-size: 90%;
-            color: #555;
-        }
-        .prompt:after {
-            content: ':';
-        }
-
-        .dataset-summary {
-            .dataset-blurb {
-                margin-bottom: 2px;
-            }
-            .dataset-datatype, .dataset-dbkey {
-                display: inline;
-                .value {
-                    font-weight: bold;
-                }
-            }
-            .dataset-datatype .value:after {
-                content: ',';
-            }
-            .dataset-dbkey:after {
-                content: ' ';
-                display: block;
-                .vertical-spacing;
-            }
-            .dataset-info {
-                .info-section;
-                .value {
-                    white-space: pre-line;
-                }
-            }
-            // handle the last vertical gap in the parent as summary is used in other states as well (w/o info)
-            .vertical-spacing;
-        }
-
-        .dataset-actions {
-            .left {
-                float: left;
-                .icon-btn {
-                    margin-right: @icon-btn-margin;
-                }
-                .icon-btn-group {
-                    margin-right: @icon-btn-margin;
-                    .icon-btn {
-                        margin-right: 0;
-                    }
-                }
-                &:not(:empty) {
-                    // can't use :empty on dataset-actions - will always have left & right, so
-                    //  add gap to left (more likely to have children)
-                    .vertical-spacing;
-                }
-            }
-            .right {
-                float: right;
-                .icon-btn {
-                    margin-left: @icon-btn-margin;
-                }
-            }
-        }
-
-        //TODO: move these out
-        .tags-display {
-            display: none;
-            .vertical-spacing;
-            .select2-container {
-                min-width: 0px;
-                .select2-choices {
-                    border-radius: 3px;
-                }
-            }
-        }
-        .annotation-display {
-            display: none;
-            .vertical-spacing;
-            .annotation {
-                .info-section;
-                white-space: pre-line;
-            }
-            textarea {
-                margin: 0px 0px 2px 0px;
-                display: block;
-                border-radius: 3px;
-                width: 100%;
-            }
-        }
-
-        .dataset-display-applications {
-            .display-application:last-child {
-                .vertical-spacing;
-            }
-        }
-
-        .dataset-peek {
-            .vertical-spacing;
-            pre.peek {
-                width: 100%;
-                margin: 0px;
-                border-radius: 3px;
-                background: white;
-                color: black;
-                font-size: 10px;
-                overflow: auto;
-                th {
-                    color: white;
-                    background: @panel-primary-heading-bg;
-                }
-                table, th, tr, td {
-                    font-family: @font-family-monospace;
-                    font-size: 10px;
-                }
-            }
-        }
-    }
-
-    .icon-btn-group {
-        display: inline-block;
-        .icon-btn:not(:last-child) {
-            margin: 0px;
-            border-radius: 0px;
-            border-right: none;
-        }
-        .icon-btn:first-child {
-            margin-right: 0px;
-            border-top-left-radius: 3px;
-            border-bottom-left-radius: 3px;
-        }
-        .icon-btn:last-child {
-            margin-left: 0px;
-            border-radius: 0px 3px 3px 0px;
-        }
-    }
-
-}
-
-.dataset .state-icon {
-    .fa-icon;
-    display: inline-block;
-    vertical-align: middle;
-    width: 16px;
-    height: 16px;
-    line-height: 16px;
-    text-align: center;
-    font-size: 16px;
-}
-
-.state-icon-error {
-    background-color: white;
-    border-radius: 8px;
-    &:before {
-        font-size: 20px;
-        line-height: 16px;
-        color: red;
-        content: @fa-var-times-circle;
     }
 }
 

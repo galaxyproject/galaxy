@@ -57,7 +57,7 @@ class CondorJobRunner( AsynchronousJobRunner ):
         galaxy_id_tag = job_wrapper.get_id_tag()
 
         # get destination params
-        query_params = submission_params(**job_destination.params)
+        query_params = submission_params(prefix="", **job_destination.params)
         galaxy_slots = query_params.get('request_cpus', None)
         if galaxy_slots:
             galaxy_slots_statement = 'GALAXY_SLOTS="%s"; export GALAXY_SLOTS_CONFIGURED="1"' % galaxy_slots

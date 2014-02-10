@@ -108,7 +108,7 @@ def build_tool_panel_section_select_field( trans ):
     for k, v in trans.app.toolbox.tool_panel.items():
         if isinstance( v, galaxy.tools.ToolSection ):
             options.append( ( v.name, v.id ) )
-    select_field = SelectField( name='tool_panel_section', display='radio' )
+    select_field = SelectField( name='tool_panel_section_id', display='radio' )
     for option_tup in options:
         select_field.add_option( option_tup[ 0 ], option_tup[ 1 ] )
     return select_field
@@ -247,12 +247,16 @@ def generate_message_for_invalid_tools( trans, invalid_file_tups, repository, me
         bold_start = ''
         bold_end = ''
     message = ''
+    if trans.webapp.name == 'galaxy':
+        tip_rev = str( repository.changeset_revision )
+    else:
+        tip_rev = str( repository.tip( trans.app ) )
     if not displaying_invalid_tool:
         if metadata_dict:
-            message += "Metadata may have been defined for some items in revision '%s'.  " % str( repository.tip( trans.app ) )
+            message += "Metadata may have been defined for some items in revision '%s'.  " % tip_rev
             message += "Correct the following problems if necessary and reset metadata.%s" % new_line
         else:
-            message += "Metadata cannot be defined for revision '%s' so this revision cannot be automatically " % str( repository.tip( trans.app ) )
+            message += "Metadata cannot be defined for revision '%s' so this revision cannot be automatically " % tip_rev
             message += "installed into a local Galaxy instance.  Correct the following problems and reset metadata.%s" % new_line
     for itc_tup in invalid_file_tups:
         tool_file, exception_msg = itc_tup
@@ -461,29 +465,24 @@ def get_list_of_copied_sample_files( repo, ctx, dir ):
                     fh.close()
     return sample_files, deleted_sample_files
 
-def get_or_create_tool_section( trans, tool_panel_section_id, new_tool_panel_section=None ):
-    tool_panel_section_key = 'section_%s' % str( tool_panel_section_id )
+def get_or_create_tool_section( trans, tool_panel_section_id, new_tool_panel_section_label=None ):
+    tool_panel_section_key = str( tool_panel_section_id )
     if tool_panel_section_key in trans.app.toolbox.tool_panel:
         # Appending a tool to an existing section in trans.app.toolbox.tool_panel
         tool_section = trans.app.toolbox.tool_panel[ tool_panel_section_key ]
         log.debug( "Appending to tool panel section: %s" % str( tool_section.name ) )
     else:
         # Appending a new section to trans.app.toolbox.tool_panel
-        try:
-            new_tool_panel_section_name = new_tool_panel_section.name
-        except:
-            new_tool_panel_section_name = new_tool_panel_section
-        if new_tool_panel_section_name:
-            elem = XmlET.Element( 'section' )
-            elem.attrib[ 'name' ] = new_tool_panel_section_name
-            elem.attrib[ 'id' ] = tool_panel_section_id
-            elem.attrib[ 'version' ] = ''
-            tool_section = galaxy.tools.ToolSection( elem )
-            trans.app.toolbox.tool_panel[ tool_panel_section_key ] = tool_section
-            log.debug( "Loading new tool panel section: %s" % str( tool_section.name ) )
-        else:
-            log.debug( "Unable to create new tool pane section using received new_tool_panel_section: %s" % str( new_tool_panel_section ))
-            return None, None
+        if new_tool_panel_section_label is None:
+            # This might add an ugly section label to the tool panel, but, oh well...
+            new_tool_panel_section_label = tool_panel_section_id
+        elem = XmlET.Element( 'section' )
+        elem.attrib[ 'name' ] = new_tool_panel_section_label
+        elem.attrib[ 'id' ] = tool_panel_section_id
+        elem.attrib[ 'version' ] = ''
+        tool_section = galaxy.tools.ToolSection( elem )
+        trans.app.toolbox.tool_panel[ tool_panel_section_key ] = tool_section
+        log.debug( "Loading new tool panel section: %s" % str( tool_section.name ) )
     return tool_panel_section_key, tool_section
 
 def get_tool_path_install_dir( partial_install_dir, shed_tool_conf_dict, tool_dict, config_elems ):
@@ -512,17 +511,17 @@ def get_tool_index_sample_files( sample_files ):
     return tool_index_sample_files
 
 def get_tool_version( app, tool_id ):
-    sa_session = app.model.context.current
-    return sa_session.query( app.model.ToolVersion ) \
-                     .filter( app.model.ToolVersion.table.c.tool_id == tool_id ) \
+    context = app.install_model.context
+    return context.query( app.install_model.ToolVersion ) \
+                     .filter( app.install_model.ToolVersion.table.c.tool_id == tool_id ) \
                      .first()
 
 def get_tool_version_association( app, parent_tool_version, tool_version ):
     """Return a ToolVersionAssociation if one exists that associates the two received tool_versions"""
-    sa_session = app.model.context.current
-    return sa_session.query( app.model.ToolVersionAssociation ) \
-                     .filter( and_( app.model.ToolVersionAssociation.table.c.parent_id == parent_tool_version.id,
-                                    app.model.ToolVersionAssociation.table.c.tool_id == tool_version.id ) ) \
+    context = app.install_model.context
+    return context.query( app.install_model.ToolVersionAssociation ) \
+                     .filter( and_( app.install_model.ToolVersionAssociation.table.c.parent_id == parent_tool_version.id,
+                                    app.install_model.ToolVersionAssociation.table.c.tool_id == tool_version.id ) ) \
                      .first()
 
 def handle_missing_data_table_entry( app, relative_install_dir, tool_path, repository_tools_tups ):
@@ -633,16 +632,20 @@ def handle_sample_tool_data_table_conf_file( app, filename, persist=False ):
         error = True
     return error, message
 
-def handle_tool_panel_selection( trans, metadata, no_changes_checked, tool_panel_section, new_tool_panel_section ):
-    """Handle the selected tool panel location for loading tools included in tool shed repositories when installing or reinstalling them."""
+def handle_tool_panel_selection( trans, metadata, no_changes_checked, tool_panel_section_id, new_tool_panel_section_label ):
+    """
+    Handle the selected tool panel location for loading tools included in tool shed repositories when installing
+    or reinstalling them.
+    """
     # Get the location in the tool panel in which each tool was originally loaded.
     tool_section = None
     tool_panel_section_key = None
     if 'tools' in metadata:
         # This forces everything to be loaded into the same section (or no section) in the tool panel.
         if no_changes_checked:
-            # Make sure the no_changes check box overrides the new_tool_panel_section if the user checked the check box and entered something into the field.
-            new_tool_panel_section = None
+            # Make sure the no_changes check box overrides the new_tool_panel_section_label if the user checked the check
+            # box and entered something into the field.
+            new_tool_panel_section_label = None
             if 'tool_panel_section' in metadata:
                 tool_panel_dict = metadata[ 'tool_panel_section' ]
                 if not tool_panel_dict:
@@ -656,24 +659,30 @@ def handle_tool_panel_selection( trans, metadata, no_changes_checked, tool_panel
                 original_section_id = tool_section_dict[ 'id' ]
                 original_section_name = tool_section_dict[ 'name' ]
                 if original_section_id:
-                    tool_panel_section_key, tool_section = get_or_create_tool_section( trans,
-                                                                                       tool_panel_section_id=original_section_id,
-                                                                                       new_tool_panel_section=new_tool_panel_section )
+                    tool_panel_section_key, tool_section = \
+                        get_or_create_tool_section( trans,
+                                                    tool_panel_section_id=original_section_id,
+                                                    new_tool_panel_section_label=new_tool_panel_section_label )
         else:
             # The user elected to change the tool panel section to contain the tools.
             tool_panel_section_key, tool_section = handle_tool_panel_section( trans,
-                                                                              tool_panel_section=tool_panel_section,
-                                                                              new_tool_panel_section=new_tool_panel_section )
-    return tool_section, new_tool_panel_section, tool_panel_section_key
+                                                                              tool_panel_section_id=tool_panel_section_id,
+                                                                              new_tool_panel_section_label=new_tool_panel_section_label )
+    return tool_section, tool_panel_section_key
 
-def handle_tool_panel_section( trans, tool_panel_section=None, new_tool_panel_section=None ):
-    if new_tool_panel_section:
-        section_id = new_tool_panel_section.lower().replace( ' ', '_' )
-        tool_panel_section_key, tool_section = get_or_create_tool_section( trans,
-                                                                           tool_panel_section_id=section_id,
-                                                                           new_tool_panel_section=new_tool_panel_section )
-    elif tool_panel_section:
-        tool_panel_section_key = 'section_%s' % str( tool_panel_section )
+def handle_tool_panel_section( trans, tool_panel_section_id=None, new_tool_panel_section_label=None ):
+    """Return a ToolSection object retrieved from the current in-memory tool_panel."""
+    # If tool_panel_section_id is received, the section exists in the tool panel.  In this case, the value of the
+    # received tool_panel_section_id must be the id retrieved from a tool panel config (e.g., tool_conf.xml, which
+    # may have getext).  If new_tool_panel_section_label is received, a new section will be added to the tool panel.  
+    if new_tool_panel_section_label:
+        section_id = str( new_tool_panel_section_label.lower().replace( ' ', '_' ) )
+        tool_panel_section_key, tool_section = \
+            get_or_create_tool_section( trans,
+                                        tool_panel_section_id=section_id,
+                                        new_tool_panel_section_label=new_tool_panel_section_label )
+    elif tool_panel_section_id:
+        tool_panel_section_key = str( tool_panel_section_id )
         tool_section = trans.app.toolbox.tool_panel[ tool_panel_section_key ]
     else:
         return None, None
@@ -684,28 +693,28 @@ def handle_tool_versions( app, tool_version_dicts, tool_shed_repository ):
     Using the list of tool_version_dicts retrieved from the tool shed (one per changeset revison up to the currently installed changeset revision),
     create the parent / child pairs of tool versions.  Each dictionary contains { tool id : parent tool id } pairs.
     """
-    sa_session = app.model.context.current
+    context = app.install_model.context
     for tool_version_dict in tool_version_dicts:
         for tool_guid, parent_id in tool_version_dict.items():
             tool_version_using_tool_guid = get_tool_version( app, tool_guid )
             tool_version_using_parent_id = get_tool_version( app, parent_id )
             if not tool_version_using_tool_guid:
-                tool_version_using_tool_guid = app.model.ToolVersion( tool_id=tool_guid, tool_shed_repository=tool_shed_repository )
-                sa_session.add( tool_version_using_tool_guid )
-                sa_session.flush()
+                tool_version_using_tool_guid = app.install_model.ToolVersion( tool_id=tool_guid, tool_shed_repository=tool_shed_repository )
+                context.add( tool_version_using_tool_guid )
+                context.flush()
             if not tool_version_using_parent_id:
-                tool_version_using_parent_id = app.model.ToolVersion( tool_id=parent_id, tool_shed_repository=tool_shed_repository )
-                sa_session.add( tool_version_using_parent_id )
-                sa_session.flush()
+                tool_version_using_parent_id = app.install_model.ToolVersion( tool_id=parent_id, tool_shed_repository=tool_shed_repository )
+                context.add( tool_version_using_parent_id )
+                context.flush()
             tool_version_association = get_tool_version_association( app,
                                                                      tool_version_using_parent_id,
                                                                      tool_version_using_tool_guid )
             if not tool_version_association:
                 # Associate the two versions as parent / child.
-                tool_version_association = app.model.ToolVersionAssociation( tool_id=tool_version_using_tool_guid.id,
+                tool_version_association = app.install_model.ToolVersionAssociation( tool_id=tool_version_using_tool_guid.id,
                                                                              parent_id=tool_version_using_parent_id.id )
-                sa_session.add( tool_version_association )
-                sa_session.flush()
+                context.add( tool_version_association )
+                context.flush()
 
 def install_tool_data_tables( app, tool_shed_repository, tool_index_sample_files ):
     """Only ever called from Galaxy end when installing"""
@@ -967,8 +976,8 @@ def remove_from_tool_panel( trans, repository, shed_tool_conf, uninstall ):
     # in the same way when the repository is activated or reinstalled.
     tool_panel_dict = suc.generate_tool_panel_dict_from_shed_tool_conf_entries( trans.app, repository )
     repository.metadata[ 'tool_panel_section' ] = tool_panel_dict
-    trans.sa_session.add( repository )
-    trans.sa_session.flush()
+    trans.install_model.context.add( repository )
+    trans.install_model.context.flush()
     # Create a list of guids for all tools that will be removed from the in-memory tool panel and config file on disk.
     guids_to_remove = [ k for k in tool_panel_dict.keys() ]
     # Remove the tools from the toolbox's tools_by_id dictionary.
@@ -984,7 +993,7 @@ def remove_from_tool_panel( trans, repository, shed_tool_conf, uninstall ):
     for config_elem in config_elems:
         if config_elem.tag == 'section':
             # Get the section key for the in-memory tool panel.
-            section_key = 'section_%s' % str( config_elem.get( "id" ) )
+            section_key = str( config_elem.get( "id" ) )
             # Generate the list of tool elements to remove.
             tool_elems_to_remove = []
             for tool_elem in config_elem:

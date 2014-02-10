@@ -55,7 +55,8 @@ def clean_tool_shed_url( base_url ):
     base = base.rstrip( '/' )
     return base
 
-def export_repository( trans, tool_shed_url, repository_id, repository_name, changeset_revision, file_type, export_repository_dependencies, api=False ):
+def export_repository( trans, tool_shed_url, repository_id, repository_name, changeset_revision, file_type,
+                       export_repository_dependencies, api=False ):
     repository = suc.get_repository_in_tool_shed( trans, repository_id )
     repositories_archive_filename = generate_repository_archive_filename( tool_shed_url,
                                                                           str( repository.name ),
@@ -67,7 +68,8 @@ def export_repository( trans, tool_shed_url, repository_id, repository_name, cha
     if export_repository_dependencies:
         repo_info_dicts = get_repo_info_dicts( trans, tool_shed_url, repository_id, changeset_revision )
         repository_ids = get_repository_ids( trans, repo_info_dicts )
-        ordered_repository_ids, ordered_repositories, ordered_changeset_revisions = order_components_for_import( trans, repository_ids, repo_info_dicts )
+        ordered_repository_ids, ordered_repositories, ordered_changeset_revisions = \
+            order_components_for_import( trans, repository_id, repository_ids, repo_info_dicts )
     else:
         ordered_repository_ids = []
         ordered_repositories = []
@@ -89,7 +91,12 @@ def export_repository( trans, tool_shed_url, repository_id, repository_name, cha
             work_dir = tempfile.mkdtemp( prefix="tmp-toolshed-export-er" )
             ordered_repository = ordered_repositories[ index ]
             ordered_changeset_revision = ordered_changeset_revisions[ index ]
-            repository_archive, error_message = generate_repository_archive( trans, work_dir, tool_shed_url, ordered_repository, ordered_changeset_revision, file_type )
+            repository_archive, error_message = generate_repository_archive( trans,
+                                                                             work_dir,
+                                                                             tool_shed_url,
+                                                                             ordered_repository,
+                                                                             ordered_changeset_revision,
+                                                                             file_type )
             if error_message:
                 error_messages = '%s  %s' % ( error_messages, error_message )
             else:
@@ -98,14 +105,17 @@ def export_repository( trans, tool_shed_url, repository_id, repository_name, cha
                 attributes, sub_elements = get_repository_attributes_and_sub_elements( ordered_repository, archive_name )
                 elem = xml_util.create_element( 'repository', attributes=attributes, sub_elements=sub_elements )
                 exported_repository_registry.exported_repository_elems.append( elem )
-            shutil.rmtree( work_dir )
+            suc.remove_dir( work_dir )
         # Keep information about the export in a file name export_info.xml in the archive.
         sub_elements = generate_export_elem( tool_shed_url, repository, changeset_revision, export_repository_dependencies, api )
         export_elem = xml_util.create_element( 'export_info', attributes=None, sub_elements=sub_elements )
         tmp_export_info = xml_util.create_and_write_tmp_file( export_elem, use_indent=True )
         repositories_archive.add( tmp_export_info, arcname='export_info.xml' )
         # Write the manifest, which must preserve the order in which the repositories should be imported.
-        tmp_manifest = xml_util.create_and_write_tmp_file( exported_repository_registry.exported_repository_elems, use_indent=True )
+        exported_repository_root = xml_util.create_element( 'repositories' )
+        for exported_repository_elem in exported_repository_registry.exported_repository_elems:
+            exported_repository_root.append( exported_repository_elem )
+        tmp_manifest = xml_util.create_and_write_tmp_file( exported_repository_root, use_indent=True )
         repositories_archive.add( tmp_manifest, arcname='manifest.xml' )
     except Exception, e:
         log.exception( str( e ) )
@@ -185,8 +195,8 @@ def generate_export_elem( tool_shed_url, repository, changeset_revision, export_
 
 def get_components_from_repo_info_dict( trans, repo_info_dict ):
     """
-    Return the repository and the associated latest installable changeset_revision (including updates) for the repository defined by the received
-    repo_info_dict.
+    Return the repository and the associated latest installable changeset_revision (including updates) for the
+    repository defined by the received repo_info_dict.
     """
     for repository_name, repo_info_tup in repo_info_dict.items():
         # There should only be one entry in the received repo_info_dict.
@@ -200,8 +210,9 @@ def get_components_from_repo_info_dict( trans, repo_info_dict ):
 
 def get_repo_info_dict_for_import( encoded_repository_id, encoded_repository_ids, repo_info_dicts ):
     """
-    The received encoded_repository_ids and repo_info_dicts are lists that contain associated elements at each location in the list.  This method will return the element
-    from repo_info_dicts associated with the received encoded_repository_id by determining it's location in the received encoded_repository_ids list.
+    The received encoded_repository_ids and repo_info_dicts are lists that contain associated elements at each
+    location in the list.  This method will return the element from repo_info_dicts associated with the received
+    encoded_repository_id by determining it's location in the received encoded_repository_ids list.
     """
     for index, repository_id in enumerate( encoded_repository_ids ):
         if repository_id == encoded_repository_id:
@@ -210,6 +221,10 @@ def get_repo_info_dict_for_import( encoded_repository_id, encoded_repository_ids
     return None
 
 def get_repo_info_dicts( trans, tool_shed_url, repository_id, changeset_revision ):
+    """
+    Return a list of dictionaries defining repositories that are required by the repository associated with the
+    received repository_id.
+    """
     repository = suc.get_repository_in_tool_shed( trans, repository_id )
     repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
     # Get a dictionary of all repositories upon which the contents of the current repository_metadata record depend.
@@ -238,8 +253,9 @@ def get_repo_info_dicts( trans, tool_shed_url, repository_id, changeset_revision
 
 def get_repository_attributes_and_sub_elements( repository, archive_name ):
     """
-    Get the information about a repository to create and populate an XML tag set.  The generated attributes will be contained within the <repository>
-    tag, while the sub_elements will be tag sets contained within the <repository> tag set.
+    Get the information about a repository to create and populate an XML tag set.  The generated attributes will
+    be contained within the <repository> tag, while the sub_elements will be tag sets contained within the <repository>
+    tag set.
     """
     attributes = odict()
     sub_elements = odict()
@@ -260,6 +276,7 @@ def get_repository_attributes_and_sub_elements( repository, archive_name ):
     return attributes, sub_elements
 
 def get_repository_ids( trans, repo_info_dicts ):
+    """Return a list of repository ids associated with each dictionary in the received repo_info_dicts."""
     repository_ids = []
     for repo_info_dict in repo_info_dicts:
         for repository_name, repo_info_tup in repo_info_dict.items():
@@ -269,23 +286,36 @@ def get_repository_ids( trans, repo_info_dicts ):
             repository_ids.append( trans.security.encode_id( repository.id ) )
     return repository_ids
 
-def order_components_for_import( trans, repository_ids, repo_info_dicts ):
+def order_components_for_import( trans, primary_repository_id, repository_ids, repo_info_dicts ):
     """
-    Some repositories may have repository dependencies that must be imported and have metadata set on them before the dependent repository is imported.  This method
-    will inspect the list of repositories about to be exported and make sure to order them appropriately for proper import.  For each repository about to be exported,
-    if required repositories are not contained in the list of repositories about to be exported, then they are not considered.  Repository dependency definitions that
-    contain circular dependencies should not result in an infinite loop, but obviously ordering the list will not be handled for one or more of the repositories that
-    require prior import.
+    Some repositories may have repository dependencies that must be imported and have metadata set on
+    them before the dependent repository is imported.  This method will inspect the list of repositories
+    about to be exported and make sure to order them appropriately for proper import.  For each repository
+    about to be exported, if required repositories are not contained in the list of repositories about to
+    be exported, then they are not considered.  Repository dependency definitions that contain circular
+    dependencies should not result in an infinite loop, but obviously ordering the list will not be handled
+    for one or more of the repositories that require prior import.
     """
+    # The received primary_repository_id is the id of the repository being exported, with the received list
+    # of repository_ids being only the ids of all of its repository dependencies.  The primary repository will
+    # always be last in the returned lists.
     ordered_repository_ids = []
     ordered_repositories = []
     ordered_changeset_revisions = []
-    # Create a dictionary whose keys are the received repository_ids and whose values are a list of repository_ids, each of which is contained in the received list of
-    # repository_ids and whose associated repository must be imported prior to the repository associated with the repository_id key.
+    # Create a dictionary whose keys are the received repository_ids and whose values are a list of
+    # repository_ids, each of which is contained in the received list of repository_ids and whose associated
+    # repository must be imported prior to the repository associated with the repository_id key.
     prior_import_required_dict = suc.get_prior_import_or_install_required_dict( trans, repository_ids, repo_info_dicts )
     processed_repository_ids = []
+    # Process the list of repository dependencies defined for the repository associated with the received
+    # primary_repository_id.
     while len( processed_repository_ids ) != len( prior_import_required_dict.keys() ):
         repository_id = suc.get_next_prior_import_or_install_required_dict_entry( prior_import_required_dict, processed_repository_ids )
+        if repository_id == primary_repository_id:
+            # Append the primary_repository_id without processing it since it must be returned last in the order.
+            # It will be processed below after all dependencies are processed.
+            processed_repository_ids.append( primary_repository_id )
+            continue
         processed_repository_ids.append( repository_id )
         if repository_id not in ordered_repository_ids:
             prior_import_required_ids = prior_import_required_dict[ repository_id ]
@@ -304,4 +334,11 @@ def order_components_for_import( trans, repository_ids, repo_info_dicts ):
                 ordered_repository_ids.append( repository_id )
                 ordered_repositories.append( repository )
                 ordered_changeset_revisions.append( changeset_revision )
+    # Process the repository associated with the received primary_repository_id last.
+    repo_info_dict = get_repo_info_dict_for_import( primary_repository_id, repository_ids, repo_info_dicts )
+    repository, changeset_revision = get_components_from_repo_info_dict( trans, repo_info_dict )
+    if repository and changeset_revision:
+        ordered_repository_ids.append( repository_id )
+        ordered_repositories.append( repository )
+        ordered_changeset_revisions.append( changeset_revision )
     return ordered_repository_ids, ordered_repositories, ordered_changeset_revisions

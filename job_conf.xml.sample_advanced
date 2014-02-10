@@ -6,7 +6,19 @@
           -->
         <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner"/>
         <plugin id="pbs" type="runner" load="galaxy.jobs.runners.pbs:PBSJobRunner" workers="2"/>
-        <plugin id="drmaa" type="runner" load="galaxy.jobs.runners.drmaa:DRMAAJobRunner"/>
+        <plugin id="drmaa" type="runner" load="galaxy.jobs.runners.drmaa:DRMAAJobRunner">
+            <!-- Different DRMs handle successfully completed jobs differently,
+                 these options can be changed to handle such differences and
+                 are explained in detail on the Galaxy wiki. Defaults are shown -->
+            <param id="invalidjobexception_state">ok</param>
+            <param id="invalidjobexception_retries">0</param>
+            <param id="internalexception_state">ok</param>
+            <param id="internalexception_retries">0</param>
+        </plugin>
+        <plugin id="sge" type="runner" load="galaxy.jobs.runners.drmaa:DRMAAJobRunner">
+            <!-- Override the $DRMAA_LIBRARY_PATH environment variable -->
+            <param id="drmaa_library_path">/sge/lib/libdrmaa.so</param>
+        </plugin>
         <plugin id="lwr" type="runner" load="galaxy.jobs.runners.lwr:LwrJobRunner">
           <!-- More information on LWR can be found at https://lwr.readthedocs.org -->
           <!-- Uncomment following line to use libcurl to perform HTTP calls (defaults to urllib) -->
@@ -14,6 +26,7 @@
         </plugin>
         <plugin id="cli" type="runner" load="galaxy.jobs.runners.cli:ShellJobRunner" />
         <plugin id="condor" type="runner" load="galaxy.jobs.runners.condor:CondorJobRunner" />
+        <plugin id="slurm" type="runner" load="galaxy.jobs.runners.slurm:SlurmJobRunner" />
     </plugins>
     <handlers default="handlers">
         <!-- Additional job handlers - the id should match the name of a
@@ -21,6 +34,15 @@
          -->
         <handler id="handler0" tags="handlers"/>
         <handler id="handler1" tags="handlers"/>
+        <!-- Handlers will load all plugins defined in the <plugins> collection
+             above by default, but can be limited to a subset using <plugin>
+             tags. This is useful for heterogenous environments where the DRMAA
+             plugin would need to be loaded more than once with different
+             configs.
+         -->
+        <handler id="sge_handler">
+            <plugin id="sge"/>
+        </handler>
         <handler id="special_handler0" tags="special_handlers"/>
         <handler id="special_handler1" tags="special_handlers"/>
         <handler id="trackster_handler"/>
@@ -52,15 +74,44 @@
             <param id="private_token">123456789changeme</param>
             <!-- Uncomment the following statement to disable file staging (e.g.
                  if there is a shared file system between Galaxy and the LWR 
-                 server). -->
+                 server). Alternatively action can be set to 'copy' - to replace 
+                 http transfers with file system copies. -->
             <!-- <param id="default_file_action">none</param> -->
+            <!-- The above option is just the default, the transfer behavior
+                 none|copy|http can be configured on a per path basis via the
+                 following file. See lib/galaxy/jobs/runners/lwr_client/action_mapper.py
+                 for examples of how to configure this file. This is very beta
+                 and nature of file will likely change.
+            -->
+            <!-- <param id="file_action_config">file_actions.json</param> -->
+            <!-- Uncomment following option to disable Galaxy tool dependency
+                 resolution and utilize remote LWR's configuraiton of tool
+                 dependency resolution instead (same options as Galaxy for
+                 dependency resolution are available in LWR).
+            -->
+            <!-- <param id="dependency_resolution">remote</params> -->
+            <!-- Uncomment following option to enable setting metadata on remote
+                 LWR server. The 'use_remote_datatypes' option is available for
+                 determining whether to use remotely configured datatypes or local
+                 ones (both alternatives are a little brittle). -->
+            <!-- <param id="remote_metadata">true</param> -->
+            <!-- <param id="use_remote_datatypes">false</param> -->
+            <!-- If remote LWR server is configured to run jobs as the real user,
+                 uncomment the following line to pass the current Galaxy user
+                 along. -->
+            <!-- <param id="submit_user">$__user_name__</param> -->
+            <!-- Various other submission parameters can be passed along to the LWR
+                 whose use will depend on the remote LWR's configured job manager.
+                 For instance:
+            -->
+            <!-- <param id="submit_native_specification">-P bignodes -R y -pe threads 8</param> -->            
         </destination>
         <destination id="ssh_torque" runner="cli">
             <param id="shell_plugin">SecureShell</param>
             <param id="job_plugin">Torque</param>
             <param id="shell_username">foo</param>
             <param id="shell_hostname">foo.example.org</param>
-            <param id="Job_Execution_Time">24:00:00</param>
+            <param id="job_Resource_List">walltime=24:00:00,ncpus=4</param>
         </destination>
         <destination id="condor" runner="condor">
             <!-- With no params, jobs are submitted to the 'vanilla' universe with:

@@ -1,6 +1,4 @@
 from tool_shed.base.twilltestcase import ShedTwillTestCase, common, os
-import tool_shed.base.test_db_util as test_db_util
-
 emboss_datatypes_repository_name = 'emboss_datatypes_0050'
 emboss_datatypes_repository_description = "Datatypes for emboss"
 emboss_datatypes_repository_long_description = "Long description of Emboss' datatypes"
@@ -32,7 +30,6 @@ bismark_repository_long_description = "A flexible aligner and methylation caller
 category_name = 'Test 0050 Circular Dependencies 5 Levels'
 category_description = 'Test circular dependency features'
 
-
 class TestRepositoryCircularDependenciesToNLevels( ShedTwillTestCase ):
     '''Verify that the code correctly handles circular dependencies down to n levels.'''
 
@@ -40,14 +37,14 @@ class TestRepositoryCircularDependenciesToNLevels( ShedTwillTestCase ):
         """Create necessary user accounts."""
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        test_user_1 = test_db_util.get_user( common.test_user_1_email )
+        test_user_1 = self.test_db_util.get_user( common.test_user_1_email )
         assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % test_user_1_email
-        test_user_1_private_role = test_db_util.get_private_role( test_user_1 )
+        test_user_1_private_role = self.test_db_util.get_private_role( test_user_1 )
         self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
-        admin_user = test_db_util.get_user( common.admin_email )
+        admin_user = self.test_db_util.get_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % admin_email
-        admin_user_private_role = test_db_util.get_private_role( admin_user )
+        admin_user_private_role = self.test_db_util.get_private_role( admin_user )
   
     def test_0005_create_convert_repository( self ):
         '''Create and populate convert_chars_0050.'''
@@ -187,13 +184,13 @@ class TestRepositoryCircularDependenciesToNLevels( ShedTwillTestCase ):
                           strings_not_displayed=[] )
    
     def test_0040_create_and_upload_dependency_definitions( self ):
-        column_repository = test_db_util.get_repository_by_name_and_owner( column_repository_name, common.test_user_1_name )
-        convert_repository = test_db_util.get_repository_by_name_and_owner( convert_repository_name, common.test_user_1_name )
-        datatypes_repository = test_db_util.get_repository_by_name_and_owner( emboss_datatypes_repository_name, common.test_user_1_name )
-        emboss_repository = test_db_util.get_repository_by_name_and_owner( emboss_repository_name, common.test_user_1_name )
-        filtering_repository = test_db_util.get_repository_by_name_and_owner( filtering_repository_name, common.test_user_1_name )
-        freebayes_repository = test_db_util.get_repository_by_name_and_owner( freebayes_repository_name, common.test_user_1_name )
-        bismark_repository = test_db_util.get_repository_by_name_and_owner( bismark_repository_name, common.test_user_1_name )
+        column_repository = self.test_db_util.get_repository_by_name_and_owner( column_repository_name, common.test_user_1_name )
+        convert_repository = self.test_db_util.get_repository_by_name_and_owner( convert_repository_name, common.test_user_1_name )
+        datatypes_repository = self.test_db_util.get_repository_by_name_and_owner( emboss_datatypes_repository_name, common.test_user_1_name )
+        emboss_repository = self.test_db_util.get_repository_by_name_and_owner( emboss_repository_name, common.test_user_1_name )
+        filtering_repository = self.test_db_util.get_repository_by_name_and_owner( filtering_repository_name, common.test_user_1_name )
+        freebayes_repository = self.test_db_util.get_repository_by_name_and_owner( freebayes_repository_name, common.test_user_1_name )
+        bismark_repository = self.test_db_util.get_repository_by_name_and_owner( bismark_repository_name, common.test_user_1_name )
         dependency_xml_path = self.generate_temp_path( 'test_0050', additional_paths=[ 'freebayes' ] )
         # convert_chars depends on column_maker
         # column_maker depends on convert_chars
@@ -235,13 +232,13 @@ class TestRepositoryCircularDependenciesToNLevels( ShedTwillTestCase ):
              id: 7 key: http://toolshed.local:10001__ESEP__emboss_5__ESEP__test__ESEP__8de5fe0d7b04
                  ['http://toolshed.local:10001', 'emboss_datatypes', 'test', 'dbd4f68bf507']
         '''
-        emboss_datatypes_repository = test_db_util.get_repository_by_name_and_owner( emboss_datatypes_repository_name, common.test_user_1_name )
-        emboss_repository = test_db_util.get_repository_by_name_and_owner( emboss_repository_name, common.test_user_1_name )
-        filtering_repository = test_db_util.get_repository_by_name_and_owner( filtering_repository_name, common.test_user_1_name )
-        freebayes_repository = test_db_util.get_repository_by_name_and_owner( freebayes_repository_name, common.test_user_1_name )
-        column_repository = test_db_util.get_repository_by_name_and_owner( column_repository_name, common.test_user_1_name )
-        convert_repository = test_db_util.get_repository_by_name_and_owner( convert_repository_name, common.test_user_1_name )
-        bismark_repository = test_db_util.get_repository_by_name_and_owner( bismark_repository_name, common.test_user_1_name )
+        emboss_datatypes_repository = self.test_db_util.get_repository_by_name_and_owner( emboss_datatypes_repository_name, common.test_user_1_name )
+        emboss_repository = self.test_db_util.get_repository_by_name_and_owner( emboss_repository_name, common.test_user_1_name )
+        filtering_repository = self.test_db_util.get_repository_by_name_and_owner( filtering_repository_name, common.test_user_1_name )
+        freebayes_repository = self.test_db_util.get_repository_by_name_and_owner( freebayes_repository_name, common.test_user_1_name )
+        column_repository = self.test_db_util.get_repository_by_name_and_owner( column_repository_name, common.test_user_1_name )
+        convert_repository = self.test_db_util.get_repository_by_name_and_owner( convert_repository_name, common.test_user_1_name )
+        bismark_repository = self.test_db_util.get_repository_by_name_and_owner( bismark_repository_name, common.test_user_1_name )
         self.check_repository_dependency( convert_repository, column_repository )
         self.check_repository_dependency( column_repository, convert_repository )
         self.check_repository_dependency( emboss_datatypes_repository, bismark_repository )
@@ -256,17 +253,17 @@ class TestRepositoryCircularDependenciesToNLevels( ShedTwillTestCase ):
   
     def test_0050_verify_tool_dependencies( self ):
         '''Check that freebayes and emboss display tool dependencies.'''
-        freebayes_repository = test_db_util.get_repository_by_name_and_owner( freebayes_repository_name, common.test_user_1_name )
-        emboss_repository = test_db_util.get_repository_by_name_and_owner( emboss_repository_name, common.test_user_1_name )
+        freebayes_repository = self.test_db_util.get_repository_by_name_and_owner( freebayes_repository_name, common.test_user_1_name )
+        emboss_repository = self.test_db_util.get_repository_by_name_and_owner( emboss_repository_name, common.test_user_1_name )
         self.display_manage_repository_page( freebayes_repository, 
                                              strings_displayed=[ 'freebayes', '0.9.4_9696d0ce8a9', 'samtools', '0.1.18', 'Tool dependencies', 'package' ] )
         self.display_manage_repository_page( emboss_repository, strings_displayed=[ 'Tool dependencies', 'emboss', '5.0.0', 'package' ] )
  
     def test_0055_verify_repository_metadata( self ):
         '''Verify that resetting the metadata does not change it.'''
-        emboss_datatypes_repository = test_db_util.get_repository_by_name_and_owner( emboss_datatypes_repository_name, common.test_user_1_name )
-        emboss_repository = test_db_util.get_repository_by_name_and_owner( emboss_repository_name, common.test_user_1_name )
-        filtering_repository = test_db_util.get_repository_by_name_and_owner( filtering_repository_name, common.test_user_1_name )
-        freebayes_repository = test_db_util.get_repository_by_name_and_owner( freebayes_repository_name, common.test_user_1_name )
+        emboss_datatypes_repository = self.test_db_util.get_repository_by_name_and_owner( emboss_datatypes_repository_name, common.test_user_1_name )
+        emboss_repository = self.test_db_util.get_repository_by_name_and_owner( emboss_repository_name, common.test_user_1_name )
+        filtering_repository = self.test_db_util.get_repository_by_name_and_owner( filtering_repository_name, common.test_user_1_name )
+        freebayes_repository = self.test_db_util.get_repository_by_name_and_owner( freebayes_repository_name, common.test_user_1_name )
         for repository in [ emboss_datatypes_repository, emboss_repository, freebayes_repository, filtering_repository ]:
             self.verify_unchanged_repository_metadata( repository )

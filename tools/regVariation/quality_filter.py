@@ -9,7 +9,7 @@ usage: %prog input out_file primary_species mask_species score mask_char mask_re
 
 from __future__ import division
 from galaxy import eggs
-import pkg_resources 
+import pkg_resources
 pkg_resources.require( "bx-python" )
 pkg_resources.require( "lrucache" )
 try:
@@ -17,14 +17,12 @@ try:
 except:
     pass
 
-import psyco_full
 import sys
 import os, os.path
 from UserDict import DictMixin
-from bx.binned_array import BinnedArray, FileBinnedArray
+from bx.binned_array import FileBinnedArray
 from bx.bitset import *
 from bx.bitset_builders import *
-from math import isnan
 from bx.cookbook import doc_optparse
 from galaxy.tools.exception_handling import *
 import bx.align.maf
@@ -32,7 +30,7 @@ import bx.align.maf
 class FileBinnedArrayDir( DictMixin ):
     """
     Adapter that makes a directory of FileBinnedArray files look like
-    a regular dict of BinnedArray objects. 
+    a regular dict of BinnedArray objects.
     """
     def __init__( self, dir ):
         self.dir = dir
@@ -56,14 +54,14 @@ def stop_err(msg):
 
 def load_scores_ba_dir( dir ):
     """
-    Return a dict-like object (keyed by chromosome) that returns 
+    Return a dict-like object (keyed by chromosome) that returns
     FileBinnedArray objects created from "key.ba" files in `dir`
     """
     return FileBinnedArrayDir( dir )
 
 def bitwise_and ( string1, string2, maskch ):
-    result=[]
-    for i,ch in enumerate(string1):
+    result = []
+    for i, ch in enumerate(string1):
         try:
             ch = int(ch)
         except:
@@ -76,7 +74,7 @@ def bitwise_and ( string1, string2, maskch ):
             result.append(maskch)
     return ''.join(result)
 
-def main():   
+def main():
     # Parsing Command Line here
     options, args = doc_optparse.parse( __doc__ )
     
@@ -104,25 +102,24 @@ def main():
     mask_reg_dict = {0:'Current pos', 1:'Current+Downstream', 2:'Current+Upstream', 3:'Current+Both sides'}
 
     #ensure dbkey is present in the twobit loc file
-    filepath = None
     try:
         pspecies_all = pri_species.split(',')
         pspecies_all2 = pri_species.split(',')
         pspecies = []
         filepaths = []
         for line in open(loc_file):
-            if pspecies_all2 == []:    
+            if pspecies_all2 == []:
                 break
             if line[0:1] == "#":
                 continue
             fields = line.split('\t')
             try:
                 build = fields[0]
-                for i,dbkey in enumerate(pspecies_all2):
+                for i, dbkey in enumerate(pspecies_all2):
                     if dbkey == build:
                         pspecies.append(build)
                         filepaths.append(fields[1])
-                        del pspecies_all2[i]        
+                        del pspecies_all2[i]
                     else:
                         continue
             except:
@@ -133,7 +130,7 @@ def main():
     if len(pspecies) == 0:
         stop_err( "Quality scores are not available for the following genome builds: %s" % ( pspecies_all2 ) )
     if len(pspecies) < len(pspecies_all):
-        print "Quality scores are not available for the following genome builds: %s" %(pspecies_all2)
+        print "Quality scores are not available for the following genome builds: %s" % (pspecies_all2)
     
     scores_by_chrom = []
     #Get scores for all the primary species
@@ -172,8 +169,8 @@ def main():
                 except:
                     continue
                 pos = 0
-                while pos < (s_end-s_start):    
-                    if sequence[ind] == '-':    #No score for GAPS
+                while pos < (s_end-s_start):
+                    if sequence[ind] == '-':  #No score for GAPS
                         ind += 1
                         continue
                     score = scores[pos]
@@ -202,7 +199,7 @@ def main():
                             ind += 1
                             pos += 1
                         elif mask_region == 3:    #Mask Corresponding position + neighbors on both sides
-                            for n in range(-mask_length_l,mask_length_r+1):
+                            for n in range(-mask_length_l, mask_length_r+1):
                                 try:
                                     status_list[ind+n] = '0'
                                 except:
@@ -238,8 +235,8 @@ def main():
         
     maf_reader.close()
     maf_writer.close()
-    print "No. of blocks = %d; No. of masked nucleotides = %s; Mask character = %s; Mask region = %s; Cutoff used = %d" %(maf_count, mask_chr_count, mask_chr_dict[mask_chr], mask_reg_dict[mask_region], qual_cutoff)
-    
-    
+    print "No. of blocks = %d; No. of masked nucleotides = %s; Mask character = %s; Mask region = %s; Cutoff used = %d" % (maf_count, mask_chr_count, mask_chr_dict[mask_chr], mask_reg_dict[mask_region], qual_cutoff)
+
+
 if __name__ == "__main__":
     main()

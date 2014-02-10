@@ -51,6 +51,23 @@
     </script>
 </%def>
 
+<%def name="render_deprecated_repository_dependencies_message( deprecated_repository_dependency_tups )">
+    <div class="warningmessage">
+        <%
+            from tool_shed.util.common_util import parse_repository_dependency_tuple
+            msg = '<ul>'
+            for deprecated_repository_dependency_tup in deprecated_repository_dependency_tups:
+                toolshed, name, owner, changeset_revision, pir, oicct = \
+                parse_repository_dependency_tuple( deprecated_repository_dependency_tup )
+                msg += '<li>Revision <b>%s</b> of repository <b>%s</b> owned by <b>%s</b></li>' % \
+                    ( changeset_revision, name, owner )
+            msg += '</ul>'
+        %>
+        This repository depends upon the following deprecated repositories<br/>
+        ${msg}
+    </div>
+</%def>
+
 <%def name="render_star_rating( name, rating, disabled=False )">
     <%
         if disabled:
@@ -84,6 +101,20 @@
             <tr><td>${description_text}</td></tr>
         </table>
         <div style="clear: both"></div>
+    </div>
+</%def>
+
+<%def name="render_multiple_heads_message( heads )">
+    <div class="warningmessage">
+        <%
+            from tool_shed.util.shed_util_common import get_revision_label_from_ctx
+            heads_str = ''
+            for ctx in heads:
+                heads_str += '%s<br/>' % get_revision_label_from_ctx( ctx, include_date=True )
+        %>
+        Contact the administrator of this Tool Shed as soon as possible and let them know that
+        this repository has the following multiple heads which must be merged.<br/>
+        ${heads_str}
     </div>
 </%def>
 

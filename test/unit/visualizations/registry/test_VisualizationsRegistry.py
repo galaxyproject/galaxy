@@ -4,7 +4,7 @@ import os
 import imp
 import unittest
 
-utility = imp.load_source( 'utility', '../../util/utility.py' )
+utility = imp.load_source( 'utility', os.path.join( os.path.dirname( __file__ ), '../../util/utility.py' ) )
 log = utility.set_up_filelogger( __name__ + '.log' )
 
 relative_test_path = '/test/unit/visualizations/registry'
@@ -12,7 +12,7 @@ utility.add_galaxy_lib_to_path( relative_test_path )
 
 from galaxy.visualization.registry import VisualizationsRegistry
 
-base_mock = imp.load_source( 'mock', '../../web/base/mock.py' )
+base_mock = imp.load_source( 'mock',  os.path.join( os.path.dirname( __file__ ), '../../web/base/mock.py' ) )
 
 # ----------------------------------------------------------------------------- globals
 glx_dir = os.getcwd().replace( relative_test_path, '' )
@@ -49,18 +49,8 @@ class VisualizationsRegistry_TestCase( unittest.TestCase ):
             template_cache_dir=template_cache_dir )
 
         expected_plugins_path = os.path.join( glx_dir, vis_reg_path )
-        expected_plugin_names = [
-            'circster',
-            'graphview',
-            'phyloviz',
-            'scatterplot',
-            'sweepster',
-            'trackster',
-        ]
-
         self.assertEqual( plugin_mgr.base_url, 'visualizations' )
         self.assertItemsEqual( plugin_mgr.directories, [ expected_plugins_path ] )
-        self.assertItemsEqual( plugin_mgr.plugins.keys(), expected_plugin_names )
         
         scatterplot = plugin_mgr.plugins[ 'scatterplot' ]
         self.assertEqual( scatterplot.name, 'scatterplot' )

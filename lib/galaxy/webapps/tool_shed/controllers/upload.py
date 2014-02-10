@@ -62,7 +62,13 @@ class UploadController( BaseUIController ):
                 uploaded_directory = tempfile.mkdtemp()
                 repo_url = 'http%s' % url[ len( 'hg' ): ]
                 repo_url = repo_url.encode( 'ascii', 'replace' )
-                commands.clone( suc.get_configured_ui(), repo_url, uploaded_directory )
+                try:
+                    commands.clone( suc.get_configured_ui(), repo_url, uploaded_directory )
+                except Exception, e:
+                    message = 'Error uploading via mercurial clone: %s' % suc.to_html_string( str( e ) )
+                    status = 'error'
+                    suc.remove_dir( uploaded_directory )
+                    uploaded_directory = None
             elif url:
                 valid_url = True
                 try:
@@ -123,7 +129,7 @@ class UploadController( BaseUIController ):
                         self.upload_directory( trans, repository, uploaded_directory, upload_point, remove_repo_files_not_in_tar, commit_message, new_repo_alert )
                 else:
                     if ( isgzip or isbz2 ) and uncompress_file:
-                        uploaded_file_filename = commit_util.uncompress( repository, uploaded_file_name, uploaded_file_filename, isgzip, isbz2 )
+                        uploaded_file_filename = commit_util.uncompress( repository, uploaded_file_name, uploaded_file_filename, isgzip=isgzip, isbz2=isbz2 )
                     if repository.type == rt_util.TOOL_DEPENDENCY_DEFINITION and uploaded_file_filename != suc.TOOL_DEPENDENCY_DEFINITION_FILENAME:
                         ok = False
                         message = 'Repositories of type <b>Tool dependency definition</b> can only contain a single file named <b>tool_dependencies.xml</b>.'
@@ -248,6 +254,8 @@ class UploadController( BaseUIController ):
                         status = 'error'
                     # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
                     tool_util.reset_tool_data_tables( trans.app )
+                    if uploaded_directory:
+                        suc.remove_dir( uploaded_directory )
                     trans.response.send_redirect( web.url_for( controller='repository',
                                                                action='browse_repository',
                                                                id=repository_id,
@@ -255,6 +263,8 @@ class UploadController( BaseUIController ):
                                                                message=message,
                                                                status=status ) )
                 else:
+                    if uploaded_directory:
+                        suc.remove_dir( uploaded_directory )
                     status = 'error'
                 # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
                 tool_util.reset_tool_data_tables( trans.app )

@@ -1,12 +1,33 @@
+# -*- coding: utf-8 -*-
 """
 Utility functions used systemwide.
 
 """
-import binascii, errno, grp, logging, os, pickle, random, re, shutil, smtplib, stat, string, sys, tempfile, threading
+
+from __future__ import absolute_import
+
+import binascii
+import errno
+import grp
+import json
+import logging
+import os
+import pickle
+import random
+import re
+import shutil
+import smtplib
+import stat
+import string
+import sys
+import tempfile
+import threading
+
 from email.MIMEText import MIMEText
 
 from os.path import relpath
 from hashlib import md5
+from itertools import izip
 
 from galaxy import eggs
 
@@ -20,11 +41,8 @@ from elementtree import ElementTree, ElementInclude
 eggs.require( "wchartype" )
 import wchartype
 
-from inflection import Inflector, English
+from .inflection import Inflector, English
 inflector = Inflector(English)
-
-eggs.require( "simplejson" )
-import simplejson
 
 log   = logging.getLogger(__name__)
 _lock = threading.RLock()
@@ -36,7 +54,7 @@ DATABASE_MAX_STRING_SIZE_PRETTY = '32K'
 
 gzip_magic = '\037\213'
 bz2_magic = 'BZh'
-DEFAULT_ENCODING = 'utf-8'
+DEFAULT_ENCODING = os.environ.get('GALAXY_DEFAULT_ENCODING', 'utf-8')
 NULL_CHAR = '\000'
 BINARY_CHARS = [ NULL_CHAR ]
 
@@ -134,6 +152,11 @@ def parse_xml(fname):
     tree = ElementTree.parse(fname)
     root = tree.getroot()
     ElementInclude.include(root)
+    return tree
+
+
+def parse_xml_string(xml_string):
+    tree = ElementTree.fromstring(xml_string)
     return tree
 
 def xml_to_string( elem, pretty=False ):
@@ -286,8 +309,8 @@ def shrink_string_by_size( value, size, join_by="..", left_larger=True, beginnin
 
 def pretty_print_json(json_data, is_json_string=False):
     if is_json_string:
-        json_data = simplejson.loads(json_data)
-    return simplejson.dumps(json_data, sort_keys=True, indent=4 * ' ')
+        json_data = json.loads(json_data)
+    return json.dumps(json_data, sort_keys=True, indent=4 * ' ')
 
 # characters that are valid
 valid_chars  = set(string.letters + string.digits + " -=_.()/+*^,:?!")
@@ -367,6 +390,42 @@ def sanitize_for_filename( text, default=None ):
             return sanitize_for_filename( str( unique_id() ) )
         return default
     return out
+
+
+def ready_name_for_url( raw_name ):
+    """ General method to convert a string (i.e. object name) to a URL-ready
+    slug.
+
+    >>> ready_name_for_url( "My Cool Object" )
+    'My-Cool-Object'
+    >>> ready_name_for_url( "!My Cool Object!" )
+    'My-Cool-Object'
+    >>> ready_name_for_url( "Hello₩◎ґʟⅾ" )
+    'Hello'
+    """
+
+    # Replace whitespace with '-'
+    slug_base = re.sub( "\s+", "-", raw_name )
+    # Remove all non-alphanumeric characters.
+    slug_base = re.sub( "[^a-zA-Z0-9\-]", "", slug_base )
+    # Remove trailing '-'.
+    if slug_base.endswith('-'):
+        slug_base = slug_base[:-1]
+    return slug_base
+
+
+def in_directory( file, directory ):
+    """
+    Return true, if the common prefix of both is equal to directory
+    e.g. /a/b/c/d.rst and directory is /a/b, the common prefix is /a/b
+    """
+
+    # Make both absolute.
+    directory = os.path.abspath( directory )
+    file = os.path.abspath( file )
+
+    return os.path.commonprefix( [ file, directory ] ) == directory
+
 
 class Params( object ):
     """
@@ -929,6 +988,15 @@ def move_merge( source, target ):
             move_merge( os.path.join( source, name ), os.path.join( target, name ) )
     else:
         return shutil.move( source, target )
+
+
+def safe_str_cmp(a, b):
+    if len(a) != len(b):
+        return False
+    rv = 0
+    for x, y in izip(a, b):
+        rv |= ord(x) ^ ord(y)
+    return rv == 0
 
 galaxy_root_path = os.path.join(__path__[0], "..","..","..")
 

@@ -53,6 +53,8 @@ class Configuration( object ):
         self.tool_data_table_config_path = resolve_path( kwargs.get( 'tool_data_table_config_path', 'tool_data_table_conf.xml' ), self.root )
         self.shed_tool_data_table_config = resolve_path( kwargs.get( 'shed_tool_data_table_config', 'shed_tool_data_table_conf.xml' ), self.root )
         self.ftp_upload_dir = kwargs.get( 'ftp_upload_dir', None )
+        # Install and test framework for testing tools contained in repositories.
+        self.num_tool_test_results_saved = kwargs.get( 'num_tool_test_results_saved', 5 )
         # Location for dependencies
         if 'tool_dependency_dir' in kwargs:
             self.tool_dependency_dir = resolve_path( kwargs.get( "tool_dependency_dir" ), self.root )
@@ -70,6 +72,7 @@ class Configuration( object ):
         self.blacklist_location = kwargs.get( 'blacklist_file', None )
         self.blacklist_content = None
         self.remote_user_maildomain = kwargs.get( "remote_user_maildomain", None )
+        self.remote_user_header = kwargs.get( "remote_user_header", 'HTTP_REMOTE_USER' )
         self.remote_user_logout_href = kwargs.get( "remote_user_logout_href", None )
         self.require_login = string_as_bool( kwargs.get( "require_login", "False" ) )
         self.allow_user_creation = string_as_bool( kwargs.get( "allow_user_creation", "True" ) )

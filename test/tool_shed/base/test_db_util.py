@@ -1,8 +1,12 @@
 import galaxy.model, logging
+import galaxy.model.tool_shed_install
 import galaxy.webapps.tool_shed.model as model
 from galaxy.model.orm import *
-from galaxy.webapps.tool_shed.model.mapping import context as sa_session
-from galaxy.model.mapping import context as ga_session
+
+from functional.database_contexts import tool_shed_context as sa_session
+from functional.database_contexts import galaxy_context as ga_session
+from functional.database_contexts import install_context as install_session
+
 
 log = logging.getLogger( 'test.tool_shed.test_db_util' )
 
@@ -24,13 +28,13 @@ def get_all_repositories():
 
 def get_all_installed_repositories( actually_installed=False ):
     if actually_installed:
-        return ga_session.query( galaxy.model.ToolShedRepository ) \
-                         .filter( and_( galaxy.model.ToolShedRepository.table.c.deleted == False,
-                                        galaxy.model.ToolShedRepository.table.c.uninstalled == False,
-                                        galaxy.model.ToolShedRepository.table.c.status == galaxy.model.ToolShedRepository.installation_status.INSTALLED ) ) \
+        return install_session.query( galaxy.model.tool_shed_install.ToolShedRepository ) \
+                         .filter( and_( galaxy.model.tool_shed_install.ToolShedRepository.table.c.deleted == False,
+                                        galaxy.model.tool_shed_install.ToolShedRepository.table.c.uninstalled == False,
+                                        galaxy.model.tool_shed_install.ToolShedRepository.table.c.status == galaxy.model.tool_shed_install.ToolShedRepository.installation_status.INSTALLED ) ) \
                          .all()
     else:
-        return ga_session.query( galaxy.model.ToolShedRepository ).all()
+        return install_session.query( galaxy.model.tool_shed_install.ToolShedRepository ).all()
     
 def get_category_by_name( name ):
     return sa_session.query( model.Category ) \
@@ -48,21 +52,21 @@ def get_default_user_permissions_by_user( user ):
                      .all()
                      
 def get_galaxy_repository_by_name_owner_changeset_revision( repository_name, owner, changeset_revision ):
-    return ga_session.query( galaxy.model.ToolShedRepository ) \
-                     .filter( and_( galaxy.model.ToolShedRepository.table.c.name == repository_name,
-                                    galaxy.model.ToolShedRepository.table.c.owner == owner,
-                                    galaxy.model.ToolShedRepository.table.c.changeset_revision == changeset_revision ) ) \
+    return install_session.query( galaxy.model.tool_shed_install.ToolShedRepository ) \
+                     .filter( and_( galaxy.model.tool_shed_install.ToolShedRepository.table.c.name == repository_name,
+                                    galaxy.model.tool_shed_install.ToolShedRepository.table.c.owner == owner,
+                                    galaxy.model.tool_shed_install.ToolShedRepository.table.c.changeset_revision == changeset_revision ) ) \
                      .first()
                      
 def get_installed_repository_by_id( repository_id ):
-    return ga_session.query( galaxy.model.ToolShedRepository ) \
-                     .filter( galaxy.model.ToolShedRepository.table.c.id == repository_id ) \
+    return install_session.query( galaxy.model.tool_shed_install.ToolShedRepository ) \
+                     .filter( galaxy.model.tool_shed_install.ToolShedRepository.table.c.id == repository_id ) \
                      .first()
                      
 def get_installed_repository_by_name_owner( repository_name, owner ):
-    return ga_session.query( galaxy.model.ToolShedRepository ) \
-                     .filter( and_( galaxy.model.ToolShedRepository.table.c.name == repository_name,
-                                    galaxy.model.ToolShedRepository.table.c.owner == owner ) ) \
+    return install_session.query( galaxy.model.tool_shed_install.ToolShedRepository ) \
+                     .filter( and_( galaxy.model.tool_shed_install.ToolShedRepository.table.c.name == repository_name,
+                                    galaxy.model.tool_shed_install.ToolShedRepository.table.c.owner == owner ) ) \
                      .first()
                      
 def get_private_role( user ):
@@ -151,7 +155,7 @@ def refresh( obj ):
     sa_session.refresh( obj )
     
 def ga_refresh( obj ):
-    ga_session.refresh( obj )
+    install_session.refresh( obj )
     
 def get_galaxy_private_role( user ):
     for role in user.all_roles():

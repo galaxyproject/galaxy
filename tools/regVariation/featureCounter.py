@@ -11,8 +11,7 @@ usage: %prog bed_file_1 bed_file_2 out_file
 from galaxy import eggs
 import pkg_resources
 pkg_resources.require( "bx-python" )
-import sys, traceback, fileinput
-from warnings import warn
+import sys, fileinput
 from bx.intervals.io import *
 from bx.cookbook import doc_optparse
 from bx.intervals.operations import quicksect
@@ -33,7 +32,7 @@ def counter(node, start, end):
             partial += 1
         if node.left and node.left.maxend > start:
             counter(node.left, start, end)
-        if node.right: 
+        if node.right:
             counter(node.right, start, end)
     elif start < node.start < end:
         if node.end <= end:
@@ -42,10 +41,10 @@ def counter(node, start, end):
             partial += 1
         if node.left and node.left.maxend > start:
             counter(node.left, start, end)
-        if node.right: 
+        if node.right:
             counter(node.right, start, end)
     else:
-        if node.left: 
+        if node.left:
             counter(node.left, start, end)
 
 def count_coverage( readers, comments=True ):
@@ -58,8 +57,8 @@ def count_coverage( readers, comments=True ):
         if type( item ) is GenomicInterval:
             rightTree.insert( item, secondary.linenum, item.fields )
     
-    bitsets = secondary_copy.binned_bitsets() 
-        
+    bitsets = secondary_copy.binned_bitsets()
+    
     global full, partial
     
     for interval in primary:
@@ -82,7 +81,7 @@ def count_coverage( readers, comments=True ):
                 bases_covered = bitsets[ chrom ].count_range( start, end-start )
                 if (end - start) == 0:
                     percent = 0
-                else: 
+                else:
                     percent = float(bases_covered) / float(end - start)
                 if bases_covered:
                     root = rightTree.chroms[chrom]    #root node for the chrom tree
@@ -92,13 +91,14 @@ def count_coverage( readers, comments=True ):
             interval.fields.append(str(full))
             interval.fields.append(str(partial))
             yield interval
-    
+
+
 def main():
     options, args = doc_optparse.parse( __doc__ )
     
     try:
         chr_col_1, start_col_1, end_col_1, strand_col_1 = parse_cols_arg( options.cols1 )
-        chr_col_2, start_col_2, end_col_2, strand_col_2 = parse_cols_arg( options.cols2 )      
+        chr_col_2, start_col_2, end_col_2, strand_col_2 = parse_cols_arg( options.cols2 )
         in1_fname, in2_fname, out_fname = args
     except:
         stop_err( "Data issue: click the pencil icon in the history item to correct the metadata attributes." )
@@ -126,7 +126,7 @@ def main():
     out_file = open( out_fname, "w" )
 
     try:
-        for line in count_coverage([g1,g2,g2_copy]):
+        for line in count_coverage([g1, g2, g2_copy]):
             if type( line ) is GenomicInterval:
                 out_file.write( "%s\n" % "\t".join( line.fields ) )
             else:
@@ -143,6 +143,7 @@ def main():
         print skipped( g2, filedesc=" of 2nd dataset" )
     elif g2_copy.skipped > 0:
         print skipped( g2_copy, filedesc=" of 2nd dataset" )
-        
+
+
 if __name__ == "__main__":
     main()

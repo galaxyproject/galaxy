@@ -13,12 +13,22 @@ Note: that you can enable (lots of) debugging info using cli options:
 * casperjs usertests.js --url='http://localhost:8080' --verbose=true --logLevel=debug
 
 (see casperjs.org for more information)
+
+Note: This seems to not work with CasperJS 1.1 (and PhantomJS 1.9) - Casper 1.0.xx and
+PhantomJS 1.8 work for me (John).
+
+Note: Example of specifing user and admin user credentials.
+
+casperjs api-configuration-tests.js --url="http://localhost:8080" \
+    --admin='{"email": "foo@example.com", "password": "123456" }' \
+    '{ "testUser": { "email": "foo@example.com", "password": "123456" } }'
+
 """
 # -------------------------------------------------------------------- can't do 2.5
 import sys
 ( major, minor, micro, releaselevel, serial ) = sys.version_info
 if minor < 6:
-    msg = 'casperjs requires python 2.6 or newer. Using: %s' %( sys.version )
+    msg = 'casperjs requires python 2.6 or newer. Using: %s' % ( sys.version )
     try:
         # if nose is installed do a skip test
         from nose.plugins.skip import SkipTest
@@ -36,7 +46,6 @@ import re
 import unittest
 from server_env import TestEnvironment
 
-import pprint
 import logging
 logging.basicConfig( stream=sys.stderr, name=__name__ )
 log = logging.getLogger( __name__ )
@@ -50,11 +59,13 @@ _TODO = """
     better way to turn debugging on from the environment
 """
 
+
 # ====================================================================
 class HeadlessJSJavascriptError( Exception ):
     """An error that occurrs in the javascript test file.
     """
     pass
+
 
 class CasperJSTestCase( unittest.TestCase ):
     """Casper tests running in a unittest framework.
@@ -76,7 +87,7 @@ class CasperJSTestCase( unittest.TestCase ):
     casper_done_str = '# Stopping'
 
     # convert js test results to unittest.TestResults
-    results_adapter = None #CasperJsonToUnittestResultsConverter()
+    results_adapter = None  # CasperJsonToUnittestResultsConverter()
 
     # ---------------------------------------------------------------- run the js script
     def run_js_script( self, rel_script_path, *args, **kwargs ):
@@ -166,14 +177,14 @@ class CasperJSTestCase( unittest.TestCase ):
         """Converts the headless' error from JSON into a more informative
         python HeadlessJSJavascriptError.
         """
-        get_error   = lambda d: d[ 'errors' ][0]
-        get_msg     = lambda err: err[ 'msg' ]
-        get_trace   = lambda err: err[ 'backtrace' ]
+        get_error = lambda d: d[ 'errors' ][0]
+        get_msg = lambda err: err[ 'msg' ]
+        get_trace = lambda err: err[ 'backtrace' ]
         try:
             # assume it's json and located in errors (and first)
             js_test_results = json.loads( stdout_output )
             last_error = get_error( js_test_results )
-            err_string = ( "%s\n%s" %( get_msg( last_error ),
+            err_string = ( "%s\n%s" % ( get_msg( last_error ),
                 self.browser_backtrace_to_string( get_trace( last_error ) ) ) )
 
         # if we couldn't parse json from what's returned on the error, dump stdout
@@ -187,7 +198,7 @@ class CasperJSTestCase( unittest.TestCase ):
         except Exception, exc:
             log.debug( '(failed to parse error returned from %s: %s)', _PATH_TO_HEADLESS, str( exc ) )
             return HeadlessJSJavascriptError(
-                "ERROR in headless browser script %s" %( script_path ) )
+                "ERROR in headless browser script %s" % ( script_path ) )
 
         # otherwise, raise with msg and backtrace
         return HeadlessJSJavascriptError( err_string )
@@ -196,10 +207,10 @@ class CasperJSTestCase( unittest.TestCase ):
         """Converts list of trace dictionaries (as might be returned from
         json results) to a string similar to a python backtrace.
         """
-        template    = '  File "%s", line %s, in %s'
+        template = '  File "%s", line %s, in %s'
         traces = []
         for trace in backtrace:
-            traces.append( template %( trace[ 'file' ], trace[ 'line' ], trace[ 'function' ] ) )
+            traces.append( template % ( trace[ 'file' ], trace[ 'line' ], trace[ 'function' ] ) )
         return '\n'.join( traces )
 
     # ---------------------------------------------------------------- results
@@ -216,7 +227,7 @@ class CasperJSTestCase( unittest.TestCase ):
             js_test_results = json.loads( results )
             failures = js_test_results[ 'testResults' ][ 'failures' ]
             assert len( failures ) == 0, (
-                "%d assertions failed in the headless browser tests" %( len( failures ) )
+                "%d assertions failed in the headless browser tests" % ( len( failures ) )
                 + " (see the log for details)" )
 
     # ---------------------------------------------------------------- TestCase overrides
@@ -247,7 +258,7 @@ class CasperJsonToUnittestResultsConverter( object ):
         """
         results_dict = json.loads( json_results )
         failures = results_dict[ 'testResults' ][ 'failures' ]
-        passes   = results_dict[ 'testResults' ][ 'passes' ]
+        passes = results_dict[ 'testResults' ][ 'passes' ]
         self.add_json_failures_to_results( failures, test )
         self.add_json_successes_to_results( passes, test )
 
@@ -271,11 +282,11 @@ class CasperJsonToUnittestResultsConverter( object ):
         """
         #TODO: this is all too elaborate
         fail_type = casper_failure[ 'type' ]
-        values    = json.dumps( casper_failure[ 'values' ] )
-        desc      = casper_failure[ 'standard' ]
+        values = json.dumps( casper_failure[ 'values' ] )
+        desc = casper_failure[ 'standard' ]
         if 'messgae' in casper_failure:
-            desc = capser_failure[ 'message' ]
-        failure_msg = "(%s) %s: %s" %( fail_type, desc, values )
+            desc = casper_failure[ 'message' ]
+        failure_msg = "(%s) %s: %s" % ( fail_type, desc, values )
         #TODO: tb is empty ([]) - can we get file info from casper, covert to py trace?
         return ( failure_class, failure_msg, [] )
 
@@ -295,6 +306,7 @@ class CasperJsonToUnittestResultsConverter( object ):
 def setup_module():
     log.debug( '\n--------------- setting up module' )
 
+
 def teardown_module():
     log.debug( '\n--------------- tearing down module' )
 
@@ -303,6 +315,7 @@ test_user = {
     'email': 'test1@test.test',
     'password': '123456'
 }
+
 
 # ==================================================================== TESTCASE EXAMPLE
 # these could be broken out into other py files - shouldn't be necc. ATM

@@ -1,7 +1,6 @@
 import os
 import shutil
-import simplejson
-from simplejson import dumps
+from json import dumps, loads
 from time import sleep
 
 from .destination import submit_params
@@ -16,7 +15,7 @@ class parseJson(object):
     def __call__(self, func):
         def replacement(*args, **kwargs):
             response = func(*args, **kwargs)
-            return simplejson.loads(response)
+            return loads(response)
         return replacement
 
 
@@ -50,7 +49,7 @@ class OutputNotFoundException(Exception):
         return "No remote output found for path %s" % self.path
 
 
-class Client(object):
+class JobClient(object):
     """
     Objects of this client class perform low-level communication with a remote LWR server.
 
@@ -82,16 +81,16 @@ class Client(object):
         args = {"job_id": self.job_id, "name": name, "input_type": input_type}
         return self._raw_execute('input_path', args)
 
-    def put_file(self, path, input_type, name=None, contents=None, action='transfer'):
+    def put_file(self, path, input_type, name=None, contents=None, action_type='transfer'):
         if not name:
             name = os.path.basename(path)
         args = {"job_id": self.job_id, "name": name, "input_type": input_type}
         input_path = path
         if contents:
             input_path = None
-        if action == 'transfer':
+        if action_type == 'transfer':
             return self._upload_file(args, contents, input_path)
-        elif action == 'copy':
+        elif action_type == 'copy':
             lwr_path = self._raw_execute('input_path', args)
             self._copy(path, lwr_path)
             return {'path': lwr_path}
@@ -105,11 +104,14 @@ class Client(object):
         ## path. Use old paths.
         input_type = args['input_type']
         action = {
-            'input': 'upload_input',
-            'input_extra': 'upload_extra_input',
+            # For backward compatibility just target upload_input_extra for all
+            # inputs, it allows nested inputs. Want to do away with distinction
+            # inputs and extra inputs.
+            'input': 'upload_extra_input',
             'config': 'upload_config_file',
-            'work_dir': 'upload_working_directory_file',
-            'tool': 'upload_tool_file'
+            'workdir': 'upload_working_directory_file',
+            'tool': 'upload_tool_file',
+            'unstructured': 'upload_unstructured_file',
         }[input_type]
         del args['input_type']
         return action
@@ -119,7 +121,23 @@ class Client(object):
         return self._raw_execute("get_output_type", {"name": name,
                                                      "job_id": self.job_id})
 
-    def fetch_output(self, path, working_directory, action='transfer'):
+    # Deprecated
+    def fetch_output_legacy(self, path, working_directory, action_type='transfer'):
+        # Needs to determine if output is task/working directory or standard.
+        name = os.path.basename(path)
+
+        output_type = self._get_output_type(name)
+        if output_type == "none":
+            # Just make sure the file was created.
+            if not os.path.exists(path):
+                raise OutputNotFoundException(path)
+            return
+        elif output_type in ["task"]:
+            path = os.path.join(working_directory, name)
+
+        self.__populate_output_path(name, path, output_type, action_type)
+
+    def fetch_output(self, path, name=None, check_exists_remotely=False, action_type='transfer'):
         """
         Download an output dataset from the remote server.
 
@@ -130,58 +148,47 @@ class Client(object):
         working_directory : str
             Local working_directory for the job.
         """
-        name = os.path.basename(path)
-        output_type = self._get_output_type(name)
 
-        if output_type == "none":
-            # Just make sure the file was created.
-            if not os.path.exists(path):
-                raise OutputNotFoundException(path)
-            return
+        if not name:
+            # Extra files will send in the path.
+            name = os.path.basename(path)
 
-        output_path = self.__output_path(path, name, working_directory, output_type)
-        self.__populate_output_path(name, output_path, output_type, action)
+        output_type = "direct"  # Task/from_work_dir outputs now handled with fetch_work_dir_output
+        self.__populate_output_path(name, path, output_type, action_type)
 
-    def __populate_output_path(self, name, output_path, output_type, action):
-        if action == 'transfer':
+    def __populate_output_path(self, name, output_path, output_type, action_type):
+        self.__ensure_directory(output_path)
+        if action_type == 'transfer':
             self.__raw_download_output(name, self.job_id, output_type, output_path)
-        elif action == 'copy':
+        elif action_type == 'copy':
             lwr_path = self._output_path(name, self.job_id, output_type)['path']
             self._copy(lwr_path, output_path)
 
-    def __output_path(self, path, name, working_directory, output_type):
-        """
-        Preconditions: output_type is not 'none'.
-        """
-        if output_type == "direct":
-            output_path = path
-        elif output_type == "task":
-            output_path = os.path.join(working_directory, name)
-        else:
-            raise Exception("Unknown output_type returned from LWR server %s" % output_type)
-        return output_path
-
-    def fetch_work_dir_output(self, source, working_directory, output_path, action='transfer'):
+    def fetch_work_dir_output(self, name, working_directory, output_path, action_type='transfer'):
         """
         Download an output dataset specified with from_work_dir from the
         remote server.
 
         **Parameters**
 
-        source : str
+        name : str
             Path in job's working_directory to find output in.
         working_directory : str
             Local working_directory for the job.
         output_path : str
             Full path to output dataset.
         """
-        output = open(output_path, "wb")
-        name = os.path.basename(source)
-        if action == 'transfer':
-            self.__raw_download_output(name, self.job_id, "work_dir", output)
-        elif action == 'copy':
+        self.__ensure_directory(output_path)
+        if action_type == 'transfer':
+            self.__raw_download_output(name, self.job_id, "work_dir", output_path)
+        else:  # Even if action is none - LWR has a different work_dir so this needs to be copied.
             lwr_path = self._output_path(name, self.job_id, 'work_dir')['path']
             self._copy(lwr_path, output_path)
+
+    def __ensure_directory(self, output_path):
+        output_path_directory = os.path.dirname(output_path)
+        if not os.path.exists(output_path_directory):
+            os.makedirs(output_path_directory)
 
     @parseJson()
     def _output_path(self, name, job_id, output_type):
@@ -199,7 +206,7 @@ class Client(object):
         }
         self._raw_execute("download_output", output_params, output_path=output_path)
 
-    def launch(self, command_line):
+    def launch(self, command_line, requirements=[]):
         """
         Run or queue up the execution of the supplied
         `command_line` on the remote server.
@@ -213,6 +220,8 @@ class Client(object):
         submit_params = self._submit_params
         if submit_params:
             launch_params['params'] = dumps(submit_params)
+        if requirements:
+            launch_params['requirements'] = dumps([requirement.to_dict() for requirement in requirements])
         return self._raw_execute("launch", launch_params)
 
     def kill(self):
@@ -285,13 +294,13 @@ class Client(object):
             shutil.copyfile(source, destination)
 
 
-class InputCachingClient(Client):
+class InputCachingJobClient(JobClient):
     """
     Beta client that cache's staged files to prevent duplication.
     """
 
     def __init__(self, destination_params, job_id, job_manager_interface, client_cacher):
-        super(InputCachingClient, self).__init__(destination_params, job_id, job_manager_interface)
+        super(InputCachingJobClient, self).__init__(destination_params, job_id, job_manager_interface)
         self.client_cacher = client_cacher
 
     @parseJson()
@@ -326,3 +335,55 @@ class InputCachingClient(Client):
     @parseJson()
     def file_available(self, path):
         return self._raw_execute("file_available", {"path": path})
+
+
+class ObjectStoreClient(object):
+
+    def __init__(self, lwr_interface):
+        self.lwr_interface = lwr_interface
+
+    @parseJson()
+    def exists(self, **kwds):
+        return self._raw_execute("object_store_exists", args=self.__data(**kwds))
+
+    @parseJson()
+    def file_ready(self, **kwds):
+        return self._raw_execute("object_store_file_ready", args=self.__data(**kwds))
+
+    @parseJson()
+    def create(self, **kwds):
+        return self._raw_execute("object_store_create", args=self.__data(**kwds))
+
+    @parseJson()
+    def empty(self, **kwds):
+        return self._raw_execute("object_store_empty", args=self.__data(**kwds))
+
+    @parseJson()
+    def size(self, **kwds):
+        return self._raw_execute("object_store_size", args=self.__data(**kwds))
+
+    @parseJson()
+    def delete(self, **kwds):
+        return self._raw_execute("object_store_delete", args=self.__data(**kwds))
+
+    @parseJson()
+    def get_data(self, **kwds):
+        return self._raw_execute("object_store_get_data", args=self.__data(**kwds))
+
+    @parseJson()
+    def get_filename(self, **kwds):
+        return self._raw_execute("object_store_get_filename", args=self.__data(**kwds))
+
+    @parseJson()
+    def update_from_file(self, **kwds):
+        return self._raw_execute("object_store_update_from_file", args=self.__data(**kwds))
+
+    @parseJson()
+    def get_store_usage_percent(self):
+        return self._raw_execute("object_store_get_store_usage_percent", args={})
+
+    def __data(self, **kwds):
+        return kwds
+
+    def _raw_execute(self, command, args={}):
+        return self.lwr_interface.execute(command, args, data=None, input_path=None, output_path=None)

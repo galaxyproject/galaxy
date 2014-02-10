@@ -13,11 +13,20 @@ python data_transfer.py <config_file>
 
 """
 import ConfigParser
-import sys, os, time, traceback
+import cookielib
+import datetime
+import logging
 import optparse
-import urllib,urllib2, cookielib, shutil
-import logging, time, datetime
+import os
+import shutil
+import sys
+import time
+import time
+import traceback
+import urllib
+import urllib2
 import xml.dom.minidom
+
 
 from xml_helper import get_value, get_value_index
 
@@ -39,14 +48,11 @@ new_path.extend( sys.path[1:] ) # remove scripts/ from the path
 sys.path = new_path
 
 from galaxy import eggs
-from galaxy.util.json import from_json_string, to_json_string
 from galaxy.model import SampleDataset
 from galaxy.web.api.samples import SamplesAPIController
 import pkg_resources
 pkg_resources.require( "pexpect" )
 import pexpect
-pkg_resources.require( "simplejson" )
-import simplejson
 
 log.debug(str(dir(api)))
 

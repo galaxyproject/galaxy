@@ -24,6 +24,8 @@ from galaxy.util import docstring_trim
 from galaxy.web import url_for
 from galaxy.web.base.controller import BaseUIController
 from galaxy.web.base.controller import UsesFormDefinitionsMixin
+from galaxy.web.base.controller import CreatesUsersMixin
+from galaxy.web.base.controller import CreatesApiKeysMixin
 from galaxy.web.form_builder import CheckboxField
 from galaxy.web.form_builder import  build_select_field
 from galaxy.web.framework.helpers import time_ago, grids
@@ -56,7 +58,8 @@ class UserOpenIDGrid( grids.Grid ):
     def build_initial_query( self, trans, **kwd ):
         return trans.sa_session.query( self.model_class ).filter( self.model_class.user_id == trans.user.id )
 
-class User( BaseUIController, UsesFormDefinitionsMixin ):
+
+class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, CreatesApiKeysMixin ):
     user_openid_grid = UserOpenIDGrid()
     installed_len_files = None
 
@@ -703,22 +706,10 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
         message = kwd.get( 'message', '' )
         status = kwd.get( 'status', 'done' )
         is_admin = cntrller == 'admin' and trans.user_is_admin()
-        user = trans.app.model.User( email=email )
-        user.set_password_cleartext( password )
-        user.username = username
-        if trans.app.config.user_activation_on: 
-            user.active = False
-        else:
-            user.active = True # Activation is off, every new user is active by default.
-        trans.sa_session.add( user )
-        trans.sa_session.flush()
-        trans.app.security_agent.create_private_user_role( user )
+        user = self.create_user( trans=trans, email=email, username=username, password=password )
         error = ''
         success = True
         if trans.webapp.name == 'galaxy':
-            # We set default user permissions, before we log in and set the default history permissions
-            trans.app.security_agent.user_set_default_permissions( user,
-                                                                   default_access_private=trans.app.config.new_user_dataset_access_role_default_private )
             # Save other information associated with the user, if any
             user_info_forms = self.get_all_forms( trans,
                                                   filter=dict( deleted=False ),
@@ -835,19 +826,22 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
 
         if email is None or activation_token is None:
             #  We don't have the email or activation_token, show error.
-            return trans.show_error_message( "You are using wrong activation link. Try to log-in and we will send you a new activation email.<br><a href='%s'>Go to login page.</a>" ) % web.url_for( controller="root", action="index" )
+            return trans.show_error_message( "You are using wrong activation link. Try to log-in and we will send you a new activation email. <br><a href='%s'>Go to login page.</a>" ) % web.url_for( controller="root", action="index" )
         else:
             #  Find the user
             user = trans.sa_session.query( trans.app.model.User ).filter( trans.app.model.User.table.c.email==email ).first()
+            # If the user is active already don't try to activate            
+            if user.active == True:
+                return trans.show_ok_message( "Your account is already active. Nothing has changed. <br><a href='%s'>Go to login page.</a>" ) % web.url_for( controller='root', action='index' )
             if user.activation_token == activation_token:
                 user.activation_token = None
                 user.active = True
                 trans.sa_session.add(user)
                 trans.sa_session.flush()
-                return trans.show_ok_message( "Your account has been successfully activated!<br><a href='%s'>Go to login page.</a>" ) % web.url_for( controller='root', action='index' )
+                return trans.show_ok_message( "Your account has been successfully activated! <br><a href='%s'>Go to login page.</a>" ) % web.url_for( controller='root', action='index' )
             else:
                 #  Tokens don't match. Activation is denied.
-                return trans.show_error_message( "You are using wrong activation link. Try to log in and we will send you a new activation email.<br><a href='%s'>Go to login page.</a>" ) % web.url_for( controller='root', action='index' )
+                return trans.show_error_message( "You are using wrong activation link. Try to log in and we will send you a new activation email. <br><a href='%s'>Go to login page.</a>" ) % web.url_for( controller='root', action='index' )
         return
 
     def __get_user_type_form_definition( self, trans, user=None, **kwd ):
@@ -1089,7 +1083,8 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                 else:
                     chars = string.letters + string.digits
                     new_pass = ""
-                    for i in range(15):
+                    reset_password_length = getattr( trans.app.config, "reset_password_length", 15 )
+                    for i in range(reset_password_length):
                         new_pass = new_pass + random.choice(chars)
                     host = trans.request.host.split(':')[0]
                     if host == 'localhost':
@@ -1695,11 +1690,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         if params.get( 'new_api_key_button', False ):
-            new_key = trans.app.model.APIKeys()
-            new_key.user_id = trans.user.id
-            new_key.key = trans.app.security.get_new_guid()
-            trans.sa_session.add( new_key )
-            trans.sa_session.flush()
+            self.create_api_key( trans, trans.user )
             message = "Generated a new web API key"
             status = "done"
         return trans.fill_template( 'webapps/galaxy/user/api_keys.mako',

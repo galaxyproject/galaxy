@@ -1,16 +1,16 @@
 // Additional dependencies: jQuery, underscore.
-define(["libs/backbone/backbone-relational"], function() {
+define([], function() {
 
 /**
  * Dataset metedata.
  */
-var DatasetMetadata = Backbone.RelationalModel.extend({});
+var DatasetMetadata = Backbone.Model.extend({});
 
 /**
  * A dataset. In Galaxy, datasets are associated with a history, so
  * this object is also known as a HistoryDatasetAssociation.
  */
-var Dataset = Backbone.RelationalModel.extend({
+var Dataset = Backbone.Model.extend({
     defaults: {
         id: '',
         type: '',
@@ -20,8 +20,8 @@ var Dataset = Backbone.RelationalModel.extend({
     },
 
     initialize: function() {
-        // FIXME: pass back a metadata dict and then Backbone-relational
-        // can be used unpack metadata automatically.
+        this._set_metadata();
+        
         // Update metadata on change.
         this.on('change', this._set_metadata, this);
     },
@@ -304,27 +304,28 @@ var TabularButtonTracksterView = Backbone.View.extend(
         }
 
         // check
-        if(this.col.chrom === null)
-        {
-            console.log("TabularButtonTrackster : Chromosome column undefined.");
+        if(this.col.chrom === null) {
             return;
         }
 
         // get dataset id
-        if (typeof options.model.attributes.id === "undefined")
+        if (typeof options.model.attributes.id === "undefined") {
             console.log("TabularButtonTrackster : Dataset identification is missing.");
-        else
+        } else {
             this.dataset_id = options.model.attributes.id;
+        }
         
         // get url
-        if (typeof options.model.attributes.url_viz === "undefined")
+        if (typeof options.model.attributes.url_viz === "undefined") {
             console.log("TabularButtonTrackster : Url for visualization controller is missing.");
-        else
+        } else {
             this.url_viz = options.model.attributes.url_viz;
+        }
 
         // get genome_build / database key
-        if (typeof options.model.attributes.genome_build !== "undefined")
+        if (typeof options.model.attributes.genome_build !== "undefined") {
             this.genome_build = options.model.attributes.genome_build;
+        }
 
         // render the icon from template
         var btn_viz = new IconButtonView({ model : new IconButton({
@@ -443,7 +444,7 @@ var TabularButtonTracksterView = Backbone.View.extend(
                                                 dataset_params.id = vis_id;
                                         
                                                 // add widget
-                                                parent.Galaxy.frame_manager.frame_new({
+                                                parent.Galaxy.frame.add({
                                                     title    : "Trackster",
                                                     type     : "url",
                                                     content  : vis_url + "/trackster?" + $.param(dataset_params)
@@ -460,7 +461,7 @@ var TabularButtonTracksterView = Backbone.View.extend(
                                 var url = vis_url + "/trackster?" + $.param(dataset_params);
 
                                 // add widget
-                                parent.Galaxy.frame_manager.frame_new({
+                                parent.Galaxy.frame.add({
                                     title    : "Trackster",
                                     type     : "url",
                                     content  : url

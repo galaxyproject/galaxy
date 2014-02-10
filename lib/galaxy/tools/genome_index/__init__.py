@@ -1,6 +1,11 @@
 from __future__ import with_statement
 
-import os, shutil, logging, tempfile, tarfile
+import json
+import logging
+import os
+import shutil
+import tarfile
+import tempfile
 
 from galaxy import model, util
 from galaxy.web.framework.helpers import to_unicode
@@ -9,9 +14,6 @@ from galaxy.util.json import *
 from galaxy.web.base.controller import UsesHistoryMixin
 from galaxy.tools.data import ToolDataTableManager
 
-import pkg_resources
-pkg_resources.require("simplejson")
-import simplejson
 
 log = logging.getLogger(__name__)
 
@@ -74,7 +76,7 @@ class GenomeIndexToolWrapper( object ):
             fp = open( gitd.dataset.get_file_name(), 'r' )
             deferred = sa_session.query( model.DeferredJob ).filter_by( id=gitd.deferred_job_id ).first()
             try:
-                logloc = simplejson.load( fp )
+                logloc = json.load( fp )
             except ValueError:
                 deferred.state = app.model.DeferredJob.states.ERROR
                 sa_session.add( deferred )

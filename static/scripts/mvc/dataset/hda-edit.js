@@ -32,6 +32,12 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
             // HDAEdit gets the rerun button on almost all states
             this._render_rerunButton
         ];
+
+        //TODO: move to HiddenUntilActivatedViewMixin
+        /** should the tags editor be shown or hidden initially? */
+        this.tagsEditorShown        = attributes.tagsEditorShown || false;
+        /** should the tags editor be shown or hidden initially? */
+        this.annotationEditorShown  = attributes.annotationEditorShown || false;
     },
 
     // ......................................................................... edit attr, delete
@@ -66,15 +72,15 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
         var purged = this.model.get( 'purged' ),
             deleted = this.model.get( 'deleted' ),
             editBtnData = {
-                title       : _l( 'Edit Attributes' ),
+                title       : _l( 'Edit attributes' ),
                 href        : this.urls.edit,
-                target      : 'galaxy_main',
-                icon_class  : 'edit'
+                target      : this.linkTarget,
+                classes     : 'dataset-edit'
             };
             
         // disable if purged or deleted and explain why in the tooltip
         if( deleted || purged ){
-            editBtnData.enabled = false;
+            editBtnData.disabled = true;
             if( purged ){
                 editBtnData.title = _l( 'Cannot edit attributes of datasets removed from disk' );
             } else if( deleted ){
@@ -86,10 +92,6 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
             editBtnData.disabled = true;
             editBtnData.title = _l( 'This dataset must finish uploading before it can be edited' );
         }
-
-        
-        //return new IconButtonView({ model : new IconButton( editBtnData ) }).render().$el;
-
         editBtnData.faIcon = 'fa-pencil';
         return faIconButton( editBtnData );
     },
@@ -106,26 +108,21 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
         }
         
         var self = this,
-            delete_url = self.urls[ 'delete' ],
             deleteBtnData = {
                 title       : _l( 'Delete' ),
-                href        : delete_url,
-                icon_class  : 'delete',
-                onclick    : function() {
+                classes     : 'dataset-delete',
+                onclick     : function() {
                     // ...bler... tooltips being left behind in DOM (hover out never called on deletion)
-                    self.$el.find( '.menu-button.delete' ).trigger( 'mouseout' );
+                    self.$el.find( '.icon-btn.dataset-delete' ).trigger( 'mouseout' );
                     self.model[ 'delete' ]();
                 }
         };
         if( this.model.get( 'deleted' ) || this.model.get( 'purged' ) ){
             deleteBtnData = {
                 title       : _l( 'Dataset is already deleted' ),
-                icon_class  : 'delete',
-                enabled     : false
+                disabled    : true
             };
         }
-        //return new IconButtonView({ model : new IconButton( deleteBtnData ) }).render().$el;
-
         deleteBtnData.faIcon = 'fa-times';
         return faIconButton( deleteBtnData );
     },
@@ -138,18 +135,11 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
         if( this.model.get( 'state' ) !== hdaModel.HistoryDatasetAssociation.STATES.ERROR ){
             return null;
         }
-        
-        //return new IconButtonView({ model : new IconButton({
-        //    title       : _l( 'View or report this error' ),
-        //    href        : this.urls.report_error,
-        //    target      : 'galaxy_main',
-        //    icon_class  : 'bug'
-        //})}).render().$el;
-
         return faIconButton({
             title       : _l( 'View or report this error' ),
             href        : this.urls.report_error,
-            target      : 'galaxy_main',
+            classes     : 'dataset-report-error-btn',
+            target      : this.linkTarget,
             faIcon      : 'fa-bug'
         });
     },
@@ -158,17 +148,11 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
      *  @returns {jQuery} rendered DOM
      */
     _render_rerunButton : function(){
-        //return new IconButtonView({ model : new IconButton({
-        //    title       : _l( 'Run this job again' ),
-        //    href        : this.urls.rerun,
-        //    target      : 'galaxy_main',
-        //    icon_class  : 'arrow-circle'
-        //}) }).render().$el;
-
         return faIconButton({
             title       : _l( 'Run this job again' ),
             href        : this.urls.rerun,
-            target      : 'galaxy_main',
+            classes     : 'dataset-rerun-btn',
+            target      : this.linkTarget,
             faIcon      : 'fa-refresh'
         });
     },
@@ -179,7 +163,8 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
      */
     _render_visualizationsButton : function(){
         var visualizations = this.model.get( 'visualizations' );
-        if( ( !this.model.hasData() )
+        if( ( !this.hasUser )
+        ||  ( !this.model.hasData() )
         ||  ( _.isEmpty( visualizations ) ) ){
             return null;
         }
@@ -204,52 +189,46 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
         // Add dbkey to params if it exists.
         if( dbkey ){ params.dbkey = dbkey; }
 
-        // render the icon from template
-        //var visualizationsButton = new IconButtonView({ model : new IconButton({
-        //    title       : _l( 'Visualize' ),
-        //    href        : this.urls.visualization,
-        //    icon_class  : 'chart_curve'
-        //})});
-        //var $icon = visualizationsButton.render().addClass( 'visualize-icon' ); // needed?
-        ////return visualizationsButton.render().$el;
-
         var $icon = faIconButton({
             title       : _l( 'Visualize' ),
-            href        : this.urls.visualization,
+            classes     : 'dataset-visualize-btn',
             faIcon      : 'fa-bar-chart-o'
         });
 
         // map a function to each visualization in the icon's attributes
         //  create a popupmenu from that map
+        var hdaView = this;
         /** @inner */
         function create_viz_action( visualization ) {
             switch( visualization ){
                 case 'trackster':
                     return create_trackster_action_fn( visualization_url, params, dbkey );
                 case 'scatterplot':
-                    return create_scatterplot_action_fn( visualization_url, params );
+                    return create_scatterplot_action_fn( visualization_url, params, hdaView.linkTarget );
                 default:
-                    return function(){// add widget
-                        Galaxy.frame_manager.frame_new(
-                        {
-                            title    : "Visualization",
-                            type     : "url",
-                            content  : visualization_url + '/' + visualization + '?' + $.param( params )
+                    return function(){
+                        Galaxy.frame.add({
+                            title       : "Visualization",
+                            type        : "url",
+                            content     : visualization_url + '/' + visualization + '?' + $.param( params )
                         });
                     };
             }
         }
 
+        function titleCase( string ){
+            return string.charAt( 0 ).toUpperCase() + string.slice( 1 );
+        }
+
         // No need for popup menu because there's a single visualization.
-        if ( visualizations.length === 1 ) {
-            $icon.attr( 'title', visualizations[0] );
+        if( visualizations.length === 1 ){
+            $icon.attr( 'data-original-title', _l( 'Visualize in ' ) + _l( titleCase( visualizations[0] ) ) );
             $icon.click( create_viz_action( visualizations[0] ) );
 
         // >1: Populate menu dict with visualization fns, make the popupmenu
         } else {
             _.each( visualizations, function( visualization ) {
-                var titleCaseVisualization = visualization.charAt( 0 ).toUpperCase() + visualization.slice( 1 );
-                popup_menu_dict[ _l( titleCaseVisualization ) ] = create_viz_action( visualization );
+                popup_menu_dict[ _l( titleCase( visualization ) ) ] = create_viz_action( visualization );
             });
             make_popupmenu( $icon, popup_menu_dict );
         }
@@ -264,76 +243,54 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
         ||  !( visualizations && !_.isEmpty( visualizations ) ) ){
             return null;
         }
-
-        // render the icon from template
-        //var visualizationsButton = new IconButtonView({ model : new IconButton({
-        //    title       : _l( 'Visualize' ),
-        //    icon_class  : 'chart_curve'
-        //})});
-        //var $icon = visualizationsButton.render().$el;
         var $icon = faIconButton({
             title       : _l( 'Visualize' ),
+            classes     : 'dataset-visualize-btn',
             faIcon      : 'fa-bar-chart-o'
         });
-        $icon.addClass( 'visualize-icon' ); // needed?
 
         // No need for popup menu because there's a single visualization.
-        if( _.keys( visualizations ).length === 1 ) {
-            $icon.attr( 'title', _.keys( visualizations )[0] );
-            $icon.attr( 'href', _.values( visualizations )[0] );
+        if( visualizations.length === 1 ) {
+            var onlyVisualization = visualizations[0];
+            $icon.attr( 'data-original-title', _l( 'Visualize in ' ) + onlyVisualization.html );
+            $icon.attr( 'href', onlyVisualization.href );
 
         // >1: Populate menu dict with visualization fns, make the popupmenu
         } else {
             var popup_menu_options = [];
             _.each( visualizations, function( linkData ) {
+                linkData.func = function(){
+                    if( Galaxy.frame.active ){
+                        Galaxy.frame.add({
+                            title       : "Visualization",
+                            type        : "url",
+                            content     : linkData.href
+                        });
+                        return false;
+                    }
+                    return true;
+                };
                 popup_menu_options.push( linkData );
+                return false;
             });
-            var popup = new PopupMenu( $icon, popup_menu_options );
+            PopupMenu.create( $icon, popup_menu_options );
         }
         return $icon;
     },
-    
-    // ......................................................................... secondary actions
-    /** Render icon-button to load and display tagging html.
-     *  @returns {jQuery} rendered DOM
-     */
-    _render_tagButton : function(){
-        if( !this.hasUser ){
-            return null;
-        }
-        
-        //return new IconButtonView({ model : new IconButton({
-        //    title       : _l( 'Edit dataset tags' ),
-        //    target      : 'galaxy_main',
-        //    href        : this.urls.tags.get,
-        //    icon_class  : 'tags'
-        //})}).render().$el;
 
-        return faIconButton({
-            title       : _l( 'Edit dataset tags' ),
-            classes     : 'dataset-tag-btn',
-            faIcon      : 'fa-tags'
-        });
-    },
+    // ......................................................................... render main
+    _buildNewRender : function(){
+        var $newRender = hdaBase.HDABaseView.prototype._buildNewRender.call( this );
 
-    /** Render icon-button to load and display annotation html.
-     *  @returns {jQuery} rendered DOM
-     */
-    _render_annotateButton : function(){
-        if( !this.hasUser ){
-            return null;
-        }
+        //TODO: this won't localize easily
+        $newRender.find( '.dataset-deleted-msg' ).append(
+            _l( 'Click <a href="javascript:void(0);" class="dataset-undelete">here</a> to undelete it' +
+            ' or <a href="javascript:void(0);" class="dataset-purge">here</a> to immediately remove it from disk' ));
 
-        //return new IconButtonView({ model : new IconButton({
-        //    title       : _l( 'Edit dataset annotation' ),
-        //    target      : 'galaxy_main',
-        //    icon_class  : 'annotate'
-        //})}).render().$el;
-        return faIconButton({
-            title       : _l( 'Edit dataset annotation' ),
-            classes     : 'dataset-annotate-btn',
-            faIcon      : 'fa-comment'
-        });
+        $newRender.find( '.dataset-hidden-msg' ).append(
+            _l( 'Click <a href="javascript:void(0);" class="dataset-unhide">here</a> to unhide it' ));
+
+        return $newRender;
     },
     
     // ......................................................................... state body renderers
@@ -343,7 +300,7 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
      */
     _render_body_failed_metadata : function(){
         // add a message box about the failure at the top of the body then render the remaining body as STATES.OK
-        var $link = $( '<a/>' ).attr({ href: this.urls.edit, target: 'galaxy_main' })
+        var $link = $( '<a/>' ).attr({ href: this.urls.edit, target: this.linkTarget })
                 .text( _l( 'set it manually or retry auto-detection' ) ),
             $span = $( '<span/>' ).text( '. ' + _l( 'You may be able to' ) + ' ' ).append( $link ),
             $body = hdaBase.HDABaseView.prototype._render_body_failed_metadata.call( this );
@@ -375,97 +332,73 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
         this.makeDbkeyEditLink( $body );
 
         // more actions/buttons
-        $body.find( '.dataset-actions .left' ).append( this._render_visualizationsButton() );
-        $body.find( '.dataset-actions .right' ).append([
-            this._render_tagButton(),
-            this._render_annotateButton()
-        ]);
-        this.tagsEditor = new TagsEditor({
-            model   : this.model,
-            el      : $body.find( '.tags-display' )
-        }).render();
+        if( this.hasUser ){
+            $body.find( '.dataset-actions .left' ).append( this._render_visualizationsButton() );
+            //TODO: might be better to move these into the render() and call setElement here
+            this._renderTags( $body );
+            this._renderAnnotation( $body );
+        }
         return $body;
+    },
+
+    _renderTags : function( $where ){
+        var view = this;
+        this.tagsEditor = new TagsEditor({
+            model           : this.model,
+            el              : $where.find( '.tags-display' ),
+            onshowFirstTime : function(){ this.render(); },
+            // persist state on the hda view (and not the editor) since these are currently re-created each time
+            onshow          : function(){ view.tagsEditorShown = true; },
+            onhide          : function(){ view.tagsEditorShown = false; },
+            $activator      : faIconButton({
+                title   : _l( 'Edit dataset tags' ),
+                classes : 'dataset-tag-btn',
+                faIcon  : 'fa-tags'
+            }).appendTo( $where.find( '.dataset-actions .right' ) )
+        });
+        if( this.tagsEditorShown ){ this.tagsEditor.toggle( true ); }
+    },
+    _renderAnnotation : function( $where ){
+        var view = this;
+        this.annotationEditor = new AnnotationEditor({
+            model           : this.model,
+            el              : $where.find( '.annotation-display' ),
+            onshowFirstTime : function(){ this.render(); },
+            // persist state on the hda view (and not the editor) since these are currently re-created each time
+            onshow          : function(){ view.annotationEditorShown = true; },
+            onhide          : function(){ view.annotationEditorShown = false; },
+            $activator      : faIconButton({
+                title   : _l( 'Edit dataset annotation' ),
+                classes : 'dataset-annotate-btn',
+                faIcon  : 'fa-comment'
+            }).appendTo( $where.find( '.dataset-actions .right' ) )
+        });
+        if( this.annotationEditorShown ){ this.annotationEditor.toggle( true ); }
     },
 
     makeDbkeyEditLink : function( $body ){
         // make the dbkey a link to editing
         if( this.model.get( 'metadata_dbkey' ) === '?'
         &&  !this.model.isDeletedOrPurged() ){
-            $body.find( '.dataset-dbkey .value' ).replaceWith(
-                $( '<a target="galaxy_main">?</a>' ).attr( 'href', this.urls.edit ) );
+            var editableDbkey = $( '<a class="value">?</a>' )
+                .attr( 'href', this.urls.edit )
+                .attr( 'target', this.linkTarget );
+            $body.find( '.dataset-dbkey .value' ).replaceWith( editableDbkey );
         }
     },
 
     // ......................................................................... events
     /** event map */
-    events : {
-        'click .dataset-title-bar'      : 'toggleBodyVisibility',
+    events : _.extend( _.clone( hdaBase.HDABaseView.prototype.events ), {
         'click .dataset-undelete'       : function( ev ){ this.model.undelete(); return false; },
         'click .dataset-unhide'         : function( ev ){ this.model.unhide();   return false; },
-        'click .dataset-purge'          : 'confirmPurge',
-
-        'click .dataset-tag-btn'        : 'displayTags',
-        'click .dataset-annotate-btn'   : 'loadAndDisplayAnnotation'
-    },
+        'click .dataset-purge'          : 'confirmPurge'
+    }),
     
     /** listener for item purge */
     confirmPurge : function _confirmPurge( ev ){
-//TODO: confirm dialog
+        //TODO: confirm dialog
         this.model.purge();
-        return false;
-    },
-
-    // ......................................................................... tags
-    /** Find the tag area and, if initial: load the html (via ajax) for displaying them; otherwise, unhide/hide
-     */
-//TODO: into sub-MV
-    displayTags : function( event ){
-        this.$el.find( '.tags-display' ).slideToggle( this.fxSpeed );
-        return false;
-    },
-
-    // ......................................................................... annotations
-    /** Find the annotation area and, if initial: load the html (via ajax) for displaying them; otherwise, unhide/hide
-     */
-    loadAndDisplayAnnotation : function( event ){
-//TODO: this is a drop in from history.mako - should use MV as well
-        this.log( this + '.loadAndDisplayAnnotation', event );
-        var view = this,
-            $annotationArea = this.$el.find( '.annotation-display' ),
-            $annotationElem = $annotationArea.find( '.annotation' );
-
-        // Show or hide annotation area; if showing annotation area and it's empty, fill it.
-        if ( $annotationArea.is( ":hidden" ) ){
-            if( !jQuery.trim( $annotationElem.html() ) ){
-                // Need to fill annotation element.
-                var xhr = $.ajax( this.urls.annotation.get );
-                xhr.fail( function( xhr, status, error ){
-                    view.log( "Annotation failed", xhr, status, error );
-                    view.trigger( 'error', view, xhr, {}, _l( "Annotation failed" ) );
-                });
-                xhr.done( function( html ){
-                    html = html || "<em>" + _l( "Describe or add notes to dataset" ) + "</em>";
-                    $annotationElem.html( html );
-                    $annotationArea.find( "[title]" ).tooltip();
-
-                    $annotationElem.make_text_editable({
-                        use_textarea: true,
-                        on_finish: function( newAnnotation ){
-                            $annotationElem.text( newAnnotation );
-                            view.model.save({ annotation: newAnnotation }, { silent: true })
-                                .fail( function(){
-                                    $annotationElem.text( view.model.previous( 'annotation' ) );
-                                });
-                        }
-                    });
-                    $annotationArea.slideDown( view.fxSpeed );
-                });
-            } else {
-                $annotationArea.slideDown( view.fxSpeed );
-            }
-        } else {
-            $annotationArea.slideUp( view.fxSpeed );
-        }
         return false;
     },
 
@@ -486,15 +419,13 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
  *  @returns function that loads the scatterplot
  */
 //TODO: should be imported from scatterplot.js OR abstracted to 'load this in the galaxy_main frame'
-function create_scatterplot_action_fn( url, params ){
+function create_scatterplot_action_fn( url, params, target ){
     action = function() {
-        // add widget
-        Galaxy.frame_manager.frame_new(
-        {
-            title      : "Scatterplot",
-            type       : "url",
-            content    : url + '/scatterplot?' + $.param(params),
-            location   : 'center'
+        Galaxy.frame.add({
+            title       : "Scatterplot",
+            type        : "url",
+            content     : url + '/scatterplot?' + $.param(params),
+            target      : target
         });
 
         //TODO: this needs to go away
@@ -552,10 +483,10 @@ function create_scatterplot_action_fn( url, params ){
                                                 dataset_params.id = vis_id;
                                         
                                                 // add widget
-                                                parent.Galaxy.frame_manager.frame_new({
-                                                    title    : "Trackster",
-                                                    type     : "url",
-                                                    content  : vis_url + "/trackster?" + $.param(dataset_params)
+                                                parent.Galaxy.frame.add({
+                                                    title       : "Trackster",
+                                                    type        : "url",
+                                                    content     : vis_url + "/trackster?" + $.param(dataset_params)
                                                 });
                                             });
                                         }
@@ -569,10 +500,10 @@ function create_scatterplot_action_fn( url, params ){
                                 var url = vis_url + "/trackster?" + $.param(dataset_params);
 
                                 // add widget
-                                parent.Galaxy.frame_manager.frame_new({
-                                    title    : "Trackster",
-                                    type     : "url",
-                                    content  : url
+                                parent.Galaxy.frame.add({
+                                    title       : "Trackster",
+                                    type        : "url",
+                                    content     : url
                                 });
                             }
                         }

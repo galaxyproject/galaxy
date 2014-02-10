@@ -91,9 +91,9 @@ def check_tool_tag_set( elem, migrated_tool_configs_dict, missing_tool_configs_d
     file_path = elem.get( 'file', None )
     if file_path:
         path, name = os.path.split( file_path )
-        if name in migrated_tool_configs_dict:
-            tool_dependencies = migrated_tool_configs_dict[ name ]
-            missing_tool_configs_dict[ name ] = tool_dependencies
+        for migrated_tool_config in migrated_tool_configs_dict.keys():
+            if migrated_tool_config in [ file_path, name ]:
+                missing_tool_configs_dict[ name ] = migrated_tool_configs_dict[ migrated_tool_config ]
     return missing_tool_configs_dict
 
 def get_non_shed_tool_panel_configs( app ):
@@ -183,7 +183,11 @@ def parse_repository_dependency_tuple( repository_dependency_tuple, contains_err
 def tool_shed_get( app, tool_shed_url, uri ):
     """Make contact with the tool shed via the uri provided."""
     registry = app.tool_shed_registry
-    urlopener = urllib2.build_opener()
+    # urllib2 auto-detects system proxies, when passed a Proxyhandler.
+    # Refer: http://docs.python.org/2/howto/urllib2.html#proxies
+    proxy = urllib2.ProxyHandler()
+    urlopener = urllib2.build_opener( proxy )
+    urllib2.install_opener( urlopener )
     password_mgr = registry.password_manager_for_url( tool_shed_url )
     if password_mgr is not None:
         auth_handler = urllib2.HTTPBasicAuthHandler( password_mgr )

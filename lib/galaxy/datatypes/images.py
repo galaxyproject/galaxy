@@ -213,7 +213,6 @@ Binary.register_sniffable_binary_format("pdf", "pdf", Pdf)
 
 def create_applet_tag_peek( class_name, archive, params ):
     text = """
-<!--[if !IE]>-->
 <object classid="java:%s"
       type="application/x-java-applet"
       height="30" width="200" align="center" >
@@ -221,17 +220,14 @@ def create_applet_tag_peek( class_name, archive, params ):
     for name, value in params.iteritems():
         text += """<param name="%s" value="%s"/>""" % ( name, value )
     text += """
-<!--<![endif]-->
 <object classid="clsid:8AD9C840-044E-11D1-B3E9-00805F499D93"
         height="30" width="200" >
         <param name="code" value="%s" />
         <param name="archive" value="%s"/>""" % ( class_name, archive )
     for name, value in params.iteritems():
         text += """<param name="%s" value="%s"/>""" % ( name, value )
-    text += """</object>
-<!--[if !IE]>-->
+    text += """<div class="errormessage">You must install and enable Java in your browser in order to access this applet.<div></object>
 </object>
-<!--<![endif]-->
 """
     return """<div><p align="center">%s</p></div>""" % text
 

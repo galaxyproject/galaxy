@@ -124,7 +124,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 #genome_data_path = tool-data/genome
 
 # URL for rsync server to download pre-built indexes.
-#rsync_url = rsync://scofield.bx.psu.edu/indexes
+#rsync_url = rsync://datacache.galaxyproject.org/indexes
 
 # Dataset files are stored in this directory.
 #file_path = database/files
@@ -177,7 +177,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # Visualizations config directory: where to look for individual visualization plugins.
 # The path is relative to the Galaxy root dir. To use an absolute path begin the path
 # with '/'.
-#visualizations_plugins_directory = config/plugins/visualizations
+visualization_plugins_directory = config/plugins/visualizations
 
 # Each job is given a unique empty directory as its current working directory.
 # This option defines in what parent directory those directories will be
@@ -289,6 +289,10 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # Registration warning message is used to discourage people from registering multiple accounts. Applies mostly for the main Galaxy instance.
 # If no message specified the warning box will not be shown.
 #registration_warning_message = Please register only one account - we provide this service free of charge and have limited computational resources. Multi-accounts are tracked and will be subjected to account termination and data deletion.
+
+# When users opt to reset passwords, new ones are created, this option
+# specifies the length of these passwords.
+#reset_password_length = 15
 
 
 # -- Account activation
@@ -426,7 +430,7 @@ static_robots_txt = %(here)s/static/robots.txt
 # Cloud Launch
 
 #enable_cloud_launch = False
-#cloudlaunch_default_ami = ami-118bfc78
+#cloudlaunch_default_ami = ami-a7dbf6ce
 
 # -- Advanced proxy features
 
@@ -586,9 +590,21 @@ use_interactive = True
 # to usernames, to become your Galaxy usernames (email addresses).
 #remote_user_maildomain = None
 
+# If use_remote_user is enabled, the header that the upstream proxy provides
+# the remote username in defaults to HTTP_REMOTE_USER (the 'HTTP_' is prepended
+# by WSGI).  This option allows you to change the header.  Note, you still need
+# to prepend 'HTTP_' to the header in this option, but your proxy server should
+# *not* include 'HTTP_' at the beginning of the header name.
+#remote_user_header = 'HTTP_REMOTE_USER'
+
 # If use_remote_user is enabled, you can set this to a URL that will log your
 # users out.
 #remote_user_logout_href = None
+
+# If your proxy and/or authentication source does not normalize e-mail
+# addresses or user names being passed to Galaxy - set the following option
+# to True to force these to lower case.
+#normalize_remote_user_email = False
 
 # Administrative users - set this to a comma-separated list of valid Galaxy
 # users (email addresses).  These users will have access to the Admin section
@@ -634,6 +650,11 @@ use_interactive = True
 # Optional list of email addresses of API users who can make calls on behalf of
 # other users
 #api_allow_run_as = None
+
+# Master key that allows many API admin actions to be used without actually
+# having a defined admin user in the database/config. Only set this if you need
+# to bootstrap Galaxy, you probably do not want to set this on public servers.
+#master_api_key=changethis
 
 # Enable tool tags (associating tools with tags).  This has its own option
 # since its implementation has a few performance implications on startup for

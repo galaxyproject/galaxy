@@ -1,12 +1,14 @@
 #Dan Blankenberg
 
-import optparse, os, urllib2, urllib, cookielib, urlparse, tempfile, shutil
-
-from galaxy import eggs
-import pkg_resources
-
-pkg_resources.require( "simplejson" )
-import simplejson
+import cookielib
+import json
+import optparse
+import os
+import shutil
+import tempfile
+import urllib
+import urllib2
+import urlparse
 
 import galaxy.model # need to import model before sniff to resolve a circular import dependency
 from galaxy.datatypes import sniff
@@ -91,12 +93,12 @@ def set_genomespace_format_identifiers( url_opener, dm_site ):
     gs_request = urllib2.Request( "%s/%s/dataformat/list" % ( dm_site, GENOMESPACE_API_VERSION_STRING ) )
     gs_request.get_method = lambda: 'GET'
     opened_gs_request = url_opener.open( gs_request )
-    genomespace_formats = simplejson.loads( opened_gs_request.read() )
+    genomespace_formats = json.loads( opened_gs_request.read() )
     for format in genomespace_formats:
         GENOMESPACE_FORMAT_IDENTIFIER_TO_GENOMESPACE_EXT[ format['url'] ] = format['name']
 
 def download_from_genomespace_importer( username, token, json_parameter_file, genomespace_site ):
-    json_params = simplejson.loads( open( json_parameter_file, 'r' ).read() )
+    json_params = json.loads( open( json_parameter_file, 'r' ).read() )
     datasource_params = json_params.get( 'param_dict' )
     assert None not in [ username, token ], "Missing GenomeSpace username or token."
     output_filename = datasource_params.get( "output_file1", None )
@@ -152,7 +154,7 @@ def download_from_genomespace_importer( username, token, json_parameter_file, ge
                 metadata_request = urllib2.Request( "%s/%s/filemetadata/%s" % ( genomespace_site_dict['dmServer'], GENOMESPACE_API_VERSION_STRING, download_file_path ) )
                 metadata_request.get_method = lambda: 'GET'
                 metadata_url = url_opener.open( metadata_request )
-                file_metadata_dict = simplejson.loads( metadata_url.read() )
+                file_metadata_dict = json.loads( metadata_url.read() )
                 metadata_url.close()
                 file_type = file_metadata_dict.get( 'dataFormat', None )
                 if file_type and file_type.get( 'url' ):
@@ -176,7 +178,7 @@ def download_from_genomespace_importer( username, token, json_parameter_file, ge
         
         #save json info for single primary dataset
         if dataset_id is not None:
-           metadata_parameter_file.write( "%s\n" % simplejson.dumps( dict( type = 'dataset',
+           metadata_parameter_file.write( "%s\n" % json.dumps( dict( type = 'dataset',
                                  dataset_id = dataset_id,
                                  ext = file_type,
                                  name = "GenomeSpace importer on %s" % ( filename ) ) ) )
@@ -187,9 +189,9 @@ def download_from_genomespace_importer( username, token, json_parameter_file, ge
             while filename in used_filenames:
                 filename = "-%s" % filename
             used_filenames.append( filename )
-            target_output_filename = os.path.join( datasource_params['__new_file_path__'],  'primary_%i_%s_visible_%s' % ( hda_id, filename, file_type ) )
+            target_output_filename = os.path.join( os.getcwd(),  'primary_%i_%s_visible_%s' % ( hda_id, filename, file_type ) )
             shutil.move( output_filename, target_output_filename )
-            metadata_parameter_file.write( "%s\n" % simplejson.dumps( dict( type = 'new_primary_dataset',
+            metadata_parameter_file.write( "%s\n" % json.dumps( dict( type = 'new_primary_dataset',
                                      base_dataset_id = base_dataset_id,
                                      ext = file_type,
                                      filename = target_output_filename,

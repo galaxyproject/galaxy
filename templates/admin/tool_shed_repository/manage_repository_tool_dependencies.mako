@@ -30,22 +30,25 @@ ${render_galaxy_repository_actions( repository )}
             <tr><th  bgcolor="#D8D8D8">Name</th><th  bgcolor="#D8D8D8">Version</th><th  bgcolor="#D8D8D8">Type</th><th bgcolor="#D8D8D8">Status</th><th bgcolor="#D8D8D8">Error</th></tr>
             %for tool_dependency in repository.tool_dependencies:
                 <%
+                    # Tool dependencies cannot be uninstalled if they have a status of 'Installed'.  Only the containing repository
+                    # can be uninstalled (only if it has no dependent repositories) if a tool dependency has been successfully installed.
                     if tool_dependency.error_message:
                         error_message = tool_dependency.error_message
                     else:
                         error_message = ''
                     if not can_install:
-                        if tool_dependency.status in [ trans.model.ToolDependency.installation_status.NEVER_INSTALLED,
-                                                       trans.model.ToolDependency.installation_status.UNINSTALLED ]:
+                        if tool_dependency.status in [ trans.install_model.ToolDependency.installation_status.NEVER_INSTALLED,
+                                                       trans.install_model.ToolDependency.installation_status.UNINSTALLED ]:
                             can_install = True
                     if not can_uninstall:
-                        if tool_dependency.status not in [ trans.model.ToolDependency.installation_status.NEVER_INSTALLED,
-                                                           trans.model.ToolDependency.installation_status.UNINSTALLED ]:
+                        if tool_dependency.status not in [ trans.install_model.ToolDependency.installation_status.INSTALLED,
+                                                           trans.install_model.ToolDependency.installation_status.NEVER_INSTALLED,
+                                                           trans.install_model.ToolDependency.installation_status.UNINSTALLED ]:
                             can_uninstall = True
                 %>
                 <tr>
                     <td>
-                        %if tool_dependency.status not in [ trans.model.ToolDependency.installation_status.UNINSTALLED ]:
+                        %if tool_dependency.status not in [ trans.install_model.ToolDependency.installation_status.UNINSTALLED ]:
                             <a target="galaxy_main" href="${h.url_for( controller='admin_toolshed', action='manage_repository_tool_dependencies', operation='browse', tool_dependency_ids=trans.security.encode_id( tool_dependency.id ), repository_id=trans.security.encode_id( repository.id ) )}">
                                 ${tool_dependency.name}
                             </a>

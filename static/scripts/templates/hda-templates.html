@@ -11,32 +11,28 @@
 
         {{#if deleted}}
             {{#if purged}}
-            <div class="warningmessagesmall"><strong>
+            <div class="dataset-purged-msg warningmessagesmall"><strong>
                 {{#local}}This dataset has been deleted and removed from disk.{{/local}}
             </strong></div>
 
             {{else}}{{! deleted, not purged }}
-            <div class="warningmessagesmall"><strong>
+            <div class="dataset-deleted-msg warningmessagesmall"><strong>
                 {{#local}}This dataset has been deleted.{{/local}}
-                {{! edit-only }}
-                {{! how in the hell would you localize this? }}
-                Click <a href="javascript:void(0);" class="dataset-undelete">here</a> to undelete it
-                or <a href="javascript:void(0);" class="dataset-purge">here</a> to immediately remove it from disk
             </strong></div>
             {{/if}}
         {{/if}}
 
         {{#unless visible}}
-        <div class="warningmessagesmall"><strong>
+        <div class="dataset-hidden-msg warningmessagesmall"><strong>
             {{#local}}This dataset has been hidden.{{/local}}
-            {{! edit-only }}
-            Click <a href="javascript:void(0);" class="dataset-unhide">here</a> to unhide it
         </strong></div>
         {{/unless}}
     </div>
 
+    <div class="dataset-selector"><span class="fa fa-2x fa-square-o"></span></div>
     <div class="dataset-primary-actions"></div>
-    <div class="dataset-title-bar clear">
+    {{! adding a tabindex here allows focusing the title bar and the use of keydown to expand the dataset display }}
+    <div class="dataset-title-bar clear" tabindex="0">
         <span class="dataset-state-icon state-icon"></span>
         <div class="dataset-title">
             <span class="hda-hid">{{ hid }}</span>
@@ -97,15 +93,8 @@
     </div>
 
     {{#unless deleted }}
-    {{! TODO: move to mvc/tag.js }}
     <div class="tags-display"></div>
-
-    {{! TODO: move to mvc/annotations.js }}
-    <div class="annotation-display">
-        <label class="prompt">{{#local}}Annotation{{/local}}</label>
-        <div id="dataset-{{ id }}-annotation" class="annotation editable-text"
-             title="{{#local}}Edit dataset annotation{{/local}}"></div>
-    </div>
+    <div class="annotation-display"></div>
 
     <div class="dataset-display-applications">
         {{#each display_apps}}

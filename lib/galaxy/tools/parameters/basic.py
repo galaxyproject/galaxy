@@ -2,14 +2,20 @@
 Basic tool parameters.
 """
 
-import logging, string, sys, os, os.path, urllib
+import logging
+import string
+import sys
+import os
+import os.path
+import urllib
 from elementtree.ElementTree import XML, Element
 from galaxy import config, datatypes, util
 from galaxy.web import form_builder
 from galaxy.util.bunch import Bunch
 from galaxy.util import string_as_bool, sanitize_param, unicodify
 from sanitize import ToolParameterSanitizer
-import validation, dynamic_options
+import validation
+import dynamic_options
 # For BaseURLToolParameter
 from galaxy.web import url_for
 from galaxy.model.item_attrs import Dictifiable
@@ -53,8 +59,10 @@ class ToolParameter( object, Dictifiable ):
 
     def get_label( self ):
         """Return user friendly name for the parameter"""
-        if self.label: return self.label
-        else: return self.name
+        if self.label:
+            return self.label
+        else:
+            return self.name
 
     def get_html_field( self, trans=None, value=None, other_values={} ):
         raise TypeError( "Abstract Method" )
@@ -73,6 +81,9 @@ class ToolParameter( object, Dictifiable ):
         """
         return value
 
+    def from_json( self, value, trans=None, other_values={} ):
+        return self.from_html( value, trans, other_values )
+
     def get_initial_value( self, trans, context, history=None ):
         """
         Return the starting value of the parameter
@@ -87,7 +98,7 @@ class ToolParameter( object, Dictifiable ):
         if a value has already been chosen from the history. This is to support the capability to
         choose each dataset once
         """
-        return self.get_initial_value(trans, context, history=history);
+        return self.get_initial_value(trans, context, history=history)
 
     def get_required_enctype( self ):
         """
@@ -166,7 +177,7 @@ class ToolParameter( object, Dictifiable ):
         return value
 
     def validate( self, value, history=None ):
-        if value=="" and self.optional:
+        if value == "" and self.optional:
             return
         for validator in self.validators:
             validator.validate( value, history )
@@ -174,8 +185,12 @@ class ToolParameter( object, Dictifiable ):
     def to_dict( self, trans, view='collection', value_mapper=None ):
         """ to_dict tool parameter. This can be overridden by subclasses. """
         tool_dict = super( ToolParameter, self ).to_dict()
-        #TODO: removing html as it causes a lot of errors on subclasses - needs histories, etc.
-        #tool_dict[ 'html' ] = urllib.quote( self.get_html( trans ) )
+        #TODO: wrapping html as it causes a lot of errors on subclasses - needs histories, etc.
+        try:
+            tool_dict[ 'html' ] = urllib.quote( self.get_html( trans ) )
+        except AssertionError, e:
+            pass #HACK for assert trans.history, 'requires a history'
+
         tool_dict[ 'model_class' ] = self.__class__.__name__
         if hasattr( self, 'value' ):
             tool_dict[ 'value' ] = self.value
@@ -215,7 +230,8 @@ class TextToolParameter( ToolParameter ):
         self.area = string_as_bool( elem.get( 'area', False ) )
 
     def get_html_field( self, trans=None, value=None, other_values={} ):
-        if value is None: value = self.value
+        if value is None:
+            value = self.value
         if self.area:
             return form_builder.TextArea( self.name, self.size, value )
         else:
@@ -223,6 +239,7 @@ class TextToolParameter( ToolParameter ):
 
     def get_initial_value( self, trans, context, history=None ):
         return self.value
+
 
 class IntegerToolParameter( TextToolParameter ):
     """
@@ -264,7 +281,7 @@ class IntegerToolParameter( TextToolParameter ):
                 self.max = int( self.max )
             except:
                 raise ValueError( "An integer is required" )
-        if self.min and self.max:
+        if self.min is not None or self.max is not None:
             self.validators.append( validation.InRangeValidator( None, self.min, self.max ) )
 
     def get_html_field( self, trans=None, value=None, other_values={} ):
@@ -334,15 +351,15 @@ class FloatToolParameter( TextToolParameter ):
             raise ValueError( "The settings for this field require a 'value' setting and optionally a default value which must be a real number" )
         if self.min:
             try:
-                float( self.min )
+                self.min = float( self.min )
             except:
                 raise ValueError( "A real number is required" )
         if self.max:
             try:
-                float( self.max )
+                self.max = float( self.max )
             except:
                 raise ValueError( "A real number is required" )
-        if self.min and self.max:
+        if self.min is not None or self.max is not None:
             self.validators.append( validation.InRangeValidator( None, self.min, self.max ) )
 
     def get_html_field( self, trans=None, value=None, other_values={} ):
@@ -408,10 +425,13 @@ class BooleanToolParameter( ToolParameter ):
         checked = self.checked
         if value is not None:
             checked = form_builder.CheckboxField.is_checked( value )
-        return form_builder.CheckboxField( self.name, checked, refresh_on_change = self.refresh_on_change )
+        return form_builder.CheckboxField( self.name, checked, refresh_on_change=self.refresh_on_change )
 
     def from_html( self, value, trans=None, other_values={} ):
         return form_builder.CheckboxField.is_checked( value )
+
+    def from_json( self, value, trans=None, other_values={} ):
+        return string_as_bool( value )
 
     def to_html_value( self, value, app ):
         if value:
@@ -457,7 +477,7 @@ class FileToolParameter( ToolParameter ):
         self.ajax = string_as_bool( elem.get( 'ajax-upload' ) )
 
     def get_html_field( self, trans=None, value=None, other_values={}  ):
-        return form_builder.FileField( self.name, ajax = self.ajax, value = value )
+        return form_builder.FileField( self.name, ajax=self.ajax, value=value )
 
     def from_html( self, value, trans=None, other_values={} ):
         # Middleware or proxies may encode files in special ways (TODO: this
@@ -472,8 +492,8 @@ class FileToolParameter( ToolParameter ):
             assert local_filename.startswith( upload_store ), \
                 "Filename provided by nginx is not in correct directory"
             value = dict(
-                filename = value["name"],
-                local_filename = local_filename
+                filename=value["name"],
+                local_filename=local_filename
             )
         return value
 
@@ -529,7 +549,7 @@ class FTPFileToolParameter( ToolParameter ):
             user_ftp_dir = None
         else:
             user_ftp_dir = trans.user_ftp_dir
-        return form_builder.FTPFileField( self.name, user_ftp_dir, trans.app.config.ftp_upload_site, value = value )
+        return form_builder.FTPFileField( self.name, user_ftp_dir, trans.app.config.ftp_upload_site, value=value )
 
     def from_html( self, value, trans=None, other_values={} ):
         try:
@@ -750,8 +770,9 @@ class SelectToolParameter( ToolParameter ):
             else:
                 return form_builder.TextField( self.name, value=(value or "") )
         if value is not None:
-            if not isinstance( value, list ): value = [ value ]
-        field = form_builder.SelectField( self.name, self.multiple, self.display, self.refresh_on_change, refresh_on_change_values = self.refresh_on_change_values )
+            if not isinstance( value, list ):
+                value = [ value ]
+        field = form_builder.SelectField( self.name, self.multiple, self.display, self.refresh_on_change, refresh_on_change_values=self.refresh_on_change_values )
         options = self.get_options( trans, context )
         for text, optval, selected in options:
             if isinstance( optval, UnvalidatedValue ):
@@ -789,7 +810,7 @@ class SelectToolParameter( ToolParameter ):
                 rval.append( v )
             return rval
         else:
-            value_is_none =  ( value == "None" and "None" not in legal_values )
+            value_is_none = ( value == "None" and "None" not in legal_values )
             if value_is_none:
                 if self.multiple:
                     if self.optional:
@@ -939,7 +960,7 @@ class SelectToolParameter( ToolParameter ):
         options = []
         try:
             options = self.get_options( trans, {} )
-        except AssertionError, assertion:
+        except AssertionError:
             # we dont/cant set other_values (the {} above), so params that require other params to be filled will error:
             #       required dependency in filter_options
             #       associated DataToolParam in get_column_list
@@ -1002,16 +1023,13 @@ class GenomeBuildParameter( SelectToolParameter ):
         self.static_options = [ ( value, key, False ) for key, value in util.dbnames ]
 
     def get_options( self, trans, other_values ):
-        if not trans.history:
-            yield 'unspecified', '?', False
-        else:
+        last_used_build = object()
+        if trans.history:
             last_used_build = trans.history.genome_build
-            for dbkey, build_name in trans.db_builds:
-                yield build_name, dbkey, ( dbkey == last_used_build )
+        for dbkey, build_name in trans.db_builds:
+            yield build_name, dbkey, ( dbkey == last_used_build )
 
     def get_legal_values( self, trans, other_values ):
-        if not trans.history:
-            return set( '?' )
         return set( dbkey for dbkey, _ in trans.db_builds )
 
     def to_dict( self, trans, view='collection', value_mapper=None ):
@@ -1044,7 +1062,8 @@ class ColumnListParameter( SelectToolParameter ):
     >>> # Mock up a history (not connected to database)
     >>> from galaxy.model import History, HistoryDatasetAssociation
     >>> from galaxy.util.bunch import Bunch
-    >>> from galaxy.model.mapping import context as sa_session
+    >>> from galaxy.model.mapping import init
+    >>> sa_session = init( "/tmp", "sqlite:///:memory:", create_tables=True ).session
     >>> hist = History()
     >>> sa_session.add( hist )
     >>> sa_session.flush()
@@ -1344,7 +1363,7 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
                 options = []
             for filter_key, filter_value in self.filtered.iteritems():
                 dataset = other_values[filter_key]
-                if dataset.__class__.__name__.endswith( "DatasetFilenameWrapper" ): #this is a bad way to check for this, but problems importing class ( due to circular imports? )
+                if dataset.__class__.__name__.endswith( "DatasetFilenameWrapper" ):  # this is a bad way to check for this, but problems importing class ( due to circular imports? )
                     dataset = dataset.dataset
                 if dataset:
                     for meta_key, meta_dict in filter_value.iteritems():
@@ -1422,10 +1441,11 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
                     for opt in option['options']:
                         recurse_option( option_list, opt )
             rval = []
-            recurse_option( rval, get_base_option( value, self.get_options( other_values = other_values ) ) )
+            recurse_option( rval, get_base_option( value, self.get_options( other_values=other_values ) ) )
             return rval or [value]
 
-        if value is None: return "None"
+        if value is None:
+            return "None"
         rval = []
         if self.hierarchy == "exact":
             rval = value
@@ -1464,8 +1484,9 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
                 if value == option['value']:
                     return option['name']
                 rval = get_option_display( value, option['options'] )
-                if rval: return rval
-            return None #not found
+                if rval:
+                    return rval
+            return None  # not found
 
         if isinstance( value, UnvalidatedValue ):
             suffix = "\n(value not yet validated)"
@@ -1505,12 +1526,12 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
         options = []
         try:
             options = self.get_options( trans, {} )
-        except KeyError, key_err:
+        except KeyError:
             # will sometimes error if self.is_dynamic and self.filtered
             #   bc we dont/cant fill out other_values above ({})
             pass
 
-        d[ 'options' ] = options;
+        d[ 'options' ] = options
         return d
 
 
@@ -1527,8 +1548,9 @@ class DataToolParameter( ToolParameter ):
     TODO: There should be an alternate display that allows single selects to be
           displayed as radio buttons and multiple selects as a set of checkboxes
 
-    TODO: The following must be fixed to test correctly for the new security_check tag in the DataToolParameter ( the last test below is broken )
-    Nate's next pass at the dataset security stuff will dramatically alter this anyway.
+    TODO: The following must be fixed to test correctly for the new security_check tag in
+    the DataToolParameter ( the last test below is broken ) Nate's next pass at the dataset
+    security stuff will dramatically alter this anyway.
     """
 
     def __init__( self, tool, elem, trans=None):
@@ -1575,8 +1597,8 @@ class DataToolParameter( ToolParameter ):
         # Load conversions required for the dataset input
         self.conversions = []
         for conv_elem in elem.findall( "conversion" ):
-            name = conv_elem.get( "name" ) #name for commandline substitution
-            conv_extensions = conv_elem.get( "type" ) #target datatype extension
+            name = conv_elem.get( "name" )  # name for commandline substitution
+            conv_extensions = conv_elem.get( "type" )  # target datatype extension
             # FIXME: conv_extensions should be able to be an ordered list
             assert None not in [ name, type ], 'A name (%s) and type (%s) are required for explicit conversion' % ( name, type )
             conv_types = tool.app.datatypes_registry.get_datatype_by_extension( conv_extensions.lower() )
@@ -1588,14 +1610,13 @@ class DataToolParameter( ToolParameter ):
             try:
                 filter_value = self.options.get_options( trans, other_values )[0][0]
             except IndexError:
-                pass #no valid options
-        assert trans is not None, "DataToolParameter requires a trans"
-        history = trans.get_history()
-        assert history is not None, "DataToolParameter requires a history"
+                pass  # no valid options
+        history = self._get_history( trans )
         if value is not None:
             if type( value ) != list:
                 value = [ value ]
-        field = form_builder.SelectField( self.name, self.multiple, None, self.refresh_on_change, refresh_on_change_values = self.refresh_on_change_values )
+        field = form_builder.SelectField( self.name, self.multiple, None, self.refresh_on_change, refresh_on_change_values=self.refresh_on_change_values )
+
         # CRUCIAL: the dataset_collector function needs to be local to DataToolParameter.get_html_field()
         def dataset_collector( hdas, parent_hid ):
             current_user_roles = trans.get_current_user_roles()
@@ -1632,7 +1653,7 @@ class DataToolParameter( ToolParameter ):
                             field.add_option( "%s: (as %s) %s" % ( hid, target_ext, hda_name ), hda.id, selected )
                 # Also collect children via association object
                 dataset_collector( hda.children, hid )
-        dataset_collector( history.active_datasets, None )
+        dataset_collector( history.active_datasets_children_and_roles, None )
         some_data = bool( field.options )
         if some_data:
             if value is None or len( field.options ) == 1:
@@ -1650,7 +1671,7 @@ class DataToolParameter( ToolParameter ):
         return field
 
     def get_initial_value( self, trans, context, history=None ):
-        return self.get_initial_value_from_history_prevent_repeats(trans, context, None, history=history);
+        return self.get_initial_value_from_history_prevent_repeats(trans, context, None, history=history)
 
     def get_initial_value_from_history_prevent_repeats( self, trans, context, already_used, history=None ):
         """
@@ -1660,10 +1681,7 @@ class DataToolParameter( ToolParameter ):
         # Can't look at history in workflow mode. Tool shed has no histories.
         if trans is None or trans.workflow_building_mode or trans.webapp.name == 'tool_shed':
             return DummyDataset()
-        assert trans is not None, "DataToolParameter requires a trans"
-        if history is None:
-            history = trans.get_history()
-        assert history is not None, "DataToolParameter requires a history"
+        history = self._get_history( trans, history )
         if self.optional:
             return None
         most_recent_dataset = []
@@ -1672,13 +1690,9 @@ class DataToolParameter( ToolParameter ):
             try:
                 filter_value = self.options.get_options( trans, context )[0][0]
             except IndexError:
-                pass #no valid options
+                pass  # no valid options
+
         def dataset_collector( datasets ):
-            def is_convertable( dataset ):
-                target_ext, converted_dataset = dataset.find_conversion_destination( self.formats )
-                if target_ext is not None:
-                    return True
-                return False
             for i, data in enumerate( datasets ):
                 if data.visible and not data.deleted and data.state not in [data.states.ERROR, data.states.DISCARDED]:
                     is_valid = False
@@ -1695,7 +1709,7 @@ class DataToolParameter( ToolParameter ):
                     most_recent_dataset.append(data)
                 # Also collect children via association object
                 dataset_collector( data.children )
-        dataset_collector( history.datasets )
+        dataset_collector( history.active_datasets_children_and_roles )
         most_recent_dataset.reverse()
         if already_used is not None:
             for val in most_recent_dataset:
@@ -1718,7 +1732,13 @@ class DataToolParameter( ToolParameter ):
         if isinstance( value, str ) and value.find( "," ) > 0:
             value = [ int( value_part ) for value_part in  value.split( "," ) ]
         if isinstance( value, list ):
-            rval = [ trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( v ) for v in value ]
+            rval = []
+            for single_value in value:
+                if isinstance( single_value, dict ):
+                    assert single_value['src'] == 'hda'
+                    rval.append( trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( trans.app.security.decode_id( single_value[ 'id' ] ) ) )
+                else:
+                    rval.append( trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( single_value ) )
         elif isinstance( value, trans.app.model.HistoryDatasetAssociation ):
             rval = value
         elif isinstance( value, dict ) and 'src' in value and 'id' in value:
@@ -1734,7 +1754,7 @@ class DataToolParameter( ToolParameter ):
             if v:
                 if v.deleted:
                     raise ValueError( "The previously selected dataset has been previously deleted" )
-                if v.dataset.state in [galaxy.model.Dataset.states.ERROR, galaxy.model.Dataset.states.DISCARDED ]:
+                if v.dataset.state in [ galaxy.model.Dataset.states.ERROR, galaxy.model.Dataset.states.DISCARDED ]:
                     raise ValueError( "The previously selected dataset has entered an unusable state" )
         return rval
 
@@ -1766,7 +1786,8 @@ class DataToolParameter( ToolParameter ):
         return app.model.context.query( app.model.HistoryDatasetAssociation ).get( int( value ) )
 
     def to_param_dict_string( self, value, other_values={} ):
-        if value is None: return "None"
+        if value is None:
+            return "None"
         return value.file_name
 
     def value_to_display_text( self, value, app ):
@@ -1800,12 +1821,13 @@ class DataToolParameter( ToolParameter ):
         if self.tool is None or self.tool.has_multiple_pages or not hasattr( trans, 'workflow_building_mode' ) or trans.workflow_building_mode:
             return False
         if other_values is None:
-            return True # we don't know other values, so we can't check, assume ok
+            return True  # we don't know other values, so we can't check, assume ok
         converter_safe = [True]
-        def visitor( prefix, input, value, parent = None ):
+
+        def visitor( prefix, input, value, parent=None ):
             if isinstance( input, SelectToolParameter ) and self.name in input.get_dependencies():
                 if input.is_dynamic and ( input.dynamic_options or ( not input.dynamic_options and not input.options ) or not input.options.converter_safe ):
-                    converter_safe[0] = False #This option does not allow for conversion, i.e. uses contents of dataset file to generate options
+                    converter_safe[0] = False  # This option does not allow for conversion, i.e. uses contents of dataset file to generate options
         self.tool.visit_inputs( other_values, visitor )
         return False not in converter_safe
 
@@ -1827,6 +1849,14 @@ class DataToolParameter( ToolParameter ):
         if call_attribute:
             ref = ref()
         return ref
+
+    def _get_history( self, trans, history=None ):
+        class_name = self.__class__.__name__
+        assert trans is not None, "%s requires a trans" % class_name
+        if history is None:
+            history = trans.get_history()
+        assert history is not None, "%s requires a history" % class_name
+        return history
 
 
 class HiddenDataToolParameter( HiddenToolParameter, DataToolParameter ):
@@ -1932,21 +1962,24 @@ class LibraryDatasetToolParameter( ToolParameter ):
 #         self.html = form_builder.HiddenField( self.name, trans.history.id ).get_html()
 #         return self.html
 
-parameter_types = dict( text            = TextToolParameter,
-                        integer         = IntegerToolParameter,
-                        float           = FloatToolParameter,
-                        boolean         = BooleanToolParameter,
-                        genomebuild     = GenomeBuildParameter,
-                        select          = SelectToolParameter,
-                        data_column     = ColumnListParameter,
-                        hidden          = HiddenToolParameter,
-                        hidden_data     = HiddenDataToolParameter,
-                        baseurl         = BaseURLToolParameter,
-                        file            = FileToolParameter,
-                        ftpfile         = FTPFileToolParameter,
-                        data            = DataToolParameter,
-                        library_data    = LibraryDatasetToolParameter,
-                        drill_down      = DrillDownSelectToolParameter )
+parameter_types = dict(
+    text=TextToolParameter,
+    integer=IntegerToolParameter,
+    float=FloatToolParameter,
+    boolean=BooleanToolParameter,
+    genomebuild=GenomeBuildParameter,
+    select=SelectToolParameter,
+    data_column=ColumnListParameter,
+    hidden=HiddenToolParameter,
+    hidden_data=HiddenDataToolParameter,
+    baseurl=BaseURLToolParameter,
+    file=FileToolParameter,
+    ftpfile=FTPFileToolParameter,
+    data=DataToolParameter,
+    library_data=LibraryDatasetToolParameter,
+    drill_down=DrillDownSelectToolParameter
+)
+
 
 class UnvalidatedValue( object ):
     """
@@ -1965,4 +1998,3 @@ class RuntimeValue( object ):
     runtime.
     """
     pass
-

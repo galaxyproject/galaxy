@@ -5,7 +5,6 @@
     <tool file="data_source/ucsc_tablebrowser.xml" />
     <tool file="data_source/ucsc_tablebrowser_test.xml" />
     <tool file="data_source/ucsc_tablebrowser_archaea.xml" />
-    <tool file="data_source/bx_browser.xml" />
     <tool file="data_source/ebi_sra.xml" />
     <tool file="data_source/microbial_import.xml" />
     <tool file="data_source/biomart.xml" />
@@ -13,33 +12,17 @@
     <tool file="data_source/cbi_rice_mart.xml" />
     <tool file="data_source/gramene_mart.xml" />
     <tool file="data_source/fly_modencode.xml" />
-    <tool file="data_source/flymine.xml" />
-    <tool file="data_source/flymine_test.xml" />
-    <tool file="data_source/modmine.xml" />
-    <tool file="data_source/mousemine.xml" />
-    <tool file="data_source/ratmine.xml" />
-    <tool file="data_source/yeastmine.xml" />
-    <tool file="data_source/metabolicmine.xml" />
     <tool file="data_source/worm_modencode.xml" />
     <tool file="data_source/wormbase.xml" />
     <tool file="data_source/wormbase_test.xml" />
     <tool file="data_source/eupathdb.xml" />
-    <tool file="data_source/encode_db.xml" />
-    <tool file="data_source/epigraph_import.xml" />
-    <tool file="data_source/epigraph_import_test.xml" />
     <tool file="data_source/hbvar.xml" />
     <tool file="genomespace/genomespace_file_browser_prod.xml" />
     <tool file="genomespace/genomespace_importer.xml" />
     <tool file="validation/fix_errors.xml" />
   </section>
   <section id="send" name="Send Data">
-    <tool file="data_destination/epigraph.xml" />
-    <tool file="data_destination/epigraph_test.xml" />
     <tool file="genomespace/genomespace_exporter.xml" />
-  </section>
-  <section id="EncodeTools" name="ENCODE Tools">
-    <tool file="encode/gencode_partition.xml" />
-    <tool file="encode/random_intervals.xml" />
   </section>
   <section id="liftOver" name="Lift-Over">
     <tool file="extract/liftOver_wrapper.xml" />
@@ -81,7 +64,6 @@
     <tool file="filters/compare.xml" />
     <tool file="new_operations/subtract_query.xml" />
     <tool file="stats/grouping.xml" />
-    <tool file="new_operations/column_join.xml" />
   </section>
   <section id="convert" name="Convert Formats">
     <tool file="filters/axt_to_concat_fasta.xml" />
@@ -95,7 +77,6 @@
     <tool file="maf/maf_to_interval.xml" />
     <tool file="maf/maf_to_fasta.xml" />
     <tool file="fasta_tools/tabular_to_fasta.xml" />
-    <tool file="fastq/fastq_to_fasta.xml" />
     <tool file="filters/wiggle_to_simple.xml" />
     <tool file="filters/sff_extractor.xml" />
     <tool file="filters/gtf2bedgraph.xml" />
@@ -125,7 +106,6 @@
   <section id="scores" name="Get Genomic Scores">
     <tool file="stats/wiggle_to_simple.xml" />
     <tool file="stats/aggregate_binned_scores_in_intervals.xml" />
-    <tool file="extract/phastOdds/phastOdds_tool.xml" />
   </section>
   <section id="bxops" name="Operate on Genomic Intervals">
     <tool file="new_operations/intersect.xml" />
@@ -153,22 +133,11 @@
     <label id="gff" text="GFF" />
     <tool file="stats/count_gff_features.xml" />
   </section>
-  <section id="dwt" name="Wavelet Analysis">
-    <tool file="discreteWavelet/execute_dwt_var_perFeature.xml" />
-    <!--
-    Keep this section/tools commented until all of the tools have functional tests
-    <tool file="discreteWavelet/execute_dwt_IvC_all.xml" />
-    <tool file="discreteWavelet/execute_dwt_cor_aVa_perClass.xml" />
-    <tool file="discreteWavelet/execute_dwt_cor_aVb_all.xml" />
-    <tool file="discreteWavelet/execute_dwt_var_perClass.xml" />
-    -->
-  </section>
   <section id="plots" name="Graph/Display Data">
     <tool file="plotting/histogram2.xml" />
     <tool file="plotting/scatterplot.xml" />
     <tool file="plotting/bar_chart.xml" />
     <tool file="plotting/boxplot.xml" />
-    <tool file="visualization/GMAJ.xml" />
     <tool file="visualization/LAJ.xml" />
     <tool file="visualization/build_ucsc_custom_track.xml" />
     <tool file="maf/vcf_to_maf_customtrack.xml" />
@@ -201,27 +170,14 @@
     <tool file="multivariate_stats/kcca.xml" />
   </section>
   <section id="hyphy" name="Evolution">
-    <tool file="hyphy/hyphy_branch_lengths_wrapper.xml" />
-    <tool file="hyphy/hyphy_nj_tree_wrapper.xml" />
-    <tool file="hyphy/hyphy_dnds_wrapper.xml" />
     <tool file="evolution/codingSnps.xml" />
     <tool file="evolution/add_scores.xml" />
   </section>
   <section id="motifs" name="Motif Tools">
     <tool file="meme/meme.xml" />
     <tool file="meme/fimo.xml" />
-    <tool file="rgenetics/rgWebLogo3.xml" />
   </section>
   <section id="clustal" name="Multiple Alignments">
-    <tool file="rgenetics/rgClustalw.xml" />
-  </section>
-  <section id="tax_manipulation" name="Metagenomic analyses">
-    <tool file="taxonomy/gi2taxonomy.xml" />
-    <tool file="taxonomy/t2t_report.xml" />
-    <tool file="taxonomy/t2ps_wrapper.xml" />
-    <tool file="taxonomy/find_diag_hits.xml" />
-    <tool file="taxonomy/lca.xml" />
-    <tool file="taxonomy/poisson2test.xml" />
   </section>
   <section id="fasta_manipulation" name="FASTA manipulation">
     <tool file="fasta_tools/fasta_compute_length.xml" />
@@ -233,18 +189,12 @@
   <section id="NGS_QC" name="NGS: QC and manipulation">
     
     <label id="fastqcsambam" text="FastQC: fastq/sam/bam" />
-    <tool file="rgenetics/rgFastQC.xml" />
     
     <label id="illumina" text="Illumina fastq" />
-    <tool file="fastq/fastq_groomer.xml" />
-    <tool file="fastq/fastq_paired_end_splitter.xml" />
-    <tool file="fastq/fastq_paired_end_joiner.xml" />
-    <tool file="fastq/fastq_stats.xml" />
     
     <label id="454" text="Roche-454 data" />
     <tool file="metag_tools/short_reads_figure_score.xml" />
     <tool file="metag_tools/short_reads_trim_seq.xml" />
-    <tool file="fastq/fastq_combiner.xml" />
     
     <label id="solid" text="AB-SOLiD data" />
     <tool file="next_gen_conversion/solid2fastq.xml" />
@@ -252,16 +202,6 @@
     <tool file="solid_tools/solid_qual_boxplot.xml" />
     
     <label id="generic_fastq" text="Generic FASTQ manipulation" />
-    <tool file="fastq/fastq_filter.xml" />
-    <tool file="fastq/fastq_trimmer.xml" />
-    <tool file="fastq/fastq_trimmer_by_quality.xml" />
-    <tool file="fastq/fastq_masker_by_quality.xml" />
-    <tool file="fastq/fastq_paired_end_interlacer.xml" />
-    <tool file="fastq/fastq_paired_end_deinterlacer.xml" />
-    <tool file="fastq/fastq_manipulation.xml" />
-    <tool file="fastq/fastq_to_fasta.xml" />
-    <tool file="fastq/fastq_to_tabular.xml" />
-    <tool file="fastq/tabular_to_fastq.xml" />
     
     <label id="fastx_toolkit" text="FASTX-Toolkit for FASTQ data" />
   </section>
@@ -277,7 +217,6 @@
   </section>
   -->
   <section id="solexa_tools" name="NGS: Mapping">
-    <tool file="sr_mapping/bowtie2_wrapper.xml" />
     <tool file="sr_mapping/bfast_wrapper.xml" />
     <tool file="metag_tools/megablast_wrapper.xml" />
     <tool file="metag_tools/megablast_xml_parser.xml" />
@@ -285,26 +224,10 @@
     <tool file="sr_mapping/srma_wrapper.xml" />
     <tool file="sr_mapping/mosaik.xml" />
   </section>
-  <section id="indel_analysis" name="NGS: Indel Analysis">
-    <tool file="indels/sam_indel_filter.xml" />
-    <tool file="indels/indel_table.xml" />
-    <tool file="indels/indel_analysis.xml" />
-  </section>
   <section id="ngs-rna-tools" name="NGS: RNA Analysis">
     
     <label id="rna_seq" text="RNA-seq" />
-    <tool file="ngs_rna/tophat_wrapper.xml" />
-    <tool file="ngs_rna/tophat2_wrapper.xml" />
-    <tool file="ngs_rna/tophat_color_wrapper.xml" />
-    <tool file="ngs_rna/express_wrapper.xml" />
-    <!-- Trinity is very memory-intensive and should only be enabled/run
-    on instances with sufficient resources. 
-    <label text="De novo Assembly" id="de_novo_assembly "/>
-    <tool file="ngs_rna/trinity_all.xml" />
-    -->
-    
     <label id="filtering" text="Filtering" />
-    <tool file="ngs_rna/filter_transcripts_via_tracking.xml" />
   </section>
   <section id="samtools" name="NGS: SAM Tools">
   </section>
@@ -341,13 +264,6 @@
     <tool file="gatk/variant_eval.xml" />
     <tool file="gatk/variant_combine.xml" />
   </section>
-  <section id="peak_calling" name="NGS: Peak Calling">
-    <tool file="peak_calling/macs_wrapper.xml" />
-    <tool file="peak_calling/sicer_wrapper.xml" />
-    <tool file="peak_calling/ccat_wrapper.xml" />
-    <tool file="genetrack/genetrack_indexer.xml" />
-    <tool file="genetrack/genetrack_peak_prediction.xml" />
-  </section>
   <section id="ngs-simulation" name="NGS: Simulation">
     <tool file="ngs_simulation/ngs_simulation.xml" />
   </section>
@@ -363,14 +279,7 @@
     <tool file="phenotype_association/gpass.xml" />
     <tool file="phenotype_association/beam.xml" />
     <tool file="phenotype_association/lps.xml" />
-    <tool file="phenotype_association/freebayes.xml" />
     <tool file="phenotype_association/master2pg.xml" />
     <tool file="phenotype_association/vcf2pgSnp.xml" />
-  </section>
-  <section id="vcf_tools" name="VCF Tools">
-    <tool file="vcf_tools/intersect.xml" />
-    <tool file="vcf_tools/annotate.xml" />
-    <tool file="vcf_tools/filter.xml" />
-    <tool file="vcf_tools/extract.xml" />
   </section>
 </toolbox>

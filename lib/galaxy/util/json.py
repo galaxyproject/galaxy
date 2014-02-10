@@ -1,16 +1,15 @@
+from __future__ import absolute_import
 
 __all__ = [ "to_json_string", "from_json_string", "json_fix", "validate_jsonrpc_request", "validate_jsonrpc_response", "jsonrpc_request", "jsonrpc_response" ]
 
-import random, string, logging
+import json
+import logging
+import random
 import socket
+import string
 
-import pkg_resources
-pkg_resources.require( "simplejson" )
-
-import simplejson
-
-to_json_string = simplejson.dumps
-from_json_string = simplejson.loads
+to_json_string = json.dumps
+from_json_string = json.loads
 
 log = logging.getLogger( __name__ )
 

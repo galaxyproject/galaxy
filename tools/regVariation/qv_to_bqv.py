@@ -6,25 +6,25 @@ Adapted from bx/scripts/qv_to_bqv.py
 Convert a qual (qv) file to several BinnedArray files for fast seek.
 This script takes approximately 4 seconds per 1 million base pairs.
 
-The input format is fasta style quality -- fasta headers followed by 
+The input format is fasta style quality -- fasta headers followed by
 whitespace separated integers.
 
 usage: %prog qual_file output_file
 """
 
-import pkg_resources 
+import pkg_resources
 pkg_resources.require( "bx-python" )
 pkg_resources.require( "numpy" )
-import string
-import psyco_full
-import sys, re, os, tempfile
+import os
+import sys
+import tempfile
 from bx.binned_array import BinnedArrayWriter
 from bx.cookbook import *
 import fileinput
 
 def load_scores_ba_dir( dir ):
     """
-    Return a dict-like object (keyed by chromosome) that returns 
+    Return a dict-like object (keyed by chromosome) that returns
     FileBinnedArray objects created from "key.ba" files in `dir`
     """
     return FileBinnedArrayDir( dir )
@@ -33,11 +33,10 @@ def main():
     args = sys.argv[1:]
     try:
         qual_file_dir = args[0]
-        #mydir="/home/gua110/Desktop/chimp_quality_scores/chr22.qa"
-        mydir="/home/gua110/Desktop/rhesus_quality_scores/rheMac2.qual.qv"
+        mydir = "/home/gua110/Desktop/rhesus_quality_scores/rheMac2.qual.qv"
         qual_file_dir = mydir.replace(mydir.split("/")[-1], "")
-        output_file = args[ 1 ]
-        fo = open(output_file,"w")
+        output_file = args[1]
+        fo = open(output_file, "w")
     except:
         print "usage: qual_file output_file"
         sys.exit()
@@ -64,7 +63,7 @@ def main():
                 region = line.lstrip(">")
                 #outfname = output_file + "." + region + ".bqv" #CHANGED
                 outfname = qual_file.strip() + ".bqv"
-                print >>fo, "Writing region " + region + " to file " + outfname
+                print >> fo, "Writing region " + region + " to file " + outfname
                 outfile = open( outfname , "wb")
                 outbin = BinnedArrayWriter(outfile, typecode='b', default=0)
                 base_count = 0

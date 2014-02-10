@@ -50,27 +50,29 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             # otherwise, check permissions for the history first
             else:
                 history = self.get_history( trans, history_id, check_ownership=True, check_accessible=True )
-            # if ids, return _FULL_ data (as show) for each id passed
+
+            contents_kwds = {}
             if ids:
-                ids = ids.split( ',' )
-                for index, hda in enumerate( history.datasets ):
-                    encoded_hda_id = trans.security.encode_id( hda.id )
-                    if encoded_hda_id in ids:
-                        #TODO: share code with show
-                        rval.append( self._detailed_hda_dict( trans, hda ) )
-            # if no ids passed, return a _SUMMARY_ of _all_ datasets in the history
+                ids = map( lambda id: trans.security.decode_id( id ), ids.split( ',' ) )
+                contents_kwds[ 'ids' ] = ids
+                # If explicit ids given, always used detailed result.
+                details = 'all'
             else:
+                contents_kwds[ 'deleted' ] = kwd.get( 'deleted', None )
+                contents_kwds[ 'visible' ] = kwd.get( 'visible', None )
+                # details param allows a mixed set of summary and detailed hdas
+                #TODO: this is getting convoluted due to backwards compat
                 details = kwd.get( 'details', None ) or []
                 if details and details != 'all':
                     details = util.listify( details )
 
-                for hda in history.datasets:
-                    encoded_hda_id = trans.security.encode_id( hda.id )
-                    if( ( encoded_hda_id in details )
-                    or  ( details == 'all' ) ):
-                        rval.append( self._detailed_hda_dict( trans, hda ) )
-                    else:
-                        rval.append( self._summary_hda_dict( trans, history_id, hda ) )
+            for hda in history.contents_iter( **contents_kwds ):
+                encoded_hda_id = trans.security.encode_id( hda.id )
+                detailed = details == 'all' or ( encoded_hda_id in details )
+                if detailed:
+                    rval.append( self._detailed_hda_dict( trans, hda ) )
+                else:
+                    rval.append( self._summary_hda_dict( trans, history_id, hda ) )
         except Exception, e:
             # for errors that are not specific to one hda (history lookup or summary list)
             rval = "Error in history API at listing contents: " + str( e )
@@ -99,6 +101,7 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             'state'  : hda.state,
             'deleted': hda.deleted,
             'visible': hda.visible,
+            'purged': hda.purged,
             'hid'   : hda.hid,
             'url'   : url_for( 'history_content', history_id=encoded_history_id, id=encoded_id, ),
         }
@@ -135,32 +138,17 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         :returns:   dictionary containing detailed HDA information
         .. seealso:: :func:`galaxy.web.base.controller.UsesHistoryDatasetAssociationMixin.get_hda_dict`
         """
-        hda_dict = {}
         try:
-            # for anon users:
-            #TODO: check login_required?
-            #TODO: this isn't actually most_recently_used (as defined in histories)
-            if( ( trans.user == None )
-            and ( history_id == trans.security.encode_id( trans.history.id ) ) ):
-                history = trans.history
-                #TODO: dataset/hda by id (from history) OR check_ownership for anon user
-                hda = self.get_history_dataset_association( trans, history, id,
-                    check_ownership=False, check_accessible=True )
-            else:
-                #TODO: do we really need the history?
-                history = self.get_history( trans, history_id,
-                    check_ownership=True, check_accessible=True, deleted=False )
-                hda = self.get_history_dataset_association( trans, history, id,
-                    check_ownership=True, check_accessible=True )
+            hda = self.get_history_dataset_association_from_ids( trans, id, history_id )
             hda_dict = self.get_hda_dict( trans, hda )
             hda_dict[ 'display_types' ] = self.get_old_display_applications( trans, hda )
             hda_dict[ 'display_apps' ] = self.get_display_apps( trans, hda )
+            return hda_dict
         except Exception, e:
             msg = "Error in history API at listing dataset: %s" % ( str(e) )
             log.error( msg, exc_info=True )
             trans.response.status = 500
             return msg
-        return hda_dict
 
     @web.expose_api
     def create( self, trans, history_id, payload, **kwd ):
@@ -303,8 +291,9 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             return { 'error': str( exception ) }
         return changed
 
+    #TODO: allow anonymous del/purge and test security on this
     @web.expose_api
-    def delete( self, trans, history_id, id, **kwd ):
+    def delete( self, trans, history_id, id, purge=False, **kwd ):
         """
         delete( self, trans, history_id, id, **kwd )
         * DELETE /api/histories/{history_id}/contents/{id}
@@ -313,11 +302,16 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
 
         :type   id:     str
         :param  id:     the encoded id of the history to delete
+        :type   purge:  bool
+        :param  purge:  if True, purge the HDA
         :type   kwd:    dict
         :param  kwd:    (optional) dictionary structure containing:
 
             * payload:     a dictionary itself containing:
                 * purge:   if True, purge the HDA
+
+        .. note:: that payload optionally can be placed in the query string of the request.
+            This allows clients that strip the request body to still purge the dataset.
 
         :rtype:     dict
         :returns:   an error object if an error occurred or a dictionary containing:
@@ -325,10 +319,12 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             * deleted:    if the history was marked as deleted,
             * purged:     if the history was purged
         """
-        # a request body is optional here
-        purge = False
+        # get purge from the query or from the request body payload (a request body is optional here)
+        purge = util.string_as_bool( purge )
         if kwd.get( 'payload', None ):
-            purge = util.string_as_bool( kwd['payload'].get( 'purge', False ) )
+            # payload takes priority
+            purge = util.string_as_bool( kwd['payload'].get( 'purge', purge ) )
+
         rval = { 'id' : id }
         try:
             hda = self.get_dataset( trans, id,
@@ -350,8 +346,10 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
                     # flush now to preserve deleted state in case of later interruption
                     trans.sa_session.flush()
                 rval[ 'purged' ] = True
+
             trans.sa_session.flush()
             rval[ 'deleted' ] = True
+
         except exceptions.httpexceptions.HTTPInternalServerError, http_server_err:
             log.exception( 'HDA API, delete: uncaught HTTPInternalServerError: %s, %s\n%s',
                            id, str( kwd ), str( http_server_err ) )
@@ -387,38 +385,19 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         )
         validated_payload = {}
         for key, val in payload.items():
-            # TODO: lots of boilerplate here, but overhead on abstraction is equally onerous
-            # typecheck, parse, remap key
-            if   key == 'name':
-                if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
-                    raise ValueError( 'name must be a string or unicode: %s' %( str( type( val ) ) ) )
-                validated_payload[ 'name' ] = util.sanitize_html.sanitize_html( val, 'utf-8' )
-                #TODO:?? if sanitized != val: log.warn( 'script kiddie' )
-            elif key == 'deleted':
-                if not isinstance( val, bool ):
-                    raise ValueError( 'deleted must be a boolean: %s' %( str( type( val ) ) ) )
-                validated_payload[ 'deleted' ] = val
-            elif key == 'visible':
-                if not isinstance( val, bool ):
-                    raise ValueError( 'visible must be a boolean: %s' %( str( type( val ) ) ) )
-                validated_payload[ 'visible' ] = val
-            elif key == 'genome_build':
-                if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
-                    raise ValueError( 'genome_build must be a string: %s' %( str( type( val ) ) ) )
-                validated_payload[ 'dbkey' ] = util.sanitize_html.sanitize_html( val, 'utf-8' )
-            elif key == 'annotation':
-                if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
-                    raise ValueError( 'annotation must be a string or unicode: %s' %( str( type( val ) ) ) )
-                validated_payload[ 'annotation' ] = util.sanitize_html.sanitize_html( val, 'utf-8' )
-            elif key == 'misc_info':
-                if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
-                    raise ValueError( 'misc_info must be a string or unicode: %s' %( str( type( val ) ) ) )
-                validated_payload[ 'info' ] = util.sanitize_html.sanitize_html( val, 'utf-8' )
+            if val is None:
+                continue
+            if key in ( 'name', 'genome_build', 'misc_info', 'annotation' ):
+                val = self.validate_and_sanitize_basestring( key, val )
+                #TODO: need better remap system or eliminate the need altogether
+                key = 'dbkey' if key == 'genome_build' else key
+                key = 'info'  if key == 'misc_info' else key
+                validated_payload[ key ] = val
+            if key in ( 'deleted', 'visible' ):
+                validated_payload[ key ] = self.validate_boolean( key, val )
             elif key == 'tags':
-                if isinstance( val, list ):
-                    validated_payload[ 'tags' ] = [ sanitize_html( t, 'utf-8' ) for t in val ]
+                validated_payload[ key ] = self.validate_and_sanitize_basestring_list( key, val )
             elif key not in valid_but_uneditable_keys:
                 pass
                 #log.warn( 'unknown key: %s', str( key ) )
         return validated_payload
-

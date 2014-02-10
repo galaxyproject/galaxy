@@ -1,8 +1,12 @@
-import galaxy.model
-from galaxy.model.orm import *
-from galaxy.model.mapping import context as sa_session
 from base.twilltestcase import TwillTestCase
-from base.test_db_util import *
+from base.test_db_util import (
+    get_user,
+    get_latest_history_for_user,
+    get_latest_hda,
+)
+
+admin_user = None
+
 
 class UploadData( TwillTestCase ):
 
@@ -26,7 +30,7 @@ class UploadData( TwillTestCase ):
         self.is_history_empty()
         return get_latest_history_for_user( user )
 
-    def test_0005_upload_file( self ):               
+    def test_0005_upload_file( self ):
         """
         Test uploading 1.bed, NOT setting the file format
         """
@@ -40,13 +44,13 @@ class UploadData( TwillTestCase ):
 
         self.delete_history( id=self.security.encode_id( history.id ) )
 
-    def test_0006_upload_file( self ):               
+    def test_0006_upload_file( self ):
         """
         Test uploading 1.bed.spaces, with space to tab selected, NOT setting the file format
         """
         history = self.create_fresh_history( admin_user )
 
-        self.upload_file( '1.bed.spaces', space_to_tab = True )
+        self.upload_file( '1.bed.spaces', space_to_tab=True )
         hda = get_latest_hda()
         assert hda is not None, "Problem retrieving hda from database"
         self.verify_dataset_correctness( '1.bed', hid=str( hda.hid ) )
@@ -210,13 +214,13 @@ class UploadData( TwillTestCase ):
         history = self.create_fresh_history( admin_user )
 
         # lped data types include a ped_file and a map_file ( which is binary )
-        self.upload_file( None, ftype='lped', metadata = [ { 'name':'base_name', 'value':'rgenetics' } ], composite_data = [ { 'name':'ped_file', 'value':'tinywga.ped' }, { 'name':'map_file', 'value':'tinywga.map'} ] )
+        self.upload_file( None, ftype='lped', metadata=[ { 'name':'base_name', 'value':'rgenetics' } ], composite_data=[ { 'name':'ped_file', 'value':'tinywga.ped' }, { 'name':'map_file', 'value':'tinywga.map'} ] )
         # Get the latest hid for testing
         hda = get_latest_hda()
         assert hda is not None, "Problem retrieving hda from database"
         # We'll test against the resulting ped file and map file for correctness
-        self.verify_composite_datatype_file_content( 'tinywga.ped', str( hda.id ), base_name = 'rgenetics.ped' )
-        self.verify_composite_datatype_file_content( 'tinywga.map', str( hda.id ), base_name = 'rgenetics.map' )
+        self.verify_composite_datatype_file_content( 'tinywga.ped', str( hda.id ), base_name='rgenetics.ped' )
+        self.verify_composite_datatype_file_content( 'tinywga.map', str( hda.id ), base_name='rgenetics.map' )
         self.check_hda_json_for_key_value( self.security.encode_id( hda.id ),
             "metadata_base_name", "rgenetics", use_string_contains=True )
 
@@ -230,13 +234,13 @@ class UploadData( TwillTestCase ):
         history = self.create_fresh_history( admin_user )
 
         # lped data types include a ped_file and a map_file ( which is binary )
-        self.upload_file( None, ftype='lped', metadata = [ { 'name':'base_name', 'value':'rgenetics' } ], composite_data = [ { 'name':'ped_file', 'value':'tinywga.ped', 'space_to_tab':True }, { 'name':'map_file', 'value':'tinywga.map'} ] )
+        self.upload_file( None, ftype='lped', metadata=[ { 'name':'base_name', 'value':'rgenetics' } ], composite_data=[ { 'name':'ped_file', 'value':'tinywga.ped', 'space_to_tab':True }, { 'name':'map_file', 'value':'tinywga.map'} ] )
         # Get the latest hid for testing
         hda = get_latest_hda()
         assert hda is not None, "Problem retrieving hda from database"
         # We'll test against the resulting ped file and map file for correctness
-        self.verify_composite_datatype_file_content( 'tinywga.ped.space_to_tab', str( hda.id ), base_name = 'rgenetics.ped' )
-        self.verify_composite_datatype_file_content( 'tinywga.map', str( hda.id ), base_name = 'rgenetics.map' )
+        self.verify_composite_datatype_file_content( 'tinywga.ped.space_to_tab', str( hda.id ), base_name='rgenetics.ped' )
+        self.verify_composite_datatype_file_content( 'tinywga.map', str( hda.id ), base_name='rgenetics.map' )
         self.check_hda_json_for_key_value( self.security.encode_id( hda.id ),
             "metadata_base_name", "rgenetics", use_string_contains=True )
 
@@ -251,8 +255,8 @@ class UploadData( TwillTestCase ):
 
         # pbed data types include a bim_file, a bed_file and a fam_file
         self.upload_file( None, ftype='pbed',
-            metadata = [ { 'name':'base_name', 'value':'rgenetics' } ],
-            composite_data = [
+            metadata=[ { 'name':'base_name', 'value':'rgenetics' } ],
+            composite_data=[
                 { 'name':'bim_file', 'value':'tinywga.bim' },
                 { 'name':'bed_file', 'value':'tinywga.bed' },
                 { 'name':'fam_file', 'value':'tinywga.fam' } ])
@@ -260,9 +264,9 @@ class UploadData( TwillTestCase ):
         hda = get_latest_hda()
         assert hda is not None, "Problem retrieving hda from database"
         # We'll test against the resulting ped file and map file for correctness
-        self.verify_composite_datatype_file_content( 'tinywga.bim', str( hda.id ), base_name = 'rgenetics.bim' )
-        self.verify_composite_datatype_file_content( 'tinywga.bed', str( hda.id ), base_name = 'rgenetics.bed' )
-        self.verify_composite_datatype_file_content( 'tinywga.fam', str( hda.id ), base_name = 'rgenetics.fam' )
+        self.verify_composite_datatype_file_content( 'tinywga.bim', str( hda.id ), base_name='rgenetics.bim' )
+        self.verify_composite_datatype_file_content( 'tinywga.bed', str( hda.id ), base_name='rgenetics.bed' )
+        self.verify_composite_datatype_file_content( 'tinywga.fam', str( hda.id ), base_name='rgenetics.fam' )
         self.check_hda_json_for_key_value( self.security.encode_id( hda.id ),
             "metadata_base_name", "rgenetics", use_string_contains=True )
 

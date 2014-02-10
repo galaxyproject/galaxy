@@ -39,9 +39,23 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
         this.defaultPrimaryActionButtonRenderers = [
             this._render_showParamsButton
         ];
+
+        /** where should pages from links be displayed? (default to new tab/window) */
+        this.linkTarget = attributes.linkTarget || '_blank';
         
-        /** is the body of this hda view expanded/not. */
-        this.expanded = attributes.expanded || false;
+        /** is the view currently in selection mode? */
+        this.selectable = attributes.selectable || false;
+        //this.log( '\t selectable:', this.selectable );
+        /** is the view currently selected? */
+        this.selected   = attributes.selected || false;
+        //this.log( '\t selected:', this.selected );
+        /** is the body of this hda view expanded/not? */
+        this.expanded   = attributes.expanded || false;
+        //this.log( '\t expanded:', this.expanded );
+        /** is the body of this hda view expanded/not? */
+        this.draggable  = attributes.draggable || false;
+        //this.log( '\t draggable:', this.draggable );
+        
         this._setUpListeners();
     },
 
@@ -83,22 +97,18 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
 
         // re-get web controller urls for functions relating to this hda. (new model data may have changed this)
         this.urls = this.model.urls();
-
-        // create a new render using a skeleton template, render title buttons, render body, and set up events, etc.
-        var $newRender = $( HDABaseView.templates.skeleton( this.model.toJSON() ) );
-        $newRender.find( '.dataset-primary-actions' ).append( this._render_titleButtons() );
-        $newRender.children( '.dataset-body' ).replaceWith( this._render_body() );
-        this._setUpBehaviors( $newRender );
+        var $newRender = this._buildNewRender();
 
         // fade the old render out (if desired)
         if( fade ){
             $( view ).queue( function( next ){ this.$el.fadeOut( view.fxSpeed, next ); });
         }
-        // empty the old render, update to any new HDA state, swap in the new render contents
+        // empty the old render, update to any new HDA state, swap in the new render contents, handle multi-select
         $( view ).queue( function( next ){
             this.$el.empty()
                 .attr( 'class', view.className ).addClass( 'state-' + view.model.get( 'state' ) )
                 .append( $newRender.children() );
+            if( this.selectable ){ this.showSelector( 0 ); }
             next();
         });
         // fade the new in
@@ -111,9 +121,20 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
             if( this.model.inReadyState() ){
                 this.trigger( 'rendered:ready', view );
             }
+            if( this.draggable ){ this.draggableOn(); }
             next();
         });
         return this;
+    },
+    
+    _buildNewRender : function(){
+        // create a new render using a skeleton template, render title buttons, render body, and set up events, etc.
+        var $newRender = $( HDABaseView.templates.skeleton( this.model.toJSON() ) );
+        $newRender.find( '.dataset-primary-actions' ).append( this._render_titleButtons() );
+        $newRender.children( '.dataset-body' ).replaceWith( this._render_body() );
+        this._setUpBehaviors( $newRender );
+        //this._renderSelectable( $newRender );
+        return $newRender;
     },
 
     /** set up js behaviors, event handlers for elements within the given container
@@ -149,8 +170,8 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
         }
         
         var displayBtnData = {
-            icon_class  : 'display',
-            target      : 'galaxy_main'
+            target      : this.linkTarget,
+            classes     : 'dataset-display'
         };
 
         // show a disabled display if the data's been purged
@@ -172,20 +193,19 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
             // add frame manager option onclick event
             var self = this;
             displayBtnData.onclick = function(){
-                Galaxy.frame_manager.frame_new({
-                    title   : "Data Viewer: " + self.model.get('name'),
-                    type    : "url",
-                    location: "center",
-                    content : self.urls.display
-                });
+                if( Galaxy.frame && Galaxy.frame.active ){
+                    Galaxy.frame.add({
+                        title       : "Data Viewer: " + self.model.get('name'),
+                        type        : "url",
+                        content     : self.urls.display
+                    });
+                }
             };
         }
-        //return new IconButtonView({ model : new IconButton( displayBtnData ) }).render().$el;
-
         displayBtnData.faIcon = 'fa-eye';
         return faIconButton( displayBtnData );
     },
-    
+
     // ......................................................................... primary actions
     /** Render icon-button/popupmenu to download the data (and/or the associated meta files (bai, etc.)) for this hda.
      *  @returns {jQuery} rendered DOM
@@ -199,15 +219,15 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
         // return either: a single download icon-button (if there are no meta files)
         if( _.isEmpty( meta_files ) ){
             return $([
-                //'<a href="', urls.download, '" title="', _l( 'Download' ), '" class="icon-button disk"></a>'
-                '<a href="' + urls.download + '" title="' + _l( 'Download' ) + '" class="icon-btn">',
+                '<a href="' + urls.download + '" title="' + _l( 'Download' ) + '" ',
+                    'class="icon-btn dataset-download-btn">',
                     '<span class="fa fa-floppy-o"></span>',
                 '</a>'
             ].join( '' ) );
         }
 
         //  or a popupmenu with links to download assoc. meta files (if there are meta files)
-//TODO: Popupmenu
+        //TODO: Popupmenu
         var menuId = 'dataset-' + this.model.get( 'id' ) + '-popup',
             html = [
                 '<div popupmenu="' + menuId + '">',
@@ -224,7 +244,8 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
                 '</div>',
 
                 '<div class="icon-btn-group">',
-                    '<a href="' + urls.download + '" title="' + _l( 'Download' ) + '" class="icon-btn">',
+                    '<a href="' + urls.download + '" title="' + _l( 'Download' ) + '" ',
+                        'class="icon-btn dataset-download-btn">',
                         '<span class="fa fa-floppy-o"></span>',
                     // join these w/o whitespace or there'll be a gap when rendered
                     '</a><a class="icon-btn popup" id="' + menuId + '">',
@@ -240,16 +261,11 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
      */
     _render_showParamsButton : function(){
         // gen. safe to show in all cases
-        //return new IconButtonView({ model : new IconButton({
-        //    title       : _l( 'View details' ),
-        //    href        : this.urls.show_params,
-        //    target      : 'galaxy_main',
-        //    icon_class  : 'information'
-        //}) }).render().$el;
         return faIconButton({
             title       : _l( 'View details' ),
+            classes     : 'dataset-params-btn',
             href        : this.urls.show_params,
-            target      : 'galaxy_main',
+            target      : this.linkTarget,
             faIcon      : 'fa-info-circle'
         });
     },
@@ -265,6 +281,8 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
         if( _.isFunction( renderFn ) ){
             $body = renderFn.call( this );
         }
+        this._setUpBehaviors( $body );
+
         // only render the body html if it's being shown
         if( this.expanded ){
             $body.show();
@@ -339,13 +357,15 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
 
     /** Render an HDA whose job has failed. */
     _render_body_error : function(){
-        var html = _l( 'An error occurred with this dataset' )
-            + ': <i>' + $.trim( this.model.get( 'misc_info' ) ) + '</i>';
+        var html = [
+            '<span class="help-text">', _l( 'An error occurred with this dataset' ), ':</span>',
+            '<div class="job-error-text">', $.trim( this.model.get( 'misc_info' ) ), '</div>'
+        ].join( '' );
         if( !this.model.get( 'purged' ) ){
             html = '<div>' + this.model.get( 'misc_blurb' ) + '</div>' + html;
         }
         return this._render_stateBodyHelper( html,
-            this.defaultPrimaryActionButtonRenderers.concat([ this._render_downloadButton ])
+            [ this._render_downloadButton ].concat( this.defaultPrimaryActionButtonRenderers )
         );
     },
         
@@ -393,8 +413,16 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
     // ......................................................................... events
     /** event map */
     events : {
-        // expand the body when the title is clicked
-        'click .dataset-title-bar'           : 'toggleBodyVisibility'
+        // expand the body when the title is clicked or when in focus and space or enter is pressed
+        'click .dataset-title-bar'      : 'toggleBodyVisibility',
+        'keydown .dataset-title-bar'    : 'toggleBodyVisibility',
+
+        // dragging - don't work, originalEvent === null
+        //'dragstart .dataset-title-bar'  : 'dragStartHandler',
+        //'dragend .dataset-title-bar'    : 'dragEndHandler'
+
+        // toggle selected state
+        'click .dataset-selector'       : 'toggleSelect'
     },
 
     /** Show or hide the body/details of an HDA.
@@ -405,6 +433,13 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
      *  @fires body-collapsed when a body has been collapsed
      */
     toggleBodyVisibility : function( event, expand ){
+        // bail (with propagation) if keydown and not space or enter
+        var KEYCODE_SPACE = 32, KEYCODE_RETURN = 13;
+        if( event && ( event.type === 'keydown' )
+        &&  !( event.keyCode === KEYCODE_SPACE || event.keyCode === KEYCODE_RETURN ) ){
+            return true;
+        }
+
         var $body = this.$el.find( '.dataset-body' );
         expand = ( expand === undefined )?( !$body.is( ':visible' ) ):( expand );
         if( expand ){
@@ -412,6 +447,7 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
         } else {
             this.collapseBody();
         }
+        return false;
     },
 
     /** Render and show the full, detailed body of this view including extra data and controls.
@@ -421,10 +457,16 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
         var hdaView = this;
 
         function _renderBodyAndExpand(){
-            hdaView.render( false ).$el.children( '.dataset-body' ).slideDown( hdaView.fxSpeed, function(){
-                hdaView.expanded = true;
-                hdaView.trigger( 'body-expanded', hdaView.model.get( 'id' ) );
-            });
+            hdaView.$el.children( '.dataset-body' ).replaceWith( hdaView._render_body() );
+            hdaView.$el.children( '.dataset-body' ).slideDown( hdaView.fxSpeed, function(){
+                    hdaView.expanded = true;
+                    hdaView.trigger( 'body-expanded', hdaView.model.get( 'id' ) );
+                });
+
+            //hdaView.render( false ).$el.children( '.dataset-body' ).slideDown( hdaView.fxSpeed, function(){
+            //    hdaView.expanded = true;
+            //    hdaView.trigger( 'body-expanded', hdaView.model.get( 'id' ) );
+            //});
         }
         // fetch first if no details in the model
         if( this.model.inReadyState() && !this.model.hasDetails() ){
@@ -445,6 +487,153 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
             hdaView.expanded = false;
             hdaView.trigger( 'body-collapsed', hdaView.model.get( 'id' ) );
         });
+    },
+
+    // ......................................................................... selection
+    /** display a (fa-icon) checkbox on the left of the hda that fires events when checked
+     *      Note: this also hides the primary actions
+     */
+    showSelector : function( speed ){
+        speed = ( speed !== undefined )?( speed ):( this.fxSpeed );
+
+        // make sure selected state is represented properly
+        if( this.selected ){
+            this.select( null, true );
+        }
+
+        // create a jq fx queue to do this sequentially: fadeout the buttons, embiggen the selector
+        var hdaView = this,
+            SELECTOR_WIDTH = 32;
+
+        if( speed ){
+            this.$el.queue( 'fx', function( next ){
+                $( this ).find( '.dataset-primary-actions' ).fadeOut( speed, next );
+            });
+            this.$el.queue( 'fx', function( next ){
+                $( this ).find( '.dataset-selector' ).show().animate({ width: SELECTOR_WIDTH }, speed, next );
+                $( this ).find( '.dataset-title-bar' ).animate({ 'margin-left': SELECTOR_WIDTH }, speed, next );
+                hdaView.selectable = true;
+                hdaView.trigger( 'selectable', true, hdaView );
+            });
+        // no animation
+        } else {
+            this.$el.find( '.dataset-primary-actions' ).hide();
+            this.$el.find( '.dataset-selector' ).show().css({ width : SELECTOR_WIDTH });
+            this.$el.find( '.dataset-title-bar' ).show().css({ 'margin-left' : SELECTOR_WIDTH });
+            hdaView.selectable = true;
+            hdaView.trigger( 'selectable', true, hdaView );
+        }
+    },
+
+    /** remove the selection checkbox */
+    hideSelector : function( speed ){
+        speed = ( speed !== undefined )?( speed ):( this.fxSpeed );
+
+        // reverse the process from showSelect
+        this.selectable = false;
+        this.trigger( 'selectable', false, this );
+
+        if( speed ){
+            this.$el.queue( 'fx', function( next ){
+                $( this ).find( '.dataset-title-bar' ).show().css({ 'margin-left' : '0' });
+                $( this ).find( '.dataset-selector' ).animate({ width: '0px' }, speed, function(){
+                    $( this ).hide();
+                    next();
+                });
+            });
+            this.$el.queue( 'fx', function( next ){
+                $( this ).find( '.dataset-primary-actions' ).fadeIn( speed, next );
+            });
+
+        // no animation
+        } else {
+            $( this ).find( '.dataset-selector' ).css({ width : '0px' }).hide();
+            $( this ).find( '.dataset-primary-actions' ).show();
+        }
+    },
+
+    toggleSelector : function( speed ){
+        if( !this.$el.find( '.dataset-selector' ).is( ':visible' ) ){
+            this.showSelector( speed );
+        } else {
+            this.hideSelector( speed );
+        }
+    },
+
+    /** event handler for selection (also programmatic selection)
+     */
+    select : function( event ){
+        // switch icon, set selected, and trigger event
+        this.$el.find( '.dataset-selector span' )
+            .removeClass( 'fa-square-o' ).addClass( 'fa-check-square-o' );
+        if( !this.selected ){
+            this.trigger( 'selected', this );
+            this.selected = true;
+        }
+        return false;
+    },
+
+    /** event handler for clearing selection (also programmatic deselection)
+     */
+    deselect : function( event ){
+        // switch icon, set selected, and trigger event
+        this.$el.find( '.dataset-selector span' )
+            .removeClass( 'fa-check-square-o' ).addClass( 'fa-square-o' );
+        if( this.selected ){
+            this.trigger( 'de-selected', this );
+            this.selected = false;
+        }
+        return false;
+    },
+
+    toggleSelect : function( event ){
+        if( this.selected ){
+            this.deselect( event );
+        } else {
+            this.select( event );
+        }
+    },
+
+    // ......................................................................... drag/drop
+    draggableOn : function(){
+        this.draggable = true;
+        //TODO: I have no idea why this doesn't work with the events hash or jq.on()...
+        //this.$el.find( '.dataset-title-bar' )
+        //    .attr( 'draggable', true )
+        //    .bind( 'dragstart', this.dragStartHandler, false )
+        //    .bind( 'dragend',   this.dragEndHandler,   false );
+        this.dragStartHandler = _.bind( this._dragStartHandler, this );
+        this.dragEndHandler   = _.bind( this._dragEndHandler,   this );
+
+        var titleBar = this.$el.find( '.dataset-title-bar' ).attr( 'draggable', true ).get(0);
+        titleBar.addEventListener( 'dragstart', this.dragStartHandler, false );
+        titleBar.addEventListener( 'dragend',   this.dragEndHandler,   false );
+    },
+    draggableOff : function(){
+        this.draggable = false;
+        var titleBar = this.$el.find( '.dataset-title-bar' ).attr( 'draggable', false ).get(0);
+        titleBar.removeEventListener( 'dragstart', this.dragStartHandler, false );
+        titleBar.removeEventListener( 'dragend',   this.dragEndHandler,   false );
+    },
+    toggleDraggable : function(){
+        if( this.draggable ){
+            this.draggableOff();
+        } else {
+            this.draggableOn();
+        }
+    },
+    _dragStartHandler : function( event ){
+        //console.debug( 'dragStartHandler:', this, event, arguments )
+        this.trigger( 'dragstart', this );
+        event.dataTransfer.effectAllowed = 'move';
+        //TODO: all except IE: should be 'application/json', IE: must be 'text'
+        event.dataTransfer.setData( 'text', JSON.stringify( this.model.toJSON() ) );
+        return false;
+    },
+    _dragEndHandler : function( event ){
+        this.trigger( 'dragend', this );
+        //console.debug( 'dragEndHandler:', event )
+        return false;
     },
 
     // ......................................................................... removal

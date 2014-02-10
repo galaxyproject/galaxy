@@ -33,7 +33,6 @@
         'libs/bootstrap',
         'libs/underscore',
         'libs/backbone/backbone',
-        'libs/backbone/backbone-relational',
         'libs/require',
         'libs/d3',
         'galaxy.base',
@@ -103,7 +102,6 @@
                 "libs/underscore": { exports: "_" },
                 "libs/d3": { exports: "d3" },
                 "libs/backbone/backbone": { exports: "Backbone" },
-                "libs/backbone/backbone-relational": ["libs/backbone/backbone"]
             }
         });
 

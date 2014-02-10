@@ -2,15 +2,18 @@
 
 ## ----------------------------------------------------------------------------
 <%def name="current_history_panel( selector_to_attach_to=None, show_deleted=None, show_hidden=None, hda_id=None )">
-<script type="text/javascript">
-function onModuleReady( historyPanel ){
-    // attach a panel to selector_to_attach_to and load the current history/hdas over the api
 
+${history_panel_javascripts()}
+
+<script type="text/javascript">
+onhistoryready.done( function( historyPanel ){
+    // attach a panel to selector_to_attach_to and load the current history/hdas over the api
     var currPanel = new historyPanel.HistoryPanel({
         // is page sending in show settings? if so override history's
         show_deleted    : ${ 'true' if show_deleted == True else ( 'null' if show_deleted == None else 'false' ) },
         show_hidden     : ${ 'true' if show_hidden  == True else ( 'null' if show_hidden  == None else 'false' ) },
         el              : $( "${selector_to_attach_to}" ),
+        linkTarget      : 'galaxy_main',
         onready         : function loadAsCurrentHistoryPanel(){
             var panel = this;
             this.connectToQuotaMeter( Galaxy.quotaMeter ).connectToOptionsMenu( Galaxy.historyOptionsMenu );
@@ -21,43 +24,45 @@ function onModuleReady( historyPanel ){
             }
     });
     Galaxy.currHistoryPanel = currPanel;
-}
+});
 </script>
-
-${history_panel_javascripts()}
 </%def>
 
 
 ## ----------------------------------------------------------------------------
 <%def name="history_panel( history_id, selector_to_attach_to=None, \
                            show_deleted=None, show_hidden=None, hda_id=None )">
-<script type="text/javascript">
-function onModuleReady( historyPanel ){
-    // attach a panel to selector_to_attach_to and load the history/hdas with the given history_id over the api
 
+${history_panel_javascripts()}
+
+<script type="text/javascript">
+onhistoryready.done( function( historyPanel ){
+    // attach a panel to selector_to_attach_to and load the history/hdas with the given history_id over the api
     var panel = new historyPanel.HistoryPanel({
         show_deleted    : ${ 'true' if show_deleted == True else ( 'null' if show_deleted == None else 'false' ) },
         show_hidden     : ${ 'true' if show_hidden  == True else ( 'null' if show_hidden  == None else 'false' ) },
         el              : $( "${selector_to_attach_to}" ),
         onready         : function loadHistoryById(){
             var panel = this;
-            this.loadHistoryWithDetails( '${history_id}' )
+            this.loadHistoryWithHDADetails( '${history_id}' )
                 .fail( function(){
                     panel.render();
                 });
             }
     });
+});
 </script>
-
-${history_panel_javascripts()}
 </%def>
 
 
 ## ----------------------------------------------------------------------------
 <%def name="bootstrapped_history_panel( history, hdas, selector_to_attach_to=None, \
                                         show_deleted=None, show_hidden=None, hda_id=None )">
+
+${history_panel_javascripts()}
+
 <script type="text/javascript">
-function onModuleReady( historyPanel ){
+onhistoryready.done( function( historyPanel ){
     // attach a panel to selector_to_attach_to and use a history model with bootstrapped data
 
     // history module is already in the dpn chain from the panel. We can re-scope it here.
@@ -65,9 +70,6 @@ function onModuleReady( historyPanel ){
         debugging = JSON.parse( sessionStorage.getItem( 'debugging' ) ) || false,
         historyJSON = ${h.to_json_string( history )},
         hdaJSON = ${h.to_json_string( hdas )};
-
-    // i don't like this history+user relationship, but user authentication changes views/behaviour
-    historyJSON.user = Galaxy.currUser.toJSON();
 
     var history = new historyModel.History( historyJSON, hdaJSON, {
         logger: ( debugging )?( console ):( null )
@@ -80,22 +82,24 @@ function onModuleReady( historyPanel ){
         model           : history,
         onready         : function(){ this.render(); }
     });
-}
+})
 </script>
-
-${history_panel_javascripts()}
 </%def>
 
 
 ## ----------------------------------------------------------------------------- generic 'base' function
 <%def name="history_panel_javascripts()">
 ${h.js(
-    "mvc/tags"
+    "utils/localization",
+    "mvc/base-mvc",
+    "mvc/tags",
+    "mvc/annotations"
 )}
 
 ##TODO: concat these
 ${h.templates(
-    "history-templates"
+    "history-templates",
+    "helpers-common-templates"
 )}
 
 ${localize_js_strings([
@@ -130,7 +134,9 @@ ${localize_js_strings([
 ])}
 
 <script type="text/javascript">
-var debugging = JSON.parse( sessionStorage.getItem( 'debugging' ) ) || false;
+var debugging = JSON.parse( sessionStorage.getItem( 'debugging' ) ) || false,
+    // use deferred to allow multiple callbacks (.done())
+    onhistoryready = jQuery.Deferred();
 
 require.config({
     baseUrl : "${h.url_for( '/static/scripts' )}"
@@ -144,9 +150,9 @@ require.config({
 //require([ "/static/scripts/history-panel.min.js" ], function( historyPanel ){
 
 require([ "mvc/history/history-panel" ], function( historyPanel ){
-    onModuleReady( historyPanel );
+    $(function(){
+        onhistoryready.resolve( historyPanel )
+    });
 });
 </script>
 </%def>
-
-
