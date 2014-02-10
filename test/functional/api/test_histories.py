@@ -61,7 +61,7 @@ class HistoriesApiTestCase( api.ApiTestCase, TestsDatasets ):
         import_data = dict( archive_source=full_download_url, archive_type="url" )
         import_response = self._post( "histories", data=import_data )
 
-        self._assert_status_code_is( import_response, 201 )
+        self._assert_status_code_is( import_response, 200 )
         found = False
         while not found:
             time.sleep( .1 )

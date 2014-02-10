@@ -191,7 +191,6 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin,
             archive_source = payload[ "archive_source" ]
             archive_type = payload.get( "archive_type", "url" )
             self.queue_history_import( trans, archive_type=archive_type, archive_source=archive_source )
-            trans.response.status = 201
             return {}
 
         new_history = None
