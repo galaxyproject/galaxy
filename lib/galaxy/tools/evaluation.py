@@ -19,6 +19,7 @@ from galaxy.tools.parameters.basic import (
     SelectToolParameter,
 )
 from galaxy.tools.parameters.grouping import Conditional, Repeat
+from galaxy.jobs.datasets import dataset_path_rewrites
 
 
 class ToolEvaluator( object ):
@@ -102,7 +103,7 @@ class ToolEvaluator( object ):
         # All parameters go into the param_dict
         param_dict.update( incoming )
 
-        input_false_paths = dict( [ ( dp.real_path, dp.false_path ) for dp in input_paths if getattr( dp, "false_path", None ) ] )
+        input_false_paths = dataset_path_rewrites( input_paths )
 
         def wrap_values( inputs, input_values ):
             """
@@ -218,7 +219,7 @@ class ToolEvaluator( object ):
             if data:
                 for child in data.children:
                     param_dict[ "_CHILD___%s___%s" % ( name, child.designation ) ] = DatasetFilenameWrapper( child )
-        output_false_paths = dict( [ ( dp.real_path, dp.false_path ) for dp in output_paths if getattr( dp, "false_path", None ) ] )
+        output_false_paths = dataset_path_rewrites( output_paths )
         for name, hda in output_datasets.items():
             # Write outputs to the working directory (for security purposes)
             # if desired.
