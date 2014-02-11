@@ -126,11 +126,12 @@ def do_merge( job_wrapper,  task_wrappers):
         assert task_dirs, "Should be at least one sub-task!"
         # TODO: Output datasets can be very complex. This doesn't handle metadata files
         outputs = job_wrapper.get_output_hdas_and_fnames()
+        output_paths = job_wrapper.get_output_fnames()
         pickone_done = []
         task_dirs = [os.path.join(working_directory, x) for x in os.listdir(working_directory) if x.startswith('task_')]
         task_dirs.sort(key = lambda x: int(x.split('task_')[-1]))
-        for output in outputs:
-            output_file_name = str(outputs[output][1])
+        for index, output in enumerate( outputs ):
+            output_file_name = str( output_paths[ index ] )  # Use false_path if set, else real path.
             base_output_name = os.path.basename(output_file_name)
             if output in merge_outputs:
                 output_dataset = outputs[output][0]

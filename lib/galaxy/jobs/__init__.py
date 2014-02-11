@@ -26,6 +26,9 @@ from galaxy.util.expressions import ExpressionContext
 from galaxy.util.json import from_json_string
 from galaxy.util import unicodify
 from .output_checker import check_output
+from .datasets import TaskPathRewriter
+from .datasets import OutputsToWorkingDirectoryPathRewriter
+from .datasets import NullDatasetPathRewriter
 
 log = logging.getLogger( __name__ )
 
@@ -577,6 +580,7 @@ class JobWrapper( object ):
             log.debug('(%s) Working directory for job is: %s' % (self.job_id, self.working_directory))
         except ObjectInvalid:
             raise Exception('Unable to create job working directory, job failure')
+        self.dataset_path_rewriter = self._job_dataset_path_rewriter( self.working_directory )
         self.output_paths = None
         self.output_hdas_and_paths = None
         self.tool_provided_job_metadata = None
@@ -589,6 +593,13 @@ class JobWrapper( object ):
 
         self.__user_system_pwent = None
         self.__galaxy_system_pwent = None
+
+    def _job_dataset_path_rewriter( self, working_directory ):
+        if self.app.config.outputs_to_working_directory:
+            dataset_path_rewriter = OutputsToWorkingDirectoryPathRewriter( working_directory )
+        else:
+            dataset_path_rewriter = NullDatasetPathRewriter( )
+        return dataset_path_rewriter
 
     def can_split( self ):
         # Should the job handler split this job up?
@@ -1169,6 +1180,8 @@ class JobWrapper( object ):
         return self.output_hdas_and_paths
 
     def compute_outputs( self ) :
+        dataset_path_rewriter = self.dataset_path_rewriter
+
         class DatasetPath( object ):
             def __init__( self, dataset_id, real_path, false_path=None, mutable=True ):
                 self.dataset_id = dataset_id
@@ -1187,21 +1200,18 @@ class JobWrapper( object ):
         if not special:
             special = self.sa_session.query( model.GenomeIndexToolData ).filter_by( job=job ).first()
         false_path = None
-        if self.app.config.outputs_to_working_directory:
-            self.output_paths = []
-            self.output_hdas_and_paths = {}
-            for name, hda in [ ( da.name, da.dataset ) for da in job.output_datasets + job.output_library_datasets ]:
-                false_path = os.path.abspath( os.path.join( self.working_directory, "galaxy_dataset_%d.dat" % hda.dataset.id ) )
-                dsp = DatasetPath( hda.dataset.id, hda.dataset.file_name, false_path, mutable=hda.dataset.external_filename is None  )
-                self.output_paths.append( dsp )
-                self.output_hdas_and_paths[name] = hda, dsp
-            if special:
-                false_path = os.path.abspath( os.path.join( self.working_directory, "galaxy_dataset_%d.dat" % special.dataset.id ) )
-        else:
-            results = [ ( da.name, da.dataset, DatasetPath( da.dataset.dataset.id, da.dataset.file_name, mutable=da.dataset.dataset.external_filename is None ) ) for da in job.output_datasets + job.output_library_datasets ]
-            self.output_paths = [t[2] for t in results]
-            self.output_hdas_and_paths = dict([(t[0],  t[1:]) for t in results])
+
+        results = []
+        for da in job.output_datasets + job.output_library_datasets:
+            da_false_path = dataset_path_rewriter.rewrite_dataset_path( da.dataset, 'output' )
+            mutable = da.dataset.dataset.external_filename is None
+            dataset_path = DatasetPath( da.dataset.dataset.id, da.dataset.file_name, false_path=da_false_path, mutable=mutable )
+            results.append( ( da.name, da.dataset, dataset_path ) )
+
+        self.output_paths = [t[2] for t in results]
+        self.output_hdas_and_paths = dict([(t[0],  t[1:]) for t in results])
         if special:
+            false_path = dataset_path_rewriter.rewrite_dataset_path( special.dataset, 'output' )
             dsp = DatasetPath( special.dataset.id, special.dataset.file_name, false_path )
             self.output_paths.append( dsp )
         return self.output_paths
@@ -1371,7 +1381,10 @@ class TaskWrapper(JobWrapper):
     def __init__(self, task, queue):
         super(TaskWrapper, self).__init__(task.job, queue)
         self.task_id = task.id
-        self.working_directory = task.working_directory
+        working_directory = task.working_directory
+        self.working_directory = working_directory
+        job_dataset_path_rewriter = self._job_dataset_path_rewriter( self.working_directory )
+        self.dataset_path_rewriter = TaskPathRewriter( working_directory, job_dataset_path_rewriter )
         if task.prepare_input_files_cmd is not None:
             self.prepare_input_files_cmds = [ task.prepare_input_files_cmd ]
         else:
@@ -1422,8 +1435,8 @@ class TaskWrapper(JobWrapper):
         fnames = {}
         for v in self.get_input_fnames():
             fnames[v] = os.path.join(self.working_directory, os.path.basename(v))
-        for dp in [x.real_path for x in self.get_output_fnames()]:
-            fnames[dp] = os.path.join(self.working_directory, os.path.basename(dp))
+        #for dp in [x.real_path for x in self.get_output_fnames()]:
+        #    fnames[dp] = os.path.join(self.working_directory, os.path.basename(dp))
 
         self.sa_session.flush()
 
