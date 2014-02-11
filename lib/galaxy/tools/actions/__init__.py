@@ -352,23 +352,10 @@ class DefaultToolAction( object ):
                 data.state = data.states.QUEUED
                 data.blurb = "queued"
                 # Set output label
-                if output.label:
-                    if params is None:
-                        params = make_dict_copy( incoming )
-                        # wrapping the params allows the tool config to contain things like
-                        # <outputs>
-                        #     <data format="input" name="output" label="Blat on ${<input_param>.name}" />
-                        # </outputs>
-                        wrap_values( tool.inputs, params, skip_missing_values=not tool.check_values )
-                    #tool (only needing to be set once) and on_string (set differently for each label) are overwritten for each output dataset label being determined
-                    params['tool'] = tool
-                    params['on_string'] = on_text
-                    data.name = fill_template( output.label, context=params )
-                else:
-                    if params is None:
-                        params = make_dict_copy( incoming )
-                        wrap_values( tool.inputs, params, skip_missing_values=not tool.check_values )
-                    data.name = self._get_default_data_name( data, tool, on_text=on_text, trans=trans, incoming=incoming, history=history, params=params, job_params=job_params )
+                if params is None:
+                    params = make_dict_copy( incoming )
+                    wrap_values( tool.inputs, params, skip_missing_values=not tool.check_values )
+                data.name = self.get_output_name( output, data, tool, on_text, trans, incoming, history, params, job_params )
                 # Store output
                 out_data[ name ] = data
                 if output.actions:
@@ -488,6 +475,14 @@ class DefaultToolAction( object ):
             trans.app.job_queue.put( job.id, job.tool_id )
             trans.log_event( "Added job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id )
             return job, out_data
+
+    def get_output_name( self, output, dataset, tool, on_text, trans, incoming, history, params, job_params ):
+        if output.label:
+            params['tool'] = tool
+            params['on_string'] = on_text
+            return fill_template( output.label, context=params )
+        else:
+            return self._get_default_data_name( dataset, tool, on_text=on_text, trans=trans, incoming=incoming, history=history, params=params, job_params=job_params )
 
     def _get_default_data_name( self, dataset, tool, on_text=None, trans=None, incoming=None, history=None, params=None, job_params=None, **kwd ):
         name = tool.name
