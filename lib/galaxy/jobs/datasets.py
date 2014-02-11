@@ -25,6 +25,20 @@ class DatasetPath( object ):
         else:
             return self.false_path
 
+    def with_path_for_job( self, false_path ):
+        """
+        Clone the dataset path but with a new false_path.
+        """
+        dataset_path = self
+        if false_path is not None:
+            dataset_path = DatasetPath(
+                dataset_id=self.dataset_id,
+                real_path=self.real_path,
+                false_path=false_path,
+                mutable=self.mutable,
+            )
+        return dataset_path
+
 
 class DatasetPathRewriter( object ):
     """ Used by runner to rewrite paths. """

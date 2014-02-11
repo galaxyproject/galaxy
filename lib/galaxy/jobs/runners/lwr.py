@@ -2,9 +2,11 @@ import logging
 
 from galaxy import model
 from galaxy.jobs.runners import AsynchronousJobState, AsynchronousJobRunner
+from galaxy.jobs import ComputeEnvironment
 from galaxy.jobs import JobDestination
 from galaxy.jobs.command_factory import build_command
 from galaxy.util import string_as_bool_or_none
+from galaxy.util import in_directory
 from galaxy.util.bunch import Bunch
 
 import errno
@@ -17,6 +19,7 @@ from .lwr_client import submit_job as lwr_submit_job
 from .lwr_client import ClientJobDescription
 from .lwr_client import LwrOutputs
 from .lwr_client import GalaxyOutputs
+from .lwr_client import PathMapper
 
 log = logging.getLogger( __name__ )
 
@@ -73,15 +76,17 @@ class LwrJobRunner( AsynchronousJobRunner ):
             dependency_resolution = LwrJobRunner.__dependency_resolution( client )
             remote_dependency_resolution = dependency_resolution == "remote"
             requirements = job_wrapper.tool.requirements if remote_dependency_resolution else []
+            rewrite_paths = not LwrJobRunner.__rewrite_parameters( client )
             client_job_description = ClientJobDescription(
                 command_line=command_line,
                 output_files=self.get_output_files(job_wrapper),
-                input_files=job_wrapper.get_input_fnames(),
+                input_files=self.get_input_files(job_wrapper),
                 working_directory=job_wrapper.working_directory,
                 tool=job_wrapper.tool,
                 config_files=job_wrapper.extra_filenames,
                 requirements=requirements,
                 version_file=job_wrapper.get_version_string_path(),
+                rewrite_paths=rewrite_paths,
             )
             job_id = lwr_submit_job(client, client_job_description, remote_job_config)
             log.info("lwr job submitted with job_id %s" % job_id)
@@ -106,11 +111,16 @@ class LwrJobRunner( AsynchronousJobRunner ):
         client = None
         remote_job_config = None
         try:
-            job_wrapper.prepare()
-            self.__prepare_input_files_locally(job_wrapper)
             client = self.get_client_from_wrapper(job_wrapper)
             tool = job_wrapper.tool
             remote_job_config = client.setup(tool.id, tool.version)
+            rewrite_parameters = LwrJobRunner.__rewrite_parameters( client )
+            prepare_kwds = {}
+            if rewrite_parameters:
+                compute_environment = LwrComputeEnvironment( client, job_wrapper, remote_job_config )
+                prepare_kwds[ 'compute_environment' ] = compute_environment
+            job_wrapper.prepare( **prepare_kwds )
+            self.__prepare_input_files_locally(job_wrapper)
             remote_metadata = LwrJobRunner.__remote_metadata( client )
             remote_work_dir_copy = LwrJobRunner.__remote_work_dir_copy( client )
             dependency_resolution = LwrJobRunner.__dependency_resolution( client )
@@ -147,8 +157,12 @@ class LwrJobRunner( AsynchronousJobRunner ):
             job_wrapper.prepare_input_files_cmds = None  # prevent them from being used in-line
 
     def get_output_files(self, job_wrapper):
-        output_fnames = job_wrapper.get_output_fnames()
-        return [ str( o ) for o in output_fnames ]
+        output_paths = job_wrapper.get_output_fnames()
+        return [ str( o ) for o in output_paths ]   # Force job_path from DatasetPath objects.
+
+    def get_input_files(self, job_wrapper):
+        input_paths = job_wrapper.get_input_paths()
+        return [ str( i ) for i in input_paths ]  # Force job_path from DatasetPath objects.
 
     def get_client_from_wrapper(self, job_wrapper):
         job_id = job_wrapper.job_id
@@ -323,6 +337,10 @@ class LwrJobRunner( AsynchronousJobRunner ):
         use_remote_datatypes = string_as_bool_or_none( lwr_client.destination_params.get( "use_remote_datatypes", False ) )
         return use_remote_datatypes
 
+    @staticmethod
+    def __rewrite_parameters( lwr_client ):
+        return string_as_bool_or_none( lwr_client.destination_params.get( "rewrite_parameters", False ) ) or False
+
     def __build_metadata_configuration(self, client, job_wrapper, remote_metadata, remote_job_config):
         metadata_kwds = {}
         if remote_metadata:
@@ -352,3 +370,55 @@ class LwrJobRunner( AsynchronousJobRunner ):
 
                 metadata_kwds['datatypes_config'] = os.path.join(configs_directory, os.path.basename(integrates_datatypes_config))
         return metadata_kwds
+
+
+class LwrComputeEnvironment( ComputeEnvironment ):
+
+    def __init__( self, lwr_client, job_wrapper, remote_job_config ):
+        self.lwr_client = lwr_client
+        self.job_wrapper = job_wrapper
+        self.local_path_config = job_wrapper.default_compute_environment()
+        # job_wrapper.prepare is going to expunge the job backing the following
+        # computations, so precalculate these paths.
+        self._wrapper_input_paths = self.local_path_config.input_paths()
+        self._wrapper_output_paths = self.local_path_config.output_paths()
+        self.path_mapper = PathMapper(lwr_client, remote_job_config, self.local_path_config.working_directory())
+        self._config_directory = remote_job_config[ "configs_directory" ]
+        self._working_directory = remote_job_config[ "working_directory" ]
+        self._sep = remote_job_config[ "system_properties" ][ "separator" ]
+        self._tool_dir = remote_job_config[ "tools_directory" ]
+
+    def output_paths( self ):
+        local_output_paths = self._wrapper_output_paths
+
+        results = []
+        for local_output_path in local_output_paths:
+            wrapper_path = str( local_output_path )
+            remote_path = self.path_mapper.remote_output_path_rewrite( wrapper_path )
+            results.append( local_output_path.with_path_for_job( remote_path ) )
+        return results
+
+    def input_paths( self ):
+        local_input_paths = self._wrapper_input_paths
+
+        results = []
+        for local_input_path in local_input_paths:
+            wrapper_path = str( local_input_path )
+            # This will over-copy in some cases. For instance in the case of task
+            # splitting, this input will be copied even though only the work dir
+            # input will actually be used.
+            remote_path = self.path_mapper.remote_input_path_rewrite( wrapper_path )
+            results.append( local_input_path.with_path_for_job( remote_path ) )
+        return results
+
+    def working_directory( self ):
+        return self._working_directory
+
+    def config_directory( self ):
+        return self._config_directory
+
+    def new_file_path( self ):
+        return self.working_directory()  # Problems with doing this?
+
+    def sep( self ):
+        return self._sep
