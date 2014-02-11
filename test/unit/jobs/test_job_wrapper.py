@@ -72,7 +72,7 @@ class JobWrapperTestCase(BaseWrapperTestCase, TestCase):
 
     def test_prepare_sets_version_command(self):
         with self._prepared_wrapper() as wrapper:
-            assert TEST_VERSION_COMMAND == wrapper.version_string_cmd, wrapper.version_string_cmd
+            assert TEST_VERSION_COMMAND in wrapper.write_version_cmd, wrapper.write_version_cmd
 
 
 class TaskWrapperTestCase(BaseWrapperTestCase, TestCase):
@@ -88,7 +88,7 @@ class TaskWrapperTestCase(BaseWrapperTestCase, TestCase):
 
     def test_prepare_sets_no_version_command(self):
         with self._prepared_wrapper() as wrapper:
-            assert wrapper.version_string_cmd is None
+            assert wrapper.write_version_cmd is None
 
 
 class MockEvaluator(object):

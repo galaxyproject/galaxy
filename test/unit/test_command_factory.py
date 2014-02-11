@@ -133,7 +133,7 @@ class TestCommandFactory(TestCase):
 class MockJobWrapper(object):
 
     def __init__(self):
-        self.version_string_cmd = None
+        self.write_version_cmd = None
         self.command_line = MOCK_COMMAND_LINE
         self.dependency_shell_commands = []
         self.metadata_line = None

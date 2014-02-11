@@ -571,7 +571,7 @@ class JobWrapper( object ):
         self.extra_filenames = []
         self.command_line = None
         # Tool versioning variables
-        self.version_string_cmd = None
+        self.write_version_cmd = None
         self.version_string = ""
         self.galaxy_lib_dir = None
         # With job outputs in the working directory, we need the working
@@ -689,7 +689,11 @@ class JobWrapper( object ):
         self.sa_session.flush()
         # Return list of all extra files
         self.param_dict = tool_evaluator.param_dict
-        self.version_string_cmd = self.tool.version_string_cmd
+        version_string_cmd = self.tool.version_string_cmd
+        if version_string_cmd:
+            self.write_version_cmd = "%s > %s 2>&1" % ( version_string_cmd, compute_environment.version_path() )
+        else:
+            self.write_version_cmd = None
         return self.extra_filenames
 
     def default_compute_environment( self, job=None ):
@@ -889,7 +893,7 @@ class JobWrapper( object ):
         else:
             final_job_state = job.states.ERROR
 
-        if self.version_string_cmd:
+        if self.write_version_cmd:
             version_filename = self.get_version_string_path()
             if os.path.exists(version_filename):
                 self.version_string = open(version_filename).read()
@@ -1575,6 +1579,10 @@ class ComputeEnvironment( object ):
     def new_file_path( self ):
         """ Location to dump new files for this job on remote server. """
 
+    @abstractmethod
+    def version_path( self ):
+        """ Location of the version file for the underlying tool. """
+
 
 class SimpleComputeEnvironment( object ):
 
@@ -1607,6 +1615,9 @@ class SharedComputeEnvironment( SimpleComputeEnvironment ):
 
     def new_file_path( self ):
         return os.path.abspath( self.app.config.new_file_path )
+
+    def version_path( self ):
+        return self.job_wrapper.get_version_string_path()
 
 
 class NoopQueue( object ):

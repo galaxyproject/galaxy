@@ -387,6 +387,11 @@ class LwrComputeEnvironment( ComputeEnvironment ):
         self._working_directory = remote_job_config[ "working_directory" ]
         self._sep = remote_job_config[ "system_properties" ][ "separator" ]
         self._tool_dir = remote_job_config[ "tools_directory" ]
+        version_path = self.local_path_config.version_path()
+        new_version_path = self.path_mapper.remote_version_path_rewrite(version_path)
+        if new_version_path:
+            version_path = new_version_path
+        self._version_path = version_path
 
     def output_paths( self ):
         local_output_paths = self._wrapper_output_paths
@@ -428,3 +433,6 @@ class LwrComputeEnvironment( ComputeEnvironment ):
 
     def sep( self ):
         return self._sep
+
+    def version_path( self ):
+        return self._version_path
