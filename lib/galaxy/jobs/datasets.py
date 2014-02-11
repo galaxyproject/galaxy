@@ -9,10 +9,11 @@ from abc import abstractmethod
 
 def dataset_path_rewrites( dataset_paths ):
     dataset_paths_with_rewrites = filter( lambda path: getattr( path, "false_path", None ), dataset_paths )
-    return dict( [ ( dp.real_path, dp.false_path ) for dp in dataset_paths_with_rewrites ] )
+    return dict( [ ( dp.real_path, dp ) for dp in dataset_paths_with_rewrites ] )
 
 
 class DatasetPath( object ):
+
     def __init__( self, dataset_id, real_path, false_path=None, mutable=True ):
         self.dataset_id = dataset_id
         self.real_path = real_path

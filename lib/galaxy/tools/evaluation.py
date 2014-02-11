@@ -103,7 +103,7 @@ class ToolEvaluator( object ):
         # All parameters go into the param_dict
         param_dict.update( incoming )
 
-        input_false_paths = dataset_path_rewrites( input_paths )
+        input_dataset_paths = dataset_path_rewrites( input_paths )
 
         def wrap_values( inputs, input_values ):
             """
@@ -120,7 +120,7 @@ class ToolEvaluator( object ):
                 elif isinstance( input, DataToolParameter ) and input.multiple:
                     input_values[ input.name ] = \
                         DatasetListWrapper( input_values[ input.name ],
-                                            false_paths=input_false_paths,
+                                            dataset_paths=input_dataset_paths,
                                             datatypes_registry=self.app.datatypes_registry,
                                             tool=self.tool,
                                             name=input.name )
@@ -163,8 +163,8 @@ class ToolEvaluator( object ):
                         name=input.name
                     )
                     real_path = dataset.file_name
-                    if real_path in input_false_paths:
-                        wrapper_kwds[ "false_path" ] = input_false_paths[ real_path ]
+                    if real_path in input_dataset_paths:
+                        wrapper_kwds[ "dataset_path" ] = input_dataset_paths[ real_path ]
                     input_values[ input.name ] = \
                         DatasetFilenameWrapper( dataset, **wrapper_kwds )
                 elif isinstance( input, SelectToolParameter ):
@@ -212,22 +212,22 @@ class ToolEvaluator( object ):
                     name=name,
                 )
                 real_path = data.file_name
-                if real_path in input_false_paths:
-                    false_path = input_false_paths[ real_path ]
-                    wrapper_kwds[ 'false_path' ] = false_path
+                if real_path in input_dataset_paths:
+                    dataset_path = input_dataset_paths[ real_path ]
+                    wrapper_kwds[ 'dataset_path' ] = dataset_path
                 param_dict[name] = DatasetFilenameWrapper( data, **wrapper_kwds )
             if data:
                 for child in data.children:
                     param_dict[ "_CHILD___%s___%s" % ( name, child.designation ) ] = DatasetFilenameWrapper( child )
-        output_false_paths = dataset_path_rewrites( output_paths )
+        output_dataset_paths = dataset_path_rewrites( output_paths )
         for name, hda in output_datasets.items():
             # Write outputs to the working directory (for security purposes)
             # if desired.
             real_path = hda.file_name
-            if real_path in output_false_paths:
-                false_path = output_false_paths[ real_path ]
-                param_dict[name] = DatasetFilenameWrapper( hda, false_path=false_path )
-                open( false_path, 'w' ).close()
+            if real_path in output_dataset_paths:
+                dataset_path = output_dataset_paths[ real_path ]
+                param_dict[name] = DatasetFilenameWrapper( hda, dataset_path=dataset_path )
+                open( dataset_path.false_path, 'w' ).close()
             else:
                 param_dict[name] = DatasetFilenameWrapper( hda )
             # Provide access to a path to store additional files

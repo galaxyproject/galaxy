@@ -90,7 +90,7 @@ def test_dataset_wrapper():
 def test_dataset_wrapper_false_path():
     dataset = MockDataset()
     new_path = "/new/path/dataset_123.dat"
-    wrapper = DatasetFilenameWrapper(dataset, false_path=new_path)
+    wrapper = DatasetFilenameWrapper(dataset, dataset_path=Bunch(false_path=new_path))
     assert str( wrapper ) == new_path
     assert wrapper.file_name == new_path
 

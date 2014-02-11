@@ -161,7 +161,7 @@ class DatasetFilenameWrapper( ToolParameterValueWrapper ):
         def items( self ):
             return iter( [ ( k, self.get( k ) ) for k, v in self.metadata.items() ] )
 
-    def __init__( self, dataset, datatypes_registry=None, tool=None, name=None, false_path=None ):
+    def __init__( self, dataset, datatypes_registry=None, tool=None, name=None, dataset_path=None ):
         if not dataset:
             try:
                 # TODO: allow this to work when working with grouping
@@ -172,7 +172,7 @@ class DatasetFilenameWrapper( ToolParameterValueWrapper ):
         else:
             self.dataset = dataset
             self.metadata = self.MetadataWrapper( dataset.metadata )
-        self.false_path = false_path
+        self.false_path = getattr( dataset_path, "false_path", None )
 
     def __str__( self ):
         if self.false_path is not None:
@@ -193,15 +193,15 @@ class DatasetFilenameWrapper( ToolParameterValueWrapper ):
 class DatasetListWrapper( list ):
     """
     """
-    def __init__( self, datasets, false_paths=[], **kwargs ):
+    def __init__( self, datasets, dataset_paths=[], **kwargs ):
         if not isinstance(datasets, list):
             datasets = [datasets]
 
         def to_wrapper( dataset ):
             real_path = dataset.file_name
             wrapper_kwds = kwargs.copy()
-            if real_path in false_paths:
-                wrapper_kwds[ "false_path" ] = false_paths[ real_path ]
+            if real_path in dataset_paths:
+                wrapper_kwds[ "dataset_path" ] = dataset_paths[ real_path ]
             return DatasetFilenameWrapper( dataset, **wrapper_kwds )
 
         list.__init__( self, map( to_wrapper, datasets ) )
