@@ -104,6 +104,15 @@ class ToolEvaluator( object ):
         param_dict.update( incoming )
 
         input_dataset_paths = dataset_path_rewrites( input_paths )
+        self.__populate_wrappers(param_dict, input_dataset_paths)
+        self.__populate_input_dataset_wrappers(param_dict, input_datasets, input_dataset_paths)
+        self.__populate_output_dataset_wrappers(param_dict, output_datasets, output_paths, job_working_directory)
+        self.__populate_non_job_params(param_dict)
+
+        # Return the dictionary of parameters
+        return param_dict
+
+    def __populate_wrappers(self, param_dict, input_dataset_paths):
 
         def wrap_values( inputs, input_values ):
             """
@@ -186,6 +195,7 @@ class ToolEvaluator( object ):
         if self.tool.check_values:
             wrap_values( self.tool.inputs, param_dict )
 
+    def __populate_input_dataset_wrappers(self, param_dict, input_datasets, input_dataset_paths):
         ## FIXME: when self.check_values==True, input datasets are being wrapped
         ##        twice (above and below, creating 2 separate
         ##        DatasetFilenameWrapper objects - first is overwritten by
@@ -219,6 +229,8 @@ class ToolEvaluator( object ):
             if data:
                 for child in data.children:
                     param_dict[ "_CHILD___%s___%s" % ( name, child.designation ) ] = DatasetFilenameWrapper( child )
+
+    def __populate_output_dataset_wrappers(self, param_dict, output_datasets, output_paths, job_working_directory):
         output_dataset_paths = dataset_path_rewrites( output_paths )
         for name, hda in output_datasets.items():
             # Write outputs to the working directory (for security purposes)
@@ -242,6 +254,7 @@ class ToolEvaluator( object ):
                 # NoneDataset
                 param_dict[ out_name ] = NoneDataset( datatypes_registry=self.app.datatypes_registry, ext=output.format )
 
+    def __populate_non_job_params(self, param_dict):
         # -- Add useful attributes/functions for use in creating command line.
 
         # Function for querying a data table.
@@ -271,8 +284,6 @@ class ToolEvaluator( object ):
         param_dict['__datatypes_config__'] = param_dict['GALAXY_DATATYPES_CONF_FILE'] = self.app.datatypes_registry.integrated_datatypes_configs
         param_dict['__admin_users__'] = self.app.config.admin_users
         param_dict['__user__'] = RawObjectWrapper( param_dict.get( '__user__', None ) )
-        # Return the dictionary of parameters
-        return param_dict
 
     def build( self ):
         """
