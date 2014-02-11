@@ -2664,17 +2664,15 @@ class Tool( object, Dictifiable ):
             if data:
                 for child in data.children:
                     param_dict[ "_CHILD___%s___%s" % ( name, child.designation ) ] = DatasetFilenameWrapper( child )
+        output_false_paths = dict( [ ( dp.real_path, dp.false_path ) for dp in output_paths if getattr( dp, "false_path", None ) ] )
         for name, hda in output_datasets.items():
             # Write outputs to the working directory (for security purposes)
             # if desired.
-            if self.app.config.outputs_to_working_directory:
-                try:
-                    false_path = [ dp.false_path for dp in output_paths if dp.real_path == hda.file_name ][0]
-                    param_dict[name] = DatasetFilenameWrapper( hda, false_path = false_path )
-                    open( false_path, 'w' ).close()
-                except IndexError:
-                    log.warning( "Unable to determine alternate path for writing job outputs, outputs will be written to their real paths" )
-                    param_dict[name] = DatasetFilenameWrapper( hda )
+            real_path = hda.file_name
+            if real_path in output_false_paths:
+                false_path = output_false_paths[ real_path ]
+                param_dict[name] = DatasetFilenameWrapper( hda, false_path = false_path )
+                open( false_path, 'w' ).close()
             else:
                 param_dict[name] = DatasetFilenameWrapper( hda )
             # Provide access to a path to store additional files
