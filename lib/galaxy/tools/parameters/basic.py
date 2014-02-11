@@ -16,7 +16,6 @@ from galaxy.util import string_as_bool, sanitize_param, unicodify
 from sanitize import ToolParameterSanitizer
 import validation
 import dynamic_options
-from .dataset_util import DatasetParamContext
 # For BaseURLToolParameter
 from galaxy.web import url_for
 from galaxy.model.item_attrs import Dictifiable
@@ -1611,36 +1610,52 @@ class DataToolParameter( ToolParameter ):
             self.conversions.append( ( name, conv_extensions, conv_types ) )
 
     def get_html_field( self, trans=None, value=None, other_values={} ):
+        filter_value = None
+        if self.options:
+            try:
+                filter_value = self.options.get_options( trans, other_values )[0][0]
+            except IndexError:
+                pass  # no valid options
         history = self._get_history( trans )
         if value is not None:
             if type( value ) != list:
                 value = [ value ]
-        dataset_param_context = DatasetParamContext( trans, history, self, value, other_values )
         field = form_builder.SelectField( self.name, self.multiple, None, self.refresh_on_change, refresh_on_change_values=self.refresh_on_change_values )
 
         # CRUCIAL: the dataset_collector function needs to be local to DataToolParameter.get_html_field()
         def dataset_collector( hdas, parent_hid ):
+            current_user_roles = trans.get_current_user_roles()
             for i, hda in enumerate( hdas ):
                 hda_name = hda.name
                 if parent_hid is not None:
                     hid = "%s.%d" % ( parent_hid, i + 1 )
                 else:
                     hid = str( hda.hid )
-                valid_hda = dataset_param_context.valid_hda( hda )
-                if not valid_hda:
-                    continue
-                if not valid_hda.implicit_conversion:
-                    selected = dataset_param_context.selected( hda )
-                    if hda.visible:
-                        hidden_text = ""
+                if not hda.dataset.state in [galaxy.model.Dataset.states.ERROR, galaxy.model.Dataset.states.DISCARDED] and \
+                    ( hda.visible or ( value and hda in value and not hda.implicitly_converted_parent_datasets ) ) and \
+                    trans.app.security_agent.can_access_dataset( current_user_roles, hda.dataset ):
+                    # If we are sending data to an external application, then we need to make sure there are no roles
+                    # associated with the dataset that restrict it's access from "public".
+                    if self.tool and self.tool.tool_type == 'data_destination' and not trans.app.security_agent.dataset_is_public( hda.dataset ):
+                        continue
+                    if self.options and self._options_filter_attribute( hda ) != filter_value:
+                        continue
+                    if hda.datatype.matches_any( self.formats ):
+                        selected = ( value and ( hda in value ) )
+                        if hda.visible:
+                            hidden_text = ""
+                        else:
+                            hidden_text = " (hidden)"
+                        field.add_option( "%s:%s %s" % ( hid, hidden_text, hda_name ), hda.id, selected )
                     else:
-                        hidden_text = " (hidden)"
-                    field.add_option( "%s:%s %s" % ( hid, hidden_text, hda_name ), hda.id, selected )
-                else:
-                    hda = valid_hda.hda  # Get converted dataset
-                    target_ext = valid_hda.target_ext
-                    selected = dataset_param_context.selected( hda )
-                    field.add_option( "%s: (as %s) %s" % ( hid, target_ext, hda_name ), hda.id, selected )
+                        target_ext, converted_dataset = hda.find_conversion_destination( self.formats )
+                        if target_ext:
+                            if converted_dataset:
+                                hda = converted_dataset
+                            if not trans.app.security_agent.can_access_dataset( current_user_roles, hda.dataset ):
+                                continue
+                            selected = ( value and ( hda in value ) )
+                            field.add_option( "%s: (as %s) %s" % ( hid, target_ext, hda_name ), hda.id, selected )
                 # Also collect children via association object
                 dataset_collector( hda.children, hid )
         dataset_collector( history.active_datasets_children_and_roles, None )
@@ -1672,18 +1687,30 @@ class DataToolParameter( ToolParameter ):
         if trans is None or trans.workflow_building_mode or trans.webapp.name == 'tool_shed':
             return DummyDataset()
         history = self._get_history( trans, history )
-        dataset_param_context = DatasetParamContext( trans, history, self, None, context )
         if self.optional:
             return None
         most_recent_dataset = []
+        filter_value = None
+        if self.options:
+            try:
+                filter_value = self.options.get_options( trans, context )[0][0]
+            except IndexError:
+                pass  # no valid options
 
         def dataset_collector( datasets ):
             for i, data in enumerate( datasets ):
-                if data.visible and dataset_param_context.hda_accessible( data, check_security=False ):
-                    match = dataset_param_context.valid_hda_matches_format( data, check_security=False )
-                    if not match or dataset_param_context.filter( match.hda ):
+                if data.visible and not data.deleted and data.state not in [data.states.ERROR, data.states.DISCARDED]:
+                    is_valid = False
+                    if data.datatype.matches_any( self.formats ):
+                        is_valid = True
+                    else:
+                        target_ext, converted_dataset = data.find_conversion_destination( self.formats )
+                        if target_ext:
+                            is_valid = True
+                        if converted_dataset:
+                            data = converted_dataset
+                    if not is_valid or ( self.options and self._options_filter_attribute( data ) != filter_value ):
                         continue
-                    data = match.hda
                     most_recent_dataset.append(data)
                 # Also collect children via association object
                 dataset_collector( data.children )
