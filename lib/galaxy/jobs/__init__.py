@@ -1,6 +1,8 @@
 """
 Support for running a tool in Galaxy via an internal job management system
 """
+from abc import ABCMeta
+from abc import abstractmethod
 
 import time
 import copy
@@ -25,6 +27,7 @@ from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.json import from_json_string
 from galaxy.util import unicodify
+
 from .output_checker import check_output
 from .datasets import TaskPathRewriter
 from .datasets import OutputsToWorkingDirectoryPathRewriter
@@ -649,7 +652,7 @@ class JobWrapper( object ):
     def get_version_string_path( self ):
         return os.path.abspath(os.path.join(self.app.config.new_file_path, "GALAXY_VERSION_STRING_%s" % self.job_id))
 
-    def prepare( self ):
+    def prepare( self, compute_environment=None ):
         """
         Prepare the job to run by creating the working directory and the
         config files.
@@ -661,15 +664,19 @@ class JobWrapper( object ):
 
         job = self._load_job()
 
-        param_dict = self._build_param_dict( job, populate_special_output_file=True )
+        def get_special( ):
+            special = self.sa_session.query( model.JobExportHistoryArchive ).filter_by( job=job ).first()
+            if not special:
+                special = self.sa_session.query( model.GenomeIndexToolData ).filter_by( job=job ).first()
+            return special
+
+        tool_evaluator = self._get_tool_evaluator( job )
+        compute_environment = compute_environment or self.default_compute_environment( job )
+        tool_evaluator.set_compute_environment( compute_environment, get_special=get_special )
 
         self.sa_session.flush()
-        # Build any required config files
-        config_filenames = self.tool.build_config_files( param_dict, self.working_directory )
-        # FIXME: Build the param file (might return None, DEPRECATED)
-        param_filename = self.tool.build_param_file( param_dict, self.working_directory )
-        # Build the job's command line
-        self.command_line = self.tool.build_command_line( param_dict )
+
+        self.command_line, self.extra_filenames = tool_evaluator.build()
         # FIXME: for now, tools get Galaxy's lib dir in their path
         if self.command_line and self.command_line.startswith( 'python' ):
             self.galaxy_lib_dir = os.path.abspath( "lib" )  # cwd = galaxy root
@@ -681,13 +688,14 @@ class JobWrapper( object ):
         self.sa_session.add( job )
         self.sa_session.flush()
         # Return list of all extra files
-        extra_filenames = config_filenames
-        if param_filename is not None:
-            extra_filenames.append( param_filename )
-        self.param_dict = param_dict
-        self.extra_filenames = extra_filenames
+        self.param_dict = tool_evaluator.param_dict
         self.version_string_cmd = self.tool.version_string_cmd
-        return extra_filenames
+        return self.extra_filenames
+
+    def default_compute_environment( self, job=None ):
+        if not job:
+            job = self.get_job()
+        return SharedComputeEnvironment( self, job )
 
     def _load_job( self ):
         # Load job from database and verify it has user or session.
@@ -697,52 +705,19 @@ class JobWrapper( object ):
             raise Exception( 'Job %s has no user and no session.' % job.id )
         return job
 
-    def _build_param_dict( self, job, populate_special_output_file=True ):
-        incoming = dict( [ ( p.name, p.value ) for p in job.parameters ] )
-        incoming = self.tool.params_from_strings( incoming, self.app )
-        # Do any validation that could not be done at job creation
-        self.tool.handle_unvalidated_param_values( incoming, self.app )
-        # Restore input / output data lists
-        inp_data = dict( [ ( da.name, da.dataset ) for da in job.input_datasets ] )
-        out_data = dict( [ ( da.name, da.dataset ) for da in job.output_datasets ] )
-        inp_data.update( [ ( da.name, da.dataset ) for da in job.input_library_datasets ] )
-        out_data.update( [ ( da.name, da.dataset ) for da in job.output_library_datasets ] )
+    def _get_tool_evaluator( self, job ):
+        # Hacky way to avoid cirular import for now.
+        # Placing ToolEvaluator in either jobs or tools
+        # result in ciruclar dependency.
+        from galaxy.tools.evaluation import ToolEvaluator
 
-        if populate_special_output_file:
-            # Set up output dataset association for export history jobs. Because job
-            # uses a Dataset rather than an HDA or LDA, it's necessary to set up a
-            # fake dataset association that provides the needed attributes for
-            # preparing a job.
-            class FakeDatasetAssociation ( object ):
-                def __init__( self, dataset=None ):
-                    self.dataset = dataset
-                    self.file_name = dataset.file_name
-                    self.metadata = dict()
-                    self.children = []
-            special = self.sa_session.query( model.JobExportHistoryArchive ).filter_by( job=job ).first()
-            if not special:
-                special = self.sa_session.query( model.GenomeIndexToolData ).filter_by( job=job ).first()
-            if special:
-                out_data[ "output_file" ] = FakeDatasetAssociation( dataset=special.dataset )
-
-        # These can be passed on the command line if wanted as $__user_*__
-        incoming.update( model.User.user_template_environment( job.history and job.history.user ) )
-
-        # Build params, done before hook so hook can use
-        param_dict = self.tool.build_param_dict( incoming,
-                                                 inp_data, out_data,
-                                                 output_paths=self.get_output_fnames(),
-                                                 job_working_directory=self.working_directory,
-                                                 input_paths=self.get_input_paths( job ) )
-
-        # Certain tools require tasks to be completed prior to job execution
-        # ( this used to be performed in the "exec_before_job" hook, but hooks are deprecated ).
-        self.tool.exec_before_job( self.queue.app, inp_data, out_data, param_dict )
-        # Run the before queue ("exec_before_job") hook
-        self.tool.call_hook( 'exec_before_job', self.queue.app, inp_data=inp_data,
-                             out_data=out_data, tool=self.tool, param_dict=incoming)
-
-        return param_dict
+        tool_evaluator = ToolEvaluator(
+            app=self.app,
+            job=job,
+            tool=self.tool,
+            local_working_directory=self.working_directory,
+        )
+        return tool_evaluator
 
     def fail( self, message, exception=False, stdout="", stderr="", exit_code=None ):
         """
@@ -1420,7 +1395,7 @@ class TaskWrapper(JobWrapper):
         param_dict = self.tool.params_from_strings( param_dict, self.app )
         return param_dict
 
-    def prepare( self ):
+    def prepare( self, compute_environment=None ):
         """
         Prepare the job to run by creating the working directory and the
         config files.
@@ -1431,17 +1406,14 @@ class TaskWrapper(JobWrapper):
 
         # DBTODO New method for generating command line for a task?
 
-        param_dict = self._build_param_dict( job, populate_special_output_file=False )
+        tool_evaluator = self._get_tool_evaluator( job )
+        compute_environment = compute_environment or self.default_compute_environment( job )
+        tool_evaluator.set_compute_environment( compute_environment )
 
         self.sa_session.flush()
 
-        # Build any required config files
-        config_filenames = self.tool.build_config_files( param_dict, self.working_directory )
+        self.command_line, self.extra_filenames = tool_evaluator.build()
 
-        # FIXME: Build the param file (might return None, DEPRECATED)
-        param_filename = self.tool.build_param_file( param_dict, self.working_directory )
-        # Build the job's command line
-        self.command_line = self.tool.build_command_line( param_dict )
         # FIXME: for now, tools get Galaxy's lib dir in their path
         if self.command_line and self.command_line.startswith( 'python' ):
             self.galaxy_lib_dir = os.path.abspath( "lib" )  # cwd = galaxy root
@@ -1452,14 +1424,10 @@ class TaskWrapper(JobWrapper):
         task.command_line = self.command_line
         self.sa_session.add( task )
         self.sa_session.flush()
-        # # Return list of all extra files
-        extra_filenames = config_filenames
-        if param_filename is not None:
-            extra_filenames.append( param_filename )
-        self.param_dict = param_dict
-        self.extra_filenames = extra_filenames
+
+        self.param_dict = tool_evaluator.param_dict
         self.status = 'prepared'
-        return extra_filenames
+        return self.extra_filenames
 
     def fail( self, message, exception=False ):
         log.error("TaskWrapper Failure %s" % message)
@@ -1574,6 +1542,71 @@ class TaskWrapper(JobWrapper):
         required in the task case so they can be merged.
         """
         return os.path.join( self.working_directory, os.path.basename( output_path ) )
+
+
+class ComputeEnvironment( object ):
+    """ Definition of the job as it will be run on the (potentially) remote
+    compute server.
+    """
+    __metaclass__ = ABCMeta
+
+    @abstractmethod
+    def output_paths( self ):
+        """ Output DatasetPaths defined by job. """
+
+    @abstractmethod
+    def input_paths( self ):
+        """ Input DatasetPaths defined by job. """
+
+    @abstractmethod
+    def working_directory( self ):
+        """ Job working directory (potentially remote) """
+
+    @abstractmethod
+    def config_directory( self ):
+        """ Directory containing config files (potentially remote) """
+
+    @abstractmethod
+    def sep( self ):
+        """ os.path.sep for the platform this job will execute in.
+        """
+
+    @abstractmethod
+    def new_file_path( self ):
+        """ Location to dump new files for this job on remote server. """
+
+
+class SimpleComputeEnvironment( object ):
+
+    def config_directory( self ):
+        return self.working_directory( )
+
+    def sep( self ):
+        return os.path.sep
+
+
+class SharedComputeEnvironment( SimpleComputeEnvironment ):
+    """ Default ComputeEnviornment for job and task wrapper to pass
+    to ToolEvaluator - valid when Galaxy and compute share all the relevant
+    file systems.
+    """
+
+    def __init__( self, job_wrapper, job ):
+        self.app = job_wrapper.app
+        self.job_wrapper = job_wrapper
+        self.job = job
+
+    def output_paths( self ):
+        return self.job_wrapper.get_output_fnames()
+
+    def input_paths( self ):
+        return self.job_wrapper.get_input_paths( self.job )
+
+    def working_directory( self ):
+        return self.job_wrapper.working_directory
+
+    def new_file_path( self ):
+        return os.path.abspath( self.app.config.new_file_path )
 
 
 class NoopQueue( object ):
