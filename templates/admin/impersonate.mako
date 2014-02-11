@@ -30,7 +30,7 @@
     $("#email_select").select2({
         placeholder: "Select a user",
         ajax: {
-            url: "/api/users/",
+            url: "${h.url_for(controller="/api/users", action="index")}",
             dataType: 'json',
             quietMillis: 250,
             matcher: function(term, text) { return text.toUpperCase().indexOf(term.toUpperCase())>=0; },
