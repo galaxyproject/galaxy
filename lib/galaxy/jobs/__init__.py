@@ -1415,15 +1415,10 @@ class TaskWrapper(JobWrapper):
         inp_data.update( [ ( da.name, da.dataset ) for da in job.input_library_datasets ] )
         out_data.update( [ ( da.name, da.dataset ) for da in job.output_library_datasets ] )
         # DBTODO New method for generating command line for a task?
-        # These can be passed on the command line if wanted as $userId $userEmail
-        if job.history and job.history.user:  # check for anonymous user!
-            userId = '%d' % job.history.user.id
-            userEmail = str(job.history.user.email)
-        else:
-            userId = 'Anonymous'
-            userEmail = 'Anonymous'
-        incoming['userId'] = userId
-        incoming['userEmail'] = userEmail
+
+        # These can be passed on the command line if wanted as $__user_*__
+        incoming.update( model.User.user_template_environment( job.history and job.history.user ) )
+
         # Build params, done before hook so hook can use
         param_dict = self.tool.build_param_dict( incoming, inp_data, out_data, self.get_output_fnames(), self.working_directory )
         fnames = {}
