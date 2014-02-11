@@ -34,7 +34,7 @@ class DatasetPath( object ):
         else:
             return self.false_path
 
-    def with_path_for_job( self, false_path ):
+    def with_path_for_job( self, false_path, false_extra_files_path=None ):
         """
         Clone the dataset path but with a new false_path.
         """
@@ -44,6 +44,7 @@ class DatasetPath( object ):
                 dataset_id=self.dataset_id,
                 real_path=self.real_path,
                 false_path=false_path,
+                false_extra_files_path=false_extra_files_path,
                 mutable=self.mutable,
             )
         return dataset_path

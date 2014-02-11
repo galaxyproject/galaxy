@@ -395,7 +395,7 @@ class LwrComputeEnvironment( ComputeEnvironment ):
         for local_output_path in local_output_paths:
             wrapper_path = str( local_output_path )
             remote_path = self.path_mapper.remote_output_path_rewrite( wrapper_path )
-            results.append( local_output_path.with_path_for_job( remote_path ) )
+            results.append( self._dataset_path( local_output_path, remote_path ) )
         return results
 
     def input_paths( self ):
@@ -408,8 +408,14 @@ class LwrComputeEnvironment( ComputeEnvironment ):
             # splitting, this input will be copied even though only the work dir
             # input will actually be used.
             remote_path = self.path_mapper.remote_input_path_rewrite( wrapper_path )
-            results.append( local_input_path.with_path_for_job( remote_path ) )
+            results.append( self._dataset_path( local_input_path, remote_path ) )
         return results
+
+    def _dataset_path( self, local_dataset_path, remote_path ):
+        remote_extra_files_path = None
+        if remote_path:
+            remote_extra_files_path = "%s_files" % remote_path[ 0:-len( ".dat" ) ]
+        return local_dataset_path.with_path_for_job( remote_path, remote_extra_files_path )
 
     def working_directory( self ):
         return self._working_directory
