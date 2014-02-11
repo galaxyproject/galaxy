@@ -2614,11 +2614,14 @@ class Tool( object, Dictifiable ):
                                                         tool = Bunch( conversion_name = Bunch( extensions = conv_ext ) ),
                                                         name = conversion_name )
                     # Wrap actual input dataset
+                    dataset = input_values[ input.name ]
+                    wrapper_kwds = dict(
+                        datatypes_registry=self.app.datatypes_registry,
+                        tool=self,
+                        name=input.name
+                    )
                     input_values[ input.name ] = \
-                        DatasetFilenameWrapper( input_values[ input.name ],
-                                                datatypes_registry = self.app.datatypes_registry,
-                                                tool = self,
-                                                name = input.name )
+                        DatasetFilenameWrapper( dataset, **wrapper_kwds )
                 elif isinstance( input, SelectToolParameter ):
                     input_values[ input.name ] = SelectToolParameterWrapper(
                         input, input_values[ input.name ], self.app, other_values = param_dict )
@@ -2657,10 +2660,12 @@ class Tool( object, Dictifiable ):
         for name, data in input_datasets.items():
             param_dict_value = param_dict.get(name, None)
             if not isinstance(param_dict_value, (DatasetFilenameWrapper, DatasetListWrapper)):
-                param_dict[name] = DatasetFilenameWrapper( data,
-                                                           datatypes_registry = self.app.datatypes_registry,
-                                                           tool = self,
-                                                           name = name )
+                wrapper_kwds = dict(
+                    datatypes_registry=self.app.datatypes_registry,
+                    tool=self,
+                    name=name,
+                )
+                param_dict[name] = DatasetFilenameWrapper( data, **wrapper_kwds )
             if data:
                 for child in data.children:
                     param_dict[ "_CHILD___%s___%s" % ( name, child.designation ) ] = DatasetFilenameWrapper( child )
@@ -3573,7 +3578,12 @@ class DatasetListWrapper( list ):
     def __init__( self, datasets, **kwargs ):
         if not isinstance(datasets, list):
             datasets = [datasets]
-        list.__init__( self, [DatasetFilenameWrapper(dataset, **kwargs) for dataset in datasets] )
+
+        def to_wrapper( dataset ):
+            wrapper_kwds = kwargs.copy()
+            return DatasetFilenameWrapper( dataset, **wrapper_kwds )
+
+        list.__init__( self, map( to_wrapper, datasets ) )
 
 
 def json_fix( val ):
