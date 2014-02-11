@@ -731,8 +731,9 @@ class JobWrapper( object ):
         # Build params, done before hook so hook can use
         param_dict = self.tool.build_param_dict( incoming,
                                                  inp_data, out_data,
-                                                 self.get_output_fnames(),
-                                                 self.working_directory )
+                                                 output_paths=self.get_output_fnames(),
+                                                 job_working_directory=self.working_directory,
+                                                 input_paths=self.get_input_paths( job ) )
 
         # Certain tools require tasks to be completed prior to job execution
         # ( this used to be performed in the "exec_before_job" hook, but hooks are deprecated ).
@@ -1165,6 +1166,18 @@ class JobWrapper( object ):
                 filenames.extend(self.get_input_dataset_fnames(da.dataset))
         return filenames
 
+    def get_input_paths( self, job=None ):
+        if job is None:
+            job = self.get_job()
+        paths = []
+        for da in job.input_datasets + job.input_library_datasets:  # da is JobToInputDatasetAssociation object
+            if da.dataset:
+                filenames = self.get_input_dataset_fnames(da.dataset)
+                for real_path in filenames:
+                    false_path = self.dataset_path_rewriter.rewrite_dataset_path( da.dataset, 'input' )
+                    paths.append( DatasetPath( da.id, real_path=real_path, false_path=false_path, mutable=False ) )
+        return paths
+
     def get_output_fnames( self ):
         if self.output_paths is None:
             self.compute_outputs()
@@ -1420,30 +1433,15 @@ class TaskWrapper(JobWrapper):
 
         param_dict = self._build_param_dict( job, populate_special_output_file=False )
 
-        # Build dict of file name re-writes for split up tasks.
-        fnames = {}
-        for v in self.get_input_fnames():
-            fnames[v] = os.path.join(self.working_directory, os.path.basename(v))
-        #for dp in [x.real_path for x in self.get_output_fnames()]:
-        #    fnames[dp] = os.path.join(self.working_directory, os.path.basename(dp))
-
         self.sa_session.flush()
 
         # Build any required config files
         config_filenames = self.tool.build_config_files( param_dict, self.working_directory )
-        for config_filename in config_filenames:
-            config_contents = open(config_filename, "r").read()
-            for k, v in fnames.iteritems():
-                config_contents = config_contents.replace(k, v)
-            open(config_filename, "w").write(config_contents)
 
         # FIXME: Build the param file (might return None, DEPRECATED)
         param_filename = self.tool.build_param_file( param_dict, self.working_directory )
         # Build the job's command line
         self.command_line = self.tool.build_command_line( param_dict )
-        # HACK, Fix this when refactored.
-        for k, v in fnames.iteritems():
-            self.command_line = self.command_line.replace(k, v)
         # FIXME: for now, tools get Galaxy's lib dir in their path
         if self.command_line and self.command_line.startswith( 'python' ):
             self.galaxy_lib_dir = os.path.abspath( "lib" )  # cwd = galaxy root
