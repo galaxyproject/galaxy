@@ -2,6 +2,7 @@
 <!DOCTYPE HTML>
 <html>
     <!--base.mako-->
+    ${self.init()}
     <head>
         <title>${self.title()}</title>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
@@ -9,13 +10,16 @@
         ${self.stylesheets()}
         ${self.javascripts()}
     </head>
-    <body>
+    <body class="inbound">
         ${next.body()}
     </body>
 </html>
 
 ## Default title
 <%def name="title()"></%def>
+
+## Default init
+<%def name="init()"></%def>
 
 ## Default stylesheets
 <%def name="stylesheets()">
@@ -40,24 +44,22 @@
         "libs/jquery/jquery",
         "libs/jquery/jquery.migrate",
         "libs/jquery/select2",
-        "libs/json2",
         "libs/bootstrap",
         "libs/underscore",
         "libs/backbone/backbone",
-        "libs/backbone/backbone-relational",
         "libs/handlebars.runtime",
-        "galaxy.base"
-    )}
-
-    ${h.templates(
-        "template-popupmenu-menu"
-    )}
-
-    ${h.js(
-        "mvc/ui"
+        "galaxy.base",
+        "mvc/ui",
+        'libs/require'
     )}
 
     <script type="text/javascript">
+        ## global configuration object
+        var galaxy_config =
+        {
+            root: '${h.url_for( "/" )}'
+        };
+
         // console protection
         window.console = window.console || {
             log     : function(){},
@@ -68,10 +70,13 @@
             assert  : function(){}
         };
 
-        // Set up needed paths.
-        var galaxy_paths = new GalaxyPaths({
-            root_path: '${h.url_for( "/" )}',
-            image_path: '${h.url_for( "/static/images" )}'
+        ## configure require
+        require.config({
+            baseUrl: "${h.url_for('/static/scripts') }",
+            shim: {
+                "libs/underscore": { exports: "_" },
+                "libs/backbone/backbone": { exports: "Backbone" }
+            }
         });
     </script>
 

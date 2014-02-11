@@ -1,5 +1,6 @@
 from tool_shed.base.twilltestcase import ShedTwillTestCase, common, os
-import tool_shed.base.test_db_util as test_db_util
+
+
 import logging
 
 log = logging.getLogger( __name__ )
@@ -22,7 +23,6 @@ clone_path = None
 5. Verify that the changesets have been applied.
 '''
 
-
 class TestHgWebFeatures( ShedTwillTestCase ):
     '''Test http mercurial interface.'''
     
@@ -30,19 +30,19 @@ class TestHgWebFeatures( ShedTwillTestCase ):
         """Create necessary user accounts and login as an admin user."""
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        test_user_1 = test_db_util.get_user( common.test_user_1_email )
+        test_user_1 = self.test_db_util.get_user( common.test_user_1_email )
         assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % test_user_1_email
-        test_user_1_private_role = test_db_util.get_private_role( test_user_1 )
+        test_user_1_private_role = self.test_db_util.get_private_role( test_user_1 )
         self.logout()
         self.login( email=common.test_user_2_email, username=common.test_user_2_name )
-        test_user_2 = test_db_util.get_user( common.test_user_2_email )
+        test_user_2 = self.test_db_util.get_user( common.test_user_2_email )
         assert test_user_2 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_2_email
-        test_user_2_private_role = test_db_util.get_private_role( test_user_2 )
+        test_user_2_private_role = self.test_db_util.get_private_role( test_user_2 )
         self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
-        admin_user = test_db_util.get_user( common.admin_email )
+        admin_user = self.test_db_util.get_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % admin_email
-        admin_user_private_role = test_db_util.get_private_role( admin_user )
+        admin_user_private_role = self.test_db_util.get_private_role( admin_user )
 
     def test_0005_create_filtering_repository( self ):
         '''Create and populate the filtering_0310 repository.'''
@@ -98,7 +98,7 @@ class TestHgWebFeatures( ShedTwillTestCase ):
         
         We will be prepending a comment to filtering.py.
         '''
-        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         clone_path = self.generate_temp_path( 'test_0310', additional_paths=[ 'filtering_0310', 'user2' ] )
         self.clone_repository( repository, clone_path )
         hgrepo = self.get_hg_repo( clone_path )
@@ -133,7 +133,7 @@ class TestHgWebFeatures( ShedTwillTestCase ):
         
         We will be prepending a second comment to filtering.py.
         '''
-        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         clone_path = self.generate_temp_path( 'test_0310', additional_paths=[ 'filtering_0310', 'user1' ] )
         self.clone_repository( repository, clone_path )
         hgrepo = self.get_hg_repo( clone_path )
@@ -161,7 +161,7 @@ class TestHgWebFeatures( ShedTwillTestCase ):
         
         The commit from test_user_2 should not be present in the changelog, since the repositories were cloned to separate locations.
         '''
-        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         strings_displayed = [ 'Uploaded filtering 1.1.0.', 'Uploaded filtering test data.',
                               'Added another line to filtering.py.' ]
         strings_not_displayed = [ 'Added a line to filtering.py' ]

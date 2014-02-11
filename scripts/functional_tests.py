@@ -1,6 +1,11 @@
 #!/usr/bin/env python
 
-import os, sys, shutil, tempfile, re
+import os
+import sys
+import shutil
+import tempfile
+import re
+from ConfigParser import SafeConfigParser
 
 # Assume we are run from the galaxy root directory, add lib to the python path
 cwd = os.getcwd()
@@ -8,7 +13,7 @@ new_path = [ os.path.join( cwd, "lib" ), os.path.join( cwd, "test" ) ]
 new_path.extend( sys.path[1:] )
 sys.path = new_path
 
-from base.util import parse_tool_panel_config
+from base.tool_shed_util import parse_tool_panel_config
 
 from galaxy import eggs
 
@@ -24,10 +29,18 @@ eggs.require( "Cheetah" )
 # http://code.google.com/p/python-nose/issues/detail?id=284
 eggs.require( "pysqlite" )
 
-import atexit, logging, os, os.path, sys, tempfile
-import twill, unittest, time
-import subprocess, sys, threading, random
-import httplib, socket
+import atexit
+import logging
+import os.path
+import twill
+import unittest
+import time
+import subprocess
+import threading
+import random
+import httplib
+import socket
+import urllib
 from paste import httpserver
 import galaxy.app
 from galaxy.app import UniverseApplication
@@ -36,6 +49,10 @@ from galaxy import tools
 from galaxy.util import bunch
 from galaxy import util
 from galaxy.util.json import to_json_string
+
+from functional import database_contexts
+from base.api_util import get_master_api_key
+from base.api_util import get_user_api_key
 
 import nose.core
 import nose.config
@@ -55,6 +72,25 @@ installed_tool_panel_configs = [ 'shed_tool_conf.xml' ]
 # should this serve static resources (scripts, images, styles, etc.)
 STATIC_ENABLED = True
 
+# Set up a job_conf.xml that explicitly limits jobs to 10 minutes.
+job_conf_xml = '''<?xml version="1.0"?>
+<!-- A test job config that explicitly configures job running the way it is configured by default (if there is no explicit config). -->
+<job_conf>
+    <plugins>
+        <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner" workers="4"/>
+    </plugins>
+    <handlers>
+        <handler id="main"/>
+    </handlers>
+    <destinations>
+        <destination id="local" runner="local"/>
+    </destinations>
+    <limits>
+        <limit type="walltime">00:10:00</limit>
+    </limits>
+</job_conf>
+'''
+
 def get_static_settings():
     """Returns dictionary of the settings necessary for a galaxy App
     to be wrapped in the static middleware.
@@ -67,15 +103,16 @@ def get_static_settings():
     #TODO: these should be copied from universe_wsgi.ini
     return dict(
         #TODO: static_enabled needed here?
-        static_enabled      = True,
-        static_cache_time   = 360,
-        static_dir          = static_dir,
-        static_images_dir   = os.path.join( static_dir, 'images', '' ),
-        static_favicon_dir  = os.path.join( static_dir, 'favicon.ico' ),
-        static_scripts_dir  = os.path.join( static_dir, 'scripts', '' ),
-        static_style_dir    = os.path.join( static_dir, 'june_2007_style', 'blue' ),
-        static_robots_txt   = os.path.join( static_dir, 'robots.txt' ),
+        static_enabled=True,
+        static_cache_time=360,
+        static_dir=static_dir,
+        static_images_dir=os.path.join( static_dir, 'images', '' ),
+        static_favicon_dir=os.path.join( static_dir, 'favicon.ico' ),
+        static_scripts_dir=os.path.join( static_dir, 'scripts', '' ),
+        static_style_dir=os.path.join( static_dir, 'june_2007_style', 'blue' ),
+        static_robots_txt=os.path.join( static_dir, 'robots.txt' ),
     )
+
 
 def get_webapp_global_conf():
     """Get the global_conf dictionary sent as the first argument to app_factory.
@@ -85,6 +122,41 @@ def get_webapp_global_conf():
     if STATIC_ENABLED:
         global_conf.update( get_static_settings() )
     return global_conf
+
+
+def generate_config_file( input_filename, output_filename, config_items ):
+    '''
+    Generate a config file with the configuration that has been defined for the embedded web application.
+    This is mostly relevant when setting metadata externally, since the script for doing that does not
+    have access to app.config.
+    '''
+    cp = SafeConfigParser()
+    cp.read( input_filename )
+    config_items_by_section = []
+    for label, value in config_items:
+        found = False
+        # Attempt to determine the correct section for this configuration option.
+        for section in cp.sections():
+            if cp.has_option( section, label ):
+                config_tuple = section, label, value
+                config_items_by_section.append( config_tuple )
+                found = True
+                continue
+        # Default to app:main if no section was found.
+        if not found:
+            config_tuple = 'app:main', label, value
+            config_items_by_section.append( config_tuple )
+    print( config_items_by_section )
+
+    # Replace the default values with the provided configuration.
+    for section, label, value in config_items_by_section:
+        if cp.has_option( section, label ):
+            cp.remove_option( section, label )
+        cp.set( section, label, str( value ) )
+    fh = open( output_filename, 'w' )
+    cp.write( fh )
+    fh.close()
+
 
 def run_tests( test_config ):
     loader = nose.loader.TestLoader( config=test_config )
@@ -100,7 +172,23 @@ def run_tests( test_config ):
         test_runner = plug_runner
     return test_runner.run( tests )
 
-def main():    
+
+def __copy_database_template( source, db_path ):
+    """
+    Copy a 'clean' sqlite template database (from file or URL) to specified
+    database path.
+    """
+    os.makedirs( os.path.dirname( db_path ) )
+    if os.path.exists( source ):
+        shutil.copy( source, db_path )
+        assert os.path.exists( db_path )
+    elif source.lower().startswith( ( "http://", "https://", "ftp://" ) ):
+        urllib.urlretrieve( source, db_path )
+    else:
+        raise Exception( "Failed to copy database template from source %s" % source )
+
+
+def main():
     # ---- Configuration ------------------------------------------------------
     galaxy_test_host = os.environ.get( 'GALAXY_TEST_HOST', default_galaxy_test_host )
     galaxy_test_port = os.environ.get( 'GALAXY_TEST_PORT', None )
@@ -108,11 +196,11 @@ def main():
     tool_path = os.environ.get( 'GALAXY_TEST_TOOL_PATH', 'tools' )
     if 'HTTP_ACCEPT_LANGUAGE' not in os.environ:
         os.environ[ 'HTTP_ACCEPT_LANGUAGE' ] = default_galaxy_locales
-    testing_migrated_tools = '-migrated' in sys.argv
-    testing_installed_tools = '-installed' in sys.argv
+    testing_migrated_tools = __check_arg( '-migrated' )
+    testing_installed_tools = __check_arg( '-installed' )
+    datatypes_conf_override = None
 
     if testing_migrated_tools or testing_installed_tools:
-        sys.argv.pop()
         # Store a jsonified dictionary of tool_id : GALAXY_TEST_FILE_DIR pairs.
         galaxy_tool_shed_test_file = 'shed_tools_dict'
         # We need the upload tool for functional tests, so we'll create a temporary tool panel config that defines it.
@@ -129,8 +217,18 @@ def main():
         # Exclude all files except test_toolbox.py.
         ignore_files = ( re.compile( r'^test_[adghlmsu]*' ), re.compile( r'^test_ta*' ) )
     else:
-        tool_config_file = os.environ.get( 'GALAXY_TEST_TOOL_CONF', 'tool_conf.xml.sample' )
-        galaxy_test_file_dir = os.environ.get( 'GALAXY_TEST_FILE_DIR', default_galaxy_test_file_dir )
+        framework_test = __check_arg( '-framework' )  # Run through suite of tests testing framework.
+        if framework_test:
+            framework_tool_dir = os.path.join('test', 'functional', 'tools')
+            tool_conf = os.path.join( framework_tool_dir, 'samples_tool_conf.xml' )
+            datatypes_conf_override = os.path.join( framework_tool_dir, 'sample_datatypes_conf.xml' )
+            test_dir = os.path.join( framework_tool_dir, 'test-data')
+        else:
+            # Use tool_conf.xml toolbox.
+            tool_conf = 'tool_conf.xml'
+            test_dir = default_galaxy_test_file_dir
+        tool_config_file = os.environ.get( 'GALAXY_TEST_TOOL_CONF', tool_conf )
+        galaxy_test_file_dir = os.environ.get( 'GALAXY_TEST_FILE_DIR', test_dir )
         if not os.path.isabs( galaxy_test_file_dir ):
             galaxy_test_file_dir = os.path.join( os.getcwd(), galaxy_test_file_dir )
         library_import_dir = galaxy_test_file_dir
@@ -140,15 +238,25 @@ def main():
     start_server = 'GALAXY_TEST_EXTERNAL' not in os.environ
     if os.path.exists( 'tool_data_table_conf.test.xml' ):
         tool_data_table_config_path = 'tool_data_table_conf.test.xml'
-    else:    
+    else:
         tool_data_table_config_path = 'tool_data_table_conf.xml'
     shed_tool_data_table_config = 'shed_tool_data_table_conf.xml'
     tool_dependency_dir = os.environ.get( 'GALAXY_TOOL_DEPENDENCY_DIR', None )
     use_distributed_object_store = os.environ.get( 'GALAXY_USE_DISTRIBUTED_OBJECT_STORE', False )
-    
+    galaxy_test_tmp_dir = os.environ.get( 'GALAXY_TEST_TMP_DIR', None )
+    if galaxy_test_tmp_dir is None:
+        galaxy_test_tmp_dir = tempfile.mkdtemp()
+
+    galaxy_job_conf_file = os.environ.get( 'GALAXY_TEST_JOB_CONF',
+                                           os.path.join( galaxy_test_tmp_dir, 'test_job_conf.xml' ) )
+    # Generate the job_conf.xml file.
+    file( galaxy_job_conf_file, 'w' ).write( job_conf_xml )
+
+    database_auto_migrate = False
+
+    galaxy_test_proxy_port = None
+    psu_production = False
     if start_server:
-        psu_production = False
-        galaxy_test_proxy_port = None
         if 'GALAXY_TEST_PSU_PRODUCTION' in os.environ:
             if not galaxy_test_port:
                 raise Exception( 'Please set GALAXY_TEST_PORT to the port to which the proxy server will proxy' )
@@ -175,37 +283,49 @@ def main():
             job_working_directory = os.path.join( new_file_path, 'job_working_directory' )
             os.mkdir( cluster_files_directory )
             os.mkdir( job_working_directory )
-            kwargs = dict( database_engine_option_pool_size = '10',
-                           database_engine_option_max_overflow = '20',
-                           database_engine_option_strategy = 'threadlocal',
-                           nginx_x_accel_redirect_base = '/_x_accel_redirect',
-                           nginx_upload_store = nginx_upload_store,
-                           nginx_upload_path = '/_upload',
-                           allow_library_path_paste = 'True',
-                           cluster_files_directory = cluster_files_directory,
-                           job_working_directory = job_working_directory,
-                           outputs_to_working_directory = 'True',
-                           static_enabled = 'False',
-                           debug = 'False',
-                           track_jobs_in_database = 'True',
-                           job_scheduler_policy = 'FIFO',
-                           start_job_runners = 'pbs',
-                           default_cluster_job_runner = default_cluster_job_runner )
+            kwargs = dict( database_engine_option_pool_size='10',
+                           database_engine_option_max_overflow='20',
+                           database_engine_option_strategy='threadlocal',
+                           nginx_x_accel_redirect_base='/_x_accel_redirect',
+                           nginx_upload_store=nginx_upload_store,
+                           nginx_upload_path='/_upload',
+                           allow_library_path_paste='True',
+                           cluster_files_directory=cluster_files_directory,
+                           job_working_directory=job_working_directory,
+                           outputs_to_working_directory='True',
+                           static_enabled='False',
+                           debug='False',
+                           track_jobs_in_database='True',
+                           job_scheduler_policy='FIFO',
+                           start_job_runners='pbs',
+                           default_cluster_job_runner=default_cluster_job_runner )
             psu_production = True
         else:
+            tempdir = tempfile.mkdtemp( dir=galaxy_test_tmp_dir )
+            # Configure the database path.
             if 'GALAXY_TEST_DBPATH' in os.environ:
-                db_path = os.environ['GALAXY_TEST_DBPATH']
-            else: 
-                tempdir = tempfile.mkdtemp()
-                db_path = tempfile.mkdtemp( prefix='database_', dir=tempdir )
-            # FIXME: This is a workaround for cases where metadata is being set externally.
-            file_path = os.path.join( 'database', 'files' )
+                galaxy_db_path = os.environ[ 'GALAXY_TEST_DBPATH' ]
+            else:
+                galaxy_db_path = os.path.join( tempdir, 'database' )
+            # Configure the paths Galaxy needs to  test tools.
+            file_path = os.path.join( galaxy_db_path, 'files' )
             new_file_path = tempfile.mkdtemp( prefix='new_files_path_', dir=tempdir )
             job_working_directory = tempfile.mkdtemp( prefix='job_working_directory_', dir=tempdir )
+            install_database_connection = os.environ.get( 'GALAXY_TEST_INSTALL_DBURI', None )
             if 'GALAXY_TEST_DBURI' in os.environ:
                 database_connection = os.environ['GALAXY_TEST_DBURI']
             else:
-                database_connection = 'sqlite:///' + os.path.join( db_path, 'universe.sqlite' )
+                db_path = os.path.join( galaxy_db_path, 'universe.sqlite' )
+                if 'GALAXY_TEST_DB_TEMPLATE' in os.environ:
+                    # Middle ground between recreating a completely new
+                    # database and pointing at existing database with
+                    # GALAXY_TEST_DBURI. The former requires a lot of setup
+                    # time, the latter results in test failures in certain
+                    # cases (namely tool shed tests expecting clean database).
+                    log.debug( "Copying database template from %s.", os.environ['GALAXY_TEST_DB_TEMPLATE'] )
+                    __copy_database_template(os.environ['GALAXY_TEST_DB_TEMPLATE'], db_path)
+                    database_auto_migrate = True
+                database_connection = 'sqlite:///%s' % db_path
             kwargs = {}
         for dir in file_path, new_file_path:
             try:
@@ -214,12 +334,49 @@ def main():
             except OSError:
                 pass
 
-    # ---- Build Application -------------------------------------------------- 
-    app = None 
+    #Data Manager testing temp path
+    #For storing Data Manager outputs and .loc files so that real ones don't get clobbered
+    data_manager_test_tmp_path = tempfile.mkdtemp( prefix='data_manager_test_tmp', dir=galaxy_test_tmp_dir )
+    galaxy_data_manager_data_path = tempfile.mkdtemp( prefix='data_manager_tool-data', dir=data_manager_test_tmp_path )
+    
+    # ---- Build Application --------------------------------------------------
+    master_api_key = get_master_api_key()
+    app = None
     if start_server:
-        global_conf = { '__file__' : 'universe_wsgi.ini.sample' }
+        kwargs = dict( admin_users='test@bx.psu.edu',
+                       api_allow_run_as='test@bx.psu.edu',
+                       allow_library_path_paste=True,
+                       allow_user_creation=True,
+                       allow_user_deletion=True,
+                       database_connection=database_connection,
+                       database_auto_migrate=database_auto_migrate,
+                       datatype_converters_config_file="datatype_converters_conf.xml.sample",
+                       file_path=file_path,
+                       id_secret='changethisinproductiontoo',
+                       job_queue_workers=5,
+                       job_working_directory=job_working_directory,
+                       library_import_dir=library_import_dir,
+                       log_destination="stdout",
+                       new_file_path=new_file_path,
+                       running_functional_tests=True,
+                       shed_tool_data_table_config=shed_tool_data_table_config,
+                       template_path="templates",
+                       test_conf="test.conf",
+                       tool_config_file=tool_config_file,
+                       tool_data_table_config_path=tool_data_table_config_path,
+                       tool_path=tool_path,
+                       galaxy_data_manager_data_path=galaxy_data_manager_data_path,
+                       tool_parse_help=False,
+                       update_integrated_tool_panel=False,
+                       use_heartbeat=False,
+                       user_library_import_dir=user_library_import_dir,
+                       master_api_key=master_api_key,
+                       use_tasked_jobs=True,
+        )
+        if install_database_connection is not None:
+            kwargs[ 'install_database_connection' ] = install_database_connection
         if psu_production:
-            global_conf = None
+            kwargs[ 'global_conf' ] = None
         if not database_connection.startswith( 'sqlite://' ):
             kwargs[ 'database_engine_option_max_overflow' ] = '20'
             kwargs[ 'database_engine_option_pool_size' ] = '10'
@@ -228,40 +385,32 @@ def main():
         if use_distributed_object_store:
             kwargs[ 'object_store' ] = 'distributed'
             kwargs[ 'distributed_object_store_config_file' ] = 'distributed_object_store_conf.xml.sample'
+        if datatypes_conf_override:
+            kwargs[ 'datatypes_config_file' ] = datatypes_conf_override
+        # If the user has passed in a path for the .ini file, do not overwrite it.
+        galaxy_config_file = os.environ.get( 'GALAXY_TEST_INI_FILE', None )
+        if not galaxy_config_file:
+            galaxy_config_file = os.path.join( galaxy_test_tmp_dir, 'functional_tests_wsgi.ini' )
+            config_items = []
+            for label in kwargs:
+                config_tuple = label, kwargs[ label ]
+                config_items.append( config_tuple )
+            # Write a temporary file, based on universe_wsgi.ini.sample, using the configuration options defined above.
+            generate_config_file( 'universe_wsgi.ini.sample', galaxy_config_file, config_items )
+        # Set the global_conf[ '__file__' ] option to the location of the temporary .ini file, which gets passed to set_metadata.sh.
+        kwargs[ 'global_conf' ] = get_webapp_global_conf()
+        kwargs[ 'global_conf' ][ '__file__' ] = galaxy_config_file
+        kwargs[ 'config_file' ] = galaxy_config_file
         # Build the Universe Application
-        app = UniverseApplication( admin_users = 'test@bx.psu.edu',
-                                   allow_library_path_paste = True,
-                                   allow_user_creation = True,
-                                   allow_user_deletion = True,
-                                   database_connection = database_connection,
-                                   datatype_converters_config_file = "datatype_converters_conf.xml.sample",
-                                   file_path = file_path,
-                                   global_conf = global_conf,
-                                   id_secret = 'changethisinproductiontoo',
-                                   job_queue_workers = 5,
-                                   job_working_directory = job_working_directory,
-                                   library_import_dir = library_import_dir,
-                                   log_destination = "stdout",
-                                   new_file_path = new_file_path,
-                                   running_functional_tests = True,
-                                   shed_tool_data_table_config = shed_tool_data_table_config,
-                                   template_path = "templates",
-                                   test_conf = "test.conf",
-                                   tool_config_file = tool_config_file,
-                                   tool_data_table_config_path = tool_data_table_config_path,
-                                   tool_path = tool_path,
-                                   tool_parse_help = False,
-                                   update_integrated_tool_panel = False,
-                                   use_heartbeat = False,
-                                   user_library_import_dir = user_library_import_dir,
-                                   **kwargs )
+        app = UniverseApplication( **kwargs )
+        database_contexts.galaxy_context = app.model.context
         log.info( "Embedded Universe application started" )
 
     # ---- Run webserver ------------------------------------------------------
     server = None
-    
+
     if start_server:
-        webapp = buildapp.app_factory( get_webapp_global_conf(), app=app,
+        webapp = buildapp.app_factory( kwargs[ 'global_conf' ], app=app,
             use_translogger=False, static_enabled=STATIC_ENABLED )
         if galaxy_test_port is not None:
             server = httpserver.serve( webapp, host=galaxy_test_host, port=galaxy_test_port, start_loop=False )
@@ -288,7 +437,7 @@ def main():
         t.start()
         # Test if the server is up
         for i in range( 10 ):
-            conn = httplib.HTTPConnection( galaxy_test_host, galaxy_test_port ) # directly test the app, not the proxy
+            conn = httplib.HTTPConnection( galaxy_test_host, galaxy_test_port )  # directly test the app, not the proxy
             conn.request( "GET", "/" )
             if conn.getresponse().status == 200:
                 break
@@ -297,7 +446,7 @@ def main():
             raise Exception( "Test HTTP server did not return '200 OK' after 10 tries" )
         # Test if the proxy server is up
         if psu_production:
-            conn = httplib.HTTPConnection( galaxy_test_host, galaxy_test_proxy_port ) # directly test the app, not the proxy
+            conn = httplib.HTTPConnection( galaxy_test_host, galaxy_test_proxy_port )  # directly test the app, not the proxy
             conn.request( "GET", "/" )
             if not conn.getresponse().status == 200:
                 raise Exception( "Test HTTP proxy server did not return '200 OK'" )
@@ -307,7 +456,7 @@ def main():
     new_path = [ os.path.join( cwd, "test" ) ]
     new_path.extend( sys.path[1:] )
     sys.path = new_path
-    import functional.test_toolbox
+
     # ---- Find tests ---------------------------------------------------------
     if galaxy_test_proxy_port:
         log.info( "Functional tests will be run against %s:%s" % ( galaxy_test_host, galaxy_test_proxy_port ) )
@@ -316,11 +465,49 @@ def main():
     success = False
     try:
         tool_configs = app.config.tool_configs
-        # What requires these? Handy for (eg) functional tests to save outputs?        
+        # What requires these? Handy for (eg) functional tests to save outputs?
         if galaxy_test_save:
             os.environ[ 'GALAXY_TEST_SAVE' ] = galaxy_test_save
-        # Pass in through script setenv, will leave a copy of ALL test validate files        
+        # Pass in through script setenv, will leave a copy of ALL test validate files
         os.environ[ 'GALAXY_TEST_HOST' ] = galaxy_test_host
+
+        def _run_functional_test( testing_shed_tools=None ):
+            workflow_test = __check_arg( '-workflow', param=True )
+            if workflow_test:
+                import functional.workflow
+                functional.workflow.WorkflowTestCase.workflow_test_file = workflow_test
+                functional.workflow.WorkflowTestCase.master_api_key = master_api_key
+                functional.workflow.WorkflowTestCase.user_api_key = get_user_api_key()
+            data_manager_test = __check_arg( '-data_managers', param=False )
+            if data_manager_test:
+                import functional.test_data_managers
+                functional.test_data_managers.data_managers = app.data_managers #seems like a hack...
+                functional.test_data_managers.build_tests(
+                    tmp_dir=data_manager_test_tmp_path,
+                    testing_shed_tools=testing_shed_tools,
+                    master_api_key=master_api_key,
+                    user_api_key=get_user_api_key(),
+                )
+            else:
+                # We must make sure that functional.test_toolbox is always imported after
+                # database_contexts.galaxy_content is set (which occurs in this method above).
+                # If functional.test_toolbox is imported before database_contexts.galaxy_content
+                # is set, sa_session will be None in all methods that use it.
+                import functional.test_toolbox
+                functional.test_toolbox.toolbox = app.toolbox
+                # When testing data managers, do not test toolbox.
+                functional.test_toolbox.build_tests(
+                    app=app,
+                    testing_shed_tools=testing_shed_tools,
+                    master_api_key=master_api_key,
+                    user_api_key=get_user_api_key(),
+                )
+            test_config = nose.config.Config( env=os.environ, ignoreFiles=ignore_files, plugins=nose.plugins.manager.DefaultPluginManager() )
+            test_config.configure( sys.argv )
+            result = run_tests( test_config )
+            success = result.wasSuccessful()
+            return success
+
         if testing_migrated_tools or testing_installed_tools:
             shed_tools_dict = {}
             if testing_migrated_tools:
@@ -344,12 +531,7 @@ def main():
                 for installed_tool_panel_config in installed_tool_panel_configs:
                     tool_configs.append( installed_tool_panel_config )
                 app.toolbox = tools.ToolBox( tool_configs, app.config.tool_path, app )
-            functional.test_toolbox.toolbox = app.toolbox
-            functional.test_toolbox.build_tests( testing_shed_tools=True )
-            test_config = nose.config.Config( env=os.environ, ignoreFiles=ignore_files, plugins=nose.plugins.manager.DefaultPluginManager() )
-            test_config.configure( sys.argv )
-            result = run_tests( test_config )    
-            success = result.wasSuccessful()
+            success = _run_functional_test( testing_shed_tools=True )
             try:
                 os.unlink( tmp_tool_panel_conf )
             except:
@@ -359,17 +541,12 @@ def main():
             except:
                 log.info( "Unable to remove file: %s" % galaxy_tool_shed_test_file )
         else:
-            functional.test_toolbox.toolbox = app.toolbox
-            functional.test_toolbox.build_tests()
             if galaxy_test_file_dir:
                 os.environ[ 'GALAXY_TEST_FILE_DIR' ] = galaxy_test_file_dir
-            test_config = nose.config.Config( env=os.environ, ignoreFiles=ignore_files, plugins=nose.plugins.manager.DefaultPluginManager() )
-            test_config.configure( sys.argv )
-            result = run_tests( test_config )    
-            success = result.wasSuccessful()
+            success = _run_functional_test( )
     except:
         log.exception( "Failure running tests" )
-        
+
     log.info( "Shutting down" )
     # ---- Tear down -----------------------------------------------------------
     if server:
@@ -402,6 +579,20 @@ def main():
         return 0
     else:
         return 1
+
+
+def __check_arg( name, param=False ):
+    try:
+        index = sys.argv.index( name )
+        del sys.argv[ index ]
+        if param:
+            ret_val = sys.argv[ index ]
+            del sys.argv[ index ]
+        else:
+            ret_val = True
+    except ValueError:
+        ret_val = False
+    return ret_val
 
 if __name__ == "__main__":
     sys.exit( main() )

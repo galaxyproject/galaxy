@@ -7,7 +7,7 @@ the order should be:
 1st line: @title_of_seq
 2nd line: nucleotides
 3rd line: +title_of_qualityscore (might be skipped)
-4th line: quality scores 
+4th line: quality scores
 (in three forms: a. digits, b. ASCII codes, the first char as the coding base, c. ASCII codes without the first char.)
 
 Usage:
@@ -30,7 +30,7 @@ def __main__():
     seq_title_startswith = ''
     default_coding_value = 64
     fastq_block_lines = 0
-    
+
     for i, line in enumerate( file( infile_name ) ):
         line = line.rstrip()
         if not line or line.startswith( '#' ):
@@ -52,7 +52,7 @@ def __main__():
             if not qual_title_startswith:
                 qual_title_startswith = line_startswith
             if line_startswith != qual_title_startswith:
-                stop_err( 'Invalid fastqsolexa format at line %d: %s.' % ( i + 1, line ) )    
+                stop_err( 'Invalid fastqsolexa format at line %d: %s.' % ( i + 1, line ) )
             quality_title = line[1:]
             if quality_title and read_title != quality_title:
                 stop_err( 'Invalid fastqsolexa format at line %d: sequence title "%s" differes from score title "%s".' % ( i + 1, read_title, quality_title ) )
@@ -67,15 +67,15 @@ def __main__():
             # peek: ascii or digits?
             val = line.split()[0]
 
-            try: 
+            try:
                 check = int( val )
                 fastq_integer = True
             except:
                 fastq_integer = False
-                
+
             if fastq_integer: # digits
                 qual = line
-            else: 
+            else:
                 # ascii
                 quality_score_length = len( line )
                 if quality_score_length == read_length + 1:
@@ -89,8 +89,7 @@ def __main__():
                     score = ord( char ) - quality_score_startswith    # 64
                     qual = "%s%s " % ( qual, str( score ) )
             outfile_score.write( '%s\n' % qual )
-                            
+
     outfile_score.close()
 
-if __name__ == "__main__": __main__()  
-    
+if __name__ == "__main__": __main__()

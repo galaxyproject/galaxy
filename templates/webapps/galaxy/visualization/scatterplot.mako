@@ -216,13 +216,13 @@ ${h.templates(
 )}
 
 ${h.js(
-    "mvc/visualizations/scatterplotControlForm",
+    "mvc/visualization/scatterplotControlForm",
 )}
 
 <script type="text/javascript">
 $(function(){
 
-    var hda             = ${h.to_json_string( trans.security.encode_dict_ids( hda.get_api_value() ) )},
+    var hda             = ${h.to_json_string( trans.security.encode_dict_ids( hda.to_dict() ) )},
         querySettings   = ${h.to_json_string( query_args )},
         chartConfig     = _.extend( querySettings, {
             containerSelector : '#chart',

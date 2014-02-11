@@ -1,6 +1,4 @@
 from tool_shed.base.twilltestcase import ShedTwillTestCase, common, os
-import tool_shed.base.test_db_util as test_db_util
-
 datatypes_repository_name = 'blast_datatypes_0120'
 datatypes_repository_description = 'Galaxy applicable datatypes for BLAST'
 datatypes_repository_long_description = 'Galaxy datatypes for the BLAST top hit descriptons tool'
@@ -23,7 +21,6 @@ Tool shed side:
 base_datatypes_count = 0
 repository_datatypes_count = 0
 
-
 class TestRepositoryMultipleOwners( ShedTwillTestCase ):
 
     def test_0000_initiate_users( self ):
@@ -34,19 +31,19 @@ class TestRepositoryMultipleOwners( ShedTwillTestCase ):
         """
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        test_user_1 = test_db_util.get_user( common.test_user_1_email )
+        test_user_1 = self.test_db_util.get_user( common.test_user_1_email )
         assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_1_email
-        test_user_1_private_role = test_db_util.get_private_role( test_user_1 )
+        test_user_1_private_role = self.test_db_util.get_private_role( test_user_1 )
         self.logout()
         self.login( email=common.test_user_2_email, username=common.test_user_2_name )
-        test_user_2 = test_db_util.get_user( common.test_user_1_email )
+        test_user_2 = self.test_db_util.get_user( common.test_user_1_email )
         assert test_user_2 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_2_email
-        test_user_2_private_role = test_db_util.get_private_role( test_user_2 )
+        test_user_2_private_role = self.test_db_util.get_private_role( test_user_2 )
         self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
-        admin_user = test_db_util.get_user( common.admin_email )
+        admin_user = self.test_db_util.get_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
-        admin_user_private_role = test_db_util.get_private_role( admin_user )
+        admin_user_private_role = self.test_db_util.get_private_role( admin_user )
 
     def test_0005_create_datatypes_repository( self ):
         """Create and populate the blast_datatypes_0120 repository"""
@@ -58,7 +55,7 @@ class TestRepositoryMultipleOwners( ShedTwillTestCase ):
         self.logout()
         self.login( email=common.test_user_2_email, username=common.test_user_2_name )
         strings_displayed = [ 'Repository %s' % "'%s'" % datatypes_repository_name, 
-                              'Repository %s has been created' % "'%s'" % datatypes_repository_name ]
+                              'Repository %s has been created' % "<b>%s</b>" % datatypes_repository_name ]
         repository = self.get_or_create_repository( name=datatypes_repository_name, 
                                                     description=datatypes_repository_description, 
                                                     long_description=datatypes_repository_long_description, 
@@ -83,7 +80,7 @@ class TestRepositoryMultipleOwners( ShedTwillTestCase ):
         the datatypes that are defined in datatypes_conf.xml.
         '''
         global repository_datatypes_count
-        repository = test_db_util.get_repository_by_name_and_owner( datatypes_repository_name, common.test_user_2_name )
+        repository = self.test_db_util.get_repository_by_name_and_owner( datatypes_repository_name, common.test_user_2_name )
         strings_displayed = [ 'BlastXml', 'BlastNucDb', 'BlastProtDb', 'application/xml', 'text/html', 'blastxml', 'blastdbn', 'blastdbp']
         self.display_manage_repository_page( repository, strings_displayed=strings_displayed )
         repository_datatypes_count = int( self.get_repository_datatypes_count( repository ) )
@@ -98,7 +95,7 @@ class TestRepositoryMultipleOwners( ShedTwillTestCase ):
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         strings_displayed = [ 'Repository %s' % "'%s'" % tool_repository_name, 
-                              'Repository %s has been created' % "'%s'" % tool_repository_name ]
+                              'Repository %s has been created' % "<b>%s</b>" % tool_repository_name ]
         repository = self.get_or_create_repository( name=tool_repository_name, 
                                                     description=tool_repository_description, 
                                                     long_description=tool_repository_long_description, 
@@ -121,7 +118,7 @@ class TestRepositoryMultipleOwners( ShedTwillTestCase ):
         We are at step 2a.
         Check for appropriate strings, such as tool name, description, and version.
         '''
-        repository = test_db_util.get_repository_by_name_and_owner( tool_repository_name, common.test_user_1_name )
+        repository = self.test_db_util.get_repository_by_name_and_owner( tool_repository_name, common.test_user_1_name )
         strings_displayed = [ 'blastxml_to_top_descr_0120', 'BLAST top hit descriptions', 'Make a table from BLAST XML' ]
         strings_displayed.extend( [ '0.0.1', 'Valid tools'] )
         self.display_manage_repository_page( repository, strings_displayed=strings_displayed )
@@ -132,8 +129,8 @@ class TestRepositoryMultipleOwners( ShedTwillTestCase ):
         We are at step 3.
         Create a simple repository dependency for blastxml_to_top_descr_0120 that defines a dependency on blast_datatypes_0120.
         '''
-        datatypes_repository = test_db_util.get_repository_by_name_and_owner( datatypes_repository_name, common.test_user_2_name )
-        tool_repository = test_db_util.get_repository_by_name_and_owner( tool_repository_name, common.test_user_1_name )
+        datatypes_repository = self.test_db_util.get_repository_by_name_and_owner( datatypes_repository_name, common.test_user_2_name )
+        tool_repository = self.test_db_util.get_repository_by_name_and_owner( tool_repository_name, common.test_user_1_name )
         dependency_xml_path = self.generate_temp_path( 'test_0120', additional_paths=[ 'dependencies' ] )
         datatypes_tuple = ( self.url, datatypes_repository.name, datatypes_repository.user.username, self.get_repository_tip( datatypes_repository ) )
         self.create_repository_dependency( repository=tool_repository, repository_tuples=[ datatypes_tuple ], filepath=dependency_xml_path )
@@ -144,6 +141,6 @@ class TestRepositoryMultipleOwners( ShedTwillTestCase ):
         We are at step 3a.
         Check the newly created repository dependency to ensure that it was defined and displays correctly.
         '''
-        datatypes_repository = test_db_util.get_repository_by_name_and_owner( datatypes_repository_name, common.test_user_2_name )
-        tool_repository = test_db_util.get_repository_by_name_and_owner( tool_repository_name, common.test_user_1_name )
+        datatypes_repository = self.test_db_util.get_repository_by_name_and_owner( datatypes_repository_name, common.test_user_2_name )
+        tool_repository = self.test_db_util.get_repository_by_name_and_owner( tool_repository_name, common.test_user_1_name )
         self.check_repository_dependency( tool_repository, datatypes_repository )

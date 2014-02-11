@@ -1,0 +1,26 @@
+GALAXY STYLE BUILDING
+
+Requirements:
+node.js             http://nodejs.org
+grunt               http://gruntjs.com
+phantomjs           http://phantomjs.org
+    *phantomjs can be replaced with other libraries if you know what you're
+    doing (it's used as an engine for sprite building), but it's the easiest to
+    get up and running.
+
+After node, grunt, and phantomjs are all installed (and on your path):
+
+    1: navigate to the <galaxy>/static/style directory (where this file is)
+    2: execute 'npm install'
+    3: execute 'grunt'
+
+The 'npm install' command will install the required modules for building galaxy
+into the node_modules directory here.  If phantomjs isn't correctly installed
+and on your path prior to running 'npm install', you'll see this error message:
+
+    Warning: Sorry, no spritesmith engine could be loaded for your machine.
+    Please be sure you have installed canvas or gm. Use --force to continue.
+
+If this happens, you'll need to rerun 'npm install' after 1) ensuring phantomjs
+is on your path and 2) removing the local node_modules directory (rm -rf
+node_modules).

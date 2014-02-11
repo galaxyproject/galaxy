@@ -32,7 +32,7 @@ class ASync( BaseUIController ):
             return trans.response.send_redirect( "/index" )
 
         history = trans.get_history( create=True )
-        params  = Params(kwd, sanitize=False) 
+        params  = Params(kwd, sanitize=False)
         STATUS = params.STATUS
         URL = params.URL
         data_id = params.data_id
@@ -45,7 +45,7 @@ class ASync( BaseUIController ):
         tool = toolbox.get_tool( tool_id )
         if not tool:
             return "Tool with id %s not found" % tool_id
-        
+
         #
         # we have an incoming data_id
         #
@@ -53,7 +53,7 @@ class ASync( BaseUIController ):
             if not URL:
                 return "No URL parameter was submitted for data %s" % data_id
             data = trans.sa_session.query( trans.model.HistoryDatasetAssociation ).get( data_id )
-           
+
             if not data:
                 return "Data %s does not exist or has already been deleted" % data_id
 
@@ -76,12 +76,12 @@ class ASync( BaseUIController ):
                 trans.log_event( 'Async error -> %s' % STATUS )
                 data.state = data.blurb = jobs.JOB_ERROR
                 data.info  = "Error -> %s" % STATUS
-            
+
             trans.sa_session.flush()
-            
+
             return "Data %s with status %s received. OK" % (data_id, STATUS)
         else:
-            #            
+            #
             # no data_id must be parameter submission
             #
             if params.data_type:
@@ -90,11 +90,11 @@ class ASync( BaseUIController ):
                 GALAXY_TYPE = 'wig'
             else:
                 GALAXY_TYPE = params.GALAXY_TYPE  or  tool.outputs.values()[0].format
-                
+
             GALAXY_NAME = params.name or params.GALAXY_NAME or '%s query' % tool.name
             GALAXY_INFO = params.info or params.GALAXY_INFO or params.galaxyDescription or ''
             GALAXY_BUILD = params.dbkey or params.GALAXY_BUILD or params.galaxyFreeze or '?'
-            
+
             #data = datatypes.factory(ext=GALAXY_TYPE)()
             #data.ext   = GALAXY_TYPE
             #data.name  = GALAXY_NAME
@@ -102,7 +102,7 @@ class ASync( BaseUIController ):
             #data.dbkey = GALAXY_BUILD
             #data.state = jobs.JOB_OK
             #history.datasets.add_dataset( data )
-            
+
             data = trans.app.model.HistoryDatasetAssociation( create_dataset=True, sa_session=trans.sa_session, extension=GALAXY_TYPE )
             trans.app.security_agent.set_all_dataset_permissions( data.dataset, trans.app.security_agent.history_get_default_permissions( trans.history ) )
             data.name = GALAXY_NAME
@@ -132,7 +132,7 @@ class ASync( BaseUIController ):
             except Exception, e:
                 data.info  = str(e)
                 data.state = data.blurb = data.states.ERROR
-            
+
             trans.sa_session.flush()
 
         return trans.fill_template( 'tool_executed.mako', history=history, toolbox=toolbox, tool=tool, util=util, out_data={} )

@@ -1,8 +1,6 @@
 from sqlalchemy.types import *
 
-import pkg_resources
-pkg_resources.require("simplejson")
-import simplejson
+import json
 import pickle
 import copy
 import uuid
@@ -19,8 +17,8 @@ import logging
 log = logging.getLogger( __name__ )
 
 # Default JSON encoder and decoder
-json_encoder = simplejson.JSONEncoder( sort_keys=True )
-json_decoder = simplejson.JSONDecoder( )
+json_encoder = json.JSONEncoder( sort_keys=True )
+json_decoder = json.JSONDecoder( )
 
 def _sniffnfix_pg9_hex(value):
     """
@@ -29,6 +27,8 @@ def _sniffnfix_pg9_hex(value):
     try:
         if value[0] == 'x':
             return binascii.unhexlify(value[1:])
+        elif value.startswith( '\\x' ):
+            return binascii.unhexlify( value[2:] )
         else:
             return value
     except Exception, ex:
@@ -89,7 +89,7 @@ class MetadataType( JSONType ):
 class UUIDType(TypeDecorator):
     """
     Platform-independent UUID type.
-    
+
     Based on http://docs.sqlalchemy.org/en/rel_0_8/core/types.html#backend-agnostic-guid-type
     Changed to remove sqlalchemy 0.8 specific code
 

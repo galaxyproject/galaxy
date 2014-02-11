@@ -59,9 +59,13 @@ def __main__():
     if not os.path.exists( os.path.split( options.db_build )[0] ):
         stop_err( 'Cannot locate the target database directory. Please check your location file.' )
 
+    try:
+        threads = int( os.environ['GALAXY_SLOTS'])
+    except Exception:
+        threads = 8
     # arguments for megablast
-    megablast_command = "blastn -task megablast -db %s -query %s -out %s -outfmt '6 qseqid sgi slen ppos length mismatch gaps qstart qend sstart send evalue bitscore' -num_threads 8 -word_size %s -perc_identity %s -evalue %s -dust %s > /dev/null" \
-        % ( options.db_build, query_filename, mega_temp_output, mega_word_size, mega_iden_cutoff, mega_evalue_cutoff, options.filter_query ) 
+    megablast_command = "blastn -task megablast -db %s -query %s -out %s -outfmt '6 qseqid sgi slen ppos length mismatch gaps qstart qend sstart send evalue bitscore' -num_threads %d -word_size %s -perc_identity %s -evalue %s -dust %s > /dev/null" \
+        % ( options.db_build, query_filename, mega_temp_output, threads, mega_word_size, mega_iden_cutoff, mega_evalue_cutoff, options.filter_query ) 
 
     print megablast_command
 

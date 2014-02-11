@@ -1,5 +1,6 @@
 from tool_shed.base.twilltestcase import ShedTwillTestCase, common, os
-import tool_shed.base.test_db_util as test_db_util
+
+
 import logging, time
 log = logging.getLogger(__name__)
 
@@ -17,7 +18,6 @@ category_description = 'Functional test suite to test the update manager.'
 4. Verify that the browse page now shows an update available.
 '''
 
-
 class TestUpdateManager( ShedTwillTestCase ):
     '''Test the Galaxy update manager.'''
     
@@ -29,19 +29,19 @@ class TestUpdateManager( ShedTwillTestCase ):
         """
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        test_user_1 = test_db_util.get_user( common.test_user_1_email )
+        test_user_1 = self.test_db_util.get_user( common.test_user_1_email )
         assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_1_email
-        test_user_1_private_role = test_db_util.get_private_role( test_user_1 )
+        test_user_1_private_role = self.test_db_util.get_private_role( test_user_1 )
         self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
-        admin_user = test_db_util.get_user( common.admin_email )
+        admin_user = self.test_db_util.get_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
-        admin_user_private_role = test_db_util.get_private_role( admin_user )
+        admin_user_private_role = self.test_db_util.get_private_role( admin_user )
         self.galaxy_logout()
         self.galaxy_login( email=common.admin_email, username=common.admin_username )
-        galaxy_admin_user = test_db_util.get_galaxy_user( common.admin_email )
+        galaxy_admin_user = self.test_db_util.get_galaxy_user( common.admin_email )
         assert galaxy_admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
-        galaxy_admin_user_private_role = test_db_util.get_galaxy_private_role( galaxy_admin_user )
+        galaxy_admin_user_private_role = self.test_db_util.get_galaxy_private_role( galaxy_admin_user )
         
     def test_0005_create_filtering_repository( self ):
         '''Create and populate the filtering_1410 repository.'''
@@ -78,8 +78,8 @@ class TestUpdateManager( ShedTwillTestCase ):
         self.install_repository( 'filtering_1410', 
                                  common.test_user_1_name, 
                                  category_name, 
-                                 new_tool_panel_section='test_1410' )
-        installed_repository = test_db_util.get_installed_repository_by_name_owner( 'filtering_1410', common.test_user_1_name )
+                                 new_tool_panel_section_label='test_1410' )
+        installed_repository = self.test_db_util.get_installed_repository_by_name_owner( 'filtering_1410', common.test_user_1_name )
         strings_displayed = [ 'filtering_1410',
                               "Galaxy's filtering tool",
                               'user1', 
@@ -100,7 +100,7 @@ class TestUpdateManager( ShedTwillTestCase ):
         '''
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         self.upload_file( repository, 
                           filename='readme.txt', 
                           filepath=None,
@@ -121,5 +121,10 @@ class TestUpdateManager( ShedTwillTestCase ):
         time.sleep( 3 )
         self.galaxy_logout()
         self.galaxy_login( email=common.admin_email, username=common.admin_username )
-        self.display_galaxy_browse_repositories_page( strings_displayed=[ 'state-color-running' ] )
+        repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        self.update_tool_shed_status()
+        ok_title = r'title=\"Updates are available in the Tool Shed for this revision\"'
+        updates_icon = '/static/images/icon_warning_sml.gif'
+        strings_displayed = [ ok_title, updates_icon ]
+        self.display_galaxy_browse_repositories_page( strings_displayed=strings_displayed )
         

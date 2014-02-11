@@ -5,6 +5,9 @@
          To fix this: (a) merge sam_to_bam tool in tools with this conversion (like fasta_to_len 
          conversion); and (b) define a datatype-specific way to set converter parameters.
       -->
+    <requirements>
+        <requirement type="package">samtools</requirement>
+    </requirements>
     <command interpreter="python">sam_to_bam.py $input1 $output</command>
     <inputs>
         <param name="input1" type="data" format="sam" label="SAM file"/>

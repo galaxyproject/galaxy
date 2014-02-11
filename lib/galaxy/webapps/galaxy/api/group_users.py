@@ -82,7 +82,7 @@ class GroupUsersAPIController( BaseAPIController ):
                 if uga.user == user:
                     item = dict( id = user_id,
                                    email = user.email,
-                                   url = url_for( 'group_user', group_id=group_id, id=user_id) ) 
+                                   url = url_for( 'group_user', group_id=group_id, id=user_id) )
             if not item:
                 uga = trans.app.model.UserGroupAssociation( user, group )
                 # Add UserGroupAssociations
@@ -90,7 +90,7 @@ class GroupUsersAPIController( BaseAPIController ):
                 trans.sa_session.flush()
                 item = dict( id = user_id,
                              email = user.email,
-                             url = url_for( 'group_user', group_id=group_id, id=user_id) ) 
+                             url = url_for( 'group_user', group_id=group_id, id=user_id) )
         except Exception, e:
             item = "Error in group_user API Adding user %s to group %s" % (user.email,group.name)
             log.error(item + ": %s" % str(e))
@@ -115,7 +115,7 @@ class GroupUsersAPIController( BaseAPIController ):
                     trans.sa_session.flush()
                     item = dict( id = user_id,
                                  email = user.email,
-                                 url = url_for( 'group_user', group_id=group_id, id=user_id) ) 
+                                 url = url_for( 'group_user', group_id=group_id, id=user_id) )
             if not item:
                 item = "user %s not in group %s" % (user.email,group.name)
         except Exception, e:

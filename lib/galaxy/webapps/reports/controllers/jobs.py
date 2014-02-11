@@ -20,8 +20,8 @@ class SpecifiedDateListGrid( grids.Grid ):
             return '<div class="count-box state-color-%s">%s</div>' % ( job.state, job.state )
         def filter( self, trans, user, query, column_filter ):
             if column_filter == 'Unfinished':
-                return query.filter( not_( or_( model.Job.table.c.state == model.Job.states.OK, 
-                                                model.Job.table.c.state == model.Job.states.ERROR, 
+                return query.filter( not_( or_( model.Job.table.c.state == model.Job.states.OK,
+                                                model.Job.table.c.state == model.Job.states.ERROR,
                                                 model.Job.table.c.state == model.Job.states.DELETED ) ) )
             return query
     class ToolColumn( grids.TextColumn ):
@@ -29,7 +29,7 @@ class SpecifiedDateListGrid( grids.Grid ):
             return job.tool_id
     class CreateTimeColumn( grids.DateTimeColumn ):
         def get_value( self, trans, grid, job ):
-            return job.create_time
+            return job.create_time.isoformat()
     class UserColumn( grids.GridColumn ):
         def get_value( self, trans, grid, job ):
             if job.user:
@@ -47,26 +47,23 @@ class SpecifiedDateListGrid( grids.Grid ):
                 return query
             # We are either filtering on a date like YYYY-MM-DD or on a month like YYYY-MM,
             # so we need to figure out which type of date we have
-            if column_filter.count( '-' ) == 2:
-                # We are filtering on a date like YYYY-MM-DD
+            if column_filter.count( '-' ) == 2:  # We are filtering on a date like YYYY-MM-DD
                 year, month, day = map( int, column_filter.split( "-" ) )
                 start_date = date( year, month, day )
                 end_date = start_date + timedelta( days=1 )
-                return query.filter( and_( self.model_class.table.c.create_time >= start_date,
-                                           self.model_class.table.c.create_time < end_date ) )
-            if column_filter.count( '-' ) == 1:
-                # We are filtering on a month like YYYY-MM
+            if column_filter.count( '-' ) == 1:  # We are filtering on a month like YYYY-MM
                 year, month = map( int, column_filter.split( "-" ) )
                 start_date = date( year, month, 1 )
                 end_date = start_date + timedelta( days=calendar.monthrange( year, month )[1] )
-                return query.filter( and_( self.model_class.table.c.create_time >= start_date,
+
+            return query.filter( and_( self.model_class.table.c.create_time >= start_date,
                                            self.model_class.table.c.create_time < end_date ) )
 
     # Grid definition
     use_async = False
     model_class = model.Job
     title = "Jobs"
-    template='/webapps/reports/grid.mako'
+    template = '/webapps/reports/grid.mako'
     default_sort_key = "id"
     columns = [
         JobIdColumn( "Id",
@@ -102,8 +99,8 @@ class SpecifiedDateListGrid( grids.Grid ):
                            visible=False,
                            filterable="advanced" )
     ]
-    columns.append( grids.MulticolFilterColumn( "Search", 
-                                                cols_to_filter=[ columns[1], columns[2] ], 
+    columns.append( grids.MulticolFilterColumn( "Search",
+                                                cols_to_filter=[ columns[1], columns[2] ],
                                                 key="free-text-search",
                                                 visible=False,
                                                 filterable="standard" ) )
@@ -112,12 +109,21 @@ class SpecifiedDateListGrid( grids.Grid ):
     num_rows_per_page = 50
     preserve_state = False
     use_paging = True
+
     def build_initial_query( self, trans, **kwd ):
+        params = util.Params( kwd )
+        monitor_email = params.get( 'monitor_email', 'monitor@bx.psu.edu' )
+        monitor_user_id = get_monitor_id( trans, monitor_email )
         return trans.sa_session.query( self.model_class ) \
                                .join( model.User ) \
+                               .filter( model.Job.table.c.user_id != monitor_user_id )\
                                .enable_eagerloads( False )
 
 class Jobs( BaseUIController ):
+    """
+    Class contains functions for querying data requested by user via the webapp. It exposes the functions and
+    responds to requests with the filled .mako templates.
+    """
 
     specified_date_list_grid = SpecifiedDateListGrid()
 
@@ -160,7 +166,7 @@ class Jobs( BaseUIController ):
                 if job.user:
                     kwd[ 'email' ] = job.user.email
                 else:
-                    kwd[ 'email' ] = None # For anonymous users
+                    kwd[ 'email' ] = None  # For anonymous users
                 return trans.response.send_redirect( web.url_for( controller='jobs',
                                                                   action='user_per_month',
                                                                   **kwd ) )
@@ -169,11 +175,20 @@ class Jobs( BaseUIController ):
             elif operation == "unfinished":
                 kwd[ 'f-state' ] = 'Unfinished'
         return self.specified_date_list_grid( trans, **kwd )
+
     @web.expose
     def specified_month_all( self, trans, **kwd ):
-        params = util.Params( kwd )
+        """
+        Queries the DB for all jobs in given month, defaults to current month.
+        """
         message = ''
+
+        params = util.Params( kwd )
         monitor_email = params.get( 'monitor_email', 'monitor@bx.psu.edu' )
+
+        # In case we don't know which is the monitor user we will query for all jobs
+        monitor_user_id = get_monitor_id( trans, monitor_email )
+
         # If specified_date is not received, we'll default to the current month
         specified_date = kwd.get( 'specified_date', datetime.utcnow().strftime( "%Y-%m-%d" ) )
         specified_month = specified_date[ :7 ]
@@ -182,115 +197,165 @@ class Jobs( BaseUIController ):
         end_date = start_date + timedelta( days=calendar.monthrange( year, month )[1] )
         month_label = start_date.strftime( "%B" )
         year_label = start_date.strftime( "%Y" )
-        q = sa.select( ( sa.func.date( model.Job.table.c.create_time ).label( 'date' ),
-                         sa.func.sum( sa.case( [ ( model.User.table.c.email == monitor_email, 1 ) ], else_=0 ) ).label( 'monitor_jobs' ),
-                         sa.func.count( model.Job.table.c.id ).label( 'total_jobs' ) ),
-                       whereclause = sa.and_( model.Job.table.c.create_time >= start_date,
-                                              model.Job.table.c.create_time < end_date ),
-                       from_obj = [ sa.outerjoin( model.Job.table, model.User.table ) ],
-                       group_by = [ 'date' ],
-                       order_by = [ sa.desc( 'date' ) ] )
+
+
+        month_jobs = sa.select( ( sa.func.date( model.Job.table.c.create_time ).label( 'date' ),
+                             sa.func.count( model.Job.table.c.id ).label( 'total_jobs' ) ),
+                           whereclause=sa.and_( model.Job.table.c.user_id != monitor_user_id,
+                                                  model.Job.table.c.create_time >= start_date,
+                                                  model.Job.table.c.create_time < end_date ),
+                           from_obj=[ model.Job.table ],
+                           group_by=[ 'date' ],
+                           order_by=[ sa.desc( 'date' ) ] )
+
         jobs = []
-        for row in q.execute():
+        for row in month_jobs.execute():
             jobs.append( ( row.date.strftime( "%A" ),
-                           row.date,
-                           row.total_jobs - row.monitor_jobs,
-                           row.monitor_jobs,
+                           row.date.strftime( "%d" ),
                            row.total_jobs,
-                           row.date.strftime( "%d" ) ) )
-        return trans.fill_template( '/webapps/reports/jobs_specified_month_all.mako', 
-                                    month_label=month_label, 
-                                    year_label=year_label, 
-                                    month=month, 
-                                    jobs=jobs, 
-                                    message=message ) 
-    @web.expose
-    def specified_month_in_error( self, trans, **kwd ):
-        params = util.Params( kwd )
-        message = ''
-        # If specified_date is not received, we'll default to the current month
-        specified_date = kwd.get( 'specified_date', datetime.utcnow().strftime( "%Y-%m-%d" ) )
-        specified_month = specified_date[ :7 ]
-        year, month = map( int, specified_month.split( "-" ) )
-        start_date = date( year, month, 1 )
-        end_date = start_date + timedelta( days=calendar.monthrange( year, month )[1] )
-        month_label = start_date.strftime( "%B" )
-        year_label = start_date.strftime( "%Y" )
-        q = sa.select( ( sa.func.date( model.Job.table.c.create_time ).label( 'date' ),
-                         sa.func.count( model.Job.table.c.id ).label( 'total_jobs' ) ),
-                       whereclause = sa.and_( model.Job.table.c.state == 'error',
-                                              model.Job.table.c.create_time >= start_date, 
-                                              model.Job.table.c.create_time < end_date ),
-                       from_obj = [ sa.outerjoin( model.Job.table, model.User.table ) ],
-                       group_by = [ 'date' ],
-                       order_by = [ sa.desc( 'date' ) ] )
-        jobs = []
-        for row in q.execute():
-            jobs.append( ( row.date.strftime( "%A" ),
-                           row.date,
-                           row.total_jobs,
-                           row.date.strftime( "%d" ) ) )
-        return trans.fill_template( '/webapps/reports/jobs_specified_month_in_error.mako', 
-                                    month_label=month_label, 
-                                    year_label=year_label, 
-                                    month=month, 
-                                    jobs=jobs, 
+                           row.date
+                            ) )
+        return trans.fill_template( '/webapps/reports/jobs_specified_month_all.mako',
+                                    month_label=month_label,
+                                    year_label=year_label,
+                                    month=month,
+                                    jobs=jobs,
+                                    is_user_jobs_only=monitor_user_id,
                                     message=message )
     @web.expose
-    def per_month_all( self, trans, **kwd ):
-        params = util.Params( kwd )
+    def specified_month_in_error( self, trans, **kwd ):
+        """
+        Queries the DB for the user jobs in error.
+        """
         message = ''
+        params = util.Params( kwd )
         monitor_email = params.get( 'monitor_email', 'monitor@bx.psu.edu' )
-        q = sa.select( ( sa.func.date_trunc( 'month', sa.func.date( model.Job.table.c.create_time ) ).label( 'date' ),
-                         sa.func.sum( sa.case( [( model.User.table.c.email == monitor_email, 1 )], else_=0 ) ).label( 'monitor_jobs' ),
-                         sa.func.count( model.Job.table.c.id ).label( 'total_jobs' ) ),
-                       from_obj = [ sa.outerjoin( model.Job.table, model.User.table ) ],
-                       group_by = [ sa.func.date_trunc( 'month', sa.func.date( model.Job.table.c.create_time ) ) ],
-                       order_by = [ sa.desc( 'date' ) ] )
+
+        # In case we don't know which is the monitor user we will query for all jobs instead
+        monitor_user_id = get_monitor_id( trans, monitor_email )
+
+        # If specified_date is not received, we'll default to the current month
+        specified_date = kwd.get( 'specified_date', datetime.utcnow().strftime( "%Y-%m-%d" ) )
+        specified_month = specified_date[ :7 ]
+        year, month = map( int, specified_month.split( "-" ) )
+        start_date = date( year, month, 1 )
+        end_date = start_date + timedelta( days=calendar.monthrange( year, month )[1] )
+        month_label = start_date.strftime( "%B" )
+        year_label = start_date.strftime( "%Y" )
+
+        month_jobs_in_error = sa.select( ( sa.func.date( model.Job.table.c.create_time ).label( 'date' ),
+                             sa.func.count( model.Job.table.c.id ).label( 'total_jobs' ) ),
+                           whereclause=sa.and_( model.Job.table.c.user_id != monitor_user_id,
+                                                  model.Job.table.c.state == 'error',
+                                                  model.Job.table.c.create_time >= start_date,
+                                                  model.Job.table.c.create_time < end_date ),
+                           from_obj=[ model.Job.table ],
+                           group_by=[ 'date' ],
+                           order_by=[ sa.desc( 'date' ) ] )
+
         jobs = []
-        for row in q.execute():
-            jobs.append( ( row.date.strftime( "%Y-%m" ),
-                           row.total_jobs - row.monitor_jobs,
-                           row.monitor_jobs, 
+        for row in month_jobs_in_error.execute():
+            jobs.append( ( row.date.strftime( "%A" ),
+                           row.date,
+                           row.total_jobs,
+                           row.date.strftime( "%d" ) ) )
+        return trans.fill_template( '/webapps/reports/jobs_specified_month_in_error.mako',
+                                    month_label=month_label,
+                                    year_label=year_label,
+                                    month=month,
+                                    jobs=jobs,
+                                    message=message,
+                                    is_user_jobs_only=monitor_user_id )
+    @web.expose
+    def per_month_all( self, trans, **kwd ):
+        """
+        Queries the DB for all jobs. Avoids monitor jobs.
+        """
+
+        message = ''
+        params = util.Params( kwd )
+        monitor_email = params.get( 'monitor_email', 'monitor@bx.psu.edu' )
+
+        # In case we don't know which is the monitor user we will query for all jobs
+        monitor_user_id = get_monitor_id( trans, monitor_email )
+
+        jobs_by_month = sa.select( ( sa.func.date_trunc( 'month', model.Job.table.c.create_time ).label( 'date' ),
+                             sa.func.count( model.Job.table.c.id ).label( 'total_jobs' ) ),
+                           whereclause=model.Job.table.c.user_id != monitor_user_id,
+                           from_obj=[ model.Job.table ],
+                           group_by=[ 'date' ],
+                           order_by=[ sa.desc( 'date' ) ] )
+
+        jobs = []
+        for row in jobs_by_month.execute():
+            jobs.append( ( 
+                           row.date.strftime( "%Y-%m" ),
                            row.total_jobs,
                            row.date.strftime( "%B" ),
-                           row.date.strftime( "%Y" ) ) )
+                           row.date.strftime( "%y" )
+                           ) )
+
         return trans.fill_template( '/webapps/reports/jobs_per_month_all.mako',
                                     jobs=jobs,
+                                    is_user_jobs_only=monitor_user_id,
                                     message=message )
     @web.expose
     def per_month_in_error( self, trans, **kwd ):
-        params = util.Params( kwd )
+        """
+        Queries the DB for user jobs in error. Filters out monitor jobs.
+        """
+
         message = ''
-        q = sa.select( ( sa.func.date_trunc( 'month', sa.func.date( model.Job.table.c.create_time ) ).label( 'date' ),
-                         sa.func.count( model.Job.table.c.id ).label( 'total_jobs' ) ),
-                       whereclause = model.Job.table.c.state == 'error',
-                       from_obj = [ model.Job.table ],
-                       group_by = [ sa.func.date_trunc( 'month', sa.func.date( model.Job.table.c.create_time ) ) ],
-                       order_by = [ sa.desc( 'date' ) ] )
+        params = util.Params( kwd )
+        monitor_email = params.get( 'monitor_email', 'monitor@bx.psu.edu' )
+
+        # In case we don't know which is the monitor user we will query for all jobs
+        monitor_user_id = get_monitor_id( trans, monitor_email )
+
+        jobs_in_error_by_month = sa.select( ( sa.func.date_trunc( 'month', sa.func.date( model.Job.table.c.create_time ) ).label( 'date' ),
+                                              sa.func.count( model.Job.table.c.id ).label( 'total_jobs' ) ),
+                                           whereclause=sa.and_ ( model.Job.table.c.state == 'error',
+                                                                  model.Job.table.c.user_id != monitor_user_id ),
+                                           from_obj=[ model.Job.table ],
+                                           group_by=[ sa.func.date_trunc( 'month', sa.func.date( model.Job.table.c.create_time ) ) ],
+                                           order_by=[ sa.desc( 'date' ) ] )
+
         jobs = []
-        for row in q.execute():
-            jobs.append( ( row.date.strftime( "%Y-%m" ), 
+        for row in jobs_in_error_by_month.execute():
+            jobs.append( ( row.date.strftime( "%Y-%m" ),
                            row.total_jobs,
                            row.date.strftime( "%B" ),
-                           row.date.strftime( "%Y" ) ) )
+                           row.date.strftime( "%y" ) ) )
         return trans.fill_template( '/webapps/reports/jobs_per_month_in_error.mako',
                                     jobs=jobs,
-                                    message=message )
+                                    message=message,
+                                    is_user_jobs_only=monitor_user_id )
+
     @web.expose
     def per_user( self, trans, **kwd ):
         params = util.Params( kwd )
         message = ''
+        monitor_email = params.get( 'monitor_email', 'monitor@bx.psu.edu' )
+
         jobs = []
-        q = sa.select( ( model.User.table.c.email.label( 'user_email' ),
+        jobs_per_user = sa.select( ( model.User.table.c.email.label( 'user_email' ),
                          sa.func.count( model.Job.table.c.id ).label( 'total_jobs' ) ),
-                       from_obj = [ sa.outerjoin( model.Job.table, model.User.table ) ],
-                       group_by = [ 'user_email' ],
-                       order_by = [ sa.desc( 'total_jobs' ), 'user_email' ] )
-        for row in q.execute():
-            jobs.append( ( row.user_email, 
+                       from_obj=[ sa.outerjoin( model.Job.table, model.User.table ) ],
+                       group_by=[ 'user_email' ],
+                       order_by=[ sa.desc( 'total_jobs' ), 'user_email' ] )
+        for row in jobs_per_user.execute():
+            if ( row.user_email == None ):
+                jobs.append ( ( 'Anonymous',
+                              row.total_jobs ) )
+            elif ( row.user_email == monitor_email ):
+                continue
+            else:
+                jobs.append( ( row.user_email,
                            row.total_jobs ) )
-        return trans.fill_template( '/webapps/reports/jobs_per_user.mako', jobs=jobs, message=message )
+        return trans.fill_template( '/webapps/reports/jobs_per_user.mako',
+                                    jobs=jobs,
+                                    message=message )
+
     @web.expose
     def user_per_month( self, trans, **kwd ):
         params = util.Params( kwd )
@@ -298,53 +363,70 @@ class Jobs( BaseUIController ):
         email = util.restore_text( params.get( 'email', '' ) )
         q = sa.select( ( sa.func.date_trunc( 'month', sa.func.date( model.Job.table.c.create_time ) ).label( 'date' ),
                          sa.func.count( model.Job.table.c.id ).label( 'total_jobs' ) ),
-                       whereclause = sa.and_( model.Job.table.c.session_id == model.GalaxySession.table.c.id,
+                       whereclause=sa.and_( model.Job.table.c.session_id == model.GalaxySession.table.c.id,
                                               model.GalaxySession.table.c.user_id == model.User.table.c.id,
                                               model.User.table.c.email == email
                                             ),
-                       from_obj = [ sa.join( model.Job.table, model.User.table ) ],
-                       group_by = [ sa.func.date_trunc( 'month', sa.func.date( model.Job.table.c.create_time ) ) ],
-                       order_by = [ sa.desc( 'date' ) ] )
+                       from_obj=[ sa.join( model.Job.table, model.User.table ) ],
+                       group_by=[ sa.func.date_trunc( 'month', sa.func.date( model.Job.table.c.create_time ) ) ],
+                       order_by=[ sa.desc( 'date' ) ] )
         jobs = []
         for row in q.execute():
-            jobs.append( ( row.date.strftime( "%Y-%m" ), 
+            jobs.append( ( row.date.strftime( "%Y-%m" ),
                            row.total_jobs,
                            row.date.strftime( "%B" ),
                            row.date.strftime( "%Y" ) ) )
         return trans.fill_template( '/webapps/reports/jobs_user_per_month.mako',
                                     email=util.sanitize_text( email ),
                                     jobs=jobs, message=message )
+
     @web.expose
     def per_tool( self, trans, **kwd ):
-        params = util.Params( kwd )
         message = ''
+
+        params = util.Params( kwd )
+        monitor_email = params.get( 'monitor_email', 'monitor@bx.psu.edu' )
+
+        # In case we don't know which is the monitor user we will query for all jobs
+        monitor_user_id = get_monitor_id( trans, monitor_email )
+
         jobs = []
         q = sa.select( ( model.Job.table.c.tool_id.label( 'tool_id' ),
                          sa.func.count( model.Job.table.c.id ).label( 'total_jobs' ) ),
-                       from_obj = [ model.Job.table ],
-                       group_by = [ 'tool_id' ],
-                       order_by = [ 'tool_id' ] )
+                       whereclause=model.Job.table.c.user_id != monitor_user_id,
+                       from_obj=[ model.Job.table ],
+                       group_by=[ 'tool_id' ],
+                       order_by=[ 'tool_id' ] )
         for row in q.execute():
-            jobs.append( ( row.tool_id, 
+            jobs.append( ( row.tool_id,
                            row.total_jobs ) )
         return trans.fill_template( '/webapps/reports/jobs_per_tool.mako',
                                     jobs=jobs,
-                                    message=message )
+                                    message=message,
+                                    is_user_jobs_only=monitor_user_id )
+
     @web.expose
     def tool_per_month( self, trans, **kwd ):
-        params = util.Params( kwd )
         message = ''
+
+        params = util.Params( kwd )
+        monitor_email = params.get( 'monitor_email', 'monitor@bx.psu.edu' )
+
+        # In case we don't know which is the monitor user we will query for all jobs
+        monitor_user_id = get_monitor_id( trans, monitor_email )
+
         tool_id = params.get( 'tool_id', 'Add a column1' )
         specified_date = params.get( 'specified_date', datetime.utcnow().strftime( "%Y-%m-%d" ) )
         q = sa.select( ( sa.func.date_trunc( 'month', sa.func.date( model.Job.table.c.create_time ) ).label( 'date' ),
                          sa.func.count( model.Job.table.c.id ).label( 'total_jobs' ) ),
-                       whereclause = model.Job.table.c.tool_id == tool_id, 
-                       from_obj = [ model.Job.table ],
-                       group_by = [ sa.func.date_trunc( 'month', sa.func.date( model.Job.table.c.create_time ) ) ],
-                       order_by = [ sa.desc( 'date' ) ] )
+                       whereclause=sa.and_( model.Job.table.c.tool_id == tool_id,
+                                           model.Job.table.c.user_id != monitor_user_id ),
+                       from_obj=[ model.Job.table ],
+                       group_by=[ sa.func.date_trunc( 'month', sa.func.date( model.Job.table.c.create_time ) ) ],
+                       order_by=[ sa.desc( 'date' ) ] )
         jobs = []
         for row in q.execute():
-            jobs.append( ( row.date.strftime( "%Y-%m" ), 
+            jobs.append( ( row.date.strftime( "%Y-%m" ),
                            row.total_jobs,
                            row.date.strftime( "%B" ),
                            row.date.strftime( "%Y" ) ) )
@@ -352,7 +434,9 @@ class Jobs( BaseUIController ):
                                     specified_date=specified_date,
                                     tool_id=tool_id,
                                     jobs=jobs,
-                                    message=message )
+                                    message=message,
+                                    is_user_jobs_only=monitor_user_id )
+
     @web.expose
     def job_info( self, trans, **kwd ):
         params = util.Params( kwd )
@@ -362,49 +446,20 @@ class Jobs( BaseUIController ):
         return trans.fill_template( '/webapps/reports/job_info.mako',
                                     job=job,
                                     message=message )
-    @web.expose
-    def per_domain( self, trans, **kwd ):
-        # TODO: rewrite using alchemy
-        params = util.Params( kwd )
-        message = ''
-        engine = model.mapping.metadata.engine
-        jobs = []
-        s = """
-        SELECT
-            substr(bar.first_pass_domain, bar.dot_position, 4) AS domain,
-            count(job_id) AS total_jobs
-        FROM
-            (SELECT
-                user_email AS user_email,
-                first_pass_domain,
-                position('.' in first_pass_domain) AS dot_position,
-                job_id AS job_id
-            FROM
-                (SELECT
-                    email AS user_email,
-                    substr(email, char_length(email)-3, char_length(email)) AS first_pass_domain,
-                    job.id AS job_id
-                FROM
-                    job
-                LEFT OUTER JOIN galaxy_session ON galaxy_session.id = job.session_id
-                LEFT OUTER JOIN galaxy_user ON galaxy_session.user_id = galaxy_user.id
-                WHERE
-                    job.session_id = galaxy_session.id
-                AND
-                    galaxy_session.user_id = galaxy_user.id
-                ) AS foo
-            ) AS bar
-        GROUP BY
-            domain
-        ORDER BY
-            total_jobs DESC
-        """
-        job_rows = engine.text( s ).execute().fetchall()
-        for job in job_rows:
-            jobs.append( ( job.domain, job.total_jobs ) )
-        return trans.fill_template( '/webapps/reports/jobs_per_domain.mako', jobs=jobs, message=message )
 
 ## ---- Utility methods -------------------------------------------------------
 
 def get_job( trans, id ):
     return trans.sa_session.query( trans.model.Job ).get( trans.security.decode_id( id ) )
+
+def get_monitor_id( trans, monitor_email ):
+    """
+    A convenience method to obtain the monitor job id.
+    """
+    monitor_user_id = None
+    monitor_row = trans.sa_session.query( trans.model.User.table.c.id ) \
+                                          .filter( trans.model.User.table.c.email == monitor_email ) \
+                                          .first()
+    if monitor_row is not None:
+        monitor_user_id = monitor_row[0]
+    return monitor_user_id

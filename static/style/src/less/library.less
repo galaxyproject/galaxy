@@ -1,0 +1,157 @@
+@import "galaxy_bootstrap/variables.less";
+@import "galaxy_variables.less";
+
+.libraryRow {
+    background-color: @table-heading-bg;
+}
+
+.datasetHighlighted {
+    background-color: @table-bg-accent;
+}
+
+.libraryItemDeleted-True {
+    font-style: italic;
+}
+
+div.libraryItemBody {
+    padding: 4px 4px 2px 4px;
+}
+
+li.folderRow,
+li.datasetRow
+{
+    border-top: solid 1px @table-border;
+}
+
+li.folderRow:hover,
+li.datasetRow:hover
+{
+    background-color: @table-bg-accent;
+}
+
+
+tr.light td
+{
+    background-color: white;
+    color: black;
+}
+tr.light:hover td
+{
+    background-color: #f5f5f5;
+    color: #8389a1;
+}
+tr.dark td
+{
+    background-color: #8389a1;
+    color: white;
+}
+tr.dark:hover td
+{
+    background-color: #bbbfd0;
+    color: white;
+}
+a.dark:hover
+{
+    color: yellow;
+    // text-decoration: none;
+}
+a.dark
+{
+    color: white;
+    // text-decoration: none;
+}
+th.button_heading
+{
+    width: 7em;
+}
+div.library_breadcrumb{
+    padding-top: 0.8em;
+    padding-bottom: 0.8em;
+}
+div.library_breadcrumb a:hover{
+    color:green;
+}
+
+
+img.expanderIcon {
+    padding-right: 4px;
+}
+
+input.datasetCheckbox,
+li, ul {
+    padding: 0;
+    margin: 0;
+}
+
+.rowTitle {
+    padding: 2px;
+}
+
+ul {
+    list-style: none;
+}
+
+.libraryTitle th {
+    text-align: left;
+}
+
+pre.peek {
+    background: white;
+    color: black;
+    width: 100%;
+    overflow: auto;
+}
+
+pre.peek th {
+    color: white;
+    background: @table-heading-bg;
+}
+
+span.expandLink {
+    padding-left: 12px;
+    display: inline-block;
+    vertical-align: middle;
+    background: url(../images/silk/resultset_next.png) no-repeat;
+}
+
+.folderRow.expanded span.expandLink {
+    background: url(../images/silk/resultset_bottom.png) no-repeat;
+}
+
+.folderRow span.rowIcon {
+    float: left;
+    margin-right: 5px;
+    width: 16px;
+    height: 16px;
+    display: inline-block;
+    vertical-align: middle;
+    background: url(../images/silk/folder.png);
+}
+
+.libraryItem-error {
+    margin-right: 2px;
+    padding: 0 2px 0 2px;
+    border: 1px solid @state-danger-border;
+    background: @state-danger-bg;
+}
+
+.libraryItem-queued {
+    margin-right: 2px;
+    padding: 0 2px 0 2px;
+    border: 1px solid @state-default-border;
+    background: @state-default-bg;
+}
+
+.libraryItem-running {
+    margin-right: 2px;
+    padding: 0 2px 0 2px;
+    border: 1px solid @state-running-border;
+    background: @state-running-bg;
+}
+
+.libraryItem-upload {
+    margin-right: 2px;
+    padding: 0 2px 0 2px;
+    border: 1px solid @state-upload-border;
+    background: @state-upload-bg;
+}

@@ -18,6 +18,7 @@ DataProvider related decorators.
 
 from functools import wraps
 #from types import MethodType
+import urllib2
 import copy
 
 import logging
@@ -134,6 +135,7 @@ def _parse_query_string_settings( query_kwargs, settings=None ):
     Parse the values in `query_kwargs` from strings to the proper types
     listed in the same key in `settings`.
     """
+    #TODO: this was a relatively late addition: review and re-think
     def list_from_query_string( s ):
         # assume csv
         return s.split( ',' )
@@ -142,8 +144,9 @@ def _parse_query_string_settings( query_kwargs, settings=None ):
         'int'   : int,
         'float' : float,
         'bool'  : bool,
-        'list:str'  : lambda s: list_from_query_string( s ),
-        'list:int'  : lambda s: [ int( i ) for i in list_from_query_string( s ) ],
+        'list:str'      : lambda s: list_from_query_string( s ),
+        'list:escaped'  : lambda s: [ urllib2.unquote( e ) for e in list_from_query_string( s ) ],
+        'list:int'      : lambda s: [ int( i ) for i in list_from_query_string( s ) ],
     }
     settings = settings or {}
     # yay! yet another set of query string parsers! <-- sarcasm
@@ -155,10 +158,11 @@ def _parse_query_string_settings( query_kwargs, settings=None ):
             #TODO: this would be the place to sanitize any strings
             query_value = query_kwargs[ key ]
             needed_type = settings[ key ]
-            try:
-                query_kwargs[ key ] = parsers[ needed_type ]( query_value )
-            except ( KeyError, ValueError ):
-                del query_kwargs[ key ]
+            if needed_type != 'str':
+                try:
+                    query_kwargs[ key ] = parsers[ needed_type ]( query_value )
+                except ( KeyError, ValueError ):
+                    del query_kwargs[ key ]
 
         #TODO:?? do we want to remove query_kwarg entries NOT in settings?
     return query_kwargs

@@ -12,40 +12,45 @@
                 }
         });
 
-        require(["mvc/tools"], function(tools) {
+        require(["mvc/tools"], function(tools_mod) {
 
             // Init. on document load.
             $(function() {
-                // Create tool search, tool panel, and tool panel view.
-                var tool_search = new tools.ToolSearch({ 
-                        spinner_url: "${h.url_for('/static/images/loading_small_white_bg.gif')}",
-                        search_url: "${h.url_for( controller='root', action='tool_search' )}",
-                        hidden: false 
-                    }),
-                    tool_panel = new tools.ToolPanel({ tool_search: tool_search }),
-                    tool_panel_view = new tools.ToolPanelView({ collection: tool_panel });
-
-                // Add tool panel to Galaxy object.
-                Galaxy.toolPanel = tool_panel;
-
                 ## Populate tool panel if (a) anonymous use possible or (b) user is logged in.
                 %if trans.user or not trans.app.config.require_login:
-                    tool_panel.reset( tool_panel.parse( ${h.to_json_string( trans.app.toolbox.to_dict( trans ) )} ) );
-                %endif
+                    // Create tool search, tool panel, and tool panel view.
+                    var tool_search = new tools_mod.ToolSearch({ 
+                            spinner_url: "${h.url_for('/static/images/loading_small_white_bg.gif')}",
+                            search_url: "${h.url_for( controller='root', action='tool_search' )}",
+                            hidden: false 
+                        }),
+                        tools = new tools_mod.ToolCollection( 
+                                    ${ h.to_json_string( trans.app.toolbox.to_dict( trans, in_panel=False ) ) } 
+                                                        ),
+                        tool_panel = new tools_mod.ToolPanel({ 
+                            tool_search: tool_search,
+                            tools: tools,
+                            layout: ${h.to_json_string( trans.app.toolbox.to_dict( trans ) )}
+                        }),
+                        tool_panel_view = new tools_mod.ToolPanelView({ model: tool_panel });
+                    
+                    // Add tool panel to Galaxy object.
+                    Galaxy.toolPanel = tool_panel;
 
-                // If there are tools, render panel and display everything.
-                if (tool_panel.length > 1) { // > 1 because tool_search counts as a model
-                    tool_panel_view.render();
-                    $('.toolMenu').show();
-                }
-                $('.toolMenuContainer').prepend(tool_panel_view.$el);
-                
-                // Minsize init hint.
-                $( "a[minsizehint]" ).click( function() {
-                    if ( parent.handle_minwidth_hint ) {
-                        parent.handle_minwidth_hint( $(this).attr( "minsizehint" ) );
+                    // If there are tools, render panel and display everything.
+                    if (tool_panel.get('layout').size() > 1) {
+                        tool_panel_view.render();
+                        $('.toolMenu').show();
                     }
-                });
+                    $('.toolMenuContainer').prepend(tool_panel_view.$el);
+                    
+                    // Minsize init hint.
+                    $( "a[minsizehint]" ).click( function() {
+                        if ( parent.handle_minwidth_hint ) {
+                            parent.handle_minwidth_hint( $(this).attr( "minsizehint" ) );
+                        }
+                    });
+                %endif
             });
 
         });

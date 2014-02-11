@@ -6,7 +6,7 @@
 
 <%
     from tool_shed.grids.util import build_approved_select_field
-    from galaxy.webapps.tool_shed.util.container_util import STRSEP
+    from tool_shed.util.container_util import STRSEP
 
     if installable:
         installable_str = 'yes'
@@ -25,7 +25,7 @@
 <%inherit file="${inherit(context)}"/>
 
 <%def name="stylesheets()">
-    ${h.css('base','panel_layout','jquery.rating')}
+    ${h.css('base','jquery.rating')}
 </%def>
 
 <%def name="javascripts()">
@@ -45,7 +45,7 @@ ${render_tool_shed_repository_actions( repository=repository, changeset_revision
     <div class="toolFormBody">
         <div class="form-row">
             <label>Revision:</label>
-            <a class="action-button" href="${h.url_for( controller='repository_review', action='view_or_manage_repository', id=trans.security.encode_id( repository.id ), changeset_revision=changeset_revision )}">${changeset_revision_label | h}</a>
+            <a class="action-button" href="${h.url_for( controller='repository_review', action='view_or_manage_repository', id=trans.security.encode_id( repository.id ), changeset_revision=changeset_revision )}">${changeset_revision_label}</a>
             <div style="clear: both"></div>
         </div>
         <div class="form-row">

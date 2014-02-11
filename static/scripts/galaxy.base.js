@@ -66,7 +66,10 @@ $.fn.makeAbsolute = function(rebase) {
 };
 
 /**
- *  Sets up popupmenu rendering and binds options functions to the appropriate links
+ * Sets up popupmenu rendering and binds options functions to the appropriate links.
+ * initial_options is a dict with text describing the option pointing to either (a) a 
+ * function to perform; or (b) another dict with two required keys, 'url' and 'action' (the 
+ * function to perform. (b) is useful for exposing the underlying URL of the option.
  */
 function make_popupmenu(button_element, initial_options) {
     /*  Use the $.data feature to store options with the link element.
@@ -92,7 +95,9 @@ function make_popupmenu(button_element, initial_options) {
             }
             $.each( options, function( k, v ) {
                 if (v) {
-                    menu_element.append( $("<li></li>").append( $("<a href='#'></a>").html(k).click(v) ) );
+                    // Action can be either an anonymous function and a mapped dict.
+                    var action = v.action || v;
+                    menu_element.append( $("<li></li>").append( $("<a>").attr("href", v.url).html(k).click(action) ) );
                 } else {
                     menu_element.append( $("<li></li>").addClass( "head" ).append( $("<a href='#'></a>").html(k) ) );
                 }
@@ -164,43 +169,21 @@ function make_popup_menus( parent ) {
                 options[ link.text() ] = null;
                 
             } else {
-                options[ link.text() ] = function() {
+                options[ link.text() ] = {
+                    url: href,
+                    action: function() {
 
-                    // if theres confirm text, send the dialog
-                    if ( !confirmtext || confirm( confirmtext ) ) {
-                        var f;
-                        // relocate the center panel
-                        if ( target === "_parent" ) {
-                            window.parent.location = href;
-                            
-                        // relocate the entire window
-                        } else if ( target === "_top" ) {
-                            window.top.location = href;
-                            
-                        // Http request target is a window named demolocal on the local box
-                        } else if ( target === "demo" ) {
-                            if ( f === undefined || f.closed ) {
-                                f = window.open( href,target );
-                                f.creator = self;
+                        // if theres confirm text, send the dialog
+                        if ( !confirmtext || confirm( confirmtext ) ) {
+                            // link.click() doesn't use target for some reason, 
+                            // so manually do it here. 
+                            if (target) {
+                                window.open(href, target);
+                                return false;
                             }
-                            
-                        // this panel or other, valid panels
-                        } else {
-                            // it may be that the button and menu href are not in the same frame:
-                            //  allow certain frame names to be used as a target
-                            var other_valid_targets = [
-                                'galaxy_main'
-                                // following are blocked until needed
-                                //'galaxy_tools',
-                                //'galaxy_history'
-                            ];
-                            if( ( target && ( target in window )
-                            &&  ( other_valid_targets.indexOf( target ) !== -1 ) ) ){
-                                window[ target ].location = href;
-
-                            // relocate this panel
-                            } else {
-                                window.location = href;
+                            // For all other links, do the default action.
+                            else {
+                                link.click();
                             }
                         }
                     }
@@ -313,7 +296,6 @@ $.fn.make_text_editable = function(config_dict) {
         use_textarea = ("use_textarea" in config_dict ? config_dict.use_textarea : false),
         on_finish = ("on_finish" in config_dict ? config_dict.on_finish : null),
         help_text = ("help_text" in config_dict ? config_dict.help_text : null);
-        
     
     // Add element behavior.
     var container = $(this);
@@ -344,7 +326,7 @@ $.fn.make_text_editable = function(config_dict) {
         };
         
         // Create input element(s) for editing.
-        var cur_text = container.text(),
+        var cur_text = ("cur_text" in config_dict ? config_dict.cur_text : container.text() ),
             input_elt, button_elt;
             
         if (use_textarea) {
@@ -642,58 +624,66 @@ GalaxyAsync.prototype.log_user_action = function( action, context, params ) {
     });
 };
 
-$(document).ready( function() {
-
-    $("select[refresh_on_change='true']").change( function() {
-        var select_field = $(this),
-            select_val = select_field.val(),
-            refresh = false,
-            ref_on_change_vals = select_field.attr("refresh_on_change_values");
-        if (ref_on_change_vals) {
-            ref_on_change_vals = ref_on_change_vals.split(',');
-            var last_selected_value = select_field.attr("last_selected_value");
-            if ($.inArray(select_val, ref_on_change_vals) === -1 && $.inArray(last_selected_value, ref_on_change_vals) === -1) {
-                return;
+// Initialize refresh events.
+function init_refresh_on_change () {
+    $("select[refresh_on_change='true']")
+        .off('change')
+        .change(function() {
+            var select_field = $(this),
+                select_val = select_field.val(),
+                refresh = false,
+                ref_on_change_vals = select_field.attr("refresh_on_change_values");
+            if (ref_on_change_vals) {
+                ref_on_change_vals = ref_on_change_vals.split(',');
+                var last_selected_value = select_field.attr("last_selected_value");
+                if ($.inArray(select_val, ref_on_change_vals) === -1 && $.inArray(last_selected_value, ref_on_change_vals) === -1) {
+                    return;
+                }
             }
-        }
-        $(window).trigger("refresh_on_change");
-        $(document).trigger("convert_to_values"); // Convert autocomplete text to values
-        select_field.get(0).form.submit();
-    });
+            $(window).trigger("refresh_on_change");
+            $(document).trigger("convert_to_values"); // Convert autocomplete text to values
+            select_field.get(0).form.submit();
+        });
     
     // checkboxes refresh on change
-    $(":checkbox[refresh_on_change='true']").click( function() {
-        var select_field = $(this),
-            select_val = select_field.val(),
-            refresh = false,
-            ref_on_change_vals = select_field.attr("refresh_on_change_values");
-        if (ref_on_change_vals) {
-            ref_on_change_vals = ref_on_change_vals.split(',');
-            var last_selected_value = select_field.attr("last_selected_value");
-            if ($.inArray(select_val, ref_on_change_vals) === -1 && $.inArray(last_selected_value, ref_on_change_vals) === -1) {
-                return;
+    $(":checkbox[refresh_on_change='true']")
+        .off('click')
+        .click( function() {
+            var select_field = $(this),
+                select_val = select_field.val(),
+                refresh = false,
+                ref_on_change_vals = select_field.attr("refresh_on_change_values");
+            if (ref_on_change_vals) {
+                ref_on_change_vals = ref_on_change_vals.split(',');
+                var last_selected_value = select_field.attr("last_selected_value");
+                if ($.inArray(select_val, ref_on_change_vals) === -1 && $.inArray(last_selected_value, ref_on_change_vals) === -1) {
+                    return;
+                }
             }
-        }
-        $(window).trigger("refresh_on_change");
-        select_field.get(0).form.submit();
-    });
+            $(window).trigger("refresh_on_change");
+            select_field.get(0).form.submit();
+        });
     
     // Links with confirmation
-    $( "a[confirm]" ).click( function() {
-        return confirm( $(this).attr("confirm") );
-    });
+    $( "a[confirm]" )
+        .off('click')
+        .click( function() {
+            return confirm( $(this).attr("confirm") );
+        });
+};
+
+$(document).ready( function() {
+
+    // Refresh events for form fields.
+    init_refresh_on_change();
+    
     // Tooltips
-    // if ( $.fn.tipsy ) {
-    //     // FIXME: tipsy gravity cannot be updated, so need classes that specify N/S gravity and 
-    //     // initialize each separately.
-    //     $(".tooltip").tipsy( { gravity: 's' } );
-    // }
     if ( $.fn.tooltip ) {
         // Put tooltips below items in panel header so that they do not overlap masthead.
-        $(".unified-panel-header .tooltip").tooltip( { placement: 'bottom' } );
+        $(".unified-panel-header [title]").tooltip( { placement: 'bottom' } );
         
         // Default tooltip location to be above item.
-        $(".tooltip").tooltip( { placement: 'top' } );
+        $("[title]").tooltip( { placement: 'top' } );
     }
     // Make popup menus.
     make_popup_menus();

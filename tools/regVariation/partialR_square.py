@@ -2,7 +2,7 @@
 
 from galaxy import eggs
 
-import sys, string
+import sys
 from rpy import *
 import numpy
 
@@ -12,6 +12,7 @@ import numpy
 def stop_err(msg):
     sys.stderr.write(msg)
     sys.exit()
+
 
 def sscombs(s):
     if len(s) == 1:
@@ -26,14 +27,14 @@ y_col = int(sys.argv[2])-1
 x_cols = sys.argv[3].split(',')
 outfile = sys.argv[4]
 
-print "Predictor columns: %s; Response column: %d" %(x_cols,y_col+1)
+print "Predictor columns: %s; Response column: %d" % ( x_cols, y_col+1 )
 fout = open(outfile,'w')
 
 for i, line in enumerate( file ( infile )):
     line = line.rstrip('\r\n')
     if len( line )>0 and not line.startswith( '#' ):
         elems = line.split( '\t' )
-        break 
+        break
     if i == 30:
         break # Hopefully we'll never get here...
 
@@ -43,7 +44,7 @@ if len( elems )<1:
 y_vals = []
 x_vals = []
 
-for k,col in enumerate(x_cols):
+for k, col in enumerate(x_cols):
     x_cols[k] = int(col)-1
     x_vals.append([])
     """
@@ -51,13 +52,13 @@ for k,col in enumerate(x_cols):
         float( elems[x_cols[k]] )
     except:
         try:
-            msg = "This operation cannot be performed on non-numeric column %d containing value '%s'." %( col, elems[x_cols[k]] )
+            msg = "This operation cannot be performed on non-numeric column %d containing value '%s'." % ( col, elems[x_cols[k]] )
         except:
             msg = "This operation cannot be performed on non-numeric data."
         stop_err( msg )
     """
 NA = 'NA'
-for ind,line in enumerate( file( infile )):
+for ind, line in enumerate( file( infile )):
     if line and not line.startswith( '#' ):
         try:
             fields = line.split("\t")
@@ -65,20 +66,20 @@ for ind,line in enumerate( file( infile )):
                 yval = float(fields[y_col])
             except Exception, ey:
                 yval = r('NA')
-                #print >>sys.stderr, "ey = %s" %ey
+                #print >> sys.stderr, "ey = %s" %ey
             y_vals.append(yval)
-            for k,col in enumerate(x_cols):
+            for k, col in enumerate(x_cols):
                 try:
                     xval = float(fields[col])
                 except Exception, ex:
                     xval = r('NA')
-                    #print >>sys.stderr, "ex = %s" %ex
+                    #print >> sys.stderr, "ex = %s" %ex
                 x_vals[k].append(xval)
         except:
             pass
 
 x_vals1 = numpy.asarray(x_vals).transpose()
-dat= r.list(x=array(x_vals1), y=y_vals)
+dat = r.list(x=array(x_vals1), y=y_vals)
 
 set_default_mode(NO_CONVERSION)
 try:
@@ -91,7 +92,7 @@ summary = r.summary(full)
 fullr2 = summary.get('r.squared','NA')
 
 if fullr2 == 'NA':
-    stop_error("Error in linear regression")
+    stop_err("Error in linear regression")
 
 if len(x_vals) < 10:
     s = ""
@@ -100,10 +101,10 @@ if len(x_vals) < 10:
 else:
     stop_err("This tool only works with less than 10 predictors.")
 
-print >>fout, "#Model\tR-sq\tpartial_R_Terms\tpartial_R_Value"
+print >> fout, "#Model\tR-sq\tpartial_R_Terms\tpartial_R_Value"
 all_combos = sorted(sscombs(s), key=len)
 all_combos.reverse()
-for j,cols in enumerate(all_combos):
+for j, cols in enumerate(all_combos):
     #if len(cols) == len(s):    #Same as the full model above
     #    continue
     if len(cols) == 1:
@@ -113,7 +114,7 @@ for j,cols in enumerate(all_combos):
         for col in cols:
             x_v.append(x_vals[int(col)])
         x_vals1 = numpy.asarray(x_v).transpose()
-    dat= r.list(x=array(x_vals1), y=y_vals)
+    dat = r.list(x=array(x_vals1), y=y_vals)
     set_default_mode(NO_CONVERSION)
     red = r.lm(r("y ~ x"), data= dat)    #Reduced model
     set_default_mode(BASIC_CONVERSION)
@@ -136,11 +137,11 @@ for j,cols in enumerate(all_combos):
         partial_R_col_str = "-"
         partial_R = "-"
     try:
-        redr2 = "%.4f" %(float(redr2))
+        redr2 = "%.4f" % (float(redr2))
     except:
         pass
     try:
-        partial_R = "%.4f" %(float(partial_R))
+        partial_R = "%.4f" % (float(partial_R))
     except:
         pass
-    print >>fout, "%s\t%s\t%s\t%s" %(col_str,redr2,partial_R_col_str,partial_R)
+    print >> fout, "%s\t%s\t%s\t%s" % ( col_str, redr2, partial_R_col_str, partial_R )

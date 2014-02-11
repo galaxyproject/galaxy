@@ -1,0 +1,223 @@
+* { margin: 0; padding: 0; }
+
+/* -------------------------------------------- header */
+.chart-header > * { margin: 0; padding: 0; }
+
+.chart-header {
+    margin-bottom: 16px;
+    overflow: auto;
+    background-color: #ebd9b2;
+    padding : 16px 12px 12px 12px;
+}
+
+.chart-header h2 {
+    margin-bottom: 4px;
+}
+
+.chart-header p {
+    color: white;
+    font-size: small;
+}
+
+/* -------------------------------------------- main layout */
+.scatterplot-editor > * { margin: 0; padding: 0; }
+.scatterplot-editor .tab-pane {
+    padding: 8px;
+}
+
+.scatterplot-editor .help-text,
+.scatterplot-editor .help-text-small {
+    color: grey;
+    margin-bottom: 8px;
+}
+
+.scatterplot-editor .help-text {
+    margin-top: 4px;
+}
+
+.scatterplot-editor .help-text-small {
+    font-size: smaller;
+}
+
+.scatterplot-editor .file-controls {
+    float: right;
+    /*margin-right: 16px;*/
+}
+
+.file-controls .btn {
+    height: 24px;
+    padding: 0px 10px 0px 10px;
+    line-height: 24px;
+}
+
+.file-controls .copy-btn {
+    display: none;
+}
+
+
+/* ============================================ config controls */
+.scatterplot-config-control {
+    max-width: 768px;
+}
+
+.scatterplot-config-control input[type="button"],
+.scatterplot-config-control button,
+.scatterplot-config-control select {
+    width: 100%;
+    max-width: 256px;
+    margin-bottom: 8px;
+}
+.scatterplot-config-control input[type="text"] {
+    width: 100%;
+    max-width: 512px;
+    border: 1px solid lightgrey;
+}
+
+.scatterplot-config-control input[type="checkbox"] {
+    display: inline-block;
+    margin-top: -3px;
+}
+
+.scatterplot-config-control .render-button {
+    display: block;
+    margin-top: 16px;
+}
+
+.scatterplot-config-control .form-input {
+    margin-bottom: 8px;
+}
+
+.scatterplot-config-control .slider {
+    height: 8px;
+    display: block;
+    margin-bottom: 8px;
+}
+
+.scatterplot-config-control .slider-output {
+    float: right;
+}
+
+/* ============================================ plot display */
+/* -------------------------------------------- load indicators */
+.scatterplot-display .loading-indicator {
+    color: grey;
+}
+
+.scatterplot-display .loading-indicator .loading-indicator-message {
+    display: inline-block;
+    margin-left: 4px;
+    font-style: italic;
+}
+
+/* -------------------------------------------- display controls */
+.scatterplot-display .controls {
+    width: 100%;
+    margin-bottom: 4px;
+    border: 1px solid lightgrey;
+    border-radius: 3px;
+    padding: 8px 8px 4px 8px;
+}
+
+.scatterplot-display .controls button {
+    display: inline-block;
+    min-width: 0;
+    width: auto;
+    margin: 0px;
+}
+
+.scatterplot-display .controls .left {
+    float: left;
+}
+
+.scatterplot-display .controls .pagination {
+    display: inline-block;
+    margin: 0px;
+}
+
+.scatterplot-display .controls .data-prev-next {
+    display: inline-block;
+    margin: 0px 4px 0px 0px;
+}
+
+.scatterplot-display .controls .pagination-container {
+    display: inline-block;
+    overflow: auto;
+    max-width: 256px;
+    /*very tweaky*/
+    margin: 0px 8px 0px 0px;
+    height: 27px;
+    padding-top: 5px;
+}
+.scatterplot-display .controls .pagination-container a {
+    display: inline;
+    /* WTH, bootstrap? */
+    position: static;
+    float: none;
+    /* up from 4px -> 5px */
+    padding: 5px 10px 5px 10px;
+}
+
+.scatterplot-display .controls .right {
+    float: right;
+    margin-bottom: 4px;
+}
+
+.scatterplot-display .controls p {
+    display: inline-block;
+    margin: 0px 4px 0px 4px;
+    /*to better match the buttons*/
+    vertical-align: middle;
+    line-height: 24px;
+}
+
+.scatterplot-display button.rerender-btn {
+    margin-left: 4px;
+}
+
+.scatterplot-display button.stats-toggle-btn {
+    margin-left: 4px;
+}
+
+/* -------------------------------------------- chart area */
+svg.scatterplot {
+    border: 1px solid lightgrey;
+    border-radius: 3px;
+}
+
+svg.scatterplot .grid-line {
+    fill: none;
+    stroke: lightgrey;
+    stroke-opacity: 0.2;
+    shape-rendering: crispEdges;
+}
+
+svg.scatterplot .axis path,
+svg.scatterplot .axis line {
+    fill: none;
+    stroke: black;
+    shape-rendering: crispEdges;
+}
+
+svg.scatterplot .axis text {
+    font-size: 9px;
+}
+
+svg.scatterplot .axis-label {
+    font-family: sans-serif;
+    font-size: 13px;
+}
+
+svg.scatterplot .glyph {
+    stroke: none;
+    fill: black;
+    fill-opacity: 0.2;
+}
+
+/* -------------------------------------------- info box */
+.chart-info-box {
+    border-radius: 4px;
+    padding: 4px;
+    background-color: white;
+    border: 1px solid black;
+}
+

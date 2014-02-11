@@ -120,7 +120,7 @@ class QuotaAgent( NoQuotaAgent ):
             dqa = self.model.DefaultQuotaAssociation( default_type, quota )
         self.sa_session.add( dqa )
         self.sa_session.flush()
-        
+
     def get_percent( self, trans=None, user=False, history=False, usage=False, quota=False ):
         """
         Return the percentage of any storage quota applicable to the user/transaction.
@@ -138,7 +138,11 @@ class QuotaAgent( NoQuotaAgent ):
         # get the usage, if it wasn't passed
         if usage is False:
             usage = self.get_usage( trans, user, history )
-        return min( ( int( float( usage ) / quota * 100 ), 100 ) )
+        try:
+            return min( ( int( float( usage ) / quota * 100 ), 100 ) )
+        except ZeroDivisionError:
+            return 100
+
 
     def set_entity_quota_associations( self, quotas=[], users=[], groups=[], delete_existing_assocs=True ):
         for quota in quotas:

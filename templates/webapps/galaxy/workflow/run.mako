@@ -3,6 +3,9 @@
 <%def name="javascripts()">
     ${parent.javascripts()}
     <script type="text/javascript">
+         $.fn.outerHTML = function(s) {
+             return s ? this.before(s).remove() : jQuery("<p>").append(this.eq(0).clone()).html();
+         };
         $( function() {
             function show_tool_body(title){
                 title.parent().show().css('border-bottom-width', '1px');
@@ -57,7 +60,7 @@
             }
             else {
                 // Collapse non-interactive run-workflow panels by default.
-                $("div.toolFormBody:not(:has(select, textarea, input[type!=hidden], .wfpspan))").hide().parent().css('border-bottom-width', '0px');
+                $("div.toolFormBody:not(:has(.runtime-form-row))").hide().parent().css('border-bottom-width', '0px');
             }
             $("#show_all_tool_body").click(function(){
                 $("div.toolFormTitle").each(function(){
@@ -72,11 +75,12 @@
             $("#new_history_cbx").click(function(){
                 $("#new_history_input").toggle(this.checked);
             });
-            // The destroy on the following line is temporary and prevents
-            // select2 use on Input Dataset Steps, but allows elsewhere.  We
-            // need a new widget to better handle pairwise matching.
-            $('span.multiinput_wrap select[name*="|input"]').removeAttr('multiple').select2("destroy").each(function(i, s) {
+            $('span.multiinput_wrap select[name*="|input"]').removeAttr('multiple').each(function(i, s) {
                 var select = $(s);
+                // The destroy on the following line is temporary and prevents
+                // select2 use on Input Dataset Steps, but allows elsewhere.  We
+                // need a new widget to better handle pairwise matching.
+                select.select2("destroy");
                 var new_width = Math.max(200, select.width()) + 20;
                 // Find the label for this element.
                 select.closest('.form-row').children('label').append(
@@ -127,6 +131,55 @@
                 }).width(new_width).css('display', 'block');
                 select.after(filter);
                 select.width(new_width);
+            });
+        // Editable Workflow
+
+        var readyParameter = function(icon) {
+            icon.attr("name", "edit");
+            icon.attr('title', "Modify default value for this workflow parameter.");
+            icon.removeClass("workflow-edit-button-editing");
+            icon.addClass("workflow-edit-button-ready");
+            icon.addClass("fa-edit");
+            icon.removeClass("fa-undo");
+        };
+
+        var editingParameter = function(icon) {
+            icon.attr("name", "revert");
+            icon.attr('title', "Restore workflow default value for this parameter.");
+            icon.addClass("workflow-edit-button-editing");
+            icon.removeClass("workflow-edit-button-ready");
+            icon.removeClass("fa-edit");
+            icon.addClass("fa-undo");
+        };
+
+         $(".workflow-edit-button").on("click",function(){
+                var state = $(this).attr("name");
+                var stepToolBox = $(this).parent().find('input:not([class]), select:not([class])');
+                var split_name=stepToolBox.attr("name").split("|");
+                var step_id = split_name[0];
+                var step_name = split_name[split_name.length-1];
+                hidden_html = "<input type='hidden' name='"+step_id+"|__runtime__"+step_name+"' value='true' />";
+                if (state === "edit"){
+                    stepToolBoxClone = stepToolBox.clone();
+                    stepToolBoxClone.attr({"name":step_id+"|"+step_name});
+                    stepToolBoxClone.show()
+                    $(this).parent().find(".editable").show();
+                    $(this).parent().parent().find(".uneditable_field").hide();
+                    $(this).parent().find(".editable").html(stepToolBoxClone.outerHTML()+hidden_html);
+                    editingParameter($(this));
+                }
+                else{
+                    $(this).parent().find(".editable").hide();
+                    $(this).parent().parent().find(".uneditable_field").show();
+                    $(this).attr("name", "edit");
+                    stepToolBox.hide();
+                    readyParameter($(this));
+                }
+            }).each(function(i, icon) {
+                var conditionalStart = $(this).closest(".form-row").prev().hasClass("conditional-start");
+                if(! conditionalStart ) {
+                    readyParameter($(icon));
+                }
             });
 
             // Augment hidden fields with icons.
@@ -216,6 +269,22 @@
     .workflow-annotation {
         margin-bottom: 1em;
     }
+    .editable {
+        display: none;
+    }
+
+    .workflow-edit-button-editing {
+        color: black;
+    }
+
+    .workflow-edit-button-default {
+        color: Gray;
+    }
+
+    .workflow-edit-button:hover {
+        color: green; // TODO: Use a history panel green.
+    }
+
     </style>
 </%def>
 
@@ -272,6 +341,7 @@ if wf_parms:
       <% current_case = group_values['__current_case__'] %>
       <% new_prefix = prefix + input.name + "|" %>
       <% group_errors = errors.get( input.name, {} ) %>
+      <span class="conditional-start"></span>
       ${row_for_param( input.test_param, group_values[ input.test_param.name ], other_values, group_errors, prefix, step, already_used )}
       ${do_inputs( input.cases[ current_case ].inputs, group_values, group_errors, new_prefix, step, other_values, already_used )}
     %else:
@@ -309,12 +379,16 @@ if wf_parms:
                     %>
                     %if step.type == 'data_input':
                     ##Input Dataset Step, wrap for multiinput.
-                        <span class='multiinput_wrap'>
-                        <input class="multi-mode" type="hidden" name="${str(step.id)}|multi_mode" id="${str(step.id)}|multi_mode" value="matched" />
-                        ${param.get_html_field( t, value, other_values ).get_html( str(step.id) + "|" + prefix )}
+                        <span class="runtime-form-row">
+                            <span class='multiinput_wrap'>
+                            <input class="multi-mode" type="hidden" name="${str(step.id)}|multi_mode" id="${str(step.id)}|multi_mode" value="matched" />
+                            ${param.get_html_field( t, value, other_values ).get_html( str(step.id) + "|" + prefix )}
+                            </span>
                         </span>
                     %else:
-                        ${param.get_html_field( t, value, other_values ).get_html( str(step.id) + "|" + prefix )}
+                        <span class="runtime-form-row">
+                            ${param.get_html_field( t, value, other_values ).get_html( str(step.id) + "|" + prefix )}
+                        </span>
                     %endif
 
                     <input type="hidden" name="${step.id}|__force_update__${prefix}${param.name}" value="true" />
@@ -334,8 +408,10 @@ if wf_parms:
                     if not enable_unique_defaults:
                         del already_used[:]
                 %>
-                ${param.get_html_field( t, value, other_values ).get_html( str(step.id) + "|" + prefix )}
-                <input type="hidden" name="${step.id}|__runtime__${prefix}${param.name}" value="true" />
+                <span class="runtime-form-row">
+                    ${param.get_html_field( t, value, other_values ).get_html( str(step.id) + "|" + prefix )}
+                    <input type="hidden" name="${step.id}|__runtime__${prefix}${param.name}" value="true" />
+                </span>
             %else:
                 <%
                 p_text = param.value_to_display_text( value, app )
@@ -343,7 +419,7 @@ if wf_parms:
                 if isinstance(p_text, basestring):
                     for rematch in re.findall('\$\{.+?\}', p_text):
                         replacements.append('wf_parm__%s' % rematch[2:-1])
-                        p_text = p_text.replace(rematch, '<span style="background-color:%s" class="wfpspan wf_parm__%s">%s</span>' % (wf_parms[rematch[2:-1]], rematch[2:-1], rematch[2:-1]))
+                        p_text = p_text.replace(rematch, '<span style="background-color:%s" class="runtime-form-row wfpspan wf_parm__%s">%s</span>' % (wf_parms[rematch[2:-1]], rematch[2:-1], rematch[2:-1]))
                 %>
                 %if replacements:
                     <span style="display:none" class="parm_wrap ${' '.join(replacements)}">
@@ -352,7 +428,18 @@ if wf_parms:
                     <span class="p_text_wrapper">${p_text}</span>
                     <input type="hidden" name="${step.id}|__runtime__${prefix}${param.name}" value="true" />
                 %else:
-                    ${param.value_to_display_text( value, app )}
+                <span class="workflow_parameters">
+                    <span class="uneditable_field">
+                        ${param.value_to_display_text( value, app )}
+                    </span>
+                    <span class="editable_field">
+                        <span class="editable">
+                            ${param.get_html_field( t, value, other_values).get_html( str(step.id) + "|" + "editable" + "|"+ prefix )}
+                        </span>
+
+                        <i class="fa workflow-edit-button"></i>
+                    </span>
+                </span>
                 %endif
             %endif
         </div>
@@ -516,7 +603,7 @@ if wf_parms:
     %if history_id is None:
 <p id='new_history_p'>
     <input type="checkbox" name='new_history' value="true" id='new_history_cbx'/><label for='new_history_cbx'>Send results to a new history </label>
-    <span id="new_history_input">named: <input type='text' name='new_history_name' value='${h.to_unicode( workflow.name )}'/></span>
+    <span id="new_history_input">named: <input type='text' name='new_history_name' value='${ h.to_unicode( workflow.name ) | h }'/></span>
 </p>
     %endif
 <input type="submit" class="btn btn-primary" name="run_workflow" value="Run workflow" />

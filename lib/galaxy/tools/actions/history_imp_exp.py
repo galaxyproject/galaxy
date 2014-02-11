@@ -1,7 +1,7 @@
-import tempfile
+import tempfile, os
 from __init__ import ToolAction
 from galaxy.util.odict import odict
-from galaxy.tools.imp_exp import *
+from galaxy.tools.imp_exp import JobImportHistoryArchiveWrapper, JobExportHistoryArchiveWrapper
 
 import logging
 log = logging.getLogger( __name__ )
@@ -14,8 +14,15 @@ class ImportHistoryToolAction( ToolAction ):
         # Create job.
         #
         job = trans.app.model.Job()
-        job.session_id = trans.get_galaxy_session().id
-        job.history_id = trans.history.id
+        session = trans.get_galaxy_session()
+        job.session_id = session and session.id
+        if history:
+            history_id = history.id
+        elif trans.history:
+            history_id = trans.history.id
+        else:
+            history_id = None
+        job.history_id = history_id
         job.tool_id = tool.id
         job.user_id = trans.user.id
         start_job_state = job.state #should be job.states.NEW
@@ -34,7 +41,7 @@ class ImportHistoryToolAction( ToolAction ):
         archive_dir = os.path.abspath( tempfile.mkdtemp() )
         jiha = trans.app.model.JobImportHistoryArchive( job=job, archive_dir=archive_dir )
         trans.sa_session.add( jiha )
-        
+
         #
         # Add parameters to job_parameter table.
         #
@@ -76,8 +83,13 @@ class ExportHistoryToolAction( ToolAction ):
         # Create the job and output dataset objects
         #
         job = trans.app.model.Job()
-        job.session_id = trans.get_galaxy_session().id
-        job.history_id = trans.history.id
+        session = trans.get_galaxy_session()
+        job.session_id = session and session.id
+        if history:
+            history_id = history.id
+        else:
+            history_id = trans.history.id
+        job.history_id = history_id
         job.tool_id = tool.id
         if trans.user:
             # If this is an actual user, run the job as that individual.  Otherwise we're running as guest.

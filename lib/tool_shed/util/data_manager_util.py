@@ -6,7 +6,7 @@ import tool_shed.util.shed_util_common as suc
 log = logging.getLogger( __name__ )
 
 def data_manager_config_elems_to_xml_file( app, config_elems, config_filename ):#, shed_tool_conf_filename ):
-    # Persist the current in-memory list of config_elems to a file named by the value of config_filename.  
+    # Persist the current in-memory list of config_elems to a file named by the value of config_filename.
     fh = open( config_filename, 'wb' )
     fh.write( '<?xml version="1.0"?>\n<data_managers>\n' )#% ( shed_tool_conf_filename ))
     for elem in config_elems:
@@ -95,7 +95,7 @@ def remove_from_data_manager( app, repository ):
     if metadata_dict and 'data_manager' in metadata_dict:
         shed_data_manager_conf_filename = app.config.shed_data_manager_config_file
         tree, error_message = xml_util.parse_xml( shed_data_manager_conf_filename )
-        if tree:  
+        if tree:
             root = tree.getroot()
             assert root.tag == 'data_managers', 'The file provided (%s) for removing data managers from is not a valid data manager xml file.' % ( shed_data_manager_conf_filename )
             guids = [ data_manager_dict.get( 'guid' ) for data_manager_dict in metadata_dict.get( 'data_manager', {} ).get( 'data_managers', {} ).itervalues() if 'guid' in data_manager_dict ]

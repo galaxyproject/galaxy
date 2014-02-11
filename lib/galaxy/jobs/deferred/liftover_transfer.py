@@ -24,26 +24,26 @@ log = logging.getLogger( __name__ )
 __all__ = [ 'LiftOverTransferPlugin' ]
 
 class LiftOverTransferPlugin( DataTransfer ):
-    
+
     locations = {}
-    
+
     def __init__( self, app ):
         super( LiftOverTransferPlugin, self ).__init__( app )
         self.app = app
         self.sa_session = app.model.context.current
-        
+
     def create_job( self, trans, url, dbkey, from_genome, to_genome, destfile, parentjob ):
         job = trans.app.transfer_manager.new( protocol='http', url=url )
-        params = dict( user=trans.user.id, transfer_job_id=job.id, protocol='http', 
-                       type='init_transfer', dbkey=dbkey, from_genome=from_genome, 
+        params = dict( user=trans.user.id, transfer_job_id=job.id, protocol='http',
+                       type='init_transfer', dbkey=dbkey, from_genome=from_genome,
                        to_genome=to_genome, destfile=destfile, parentjob=parentjob )
         deferred = trans.app.model.DeferredJob( state = self.app.model.DeferredJob.states.NEW, plugin = 'LiftOverTransferPlugin', params = params )
         self.sa_session.add( deferred )
         self.sa_session.flush()
         return deferred.id
-        
+
     def check_job( self, job ):
-        if job.params['type'] == 'init_transfer': 
+        if job.params['type'] == 'init_transfer':
             if not hasattr(job, 'transfer_job'):
                 job.transfer_job = self.sa_session.query( self.app.model.TransferJob ).get( int( job.params[ 'transfer_job_id' ] ) )
             else:
@@ -79,13 +79,13 @@ class LiftOverTransferPlugin( DataTransfer ):
             else:
                 log.error( "An error occurred while downloading from %s" % job.transfer_job.params[ 'url' ] )
                 return self.job_states.INVALID
-        elif job.params[ 'type' ] == 'extract_transfer': 
+        elif job.params[ 'type' ] == 'extract_transfer':
             return self.job_states.READY
-            
+
     def get_job_status( self, jobid ):
         job = self.sa_session.query( self.app.model.DeferredJob ).get( int( jobid ) )
         return job
-            
+
     def run_job( self, job ):
         params = job.params
         dbkey = params[ 'dbkey' ]
@@ -144,7 +144,7 @@ class LiftOverTransferPlugin( DataTransfer ):
             self.sa_session.add( transfer )
             self.sa_session.flush()
             return self.app.model.DeferredJob.states.OK
-                    
+
     def _add_line( self, newline ):
         filepath = 'tool-data/liftOver.loc'
         origlines = []
@@ -155,4 +155,4 @@ class LiftOverTransferPlugin( DataTransfer ):
             origlines.append( newline )
             with open( filepath, 'w+' ) as destfile:
                 destfile.write( '\n'.join( origlines ) )
-        
+

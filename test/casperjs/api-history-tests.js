@@ -107,7 +107,7 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
     this.test.comment( 'A bad id to show should throw an error' );
     this.assertRaises( function(){
         this.api.histories.show( '1234123412341234' );
-    }, 'Error in history API at showing history detail: 400 Bad Request', 'Raises an exception' );
+    }, '400 Bad Request', 'Raises an exception' );
 
 
     // ------------------------------------------------------------------------------------------- CREATE
@@ -131,8 +131,10 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
     this.test.comment( 'calling delete should delete the given history and remove it from the standard index' );
     var deletedHistory = this.api.histories.delete_( createdHistory.id );
     //this.debug( 'returned from delete:\n' + this.jsonStr( deletedHistory ) );
-    this.test.assert( deletedHistory === 'OK',
-        "Deletion returned 'OK' - even though that's not a great, informative response: " + deletedHistory );
+    this.test.assert( deletedHistory.id === createdHistory.id,
+        "Deletion returned id matching created history: " + deletedHistory.id );
+    this.test.assert( deletedHistory.deleted === true,
+        "Deletion return 'deleted: true': " + deletedHistory.deleted );
 
     newFirstHistory = this.api.histories.index()[0];
     //this.debug( 'newFirstHistory:\n' + this.jsonStr( newFirstHistory ) );
@@ -170,8 +172,8 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
     });
     this.test.assert( countKeys( returned ) === 0, "No changed returned: " + this.jsonStr( returned ) );
 
-    this.test.comment( 'updating using a nonsense key should fail with an error' );
-    var err = {};
+    this.test.comment( 'updating using a nonsense key should fail silently' );
+    var err = null;
     try {
         returned = this.api.histories.update( newFirstHistory.id, {
             konamiCode : 'uuddlrlrba'
@@ -180,8 +182,7 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
         err = error;
         //this.debug( this.jsonStr( err ) );
     }
-    this.test.assert( !!err.message, "Error occurred: " + err.message );
-    this.test.assert( err.status === 400, "Error status is 400: " + err.status );
+    this.test.assert( err === null, "No error occurred: " + this.jsonStr( err ) );
 
     this.test.comment( 'updating by attempting to change type should cause an error' );
     err = {};
@@ -217,23 +218,14 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
     this.test.assert( historyShow.name === 'New name', "Update sanitized name: " + historyShow.name );
 
     //NOTE!: this fails on sqlite3 (with default setup)
-    try {
-        this.test.comment( 'update should allow unicode in names' );
-        var unicodeName = '桜ゲノム';
-        returned = this.api.histories.update( newFirstHistory.id, {
-            name : unicodeName
-        });
-        //this.debug( 'returned:\n' + this.jsonStr( returned ) );
-        historyShow = this.api.histories.show( newFirstHistory.id );
-        this.test.assert( historyShow.name === unicodeName, "Update accepted unicode name: " + historyShow.name );
-    } catch( err ){
-        //this.debug( this.jsonStr( err ) );
-        if( ( err instanceof this.api.APIError )
-        &&  ( err.status === 500 )
-        &&  ( err.message.indexOf( '(ProgrammingError) You must not use 8-bit bytestrings' ) !== -1 ) ){
-            this.skipTest( 'Unicode update failed. Are you using sqlite3 as the db?' );
-        }
-    }
+    this.test.comment( 'update should allow unicode in names' );
+    var unicodeName = '桜ゲノム';
+    returned = this.api.histories.update( newFirstHistory.id, {
+        name : unicodeName
+    });
+    //this.debug( 'returned:\n' + this.jsonStr( returned ) );
+    historyShow = this.api.histories.show( newFirstHistory.id );
+    this.test.assert( historyShow.name === unicodeName, "Update accepted unicode name: " + historyShow.name );
 
     this.test.comment( 'update should allow escaped quotations in names' );
     var quotedName = '"Bler"';
@@ -252,7 +244,7 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
         deleted: true
     });
     //this.debug( 'returned:\n' + this.jsonStr( returned ) );
-    historyShow = this.api.histories.show( newFirstHistory.id );
+    historyShow = this.api.histories.show( newFirstHistory.id, true );
     this.test.assert( historyShow.deleted === true, "Update set the deleted flag: " + historyShow.deleted );
 
     this.test.comment( 'update should allow changing the deleted flag back' );
@@ -293,25 +285,16 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
     this.test.assert( historyShow.genome_build === 'hg18',
         "Update sanitized genome_build: " + historyShow.genome_build );
 
+    // removing for now until I can determine the relationship between unicode and genome_builds
     this.test.comment( 'update should allow unicode in genome builds' );
     var unicodeBuild = '桜12';
-    //NOTE!: this fails on sqlite3 (with default setup)
-    try {
-        returned = this.api.histories.update( newFirstHistory.id, {
-            name : unicodeBuild
-        });
-        //this.debug( 'returned:\n' + this.jsonStr( returned ) );
-        historyShow = this.api.histories.show( newFirstHistory.id );
-        this.test.assert( historyShow.genome_build === unicodeBuild,
-            "Update accepted unicode genome_build: " + historyShow.name );
-    } catch( err ){
-        //this.debug( this.jsonStr( err ) );
-        if( ( err instanceof this.api.APIError )
-        &&  ( err.status === 500 )
-        &&  ( err.message.indexOf( '(ProgrammingError) You must not use 8-bit bytestrings' ) !== -1 ) ){
-            this.skipTest( 'Unicode update failed. Are you using sqlite3 as the db?' );
-        }
-    }
+    returned = this.api.histories.update( newFirstHistory.id, {
+        genome_build : unicodeBuild
+    });
+    //this.debug( 'returned:\n' + this.jsonStr( returned ) );
+    historyShow = this.api.histories.show( newFirstHistory.id );
+    this.test.assert( historyShow.genome_build === unicodeBuild,
+        "Update accepted unicode genome_build: " + historyShow.genome_build );
 
 
     // ........................................................................................... annotation
@@ -334,25 +317,15 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
     this.test.assert( historyShow.annotation === 'New annotation',
         "Update sanitized annotation: " + historyShow.annotation );
 
-    //NOTE!: this fails on sqlite3 (with default setup)
-    try {
-        this.test.comment( 'update should allow unicode in annotations' );
-        var unicodeAnnotation = 'お願いは、それが落下させない';
-        returned = this.api.histories.update( newFirstHistory.id, {
-            annotation : unicodeAnnotation
-        });
-        //this.debug( 'returned:\n' + this.jsonStr( returned ) );
-        historyShow = this.api.histories.show( newFirstHistory.id );
-        this.test.assert( historyShow.annotation === unicodeAnnotation,
-            "Update accepted unicode annotation: " + historyShow.annotation );
-    } catch( err ){
-        //this.debug( this.jsonStr( err ) );
-        if( ( err instanceof this.api.APIError )
-        &&  ( err.status === 500 )
-        &&  ( err.message.indexOf( '(ProgrammingError) You must not use 8-bit bytestrings' ) !== -1 ) ){
-            this.skipTest( 'Unicode update failed. Are you using sqlite3 as the db?' );
-        }
-    }
+    this.test.comment( 'update should allow unicode in annotations' );
+    var unicodeAnnotation = 'お願いは、それが落下させない';
+    returned = this.api.histories.update( newFirstHistory.id, {
+        annotation : unicodeAnnotation
+    });
+    //this.debug( 'returned:\n' + this.jsonStr( returned ) );
+    historyShow = this.api.histories.show( newFirstHistory.id );
+    this.test.assert( historyShow.annotation === unicodeAnnotation,
+        "Update accepted unicode annotation: " + historyShow.annotation );
 
     this.test.comment( 'update should allow escaped quotations in annotations' );
     var quotedAnnotation = '"Bler"';
@@ -368,7 +341,6 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
     // ------------------------------------------------------------------------------------------- ERRORS
     //TODO: make sure expected errors are being passed back (but no permissions checks here - different suite)
     // bad ids: index, show, update, delete, undelete
-
 /*
 */
     //this.debug( this.jsonStr( historyShow ) );

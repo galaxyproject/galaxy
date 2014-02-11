@@ -26,7 +26,6 @@ log = logging.getLogger(__name__)
 
 PKEY_PREFIX = 'gxy_pkey'
 DEFAULT_KEYPAIR = 'cloudman_keypair'
-DEFAULT_AMI = 'ami-da58aab3'
 
 
 class CloudController(BaseUIController):
@@ -54,6 +53,8 @@ class CloudController(BaseUIController):
             kps = ec2_conn.get_all_key_pairs()
         except EC2ResponseError, e:
             log.error("Problem starting an instance: %s\n%s" % (e, e.body))
+            trans.response.status = 400
+            return e.error_message or "Instance failure, but no specific error was detected.  Please check your AWS Console."
         account_info['keypairs'] = [akp.name for akp in kps]
         #Existing Clusters
         s3_conn = S3Connection(key_id, secret, calling_format=OrdinaryCallingFormat())
@@ -96,7 +97,7 @@ class CloudController(BaseUIController):
         return to_json_string(account_info)
 
     @web.expose
-    def launch_instance(self, trans, cluster_name, password, key_id, secret, instance_type, share_string, keypair, ami=DEFAULT_AMI, zone=None, bucket_default=None, **kwargs):
+    def launch_instance(self, trans, cluster_name, password, key_id, secret, instance_type, share_string, keypair, ami=None, zone=None, bucket_default=None, **kwargs):
         ec2_error = None
         try:
             # Create security group & key pair used when starting an instance
@@ -119,6 +120,9 @@ class CloudController(BaseUIController):
                 user_provided_data['share_string'] = share_string
             if bucket_default:
                 user_provided_data['bucket_default']  = bucket_default
+
+            if not ami:
+                ami = trans.app.config.cloudlaunch_default_ami
 
             rs = run_instance(ec2_conn=ec2_conn,
                       image_id = ami,

@@ -5,7 +5,7 @@ import cgi
 import os
 import urllib
 
-from paste.httpexceptions import HTTPNotFound
+from paste.httpexceptions import HTTPNotFound, HTTPBadGateway
 
 from galaxy import web
 from galaxy.web import url_for
@@ -21,23 +21,24 @@ log = logging.getLogger( __name__ )
 
 class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAssociationMixin, UsesAnnotations ):
     """Controller class that maps to the url root of Galaxy (i.e. '/')."""
-    
+
     @web.expose
     def default(self, trans, target1=None, target2=None, **kwd):
         """Called on any url that does not match a controller method.
         """
         raise HTTPNotFound( 'This link may not be followed from within Galaxy.' )
-    
+
     @web.expose
     def index(self, trans, id=None, tool_id=None, mode=None, workflow_id=None, m_c=None, m_a=None, **kwd):
-        """Called on the root url to display the main Galaxy page.
+        """
+        Called on the root url to display the main Galaxy page.
         """
         return trans.fill_template( "root/index.mako",
                                     tool_id=tool_id,
                                     workflow_id=workflow_id,
                                     m_c=m_c, m_a=m_a,
                                     params=kwd )
-        
+
     ## ---- Tool related -----------------------------------------------------
 
     @web.json
@@ -99,142 +100,88 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
                                           show_deleted=string_as_bool( show_deleted ),
                                           show_hidden=string_as_bool( show_hidden ) )
 
-    @web.expose
-    def history( self, trans, as_xml=False, show_deleted=None, show_hidden=None, hda_id=None, **kwd ):
-        """Display the current history, creating a new history if necessary.
-
-        NOTE: No longer accepts "id" or "template" options for security reasons.
-        """
-        if as_xml:
-            return self.history_as_xml( trans,
-                show_deleted=string_as_bool( show_deleted ), show_hidden=string_as_bool( show_hidden ) )
-
-        # get all datasets server-side, client-side will get flags and render appropriately
-        show_deleted = string_as_bool_or_none( show_deleted )
-        show_purged  = show_deleted
-        show_hidden  = string_as_bool_or_none( show_hidden )
-        params = Params( kwd )
-        message = params.get( 'message', '' )
-        #TODO: ugh...
-        message = message if message != 'None' else ''
-        status = params.get( 'status', 'done' )
-
-        if trans.app.config.require_login and not trans.user:
-            return trans.fill_template( '/no_access.mako', message = 'Please log in to access Galaxy histories.' )
-
-        def err_msg( where=None ):
-            where = where if where else 'getting the history data from the server'
-            err_msg = ( 'An error occurred %s. '
-                      + 'Please contact a Galaxy administrator if the problem persists.' ) %( where )
-            return err_msg, 'error'
-
+    def _get_current_history_data( self, trans ):
         history_dictionary = {}
         hda_dictionaries   = []
+
         try:
             history = trans.get_history( create=True )
             hdas = self.get_history_datasets( trans, history,
                 show_deleted=True, show_hidden=True, show_purged=True )
 
             for hda in hdas:
+                hda_dict = {}
                 try:
-                    hda_dictionaries.append( self.get_hda_dict( trans, hda ) )
+                    hda_dict = self.get_hda_dict( trans, hda )
 
                 except Exception, exc:
                     # don't fail entire list if hda err's, record and move on
                     log.error( 'Error bootstrapping hda %d: %s', hda.id, str( exc ), exc_info=True )
-                    hda_dictionaries.append( self.get_hda_dict_with_error( trans, hda, str( exc ) ) )
+                    hda_dict = self.get_hda_dict_with_error( trans, hda, str( exc ) )
+
+                hda_dictionaries.append( hda_dict )
 
             # re-use the hdas above to get the history data...
             history_dictionary = self.get_history_dict( trans, history, hda_dictionaries=hda_dictionaries )
 
         except Exception, exc:
             user_id = str( trans.user.id ) if trans.user else '(anonymous)'
-            log.error( 'Error bootstrapping history for user %s: %s', user_id, str( exc ), exc_info=True )
-            message, status = err_msg()
+            log.exception( 'Error bootstrapping history for user %s: %s', user_id, str( exc ) )
+            message = ( 'An error occurred getting the history data from the server. '
+                      + 'Please contact a Galaxy administrator if the problem persists.' )
             history_dictionary[ 'error' ] = message
 
-        return trans.stream_template_mako( "root/history.mako",
-            history_json = to_json_string( history_dictionary ), hda_json = to_json_string( hda_dictionaries ),
-            show_deleted=show_deleted, show_hidden=show_hidden, hda_id=hda_id, log=log, message=message, status=status )
+        return {
+            'history'   : history_dictionary,
+            'hdas'      : hda_dictionaries
+        }
 
     @web.expose
-    def profile_history( self, trans, as_xml=False, show_deleted=None, show_hidden=None, hda_id=None, **kwd ):
+    def history( self, trans, as_xml=False, show_deleted=None, show_hidden=None, **kwd ):
         """
-        Same as above but adds SimpleProfiler to get some
-        profiling times for the operations done.
+        Display the current history in it's own page or as xml.
         """
         if as_xml:
             return self.history_as_xml( trans,
                 show_deleted=string_as_bool( show_deleted ), show_hidden=string_as_bool( show_hidden ) )
 
+        if trans.app.config.require_login and not trans.user:
+            return trans.fill_template( '/no_access.mako', message = 'Please log in to access Galaxy histories.' )
+
         # get all datasets server-side, client-side will get flags and render appropriately
         show_deleted = string_as_bool_or_none( show_deleted )
         show_purged  = show_deleted
         show_hidden  = string_as_bool_or_none( show_hidden )
-        params = Params( kwd )
-        message = params.get( 'message', '' )
-        #TODO: ugh...
-        message = message if message != 'None' else ''
-        status = params.get( 'status', 'done' )
-
-        if trans.app.config.require_login and not trans.user:
-            return trans.fill_template( '/no_access.mako', message = 'Please log in to access Galaxy histories.' )
-
-        def err_msg( where=None ):
-            where = where if where else 'getting the history data from the server'
-            err_msg = ( 'An error occurred %s. '
-                      + 'Please contact a Galaxy administrator if the problem persists.' ) %( where )
-            return err_msg, 'error'
-
-        profiler = SimpleProfiler()
-        profiler.start()
 
         history_dictionary = {}
         hda_dictionaries   = []
-        import pprint
         try:
-            history = trans.get_history( create=True )
-            profiler.report( 'trans.get_history' )
-            hdas = self.get_history_datasets( trans, history,
-                show_deleted=True, show_hidden=True, show_purged=True )
-            profiler.report( 'get_history_datasets' )
-
-            for hda in hdas:
-                try:
-                    ( hda_profiler, hda_dict ) = self.profile_get_hda_dict( trans, hda )
-                    profiler.reports.extend( hda_profiler.get_reports() )
-                    profiler.report( '\t hda -> dictionary (%s)' %( hda.name ) )
-                    hda_dictionaries.append( hda_dict )
-
-                except Exception, exc:
-                    # don't fail entire list if hda err's, record and move on
-                    log.error( 'Error bootstrapping hda %d: %s', hda.id, str( exc ), exc_info=True )
-                    hda_dictionaries.append( self.get_hda_dict_with_error( trans, hda, str( exc ) ) )
-            profiler.report( 'hdas -> dictionaries' )
-
-            # re-use the hdas above to get the history data...
-            history_dictionary = self.get_history_dict( trans, history, hda_dictionaries=hda_dictionaries )
-            profiler.report( 'history -> dictionary' )
+            history_data = self._get_current_history_data( trans )
+            history_dictionary = history_data[ 'history' ]
+            hda_dictionaries   = history_data[ 'hdas' ]
 
         except Exception, exc:
             user_id = str( trans.user.id ) if trans.user else '(anonymous)'
-            log.error( 'Error bootstrapping history for user %s: %s', user_id, str( exc ), exc_info=True )
-            message, status = err_msg()
-            history_dictionary[ 'error' ] = message
+            log.exception( 'Error bootstrapping history for user %s: %s', user_id, str( exc ) )
+            history_dictionary[ 'error' ] = ( 'An error occurred getting the history data from the server. '
+                                            + 'Please contact a Galaxy administrator if the problem persists.' )
 
-        return trans.stream_template_mako( "root/history.mako",
-            history_json = to_json_string( history_dictionary ), hda_json = to_json_string( hda_dictionaries ),
-            show_deleted=show_deleted, show_hidden=show_hidden, hda_id=hda_id, log=log, message=message, status=status,
-            profiling=profiler.get_reports() )
+        return trans.fill_template_mako( "root/history.mako",
+            history = history_dictionary, hdas = hda_dictionaries,
+            show_deleted=show_deleted, show_hidden=show_hidden )
 
     ## ---- Dataset display / editing ----------------------------------------
     @web.expose
-    def display( self, trans, id=None, hid=None, tofile=None, toext=".txt", **kwd ):
+    def display( self, trans, id=None, hid=None, tofile=None, toext=".txt", encoded_id=None, **kwd ):
         """Returns data directly into the browser.
 
         Sets the mime-type according to the extension.
+
+        Used by the twill tool test driver - used anywhere else? Would like to drop hid
+        argument and path if unneeded now. Likewise, would like to drop encoded_id=XXX
+        and use assume id is encoded (likely id wouldn't be coming in encoded if this
+        is used anywhere else though.)
         """
-        #TODO: unused?
         #TODO: unencoded id
         if hid is not None:
             try:
@@ -249,6 +196,8 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
             else:
                 raise Exception( "No dataset with hid '%d'" % hid )
         else:
+            if encoded_id and not id:
+                id = trans.security.decode_id( encoded_id )
             try:
                 data = trans.sa_session.query( self.app.model.HistoryDatasetAssociation ).get( id )
             except:
@@ -559,7 +508,7 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
         Attempts to parse values passed as boolean, float, then int. Defaults
         to string. Non-recursive (will not parse lists).
         """
-        #TODO: use simplejson or json
+        #TODO: use json
         rval = {}
         for k in kwd:
             rval[ k ] = kwd[k]
@@ -573,7 +522,22 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
         return rval
 
     @web.expose
-    def generate_error( self, trans ):
+    def generate_error( self, trans, code=500 ):
         """Raises an exception (debugging).
         """
+        trans.response.status = code
         raise Exception( "Fake error!" )
+
+    @web.json
+    def generate_json_error( self, trans, code=500 ):
+        """Raises an exception (debugging).
+        """
+        try:
+            code = int( code )
+        except Exception, exc:
+            code = 500
+
+        if code == 502:
+            raise HTTPBadGateway()
+        trans.response.status = code
+        return { 'error': 'Fake error!' }

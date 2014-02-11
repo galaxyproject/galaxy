@@ -1,6 +1,11 @@
 from __future__ import with_statement
 
-import os, shutil, logging, tempfile, tarfile
+import json
+import logging
+import os
+import shutil
+import tarfile
+import tempfile
 
 from galaxy import model, util
 from galaxy.web.framework.helpers import to_unicode
@@ -9,9 +14,6 @@ from galaxy.util.json import *
 from galaxy.web.base.controller import UsesHistoryMixin
 from galaxy.tools.data import ToolDataTableManager
 
-import pkg_resources
-pkg_resources.require("simplejson")
-import simplejson
 
 log = logging.getLogger(__name__)
 
@@ -34,7 +36,7 @@ def load_genome_index_tools( toolbox ):
           </stdio>
         </tool>
         """
-        
+
     # Load index tool.
     tmp_name = tempfile.NamedTemporaryFile()
     tmp_name.write( tool_xml_text )
@@ -42,39 +44,39 @@ def load_genome_index_tools( toolbox ):
     genome_index_tool = toolbox.load_tool( tmp_name.name )
     toolbox.tools_by_id[ genome_index_tool.id ] = genome_index_tool
     log.debug( "Loaded genome index tool: %s", genome_index_tool.id )
-    
+
 class GenomeIndexToolWrapper( object ):
     """ Provides support for performing jobs that index a genome. """
     def __init__( self, job_id ):
         self.locations = dict()
         self.job_id = job_id
-        
+
     def setup_job( self, genobj ):
-        """ Perform setup for job to index a genome and return an archive. Method generates 
+        """ Perform setup for job to index a genome and return an archive. Method generates
             attribute files, sets the corresponding attributes in the associated database
             object, and returns a command line for running the job. The command line
-            includes the command, inputs, and options; it does not include the output 
+            includes the command, inputs, and options; it does not include the output
             file because it must be set at runtime. """
-        
+
         #
         # Create and return command line for running tool.
         #
         scriptpath = os.path.join( os.path.abspath( os.getcwd() ), "lib/galaxy/tools/genome_index/index_genome.py" )
         return "python %s %s %s" % ( scriptpath, genobj.indexer, genobj.fasta_path )
-        
+
     def postprocessing( self, sa_session, app ):
         """ Finish the job, move the finished indexes to their final resting place,
             and update the .loc files where applicable. """
         gitd = sa_session.query( model.GenomeIndexToolData ).filter_by( job_id=self.job_id ).first()
-        indexdirs = dict( bfast='bfast_index', bowtie='bowtie_index', bowtie2='bowtie2_index', 
+        indexdirs = dict( bfast='bfast_index', bowtie='bowtie_index', bowtie2='bowtie2_index',
                           bwa='bwa_index', perm='perm_%s_index', picard='srma_index', sam='sam_index' )
-        
+
 
         if gitd:
             fp = open( gitd.dataset.get_file_name(), 'r' )
             deferred = sa_session.query( model.DeferredJob ).filter_by( id=gitd.deferred_job_id ).first()
             try:
-                logloc = simplejson.load( fp )
+                logloc = json.load( fp )
             except ValueError:
                 deferred.state = app.model.DeferredJob.states.ERROR
                 sa_session.add( deferred )
@@ -165,7 +167,7 @@ class GenomeIndexToolWrapper( object ):
                         locfile = self.locations[ 'sam_fa_indexes' ]
                         locdir = os.path.join( destination, line )
                         location.append( dict( line='\t'.join( [ 'index', dbkey, locdir ] ), file=locfile ) )
-            
+
             if destination is not None and os.path.exists( os.path.split( destination )[0] ) and not os.path.exists( destination ):
                 log.debug( 'Moving %s to %s' % ( indexdata, destination ) )
                 shutil.move( indexdata, destination )
@@ -184,7 +186,7 @@ class GenomeIndexToolWrapper( object ):
             sa_session.add( deferred )
             sa_session.flush()
 
-        
+
     def _check_link( self, targetfile, symlink ):
         target = os.path.relpath( targetfile, os.path.dirname( symlink ) )
         filename = os.path.basename( targetfile )
@@ -210,22 +212,22 @@ class GenomeIndexToolWrapper( object ):
                     return
                 else:
                     raise Exception, "Regular file %s exists, is not empty, contents do not match %s." % ( symlink, targetfile )
-    
+
     def _hash_file( self, filename ):
         import hashlib
         md5 = hashlib.md5()
-        with open( filename, 'rb' ) as f: 
+        with open( filename, 'rb' ) as f:
             for chunk in iter( lambda: f.read( 8192 ), '' ):
                  md5.update( chunk )
         return md5.digest()
 
-    
+
     def _ex_tar( self, directory, filename ):
         fh = tarfile.open( os.path.join( directory, filename ) )
         fh.extractall( path=directory )
         fh.close()
         os.remove( os.path.join( directory, filename ) )
-        
+
     def _add_line( self, locfile, newline ):
         filepath = locfile
         origlines = []

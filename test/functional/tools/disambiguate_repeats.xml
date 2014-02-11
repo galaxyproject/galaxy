@@ -1,0 +1,63 @@
+<tool id="disambiguate_repeats" name="disambiguate_repeats">
+    <command>
+        cat #for $q in $queries# ${q.input} #end for# #for $q in $more_queries# ${q.input} #end for# > $out_file1
+    </command>
+    <inputs>
+        <repeat name="queries" title="Dataset">
+            <param name="input" type="data" label="Select" />
+        </repeat>
+        <repeat name="more_queries" title="Dataset">
+            <param name="input" type="data" label="Select" />
+        </repeat>        
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="txt" />
+    </outputs>
+    <tests>
+        <!-- Can disambiguate repeats and specify multiple blocks using,
+             nested structure. -->
+        <test>
+            <repeat name="queries">
+                <param name="input" value="simple_line.txt"/>
+            </repeat>
+            <repeat name="more_queries">
+                <param name="input" value="simple_line_alternative.txt"/>
+            </repeat>
+            <output name="out_file1">
+                <assert_contents>
+                    <has_line line="This is a line of text." />
+                    <has_line line="This is a different line of text." />
+                </assert_contents>
+            </output>
+        </test>
+        <!-- Multiple such blocks can be specified but only with newer API
+             driven tests. -->
+        <test>
+            <repeat name="queries">
+                <param name="input" value="simple_line.txt"/>
+            </repeat>
+            <repeat name="queries">
+                <param name="input" value="simple_line_alternative.txt"/>
+            </repeat>
+            <repeat name="more_queries">
+                <param name="input" value="simple_line.txt"/>
+            </repeat>
+            <repeat name="more_queries">
+                <param name="input" value="simple_line_alternative.txt"/>
+            </repeat>
+            <output name="out_file1" file="simple_lines_interleaved.txt"/>
+        </test>
+        <!-- Can also use prefixes to disambiguate inputs or force order, but
+             the above nested structure is preferable. -->
+        <test>
+            <param name="queries_1|input" value="simple_line_alternative.txt"/>
+            <param name="queries_0|input" value="simple_line.txt"/>
+
+            <param name="more_queries_1|input" value="simple_line_alternative.txt" />
+            <param name="more_queries_0|input" value="simple_line.txt"/>
+
+            <output name="out_file1" file="simple_lines_interleaved.txt"/>
+        </test>
+
+    </tests>
+</tool>

@@ -1,17 +1,17 @@
 #!/usr/bin/env python
-import os
-import sys
 import errno
+import json
+import os
 import pwd
+import sys
 #import drmaa
+
 new_path = [ os.path.join( os.getcwd(), "lib" ) ]
 new_path.extend( sys.path[1:] ) # remove scripts/ from the path
 sys.path = new_path
 
 from galaxy import eggs
 import pkg_resources
-pkg_resources.require("simplejson")
-import simplejson as json
 pkg_resources.require("drmaa")
 import drmaa
 

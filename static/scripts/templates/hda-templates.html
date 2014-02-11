@@ -1,124 +1,133 @@
-<!-- ---------------------------------------------------------------------- WARNING BOXES -->
-<script type="text/template" class="template-hda" id="template-hda-warning-messages">
-{{#if error}}
-<div class="errormessagesmall">
-    {{#local}}There was an error getting the data for this dataset{{/local}}:
-    {{#local}}{{error}}{{/local}}
-</div>
-{{/if}}
-
-{{#if deleted}}{{#unless purged}}
-{{#warningmessagesmall}}
-    {{#local}}This dataset has been deleted.{{/local}}
-    {{#if urls.undelete}}
-        {{! how in the hell would you localize this? }}
-        Click <a href="{{ urls.undelete }}" class="historyItemUndelete" id="historyItemUndeleter-{{ id }}"
-                 target="galaxy_history">here</a> to undelete it
-        {{#if urls.purge}}
-        or <a href="{{ urls.purge }}" class="historyItemPurge" id="historyItemPurger-{{ id }}"
-           target="galaxy_history">here</a> to immediately remove it from disk
+<!-- ---------------------------------------------------------------------- outer structure -->
+<script type="text/template" class="template-hda" id="template-hda-skeleton">
+<div class="dataset hda">
+    <div class="dataset-warnings">
+        {{#if error}}
+        <div class="errormessagesmall">
+            {{#local}}There was an error getting the data for this dataset{{/local}}:
+            {{#local}}{{error}}{{/local}}
+        </div>
         {{/if}}
-    {{/if}}
-{{/warningmessagesmall}}
-{{/unless}}{{/if}}
 
-{{#if purged}}{{#warningmessagesmall}}
-    {{#local}}This dataset has been deleted and removed from disk.{{/local}}
-{{/warningmessagesmall}}{{/if}}
+        {{#if deleted}}
+            {{#if purged}}
+            <div class="dataset-purged-msg warningmessagesmall"><strong>
+                {{#local}}This dataset has been deleted and removed from disk.{{/local}}
+            </strong></div>
 
-{{#unless visible}}{{#warningmessagesmall}}
-    {{#local}}This dataset has been hidden.{{/local}}
-    {{#if urls.unhide}}
-        Click <a href="{{ urls.unhide }}" class="historyItemUnhide" id="historyItemUnhider-{{ id }}"
-                 target="galaxy_history">here</a> to unhide it
-    {{/if}}
-{{/warningmessagesmall}}{{/unless}}
+            {{else}}{{! deleted, not purged }}
+            <div class="dataset-deleted-msg warningmessagesmall"><strong>
+                {{#local}}This dataset has been deleted.{{/local}}
+            </strong></div>
+            {{/if}}
+        {{/if}}
+
+        {{#unless visible}}
+        <div class="dataset-hidden-msg warningmessagesmall"><strong>
+            {{#local}}This dataset has been hidden.{{/local}}
+        </strong></div>
+        {{/unless}}
+    </div>
+
+    <div class="dataset-selector"><span class="fa fa-2x fa-square-o"></span></div>
+    <div class="dataset-primary-actions"></div>
+    {{! adding a tabindex here allows focusing the title bar and the use of keydown to expand the dataset display }}
+    <div class="dataset-title-bar clear" tabindex="0">
+        <span class="dataset-state-icon state-icon"></span>
+        <div class="dataset-title">
+            <span class="hda-hid">{{ hid }}</span>
+            <span class="dataset-name">{{ name }}</span>
+        </div>
+    </div>
+
+    <div class="dataset-body"></div>
+</div>
 </script>
 
+<!-- ---------------------------------------------------------------------- body structure -->
+<script type="text/template" class="template-hda" id="template-hda-body">
+<div class="dataset-body">
+    {{#if body}}
+    <div class="dataset-summary">
+        {{{ body }}}
+    </div>
+    <div class="dataset-actions clear">
+        <div class="left"></div>
+        <div class="right"></div>
+    </div>
 
-<!-- ---------------------------------------------------------------------- TITLE/NAME -->
-<script type="text/template" class="template-hda" id="template-hda-titleLink">
-<span class="historyItemTitle">{{ hid }}: {{ name }}</span>
-</script>
-
-
-<!-- ---------------------------------------------------------------------- SUMMARY INFO (ok state) -->
-<script type="text/template" class="template-hda" id="template-hda-hdaSummary">
-<div class="hda-summary">
-    {{ misc_blurb }}<br />
-    {{#local}}format: {{/local}}<span class="{{ data_type }}">{{ data_type }}</span>,
-    {{#local}}database: {{/local}}
-    {{#if dbkey_unknown_and_editable }}
-        <a class="metadata-dbkey" href="{{ urls.edit }}" target="galaxy_main">{{ metadata_dbkey }}</a>
     {{else}}
-        <span class="metadata-dbkey {{ metadata_dbkey }}">{{ metadata_dbkey }}</span>
+    <div class="dataset-summary">
+        {{#if misc_blurb }}
+        <div class="dataset-blurb">
+            <span class="value">{{ misc_blurb }}</span>
+        </div>
+        {{/if}}
+
+        {{#if data_type }}
+        <div class="dataset-datatype">
+            <label class="prompt">{{#local}}format{{/local}}</label>
+            <span class="value">{{ data_type }}</span>
+        </div>
+        {{/if}}
+
+        {{#if metadata_dbkey }}
+        <div class="dataset-dbkey">
+            <label class="prompt">{{#local}}database{{/local}}</label>
+            <span class="value">
+                {{ metadata_dbkey }}
+            </span>
+        </div>
+        {{/if}}
+
+        {{#if misc_info}}
+        <div class="dataset-info">
+            <span class="value">{{ misc_info }}</span>
+        </div>
+        {{/if}}
+    </div>{{! end dataset-summary }}
+
+    <div class="dataset-actions clear">
+        <div class="left"></div>
+        <div class="right"></div>
+    </div>
+
+    {{#unless deleted }}
+    <div class="tags-display"></div>
+    <div class="annotation-display"></div>
+
+    <div class="dataset-display-applications">
+        {{#each display_apps}}
+        <div class="display-application">
+            <span class="display-application-location">{{label}}</span>
+            <span class="display-application-links">
+                {{#each links}}
+                <a target="{{target}}" href="{{href}}">{{#local}}{{text}}{{/local}}</a>
+                {{/each}}
+            </span>
+        </div>
+        {{/each}}
+
+        {{#each display_types}}
+        <div class="display-application">
+            <span class="display-application-location">{{label}}</span>
+            <span class="display-application-links">
+                {{#each links}}
+                <a target="{{target}}" href="{{href}}">{{#local}}{{text}}{{/local}}</a>
+                {{/each}}
+            </span>
+        </div>
+        {{/each}}
+    </div>
+
+    <div class="dataset-peek">
+    {{#if peek }}
+        <pre class="peek">{{{ peek }}}</pre>
     {{/if}}
-</div>
-{{#if misc_info}}
-<div class="hda-info"> {{ misc_info }} </div>
-{{/if}}
-</script>
-
-
-<!-- ---------------------------------------------------------------------- FAILED META WARNING -->
-<script type="text/template" class="template-hda" id="template-hda-failedMetadata">
-{{#warningmessagesmall}}
-{{#local}}An error occurred setting the metadata for this dataset.{{/local}}
-You may be able to <a href="{{ urls.edit }}" target="galaxy_main">set it manually or retry auto-detection</a>.
-{{/warningmessagesmall}}
-</script>
-
-
-<!-- ---------------------------------------------------------------------- DOWNLOAD POPUP -->
-<script type="text/template" class="template-hda" id="template-hda-downloadLinks">
-{{#if urls.meta_download}}
-<div popupmenu="dataset-{{ id }}-popup">
-    <a class="action-button" href="{{ urls.download }}">{{#local}}Download Dataset{{/local}}</a>
-    <a>{{#local}}Additional Files{{/local}}</a>
-    {{#each urls.meta_download}}
-    <a class="action-button" href="{{ url }}">{{#local}}Download{{/local}} {{ file_type }}</a>
-    {{/each}}
-</div>
-<div style="float:left;" class="menubutton split popup" id="dataset-{{ id }}-popup">
-    <a href="{{ urls.download }}" title="{{#local}}Download{{/local}}" class="icon-button disk tooltip"></a>
-</div>
-{{else}}
-{{! otherwise a simple icon button }}
-<a href="{{ urls.download }}" title="{{#local}}Download{{/local}}" class="icon-button disk tooltip"></a>
-{{/if}}
-</script>
-
-
-<!-- ---------------------------------------------------------------------- TAG AREA -->
-<script type="text/template" class="template-hda" id="template-hda-tagArea">
-{{! TODO: move to mvc/tag.js templates }}
-<div class="tag-area" style="display: none;">
-    <strong>{{#local}}Tags{{/local}}:</strong>
-    <div class="tag-elt">
     </div>
+
+    {{/unless}}{{! unless deleted }}
+
+    {{/if}}{{! end if body }}
 </div>
-</script>
-
-
-<!-- ---------------------------------------------------------------------- ANNOTATION AREA -->
-<script type="text/template" class="template-hda" id="template-hda-annotationArea">
-{{! TODO: move to mvc/annotations.js templates, editable-text }}
-<div id="{{ id }}-annotation-area" class="annotation-area" style="display: none;">
-    <strong>{{#local}}Annotation{{/local}}:</strong>
-    <div id="{{ id }}-anotation-elt" class="annotation-elt tooltip editable-text"
-         style="margin: 1px 0px 1px 0px" title="{{#local}}Edit dataset annotation{{/local}}">
-    </div>
-</div>
-</script>
-
-
-<!-- ---------------------------------------------------------------------- DISPLAY_APP LINKS -->
-<script type="text/template" class="template-hda" id="template-hda-displayApps">
-{{#each displayApps}}
-    {{label}}
-    {{#each links}}
-        <a target="{{target}}" href="{{href}}">{{#local}}{{text}}{{/local}}</a>
-    {{/each}}
-    <br />
-{{/each}}
 </script>

@@ -5,15 +5,11 @@ import logging
 import operator
 import os
 import re
-import urllib
 from gettext import gettext
 
 import pkg_resources
 pkg_resources.require("SQLAlchemy >= 0.4")
 from sqlalchemy import func, and_, select
-
-pkg_resources.require( "Routes" )
-import routes
 
 from paste.httpexceptions import HTTPBadRequest, HTTPInternalServerError
 from paste.httpexceptions import HTTPNotImplemented, HTTPRequestRangeNotSatisfiable
@@ -24,22 +20,27 @@ from galaxy import web
 from galaxy import model
 from galaxy import security
 from galaxy import util
+from galaxy import objectstore
 
 from galaxy.web import error, url_for
 from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, TextArea, TextField
 from galaxy.web.form_builder import build_select_field, HistoryField, PasswordField, WorkflowField, WorkflowMappingField
 from galaxy.workflow.modules import module_factory
-from galaxy.model.orm import eagerload, eagerload_all
+from galaxy.model.orm import eagerload, eagerload_all, desc
 from galaxy.security.validate_user_input import validate_publicname
 from galaxy.util.sanitize_html import sanitize_html
+from galaxy.model.item_attrs import Dictifiable, UsesAnnotations
 
 from galaxy.datatypes.interval import ChromatinInteractions
 from galaxy.datatypes.data import Text
 
-from galaxy.visualization.genome.visual_analytics import get_tool_def
+from galaxy.model import ExtendedMetadata, ExtendedMetadataIndex, LibraryDatasetDatasetAssociation, HistoryDatasetAssociation
 
-from galaxy.datatypes.display_applications import util as da_util
 from galaxy.datatypes.metadata import FileParameter
+from galaxy.tools.parameters import RuntimeValue, visit_input_values
+from galaxy.tools.parameters.basic import DataToolParameter
+from galaxy.util.json import to_json_string
+from galaxy.workflow.modules import ToolModule
 
 
 log = logging.getLogger( __name__ )
@@ -101,7 +102,7 @@ class BaseController( object ):
         elif class_name == 'LibraryDataset':
             item_class = self.app.model.LibraryDataset
         elif class_name == 'ToolShedRepository':
-            item_class = self.app.model.ToolShedRepository
+            item_class = self.app.install_model.ToolShedRepository
         else:
             item_class = None
         return item_class
@@ -113,21 +114,25 @@ class BaseController( object ):
         try:
             decoded_id = trans.security.decode_id( id )
         except:
-            raise MessageException( "Malformed %s id ( %s ) specified, unable to decode" % ( class_name, str( id ) ), type='error' )
+            raise MessageException( "Malformed %s id ( %s ) specified, unable to decode"
+                                    % ( class_name, str( id ) ), type='error' )
         try:
             item_class = self.get_class( class_name )
             assert item_class is not None
             item = trans.sa_session.query( item_class ).get( decoded_id )
             assert item is not None
-        except:
-            log.exception( "Invalid %s id ( %s ) specified" % ( class_name, id ) )
+        except Exception, exc:
+            log.exception( "Invalid %s id ( %s ) specified: %s" % ( class_name, id, str( exc ) ) )
             raise MessageException( "Invalid %s id ( %s ) specified" % ( class_name, id ), type="error" )
+
         if check_ownership or check_accessible:
             self.security_check( trans, item, check_ownership, check_accessible )
         if deleted == True and not item.deleted:
-            raise ItemDeletionException( '%s "%s" is not deleted' % ( class_name, getattr( item, 'name', id ) ), type="warning" )
+            raise ItemDeletionException( '%s "%s" is not deleted'
+                                         % ( class_name, getattr( item, 'name', id ) ), type="warning" )
         elif deleted == False and item.deleted:
-            raise ItemDeletionException( '%s "%s" is deleted' % ( class_name, getattr( item, 'name', id ) ), type="warning" )
+            raise ItemDeletionException( '%s "%s" is deleted'
+                                         % ( class_name, getattr( item, 'name', id ) ), type="warning" )
         return item
 
     # this should be here - but catching errors from sharable item controllers that *should* have SharableItemMixin
@@ -155,15 +160,46 @@ class BaseController( object ):
         if type( rval ) != dict:
             return rval
         for k, v in rval.items():
-            if (k == 'id' or k.endswith( '_id' )) and v is not None:
+            if (k == 'id' or k.endswith( '_id' )) and v is not None and k not in ['tool_id']:
                 try:
                     rval[k] = trans.security.encode_id( v )
                 except:
                     pass # probably already encoded
+            if (k.endswith("_ids") and type(v) == list):
+                try:
+                    o = []
+                    for i in v:
+                        o.append(trans.security.encode_id( i ))
+                    rval[k] = o
+                except:
+                    pass
             else:
                 if recursive and type(v) == dict:
                     rval[k] = self.encode_all_ids(trans, v, recursive)
         return rval
+
+    # incoming param validation
+    # should probably be in sep. serializer class/object _used_ by controller
+    def validate_and_sanitize_basestring( self, key, val ):
+        if not isinstance( val, basestring ):
+            raise ValueError( '%s must be a string or unicode: %s' %( key, str( type( val ) ) ) )
+        return unicode( sanitize_html( val, 'utf-8', 'text/html' ), 'utf-8' )
+
+    def validate_and_sanitize_basestring_list( self, key, val ):
+        if not isinstance( val, list ):
+            raise ValueError( '%s must be a list: %s' %( key, str( type( val ) ) ) )
+        return [ unicode( sanitize_html( t, 'utf-8', 'text/html' ), 'utf-8' ) for t in val ]
+
+    def validate_boolean( self, key, val ):
+        if not isinstance( val, bool ):
+            raise ValueError( '%s must be a boolean: %s' %( key, str( type( val ) ) ) )
+        return val
+
+    #TODO:
+    #def validate_integer( self, key, val, min, max ):
+    #def validate_float( self, key, val, min, max ):
+    #def validate_number( self, key, val, min, max ):
+    #def validate_genome_build( self, key, val ):
 
 Root = BaseController
 
@@ -190,11 +226,11 @@ class BaseAPIController( BaseController ):
                 check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted )
 
         except ItemDeletionException, e:
-            raise HTTPBadRequest( detail="Invalid %s id ( %s ) specified" % ( class_name, str( id ) ) )
+            raise HTTPBadRequest( detail="Invalid %s id ( %s ) specified: %s" % ( class_name, str( id ), str( e ) ) )
         except MessageException, e:
             raise HTTPBadRequest( detail=e.err_msg )
         except Exception, e:
-            log.exception( "Execption in get_object check for %s %s:" % ( class_name, str( id ) ) )
+            log.exception( "Execption in get_object check for %s %s: %s" % ( class_name, str( id ), str( e ) ) )
             raise HTTPInternalServerError( comment=str( e ) )
 
     def validate_in_users_and_groups( self, trans, payload ):
@@ -246,6 +282,48 @@ class Datatype( object ):
 # -- Mixins for working with Galaxy objects. --
 #
 
+
+class CreatesUsersMixin:
+    """
+    Mixin centralizing logic for user creation between web and API controller.
+
+    Web controller handles additional features such e-mail subscription, activation,
+    user forms, etc.... API created users are much more vanilla for the time being.
+    """
+
+    def create_user( self, trans, email, username, password ):
+        user = trans.app.model.User( email=email )
+        user.set_password_cleartext( password )
+        user.username = username
+        if trans.app.config.user_activation_on:
+            user.active = False
+        else:
+            user.active = True  # Activation is off, every new user is active by default.
+        trans.sa_session.add( user )
+        trans.sa_session.flush()
+        trans.app.security_agent.create_private_user_role( user )
+        if trans.webapp.name == 'galaxy':
+            # We set default user permissions, before we log in and set the default history permissions
+            trans.app.security_agent.user_set_default_permissions( user,
+                                                                   default_access_private=trans.app.config.new_user_dataset_access_role_default_private )
+        return user
+
+
+class CreatesApiKeysMixin:
+    """
+    Mixing centralizing logic for creating API keys for user objects.
+    """
+
+    def create_api_key( self, trans, user ):
+        guid = trans.app.security.get_new_guid()
+        new_key = trans.app.model.APIKeys()
+        new_key.user_id = user.id
+        new_key.key = guid
+        trans.sa_session.add( new_key )
+        trans.sa_session.flush()
+        return guid
+
+
 class SharableItemSecurityMixin:
     """ Mixin for handling security for sharable items. """
 
@@ -280,8 +358,32 @@ class UsesHistoryMixin( SharableItemSecurityMixin ):
 
     def get_history( self, trans, id, check_ownership=True, check_accessible=False, deleted=None ):
         """Get a History from the database by id, verifying ownership."""
-        history = self.get_object( trans, id, 'History', check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted )
-        return self.security_check( trans, history, check_ownership, check_accessible )
+        history = self.get_object( trans, id, 'History',
+            check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted )
+        history = self.security_check( trans, history, check_ownership, check_accessible )
+        return history
+
+    def get_user_histories( self, trans, user=None, include_deleted=False, only_deleted=False ):
+        """
+        Get all the histories for a given user (defaulting to `trans.user`)
+        ordered by update time and filtered on whether they've been deleted.
+        """
+        # handle default and/or anonymous user (which still may not have a history yet)
+        user = user or trans.user
+        if not user:
+            current_history = trans.get_history()
+            return [ current_history ] if current_history else []
+
+        history_model = trans.model.History
+        query = ( trans.sa_session.query( history_model )
+            .filter( history_model.user == user )
+            .order_by( desc( history_model.table.c.update_time ) ) )
+        if only_deleted:
+            query = query.filter( history_model.deleted == True )
+        elif not include_deleted:
+            query = query.filter( history_model.deleted == False )
+
+        return query.all()
 
     def get_history_datasets( self, trans, history, show_deleted=False, show_hidden=False, show_purged=False ):
         """ Returns history's datasets. """
@@ -415,7 +517,10 @@ class UsesHistoryMixin( SharableItemSecurityMixin ):
     def get_history_dict( self, trans, history, hda_dictionaries=None ):
         """Returns history data in the form of a dictionary.
         """
-        history_dict = history.get_api_value( view='element', value_mapper={ 'id':trans.security.encode_id })
+        history_dict = history.to_dict( view='element', value_mapper={ 'id':trans.security.encode_id })
+        history_dict[ 'user_id' ] = None
+        if history.user_id:
+            history_dict[ 'user_id' ] = trans.security.encode_id( history.user_id )
 
         history_dict[ 'nice_size' ] = history.get_disk_size( nice_size=True )
         history_dict[ 'annotation' ] = history.get_item_annotation_str( trans.sa_session, trans.user, history )
@@ -444,7 +549,8 @@ class UsesHistoryMixin( SharableItemSecurityMixin ):
         if 'annotation' in new_data.keys() and trans.get_user():
             history.add_item_annotation( trans.sa_session, trans.get_user(), history, new_data[ 'annotation' ] )
             changed[ 'annotation' ] = new_data[ 'annotation' ]
-        # tags
+        if 'tags' in new_data.keys() and trans.get_user():
+            self.set_tags_from_list( trans, history, new_data[ 'tags' ], user=trans.user )
         # importable (ctrl.history.set_accessible_async)
         # sharing/permissions?
         # slugs?
@@ -454,6 +560,49 @@ class UsesHistoryMixin( SharableItemSecurityMixin ):
             trans.sa_session.flush()
 
         return changed
+
+
+class ExportsHistoryMixin:
+
+    def serve_ready_history_export( self, trans, jeha ):
+        assert jeha.ready
+        if jeha.compressed:
+            trans.response.set_content_type( 'application/x-gzip' )
+        else:
+            trans.response.set_content_type( 'application/x-tar' )
+        disposition = 'attachment; filename="%s"' % jeha.export_name
+        trans.response.headers["Content-Disposition"] = disposition
+        return open( trans.app.object_store.get_filename( jeha.dataset ) )
+
+    def queue_history_export( self, trans, history, gzip=True, include_hidden=False, include_deleted=False ):
+        # Convert options to booleans.
+        #
+        if isinstance( gzip, basestring ):
+            gzip = ( gzip in [ 'True', 'true', 'T', 't' ] )
+        if isinstance( include_hidden, basestring ):
+            include_hidden = ( include_hidden in [ 'True', 'true', 'T', 't' ] )
+        if isinstance( include_deleted, basestring ):
+            include_deleted = ( include_deleted in [ 'True', 'true', 'T', 't' ] )
+
+        # Run job to do export.
+        history_exp_tool = trans.app.toolbox.get_tool( '__EXPORT_HISTORY__' )
+        params = {
+            'history_to_export': history,
+            'compress': gzip,
+            'include_hidden': include_hidden,
+            'include_deleted': include_deleted
+        }
+
+        history_exp_tool.execute( trans, incoming=params, history=history, set_output_hid=True )
+
+
+class ImportsHistoryMixin:
+
+    def queue_history_import( self, trans, archive_type, archive_source ):
+        # Run job to do import.
+        history_imp_tool = trans.app.toolbox.get_tool( '__IMPORT_HISTORY__' )
+        incoming = { '__ARCHIVE_SOURCE__' : archive_source, '__ARCHIVE_TYPE__' : archive_type }
+        history_imp_tool.execute( trans, incoming=incoming )
 
 
 class UsesHistoryDatasetAssociationMixin:
@@ -466,14 +615,14 @@ class UsesHistoryDatasetAssociationMixin:
         Get an HDA object by id performing security checks using
         the current transaction.
         """
-        # DEPRECATION: We still support unencoded ids for backward compatibility
         try:
-            # encoded id?
             dataset_id = trans.security.decode_id( dataset_id )
-
         except ( AttributeError, TypeError ):
-            # unencoded id
-            dataset_id = int( dataset_id )
+            # DEPRECATION: We still support unencoded ids for backward compatibility
+            try:
+                dataset_id = int( dataset_id )
+            except ValueError, v_err:
+                raise HTTPBadRequest( "Invalid dataset id: %s." % str( dataset_id ) )
 
         try:
             data = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( int( dataset_id ) )
@@ -506,14 +655,39 @@ class UsesHistoryDatasetAssociationMixin:
         """
         #TODO: duplicate of above? alias to above (or vis-versa)
         self.security_check( trans, history, check_ownership=check_ownership, check_accessible=check_accessible )
-        hda = self.get_object( trans, dataset_id, 'HistoryDatasetAssociation', check_ownership=False, check_accessible=False, deleted=False )
+        hda = self.get_object( trans, dataset_id, 'HistoryDatasetAssociation',
+                               check_ownership=False, check_accessible=False )
 
         if check_accessible:
-            if not trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), hda.dataset ):
+            if( not trans.user_is_admin()
+            and not trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), hda.dataset ) ):
                 error( "You are not allowed to access this dataset" )
 
-                if check_state and hda.state == trans.model.Dataset.states.UPLOAD:
-                    error( "Please wait until this dataset finishes uploading before attempting to view it." )
+            if check_state and hda.state == trans.model.Dataset.states.UPLOAD:
+                error( "Please wait until this dataset finishes uploading before attempting to view it." )
+        return hda
+
+    def get_history_dataset_association_from_ids( self, trans, id, history_id ):
+        # Just to echo other TODOs, there seems to be some overlap here, still
+        # this block appears multiple places (dataset show, history_contents
+        # show, upcoming history job show) so I am consolodating it here.
+        # Someone smarter than me should determine if there is some redundancy here.
+
+        # for anon users:
+        #TODO: check login_required?
+        #TODO: this isn't actually most_recently_used (as defined in histories)
+        if( ( trans.user == None )
+        and ( history_id == trans.security.encode_id( trans.history.id ) ) ):
+            history = trans.history
+            #TODO: dataset/hda by id (from history) OR check_ownership for anon user
+            hda = self.get_history_dataset_association( trans, history, id,
+                check_ownership=False, check_accessible=True )
+        else:
+            #TODO: do we really need the history?
+            history = self.get_history( trans, history_id,
+                check_ownership=True, check_accessible=True, deleted=False )
+            hda = self.get_history_dataset_association( trans, history, id,
+                check_ownership=True, check_accessible=True )
         return hda
 
     def get_hda_list( self, trans, hda_ids, check_ownership=True, check_accessible=False, check_state=True ):
@@ -529,7 +703,9 @@ class UsesHistoryDatasetAssociationMixin:
             hda = None
             try:
                 hda = self.get_dataset( trans, id,
-                    check_ownership=check_ownership, check_accesible=check_accesible, check_state=check_state )
+                    check_ownership=check_ownership,
+                    check_accessible=check_accessible,
+                    check_state=check_state )
             except Exception, exception:
                 pass
             hdas.append( hda )
@@ -573,22 +749,30 @@ class UsesHistoryDatasetAssociationMixin:
         """
         #precondition: the user's access to this hda has already been checked
         #TODO:?? postcondition: all ids are encoded (is this really what we want at this level?)
-        hda_dict = hda.get_api_value( view='element' )
+        expose_dataset_path = trans.user_is_admin() or trans.app.config.expose_dataset_path
+        hda_dict = hda.to_dict( view='element', expose_dataset_path=expose_dataset_path )
         hda_dict[ 'api_type' ] = "file"
 
         # Add additional attributes that depend on trans can hence must be added here rather than at the model level.
-
-        #NOTE: access is an expensive operation - removing it and adding the precondition of access is already checked
+        can_access_hda = trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), hda.dataset )
+        can_access_hda = ( trans.user_is_admin() or can_access_hda )
+        if not can_access_hda:
+            return self.get_inaccessible_hda_dict( trans, hda )
         hda_dict[ 'accessible' ] = True
+
+        hda_dict[ 'annotation' ] = hda.get_item_annotation_str( trans.sa_session, trans.user, hda )
 
         # ---- return here if deleted AND purged OR can't access
         purged = ( hda.purged or hda.dataset.purged )
         if ( hda.deleted and purged ):
-            #TODO: get_api_value should really go AFTER this - only summary data
+            #TODO: to_dict should really go AFTER this - only summary data
             return trans.security.encode_dict_ids( hda_dict )
 
-        if trans.user_is_admin() or trans.app.config.expose_dataset_path:
-            hda_dict[ 'file_name' ] = hda.file_name
+        if expose_dataset_path:
+            try:
+                hda_dict[ 'file_name' ] = hda.file_name
+            except objectstore.ObjectNotFound, onf:
+                log.exception( 'objectstore.ObjectNotFound, HDA %s: %s', hda.id, onf )
 
         hda_dict[ 'download_url' ] = url_for( 'history_contents_display',
             history_id = trans.security.encode_id( hda.history.id ),
@@ -614,89 +798,28 @@ class UsesHistoryDatasetAssociationMixin:
         if hda.deleted and not purged:
             return trans.security.encode_dict_ids( hda_dict )
 
-        # if a tool declares 'force_history_refresh' in its xml, when the hda -> ready, reload the history panel
-        # expensive
-        if( ( hda.state in [ 'running', 'queued' ] )
-        and ( hda.creating_job and hda.creating_job.tool_id ) ):
-            tool_used = trans.app.toolbox.get_tool( hda.creating_job.tool_id )
-            if tool_used and tool_used.force_history_refresh:
-                hda_dict[ 'force_history_refresh' ] = True
-
         return trans.security.encode_dict_ids( hda_dict )
 
-    def profile_get_hda_dict( self, trans, hda ):
-        """Profiles returning full details of this HDA in dictionary form.
-        """
-        from galaxy.util.debugging import SimpleProfiler
-        profiler = SimpleProfiler()
-        profiler.start()
-
-        hda_dict = hda.get_api_value( view='element' )
-        profiler.report( '\t\t get_api_value' )
-        history = hda.history
-        hda_dict[ 'api_type' ] = "file"
-
-        # Add additional attributes that depend on trans can hence must be added here rather than at the model level.
-        can_access_hda = trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), hda.dataset )
-        can_access_hda = ( trans.user_is_admin() or can_access_hda )
-        hda_dict[ 'accessible' ] = can_access_hda
-        profiler.report( '\t\t accessible' )
-
-        # ---- return here if deleted AND purged OR can't access
-        purged = ( hda.purged or hda.dataset.purged )
-        if ( hda.deleted and purged ) or not can_access_hda:
-            #TODO: get_api_value should really go AFTER this - only summary data
-            return ( profiler, trans.security.encode_dict_ids( hda_dict ) )
-
-        if trans.user_is_admin() or trans.app.config.expose_dataset_path:
-            hda_dict[ 'file_name' ] = hda.file_name
-        profiler.report( '\t\t file_name' )
-
-        hda_dict[ 'download_url' ] = url_for( 'history_contents_display',
-            history_id = trans.security.encode_id( history.id ),
-            history_content_id = trans.security.encode_id( hda.id ) )
-        profiler.report( '\t\t download_url' )
-
-        # indeces, assoc. metadata files, etc.
-        meta_files = []
-        for meta_type in hda.metadata.spec.keys():
-            if isinstance( hda.metadata.spec[ meta_type ].param, FileParameter ):
-                meta_files.append( dict( file_type=meta_type ) )
-        if meta_files:
-            hda_dict[ 'meta_files' ] = meta_files
-        profiler.report( '\t\t meta_files' )
-
-        # currently, the viz reg is optional - handle on/off
-        if trans.app.visualizations_registry:
-            hda_dict[ 'visualizations' ] = trans.app.visualizations_registry.get_visualizations( trans, hda )
-        else:
-            hda_dict[ 'visualizations' ] = hda.get_visualizations()
-        profiler.report( '\t\t visualizations' )
-        #TODO: it may also be wiser to remove from here and add as API call that loads the visualizations
-        #           when the visualizations button is clicked (instead of preloading/pre-checking)
-
-        # ---- return here if deleted
-        if hda.deleted and not purged:
-            return ( profiler, trans.security.encode_dict_ids( hda_dict ) )
-
-        # if a tool declares 'force_history_refresh' in its xml, when the hda -> ready, reload the history panel
-        # expensive
-        if( ( hda.state in [ 'running', 'queued' ] )
-        and ( hda.creating_job and hda.creating_job.tool_id ) ):
-            tool_used = trans.app.toolbox.get_tool( hda.creating_job.tool_id )
-            if tool_used and tool_used.force_history_refresh:
-                hda_dict[ 'force_history_refresh' ] = True
-            profiler.report( '\t\t force_history_refresh' )
-
-        return ( profiler, trans.security.encode_dict_ids( hda_dict ) )
-
-    def get_hda_dict_with_error( self, trans, hda, error_msg='' ):
+    def get_inaccessible_hda_dict( self, trans, hda ):
         return trans.security.encode_dict_ids({
             'id'        : hda.id,
             'history_id': hda.history.id,
             'hid'       : hda.hid,
             'name'      : hda.name,
-            'error'     : error_msg
+            'state'     : hda.state,
+            'deleted'   : hda.deleted,
+            'visible'   : hda.visible,
+            'accessible': False
+        })
+
+    def get_hda_dict_with_error( self, trans, hda=None, history_id=None, id=None, error_msg='Error' ):
+        return trans.security.encode_dict_ids({
+            'id'        : hda.id if hda else id,
+            'history_id': hda.history.id if hda else history_id,
+            'hid'       : hda.hid if hda else '(unknown)',
+            'name'      : hda.name if hda else '(unknown)',
+            'error'     : error_msg,
+            'state'     : trans.model.Dataset.states.NEW
         })
 
     def get_display_apps( self, trans, hda ):
@@ -719,7 +842,7 @@ class UsesHistoryDatasetAssociationMixin:
         display_apps = []
         if not trans.app.config.enable_old_display_applications:
             return display_apps
-        
+
         for display_app in hda.datatype.get_display_types():
             target_frame, display_links = hda.datatype.get_display_links( hda,
                 display_app, trans.app, trans.request.base )
@@ -751,7 +874,8 @@ class UsesHistoryDatasetAssociationMixin:
         if 'annotation' in new_data.keys() and trans.get_user():
             hda.add_item_annotation( trans.sa_session, trans.get_user(), hda, new_data[ 'annotation' ] )
             changed[ 'annotation' ] = new_data[ 'annotation' ]
-        # tags
+        if 'tags' in new_data.keys() and trans.get_user():
+            self.set_tags_from_list( trans, hda, new_data[ 'tags' ], user=trans.user )
         # sharing/permissions?
         # purged
 
@@ -759,6 +883,15 @@ class UsesHistoryDatasetAssociationMixin:
             trans.sa_session.flush()
 
         return changed
+
+    def get_hda_job( self, hda ):
+        # Get dataset's job.
+        job = None
+        for job_output_assoc in hda.creating_job_associations:
+            job = job_output_assoc.job
+            break
+        return job
+
 
 
 class UsesLibraryMixin:
@@ -967,7 +1100,7 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin, UsesLibraryMix
             return query
         return query.all()
 
-    #TODO: move into model (get_api_value)
+    #TODO: move into model (to_dict)
     def get_visualization_summary_dict( self, visualization ):
         """
         Return a set of summary attributes for a visualization in dictionary form.
@@ -996,7 +1129,7 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin, UsesLibraryMix
             'user_id'   : visualization.user.id,
             'dbkey'     : visualization.dbkey,
             'slug'      : visualization.slug,
-            # dictify only the latest revision (allow older to be fetched elsewhere)
+            # to_dict only the latest revision (allow older to be fetched elsewhere)
             'latest_revision' : self.get_visualization_revision_dict( visualization.latest_revision ),
             'revisions' : [ r.id for r in visualization.revisions ],
         }
@@ -1110,7 +1243,6 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin, UsesLibraryMix
                 return {
                     "dataset_id": trans.security.decode_id( dataset_dict['id'] ),
                     "hda_ldda": dataset_dict.get('hda_ldda', 'hda'),
-                    "name": track_dict['name'],
                     "track_type": track_dict['track_type'],
                     "prefs": track_dict['prefs'],
                     "mode": track_dict['mode'],
@@ -1129,7 +1261,6 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin, UsesLibraryMix
                         drawable = unpack_collection( drawable_json )
                     unpacked_drawables.append( drawable )
                 return {
-                    "name": collection_json.get( 'name', '' ),
                     "obj_type": collection_json[ 'obj_type' ],
                     "drawables": unpacked_drawables,
                     "prefs": collection_json.get( 'prefs' , [] ),
@@ -1161,6 +1292,39 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin, UsesLibraryMix
         encoded_id = trans.security.encode_id( vis.id )
         return { "vis_id": encoded_id, "url": url_for( controller='visualization', action=vis.type, id=encoded_id ) }
 
+    def get_tool_def( self, trans, hda ):
+        """ Returns definition of an interactive tool for an HDA. """
+
+        job = self.get_hda_job( hda )
+        if not job:
+            return None
+        tool = trans.app.toolbox.get_tool( job.tool_id )
+        if not tool:
+            return None
+
+        # Tool must have a Trackster configuration.
+        if not tool.trackster_conf:
+            return None
+
+        # -- Get tool definition and add input values from job. --
+        tool_dict = tool.to_dict( trans, io_details=True )
+        tool_param_values = dict( [ ( p.name, p.value ) for p in job.parameters ] )
+        tool_param_values = tool.params_from_strings( tool_param_values, trans.app, ignore_errors=True )
+
+        # Only get values for simple inputs for now.
+        inputs_dict = [ i for i in tool_dict[ 'inputs' ] if i[ 'type' ] not in [ 'data', 'hidden_data', 'conditional' ] ]
+        for t_input in inputs_dict:
+            # Add value to tool.
+            if 'name' in t_input:
+                name = t_input[ 'name' ]
+                if name in tool_param_values:
+                    value = tool_param_values[ name ]
+                    if isinstance( value, Dictifiable ):
+                        value = value.to_dict()
+                    t_input[ 'value' ] = value
+
+        return tool_dict
+
     def get_visualization_config( self, trans, visualization ):
         """ Returns a visualization's configuration. Only works for trackster visualizations right now. """
         config = None
@@ -1188,12 +1352,11 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin, UsesLibraryMix
                                                                                           source='data' )
                 return {
                     "track_type": dataset.datatype.track_type,
-                    "dataset": trans.security.encode_dict_ids( dataset.get_api_value() ),
-                    "name": track_dict['name'],
+                    "dataset": trans.security.encode_dict_ids( dataset.to_dict() ),
                     "prefs": prefs,
                     "mode": track_dict.get( 'mode', 'Auto' ),
                     "filters": track_dict.get( 'filters', { 'filters' : track_data_provider.get_filters() } ),
-                    "tool": get_tool_def( trans, dataset ),
+                    "tool": self.get_tool_def( trans, dataset ),
                     "tool_state": track_dict.get( 'tool_state', {} )
                 }
 
@@ -1205,7 +1368,6 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin, UsesLibraryMix
                     else:
                         drawables.append( pack_collection( drawable_dict ) )
                 return {
-                    'name': collection_dict.get( 'name', 'dummy' ),
                     'obj_type': collection_dict[ 'obj_type' ],
                     'drawables': drawables,
                     'prefs': collection_dict.get( 'prefs', [] ),
@@ -1268,10 +1430,10 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin, UsesLibraryMix
         return {
             "track_type": dataset.datatype.track_type,
             "name": dataset.name,
-            "dataset": trans.security.encode_dict_ids( dataset.get_api_value() ),
+            "dataset": trans.security.encode_dict_ids( dataset.to_dict() ),
             "prefs": {},
             "filters": { 'filters' : track_data_provider.get_filters() },
-            "tool": get_tool_def( trans, dataset ),
+            "tool": self.get_tool_def( trans, dataset ),
             "tool_state": {}
         }
 
@@ -1376,7 +1538,7 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin, UsesLibraryMix
         return return_message
 
 
-class UsesStoredWorkflowMixin( SharableItemSecurityMixin ):
+class UsesStoredWorkflowMixin( SharableItemSecurityMixin, UsesAnnotations ):
     """ Mixin for controllers that use StoredWorkflow objects. """
 
     def get_stored_workflow( self, trans, id, check_ownership=True, check_accessible=False ):
@@ -1417,6 +1579,247 @@ class UsesStoredWorkflowMixin( SharableItemSecurityMixin ):
                 step.state = step.module.get_runtime_state()
             # Connections by input name
             step.input_connections_by_name = dict( ( conn.input_name, conn ) for conn in step.input_connections )
+
+    def _import_shared_workflow( self, trans, stored):
+        """ """
+        # Copy workflow.
+        imported_stored = model.StoredWorkflow()
+        imported_stored.name = "imported: " + stored.name
+        imported_stored.latest_workflow = stored.latest_workflow
+        imported_stored.user = trans.user
+        # Save new workflow.
+        session = trans.sa_session
+        session.add( imported_stored )
+        session.flush()
+
+        # Copy annotations.
+        self.copy_item_annotation( session, stored.user, stored, imported_stored.user, imported_stored )
+        for order_index, step in enumerate( stored.latest_workflow.steps ):
+            self.copy_item_annotation( session, stored.user, step, \
+                                        imported_stored.user, imported_stored.latest_workflow.steps[order_index] )
+        session.flush()
+        return imported_stored
+
+    def _workflow_from_dict( self, trans, data, source=None, add_to_menu=False ):
+        """
+        Creates a workflow from a dict. Created workflow is stored in the database and returned.
+        """
+        from galaxy.webapps.galaxy.controllers.workflow import attach_ordered_steps
+
+        # Put parameters in workflow mode
+        trans.workflow_building_mode = True
+        # Create new workflow from incoming dict
+        workflow = model.Workflow()
+        # If there's a source, put it in the workflow name.
+        if source:
+            name = "%s (imported from %s)" % ( data['name'], source )
+        else:
+            name = data['name']
+        workflow.name = name
+        # Assume no errors until we find a step that has some
+        workflow.has_errors = False
+        # Create each step
+        steps = []
+        # The editor will provide ids for each step that we don't need to save,
+        # but do need to use to make connections
+        steps_by_external_id = {}
+        # Keep track of tools required by the workflow that are not available in
+        # the local Galaxy instance.  Each tuple in the list of missing_tool_tups
+        # will be ( tool_id, tool_name, tool_version ).
+        missing_tool_tups = []
+        # First pass to build step objects and populate basic values
+        for step_dict in data[ 'steps' ].itervalues():
+            # Create the model class for the step
+            step = model.WorkflowStep()
+            steps.append( step )
+            steps_by_external_id[ step_dict['id' ] ] = step
+            # FIXME: Position should be handled inside module
+            step.position = step_dict['position']
+            module = module_factory.from_dict( trans, step_dict, secure=False )
+            module.save_to_step( step )
+            if module.type == 'tool' and module.tool is None:
+                # A required tool is not available in the local Galaxy instance.
+                missing_tool_tup = ( step_dict[ 'tool_id' ], step_dict[ 'name' ], step_dict[ 'tool_version' ] )
+                if missing_tool_tup not in missing_tool_tups:
+                    missing_tool_tups.append( missing_tool_tup )
+                # Save the entire step_dict in the unused config field, be parsed later
+                # when we do have the tool
+                step.config = to_json_string(step_dict)
+            if step.tool_errors:
+                workflow.has_errors = True
+            # Stick this in the step temporarily
+            step.temp_input_connections = step_dict['input_connections']
+            # Save step annotation.
+            annotation = step_dict[ 'annotation' ]
+            if annotation:
+                annotation = sanitize_html( annotation, 'utf-8', 'text/html' )
+                self.add_item_annotation( trans.sa_session, trans.get_user(), step, annotation )
+        # Second pass to deal with connections between steps
+        for step in steps:
+            # Input connections
+            for input_name, conn_list in step.temp_input_connections.iteritems():
+                if not conn_list:
+                    continue
+                if not isinstance(conn_list, list):  # Older style singleton connection
+                    conn_list = [conn_list]
+                for conn_dict in conn_list:
+                    conn = model.WorkflowStepConnection()
+                    conn.input_step = step
+                    conn.input_name = input_name
+                    conn.output_name = conn_dict['output_name']
+                    conn.output_step = steps_by_external_id[ conn_dict['id'] ]
+            del step.temp_input_connections
+
+        # Order the steps if possible
+        attach_ordered_steps( workflow, steps )
+
+        # Connect up
+        stored = model.StoredWorkflow()
+        stored.name = workflow.name
+        workflow.stored_workflow = stored
+        stored.latest_workflow = workflow
+        stored.user = trans.user
+        if data[ 'annotation' ]:
+            self.add_item_annotation( trans.sa_session, stored.user, stored, data[ 'annotation' ] )
+
+        # Persist
+        trans.sa_session.add( stored )
+        trans.sa_session.flush()
+
+        if add_to_menu:
+            if trans.user.stored_workflow_menu_entries == None:
+                trans.user.stored_workflow_menu_entries = []
+            menuEntry = model.StoredWorkflowMenuEntry()
+            menuEntry.stored_workflow = stored
+            trans.user.stored_workflow_menu_entries.append( menuEntry )
+            trans.sa_session.flush()
+
+        return stored, missing_tool_tups
+
+    def _workflow_to_dict( self, trans, stored ):
+        """
+        Converts a workflow to a dict of attributes suitable for exporting.
+        """
+        workflow = stored.latest_workflow
+        workflow_annotation = self.get_item_annotation_obj( trans.sa_session, trans.user, stored )
+        annotation_str = ""
+        if workflow_annotation:
+            annotation_str = workflow_annotation.annotation
+        # Pack workflow data into a dictionary and return
+        data = {}
+        data['a_galaxy_workflow'] = 'true' # Placeholder for identifying galaxy workflow
+        data['format-version'] = "0.1"
+        data['name'] = workflow.name
+        data['annotation'] = annotation_str
+        data['steps'] = {}
+        # For each step, rebuild the form and encode the state
+        for step in workflow.steps:
+            # Load from database representation
+            module = module_factory.from_workflow_step( trans, step )
+            if not module:
+                return None
+            # Get user annotation.
+            step_annotation = self.get_item_annotation_obj(trans.sa_session, trans.user, step )
+            annotation_str = ""
+            if step_annotation:
+                annotation_str = step_annotation.annotation
+            # Step info
+            step_dict = {
+                'id': step.order_index,
+                'type': module.type,
+                'tool_id': module.get_tool_id(),
+                'tool_version' : step.tool_version,
+                'name': module.get_name(),
+                'tool_state': module.get_state( secure=False ),
+                'tool_errors': module.get_errors(),
+                ## 'data_inputs': module.get_data_inputs(),
+                ## 'data_outputs': module.get_data_outputs(),
+                'annotation' : annotation_str
+            }
+            # Add post-job actions to step dict.
+            if module.type == 'tool':
+                pja_dict = {}
+                for pja in step.post_job_actions:
+                    pja_dict[pja.action_type+pja.output_name] = dict( action_type = pja.action_type,
+                                                                      output_name = pja.output_name,
+                                                                      action_arguments = pja.action_arguments )
+                step_dict[ 'post_job_actions' ] = pja_dict
+            # Data inputs
+            step_dict['inputs'] = []
+            if module.type == "data_input":
+                # Get input dataset name; default to 'Input Dataset'
+                name = module.state.get( 'name', 'Input Dataset')
+                step_dict['inputs'].append( { "name" : name, "description" : annotation_str } )
+            else:
+                # Step is a tool and may have runtime inputs.
+                for name, val in module.state.inputs.items():
+                    input_type = type( val )
+                    if input_type == RuntimeValue:
+                        step_dict['inputs'].append( { "name" : name, "description" : "runtime parameter for tool %s" % module.get_name() } )
+                    elif input_type == dict:
+                        # Input type is described by a dict, e.g. indexed parameters.
+                        for partval in val.values():
+                            if type( partval ) == RuntimeValue:
+                                step_dict['inputs'].append( { "name" : name, "description" : "runtime parameter for tool %s" % module.get_name() } )
+            # User outputs
+            step_dict['user_outputs'] = []
+            """
+            module_outputs = module.get_data_outputs()
+            step_outputs = trans.sa_session.query( WorkflowOutput ).filter( step=step )
+            for output in step_outputs:
+                name = output.output_name
+                annotation = ""
+                for module_output in module_outputs:
+                    if module_output.get( 'name', None ) == name:
+                        output_type = module_output.get( 'extension', '' )
+                        break
+                data['outputs'][name] = { 'name' : name, 'annotation' : annotation, 'type' : output_type }
+            """
+
+            # All step outputs
+            step_dict['outputs'] = []
+            if type( module ) is ToolModule:
+                for output in module.get_data_outputs():
+                    step_dict['outputs'].append( { 'name' : output['name'], 'type' : output['extensions'][0] } )
+            # Connections
+            input_connections = step.input_connections
+            if step.type is None or step.type == 'tool':
+                # Determine full (prefixed) names of valid input datasets
+                data_input_names = {}
+                def callback( input, value, prefixed_name, prefixed_label ):
+                    if isinstance( input, DataToolParameter ):
+                        data_input_names[ prefixed_name ] = True
+
+                # FIXME: this updates modules silently right now; messages from updates should be provided.
+                module.check_and_update_state()
+                visit_input_values( module.tool.inputs, module.state.inputs, callback )
+                # Filter
+                # FIXME: this removes connection without displaying a message currently!
+                input_connections = [ conn for conn in input_connections if conn.input_name in data_input_names ]
+            # Encode input connections as dictionary
+            input_conn_dict = {}
+            unique_input_names = set( [conn.input_name for conn in input_connections] )
+            for input_name in unique_input_names:
+                input_conn_dict[ input_name ] = \
+                    [ dict( id=conn.output_step.order_index, output_name=conn.output_name ) for conn in input_connections if conn.input_name == input_name ]
+            # Preserve backward compatability. Previously Galaxy
+            # assumed input connections would be dictionaries not
+            # lists of dictionaries, so replace any singleton list
+            # with just the dictionary so that workflows exported from
+            # newer Galaxy instances can be used with older Galaxy
+            # instances if they do no include multiple input
+            # tools. This should be removed at some point. Mirrored
+            # hack in _workflow_from_dict should never be removed so
+            # existing workflow exports continue to function.
+            for input_name, input_conn in dict(input_conn_dict).iteritems():
+                if len(input_conn) == 1:
+                    input_conn_dict[input_name] = input_conn[0]
+            step_dict['input_connections'] = input_conn_dict
+            # Position
+            step_dict['position'] = step.position
+            # Add to return value
+            data['steps'][step.order_index] = step_dict
+        return data
 
 
 class UsesFormDefinitionsMixin:
@@ -2239,13 +2642,7 @@ class SharableMixin:
                 item_name = item.name
             elif hasattr( item, 'title' ):
                 item_name = item.title
-            # Replace whitespace with '-'
-            slug_base = re.sub( "\s+", "-", item_name.lower() )
-            # Remove all non-alphanumeric characters.
-            slug_base = re.sub( "[^a-zA-Z0-9\-]", "", slug_base )
-            # Remove trailing '-'.
-            if slug_base.endswith('-'):
-                slug_base = slug_base[:-1]
+            slug_base = util.ready_name_for_url( item_name.lower() )
         else:
             slug_base = cur_slug
 
@@ -2339,6 +2736,140 @@ class UsesTagsMixin( object ):
         tagged_item = self._get_tagged_item( trans, item_class_name, id )
         log.debug( "In get_item_tag_assoc with tagged_item %s" % tagged_item )
         return self.get_tag_handler( trans )._get_item_tag_assoc( user, tagged_item, tag_name )
+
+    def set_tags_from_list( self, trans, item, new_tags_list, user=None ):
+        #precondition: item is already security checked against user
+        #precondition: incoming tags is a list of sanitized/formatted strings
+        user = user or trans.user
+
+        # based on controllers/tag retag_async: delete all old, reset to entire new
+        trans.app.tag_handler.delete_item_tags( trans, user, item )
+        new_tags_str = ','.join( new_tags_list )
+        trans.app.tag_handler.apply_item_tags( trans, user, item, unicode( new_tags_str.encode( 'utf-8' ), 'utf-8' ) )
+        trans.sa_session.flush()
+        return item.tags
+
+    def get_user_tags_used( self, trans, user=None ):
+        """
+        Return a list of distinct 'user_tname:user_value' strings that the
+        given user has used.
+
+        user defaults to trans.user.
+        Returns an empty list if no user is given and trans.user is anonymous.
+        """
+        #TODO: for lack of a UsesUserMixin - placing this here - maybe into UsesTags, tho
+        user = user or trans.user
+        if not user:
+            return []
+
+        # get all the taggable model TagAssociations
+        tag_models = [ v.tag_assoc_class for v in trans.app.tag_handler.item_tag_assoc_info.values() ]
+        # create a union of subqueries for each for this user - getting only the tname and user_value
+        all_tags_query = None
+        for tag_model in tag_models:
+            subq = ( trans.sa_session.query( tag_model.user_tname, tag_model.user_value )
+                        .filter( tag_model.user == trans.user ) )
+            all_tags_query = subq if all_tags_query is None else all_tags_query.union( subq )
+
+        # if nothing init'd the query, bail
+        if all_tags_query is None:
+            return []
+
+        # boil the tag tuples down into a sorted list of DISTINCT name:val strings
+        tags = all_tags_query.distinct().all()
+        tags = [( ( name + ':' + val ) if val else name ) for name, val in tags ]
+        return sorted( tags )
+
+
+
+class UsesExtendedMetadataMixin( SharableItemSecurityMixin ):
+    """ Mixin for getting and setting item extended metadata. """
+
+    def get_item_extended_metadata_obj( self, trans, item ):
+        """
+        Given an item object (such as a LibraryDatasetDatasetAssociation), find the object
+        of the associated extended metadata
+        """
+        if item.extended_metadata:
+            return item.extended_metadata
+        return None
+
+    def set_item_extended_metadata_obj( self, trans, item, extmeta_obj, check_writable=False):
+        if item.__class__ == LibraryDatasetDatasetAssociation:
+            if not check_writable or trans.app.security_agent.can_modify_library_item( trans.get_current_user_roles(), item, trans.user ):
+                item.extended_metadata = extmeta_obj
+                trans.sa_session.flush()
+        if item.__class__ == HistoryDatasetAssociation:
+            history = None
+            if check_writable:
+                history = self.security_check( trans, item, check_ownership=True, check_accessible=True )
+            else:
+                history = self.security_check( trans, item, check_ownership=False, check_accessible=True )
+            if history:
+                item.extended_metadata = extmeta_obj
+                trans.sa_session.flush()
+
+    def unset_item_extended_metadata_obj( self, trans, item, check_writable=False):
+        if item.__class__ == LibraryDatasetDatasetAssociation:
+            if not check_writable or trans.app.security_agent.can_modify_library_item( trans.get_current_user_roles(), item, trans.user ):
+                item.extended_metadata = None
+                trans.sa_session.flush()
+        if item.__class__ == HistoryDatasetAssociation:
+            history = None
+            if check_writable:
+                history = self.security_check( trans, item, check_ownership=True, check_accessible=True )
+            else:
+                history = self.security_check( trans, item, check_ownership=False, check_accessible=True )
+            if history:
+                item.extended_metadata = None
+                trans.sa_session.flush()
+
+    def create_extended_metadata(self, trans, extmeta):
+        """
+        Create/index an extended metadata object. The returned object is
+        not associated with any items
+        """
+        ex_meta = ExtendedMetadata(extmeta)
+        trans.sa_session.add( ex_meta )
+        trans.sa_session.flush()
+        for path, value in self._scan_json_block(extmeta):
+            meta_i = ExtendedMetadataIndex(ex_meta, path, value)
+            trans.sa_session.add(meta_i)
+        trans.sa_session.flush()
+        return ex_meta
+
+    def delete_extended_metadata( self, trans, item):
+        if item.__class__ == ExtendedMetadata:
+            trans.sa_session.delete( item )
+            trans.sa_session.flush()
+
+    def _scan_json_block(self, meta, prefix=""):
+        """
+        Scan a json style data structure, and emit all fields and their values.
+        Example paths
+
+        Data
+        { "data" : [ 1, 2, 3 ] }
+
+        Path:
+        /data == [1,2,3]
+
+        /data/[0] == 1
+
+        """
+        if isinstance(meta, dict):
+            for a in meta:
+                for path, value in self._scan_json_block(meta[a], prefix + "/" + a):
+                    yield path, value
+        elif isinstance(meta, list):
+            for i, a in enumerate(meta):
+                for path, value in self._scan_json_block(a, prefix + "[%d]" % (i)):
+                    yield path, value
+        else:
+            #BUG: Everything is cast to string, which can lead to false positives
+            #for cross type comparisions, ie "True" == True
+            yield prefix, ("%s" % (meta)).encode("utf8", errors='replace')
+
 
 """
 Deprecated: `BaseController` used to be available under the name `Root`

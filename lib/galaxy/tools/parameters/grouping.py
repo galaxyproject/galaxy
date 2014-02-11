@@ -15,31 +15,43 @@ from galaxy.util import relpath
 from galaxy.util import sanitize_for_filename
 from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
+from galaxy.model.item_attrs import Dictifiable
 
-class Group( object ):
+class Group( object, Dictifiable ):
+
+    dict_collection_visible_keys = ( 'name', 'type' )
+
     def __init__( self ):
         self.name = None
+
     @property
     def visible( self ):
         return True
+
     def value_to_basic( self, value, app ):
         """
         Convert value to a (possibly nested) representation using only basic
         types (dict, list, tuple, str, unicode, int, long, float, bool, None)
         """
         return value
+
     def value_from_basic( self, value, app, ignore_errors=False ):
         """
         Convert a basic representation as produced by `value_to_basic` back
         into the preferred value form.
         """
         return value
-    def get_initial_value( self, trans, context ):
+    def get_initial_value( self, trans, context, history=None ):
         """
         Return the initial state/value for this group
         """
         raise TypeError( "Not implemented" )
-        
+
+    def to_dict( self, trans, view='collection', value_mapper=None ):
+        # TODO: need to to_dict conditions.
+        group_dict = super( Group, self ).to_dict( view=view, value_mapper=value_mapper )
+        return group_dict
+
 class Repeat( Group ):
     type = "repeat"
     def __init__( self ):
@@ -79,7 +91,7 @@ class Repeat( Group ):
                     if ignore_errors and input.name not in d:
                         # If we do not have a value, and are ignoring errors, we simply
                         # do nothing. There will be no value for the parameter in the
-                        # conditional's values dictionary.     
+                        # conditional's values dictionary.
                         pass
                     else:
                         rval_dict[ input.name ] = input.value_from_basic( d[input.name], app, ignore_errors )
@@ -87,7 +99,7 @@ class Repeat( Group ):
         except Exception, e:
             if not ignore_errors:
                 raise e
-        return rval 
+        return rval
     def visit_inputs( self, prefix, value, callback ):
         for i, d in enumerate( value ):
             for input in self.inputs.itervalues():
@@ -96,12 +108,12 @@ class Repeat( Group ):
                     callback( new_prefix, input, d[input.name], parent = d )
                 else:
                     input.visit_inputs( new_prefix, d[input.name], callback )
-    def get_initial_value( self, trans, context ):
+    def get_initial_value( self, trans, context, history=None ):
         rval = []
         for i in range( self.default ):
             rval_dict = { '__index__': i}
             for input in self.inputs.itervalues():
-                rval_dict[ input.name ] = input.get_initial_value( trans, context )
+                rval_dict[ input.name ] = input.get_initial_value( trans, context, history=history )
             rval.append( rval_dict )
         return rval
 
@@ -118,7 +130,7 @@ class UploadDataset( Group ):
     def get_composite_dataset_name( self, context ):
         #FIXME: HACK
         #Special case of using 'base_name' metadata for use as Dataset name needs to be done in a General Fashion, as defined within a particular Datatype.
-        
+
         #We get two different types of contexts here, one straight from submitted parameters, the other after being parsed into tool inputs
         dataset_name = context.get('files_metadata|base_name', None )
         if dataset_name is None:
@@ -180,7 +192,7 @@ class UploadDataset( Group ):
                 else:
                     rval_dict[ input.name ] = input.value_from_basic( d[input.name], app, ignore_errors )
             rval.append( rval_dict )
-        return rval 
+        return rval
     def visit_inputs( self, prefix, value, callback ):
         for i, d in enumerate( value ):
             for input in self.inputs.itervalues():
@@ -189,14 +201,14 @@ class UploadDataset( Group ):
                     callback( new_prefix, input, d[input.name], parent = d )
                 else:
                     input.visit_inputs( new_prefix, d[input.name], callback )
-    def get_initial_value( self, trans, context ):
+    def get_initial_value( self, trans, context, history=None ):
         d_type = self.get_datatype( trans, context )
         rval = []
         for i, ( composite_name, composite_file ) in enumerate( d_type.writable_files.iteritems() ):
             rval_dict = {}
             rval_dict['__index__'] = i # create __index__
             for input in self.inputs.itervalues():
-                rval_dict[ input.name ] = input.get_initial_value( trans, context ) #input.value_to_basic( d[input.name], app )
+                rval_dict[ input.name ] = input.get_initial_value( trans, context, history=history ) #input.value_to_basic( d[input.name], app )
             rval.append( rval_dict )
         return rval
     def get_uploaded_datasets( self, trans, context, override_name = None, override_info = None ):
@@ -254,6 +266,9 @@ class UploadDataset( Group ):
             name = context.get( 'NAME', None )
             info = context.get( 'INFO', None )
             warnings = []
+            to_posix_lines = False
+            if context.get( 'to_posix_lines', None ) not in [ "None", None, False ]:
+                to_posix_lines = True
             space_to_tab = False
             if context.get( 'space_to_tab', None ) not in [ "None", None, False ]:
                 space_to_tab = True
@@ -286,6 +301,7 @@ class UploadDataset( Group ):
                             break
                     if file_bunch.path:
                         break
+            file_bunch.to_posix_lines = to_posix_lines
             file_bunch.space_to_tab = space_to_tab
             return file_bunch, warnings
         def get_filenames( context ):
@@ -295,16 +311,21 @@ class UploadDataset( Group ):
             ftp_files = context['ftp_files']
             name = context.get( 'NAME', None )
             info = context.get( 'INFO', None )
+            to_posix_lines = False
+            if context.get( 'to_posix_lines', None ) not in [ "None", None, False ]:
+                to_posix_lines = True
             space_to_tab = False
             if context.get( 'space_to_tab', None ) not in [ "None", None, False ]:
                 space_to_tab = True
             warnings = []
             file_bunch = get_data_file_filename( data_file, override_name = name, override_info = info )
             if file_bunch.path:
+                file_bunch.to_posix_lines = to_posix_lines
                 file_bunch.space_to_tab = space_to_tab
                 rval.append( file_bunch )
             for file_bunch in get_url_paste_urls_or_filename( context, override_name = name, override_info = info ):
                 if file_bunch.path:
+                    file_bunch.to_posix_lines = to_posix_lines
                     file_bunch.space_to_tab = space_to_tab
                     rval.append( file_bunch )
             # look for files uploaded via FTP
@@ -340,6 +361,7 @@ class UploadDataset( Group ):
                                   'filename' : os.path.basename( ftp_file ) }
                 file_bunch = get_data_file_filename( ftp_data_file, override_name = name, override_info = info )
                 if file_bunch.path:
+                    file_bunch.to_posix_lines = to_posix_lines
                     file_bunch.space_to_tab = space_to_tab
                     rval.append( file_bunch )
             return rval
@@ -378,11 +400,13 @@ class UploadDataset( Group ):
                 #replace sniff here with just creating an empty file
                 temp_name, is_multi_byte = sniff.stream_to_file( StringIO.StringIO( d_type.generate_primary_file( dataset ) ), prefix='upload_auto_primary_file' )
                 dataset.primary_file = temp_name
+                dataset.to_posix_lines = True
                 dataset.space_to_tab = False
             else:
                 file_bunch, warnings = get_one_filename( groups_incoming[ 0 ] )
                 writable_files_offset = 1
                 dataset.primary_file = file_bunch.path
+                dataset.to_posix_lines = file_bunch.to_posix_lines
                 dataset.space_to_tab = file_bunch.space_to_tab
                 dataset.warnings.extend( warnings )
             if dataset.primary_file is None:#remove this before finish, this should create an empty dataset
@@ -460,7 +484,7 @@ class Conditional( Group ):
                 if ignore_errors and input.name not in value:
                     # If we do not have a value, and are ignoring errors, we simply
                     # do nothing. There will be no value for the parameter in the
-                    # conditional's values dictionary.                 
+                    # conditional's values dictionary.
                     pass
                 else:
                     rval[ input.name ] = input.value_from_basic( value[ input.name ], app, ignore_errors )
@@ -476,12 +500,12 @@ class Conditional( Group ):
                 callback( prefix, input, value[input.name], parent = value )
             else:
                 input.visit_inputs( prefix, value[input.name], callback )
-    def get_initial_value( self, trans, context ):
+    def get_initial_value( self, trans, context, history=None ):
         # State for a conditional is a plain dictionary. 
         rval = {}
         # Get the default value for the 'test element' and use it
         # to determine the current case
-        test_value = self.test_param.get_initial_value( trans, context )
+        test_value = self.test_param.get_initial_value( trans, context, history=history )
         current_case = self.get_current_case( test_value, trans )
         # Store the current case in a special value
         rval['__current_case__'] = current_case
@@ -490,9 +514,9 @@ class Conditional( Group ):
         # Fill in state for selected case
         child_context = ExpressionContext( rval, context )
         for child_input in self.cases[current_case].inputs.itervalues():
-            rval[ child_input.name ] = child_input.get_initial_value( trans, child_context )
+            rval[ child_input.name ] = child_input.get_initial_value( trans, child_context, history=history )
         return rval
-                         
+
 class ConditionalWhen( object ):
     def __init__( self ):
         self.value = None

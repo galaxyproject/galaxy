@@ -1,0 +1,6 @@
+<?xml version='1.0' encoding='utf-8'?>
+<tool_dependency>
+    <package name="failure" version="1.0.0">
+        <repository name="package_env_sh_1_0_1440" owner="user1" />
+    </package>
+</tool_dependency>

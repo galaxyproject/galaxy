@@ -21,7 +21,7 @@
 
 <%def name="stylesheets()">
     ${parent.stylesheets()}
-    ${h.css('base','panel_layout','jquery.rating')}
+    ${h.css('base','jquery.rating')}
 </%def>
 
 <%def name="javascripts()">
@@ -33,7 +33,7 @@
     ${render_msg( message, status )}
 %endif
 
-${render_tool_shed_repository_actions( repository, repo=None, metadata=None, changeset_revision=None )}
+${render_tool_shed_repository_actions( repository, metadata=None, changeset_revision=None )}
 
 %if repository.user != trans.user:
     <div class="toolForm">
@@ -46,13 +46,18 @@ ${render_tool_shed_repository_actions( repository, repo=None, metadata=None, cha
         %endif
         <div class="toolFormBody">
             <div class="form-row">
+                <label>Type:</label>
+                ${repository.type | h}
+                <div style="clear: both"></div>
+            </div>
+            <div class="form-row">
                 <label>Description:</label>
                 ${repository.description | h}
                 <div style="clear: both"></div>
             </div>
             <div class="form-row">
-                <label>Version:</label>
-                ${repository.revision( trans.app ) | h}
+                <label>Revision:</label>
+                ${revision_label}
                 <div style="clear: both"></div>
             </div>
             <div class="form-row">

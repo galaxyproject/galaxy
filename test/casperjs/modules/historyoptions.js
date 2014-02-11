@@ -34,8 +34,11 @@ var xpath = require( 'casper' ).selectXPath;
  *  @returns {Any} the return value of fn
  */
 HistoryOptions.prototype.openMenu = function openMenu( fn ){
+
     return this.spaceghost.jumpToTop( function(){
-        this.click( this.historyoptions.data.selectors.button );
+        if( !spaceghost.visible( this.historyoptions.data.selectors.menu ) ){
+            this.click( this.historyoptions.data.selectors.button );
+        }
         return fn.call( this );
     });
 };
@@ -170,41 +173,32 @@ HistoryOptions.prototype.collapseExpanded = function collapseExpanded( then ){
  *  @param {Function} then  casper step to run when option is set
  */
 HistoryOptions.prototype.includeDeleted = function includeDeleted( then ){
-    return this.spaceghost.then( function(){
-        this.historyoptions.toggle( this.historyoptions.data.labels.options.includeDeleted, true );
-        this.historypanel.waitForHdas( then );
-    });
+    this.toggle( this.data.labels.options.includeDeleted, true );
+    this.spaceghost.historypanel.waitForHdas( then );
 };
 
 /** set 'Include Deleted Datasets' to off
  *  @param {Function} then  casper step to run when option is set
  */
 HistoryOptions.prototype.excludeDeleted = function excludeDeleted( then ){
-    return this.spaceghost.then( function(){
-        this.historyoptions.toggle( this.historyoptions.data.labels.options.includeDeleted, false );
-        //TODO:?? this puts in the history frame. Is that what we want?
-        this.historypanel.waitForHdas( then );
-    });
+    this.toggle( this.data.labels.options.includeDeleted, false );
+    this.spaceghost.historypanel.waitForHdas( then );
 };
 
 /** set 'Include Hidden Datasets' to on
  *  @param {Function} then  casper step to run when option is set
  */
 HistoryOptions.prototype.includeHidden = function includeHidden( then ){
-    return this.spaceghost.then( function(){
-        this.historyoptions.toggle( this.historyoptions.data.labels.options.includeHidden, true );
-        this.historypanel.waitForHdas( then );
-    });
+    this.toggle( this.data.labels.options.includeHidden, true );
+    this.spaceghost.historypanel.waitForHdas( then );
 };
 
 /** set 'Include Hidden Datasets' to off
  *  @param {Function} then  casper step to run when option is set
  */
 HistoryOptions.prototype.excludeHidden = function excludeHidden( then ){
-    return this.spaceghost.then( function(){
-        this.historyoptions.toggle( this.historyoptions.data.labels.options.includeHidden, false );
-        this.historypanel.waitForHdas( then );
-    });
+    this.toggle( this.data.labels.options.includeHidden, false );
+    this.spaceghost.historypanel.waitForHdas( then );
 };
 
 
@@ -213,14 +207,14 @@ HistoryOptions.prototype.excludeHidden = function excludeHidden( then ){
 HistoryOptions.prototype.data = {
     selectors : {
         button      : '#history-options-button',
-        buttonIcon  : '#history-options-button span.fa-icon-cog',
+        buttonIcon  : '#history-options-button span.fa-cog',
         menu        : '#history-options-button-menu',
         optionXpathByLabelFn : function optionXpathByLabelFn( label ){
             return xpath( '//ul[@id="history-options-button-menu"]/li/a[text()[contains(.,"' + label + '")]]' );
         },
         optionIsOnXpathByLabelFn : function optionIsOnXpathByLabelFn( label ){
             return xpath( '//ul[@id="history-options-button-menu"]/li/a[text()[contains(.,"' + label + '")]]'
-                        + '/span[@class="fa-icon-ok"]' );
+                        + '/span[@class="fa fa-check"]' );
         }
     },
     labels : {

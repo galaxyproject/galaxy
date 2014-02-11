@@ -13,13 +13,12 @@
             baseUrl: "${h.url_for('/static/scripts')}",
             shim: {
                 "libs/backbone/backbone": { exports: "Backbone" },
-                "libs/backbone/backbone-relational": ["libs/backbone/backbone"]
             }
         });
 
         require(['mvc/data'], function(data) {
             data.createTabularDatasetChunkedView(
-                _.extend( ${h.to_json_string( trans.security.encode_dict_ids( dataset.get_api_value() ) )}, 
+                _.extend( ${h.to_json_string( trans.security.encode_dict_ids( dataset.to_dict() ) )}, 
                         {
                             url_viz: "${h.url_for( controller='/visualization')}",
                             chunk_url: "${h.url_for( controller='/dataset', action='display',

@@ -42,7 +42,7 @@ use_threadpool = True
 
 # Set the number of seconds a thread can work before you should kill it (assuming it will never finish) to 3 hours.
 threadpool_kill_thread_limit = 10800
- 
+
 # ---- Filters --------------------------------------------------------------
 
 # Filters sit between Galaxy and the HTTP server.
@@ -124,7 +124,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 #genome_data_path = tool-data/genome
 
 # URL for rsync server to download pre-built indexes.
-#rsync_url = rsync://scofield.bx.psu.edu/indexes
+#rsync_url = rsync://datacache.galaxyproject.org/indexes
 
 # Dataset files are stored in this directory.
 #file_path = database/files
@@ -174,9 +174,10 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # Galaxy.
 #datatypes_config_file = datatypes_conf.xml
 
-# Visualizations config file, defines what visualizations apply to particular data and how to pass them
-# the necessary parameters
-#visualizations_conf_path = visualizations_conf.xml
+# Visualizations config directory: where to look for individual visualization plugins.
+# The path is relative to the Galaxy root dir. To use an absolute path begin the path
+# with '/'.
+visualization_plugins_directory = config/plugins/visualizations
 
 # Each job is given a unique empty directory as its current working directory.
 # This option defines in what parent directory those directories will be
@@ -202,12 +203,57 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # breaking existing tools.
 #collect_outputs_from = new_file_path,job_working_directory
 
+# -- Data Storage (Object Store)
+#
+# Configuration file for the object store
+# If this is set and exists, it overrides any other objectstore settings.
+# object_store_config_file = object_store_conf.xml
+
+# Object store backend module (valid options are: disk, s3, swift, irods,
+# distributed, hierarchical)
+#object_store = disk
+
+# *Extremely* old Galaxy instances created datasets at the root of the
+# `file_path` defined above.  If your Galaxy instance has datasets at the root
+# (instead of in directories composed by hashing the dataset id), you should
+# enable this option to allow Galaxy to find them.
+#object_store_check_old_style = False
+
+# Credentials used by certain (s3, swift) object store backends
+#os_access_key = <your cloud object store access key>
+#os_secret_key = <your cloud object store secret key>
+#os_bucket_name = <name of an existing object store bucket or container>
+
+# If using 'swift' object store, you must specify the following connection
+# properties
+#os_host = swift.rc.nectar.org.au
+#os_port = 8888
+#os_is_secure = False
+#os_conn_path = /
+
+# Reduced redundancy can be used only with the 's3' object store
+#os_use_reduced_redundancy = False
+
+# Path to cache directory for object store backends that utilize a cache (s3,
+# swift, irods)
+#object_store_cache_path = database/files/
+
+# Size (in GB) that the cache used by object store should be limited to.
+# If the value is not specified, the cache size will be limited only by the
+# file system size.
+#object_store_cache_size = 100
+
+# Configuration file for the distributed object store, if object_store =
+# distributed.  See the sample at distributed_object_store_conf.xml.sample
+#distributed_object_store_config_file = None
+
+
 # -- Mail and notification
 
 # Galaxy sends mail for various things: Subscribing users to the mailing list
 # if they request it, emailing password resets, notification from the Galaxy
-# Sample Tracking system, and reporting dataset errors.  To do this, it needs
-# to send mail through an SMTP server, which you may define here (host:port).
+# Sample Tracking system, reporting dataset errors, and sending activation emails.
+# To do this, it needs to send mail through an SMTP server, which you may define here (host:port).
 # Galaxy will automatically try STARTTLS but will continue upon failure.
 #smtp_server = None
 
@@ -217,13 +263,55 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 #smtp_username = None
 #smtp_password = None
 
+# If your SMTP server requires SSL from the beginning of the connection
+# smtp_ssl= False
+
 # On the user registration form, users may choose to join the mailing list.
 # This is the address of the list they'll be subscribed to.
 #mailing_join_addr = galaxy-announce-join@bx.psu.edu
 
 # Datasets in an error state include a link to report the error.  Those reports
 # will be sent to this address.  Error reports are disabled if no address is set.
+# Also this email is shown as a contact to user in case of Galaxy misconfiguration and other events user may encounter.
 #error_email_to = None
+
+# Activation email is used as a sender ('from' field) for the account activation mail.
+# We recommend using string in the following format: Galaxy Project <galaxy-no-reply@example.com>
+#activation_email = None
+
+# URL of the support resource for the galaxy instance. Used in activation emails.
+#instance_resource_url = http://wiki.galaxyproject.org/
+
+# E-mail domains blacklist is used for filtering out users that are using disposable email address
+# during the registration. If their address domain matches any domain in the BL they are refused the registration.
+#blacklist_file = config/disposable_email_blacklist.conf
+
+# Registration warning message is used to discourage people from registering multiple accounts. Applies mostly for the main Galaxy instance.
+# If no message specified the warning box will not be shown.
+#registration_warning_message = Please register only one account - we provide this service free of charge and have limited computational resources. Multi-accounts are tracked and will be subjected to account termination and data deletion.
+
+# When users opt to reset passwords, new ones are created, this option
+# specifies the length of these passwords.
+#reset_password_length = 15
+
+
+# -- Account activation
+
+# This is user account activation feature global flag. If set to "False" the rest of the Account 
+# activation configuration is ignored and user activation is disabled (a.k.a. accounts are active since registration).
+# Note the activation is also not working in case the smtp server is not defined.
+#user_activation_on = False
+
+# Activation grace period. Activation is not forced (login is not disabled) until 
+# grace period has passed. Users under grace period can't run jobs (see inactivity_box_content).
+# In hours. Default is 3. Enter 0 to disable grace period. 
+# Users with OpenID logins have grace period forever. 
+#activation_grace_period = 0
+
+# Used for warning box for inactive accounts (unable to run jobs).
+# In use only if activation_grace_period is set.
+#inactivity_box_content = Your account has not been activated yet.  Feel free to browse around and see what's available, but you won't be able to upload data or run jobs until you have verified your email address.
+
 
 # -- Display sites
 
@@ -279,20 +367,40 @@ nglims_config_file = tool-data/nglims.yaml
 # Append "/{brand}" to the "Galaxy" text in the masthead.
 #brand = None
 
+# Format string used when showing date and time information.
+# The string may contain:
+# - the directives used by Python time.strftime() function (see http://docs.python.org/2/library/time.html#time.strftime ),
+# - $locale (complete format string for the server locale),
+# - $iso8601 (complete format string as specified by ISO 8601 international standard).
+# pretty_datetime_format = $locale (UTC)
+
+# The URL of the page to display in Galaxy's middle pane when loaded. This can be 
+# an absolute or relative URL.
+#welcome_url = /static/welcome.html
+
 # The URL linked by the "Galaxy/brand" text.
 #logo_url = /
 
-# The URL linked by the "Galaxy Wiki" link in the "Help" menu.
-#wiki_url = http://wiki.g2.bx.psu.edu/
+# The URL linked by the "Wiki" link in the "Help" menu.
+#wiki_url = http://wiki.galaxyproject.org/
 
 # The URL linked by the "Support" link in the "Help" menu.
-#support_url = http://wiki.g2.bx.psu.edu/Support
+#support_url = http://wiki.galaxyproject.org/Support
 
-# The URL linked by the "How to Cite..." link in the "Help" menu.
-#citation_url = http://wiki.g2.bx.psu.edu/Citing%20Galaxy
+# The URL linked by the "How to Cite Galaxy" link in the "Help" menu.
+#citation_url = http://wiki.galaxyproject.org/CitingGalaxy
+
+#The URL linked by the "Search" link in the "Help" menu.
+#search_url = http://galaxyproject.org/search/usegalaxy/
+
+#The URL linked by the "Mailing Lists" link in the "Help" menu.
+#mailing_lists_url = http://wiki.galaxyproject.org/MailingLists
+
+#The URL linked by the "Videos" link in the "Help" menu.
+#videos_url = http://vimeo.com/galaxyproject
 
 # The URL linked by the "Terms and Conditions" link in the "Help" menu, as well
-# as on the user registration and login forms.
+# as on the user registration and login forms and in the activation emails.
 #terms_url = None
 
 # The URL linked by the "Galaxy Q&A" link in the "Help" menu
@@ -319,9 +427,10 @@ static_robots_txt = %(here)s/static/robots.txt
 # Note that this requires java > 1.4 for executing yuicompressor.jar
 #pack_scripts = False
 
-# Enable Cloud Launch
+# Cloud Launch
 
 #enable_cloud_launch = False
+#cloudlaunch_default_ami = ami-a7dbf6ce
 
 # -- Advanced proxy features
 
@@ -481,9 +590,21 @@ use_interactive = True
 # to usernames, to become your Galaxy usernames (email addresses).
 #remote_user_maildomain = None
 
+# If use_remote_user is enabled, the header that the upstream proxy provides
+# the remote username in defaults to HTTP_REMOTE_USER (the 'HTTP_' is prepended
+# by WSGI).  This option allows you to change the header.  Note, you still need
+# to prepend 'HTTP_' to the header in this option, but your proxy server should
+# *not* include 'HTTP_' at the beginning of the header name.
+#remote_user_header = 'HTTP_REMOTE_USER'
+
 # If use_remote_user is enabled, you can set this to a URL that will log your
 # users out.
 #remote_user_logout_href = None
+
+# If your proxy and/or authentication source does not normalize e-mail
+# addresses or user names being passed to Galaxy - set the following option
+# to True to force these to lower case.
+#normalize_remote_user_email = False
 
 # Administrative users - set this to a comma-separated list of valid Galaxy
 # users (email addresses).  These users will have access to the Admin section
@@ -518,28 +639,6 @@ use_interactive = True
 
 # -- Beta features
 
-# Object store mode (valid options are: disk, s3, swift, distributed, hierarchical)
-#object_store = disk
-#os_access_key = <your cloud object store access key>
-#os_secret_key = <your cloud object store secret key>
-#os_bucket_name = <name of an existing object store bucket or container>
-# If using 'swift' object store, you must specify the following connection properties
-#os_host = swift.rc.nectar.org.au
-#os_port = 8888
-#os_is_secure = False
-#os_conn_path = /
-# Reduced redundancy can be used only with the 's3' object store
-#os_use_reduced_redundancy = False
-# Size (in GB) that the cache used by object store should be limited to.
-# If the value is not specified, the cache size will be limited only by the
-# file system size. The file system location of the cache is considered the
-# configuration of the ``file_path`` directive defined above.
-#object_store_cache_size = 100
-
-# Configuration file for the distributed object store, if object_store =
-# distributed.  See the sample at distributed_object_store_conf.xml.sample
-#distributed_object_store_config_file = None
-
 # Enable Galaxy to communicate directly with a sequencer
 #enable_sequencer_communication = False
 
@@ -551,6 +650,11 @@ use_interactive = True
 # Optional list of email addresses of API users who can make calls on behalf of
 # other users
 #api_allow_run_as = None
+
+# Master key that allows many API admin actions to be used without actually
+# having a defined admin user in the database/config. Only set this if you need
+# to bootstrap Galaxy, you probably do not want to set this on public servers.
+#master_api_key=changethis
 
 # Enable tool tags (associating tools with tags).  This has its own option
 # since its implementation has a few performance implications on startup for
@@ -684,6 +788,18 @@ use_interactive = True
 # greater possibility that jobs will be dispatched past the configured limits
 # if running many handlers.
 #cache_user_job_count = False
+
+# ToolBox filtering
+# Modules from lib/galaxy/tools/filters/ can be specified in the following lines.
+# tool_* filters will be applied for all users and can not be changed by them.
+# user_tool_* filters will be shown under user preferences and can be toogled
+# on and off by runtime
+#tool_filters
+#tool_label_filters
+#tool_section_filters
+#user_tool_filters = examples:restrict_upload_to_admins, examples:restrict_encode
+#user_tool_section_filters = examples:restrict_text
+#user_tool_label_filters = examples:restrict_upload_to_admins, examples:restrict_encode
 
 # ---- Galaxy Message Queue -------------------------------------------------
 

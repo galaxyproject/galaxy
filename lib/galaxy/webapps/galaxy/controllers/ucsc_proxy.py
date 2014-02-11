@@ -21,12 +21,12 @@ class UCSCProxy( BaseUIController ):
         if region not in [ 'genome', 'encode']:
             region = store.get('position','')
         if track == table:
-            display = 'UCSC: %s (%s)' % (track, region) 
+            display = 'UCSC: %s (%s)' % (track, region)
         else:
-            display = 'UCSC: %s, %s (%s)' % (track, table, region)                 
-        return display            
-            
-    @web.expose 
+            display = 'UCSC: %s, %s (%s)' % (track, table, region)
+        return display
+
+    @web.expose
     def index(self, trans, init=False, **kwd):
         base_url = None
         params = dict(kwd)
@@ -40,7 +40,7 @@ class UCSCProxy( BaseUIController ):
             base_url = store.get(UCSC_URL, "http://genome.ucsc.edu/cgi-bin/hgTables?")
             params   = dict(kwd)
             params['init'] = init
-                   
+
             if not init:
                 for key, value in kwd.items():
                     store[key] = value
@@ -48,7 +48,7 @@ class UCSCProxy( BaseUIController ):
                 except: pass
             else:
                 store = {}
-            
+
             if init == "1":
                 base_url = "http://genome.ucsc.edu/cgi-bin/hgTables?"
                 params['db'] = 'hg17'
@@ -59,11 +59,11 @@ class UCSCProxy( BaseUIController ):
                 base_url = "http://archaea.ucsc.edu/cgi-bin/hgTables?"
 
             store[UCSC_URL] = base_url
-            
+
             try: del params["__GALAXY__"]
             except: pass
             url = base_url + urllib.urlencode(params)
-            
+
             page = urllib.urlopen(url)
             content = page.info().get('Content-type', '')
         except Exception, exc:
@@ -81,13 +81,13 @@ class UCSCProxy( BaseUIController ):
             url = "/tool_runner/index?" + urllib.urlencode(params)
             trans.response.send_redirect(url)
         else:
-            try:        
+            try:
                 text = page.read()
-                
+
                 # Serialize store into a form element
                 store_text = "<INPUT TYPE=\"HIDDEN\" NAME=\"__GALAXY__\" ID=\"__GALAXY__\" VALUE=\"" \
                              + util.object_to_string(store) + "\" \>"
-                
+
                 # Remove text regions that should not be exposed
                 for key,value in altered_regions.items():
                     text = text.replace(key,value)
@@ -114,7 +114,7 @@ class UCSCProxy( BaseUIController ):
                 trans.log_event( "Proxy Error -> %s" % str(exc) )
                 msg = 'There has been a problem connecting to <i>%s</i> <p> <b>%s<b>' % (base_url, exc)
                 return msg
-        
+
 # HTML for generating the proxy page.
 beginning = '''<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
@@ -146,7 +146,7 @@ ending = '''
 
 # This is a mess of mappings of text to make the proxy friendlier to
 # galaxy users.
-altered_regions = { 
+altered_regions = {
         '"../cgi-bin/hgTables' : '"/ucsc_proxy/index',
         '<TR><TD>\n<B>output file:</B>&nbsp;<INPUT TYPE=TEXT NAME="hgta_outFileName" SIZE=29 VALUE="">&nbsp;(leave blank to keep output in browser)</TD></TR>\n<TR><TD>\n<B>file type returned:&nbsp;</B><INPUT TYPE=RADIO NAME="hgta_compressType" VALUE="none" CHECKED>&nbsp;plain text&nbsp&nbsp<INPUT TYPE=RADIO NAME="hgta_compressType" VALUE="gzip" >&nbsp;gzip compressed</TD></TR>' : '<INPUT TYPE=HIDDEN NAME="hgta_compressType" VALUE="none" /><INPUT TYPE=HIDDEN NAME="hgta_outFileName" VALUE="" />',
         ' <P>To reset <B>all</B> user cart settings (including custom tracks), \n<A HREF="/cgi-bin/cartReset?destination=/cgi-bin/hgTables">click here</A>.' : '',
@@ -154,6 +154,6 @@ altered_regions = {
         '<A HREF="/goldenPath/help/customTrack.html" TARGET=_blank>custom track</A>' : '<A HREF="http://genome.ucsc.edu/goldenPath/help/customTrack.html" TARGET=_blank>custom track</A>',
         '<INPUT TYPE=RADIO NAME="hgta_regionType" VALUE="genome" onClick="regionType=\'genome\';" CHECKED>' : '<INPUT TYPE=RADIO NAME="hgta_regionType" VALUE="genome" onClick="regionType=\'genome\';">',
         '<INPUT TYPE=RADIO NAME="hgta_regionType" VALUE="range" onClick="regionType=\'range\';">' : '<INPUT TYPE=RADIO NAME="hgta_regionType" VALUE="range" onClick="regionType=\'range\';" CHECKED>',
-        "<OPTION VALUE=bed>" : "<OPTION VALUE=bed SELECTED>" , 
+        "<OPTION VALUE=bed>" : "<OPTION VALUE=bed SELECTED>" ,
         '<INPUT TYPE=SUBMIT NAME="hgta_doSchema" VALUE="describe table schema">' : '<INPUT TYPE=SUBMIT NAME="hgta_doSchema" VALUE="describe table schema" onClick="changeTarget(\'_blank\')" onMouseOut="changeTarget(\'_self\')">'
         }

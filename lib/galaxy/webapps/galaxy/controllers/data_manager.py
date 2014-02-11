@@ -10,8 +10,8 @@ import paste.httpexceptions
 import logging
 log = logging.getLogger( __name__ )
 
-class DataManager( BaseUIController ): 
-    
+class DataManager( BaseUIController ):
+
     @web.expose
     def index( self, trans, **kwd ):
         not_is_admin = not trans.user_is_admin()
@@ -20,7 +20,7 @@ class DataManager( BaseUIController ):
         message = kwd.get( 'message' )
         status = kwd.get( 'status', 'info' )
         return trans.fill_template( "data_manager/index.mako", data_managers=trans.app.data_managers, view_only=not_is_admin, message=message, status=status )
-    
+
     @web.expose
     def manage_data_manager( self, trans, **kwd ):
         not_is_admin = not trans.user_is_admin()
@@ -34,7 +34,7 @@ class DataManager( BaseUIController ):
             return trans.response.send_redirect( web.url_for( controller="data_manager", action="index", message="Invalid Data Manager (%s) was requested" % data_manager_id, status="error" ) )
         jobs = reversed( [ assoc.job for assoc in trans.sa_session.query( trans.app.model.DataManagerJobAssociation ).filter_by( data_manager_id=data_manager_id ) ] )
         return trans.fill_template( "data_manager/manage_data_manager.mako", data_manager=data_manager, jobs=jobs, view_only=not_is_admin, message=message, status=status )
-    
+
     @web.expose
     def view_job( self, trans, **kwd ):
         not_is_admin = not trans.user_is_admin()
@@ -60,7 +60,7 @@ class DataManager( BaseUIController ):
             values = []
             for key, value in data_manager_json.get( 'data_tables', {} ).iteritems():
                 values.append( ( key, value ) )
-            data_manager_output.append( values ) 
+            data_manager_output.append( values )
         return trans.fill_template( "data_manager/view_job.mako", data_manager=data_manager, job=job, view_only=not_is_admin, hdas=hdas, data_manager_output=data_manager_output, message=message, status=status )
 
     @web.expose

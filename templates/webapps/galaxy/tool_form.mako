@@ -3,7 +3,7 @@
 <%namespace file="/base_panels.mako" import="overlay" />
 
 <%def name="stylesheets()">
-    ${h.css( "autocomplete_tagging", "base", "panel_layout", "library" )}
+    ${h.css( "autocomplete_tagging", "base", "library" )}
     <style type="text/css">
         html, body {
             background-color: #fff;
@@ -14,6 +14,9 @@
 <%def name="javascripts()">
     ${parent.javascripts()}
     ${h.js( "galaxy.panels", "libs/jquery/jstorage" )}
+    <script type="text/javascript">
+        require( [ "galaxy.tools" ] );
+    </script>
     <script type="text/javascript">
     $(function() {
         $(window).bind("refresh_on_change", function() {
@@ -56,22 +59,6 @@
                     });
                 });
             });
-        });
-
-        function checkUncheckAll( name, check ) {
-            $("input[name='" + name + "'][type='checkbox']").attr('checked', !!check);
-        }
-
-        // Inserts the Select All / Unselect All buttons for checkboxes
-        $("div.checkUncheckAllPlaceholder").each( function() {
-            var check_name = $(this).attr("checkbox_name");
-            select_link = $("<a class='action-button'></a>").text("Select All").click(function() {
-               checkUncheckAll(check_name, true);
-            });
-            unselect_link = $("<a class='action-button'></a>").text("Unselect All").click(function() {
-               checkUncheckAll(check_name, false);
-            });
-            $(this).append(select_link).append(" ").append(unselect_link);
         });
 
         $(".add-librarydataset").click(function() {
@@ -218,12 +205,11 @@
     else:
         cls = "form-row"
 
-    label = param.get_label()
-
     field = param.get_html_field( trans, parent_state[ param.name ], other_values )
     field.refresh_on_change = param.refresh_on_change
 
-    # Field may contain characters submitted by user and these characters may be unicode; handle non-ascii characters gracefully.
+    # Field may contain characters submitted by user and these characters may
+    # be unicode; handle non-ascii characters gracefully.
     field_html = field.get_html( prefix )
     if type( field_html ) is not unicode:
         field_html = unicode( field_html, 'utf-8', 'replace' )
@@ -232,35 +218,49 @@
         return field_html
     %>
     <div class="${cls}">
-        %if label:
-            <label for="${param.name}">${label}:</label>
-        %endif
-        <div class="form-row-input">${field_html}</div>
-        %if parent_errors.has_key( param.name ):
-            <div class="form-row-error-message">
-                <div><img style="vertical-align: middle;" src="${h.url_for('/static/style/error_small.png')}">&nbsp;<span style="vertical-align: middle;">${parent_errors[param.name]}</span></div>
-            </div>
-        %endif
-
-        %if param.help:
-            <div class="toolParamHelp" style="clear: both;">
-                ${param.help}
-            </div>
-        %endif
-
+        ${label_for_param( param )}
+        ${input_for_param( param, field_html )}
+        ${errors_for_param( param, parent_errors )}
+        ${help_for_param( param )}
         <div style="clear: both;"></div>
-
     </div>
+</%def>
+
+<%def name="input_for_param( param, field_html )">
+    <div class="form-row-input">${field_html}</div>
+</%def>
+
+<%def name="label_for_param( param )">
+    <% label = param.get_label()%>
+    %if label:
+        <label for="${param.name}">${label}:</label>
+    %endif
+</%def>
+
+<%def name="errors_for_param( param, parent_errors )">
+    %if parent_errors.has_key( param.name ):
+        <div class="form-row-error-message">
+            <div><img style="vertical-align: middle;" src="${h.url_for('/static/style/error_small.png')}">&nbsp;<span style="vertical-align: middle;">${parent_errors[param.name]}</span></div>
+        </div>
+    %endif
+</%def>
+
+<%def name="help_for_param( param )">
+    %if param.help:
+        <div class="toolParamHelp" style="clear: both;">
+            ${param.help}
+        </div>
+    %endif
 </%def>
 
 <%def name="row_for_rerun()">
     %if trans.app.config.track_jobs_in_database and tool_state.rerun_remap_job_id is not None:
-        <div class="form-row">
+        <div id="remap-row" class="form-row">
             <input type="checkbox" name="rerun_remap_job_id" value="${tool_state.rerun_remap_job_id}"> Resume dependencies from this job
             <div class="toolParamHelp" style="clear: both;">
                 The previous run of this tool failed and other tools were waiting for it to finish successfully, use this option to resume those tools using the outputs of this tool run.
             </div>
-        <div>
+        </div>
         <div style="clear: both;"></div>
     %endif
 </%def>
@@ -322,9 +322,11 @@
         %endif
 
         %if trans.app.config.biostar_url:
-            <!-- BioStar links -->
-            <span class="pull-right"><a href="${h.url_for( controller='biostar', action='biostar_tool_question_redirect', tool_id=tool.id )}" target="_blank" class="fa-icon-question-sign tooltip" data-original-title="Ask a question about this tool"></a></span>
-            <!-- End of BioStar links -->
+            ## BioStar links
+            <span class="pull-right">
+                <a href="${h.url_for( controller='biostar', action='biostar_tool_question_redirect', tool_id=tool.id )}"
+                   target="_blank" class="fa fa-question-circle" title="Ask a question about this tool"></a>
+            </span>
         %endif
         </div>
         <div class="toolFormBody">

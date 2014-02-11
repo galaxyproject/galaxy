@@ -1,16 +1,10 @@
 from __future__ import absolute_import
-import sys, os, atexit
+import sys
+import os
 
-from galaxy import config, jobs, util, tools, web
-import galaxy.tools.search
-import galaxy.tools.data
-import tool_shed.galaxy_install
-import tool_shed.tool_shed_registry
-from galaxy.web import security
+from galaxy import config, jobs
 import galaxy.model
-import galaxy.datatypes.registry
 import galaxy.security
-from galaxy.objectstore import build_object_store_from_config
 import galaxy.quota
 from galaxy.tags.tag_handler import GalaxyTagHandler
 from galaxy.visualization.genomes import Genomes
@@ -22,10 +16,13 @@ from galaxy.sample_tracking import external_service_types
 from galaxy.openid.providers import OpenIDProviders
 from galaxy.tools.data_manager.manager import DataManagers
 
+from galaxy.web.base import pluginframework
+
 import logging
 log = logging.getLogger( __name__ )
 
-class UniverseApplication( object ):
+
+class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
     """Encapsulates the state of a Universe application"""
     def __init__( self, **kwargs ):
         print >> sys.stderr, "python path is: " + ", ".join( sys.path )
@@ -36,72 +33,38 @@ class UniverseApplication( object ):
         self.config.check()
         config.configure_logging( self.config )
         self.configure_fluent_log()
-        # Determine the database url
-        if self.config.database_connection:
-            db_url = self.config.database_connection
-        else:
-            db_url = "sqlite:///%s?isolation_level=IMMEDIATE" % self.config.database
-        # Set up the tool sheds registry
-        if os.path.isfile( self.config.tool_sheds_config ):
-            self.tool_shed_registry = tool_shed.tool_shed_registry.Registry( self.config.root, self.config.tool_sheds_config )
-        else:
-            self.tool_shed_registry = None
-        # Initialize database / check for appropriate schema version.  # If this
-        # is a new installation, we'll restrict the tool migration messaging.
-        from galaxy.model.migrate.check import create_or_verify_database
-        create_or_verify_database( db_url, kwargs.get( 'global_conf', {} ).get( '__file__', None ), self.config.database_engine_options, app=self )
-        # Alert the Galaxy admin to tools that have been moved from the distribution to the tool shed.
-        from tool_shed.galaxy_install.migrate.check import verify_tools
-        verify_tools( self, db_url, kwargs.get( 'global_conf', {} ).get( '__file__', None ), self.config.database_engine_options )
-        # Object store manager
-        self.object_store = build_object_store_from_config(self.config)
+
+        self._configure_tool_shed_registry()
+
+        self._configure_object_store( fsmon=True )
+
         # Setup the database engine and ORM
-        from galaxy.model import mapping
-        self.model = mapping.init( self.config.file_path,
-                                   db_url,
-                                   self.config.database_engine_options,
-                                   database_query_profiling_proxy = self.config.database_query_profiling_proxy,
-                                   object_store = self.object_store,
-                                   trace_logger=self.trace_logger,
-                                   use_pbkdf2=self.config.get_bool( 'use_pbkdf2', True ) )
+        config_file = kwargs.get( 'global_conf', {} ).get( '__file__', None )
+        self._configure_models( check_migrate_databases=True, check_migrate_tools=True, config_file=config_file )
+
         # Manage installed tool shed repositories.
-        self.installed_repository_manager = tool_shed.galaxy_install.InstalledRepositoryManager( self )
-        # Create an empty datatypes registry.
-        self.datatypes_registry = galaxy.datatypes.registry.Registry()
-        # Load proprietary datatypes defined in datatypes_conf.xml files in all installed tool shed repositories.  We
-        # load proprietary datatypes before datatypes in the distribution because Galaxy's default sniffers include some
-        # generic sniffers (eg text,xml) which catch anything, so it's impossible for proprietary sniffers to be used.
-        # However, if there is a conflict (2 datatypes with the same extension) between a proprietary datatype and a datatype
-        # in the Galaxy distribution, the datatype in the Galaxy distribution will take precedence.  If there is a conflict
-        # between 2 proprietary datatypes, the datatype from the repository that was installed earliest will take precedence.
-        self.installed_repository_manager.load_proprietary_datatypes()
-        # Load the data types in the Galaxy distribution, which are defined in self.config.datatypes_config.
-        self.datatypes_registry.load_datatypes( self.config.root, self.config.datatypes_config )
+        from tool_shed.galaxy_install import installed_repository_manager
+        self.installed_repository_manager = installed_repository_manager.InstalledRepositoryManager( self )
+
+        self._configure_datatypes_registry( self.installed_repository_manager )
         galaxy.model.set_datatypes_registry( self.datatypes_registry )
+
         # Security helper
-        self.security = security.SecurityHelper( id_secret=self.config.id_secret )
+        self._configure_security()
         # Tag handler
         self.tag_handler = GalaxyTagHandler()
         # Genomes
         self.genomes = Genomes( self )
         # Data providers registry.
         self.data_provider_registry = DataProviderRegistry()
-        # Initialize tool data tables using the config defined by self.config.tool_data_table_config_path.
-        self.tool_data_tables = galaxy.tools.data.ToolDataTableManager( tool_data_path=self.config.tool_data_path,
-                                                                        config_filename=self.config.tool_data_table_config_path )
-        # Load additional entries defined by self.config.shed_tool_data_table_config into tool data tables.
-        self.tool_data_tables.load_from_config_file( config_filename=self.config.shed_tool_data_table_config,
-                                                     tool_data_path=self.tool_data_tables.tool_data_path,
-                                                     from_shed_config=False )
+
+        self._configure_tool_data_tables( from_shed_config=False )
+
         # Initialize the job management configuration
         self.job_config = jobs.JobConfiguration(self)
-        # Initialize the tools, making sure the list of tool configs includes the reserved migrated_tools_conf.xml file.
-        tool_configs = self.config.tool_configs
-        if self.config.migrated_tools_config not in tool_configs:
-            tool_configs.append( self.config.migrated_tools_config )
-        self.toolbox = tools.ToolBox( tool_configs, self.config.tool_path, self )
-        # Search support for tools
-        self.toolbox_search = galaxy.tools.search.ToolBoxSearch( self.toolbox )
+
+        self._configure_toolbox()
+
         # Load Data Manager
         self.data_managers = DataManagers( self )
         # If enabled, poll respective tool sheds to see if updates are available for any installed tool shed repositories.
@@ -123,8 +86,11 @@ class UniverseApplication( object ):
         # Load genome indexer tool.
         load_genome_index_tools( self.toolbox )
         # visualizations registry: associates resources with visualizations, controls how to render
-        self.visualizations_registry = ( VisualizationsRegistry( self.config.root, self.config.visualizations_conf_path )
-                                         if self.config.visualizations_conf_path else None )
+        self.visualizations_registry = None
+        if self.config.visualization_plugins_directory:
+            self.visualizations_registry = VisualizationsRegistry( self,
+                directories_setting=self.config.visualization_plugins_directory,
+                template_cache_dir=self.config.template_cache )
         # Load security policy.
         self.security_agent = self.model.security_agent
         self.host_security_agent = galaxy.security.HostAgent( model=self.security_agent.model, permitted_actions=self.security_agent.permitted_actions )
@@ -167,6 +133,7 @@ class UniverseApplication( object ):
         self.job_stop_queue = self.job_manager.job_stop_queue
         # Initialize the external service types
         self.external_service_types = external_service_types.ExternalServiceTypesCollection( self.config.external_service_type_config_file, self.config.external_service_type_path, self )
+        self.model.engine.dispose()
 
     def shutdown( self ):
         self.job_manager.shutdown()
@@ -186,6 +153,6 @@ class UniverseApplication( object ):
     def configure_fluent_log( self ):
         if self.config.fluent_log:
             from galaxy.util.log.fluent_log import FluentTraceLogger
-            self.trace_logger = FluentTraceLogger( 'galaxy', self.config.fluent_host, self.config.fluent_port ) 
+            self.trace_logger = FluentTraceLogger( 'galaxy', self.config.fluent_host, self.config.fluent_port )
         else:
             self.trace_logger = None

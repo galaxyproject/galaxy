@@ -1,5 +1,6 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
+<% from galaxy.tools import Tool, ToolSection %>
 
 <script type="text/javascript">
 $().ready(function() {
@@ -26,13 +27,13 @@ $().ready(function() {
             </label>
             <select name="tool_id">
                 %for key, val in toolbox.tool_panel.items():
-                    %if key.startswith( 'tool' ):
+                    %if isinstance( val, Tool ):
                         <option value="${val.id}">${val.name}</option>
-                    %elif key.startswith( 'section' ):
+                    %elif isinstance( val, ToolSection ):
                         <optgroup label="${val.name}">
                         <% section = val %>
                         %for section_key, section_val in section.elems.items():
-                            %if section_key.startswith( 'tool' ):
+                            %if isinstance( section_val, Tool ):
                                 <% selected_str = "" %>
                                 %if section_val.id == tool_id:
                                      <% selected_str = " selected=\"selected\"" %>

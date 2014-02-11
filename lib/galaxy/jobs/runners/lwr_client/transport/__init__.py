@@ -1,5 +1,5 @@
-from standard import Urllib2Transport
-from curl import PycurlTransport
+from .standard import Urllib2Transport
+from .curl import PycurlTransport
 import os
 
 

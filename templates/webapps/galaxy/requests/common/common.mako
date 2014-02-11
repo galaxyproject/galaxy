@@ -314,7 +314,7 @@
     %endif
     %if can_delete_samples:
         ## Delete button
-        <td valign="top"><a class="action-button" confirm="This sample is not recoverable after deletion. Click Ok to delete." href="${h.url_for( controller='requests_common', action='delete_sample', cntrller=cntrller, request_id=trans.security.encode_id( request.id ), sample_id=sample_widget_index )}"><img src="${h.url_for('/static/images/delete_icon.png')}" style="cursor:pointer;"/></a></td>
+        <td valign="top"><a class="action-button" confirm="This sample is not recoverable after deletion. Click Ok to delete." href="${h.url_for( controller='requests_common', action='delete_sample', cntrller=cntrller, request_id=trans.security.encode_id( request.id ), sample_id=sample_widget_index )}"><img src="${h.url_for('/static/images/history-buttons/delete_icon.png')}" style="cursor:pointer;"/></a></td>
     %endif
 </%def>
 
@@ -634,7 +634,7 @@
                     <th>Name</th>
                     %for index, field in fields_dict.items():
                         <th>
-                            <a class="display tooltip" title="${field['helptext']}" >${field['label']}</a>
+                            <a class="display" title="${field['helptext']}" >${field['label']}</a>
                         </th>
                     %endfor
                     <th></th>

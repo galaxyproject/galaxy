@@ -6,19 +6,20 @@ from basic import *
 from grouping import *
 from galaxy.util.json import *
 
+
 def visit_input_values( inputs, input_values, callback, name_prefix="", label_prefix="" ):
     """
     Given a tools parameter definition (`inputs`) and a specific set of
     parameter `values`, call `callback` for each non-grouping parameter,
     passing the parameter object, value, a constructed unique name,
     and a display label.
-    
+
     If the callback returns a value, it will be replace the old value.
-    
+
     FIXME: There is redundancy between this and the visit_inputs methods of
            Repeat and Group. This tracks labels and those do not. It would
            be nice to unify all the places that recursively visit inputs.
-    """    
+    """
     for input in inputs.itervalues():
         if isinstance( input, Repeat ) or isinstance( input, UploadDataset ):
             for i, d in enumerate( input_values[ input.name ] ):
@@ -35,17 +36,18 @@ def visit_input_values( inputs, input_values, callback, name_prefix="", label_pr
         else:
             new_value = callback( input,
                                   input_values[input.name],
-                                  prefixed_name = name_prefix + input.name,
-                                  prefixed_label = label_prefix + input.label )
+                                  prefixed_name=name_prefix + input.name,
+                                  prefixed_label=label_prefix + input.label )
             if new_value:
                 input_values[input.name] = new_value
 
-def check_param( trans, param, incoming_value, param_values ):
+
+def check_param( trans, param, incoming_value, param_values, source='html' ):
     """
-    Check the value of a single parameter `param`. The value in 
+    Check the value of a single parameter `param`. The value in
     `incoming_value` is converted from its HTML encoding and validated.
-    The `param_values` argument contains the processed values of 
-    previous parameters (this may actually be an ExpressionContext 
+    The `param_values` argument contains the processed values of
+    previous parameters (this may actually be an ExpressionContext
     when dealing with grouping scenarios).
     """
     value = incoming_value
@@ -53,24 +55,28 @@ def check_param( trans, param, incoming_value, param_values ):
     try:
         if value is not None or isinstance(param, DataToolParameter):
             # Convert value from HTML representation
-            value = param.from_html( value, trans, param_values )
+            if source == 'html':
+                value = param.from_html( value, trans, param_values )
+            else:
+                value = param.from_json( value, trans, param_values )
             # Allow the value to be converted if neccesary
             filtered_value = param.filter_value( value, trans, param_values )
             # Then do any further validation on the value
             param.validate( filtered_value, trans.history )
         elif value is None and isinstance( param, SelectToolParameter ):
-           # An empty select list or column list
-           param.validate( value, trans.history ) 
+            # An empty select list or column list
+            param.validate( value, trans.history )
     except ValueError, e:
         error = str( e )
     return value, error
+
 
 def params_to_strings( params, param_values, app ):
     """
     Convert a dictionary of parameter values to a dictionary of strings
     suitable for persisting. The `value_to_basic` method of each parameter
     is called to convert its value to basic types, the result of which
-    is then json encoded (this allowing complex nested parameters and 
+    is then json encoded (this allowing complex nested parameters and
     such).
     """
     rval = dict()
@@ -79,7 +85,8 @@ def params_to_strings( params, param_values, app ):
             value = params[ key ].value_to_basic( value, app )
         rval[ key ] = str( to_json_string( value ) )
     return rval
-    
+
+
 def params_from_strings( params, param_values, app, ignore_errors=False ):
     """
     Convert a dictionary of strings as produced by `params_to_strings`
@@ -92,16 +99,17 @@ def params_from_strings( params, param_values, app, ignore_errors=False ):
         value = json_fix( from_json_string( value ) )
         if key in params:
             value = params[key].value_from_basic( value, app, ignore_errors )
-        rval[ key ] = value 
+        rval[ key ] = value
     return rval
+
 
 def params_to_incoming( incoming, inputs, input_values, app, name_prefix="" ):
     """
     Given a tool's parameter definition (`inputs`) and a specific set of
     parameter `input_values` objects, populate `incoming` with the html values.
-    
+
     Useful for e.g. the rerun function.
-    """    
+    """
     for input in inputs.itervalues():
         if isinstance( input, Repeat ) or isinstance( input, UploadDataset ):
             for i, d in enumerate( input_values[ input.name ] ):
@@ -116,4 +124,3 @@ def params_to_incoming( incoming, inputs, input_values, app, name_prefix="" ):
             params_to_incoming( incoming, input.cases[current].inputs, values, app, new_name_prefix )
         else:
             incoming[ name_prefix + input.name ] = input.to_html_value( input_values.get( input.name ), app )
-            

@@ -12,6 +12,11 @@
 
         is_admin = trans.user_is_admin()
 
+        if is_admin or trans.app.security_agent.user_can_administer_repository( trans.user, repository ):
+            can_administer = True
+        else:
+            can_administer = False
+
         if repository.deprecated:
             is_deprecated = True
         else:
@@ -54,7 +59,7 @@
         else:
             can_download = False
 
-        if ( is_admin or ( trans.user and trans.user == repository.user ) ) and not repository.deleted and not repository.deprecated and not is_new:
+        if ( can_administer or can_push ) and not repository.deleted and not repository.deprecated and not is_new:
             can_reset_all_metadata = True
         else:
             can_reset_all_metadata = False
@@ -109,11 +114,6 @@
         else:
             can_undeprecate = False
 
-        if is_admin or repository.user == trans.user:
-            can_manage = True
-        else:
-            can_manage = False
-
         can_view_change_log = not is_new
 
         if can_push:
@@ -147,7 +147,7 @@
                 %if can_upload:
                     <a class="action-button" target="galaxy_main" href="${h.url_for( controller='upload', action='upload', repository_id=trans.security.encode_id( repository.id ) )}">Upload files to repository</a>
                 %endif
-                %if can_manage:
+                %if can_administer:
                     <a class="action-button" target="galaxy_main" href="${h.url_for( controller='repository', action='manage_repository', id=trans.app.security.encode_id( repository.id ), changeset_revision=repository.tip( trans.app ) )}">Manage repository</a>
                 %else:
                     <a class="action-button" target="galaxy_main" href="${h.url_for( controller='repository', action='view_repository', id=trans.app.security.encode_id( repository.id ), changeset_revision=repository.tip( trans.app ) )}">View repository</a>
@@ -173,7 +173,13 @@
                 %if can_undeprecate:
                     <a class="action-button" target="galaxy_main" href="${h.url_for( controller='repository', action='deprecate', id=trans.security.encode_id( repository.id ), mark_deprecated=False )}">Mark repository as not deprecated</a>
                 %endif
+                %if can_administer:
+                    <a class="action-button" target="galaxy_main" href="${h.url_for( controller='repository', action='manage_repository_admins', id=trans.security.encode_id( repository.id ) )}">Manage repository administrators</a>
+                %endif
                 %if can_download:
+                    %if changeset_revision is not None:
+                        <a class="action-button" href="${h.url_for( controller='repository', action='export', repository_id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision )}">Export this revision</a>
+                    %endif
                     <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), changeset_revision=repository.tip( trans.app ), file_type='gz' )}">Download as a .tar.gz file</a>
                     <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), changeset_revision=repository.tip( trans.app ), file_type='bz2' )}">Download as a .tar.bz2 file</a>
                     <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), changeset_revision=repository.tip( trans.app ), file_type='zip' )}">Download as a zip file</a>

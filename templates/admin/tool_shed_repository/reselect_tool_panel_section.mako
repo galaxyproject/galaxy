@@ -21,7 +21,10 @@
 
 <div class="toolForm">
     <div class="toolFormBody">
-        <form name="reselect_tool_panel_section" id="reselect_tool_panel_section" action="${h.url_for( controller='admin_toolshed', action='reinstall_repository', id=trans.security.encode_id( repository.id ), repo_info_dict=encoded_repo_info_dict )}" method="post" >
+        <form name="reselect_tool_panel_section" id="reselect_tool_panel_section" action="${h.url_for( controller='admin_toolshed', action='reinstall_repository', id=trans.security.encode_id( repository.id ) )}" method="post" >
+            <div class="form-row">
+                <input type="hidden" name="repo_info_dict" value="${encoded_repo_info_dict}" />
+            </div>
             <div style="clear: both"></div>
             <% readme_files_dict = containers_dict.get( 'readme_files', None ) %>
             %if readme_files_dict:
@@ -39,7 +42,7 @@
                         <th bgcolor="#EBD9B2">Confirm dependency installation</th>
                     </table>
                 </div>
-                ${render_dependencies_section( install_repository_dependencies_check_box, install_tool_dependencies_check_box, containers_dict )}
+                ${render_dependencies_section( install_repository_dependencies_check_box, install_tool_dependencies_check_box, containers_dict, revision_label=None, export=False )}
             %endif
             %if shed_tool_conf_select_field:
                 <div class="form-row">
@@ -77,7 +80,7 @@
                 </div>
                 <div class="form-row">
                     <label>Add new tool panel section:</label>
-                    <input name="new_tool_panel_section" type="textfield" value="" size="40"/>
+                    <input name="new_tool_panel_section_label" type="textfield" value="" size="40"/>
                     <div class="toolParamHelp" style="clear: both;">
                         Add a new tool panel section to contain the installed tools (optional).
                     </div>

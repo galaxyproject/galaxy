@@ -51,7 +51,7 @@ ${render_galaxy_repository_actions( repository=repository )}
         %else:
             <div class="form-row">
                 <label>Revision:</label>
-                ${revision_label | h}
+                ${revision_label}
             </div>
         %endif
     </div>

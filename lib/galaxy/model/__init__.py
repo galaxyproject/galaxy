@@ -6,7 +6,6 @@ the relationship cardinalities are obvious (e.g. prefer Dataset to Data)
 """
 
 from galaxy import eggs
-eggs.require("simplejson")
 eggs.require("pexpect")
 
 import codecs
@@ -15,31 +14,43 @@ import logging
 import operator
 import os
 import pexpect
-import simplejson
+import json
 import socket
 import time
+from string import Template
+from itertools import ifilter
 
 import galaxy.datatypes
 import galaxy.datatypes.registry
 import galaxy.security.passwords
 from galaxy.datatypes.metadata import MetadataCollection
-from galaxy.model.item_attrs import APIItem, UsesAnnotations
+from galaxy.model.item_attrs import Dictifiable, UsesAnnotations
 from galaxy.security import get_permitted_actions
 from galaxy.util import is_multi_byte, nice_size, Params, restore_text, send_mail
+from galaxy.util import ready_name_for_url
 from galaxy.util.bunch import Bunch
 from galaxy.util.hash_util import new_secure_hash
+from galaxy.util.directory_hash import directory_hash_id
 from galaxy.web.framework.helpers import to_unicode
 from galaxy.web.form_builder import (AddressField, CheckboxField, HistoryField,
         PasswordField, SelectField, TextArea, TextField, WorkflowField,
         WorkflowMappingField)
 from sqlalchemy.orm import object_session
+from sqlalchemy.orm import joinedload
 from sqlalchemy.sql.expression import func
+from sqlalchemy import not_
 
 log = logging.getLogger( __name__ )
 
 datatypes_registry = galaxy.datatypes.registry.Registry()
 # Default Value Required for unit tests
 datatypes_registry.load_datatypes()
+
+# When constructing filters with in for a fixed set of ids, maximum
+# number of items to place in the IN statement. Different databases
+# are going to have different limits so it is likely best to not let
+# this be unlimited - filter in Python if over this limit.
+MAX_IN_FILTER_LENGTH = 100
 
 class NoConverterException(Exception):
     def __init__(self, value):
@@ -61,16 +72,29 @@ def set_datatypes_registry( d_registry ):
     datatypes_registry = d_registry
 
 
-class User( object, APIItem ):
+class HasName:
+
+    def get_display_name( self ):
+        """
+        These objects have a name attribute can be either a string or a unicode
+        object. If string, convert to unicode object assuming 'utf-8' format.
+        """
+        name = self.name
+        if isinstance(name, str):
+            name = unicode(name, 'utf-8')
+        return name
+
+
+class User( object, Dictifiable ):
     use_pbkdf2 = True
     """
     Data for a Galaxy user or admin and relations to their
     histories, credentials, and roles.
     """
-    # attributes that will be accessed and returned when calling get_api_value( view='collection' )
-    api_collection_visible_keys = ( 'id', 'email' )
-    # attributes that will be accessed and returned when calling get_api_value( view='element' )
-    api_element_visible_keys = ( 'id', 'email', 'username', 'total_disk_usage', 'nice_total_disk_usage' )
+    # attributes that will be accessed and returned when calling to_dict( view='collection' )
+    dict_collection_visible_keys = ( 'id', 'email' )
+    # attributes that will be accessed and returned when calling to_dict( view='element' )
+    dict_element_visible_keys = ( 'id', 'email', 'username', 'total_disk_usage', 'nice_total_disk_usage' )
 
     def __init__( self, email=None, password=None ):
         self.email = email
@@ -78,6 +102,8 @@ class User( object, APIItem ):
         self.external = False
         self.deleted = False
         self.purged = False
+        self.active = False
+        self.activation_token = None
         self.username = None
         # Relationships
         self.histories = []
@@ -156,10 +182,51 @@ class User( object, APIItem ):
                     total += hda.dataset.get_total_size()
         return total
 
+    @staticmethod
+    def user_template_environment( user ):
+        """
 
-class Job( object, APIItem ):
-    api_collection_visible_keys = [ 'id'  ]
-    api_element_visible_keys = [ 'id' ]
+        >>> env = User.user_template_environment(None)
+        >>> env['__user_email__']
+        'Anonymous'
+        >>> env['__user_id__']
+        'Anonymous'
+        >>> user = User('foo@example.com')
+        >>> user.id = 6
+        >>> user.username = 'foo2'
+        >>> env = User.user_template_environment(user)
+        >>> env['__user_id__']
+        '6'
+        >>> env['__user_name__']
+        'foo2'
+        """
+        if user:
+            user_id = '%d' % user.id
+            user_email = str( user.email )
+            user_name = str( user.username )
+        else:
+            user = None
+            user_id = 'Anonymous'
+            user_email = 'Anonymous'
+            user_name = 'Anonymous'
+        environment = {}
+        environment[ '__user__' ] = user
+        environment[ '__user_id__' ] = environment[ 'userId' ] = user_id
+        environment[ '__user_email__' ] = environment[ 'userEmail' ] = user_email
+        environment[ '__user_name__' ] = user_name
+        return environment
+
+    @staticmethod
+    def expand_user_properties( user, in_string ):
+        """
+        """
+        environment = User.user_template_environment( user )
+        return Template( in_string ).safe_substitute( environment )
+
+
+class Job( object, Dictifiable ):
+    dict_collection_visible_keys = [ 'id', 'state', 'exit_code', 'update_time', 'create_time' ]
+    dict_element_visible_keys = [ 'id', 'state', 'exit_code', 'update_time', 'create_time'  ]
 
     """
     A job represents a request to run a tool given input datasets, tool
@@ -363,32 +430,33 @@ class Job( object, APIItem ):
                 dataset.blurb = 'deleted'
                 dataset.peek = 'Job deleted'
                 dataset.info = 'Job output deleted by user before job completed'
-    def get_api_value( self, view='collection' ):
-        rval = super( Job, self ).get_api_value( view=view )
-        rval['tool_name'] = self.tool_id
-        param_dict = dict( [ ( p.name, p.value ) for p in self.parameters ] )
-        rval['params'] = param_dict
+    def to_dict( self, view='collection' ):
+        rval = super( Job, self ).to_dict( view=view )
+        rval['tool_id'] = self.tool_id
+        if view == 'element':
+            param_dict = dict( [ ( p.name, p.value ) for p in self.parameters ] )
+            rval['params'] = param_dict
 
-        input_dict = {}
-        for i in self.input_datasets:
-            if i.dataset is not None:
-                input_dict[i.name] = {"hda_id" : i.dataset.id}
-        for i in self.input_library_datasets:
-            if i.dataset is not None:
-                input_dict[i.name] = {"ldda_id" : i.dataset.id}
-        for k in input_dict:
-            if k in param_dict:
-                del param_dict[k]
-        rval['inputs'] = input_dict
+            input_dict = {}
+            for i in self.input_datasets:
+                if i.dataset is not None:
+                    input_dict[i.name] = {"id" : i.dataset.id, "src" : "hda"}
+            for i in self.input_library_datasets:
+                if i.dataset is not None:
+                    input_dict[i.name] = {"id" : i.dataset.id, "src" : "ldda"}
+            for k in input_dict:
+                if k in param_dict:
+                    del param_dict[k]
+            rval['inputs'] = input_dict
 
-        output_dict = {}
-        for i in self.output_datasets:
-            if i.dataset is not None:
-                output_dict[i.name] = {"hda_id" : i.dataset.id}
-        for i in self.output_library_datasets:
-            if i.dataset is not None:
-                output_dict[i.name] = {"ldda_id" : i.dataset.id}
-        rval['outputs'] = output_dict
+            output_dict = {}
+            for i in self.output_datasets:
+                if i.dataset is not None:
+                    output_dict[i.name] = {"id" : i.dataset.id, "src" : "hda"}
+            for i in self.output_library_datasets:
+                if i.dataset is not None:
+                    output_dict[i.name] = {"id" : i.dataset.id, "src" : "ldda"}
+            rval['outputs'] = output_dict
 
         return rval
 
@@ -580,6 +648,7 @@ class JobExternalOutputMetadata( object ):
             return self.library_dataset_dataset_association
         return None
 
+
 class JobExportHistoryArchive( object ):
     def __init__( self, job=None, history=None, dataset=None, compressed=False, \
                   history_attrs_filename=None, datasets_attrs_filename=None,
@@ -591,6 +660,33 @@ class JobExportHistoryArchive( object ):
         self.history_attrs_filename = history_attrs_filename
         self.datasets_attrs_filename = datasets_attrs_filename
         self.jobs_attrs_filename = jobs_attrs_filename
+
+    @property
+    def up_to_date( self ):
+        """ Return False, if a new export should be generated for corresponding
+        history.
+        """
+        job = self.job
+        return job.state not in [ Job.states.ERROR, Job.states.DELETED ] \
+           and job.update_time > self.history.update_time
+
+    @property
+    def ready( self ):
+        return self.job.state == Job.states.OK
+
+    @property
+    def preparing( self ):
+        return self.job.state in [ Job.states.RUNNING, Job.states.QUEUED, Job.states.WAITING ]
+
+    @property
+    def export_name( self ):
+        # Stream archive.
+        hname = ready_name_for_url( self.history.name )
+        hname = "Galaxy-History-%s.tar" % ( hname )
+        if self.compressed:
+            hname += ".gz"
+        return hname
+
 
 class JobImportHistoryArchive( object ):
     def __init__( self, job=None, history=None, archive_dir=None ):
@@ -649,9 +745,9 @@ class DeferredJob( object ):
         else:
             return False
 
-class Group( object, APIItem  ):
-    api_collection_visible_keys = ( 'id', 'name' )
-    api_element_visible_keys = ( 'id', 'name' )
+class Group( object, Dictifiable  ):
+    dict_collection_visible_keys = ( 'id', 'name' )
+    dict_element_visible_keys = ( 'id', 'name' )
 
     def __init__( self, name = None ):
         self.name = name
@@ -662,14 +758,15 @@ class UserGroupAssociation( object ):
         self.user = user
         self.group = group
 
-class History( object, UsesAnnotations ):
+class History( object, Dictifiable, UsesAnnotations, HasName ):
 
-    api_collection_visible_keys = ( 'id', 'name', 'published', 'deleted' )
-    api_element_visible_keys = ( 'id', 'name', 'published', 'deleted', 'genome_build', 'purged' )
+    dict_collection_visible_keys = ( 'id', 'name', 'published', 'deleted' )
+    dict_element_visible_keys = ( 'id', 'name', 'published', 'deleted', 'genome_build', 'purged' )
+    default_name = 'Unnamed history'
 
     def __init__( self, id=None, name=None, user=None ):
         self.id = id
-        self.name = name or "Unnamed history"
+        self.name = name or History.default_name
         self.deleted = False
         self.purged = False
         self.importing = False
@@ -679,10 +776,10 @@ class History( object, UsesAnnotations ):
         self.user = user
         self.datasets = []
         self.galaxy_sessions = []
+        self.tags = []
 
     def _next_hid( self ):
-        # TODO: override this with something in the database that ensures
-        # better integrity
+        # this is overriden in mapping.py db_next_hid() method
         if len( self.datasets ) == 0:
             return 1
         else:
@@ -768,55 +865,34 @@ class History( object, UsesAnnotations ):
         # This needs to be a list
         return [ hda for hda in self.datasets if not hda.dataset.deleted ]
 
-    def get_display_name( self ):
-        """
-        History name can be either a string or a unicode object.
-        If string, convert to unicode object assuming 'utf-8' format.
-        """
-        history_name = self.name
-        if isinstance(history_name, str):
-            history_name = unicode(history_name, 'utf-8')
-        return history_name
+    def to_dict( self, view='collection', value_mapper = None ):
 
-    def get_api_value( self, view='collection', value_mapper = None ):
-        if value_mapper is None:
-            value_mapper = {}
-        rval = {}
+        # Get basic value.
+        rval = super( History, self ).to_dict( view=view, value_mapper=value_mapper )
 
-        try:
-            visible_keys = self.__getattribute__( 'api_' + view + '_visible_keys' )
-        except AttributeError:
-            raise Exception( 'Unknown API view: %s' % view )
-        for key in visible_keys:
-            try:
-                rval[key] = self.__getattribute__( key )
-                if key in value_mapper:
-                    rval[key] = value_mapper.get( key )( rval[key] )
-            except AttributeError:
-                rval[key] = None
-
+        # Add tags.
         tags_str_list = []
         for tag in self.tags:
             tag_str = tag.user_tname
             if tag.value is not None:
                 tag_str += ":" + tag.user_value
             tags_str_list.append( tag_str )
-        rval['tags'] = tags_str_list
-        rval['model_class'] = self.__class__.__name__
+        rval[ 'tags' ] = tags_str_list
+
         return rval
 
     def set_from_dict( self, new_data ):
         #AKA: set_api_value
         """
         Set object attributes to the values in dictionary new_data limiting
-        to only those keys in api_element_visible_keys.
+        to only those keys in dict_element_visible_keys.
 
         Returns a dictionary of the keys, values that have been changed.
         """
         # precondition: keys are proper, values are parsed and validated
         changed = {}
         # unknown keys are ignored here
-        for key in [ k for k in new_data.keys() if k in self.api_element_visible_keys ]:
+        for key in [ k for k in new_data.keys() if k in self.dict_element_visible_keys ]:
             new_val = new_data[ key ]
             old_val = self.__getattribute__( key )
             if new_val == old_val:
@@ -826,6 +902,11 @@ class History( object, UsesAnnotations ):
             changed[ key ] = new_val
 
         return changed
+
+    @property
+    def latest_export( self ):
+        exports = self.exports
+        return exports and exports[ 0 ]
 
     @property
     def get_disk_size_bytes( self ):
@@ -856,6 +937,49 @@ class History( object, UsesAnnotations ):
             rval = galaxy.datatypes.data.nice_size( rval )
         return rval
 
+    @property
+    def active_datasets_children_and_roles( self ):
+        if not hasattr(self, '_active_datasets_children_and_roles'):
+            db_session = object_session( self )
+            query = db_session.query( HistoryDatasetAssociation ).filter( HistoryDatasetAssociation.table.c.history_id == self.id ). \
+                filter( not_( HistoryDatasetAssociation.deleted ) ). \
+                order_by( HistoryDatasetAssociation.table.c.hid.asc() ). \
+                options(
+                    joinedload("children"),
+                    joinedload("dataset"),
+                    joinedload("dataset.actions"),
+                    joinedload("dataset.actions.role"),
+                )
+            self._active_datasets_children_and_roles = query.all()
+        return self._active_datasets_children_and_roles
+
+    def contents_iter( self, **kwds ):
+        """
+        Fetch filtered list of contents of history.
+        """
+        python_filter = None
+        db_session = object_session( self )
+        assert db_session != None
+        query = db_session.query( HistoryDatasetAssociation ).filter( HistoryDatasetAssociation.table.c.history_id == self.id )
+        query = query.order_by( HistoryDatasetAssociation.table.c.hid.asc() )
+        deleted = galaxy.util.string_as_bool_or_none( kwds.get( 'deleted', None ) )
+        if deleted is not None:
+            query = query.filter( HistoryDatasetAssociation.deleted == deleted )
+        visible = galaxy.util.string_as_bool_or_none( kwds.get( 'visible', None ) )
+        if visible is not None:
+            query = query.filter( HistoryDatasetAssociation.visible == visible )
+        if 'ids' in kwds:
+            ids = kwds['ids']
+            max_in_filter_length = kwds.get('max_in_filter_length', MAX_IN_FILTER_LENGTH)
+            if len(ids) < max_in_filter_length:
+                query = query.filter( HistoryDatasetAssociation.id.in_(ids) )
+            else:
+                python_filter = lambda hda: hda.id in ids
+        if python_filter:
+            return ifilter(python_filter, query)
+        else:
+            return query
+
     def copy_tags_from(self,target_user,source_history):
         for src_shta in source_history.tags:
             new_shta = src_shta.copy()
@@ -878,9 +1002,9 @@ class GroupRoleAssociation( object ):
         self.group = group
         self.role = role
 
-class Role( object, APIItem ):
-    api_collection_visible_keys = ( 'id', 'name' )
-    api_element_visible_keys = ( 'id', 'name', 'description', 'type' )
+class Role( object, Dictifiable ):
+    dict_collection_visible_keys = ( 'id', 'name' )
+    dict_element_visible_keys = ( 'id', 'name', 'description', 'type' )
     private_id = None
     types = Bunch(
         PRIVATE = 'private',
@@ -895,21 +1019,21 @@ class Role( object, APIItem ):
         self.type = type
         self.deleted = deleted
 
-class UserQuotaAssociation( object, APIItem ):
-    api_element_visible_keys = ( 'user', )
+class UserQuotaAssociation( object, Dictifiable ):
+    dict_element_visible_keys = ( 'user', )
     def __init__( self, user, quota ):
         self.user = user
         self.quota = quota
 
-class GroupQuotaAssociation( object, APIItem ):
-    api_element_visible_keys = ( 'group', )
+class GroupQuotaAssociation( object, Dictifiable ):
+    dict_element_visible_keys = ( 'group', )
     def __init__( self, group, quota ):
         self.group = group
         self.quota = quota
 
-class Quota( object, APIItem ):
-    api_collection_visible_keys = ( 'id', 'name' )
-    api_element_visible_keys = ( 'id', 'name', 'description', 'bytes', 'operation', 'display_amount', 'default', 'users', 'groups' )
+class Quota( object, Dictifiable ):
+    dict_collection_visible_keys = ( 'id', 'name' )
+    dict_element_visible_keys = ( 'id', 'name', 'description', 'bytes', 'operation', 'display_amount', 'default', 'users', 'groups' )
     valid_operations = ( '+', '-', '=' )
     def __init__( self, name="", description="", amount=0, operation="=" ):
         self.name = name
@@ -936,8 +1060,8 @@ class Quota( object, APIItem ):
         else:
             return nice_size( self.bytes )
 
-class DefaultQuotaAssociation( Quota, APIItem ):
-    api_element_visible_keys = ( 'type', )
+class DefaultQuotaAssociation( Quota, Dictifiable ):
+    dict_element_visible_keys = ( 'type', )
     types = Bunch(
         UNREGISTERED = 'unregistered',
         REGISTERED = 'registered'
@@ -1097,7 +1221,7 @@ class Dataset( object ):
         self.total_size = self.file_size or 0
         if self.object_store.exists(self, extra_dir=self._extra_files_path or "dataset_%d_files" % self.id, dir_only=True):
             for root, dirs, files in os.walk( self.extra_files_path ):
-                self.total_size += sum( [ os.path.getsize( os.path.join( root, file ) ) for file in files ] )
+                self.total_size += sum( [ os.path.getsize( os.path.join( root, file ) ) for file in files if os.path.exists( os.path.join( root, file ) ) ] )
     def has_data( self ):
         """Detects whether there is any data"""
         return self.get_size() > 0
@@ -1517,7 +1641,7 @@ class DatasetInstance( object ):
 
         return msg
 
-class HistoryDatasetAssociation( DatasetInstance, UsesAnnotations ):
+class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations, HasName ):
     """
     Resource class that creates a relation between a dataset and a user history.
     """
@@ -1647,17 +1771,6 @@ class HistoryDatasetAssociation( DatasetInstance, UsesAnnotations ):
         for assoc in self.implicitly_converted_parent_datasets:
             assoc.clear( purge = purge, delete_dataset = False )
 
-    def get_display_name( self ):
-        """
-        Return the name of this HDA in either ascii or utf-8 encoding.
-        """
-        # Name can be either a string or a unicode object.
-        #   If string, convert to unicode object assuming 'utf-8' format.
-        hda_name = self.name
-        if isinstance(hda_name, str):
-            hda_name = unicode(hda_name, 'utf-8')
-        return hda_name
-
     def get_access_roles( self, trans ):
         """
         Return The access roles associated with this HDA's dataset.
@@ -1689,7 +1802,7 @@ class HistoryDatasetAssociation( DatasetInstance, UsesAnnotations ):
             rval += child.get_disk_usage( user )
         return rval
 
-    def get_api_value( self, view='collection' ):
+    def to_dict( self, view='collection', expose_dataset_path=False ):
         """
         Return attributes of this HDA that are exposed using the API.
         """
@@ -1710,18 +1823,37 @@ class HistoryDatasetAssociation( DatasetInstance, UsesAnnotations ):
                      visible = hda.visible,
                      state = hda.state,
                      file_size = int( hda.get_size() ),
+                     update_time = hda.update_time.isoformat(),
                      data_type = hda.ext,
                      genome_build = hda.dbkey,
-                     misc_info = hda.info,
+                     misc_info = hda.info.strip() if isinstance( hda.info, basestring ) else hda.info,
                      misc_blurb = hda.blurb )
 
+        # add tags string list
+        tags_str_list = []
+        for tag in self.tags:
+            tag_str = tag.user_tname
+            if tag.value is not None:
+                tag_str += ":" + tag.user_value
+            tags_str_list.append( tag_str )
+        rval[ 'tags' ] = tags_str_list
+
+        if hda.copied_from_library_dataset_dataset_association is not None:
+            rval['copied_from_ldda_id'] = hda.copied_from_library_dataset_dataset_association.id
+            
         if hda.history is not None:
             rval['history_id'] = hda.history.id
+
+        if hda.extended_metadata is not None:
+            rval['extended_metadata'] = hda.extended_metadata.data
 
         rval[ 'peek' ] = to_unicode( hda.display_peek() )
         for name, spec in hda.metadata.spec.items():
             val = hda.metadata.get( name )
             if isinstance( val, MetadataFile ):
+                # only when explicitly set: fetching filepaths can be expensive
+                if not expose_dataset_path:
+                    continue
                 val = val.file_name
             # If no value for metadata, look in datatype for metadata.
             elif val == None and hasattr( hda.datatype, name ):
@@ -1750,6 +1882,10 @@ class HistoryDatasetAssociation( DatasetInstance, UsesAnnotations ):
             if new_val == old_val:
                 continue
 
+            # special cases here
+            if key == 'deleted' and new_val is False and self.purged:
+                raise Exception( 'Cannot undelete a purged dataset' )
+
             self.__setattr__( key, new_val )
             changed[ key ] = new_val
 
@@ -1768,10 +1904,10 @@ class HistoryDatasetAssociationSubset( object ):
         self.subset = subset
         self.location = location
 
-class Library( object, APIItem ):
+class Library( object, Dictifiable, HasName ):
     permitted_actions = get_permitted_actions( filter='LIBRARY' )
-    api_collection_visible_keys = ( 'id', 'name' )
-    api_element_visible_keys = ( 'id', 'deleted', 'name', 'description', 'synopsis' )
+    dict_collection_visible_keys = ( 'id', 'name' )
+    dict_element_visible_keys = ( 'id', 'deleted', 'name', 'description', 'synopsis', 'root_folder_id' )
     def __init__( self, name=None, description=None, synopsis=None, root_folder=None ):
         self.name = name or "Unnamed library"
         self.description = description
@@ -1829,16 +1965,9 @@ class Library( object, APIItem ):
             if lp.action == trans.app.security_agent.permitted_actions.LIBRARY_ACCESS.action:
                 roles.append( lp.role )
         return roles
-    def get_display_name( self ):
-        # Library name can be either a string or a unicode object. If string,
-        # convert to unicode object assuming 'utf-8' format.
-        name = self.name
-        if isinstance( name, str ):
-            name = unicode( name, 'utf-8' )
-        return name
 
-class LibraryFolder( object, APIItem ):
-    api_element_visible_keys = ( 'id', 'parent_id', 'name', 'description', 'item_count', 'genome_build' )
+class LibraryFolder( object, Dictifiable, HasName ):
+    dict_element_visible_keys = ( 'id', 'parent_id', 'name', 'description', 'item_count', 'genome_build', 'update_time' )
     def __init__( self, name=None, description=None, item_count=0, order_id=None ):
         self.name = name or "Unnamed folder"
         self.description = description
@@ -1902,15 +2031,9 @@ class LibraryFolder( object, APIItem ):
     def activatable_library_datasets( self ):
          # This needs to be a list
         return [ ld for ld in self.datasets if ld.library_dataset_dataset_association and not ld.library_dataset_dataset_association.dataset.deleted ]
-    def get_display_name( self ):
-        # Library folder name can be either a string or a unicode object. If string,
-        # convert to unicode object assuming 'utf-8' format.
-        name = self.name
-        if isinstance( name, str ):
-            name = unicode( name, 'utf-8' )
-        return name
-    def get_api_value( self, view='collection' ):
-        rval = super( LibraryFolder, self ).get_api_value( view=view )
+
+    def to_dict( self, view='collection' ):
+        rval = super( LibraryFolder, self ).to_dict( view=view )
         info_association, inherited = self.get_info_association()
         if info_association:
             if inherited:
@@ -1927,7 +2050,7 @@ class LibraryFolder( object, APIItem ):
         f = self
         while f.parent:
             l_path.insert(0, f.name)
-            f = f.parent        
+            f = f.parent
         return l_path
     @property
     def parent_library( self ):
@@ -1975,7 +2098,7 @@ class LibraryDataset( object ):
     name = property( get_name, set_name )
     def display_name( self ):
         self.library_dataset_dataset_association.display_name()
-    def get_api_value( self, view='collection' ):
+    def to_dict( self, view='collection' ):
         # Since this class is a proxy to rather complex attributes we want to
         # display in other objects, we can't use the simpler method used by
         # other model classes.
@@ -1991,6 +2114,7 @@ class LibraryDataset( object ):
 
         rval = dict( id = self.id,
                      ldda_id = ldda.id,
+                     parent_library_id = self.folder.parent_library.id,
                      folder_id = self.folder_id,
                      model_class = self.__class__.__name__,
                      name = ldda.name,
@@ -2003,6 +2127,7 @@ class LibraryDataset( object ):
                      genome_build = ldda.dbkey,
                      misc_info = ldda.info,
                      misc_blurb = ldda.blurb,
+                     peek = ( lambda ldda: ldda.display_peek() if ldda.peek and ldda.peek != 'no peek' else None )( ldda ),
                      template_data = template_data )
         if ldda.dataset.uuid is None:
             rval['uuid'] = None
@@ -2017,7 +2142,7 @@ class LibraryDataset( object ):
             rval['metadata_' + name] = val
         return rval
 
-class LibraryDatasetDatasetAssociation( DatasetInstance ):
+class LibraryDatasetDatasetAssociation( DatasetInstance, HasName ):
     def __init__( self,
                   copied_from_history_dataset_association=None,
                   copied_from_library_dataset_dataset_association=None,
@@ -2105,7 +2230,7 @@ class LibraryDatasetDatasetAssociation( DatasetInstance ):
         if restrict:
             return None, inherited
         return self.library_dataset.folder.get_info_association( inherited=True )
-    def get_api_value( self, view='collection' ):
+    def to_dict( self, view='collection' ):
         # Since this class is a proxy to rather complex attributes we want to
         # display in other objects, we can't use the simpler method used by
         # other model classes.
@@ -2124,6 +2249,7 @@ class LibraryDatasetDatasetAssociation( DatasetInstance ):
                      library_dataset_id = ldda.library_dataset_id,
                      file_size = file_size,
                      file_name = ldda.file_name,
+                     update_time = ldda.update_time.isoformat(),
                      data_type = ldda.ext,
                      genome_build = ldda.dbkey,
                      misc_info = ldda.info,
@@ -2189,17 +2315,8 @@ class LibraryDatasetDatasetAssociation( DatasetInstance ):
             template_data[template.name] = tmp_dict
         return template_data
     def templates_json( self, use_name=False ):
-        return simplejson.dumps( self.templates_dict( use_name=use_name ) )
+        return json.dumps( self.templates_dict( use_name=use_name ) )
 
-    def get_display_name( self ):
-        """
-        LibraryDatasetDatasetAssociation name can be either a string or a unicode object.
-        If string, convert to unicode object assuming 'utf-8' format.
-        """
-        ldda_name = self.name
-        if isinstance( ldda_name, str ):
-            ldda_name = unicode( ldda_name, 'utf-8' )
-        return ldda_name
 
 class ExtendedMetadata( object ):
     def __init__(self, data):
@@ -2332,9 +2449,12 @@ class UCI( object ):
         self.id = None
         self.user = None
 
-class StoredWorkflow( object, APIItem):
-    api_collection_visible_keys = ( 'id', 'name', 'published' )
-    api_element_visible_keys = ( 'id', 'name', 'published' )
+
+class StoredWorkflow( object, Dictifiable):
+
+    dict_collection_visible_keys = ( 'id', 'name', 'published', 'deleted' )
+    dict_element_visible_keys = ( 'id', 'name', 'published', 'deleted' )
+
     def __init__( self ):
         self.id = None
         self.user = None
@@ -2350,8 +2470,8 @@ class StoredWorkflow( object, APIItem):
             new_swta.user = target_user
             self.tags.append(new_swta)
 
-    def get_api_value( self, view='collection', value_mapper = None  ):
-        rval = APIItem.get_api_value(self, view=view, value_mapper = value_mapper)
+    def to_dict( self, view='collection', value_mapper = None  ):
+        rval = super( StoredWorkflow, self ).to_dict( view=view, value_mapper = value_mapper )
         tags_str_list = []
         for tag in self.tags:
             tag_str = tag.user_tname
@@ -2362,7 +2482,11 @@ class StoredWorkflow( object, APIItem):
         return rval
 
 
-class Workflow( object ):
+class Workflow( object, Dictifiable ):
+
+    dict_collection_visible_keys = ( 'name', 'has_cycles', 'has_errors' )
+    dict_element_visible_keys = ( 'name', 'has_cycles', 'has_errors' )
+
     def __init__( self ):
         self.user = None
         self.name = None
@@ -2370,7 +2494,9 @@ class Workflow( object ):
         self.has_errors = None
         self.steps = []
 
+
 class WorkflowStep( object ):
+
     def __init__( self ):
         self.id = None
         self.type = None
@@ -2381,36 +2507,48 @@ class WorkflowStep( object ):
         self.input_connections = []
         self.config = None
 
+
 class WorkflowStepConnection( object ):
+
     def __init__( self ):
         self.output_step_id = None
         self.output_name = None
         self.input_step_id = None
         self.input_name = None
 
+
 class WorkflowOutput(object):
+
     def __init__( self, workflow_step, output_name):
         self.workflow_step = workflow_step
         self.output_name = output_name
 
+
 class StoredWorkflowUserShareAssociation( object ):
+
     def __init__( self ):
         self.stored_workflow = None
         self.user = None
 
+
 class StoredWorkflowMenuEntry( object ):
+
     def __init__( self ):
         self.stored_workflow = None
         self.user = None
         self.order_index = None
 
+
 class WorkflowInvocation( object ):
     pass
+
 
 class WorkflowInvocationStep( object ):
     pass
 
+
 class MetadataFile( object ):
+
     def __init__( self, dataset = None, name = None ):
         if isinstance( dataset, HistoryDatasetAssociation ):
             self.history_dataset = dataset
@@ -2425,7 +2563,8 @@ class MetadataFile( object ):
             da = self.history_dataset or self.library_dataset
             if self.object_store_id is None and da is not None:
                 self.object_store_id = da.dataset.object_store_id
-            da.dataset.object_store.create( self, extra_dir='_metadata_files', extra_dir_at_root=True, alt_name="metadata_%d.dat" % self.id )
+            if not da.dataset.object_store.exists( self, extra_dir='_metadata_files', extra_dir_at_root=True, alt_name="metadata_%d.dat" % self.id ):
+                da.dataset.object_store.create( self, extra_dir='_metadata_files', extra_dir_at_root=True, alt_name="metadata_%d.dat" % self.id )
             path = da.dataset.object_store.get_filename( self, extra_dir='_metadata_files', extra_dir_at_root=True, alt_name="metadata_%d.dat" % self.id )
             return path
         except AttributeError:
@@ -2443,7 +2582,7 @@ class MetadataFile( object ):
             return os.path.abspath( os.path.join( path, "metadata_%d.dat" % self.id ) )
 
 
-class FormDefinition( object, APIItem ):
+class FormDefinition( object, Dictifiable ):
     # The following form_builder classes are supported by the FormDefinition class.
     supported_field_types = [ AddressField, CheckboxField, PasswordField, SelectField, TextArea, TextField, WorkflowField, WorkflowMappingField, HistoryField ]
     types = Bunch( REQUEST = 'Sequencing Request Form',
@@ -2452,8 +2591,8 @@ class FormDefinition( object, APIItem ):
                    RUN_DETAILS_TEMPLATE = 'Sample run details template',
                    LIBRARY_INFO_TEMPLATE = 'Library information template',
                    USER_INFO = 'User Information' )
-    api_collection_visible_keys = ( 'id', 'name' )
-    api_element_visible_keys = ( 'id', 'name', 'desc', 'form_definition_current_id', 'fields', 'layout' )
+    dict_collection_visible_keys = ( 'id', 'name' )
+    dict_element_visible_keys = ( 'id', 'name', 'desc', 'form_definition_current_id', 'fields', 'layout' )
     def __init__( self, name=None, desc=None, fields=[], form_definition_current=None, form_type=None, layout=None ):
         self.name = name
         self.desc = desc
@@ -2571,12 +2710,12 @@ class FormValues( object ):
         self.form_definition = form_def
         self.content = content
 
-class Request( object, APIItem ):
+class Request( object, Dictifiable ):
     states = Bunch( NEW = 'New',
                     SUBMITTED = 'In Progress',
                     REJECTED = 'Rejected',
                     COMPLETE = 'Complete' )
-    api_collection_visible_keys = ( 'id', 'name', 'state' )
+    dict_collection_visible_keys = ( 'id', 'name', 'state' )
     def __init__( self, name=None, desc=None, request_type=None, user=None, form_values=None, notification=None ):
         self.name = name
         self.desc = desc
@@ -2762,9 +2901,9 @@ class ExternalService( object ):
     def populate_actions( self, trans, item, param_dict=None ):
         return self.get_external_service_type( trans ).actions.populate( self, item, param_dict=param_dict )
 
-class RequestType( object, APIItem ):
-    api_collection_visible_keys = ( 'id', 'name', 'desc' )
-    api_element_visible_keys = ( 'id', 'name', 'desc', 'request_form_id', 'sample_form_id' )
+class RequestType( object, Dictifiable ):
+    dict_collection_visible_keys = ( 'id', 'name', 'desc' )
+    dict_element_visible_keys = ( 'id', 'name', 'desc', 'request_form_id', 'sample_form_id' )
     rename_dataset_options = Bunch( NO = 'Do not rename',
                                     SAMPLE_NAME = 'Preprend sample name',
                                     EXPERIMENT_NAME = 'Prepend experiment name',
@@ -2848,12 +2987,12 @@ class RequestTypePermissions( object ):
         self.request_type = request_type
         self.role = role
 
-class Sample( object, APIItem ):
+class Sample( object, Dictifiable ):
     # The following form_builder classes are supported by the Sample class.
     supported_field_types = [ CheckboxField, SelectField, TextField, WorkflowField, WorkflowMappingField, HistoryField ]
     bulk_operations = Bunch( CHANGE_STATE = 'Change state',
                              SELECT_LIBRARY = 'Select data library and folder' )
-    api_collection_visible_keys = ( 'id', 'name' )
+    dict_collection_visible_keys = ( 'id', 'name' )
     def __init__(self, name=None, desc=None, request=None, form_values=None, bar_code=None, library=None, folder=None, workflow=None, history=None):
         self.name = name
         self.desc = desc
@@ -3066,7 +3205,8 @@ class UserOpenID( object ):
         self.session = session
         self.openid = openid
 
-class Page( object ):
+class Page( object, Dictifiable ):
+    dict_element_visible_keys = [ 'id', 'title', 'latest_revision_id', 'slug', 'published', 'importable', 'deleted' ]
     def __init__( self ):
         self.id = None
         self.user = None
@@ -3077,11 +3217,26 @@ class Page( object ):
         self.importable = None
         self.published = None
 
-class PageRevision( object ):
+    def to_dict( self, view='element' ):
+        rval = super( Page, self ).to_dict( view=view )
+        rev = []
+        for a in self.revisions:
+            rev.append(a.id)
+        rval['revision_ids'] = rev
+        return rval
+
+class PageRevision( object, Dictifiable ):
+    dict_element_visible_keys = [ 'id', 'page_id', 'title', 'content' ]
     def __init__( self ):
         self.user = None
         self.title = None
         self.content = None
+
+    def to_dict( self, view='element' ):
+        rval = super( PageRevision, self ).to_dict( view=view )
+        rval['create_time'] = str(self.create_time)
+        rval['update_time'] = str(self.update_time)
+        return rval
 
 class PageUserShareAssociation( object ):
     def __init__( self ):
@@ -3178,9 +3333,9 @@ class Tag ( object ):
     def __str__ ( self ):
         return "Tag(id=%s, type=%i, parent_id=%s, name=%s)" %  ( self.id, self.type, self.parent_id, self.name )
 
-class ItemTagAssociation ( object, APIItem ):
-    api_collection_visible_keys = ( 'id', 'user_tname', 'user_value' )
-    api_element_visible_keys = api_collection_visible_keys
+class ItemTagAssociation ( object, Dictifiable ):
+    dict_collection_visible_keys = ( 'id', 'user_tname', 'user_value' )
+    dict_element_visible_keys = dict_collection_visible_keys
 
     def __init__( self, id=None, user=None, item_id=None, tag_id=None, user_tname=None, value=None ):
         self.id = id
@@ -3298,7 +3453,7 @@ class DataManagerJobAssociation( object ):
 #end of Data Manager Classes
 
 class UserPreference ( object ):
-    def __init__( self, name=None, value=None ):
+    def __init__( self, name=None, value=None):
         self.name = name
         self.value = value
 
@@ -3313,487 +3468,7 @@ class UserAction( object ):
         self.context = context
 
 class APIKeys( object ):
-    pass
-
-class ToolShedRepository( object ):
-    api_collection_visible_keys = ( 'id', 'tool_shed', 'name', 'owner', 'installed_changeset_revision', 'changeset_revision', 'ctx_rev', 'includes_datatypes',
-                                    'update_available', 'deleted', 'uninstalled', 'dist_to_shed', 'status', 'error_message' )
-    api_element_visible_keys = ( 'id', 'tool_shed', 'name', 'owner', 'installed_changeset_revision', 'changeset_revision', 'ctx_rev', 'includes_datatypes',
-                                    'update_available', 'deleted', 'uninstalled', 'dist_to_shed', 'status', 'error_message' )
-    installation_status = Bunch( NEW='New',
-                                 CLONING='Cloning',
-                                 SETTING_TOOL_VERSIONS='Setting tool versions',
-                                 INSTALLING_REPOSITORY_DEPENDENCIES='Installing repository dependencies',
-                                 INSTALLING_TOOL_DEPENDENCIES='Installing tool dependencies',
-                                 LOADING_PROPRIETARY_DATATYPES='Loading proprietary datatypes',
-                                 INSTALLED='Installed',
-                                 DEACTIVATED='Deactivated',
-                                 ERROR='Error',
-                                 UNINSTALLED='Uninstalled' )
-    states = Bunch( INSTALLING = 'running',
-                    OK = 'ok',
-                    WARNING = 'queued',
-                    ERROR = 'error',
-                    UNINSTALLED = 'deleted_new' )
-    def __init__( self, id=None, create_time=None, tool_shed=None, name=None, description=None, owner=None, installed_changeset_revision=None,
-                  changeset_revision=None, ctx_rev=None, metadata=None, includes_datatypes=False, update_available=False, deleted=False,
-                  uninstalled=False, dist_to_shed=False, status=None, error_message=None ):
+    def __init__( self, id=None, user_id=None, key=None):
         self.id = id
-        self.create_time = create_time
-        self.tool_shed = tool_shed
-        self.name = name
-        self.description = description
-        self.owner = owner
-        self.installed_changeset_revision = installed_changeset_revision
-        self.changeset_revision = changeset_revision
-        self.ctx_rev = ctx_rev
-        self.metadata = metadata
-        self.includes_datatypes = includes_datatypes
-        self.update_available = update_available
-        self.deleted = deleted
-        self.uninstalled = uninstalled
-        self.dist_to_shed = dist_to_shed
-        self.status = status
-        self.error_message = error_message
-    def as_dict( self, value_mapper=None ):
-        return self.get_api_value( view='element', value_mapper=value_mapper )
-    def repo_files_directory( self, app ):
-        repo_path = self.repo_path( app )
-        if repo_path:
-            return os.path.join( repo_path, self.name )
-        return None
-    def repo_path( self, app ):
-        tool_shed_url = self.tool_shed
-        if tool_shed_url.find( ':' ) > 0:
-            # Eliminate the port, if any, since it will result in an invalid directory name.
-            tool_shed_url = tool_shed_url.split( ':' )[ 0 ]
-        tool_shed = tool_shed_url.rstrip( '/' )
-        for index, shed_tool_conf_dict in enumerate( app.toolbox.shed_tool_confs ):
-            tool_path = shed_tool_conf_dict[ 'tool_path' ]
-            relative_path = os.path.join( tool_path, tool_shed, 'repos', self.owner, self.name, self.installed_changeset_revision )
-            if os.path.exists( relative_path ):
-                return relative_path
-        return None
-    @property
-    def tool_shed_path_name( self ):
-        tool_shed_url = self.tool_shed
-        if tool_shed_url.find( ':' ) > 0:
-            # Eliminate the port, if any, since it will result in an invalid directory name.
-            tool_shed_url = tool_shed_url.split( ':' )[ 0 ]
-        return tool_shed_url.rstrip( '/' )
-    def get_tool_relative_path( self, app ):
-        shed_conf_dict = self.get_shed_config_dict( app )
-        tool_path = None
-        relative_path = None
-        if shed_conf_dict:
-            tool_path = shed_conf_dict[ 'tool_path' ]
-            relative_path = os.path.join( self.tool_shed_path_name, 'repos', self.owner, self.name, self.installed_changeset_revision )
-        return tool_path, relative_path
-    def get_shed_config_filename( self ):
-        shed_config_filename = None
-        if self.metadata:
-            shed_config_filename = self.metadata.get( 'shed_config_filename', shed_config_filename )
-        return shed_config_filename
-    def set_shed_config_filename( self, value ):
-        self.metadata[ 'shed_config_filename' ] = value
-    shed_config_filename = property( get_shed_config_filename, set_shed_config_filename )
-    def guess_shed_config( self, app, default=None ):
-        tool_ids = []
-        metadata = self.metadata or {}
-        for tool in metadata.get( 'tools', [] ):
-            tool_ids.append( tool.get( 'guid' ) )
-        for shed_tool_conf_dict in app.toolbox.shed_tool_confs:
-            name = shed_tool_conf_dict[ 'config_filename' ]
-            for elem in shed_tool_conf_dict[ 'config_elems' ]:
-                if elem.tag == 'tool':
-                    for sub_elem in elem.findall( 'id' ):
-                        tool_id = sub_elem.text.strip()
-                        if tool_id in tool_ids:
-                            self.shed_config_filename = name
-                            return shed_tool_conf_dict
-                elif elem.tag == "section":
-                    for tool_elem in elem.findall( 'tool' ):
-                        for sub_elem in tool_elem.findall( 'id' ):
-                            tool_id = sub_elem.text.strip()
-                            if tool_id in tool_ids:
-                                self.shed_config_filename = name
-                                return shed_tool_conf_dict
-        if self.includes_datatypes:
-            #we need to search by filepaths here, which is less desirable
-            tool_shed_url = self.tool_shed
-            if tool_shed_url.find( ':' ) > 0:
-                # Eliminate the port, if any, since it will result in an invalid directory name.
-                tool_shed_url = tool_shed_url.split( ':' )[ 0 ]
-            tool_shed = tool_shed_url.rstrip( '/' )
-            for shed_tool_conf_dict in app.toolbox.shed_tool_confs:
-                tool_path = shed_tool_conf_dict[ 'tool_path' ]
-                relative_path = os.path.join( tool_path, tool_shed, 'repos', self.owner, self.name, self.installed_changeset_revision )
-                if os.path.exists( relative_path ):
-                    self.shed_config_filename = shed_tool_conf_dict[ 'config_filename' ]
-                    return shed_tool_conf_dict
-        return default
-    def get_shed_config_dict( self, app, default=None ):
-        """
-        Return the in-memory version of the shed_tool_conf file, which is stored in the config_elems entry
-        in the shed_tool_conf_dict.
-        """
-        if not self.shed_config_filename:
-            self.guess_shed_config( app, default=default )
-        if self.shed_config_filename:
-            for shed_tool_conf_dict in app.toolbox.shed_tool_confs:
-                if self.shed_config_filename == shed_tool_conf_dict[ 'config_filename' ]:
-                    return shed_tool_conf_dict
-        return default
-    def get_api_value( self, view='collection', value_mapper=None ):
-        if value_mapper is None:
-            value_mapper = {}
-        rval = {}
-        try:
-            visible_keys = self.__getattribute__( 'api_' + view + '_visible_keys' )
-        except AttributeError:
-            raise Exception( 'Unknown API view: %s' % view )
-        for key in visible_keys:
-            try:
-                rval[ key ] = self.__getattribute__( key )
-                if key in value_mapper:
-                    rval[ key ] = value_mapper.get( key, rval[ key ] )
-            except AttributeError:
-                rval[ key ] = None
-        return rval
-    @property
-    def can_install( self ):
-        return self.status == self.installation_status.NEW
-    @property
-    def can_reset_metadata( self ):
-        return self.status == self.installation_status.INSTALLED
-    @property
-    def can_uninstall( self ):
-        return self.status != self.installation_status.UNINSTALLED
-    @property
-    def can_deactivate( self ):
-        return self.status not in [ self.installation_status.DEACTIVATED, self.installation_status.UNINSTALLED ]
-    @property
-    def can_reinstall_or_activate( self ):
-        return self.deleted
-    @property
-    def has_readme_files( self ):
-        if self.metadata:
-            return 'readme_files' in self.metadata
-        return False
-    @property
-    def has_repository_dependencies( self ):
-        if self.metadata:
-            return 'repository_dependencies' in self.metadata
-        return False
-    @property
-    def requires_prior_installation_of( self ):
-        """
-        Return a list of repository dependency tuples like (tool_shed, name, owner, changeset_revision, prior_installation_required) for this
-        repository's repository dependencies where prior_installation_required is True.  By definition, repository dependencies are required to
-        be installed in order for this repository to function correctly.  However, those repository dependencies that are defined for this
-        repository with prior_installation_required set to True place them in a special category in that the required repositories must be
-        installed before this repository is installed.  Among other things, this enables these "special" repository dependencies to include
-        information that enables the successful intallation of this repository.  This method is not used during the initial installation of
-        this repository, but only after it has been installed (metadata must be set for this repository in order for this method to be useful).
-        """
-        required_rd_tups_that_must_be_installed = []
-        if self.has_repository_dependencies:
-            rd_tups = self.metadata[ 'repository_dependencies' ][ 'repository_dependencies' ]
-            for rd_tup in rd_tups:
-                if len( rd_tup ) == 4:
-                    # For backward compatibility to the 12/20/12 Galaxy release, default prior_installation_required to False.
-                    tool_shed, name, owner, changeset_revision = rd_tup
-                    prior_installation_required = False
-                elif len( rd_tup ) == 5:
-                    tool_shed, name, owner, changeset_revision, prior_installation_required = rd_tup
-                    prior_installation_required = galaxy.util.asbool( str( prior_installation_required ) )
-                if prior_installation_required:
-                    required_rd_tups_that_must_be_installed.append( ( tool_shed, name, owner, changeset_revision, prior_installation_required ) )
-        return required_rd_tups_that_must_be_installed
-    @property
-    def includes_data_managers( self ):
-        if self.metadata:
-            return bool( len( self.metadata.get( 'data_manager', {} ).get( 'data_managers', {} ) ) )
-        return False
-    @property
-    def includes_tools( self ):
-        if self.metadata:
-            return 'tools' in self.metadata
-        return False
-    @property
-    def includes_tools_for_display_in_tool_panel( self ):
-        if self.includes_tools:
-            tool_dicts = self.metadata[ 'tools' ]
-            for tool_dict in tool_dicts:
-                if tool_dict.get( 'add_to_tool_panel', True ):
-                    return True
-        return False
-    @property
-    def includes_tool_dependencies( self ):
-        if self.metadata:
-            return 'tool_dependencies' in self.metadata
-        return False
-    @property
-    def includes_workflows( self ):
-        if self.metadata:
-            return 'workflows' in self.metadata
-        return False
-    @property
-    def in_error_state( self ):
-        return self.status == self.installation_status.ERROR
-    @property
-    def repository_dependencies( self ):
-        required_repositories = []
-        for rrda in self.required_repositories:
-            repository_dependency = rrda.repository_dependency
-            required_repository = repository_dependency.repository
-            required_repositories.append( required_repository )
-        return required_repositories
-    @property
-    def installed_repository_dependencies( self ):
-        """Return the repository's repository dependencies that are currently installed."""
-        installed_required_repositories = []
-        for required_repository in self.repository_dependencies:
-            if required_repository.status == self.installation_status.INSTALLED:
-                installed_required_repositories.append( required_repository )
-        return installed_required_repositories
-    @property
-    def missing_repository_dependencies( self ):
-        """Return the repository's repository dependencies that are not currently installed, and may not ever have been installed."""
-        missing_required_repositories = []
-        for required_repository in self.repository_dependencies:
-            if required_repository.status not in [ self.installation_status.INSTALLED ]:
-                missing_required_repositories.append( required_repository )
-        return missing_required_repositories
-    @property
-    def repository_dependencies_being_installed( self ):
-        required_repositories_being_installed = []
-        for required_repository in self.repository_dependencies:
-            if required_repository.status == self.installation_status.INSTALLING:
-                required_repositories_being_installed.append( required_repository )
-        return required_repositories_being_installed
-    @property
-    def repository_dependencies_missing_or_being_installed( self ):
-        required_repositories_missing_or_being_installed = []
-        for required_repository in self.repository_dependencies:
-            if required_repository.status in [ self.installation_status.ERROR,
-                                              self.installation_status.INSTALLING,
-                                              self.installation_status.NEVER_INSTALLED,
-                                              self.installation_status.UNINSTALLED ]:
-                required_repositories_missing_or_being_installed.append( required_repository )
-        return required_repositories_missing_or_being_installed
-    @property
-    def repository_dependencies_with_installation_errors( self ):
-        required_repositories_with_installation_errors = []
-        for required_repository in self.repository_dependencies:
-            if required_repository.status == self.installation_status.ERROR:
-                required_repositories_with_installation_errors.append( required_repository )
-        return required_repositories_with_installation_errors
-    @property
-    def uninstalled_repository_dependencies( self ):
-        """Return the repository's repository dependencies that have been uninstalled."""
-        uninstalled_required_repositories = []
-        for required_repository in self.repository_dependencies:
-            if required_repository.status == self.installation_status.UNINSTALLED:
-                uninstalled_required_repositories.append( required_repository )
-        return uninstalled_required_repositories
-    @property
-    def installed_tool_dependencies( self ):
-        """Return the repository's tool dependencies that are currently installed."""
-        installed_dependencies = []
-        for tool_dependency in self.tool_dependencies:
-            if tool_dependency.status in [ ToolDependency.installation_status.INSTALLED, ToolDependency.installation_status.ERROR ]:
-                installed_dependencies.append( tool_dependency )
-        return installed_dependencies
-    @property
-    def missing_tool_dependencies( self ):
-        """Return the repository's tool dependencies that are not currently installed, and may not ever have been installed."""
-        missing_dependencies = []
-        for tool_dependency in self.tool_dependencies:
-            if tool_dependency.status not in [ ToolDependency.installation_status.INSTALLED ]:
-                missing_dependencies.append( tool_dependency )
-        return missing_dependencies
-    @property
-    def tool_dependencies_being_installed( self ):
-        dependencies_being_installed = []
-        for tool_dependency in self.tool_dependencies:
-            if tool_dependency.status == ToolDependency.installation_status.INSTALLING:
-                dependencies_being_installed.append( tool_dependency )
-        return dependencies_being_installed
-    @property
-    def tool_dependencies_missing_or_being_installed( self ):
-        dependencies_missing_or_being_installed = []
-        for tool_dependency in self.tool_dependencies:
-            if tool_dependency.status in [ ToolDependency.installation_status.ERROR,
-                                           ToolDependency.installation_status.INSTALLING,
-                                           ToolDependency.installation_status.NEVER_INSTALLED,
-                                           ToolDependency.installation_status.UNINSTALLED ]:
-                dependencies_missing_or_being_installed.append( tool_dependency )
-        return dependencies_missing_or_being_installed
-    @property
-    def tool_dependencies_with_installation_errors( self ):
-        dependencies_with_installation_errors = []
-        for tool_dependency in self.tool_dependencies:
-            if tool_dependency.status == ToolDependency.installation_status.ERROR:
-                dependencies_with_installation_errors.append( tool_dependency )
-        return dependencies_with_installation_errors
-    @property
-    def uninstalled_tool_dependencies( self ):
-        """Return the repository's tool dependencies that have been uninstalled."""
-        uninstalled_tool_dependencies = []
-        for tool_dependency in self.tool_dependencies:
-            if tool_dependency.status == ToolDependency.installation_status.UNINSTALLED:
-                uninstalled_tool_dependencies.append( tool_dependency )
-        return uninstalled_tool_dependencies
-
-class RepositoryRepositoryDependencyAssociation( object ):
-    def __init__( self, tool_shed_repository_id=None, repository_dependency_id=None ):
-        self.tool_shed_repository_id = tool_shed_repository_id
-        self.repository_dependency_id = repository_dependency_id
-
-class RepositoryDependency( object ):
-    def __init__( self, tool_shed_repository_id=None ):
-        self.tool_shed_repository_id = tool_shed_repository_id
-
-class ToolDependency( object ):
-    installation_status = Bunch( NEVER_INSTALLED='Never installed',
-                                 INSTALLING='Installing',
-                                 INSTALLED='Installed',
-                                 ERROR='Error',
-                                 UNINSTALLED='Uninstalled' )
-    states = Bunch( INSTALLING = 'running',
-                    OK = 'ok',
-                    WARNING = 'queued',
-                    ERROR = 'error',
-                    UNINSTALLED = 'deleted_new' )
-    def __init__( self, tool_shed_repository_id=None, name=None, version=None, type=None, status=None, error_message=None ):
-        self.tool_shed_repository_id = tool_shed_repository_id
-        self.name = name
-        self.version = version
-        self.type = type
-        self.status = status
-        self.error_message = error_message
-    @property
-    def can_install( self ):
-        return self.status in [ self.installation_status.NEVER_INSTALLED, self.installation_status.UNINSTALLED ]
-    @property
-    def can_uninstall( self ):
-        return self.status in [ self.installation_status.ERROR, self.installation_status.INSTALLED ]
-    @property
-    def can_update( self ):
-        return self.status in [ self.installation_status.NEVER_INSTALLED,
-                                self.installation_status.INSTALLED,
-                                self.installation_status.ERROR,
-                                self.installation_status.UNINSTALLED ]
-    @property
-    def in_error_state( self ):
-        return self.status == self.installation_status.ERROR
-    def installation_directory( self, app ):
-        if self.type == 'package':
-            return os.path.join( app.config.tool_dependency_dir,
-                                 self.name,
-                                 self.version,
-                                 self.tool_shed_repository.owner,
-                                 self.tool_shed_repository.name,
-                                 self.tool_shed_repository.installed_changeset_revision )
-        if self.type == 'set_environment':
-            return os.path.join( app.config.tool_dependency_dir,
-                                 'environment_settings',
-                                 self.name,
-                                 self.tool_shed_repository.owner,
-                                 self.tool_shed_repository.name,
-                                 self.tool_shed_repository.installed_changeset_revision )
-
-class ToolVersion( object, APIItem ):
-    api_element_visible_keys = ( 'id', 'tool_shed_repository' )
-    def __init__( self, id=None, create_time=None, tool_id=None, tool_shed_repository=None ):
-        self.id = id
-        self.create_time = create_time
-        self.tool_id = tool_id
-        self.tool_shed_repository = tool_shed_repository
-    def get_previous_version( self, app ):
-        sa_session = app.model.context.current
-        tva = sa_session.query( app.model.ToolVersionAssociation ) \
-                        .filter( app.model.ToolVersionAssociation.table.c.tool_id == self.id ) \
-                        .first()
-        if tva:
-            return sa_session.query( app.model.ToolVersion ) \
-                             .filter( app.model.ToolVersion.table.c.id == tva.parent_id ) \
-                             .first()
-        return None
-    def get_next_version( self, app ):
-        sa_session = app.model.context.current
-        tva = sa_session.query( app.model.ToolVersionAssociation ) \
-                        .filter( app.model.ToolVersionAssociation.table.c.parent_id == self.id ) \
-                        .first()
-        if tva:
-            return sa_session.query( app.model.ToolVersion ) \
-                             .filter( app.model.ToolVersion.table.c.id == tva.tool_id ) \
-                             .first()
-        return None
-    def get_versions( self, app ):
-        tool_versions = []
-        # Prepend ancestors.
-        def __ancestors( app, tool_version ):
-            # Should we handle multiple parents at each level?
-            previous_version = tool_version.get_previous_version( app )
-            if previous_version:
-                if previous_version not in tool_versions:
-                    tool_versions.insert( 0, previous_version )
-                    __ancestors( app, previous_version )
-        # Append descendants.
-        def __descendants( app, tool_version ):
-            # Should we handle multiple child siblings at each level?
-            next_version = tool_version.get_next_version( app )
-            if next_version:
-                if next_version not in tool_versions:
-                    tool_versions.append( next_version )
-                    __descendants( app, next_version )
-        __ancestors( app, self )
-        if self not in tool_versions:
-            tool_versions.append( self )
-        __descendants( app, self )
-        return tool_versions
-    def get_version_ids( self, app, reverse=False ):
-        if reverse:
-            version_ids = []
-            for tool_version in self.get_versions( app ):
-                version_ids.insert( 0, tool_version.tool_id )
-            return version_ids
-        return [ tool_version.tool_id for tool_version in self.get_versions( app ) ]
-
-    def get_api_value( self, view='element' ):
-        rval = APIItem.get_api_value(self, view)
-        rval['tool_name'] = self.tool_id
-        for a in self.parent_tool_association:
-            rval['parent_tool_id'] = a.parent_id
-        for a in self.child_tool_association:
-            rval['child_tool_id'] = a.tool_id
-        return rval
-
-class ToolVersionAssociation( object ):
-    def __init__( self, id=None, tool_id=None, parent_id=None ):
-        self.id = id
-        self.tool_id = tool_id
-        self.parent_id = parent_id
-
-class MigrateTools( object ):
-    def __init__( self, repository_id=None, repository_path=None, version=None ):
-        self.repository_id = repository_id
-        self.repository_path = repository_path
-        self.version = version
-
-## ---- Utility methods -------------------------------------------------------
-
-def directory_hash_id( id ):
-    s = str( id )
-    l = len( s )
-    # Shortcut -- ids 0-999 go under ../000/
-    if l < 4:
-        return [ "000" ]
-    # Pad with zeros until a multiple of three
-    padded = ( ( 3 - len( s ) % 3 ) * "0" ) + s
-    # Drop the last three digits -- 1000 files per directory
-    padded = padded[:-3]
-    # Break into chunks of three
-    return [ padded[i*3:(i+1)*3] for i in range( len( padded ) // 3 ) ]
+        self.user_id = user_id
+        self.key = key

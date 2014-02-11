@@ -1,13 +1,17 @@
 """
 Universe configuration builder.
 """
+# absolute_import needed for tool_shed package.
+from __future__ import absolute_import
 
 import sys, os, tempfile, re
 import logging, logging.config
 import ConfigParser
 from datetime import timedelta
-from galaxy.util import string_as_bool, listify, parse_xml
-
+from galaxy.web.formatting import expand_pretty_datetime_format
+from galaxy.util import string_as_bool
+from galaxy.util import listify
+from galaxy.util import parse_xml
 from galaxy import eggs
 import pkg_resources
 
@@ -31,12 +35,22 @@ class Configuration( object ):
         self.umask = os.umask( 077 ) # get the current umask
         os.umask( self.umask ) # can't get w/o set, so set it back
         self.gid = os.getgid() # if running under newgrp(1) we'll need to fix the group of data created on the cluster
+
         # Database related configuration
         self.database = resolve_path( kwargs.get( "database_file", "database/universe.sqlite" ), self.root )
-        self.database_connection =  kwargs.get( "database_connection", False )
+        self.database_connection = kwargs.get( "database_connection", False )
         self.database_engine_options = get_database_engine_options( kwargs )
         self.database_create_tables = string_as_bool( kwargs.get( "database_create_tables", "True" ) )
         self.database_query_profiling_proxy = string_as_bool( kwargs.get( "database_query_profiling_proxy", "False" ) )
+
+        # Don't set this to true for production databases, but probably should
+        # default to True for sqlite databases.
+        self.database_auto_migrate = string_as_bool( kwargs.get( "database_auto_migrate", "False" ) )
+
+        # Install database related configuration (if different).
+        self.install_database_connection = kwargs.get( "install_database_connection", None )
+        self.install_database_engine_options = get_database_engine_options( kwargs, model_prefix="install_" )
+
         # Where dataset files are stored
         self.file_path = resolve_path( kwargs.get( "file_path", "database/files" ), self.root )
         self.new_file_path = resolve_path( kwargs.get( "new_file_path", "database/tmp" ), self.root )
@@ -44,7 +58,7 @@ class Configuration( object ):
         self.openid_consumer_cache_path = resolve_path( kwargs.get( "openid_consumer_cache_path", "database/openid_consumer_cache" ), self.root )
         self.cookie_path = kwargs.get( "cookie_path", "/" )
         self.genome_data_path = kwargs.get( "genome_data_path", "tool-data/genome" )
-        self.rsync_url = kwargs.get( "rsync_url", "rsync://scofield.bx.psu.edu/indexes" )
+        self.rsync_url = kwargs.get( "rsync_url", "rsync://datacache.galaxyproject.org/indexes" )
         # Galaxy OpenID settings
         self.enable_openid = string_as_bool( kwargs.get( 'enable_openid', False ) )
         self.openid_config = kwargs.get( 'openid_config_file', 'openid_conf.xml' )
@@ -53,7 +67,7 @@ class Configuration( object ):
         self.enable_unique_workflow_defaults = string_as_bool( kwargs.get( 'enable_unique_workflow_defaults', False ) )
         self.tool_path = resolve_path( kwargs.get( "tool_path", "tools" ), self.root )
         self.tool_data_path = resolve_path( kwargs.get( "tool_data_path", "tool-data" ), os.getcwd() )
-        self.len_file_path = kwargs.get( "len_file_path", resolve_path(os.path.join(self.tool_data_path, 'shared','ucsc','chrom'), self.root) )
+        self.len_file_path = resolve_path( kwargs.get( "len_file_path", os.path.join( self.tool_data_path, 'shared','ucsc','chrom') ), self.root )
         self.test_conf = resolve_path( kwargs.get( "test_conf", "" ), self.root )
         # The value of migrated_tools_config is the file reserved for containing only those tools that have been eliminated from the distribution
         # and moved to the tool shed.
@@ -63,10 +77,15 @@ class Configuration( object ):
         elif 'tool_config_files' in kwargs:
             tcf = kwargs[ 'tool_config_files' ]
         else:
-            tcf = 'tool_conf.xml'
-        self.tool_filters = listify( kwargs.get( "tool_filters", [] ) )
-        self.tool_label_filters = listify( kwargs.get( "tool_label_filters", [] ) )
-        self.tool_section_filters = listify( kwargs.get( "tool_section_filters", [] ) )
+            tcf = 'tool_conf.xml,shed_tool_conf.xml'
+        self.tool_filters = listify( kwargs.get( "tool_filters", [] ), do_strip=True )
+        self.tool_label_filters = listify( kwargs.get( "tool_label_filters", [] ), do_strip=True )
+        self.tool_section_filters = listify( kwargs.get( "tool_section_filters", [] ), do_strip=True )
+
+        self.user_tool_filters = listify( kwargs.get( "user_tool_filters", [] ), do_strip=True )
+        self.user_label_filters = listify( kwargs.get( "user_tool_label_filters", [] ), do_strip=True )
+        self.user_section_filters = listify( kwargs.get( "user_tool_section_filters", [] ), do_strip=True )
+
         self.tool_configs = [ resolve_path( p, self.root ) for p in listify( tcf ) ]
         self.shed_tool_data_path = kwargs.get( "shed_tool_data_path", None )
         if self.shed_tool_data_path:
@@ -76,21 +95,24 @@ class Configuration( object ):
         self.tool_data_table_config_path = resolve_path( kwargs.get( 'tool_data_table_config_path', 'tool_data_table_conf.xml' ), self.root )
         self.shed_tool_data_table_config = resolve_path( kwargs.get( 'shed_tool_data_table_config', 'shed_tool_data_table_conf.xml' ), self.root )
         self.enable_tool_shed_check = string_as_bool( kwargs.get( 'enable_tool_shed_check', False ) )
+        self.running_functional_tests = string_as_bool( kwargs.get( 'running_functional_tests', False ) )
         self.hours_between_check = kwargs.get( 'hours_between_check', 12 )
         try:
-            hbc_test = int( self.hours_between_check )
-            self.hours_between_check = hbc_test
-            if self.hours_between_check < 1 or self.hours_between_check > 24:
+            if isinstance( self.hours_between_check, int ):
+                if self.hours_between_check < 1 or self.hours_between_check > 24:
+                    self.hours_between_check = 12
+            elif isinstance( self.hours_between_check, float ):
+                # If we're running functional tests, the minimum hours between check should be reduced to 0.001, or 3.6 seconds.
+                if self.running_functional_tests:
+                    if self.hours_between_check < 0.001 or self.hours_between_check > 24.0:
+                        self.hours_between_check = 12.0
+                else:
+                    if self.hours_between_check < 1.0 or self.hours_between_check > 24.0:
+                        self.hours_between_check = 12.0
+            else:
                 self.hours_between_check = 12
         except:
-            try:
-                # Float values are supported for functional tests.
-                hbc_test = float( self.hours_between_check )
-                self.hours_between_check = hbc_test
-                if self.hours_between_check < 0.001 or self.hours_between_check > 24.0:
-                    self.hours_between_check = 12.0
-            except:
-                self.hours_between_check = 12
+            self.hours_between_check = 12
         self.update_integrated_tool_panel = kwargs.get( "update_integrated_tool_panel", True )
         self.enable_data_manager_user_view = string_as_bool( kwargs.get( "enable_data_manager_user_view", "False" ) )
         self.data_manager_config_file = resolve_path( kwargs.get('data_manager_config_file', 'data_manager_conf.xml' ), self.root )
@@ -100,7 +122,9 @@ class Configuration( object ):
         self.id_secret = kwargs.get( "id_secret", "USING THE DEFAULT IS NOT SECURE!" )
         self.retry_metadata_internally = string_as_bool( kwargs.get( "retry_metadata_internally", "True" ) )
         self.use_remote_user = string_as_bool( kwargs.get( "use_remote_user", "False" ) )
+        self.normalize_remote_user_email = string_as_bool( kwargs.get( "normalize_remote_user_email", "False" ) )
         self.remote_user_maildomain = kwargs.get( "remote_user_maildomain", None )
+        self.remote_user_header = kwargs.get( "remote_user_header", 'HTTP_REMOTE_USER' )
         self.remote_user_logout_href = kwargs.get( "remote_user_logout_href", None )
         self.require_login = string_as_bool( kwargs.get( "require_login", "False" ) )
         self.allow_user_creation = string_as_bool( kwargs.get( "allow_user_creation", "True" ) )
@@ -111,6 +135,7 @@ class Configuration( object ):
         self.collect_outputs_from = [ x.strip() for x in kwargs.get( 'collect_outputs_from', 'new_file_path,job_working_directory' ).lower().split(',') ]
         self.template_path = resolve_path( kwargs.get( "template_path", "templates" ), self.root )
         self.template_cache = resolve_path( kwargs.get( "template_cache_path", "database/compiled_templates" ), self.root )
+        self.dependency_resolvers_config_file = resolve_path( kwargs.get( 'dependency_resolvers_config_file', 'dependency_resolvers_conf.xml' ), self.root )
         self.job_config_file = resolve_path( kwargs.get( 'job_config_file', 'job_conf.xml' ), self.root )
         self.local_job_queue_workers = int( kwargs.get( "local_job_queue_workers", "5" ) )
         self.cluster_job_queue_workers = int( kwargs.get( "cluster_job_queue_workers", "3" ) )
@@ -127,11 +152,30 @@ class Configuration( object ):
             h, m, s = [ int( v ) for v in self.job_walltime.split( ':' ) ]
             self.job_walltime_delta = timedelta( 0, s, 0, 0, m, h )
         self.admin_users = kwargs.get( "admin_users", "" )
+        self.reset_password_length = int( kwargs.get('reset_password_length', '15') )
         self.mailing_join_addr = kwargs.get('mailing_join_addr',"galaxy-announce-join@bx.psu.edu")
         self.error_email_to = kwargs.get( 'error_email_to', None )
+        self.activation_email = kwargs.get( 'activation_email', None )
+        self.user_activation_on = string_as_bool( kwargs.get( 'user_activation_on', False ) )
+        self.activation_grace_period = kwargs.get( 'activation_grace_period', None )
+        self.inactivity_box_content = kwargs.get( 'inactivity_box_content', None )
+        self.terms_url = kwargs.get( 'terms_url', None )
+        self.instance_resource_url = kwargs.get( 'instance_resource_url', None )
+        self.registration_warning_message = kwargs.get( 'registration_warning_message', None )
+        #  Get the disposable email domains blacklist file and its contents
+        self.blacklist_location = kwargs.get( 'blacklist_file', None )
+        self.blacklist_content = None
+        if self.blacklist_location is not None:
+            self.blacklist_file = resolve_path( kwargs.get( 'blacklist_file', None ), self.root )
+            try:
+                with open( self.blacklist_file ) as blacklist:
+                    self.blacklist_content = [ line.rstrip() for line in blacklist.readlines() ]
+            except IOError:
+                    print ( "CONFIGURATION ERROR: Can't open supplied blacklist file from path: " + str( self.blacklist_file ) )
         self.smtp_server = kwargs.get( 'smtp_server', None )
         self.smtp_username = kwargs.get( 'smtp_username', None )
         self.smtp_password = kwargs.get( 'smtp_password', None )
+        self.smtp_ssl = kwargs.get( 'smtp_ssl', None )
         self.track_jobs_in_database = kwargs.get( 'track_jobs_in_database', 'None' )
         self.start_job_runners = listify(kwargs.get( 'start_job_runners', '' ))
         self.expose_dataset_path = string_as_bool( kwargs.get( 'expose_dataset_path', 'False' ) )
@@ -172,7 +216,7 @@ class Configuration( object ):
         self.message_box_content = kwargs.get( 'message_box_content', None )
         self.message_box_class = kwargs.get( 'message_box_class', 'info' )
         self.support_url = kwargs.get( 'support_url', 'http://wiki.g2.bx.psu.edu/Support' )
-        self.wiki_url = kwargs.get( 'wiki_url', 'http://g2.trac.bx.psu.edu/' )
+        self.wiki_url = kwargs.get( 'wiki_url', 'http://wiki.galaxyproject.org/' )
         self.blog_url = kwargs.get( 'blog_url', None )
         self.screencasts_url = kwargs.get( 'screencasts_url', None )
         self.library_import_dir = kwargs.get( 'library_import_dir', None )
@@ -206,6 +250,8 @@ class Configuration( object ):
         if self.nginx_upload_store:
             self.nginx_upload_store = os.path.abspath( self.nginx_upload_store )
         self.object_store = kwargs.get( 'object_store', 'disk' )
+        self.object_store_check_old_style = string_as_bool( kwargs.get( 'object_store_check_old_style', False ) )
+        self.object_store_cache_path = resolve_path( kwargs.get( "object_store_cache_path", "database/object_store_cache" ), self.root )
         # Handle AWS-specific config options for backward compatibility
         if kwargs.get( 'aws_access_key', None) is not None:
             self.os_access_key= kwargs.get( 'aws_access_key', None )
@@ -222,9 +268,14 @@ class Configuration( object ):
         self.os_is_secure = string_as_bool( kwargs.get( 'os_is_secure', True ) )
         self.os_conn_path = kwargs.get( 'os_conn_path', '/' )
         self.object_store_cache_size = float(kwargs.get( 'object_store_cache_size', -1 ))
+        self.object_store_config_file = kwargs.get( 'object_store_config_file', None )
+        if self.object_store_config_file is not None:
+            self.object_store_config_file = resolve_path( self.object_store_config_file, self.root )
         self.distributed_object_store_config_file = kwargs.get( 'distributed_object_store_config_file', None )
         if self.distributed_object_store_config_file is not None:
             self.distributed_object_store_config_file = resolve_path( self.distributed_object_store_config_file, self.root )
+        self.irods_root_collection_path = kwargs.get( 'irods_root_collection_path', None )
+        self.irods_default_resource = kwargs.get( 'irods_default_resource', None )
         # Parse global_conf and save the parser
         global_conf = kwargs.get( 'global_conf', None )
         global_conf_parser = ConfigParser.ConfigParser()
@@ -264,6 +315,7 @@ class Configuration( object ):
         self.datatypes_config = kwargs.get( 'datatypes_config_file', 'datatypes_conf.xml' )
         # Cloud configuration options
         self.enable_cloud_launch = string_as_bool( kwargs.get( 'enable_cloud_launch', False ) )
+        self.cloudlaunch_default_ami = kwargs.get( 'cloudlaunch_default_ami', 'ami-a7dbf6ce' )
         # Galaxy messaging (AMQP) configuration options
         self.amqp = {}
         try:
@@ -275,8 +327,12 @@ class Configuration( object ):
         self.biostar_url = kwargs.get( 'biostar_url', None )
         self.biostar_key_name = kwargs.get( 'biostar_key_name', None )
         self.biostar_key = kwargs.get( 'biostar_key', None )
-        self.running_functional_tests = string_as_bool( kwargs.get( 'running_functional_tests', False ) )
-        # Experimental: This will not be enabled by default and will hide 
+        self.pretty_datetime_format = expand_pretty_datetime_format( kwargs.get( 'pretty_datetime_format', '$locale (UTC)' ) )
+        self.master_api_key = kwargs.get( 'master_api_key', None )
+        if self.master_api_key == "changethis":  # default in sample config file
+            raise Exception("Insecure configuration, please change master_api_key to something other than default (changethis)")
+
+        # Experimental: This will not be enabled by default and will hide
         # nonproduction code.
         # The api_folders refers to whether the API exposes the /folders section.
         self.api_folders = string_as_bool( kwargs.get( 'api_folders', False ) )
@@ -288,13 +344,13 @@ class Configuration( object ):
         self.fluent_log = string_as_bool( kwargs.get( 'fluent_log', False ) )
         self.fluent_host = kwargs.get( 'fluent_host', 'localhost' )
         self.fluent_port = int( kwargs.get( 'fluent_port', 24224 ) )
-        # visualizations registry config path
-        self.visualizations_conf_path = kwargs.get( 'visualizations_conf_path', None )
+        # visualization plugin framework
+        self.visualization_plugins_directory = kwargs.get( 'visualization_plugins_directory', None )
 
     @property
     def sentry_dsn_public( self ):
         """
-        Sentry URL with private key removed for use in client side scripts, 
+        Sentry URL with private key removed for use in client side scripts,
         sentry server will need to be configured to accept events
         """
         if self.sentry_dsn:
@@ -364,6 +420,7 @@ class Configuration( object ):
                     self.nginx_upload_store, \
                     './static/genetrack/plots', \
                     self.whoosh_index_dir, \
+                    self.object_store_cache_path, \
                     os.path.join( self.tool_data_path, 'shared', 'jars' ):
             if path not in [ None, False ] and not os.path.isdir( path ):
                 try:
@@ -394,7 +451,7 @@ class Configuration( object ):
         admin_users = [ x.strip() for x in self.get( "admin_users", "" ).split( "," ) ]
         return ( user is not None and user.email in admin_users )
 
-def get_database_engine_options( kwargs ):
+def get_database_engine_options( kwargs, model_prefix='' ):
     """
     Allow options for the SQLAlchemy database engine to be passed by using
     the prefix "database_engine_option".
@@ -410,7 +467,7 @@ def get_database_engine_options( kwargs ):
         'pool_threadlocal': string_as_bool,
         'server_side_cursors': string_as_bool
     }
-    prefix = "database_engine_option_"
+    prefix = "%sdatabase_engine_option_" % model_prefix
     prefix_len = len( prefix )
     rval = {}
     for key, value in kwargs.iteritems():
@@ -421,14 +478,15 @@ def get_database_engine_options( kwargs ):
             rval[ key  ] = value
     return rval
 
+
 def configure_logging( config ):
     """
     Allow some basic logging configuration to be read from ini file.
     """
     # Get root logger
     root = logging.getLogger()
-    # PasteScript will have already configured the logger if the 
-    # 'loggers' section was found in the config file, otherwise we do 
+    # PasteScript will have already configured the logger if the
+    # 'loggers' section was found in the config file, otherwise we do
     # some simple setup using the 'log_*' values from the config.
     if not config.global_conf_parser.has_section( "loggers" ):
         format = config.get( "log_format", "%(name)s %(levelname)s %(asctime)s %(message)s" )
@@ -460,3 +518,115 @@ def configure_logging( config ):
         sentry_handler = SentryHandler( config.sentry_dsn )
         sentry_handler.setLevel( logging.WARN )
         root.addHandler( sentry_handler )
+
+
+class ConfiguresGalaxyMixin:
+    """ Shared code for configuring Galaxy-like app objects.
+    """
+
+    def _configure_toolbox( self ):
+        # Initialize the tools, making sure the list of tool configs includes the reserved migrated_tools_conf.xml file.
+        tool_configs = self.config.tool_configs
+        if self.config.migrated_tools_config not in tool_configs:
+            tool_configs.append( self.config.migrated_tools_config )
+        from galaxy import tools
+        self.toolbox = tools.ToolBox( tool_configs, self.config.tool_path, self )
+        # Search support for tools
+        import galaxy.tools.search
+        self.toolbox_search = galaxy.tools.search.ToolBoxSearch( self.toolbox )
+
+    def _configure_tool_data_tables( self, from_shed_config ):
+        from galaxy.tools.data import ToolDataTableManager
+
+        # Initialize tool data tables using the config defined by self.config.tool_data_table_config_path.
+        self.tool_data_tables = ToolDataTableManager( tool_data_path=self.config.tool_data_path,
+                                                      config_filename=self.config.tool_data_table_config_path )
+        # Load additional entries defined by self.config.shed_tool_data_table_config into tool data tables.
+        self.tool_data_tables.load_from_config_file( config_filename=self.config.shed_tool_data_table_config,
+                                                     tool_data_path=self.tool_data_tables.tool_data_path,
+                                                     from_shed_config=from_shed_config )
+
+    def _configure_datatypes_registry( self, installed_repository_manager=None ):
+        from galaxy.datatypes import registry
+        # Create an empty datatypes registry.
+        self.datatypes_registry = registry.Registry()
+        if installed_repository_manager:
+            # Load proprietary datatypes defined in datatypes_conf.xml files in all installed tool shed repositories.  We
+            # load proprietary datatypes before datatypes in the distribution because Galaxy's default sniffers include some
+            # generic sniffers (eg text,xml) which catch anything, so it's impossible for proprietary sniffers to be used.
+            # However, if there is a conflict (2 datatypes with the same extension) between a proprietary datatype and a datatype
+            # in the Galaxy distribution, the datatype in the Galaxy distribution will take precedence.  If there is a conflict
+            # between 2 proprietary datatypes, the datatype from the repository that was installed earliest will take precedence.
+            installed_repository_manager.load_proprietary_datatypes()
+        # Load the data types in the Galaxy distribution, which are defined in self.config.datatypes_config.
+        self.datatypes_registry.load_datatypes( self.config.root, self.config.datatypes_config )
+
+    def _configure_object_store( self, **kwds ):
+        from galaxy.objectstore import build_object_store_from_config
+        self.object_store = build_object_store_from_config( self.config, **kwds )
+
+    def _configure_security( self ):
+        from galaxy.web import security
+        self.security = security.SecurityHelper( id_secret=self.config.id_secret )
+
+    def _configure_tool_shed_registry( self ):
+        import tool_shed.tool_shed_registry
+
+        # Set up the tool sheds registry
+        if os.path.isfile( self.config.tool_sheds_config ):
+            self.tool_shed_registry = tool_shed.tool_shed_registry.Registry( self.config.root, self.config.tool_sheds_config )
+        else:
+            self.tool_shed_registry = None
+
+    def _configure_models( self, check_migrate_databases=False, check_migrate_tools=False, config_file=None ):
+        """
+        Preconditions: object_store must be set on self.
+        """
+        if self.config.database_connection:
+            db_url = self.config.database_connection
+        else:
+            db_url = "sqlite:///%s?isolation_level=IMMEDIATE" % self.config.database
+        install_db_url = self.config.install_database_connection
+        # TODO: Consider more aggressive check here that this is not the same
+        # database file under the hood.
+        combined_install_database = not( install_db_url and install_db_url != db_url )
+        install_db_url = install_db_url or db_url
+
+        if check_migrate_databases:
+            # Initialize database / check for appropriate schema version.  # If this
+            # is a new installation, we'll restrict the tool migration messaging.
+            from galaxy.model.migrate.check import create_or_verify_database
+            create_or_verify_database( db_url, config_file, self.config.database_engine_options, app=self )
+            if not combined_install_database:
+                from galaxy.model.tool_shed_install.migrate.check import create_or_verify_database as tsi_create_or_verify_database
+                tsi_create_or_verify_database( install_db_url, self.config.install_database_engine_options, app=self )
+
+        if check_migrate_tools:
+            # Alert the Galaxy admin to tools that have been moved from the distribution to the tool shed.
+            from tool_shed.galaxy_install.migrate.check import verify_tools
+            if combined_install_database:
+                install_database_options = self.config.database_engine_options
+            else:
+                install_database_options = self.config.install_database_engine_options
+            verify_tools( self, install_db_url, config_file, install_database_options )
+
+        from galaxy.model import mapping
+        self.model = mapping.init( self.config.file_path,
+                                   db_url,
+                                   self.config.database_engine_options,
+                                   map_install_models=combined_install_database,
+                                   database_query_profiling_proxy=self.config.database_query_profiling_proxy,
+                                   object_store=self.object_store,
+                                   trace_logger=getattr(self, "trace_logger", None),
+                                   use_pbkdf2=self.config.get_bool( 'use_pbkdf2', True ) )
+
+        if combined_install_database:
+            log.info("Install database targetting Galaxy's database configuration.")
+            self.install_model = self.model
+        else:
+            from galaxy.model.tool_shed_install import mapping as install_mapping
+            install_db_url = self.config.install_database_connection
+            log.info("Install database using its own connection %s" % install_db_url)
+            install_db_engine_options = self.config.install_database_engine_options
+            self.install_model = install_mapping.init( install_db_url,
+                                                       install_db_engine_options )

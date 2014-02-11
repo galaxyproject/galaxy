@@ -7,6 +7,7 @@
 <%
     from galaxy.web.framework.helpers import time_ago
     from tool_shed.util.shed_util_common import changeset_is_malicious
+    from tool_shed.repository_types.util import TOOL_DEPENDENCY_DEFINITION
 
     if repository.metadata_revisions:
         has_metadata = True
@@ -71,6 +72,29 @@
         tip_str = ''
         sharable_link_label = 'Sharable link to this repository revision:'
         sharable_link_changeset_revision = changeset_revision
+
+    if repository_metadata is None:
+        can_render_skip_tool_test_section = False
+    else:
+        if repository_metadata.changeset_revision is None:
+            can_render_skip_tool_test_section = False
+        else:
+            if includes_tools or repository.type == TOOL_DEPENDENCY_DEFINITION:
+                can_render_skip_tool_test_section = True
+            else:
+                can_render_skip_tool_test_section = False
+    if heads:
+        multiple_heads = len( heads ) > 1
+    else:
+        multiple_heads = False
+    
+    if repository_metadata is None:
+        revision_installable = False
+    else:
+        if repository_metadata.downloadable is None:
+            revision_installable = 'unknown'
+        else:
+            revision_installable = repository_metadata.downloadable
 %>
 
 <%!
@@ -84,7 +108,7 @@
 
 <%def name="stylesheets()">
     ${parent.stylesheets()}
-    ${h.css('base','library','panel_layout','jquery.rating')}
+    ${h.css('base','library','jquery.rating')}
 </%def>
 
 <%def name="javascripts()">
@@ -103,6 +127,12 @@ ${render_tool_shed_repository_actions( repository, metadata=metadata, changeset_
     <div class="warningmessage">
         This repository has been marked as deprecated, so some tool shed features may be restricted.
     </div>
+%endif:
+%if multiple_heads:
+    ${render_multiple_heads_message( heads )}
+%endif
+%if deprecated_repository_dependency_tups:
+    ${render_deprecated_repository_dependencies_message( deprecated_repository_dependency_tups )}
 %endif
 
 %if len( changeset_revision_select_field.options ) > 1:
@@ -133,7 +163,7 @@ ${render_tool_shed_repository_actions( repository, metadata=metadata, changeset_
                 <label>${sharable_link_label}</label>
                 ${render_sharable_str( repository, changeset_revision=sharable_link_changeset_revision )}
             </div>
-            %if can_download:
+            %if can_download or can_push:
                 <div class="form-row">
                     <label>Clone this repository:</label>
                     ${render_clone_str( repository )}
@@ -151,6 +181,7 @@ ${render_tool_shed_repository_actions( repository, metadata=metadata, changeset_
                 </div>
                 <div style="clear: both"></div>
             </div>
+            ${render_repository_type_select_field( repository_type_select_field, render_help=True )}
             <div class="form-row">
                 <label>Synopsis:</label>
                 <input name="description" type="textfield" value="${description | h}" size="80"/>
@@ -168,9 +199,9 @@ ${render_tool_shed_repository_actions( repository, metadata=metadata, changeset_
             <div class="form-row">
                 <label>Revision:</label>
                 %if can_view_change_log:
-                    <a href="${h.url_for( controller='repository', action='view_changelog', id=trans.app.security.encode_id( repository.id ) )}">${revision_label | h}</a>
+                    <a href="${h.url_for( controller='repository', action='view_changelog', id=trans.app.security.encode_id( repository.id ) )}">${revision_label}</a>
                 %else:
-                    ${revision_label | h}
+                    ${revision_label}
                 %endif
             </div>
             <div class="form-row">
@@ -178,7 +209,11 @@ ${render_tool_shed_repository_actions( repository, metadata=metadata, changeset_
                 ${repository.user.username | h}
             </div>
             <div class="form-row">
-                <label>Times downloaded:</label>
+                <label>This revision can be installed:</label>
+                ${revision_installable}
+            </div>
+            <div class="form-row">
+                <label>Times cloned / installed:</label>
                 ${repository.times_downloaded | h}
             </div>
             %if is_admin:
@@ -198,17 +233,29 @@ ${render_tool_shed_repository_actions( repository, metadata=metadata, changeset_
     </div>
 </div>
 ${render_repository_items( metadata, containers_dict, can_set_metadata=True, render_repository_actions_for='tool_shed' )}
-%if includes_tools:
+%if can_render_skip_tool_test_section:
     <p/>
     <div class="toolForm">
-        <div class="toolFormTitle">Automated tool tests</div>
+        %if repository.type == TOOL_DEPENDENCY_DEFINITION:
+            <div class="toolFormTitle">Automated tool dependency test</div>
+        %else:
+            <div class="toolFormTitle">Automated tool tests</div>
+        %endif
         <div class="toolFormBody">
-            <form name="skip_tool_tests" id="skip_tool_tests" action="${h.url_for( controller='repository', action='manage_repository', id=trans.security.encode_id( repository.id ), changeset_revision=repository_metadata.changeset_revision )}" method="post" >
+            <form name="skip_tool_tests" id="skip_tool_tests" action="${h.url_for( controller='repository', action='manage_repository', id=trans.security.encode_id( repository.id ), changeset_revision=str( repository_metadata.changeset_revision ) )}" method="post" >
                 <div class="form-row">
-                    <label>Skip automated testing of tools in this revision:</label>
+                    %if repository.type == TOOL_DEPENDENCY_DEFINITION:
+                        <label>Skip automated testing of this tool dependency recipe</label>
+                    %else:
+                        <label>Skip automated testing of tools in this revision:</label>
+                    %endif
                     ${skip_tool_tests_check_box.get_html()}
                     <div class="toolParamHelp" style="clear: both;">
-                        Check the box and click <b>Save</b> to skip automated testing of the tools in this revision.
+                        %if repository.type == TOOL_DEPENDENCY_DEFINITION:
+                            Check the box and click <b>Save</b> to skip automated testing of this tool dependency recipe.
+                        %else:
+                            Check the box and click <b>Save</b> to skip automated testing of the tools in this revision.
+                        %endif
                     </div>
                 </div>
                 <div style="clear: both"></div>
@@ -354,7 +401,7 @@ ${render_repository_items( metadata, containers_dict, can_set_metadata=True, ren
                             %>
                             <tr>
                                 <td>${render_star_rating( name, review.rating, disabled=True )}</td>
-                                <td>${render_review_comment( to_safe_string( review.comment, to_html=True ) )}</td>
+                                <td>${render_review_comment( to_html_string( review.comment ) )}</td>
                                 <td>${time_ago( review.update_time )}</td>
                                 <td>${review.user.username | h}</td>
                             </tr>

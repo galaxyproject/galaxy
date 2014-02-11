@@ -33,8 +33,6 @@ class Tabular( data.Text ):
     MetadataElement( name="column_types", default=[], desc="Column types", param=metadata.ColumnTypesParameter, readonly=True, visible=False, no_value=[] )
     MetadataElement( name="column_names", default=[], desc="Column names", readonly=True, visible=False, optional=True, no_value=[] )
 
-    def init_meta( self, dataset, copy_from=None ):
-        data.Text.init_meta( self, dataset, copy_from=copy_from )
     def set_meta( self, dataset, overwrite = True, skip = None, max_data_lines = 100000, max_guess_type_data_lines = None, **kwd ):
         """
         Tries to determine the number of columns as well as those columns that
@@ -199,10 +197,13 @@ class Tabular( data.Text ):
             if not column_names and dataset.metadata.column_names:
                 column_names = dataset.metadata.column_names
 
-            column_headers = [None] * dataset.metadata.columns
+            columns = dataset.metadata.columns
+            if columns is None:
+                columns = dataset.metadata.spec.columns.no_value
+            column_headers = [None] * columns
 
             # fill in empty headers with data from column_names
-            for i in range( min( dataset.metadata.columns, len( column_names ) ) ):
+            for i in range( min( columns, len( column_names ) ) ):
                 if column_headers[i] is None and column_names[i] is not None:
                     column_headers[i] = column_names[i]
 
@@ -213,7 +214,7 @@ class Tabular( data.Text ):
                         i = int( getattr( dataset.metadata, name ) ) - 1
                     except:
                         i = -1
-                    if 0 <= i < dataset.metadata.columns and column_headers[i] is None:
+                    if 0 <= i < columns and column_headers[i] is None:
                         column_headers[i] = column_parameter_alias.get(name, name)
 
             out.append( '<tr>' )
@@ -226,6 +227,7 @@ class Tabular( data.Text ):
                 out.append( '</th>' )
             out.append( '</tr>' )
         except Exception, exc:
+            log.exception( 'make_html_peek_header failed on HDA %s' % dataset.id )
             raise Exception, "Can't create peek header %s" % str( exc )
         return "".join( out )
 
@@ -236,13 +238,16 @@ class Tabular( data.Text ):
         try:
             if not dataset.peek:
                 dataset.set_peek()
+            columns = dataset.metadata.columns
+            if columns is None:
+                columns = dataset.metadata.spec.columns.no_value
             for line in dataset.peek.splitlines():
                 if line.startswith( tuple( skipchars ) ):
                     out.append( '<tr><td colspan="100%%">%s</td></tr>' % escape( line ) )
                 elif line:
                     elems = line.split( '\t' )
                     # we may have an invalid comment line or invalid data
-                    if len( elems ) != dataset.metadata.columns:
+                    if len( elems ) != columns:
                         out.append( '<tr><td colspan="100%%">%s</td></tr>' % escape( line ) )
                     else:
                         out.append( '<tr>' )
@@ -250,6 +255,7 @@ class Tabular( data.Text ):
                             out.append( '<td>%s</td>' % escape( elem ) )
                         out.append( '</tr>' )
         except Exception, exc:
+            log.exception( 'make_html_peek_rows failed on HDA %s' % dataset.id )
             raise Exception, "Can't create peek rows %s" % str( exc )
         return "".join( out )
 
@@ -269,7 +275,7 @@ class Tabular( data.Text ):
             cursor = f.read(1)
         return to_json_string( { 'ck_data': util.unicodify( ck_data ), 'ck_index': ck_index + 1 } )
 
-    def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, chunk=None):
+    def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, chunk=None, **kwd):
         preview = util.string_as_bool( preview )
         if chunk:
             return self.get_chunk(trans, dataset, chunk)
@@ -357,16 +363,16 @@ class Tabular( data.Text ):
         """Attempts to get column settings from dataset.metadata"""
         return dataproviders.dataset.DatasetColumnarDataProvider( dataset, **settings )
 
-    @dataproviders.decorators.dataprovider_factory( 'map', dataproviders.column.MapDataProvider.settings )
-    def map_dataprovider( self, dataset, **settings ):
+    @dataproviders.decorators.dataprovider_factory( 'dict', dataproviders.column.DictDataProvider.settings )
+    def dict_dataprovider( self, dataset, **settings ):
         """Uses column settings that are passed in"""
         dataset_source = dataproviders.dataset.DatasetDataProvider( dataset )
-        return dataproviders.column.MapDataProvider( dataset_source, **settings )
+        return dataproviders.column.DictDataProvider( dataset_source, **settings )
 
-    @dataproviders.decorators.dataprovider_factory( 'dataset-map', dataproviders.column.MapDataProvider.settings )
-    def dataset_map_dataprovider( self, dataset, **settings ):
+    @dataproviders.decorators.dataprovider_factory( 'dataset-dict', dataproviders.column.DictDataProvider.settings )
+    def dataset_dict_dataprovider( self, dataset, **settings ):
         """Attempts to get column settings from dataset.metadata"""
-        return dataproviders.dataset.DatasetMapDataProvider( dataset, **settings )
+        return dataproviders.dataset.DatasetDictDataProvider( dataset, **settings )
 
 
 class Taxonomy( Tabular ):
@@ -522,15 +528,15 @@ class Sam( Tabular ):
         settings[ 'comment_char' ] = '@'
         return super( Sam, self ).dataset_column_dataprovider( dataset, **settings )
 
-    @dataproviders.decorators.dataprovider_factory( 'map', dataproviders.column.MapDataProvider.settings )
-    def map_dataprovider( self, dataset, **settings ):
+    @dataproviders.decorators.dataprovider_factory( 'dict', dataproviders.column.DictDataProvider.settings )
+    def dict_dataprovider( self, dataset, **settings ):
         settings[ 'comment_char' ] = '@'
-        return super( Sam, self ).map_dataprovider( dataset, **settings )
+        return super( Sam, self ).dict_dataprovider( dataset, **settings )
 
-    @dataproviders.decorators.dataprovider_factory( 'dataset-map', dataproviders.column.MapDataProvider.settings )
-    def dataset_map_dataprovider( self, dataset, **settings ):
+    @dataproviders.decorators.dataprovider_factory( 'dataset-dict', dataproviders.column.DictDataProvider.settings )
+    def dataset_dict_dataprovider( self, dataset, **settings ):
         settings[ 'comment_char' ] = '@'
-        return super( Sam, self ).dataset_map_dataprovider( dataset, **settings )
+        return super( Sam, self ).dataset_dict_dataprovider( dataset, **settings )
 
     @dataproviders.decorators.dataprovider_factory( 'header', dataproviders.line.RegexLineDataProvider.settings )
     def header_dataprovider( self, dataset, **settings ):
@@ -538,12 +544,12 @@ class Sam( Tabular ):
         headers_source = dataproviders.line.RegexLineDataProvider( dataset_source, regex_list=[ '^@' ] )
         return dataproviders.line.RegexLineDataProvider( headers_source, **settings )
 
-    @dataproviders.decorators.dataprovider_factory( 'id-seq-qual', map_dataprovider.settings )
+    @dataproviders.decorators.dataprovider_factory( 'id-seq-qual', dict_dataprovider.settings )
     def id_seq_qual_dataprovider( self, dataset, **settings ):
-        # provided as an example of a specified column map (w/o metadata)
+        # provided as an example of a specified column dict (w/o metadata)
         settings[ 'indeces' ] = [ 0, 9, 10 ]
         settings[ 'column_names' ] = [ 'id', 'seq', 'qual' ]
-        return self.map_dataprovider( dataset, **settings )
+        return self.dict_dataprovider( dataset, **settings )
 
     @dataproviders.decorators.dataprovider_factory( 'genomic-region',
                                                     dataproviders.dataset.GenomicRegionDataProvider.settings )
@@ -551,9 +557,9 @@ class Sam( Tabular ):
         settings[ 'comment_char' ] = '@'
         return dataproviders.dataset.GenomicRegionDataProvider( dataset, 2, 3, 3, **settings )
 
-    @dataproviders.decorators.dataprovider_factory( 'genomic-region-map',
+    @dataproviders.decorators.dataprovider_factory( 'genomic-region-dict',
                                                     dataproviders.dataset.GenomicRegionDataProvider.settings )
-    def genomic_region_map_dataprovider( self, dataset, **settings ):
+    def genomic_region_dict_dataprovider( self, dataset, **settings ):
         settings[ 'comment_char' ] = '@'
         return dataproviders.dataset.GenomicRegionDataProvider( dataset, 2, 3, 3, True, **settings )
 
@@ -621,16 +627,16 @@ class Pileup( Tabular ):
             return True
         except:
             return False
-            
+
     # ------------- Dataproviders
     @dataproviders.decorators.dataprovider_factory( 'genomic-region',
                                                     dataproviders.dataset.GenomicRegionDataProvider.settings )
     def genomic_region_dataprovider( self, dataset, **settings ):
         return dataproviders.dataset.GenomicRegionDataProvider( dataset, **settings )
 
-    @dataproviders.decorators.dataprovider_factory( 'genomic-region-map',
+    @dataproviders.decorators.dataprovider_factory( 'genomic-region-dict',
                                                     dataproviders.dataset.GenomicRegionDataProvider.settings )
-    def genomic_region_map_dataprovider( self, dataset, **settings ):
+    def genomic_region_dict_dataprovider( self, dataset, **settings ):
         settings[ 'named_columns' ] = True
         return self.genomic_region_dataprovider( dataset, **settings )
 
@@ -646,7 +652,7 @@ class Vcf( Tabular ):
 
     MetadataElement( name="columns", default=10, desc="Number of columns", readonly=True, visible=False )
     MetadataElement( name="column_types", default=['str','int','str','str','str','int','str','list','str','str'], param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False )
-    MetadataElement( name="viz_filter_cols", desc="Score column for visualization", default=[5], param=metadata.ColumnParameter, multiple=True, visible=False )
+    MetadataElement( name="viz_filter_cols", desc="Score column for visualization", default=[5], param=metadata.ColumnParameter, optional=True, multiple=True, visible=False )
     MetadataElement( name="sample_names", default=[], desc="Sample names", readonly=True, visible=False, optional=True, no_value=[] )
 
     def sniff( self, filename ):
@@ -677,9 +683,9 @@ class Vcf( Tabular ):
     def genomic_region_dataprovider( self, dataset, **settings ):
         return dataproviders.dataset.GenomicRegionDataProvider( dataset, 0, 1, 1, **settings )
 
-    @dataproviders.decorators.dataprovider_factory( 'genomic-region-map',
+    @dataproviders.decorators.dataprovider_factory( 'genomic-region-dict',
                                                     dataproviders.dataset.GenomicRegionDataProvider.settings )
-    def genomic_region_map_dataprovider( self, dataset, **settings ):
+    def genomic_region_dict_dataprovider( self, dataset, **settings ):
         settings[ 'named_columns' ] = True
         return self.genomic_region_dataprovider( dataset, **settings )
 

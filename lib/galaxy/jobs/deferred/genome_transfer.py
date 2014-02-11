@@ -25,9 +25,9 @@ log = logging.getLogger( __name__ )
 __all__ = [ 'GenomeTransferPlugin' ]
 
 class GenomeTransferPlugin( DataTransfer ):
-    
+
     locations = {}
-    
+
     def __init__( self, app ):
         super( GenomeTransferPlugin, self ).__init__( app )
         self.app = app
@@ -39,7 +39,7 @@ class GenomeTransferPlugin( DataTransfer ):
             table = node.get('name')
             location = node.findall('file')[0].get('path')
             self.locations[table] = location
-        
+
     def create_job( self, trans, url, dbkey, intname, indexes ):
         job = trans.app.transfer_manager.new( protocol='http', url=url )
         params = dict( user=trans.user.id, transfer_job_id=job.id, protocol='http', type='init_transfer', url=url, dbkey=dbkey, indexes=indexes, intname=intname, liftover=None )
@@ -47,9 +47,9 @@ class GenomeTransferPlugin( DataTransfer ):
         self.sa_session.add( deferred )
         self.sa_session.flush()
         return deferred.id
-        
+
     def check_job( self, job ):
-        if job.params['type'] == 'init_transfer': 
+        if job.params['type'] == 'init_transfer':
             if not hasattr(job, 'transfer_job'):
                 job.transfer_job = self.sa_session.query( self.app.model.TransferJob ).get( int( job.params[ 'transfer_job_id' ] ) )
             else:
@@ -73,9 +73,9 @@ class GenomeTransferPlugin( DataTransfer ):
             else:
                 log.error( "An error occurred while downloading from %s" % job.params[ 'url' ] )
                 return self.job_states.INVALID
-        elif job.params[ 'type' ] == 'extract_transfer': 
+        elif job.params[ 'type' ] == 'extract_transfer':
             return self.job_states.READY
-            
+
     def get_job_status( self, jobid ):
         job = self.sa_session.query( self.app.model.DeferredJob ).get( int( jobid ) )
         if 'transfer_job_id' in job.params:
@@ -84,7 +84,7 @@ class GenomeTransferPlugin( DataTransfer ):
             else:
                 self.sa_session.refresh( job.transfer_job )
         return job
-            
+
     def run_job( self, job ):
         params = job.params
         dbkey = params[ 'dbkey' ]
@@ -214,7 +214,7 @@ class GenomeTransferPlugin( DataTransfer ):
                     self.sa_session.add( job )
             self.sa_session.flush()
             return self.app.model.DeferredJob.states.OK
-                    
+
     def _check_compress( self, filepath ):
         retval = ''
         if tarfile.is_tarfile( filepath ):
@@ -228,7 +228,7 @@ class GenomeTransferPlugin( DataTransfer ):
         if is_gzipped and is_valid:
             return retval + 'gzip'
         return None
-        
+
     def _add_line( self, locfile, newline ):
         filepath = self.locations[ locfile ]
         origlines = []
@@ -247,4 +247,4 @@ class GenomeTransferPlugin( DataTransfer ):
             output.extend( origlines )
             with open( filepath, 'w+' ) as destfile:
                 destfile.write( '\n'.join( output ) )
-        
+

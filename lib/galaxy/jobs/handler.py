@@ -11,13 +11,15 @@ from Queue import Queue, Empty
 from sqlalchemy.sql.expression import and_, or_, select, func
 
 from galaxy import model
-from galaxy.jobs import Sleeper, JobWrapper, TaskWrapper, JobDestination
+from galaxy.util.sleeper import Sleeper
+from galaxy.jobs import JobWrapper, TaskWrapper, JobDestination
 
 log = logging.getLogger( __name__ )
 
 # States for running a job. These are NOT the same as data states
 JOB_WAIT, JOB_ERROR, JOB_INPUT_ERROR, JOB_INPUT_DELETED, JOB_READY, JOB_DELETED, JOB_ADMIN_DELETED, JOB_USER_OVER_QUOTA = 'wait', 'error', 'input_error', 'input_deleted', 'ready', 'deleted', 'admin_deleted', 'user_over_quota'
 DEFAULT_JOB_PUT_FAILURE_MESSAGE = 'Unable to run job due to a misconfiguration of the Galaxy job running system.  Please contact a site administrator.'
+
 
 class JobHandler( object ):
     """
@@ -30,11 +32,14 @@ class JobHandler( object ):
         # Queues for starting and stopping jobs
         self.job_queue = JobHandlerQueue( app, self.dispatcher )
         self.job_stop_queue = JobHandlerStopQueue( app, self.dispatcher )
+
     def start( self ):
         self.job_queue.start()
+
     def shutdown( self ):
         self.job_queue.shutdown()
         self.job_stop_queue.shutdown()
+
 
 class JobHandlerQueue( object ):
     """
@@ -84,16 +89,29 @@ class JobHandlerQueue( object ):
         Checks all jobs that are in the 'new', 'queued' or 'running' state in
         the database and requeues or cleans up as necessary.  Only run as the
         job handler starts.
+        In case the activation is enforced it will filter out the jobs of inactive users.
         """
-        for job in self.sa_session.query( model.Job ).enable_eagerloads( False ) \
+        jobs_at_startup = []
+        if self.app.config.user_activation_on:
+                jobs_at_startup = self.sa_session.query( model.Job ).enable_eagerloads( False ) \
+                                  .outerjoin( model.User ) \
                                   .filter( ( ( model.Job.state == model.Job.states.NEW ) \
                                              | ( model.Job.state == model.Job.states.RUNNING ) \
                                              | ( model.Job.state == model.Job.states.QUEUED ) ) \
-                                           & ( model.Job.handler == self.app.config.server_name ) ):
+                                           & ( model.Job.handler == self.app.config.server_name ) \
+                                           & or_( ( model.Job.user_id == None ), ( model.User.active == True ) ) ).all()
+        else:
+            jobs_at_startup = self.sa_session.query( model.Job ).enable_eagerloads( False ) \
+                              .filter( ( ( model.Job.state == model.Job.states.NEW ) \
+                                         | ( model.Job.state == model.Job.states.RUNNING ) \
+                                         | ( model.Job.state == model.Job.states.QUEUED ) ) \
+                                       & ( model.Job.handler == self.app.config.server_name ) ).all()
+
+        for job in jobs_at_startup:
             if job.tool_id not in self.app.toolbox.tools_by_id:
                 log.warning( "(%s) Tool '%s' removed from tool config, unable to recover job" % ( job.id, job.tool_id ) )
                 JobWrapper( job, self ).fail( 'This tool was disabled before the job completed.  Please contact your Galaxy administrator.' )
-            if job.job_runner_name is not None and job.job_runner_external_id is None:
+            elif job.job_runner_name is not None and job.job_runner_external_id is None:
                 # This could happen during certain revisions of Galaxy where a runner URL was persisted before the job was dispatched to a runner.
                 log.debug( "(%s) Job runner assigned but no external ID recorded, adding to the job handler queue" % job.id )
                 job.job_runner_name = None
@@ -146,8 +164,9 @@ class JobHandlerQueue( object ):
         over all new and waiting jobs to check the state of the jobs each
         depends on. If the job has dependencies that have not finished, it
         it goes to the waiting queue. If the job has dependencies with errors,
-        it is marked as having errors and removed from the queue. Otherwise,
-        the job is dispatched.
+        it is marked as having errors and removed from the queue. If the job
+        belongs to an inactive user it is ignored.
+        Otherwise, the job is dispatched.
         """
         # Pull all new jobs from the queue at once
         jobs_to_check = []
@@ -159,11 +178,11 @@ class JobHandlerQueue( object ):
                     .join(model.JobToInputDatasetAssociation) \
                     .join(model.HistoryDatasetAssociation) \
                     .join(model.Dataset) \
-                    .filter(and_((model.Job.state == model.Job.states.NEW),
-                                 or_((model.HistoryDatasetAssociation._state == model.HistoryDatasetAssociation.states.FAILED_METADATA),
-                                     (model.HistoryDatasetAssociation.deleted == True ),
-                                     (model.Dataset.state != model.Dataset.states.OK ),
-                                     (model.Dataset.deleted == True)))).subquery()
+                    .filter(and_( (model.Job.state == model.Job.states.NEW ),
+                                 or_( ( model.HistoryDatasetAssociation._state == model.HistoryDatasetAssociation.states.FAILED_METADATA ),
+                                      ( model.HistoryDatasetAssociation.deleted == True ),
+                                      ( model.Dataset.state != model.Dataset.states.OK ),
+                                      ( model.Dataset.deleted == True) ) ) ).subquery()
             ldda_not_ready = self.sa_session.query(model.Job.id).enable_eagerloads(False) \
                     .join(model.JobToInputLibraryDatasetAssociation) \
                     .join(model.LibraryDatasetDatasetAssociation) \
@@ -173,7 +192,17 @@ class JobHandlerQueue( object ):
                                      (model.LibraryDatasetDatasetAssociation.deleted == True),
                                      (model.Dataset.state != model.Dataset.states.OK),
                                      (model.Dataset.deleted == True)))).subquery()
-            jobs_to_check = self.sa_session.query(model.Job).enable_eagerloads(False) \
+            if self.app.config.user_activation_on:
+                jobs_to_check = self.sa_session.query(model.Job).enable_eagerloads(False) \
+                        .outerjoin( model.User ) \
+                        .filter(and_((model.Job.state == model.Job.states.NEW),
+                                    or_((model.Job.user_id == None), (model.User.active == True)),
+                                     (model.Job.handler == self.app.config.server_name),
+                                     ~model.Job.table.c.id.in_(hda_not_ready),
+                                     ~model.Job.table.c.id.in_(ldda_not_ready))) \
+                        .order_by(model.Job.id).all()
+            else:
+                jobs_to_check = self.sa_session.query(model.Job).enable_eagerloads(False) \
                     .filter(and_((model.Job.state == model.Job.states.NEW),
                                  (model.Job.handler == self.app.config.server_name),
                                  ~model.Job.table.c.id.in_(hda_not_ready),
@@ -286,7 +315,7 @@ class JobHandlerQueue( object ):
         try:
             self.job_wrappers[job.id].job_destination
         except Exception, e:
-            failure_message = getattr(e, 'failure_message', DEFAULT_JOB_PUT_FAILURE_MESSAGE )
+            failure_message = getattr( e, 'failure_message', DEFAULT_JOB_PUT_FAILURE_MESSAGE )
             if failure_message == DEFAULT_JOB_PUT_FAILURE_MESSAGE:
                 log.exception( 'Failed to generate job destination' )
             else:
@@ -303,7 +332,7 @@ class JobHandlerQueue( object ):
                     if usage > quota:
                         return JOB_USER_OVER_QUOTA
                 except AssertionError, e:
-                    pass # No history, should not happen with an anon user
+                    pass  # No history, should not happen with an anon user
         return state
 
     def __clear_user_job_count( self ):
@@ -440,11 +469,13 @@ class JobHandlerQueue( object ):
             log.info( "job handler queue stopped" )
             self.dispatcher.shutdown()
 
+
 class JobHandlerStopQueue( object ):
     """
     A queue for jobs which need to be terminated prematurely.
     """
     STOP_SIGNAL = object()
+
     def __init__( self, app, dispatcher ):
         self.app = app
         self.dispatcher = dispatcher
@@ -537,10 +568,12 @@ class JobHandlerStopQueue( object ):
             self.sleeper.wake()
             log.info( "job handler stop queue stopped" )
 
+
 class DefaultJobDispatcher( object ):
+
     def __init__( self, app ):
         self.app = app
-        self.job_runners = self.app.job_config.get_job_runner_plugins()
+        self.job_runners = self.app.job_config.get_job_runner_plugins( self.app.config.server_name )
         # Once plugins are loaded, all job destinations that were created from
         # URLs can have their URL params converted to the destination's param
         # dict by the plugin.
@@ -572,9 +605,9 @@ class DefaultJobDispatcher( object ):
         try:
             if isinstance(job_wrapper, TaskWrapper):
                 #DBTODO Refactor
-                log.debug( "(%s) Dispatching task %s to %s runner" %( job_wrapper.job_id, job_wrapper.task_id, runner_name ) )
+                log.debug( "(%s) Dispatching task %s to %s runner" % ( job_wrapper.job_id, job_wrapper.task_id, runner_name ) )
             else:
-                log.debug( "(%s) Dispatching to %s runner" %( job_wrapper.job_id, runner_name ) )
+                log.debug( "(%s) Dispatching to %s runner" % ( job_wrapper.job_id, runner_name ) )
             self.job_runners[runner_name].put( job_wrapper )
         except KeyError:
             log.error( 'put(): (%s) Invalid job runner: %s' % ( job_wrapper.job_id, runner_name ) )
@@ -585,14 +618,14 @@ class DefaultJobDispatcher( object ):
         Stop the given job. The input variable job may be either a Job or a Task.
         """
         # The Job and Task classes have been modified so that their accessors
-        # will return the appropriate value. 
+        # will return the appropriate value.
         # Note that Jobs and Tasks have runner_names, which are distinct from
         # the job_runner_name and task_runner_name.
 
         if ( isinstance( job, model.Job ) ):
             log.debug( "Stopping job %d:", job.get_id() )
         elif( isinstance( job, model.Task ) ):
-            log.debug( "Stopping job %d, task %d" 
+            log.debug( "Stopping job %d, task %d"
                      % ( job.get_job().get_id(), job.get_id() ) )
         else:
             log.debug( "Unknown job to stop" )
@@ -601,11 +634,11 @@ class DefaultJobDispatcher( object ):
         # If we're stopping a task, then the runner_name may be
         # None, in which case it hasn't been scheduled.
         if ( None != job.get_job_runner_name() ):
-            runner_name = (job.get_job_runner_name().split(":",1))[0]
+            runner_name = ( job.get_job_runner_name().split( ":", 1 ) )[ 0 ]
             if ( isinstance( job, model.Job ) ):
-                log.debug( "stopping job %d in %s runner" %( job.get_id(), runner_name ) )
+                log.debug( "stopping job %d in %s runner" % ( job.get_id(), runner_name ) )
             elif ( isinstance( job, model.Task ) ):
-                log.debug( "Stopping job %d, task %d in %s runner" 
+                log.debug( "Stopping job %d, task %d in %s runner"
                          % ( job.get_job().get_id(), job.get_id(), runner_name ) )
             try:
                 self.job_runners[runner_name].stop_job( job )
@@ -615,7 +648,7 @@ class DefaultJobDispatcher( object ):
 
     def recover( self, job, job_wrapper ):
         runner_name = ( job.job_runner_name.split(":", 1) )[0]
-        log.debug( "recovering job %d in %s runner" %( job.get_id(), runner_name ) )
+        log.debug( "recovering job %d in %s runner" % ( job.get_id(), runner_name ) )
         try:
             self.job_runners[runner_name].recover( job, job_wrapper )
         except KeyError:

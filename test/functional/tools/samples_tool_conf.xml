@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<toolbox tool_path="test/functional/tools">
+  <tool file="upload.xml"/>
+  <tool file="simple_constructs.xml" />
+  <tool file="composite.xml" />
+  <tool file="disambiguate_cond.xml" />
+  <tool file="multi_repeats.xml"/>
+  <tool file="multi_page.xml"/>
+  <tool file="multi_select.xml" />
+  <tool file="multi_output.xml" />
+  <tool file="composite_output.xml" />
+  <tool file="metadata.xml" />
+  <tool file="output_order.xml" />
+  <tool file="disambiguate_repeats.xml" />
+  <tool file="min_repeat.xml" />
+  <tool file="parallelism.xml" />
+  <tool file="implicit_default_conds.xml" />
+  <tool file="multi_data_param.xml" />
+</toolbox>

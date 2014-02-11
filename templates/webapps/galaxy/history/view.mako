@@ -1,7 +1,7 @@
-<%namespace file="/display_common.mako" import="get_history_link, get_controller_name" />
-<%namespace file="/root/history_common.mako" import="render_dataset" />
-<%namespace file="/tagging_common.mako" import="render_individual_tagging_element, render_community_tagging_element" />
+<%namespace file="/history/history_panel.mako" import="history_panel_javascripts" />
+<%namespace file="/galaxy.masthead.mako" import="get_user_json" />
 
+## ----------------------------------------------------------------------------
 <%!
     def inherit(context):
         if context.get('use_panels'):
@@ -11,58 +11,6 @@
 %>
 <%inherit file="${inherit(context)}"/>
 
-<%def name="javascripts()">
-    ${parent.javascripts()}
-    ${h.js( "libs/jquery/jstorage" )}
-    <script type="text/javascript">
-        $(function() {
-            init_history_items( $("div.historyItemWrapper"), false, "nochanges" );
-        });
-    </script>
-</%def>
-
-<%def name="stylesheets()">
-    ${parent.stylesheets()}
-    ${h.css( "history", "autocomplete_tagging" )}
-    <style type="text/css">
-        .historyItemContainer {
-          padding-right: 3px;
-          border-right-style: solid;
-          border-right-color: #66AA66;
-        }
-        .page-body
-        {
-            padding: 10px;
-            float: left;
-            width: 65%;
-        }
-        .page-meta
-        {
-            float: right;
-            width: 27%;
-            padding: 0.5em;
-            margin: 0.25em;
-            vertical-align: text-top;
-            border: 2px solid #DDDDDD;
-            border-top: 4px solid #DDDDDD;
-        }
-    </style>
-
-    <style>
-        .historyItemBody {
-            display: none;
-        }
-    </style>
-
-    <noscript>
-        <style>
-            .historyItemBody {
-                display: block;
-            }
-        </style>
-    </noscript>
-</%def>
-
 <%def name="init()">
 <%
     self.has_left_panel=False
@@ -71,70 +19,171 @@
 %>
 </%def>
 
+<%def name="center_panel()">
+</%def>
+
+## ----------------------------------------------------------------------------
 <%def name="body()">
     ${center_panel()}
 </%def>
 
+## ----------------------------------------------------------------------------
+<%def name="title()">
+    ${history[ 'name' ]}
+</%def>
+
+## ----------------------------------------------------------------------------
+<%def name="stylesheets()">
+${parent.stylesheets()}
+<style>
+%if not use_panels:
+    body, html {
+        margin: 0px;
+        padding: 0px;
+    }
+%endif
+#header {
+    background-color: white;
+    border-bottom: 1px solid #DDD;
+    width: 100%;
+    height: 48px;
+}
+#history-view-controls {
+    margin: 10px 10px 10px 10px;
+}
+.history-panel {
+    /* this and the height of #header above are way too tweaky */
+    margin-top: 18px;
+}
+.history-title {
+    font-size: 120%;
+}
+.history-title input {
+    font-size: 100%;
+}
+a.btn {
+    text-decoration: none;
+}
+</style>
+</%def>
+
+## ----------------------------------------------------------------------------
+<%def name="javascripts()">
+${parent.javascripts()}
+${history_panel_javascripts()}
+
+%if not use_panels:
+    ${h.js( 'mvc/user/user-model' )}
+%endif
+
+<script type="text/javascript">
+    var using_panels = ${ 'false' if not use_panels else 'true' };
+    %if not use_panels:
+        window.Galaxy = {};
+        Galaxy.currUser = new User(${h.to_json_string( get_user_json() )});
+    %endif
+</script>
+</%def>
+
+## ----------------------------------------------------------------------------
 <%def name="center_panel()">
-    ## Get URL to other histories owned by user that owns this history.
-    <%
-        ##TODO: is there a better way to create this URL? Can't use 'f-username' as a key b/c it's not a valid identifier.
-        href_to_published_histories = h.url_for( controller='/history', action='list_published')
-        if history.user is not None:
-            href_to_user_histories = h.url_for( controller='/history', action='list_published', xxx=history.user.username).replace( 'xxx', 'f-username')
-        else:
-            href_to_user_histories = h.url_for( controller='/history', action='list_published' )##should this instead be be None or empty string?
-    %>
-    
-    <div class="unified-panel-header" unselectable="on">
+<div id="header" class="clear">
+    <div id="history-view-controls" class="pull-right">
+        <%
+            show_deleted = context.get( 'show_deleted', None )
+            show_hidden  = context.get( 'show_hidden',  None )
+
+            show_deleted_js = 'true' if show_deleted == True else ( 'null' if show_deleted == None else 'false' )
+            show_hidden_js  = 'true' if show_hidden  == True else ( 'null' if show_hidden  == None else 'false' )
+        %>
+        %if not history[ 'purged' ]:
+            <a id="import" class="btn btn-default" style="display: none;"
+               href="${h.url_for( controller='history', action='imp', id=history['id'], include_deleted=show_deleted )}">
+                ${_('Import and start using history')}
+            </a>
+        %endif
+        <button id="toggle-deleted" class="btn btn-default">
+            ${_('Exclude deleted') if show_deleted else _('Include deleted')}
+        </button>
+        <button id="toggle-hidden" class="btn btn-default">
+            ${_('Exclude hidden') if show_hidden else _('Include hidden')}
+        </button>
     </div>
-    
-    <div class="unified-panel-body">
-        <div style="overflow: auto; height: 100%;">
-            ## Render view of history.
-            <div id="top-links" class="historyLinks" style="padding: 0px 0px 5px 0px">
-                %if not history.purged:
-                    <a href="${h.url_for(controller='history', action='imp', id=trans.security.encode_id(history.id) )}">import and start using history</a> |
-                    <a href="${get_history_link( history )}">${_('refresh')}</a> |
-                %endif
-                %if show_deleted:
-                    <a href="${h.url_for(controller='history', action='view', id=trans.security.encode_id(history.id), show_deleted=False, use_panels=use_panels )}">${_('hide deleted')}</a> |
-                %else:
-                    <a href="${h.url_for(controller='history', action='view', id=trans.security.encode_id(history.id), show_deleted=True, use_panels=use_panels )}">${_('show deleted')}</a> |
-                %endif
-                <a href="#" class="toggle">collapse all</a>
-            </div>
+</div>
 
-            <div id="history-name-area" class="historyLinks" style="color: gray; font-weight: bold; padding: 0px 0px 5px 0px">
-                <div id="history-name">${history.get_display_name()}</div>
-            </div>
+<div id="history-${ history[ 'id' ] }" class="history-panel unified-panel-body" style="overflow: auto;"></div>
 
-            %if history.deleted:
-                <div class="warningmessagesmall">
-                    ${_('You are currently viewing a deleted history!')}
-                </div>
-                <p></p>
-            %endif
+<script type="text/javascript">
+    var debugging    = JSON.parse( sessionStorage.getItem( 'debugging' ) ) || false,
+        historyJSON  = ${h.to_json_string( history )},
+        hdaJSON      = ${h.to_json_string( hdas )};
+    window.hdaJSON = hdaJSON;
 
-            %if not datasets:
+    $( '#toggle-deleted' ).modeButton({
+        initialMode : (${ show_deleted_js })?( 'exclude' ):( 'include' ),
+        modes: [
+            { mode: 'exclude', html: _l( 'Exclude deleted' ) },
+            { mode: 'include', html: _l( 'Include deleted' ) }
+        ]
+    }).click( function(){
+        // allow the 'include/exclude deleted' button to control whether the 'import' button includes deleted datasets
+        //  when importing or not; when deleted datasets are shown, they'll be imported
+        var $importBtn = $( '#import' );
+        if( $importBtn.size() ){
+            // a bit hacky
+            var href = $importBtn.attr( 'href' ),
+                includeDeleted = $( this ).modeButton()[0].getMode().mode === 'exclude';
+            href = href.replace( /include_deleted=True|False/, ( includeDeleted )?( 'True' ):( 'False' ) );
+            $importBtn.attr( 'href', href );
+            $importBtn.text( includeDeleted ? _l( 'Import with deleted datasets and start using history' )
+                                            : _l( 'Import and start using history' ) );
+        }
+    });
 
-                <div class="infomessagesmall" id="emptyHistoryMessage">
+    $( '#toggle-hidden' ).modeButton({
+        initialMode : (${ show_hidden_js })?( 'exclude' ):( 'include' ),
+        modes: [
+            { mode: 'exclude', html: _l( 'Exclude hidden' ) },
+            { mode: 'include', html: _l( 'Include hidden' ) }
+        ]
+    });
 
-            %else:    
+    ##TODO: move to mako
+    if( Galaxy.currUser.id !== historyJSON.user_id ){
+        $( '#import' ).show();
+    }
 
-                ## Render requested datasets, ordered from newest to oldest
-                %for data in datasets:
-                    %if data.visible:
-                        <div class="historyItemContainer visible-right-border" id="historyItemContainer-${data.id}">
-                            ${render_dataset( data, data.hid, show_deleted_on_refresh = show_deleted, for_editing=False )}
-                        </div>
-                    %endif
-                %endfor
+    require.config({
+        baseUrl : "${h.url_for( '/static/scripts' )}"
+    });
+    require([ "mvc/history/history-panel" ], function( historyPanel ){
+        // history module is already in the dpn chain from the panel. We can re-scope it here.
+        var historyModel = require( 'mvc/history/history-model' ),
+            hdaBaseView  = require( 'mvc/dataset/hda-base' );
 
-                <div class="infomessagesmall" id="emptyHistoryMessage" style="display:none;">
-            %endif
-                    ${_("Your history is empty. Click 'Get Data' on the left pane to start")}
-                </div>
-        </div>
-    </div>
+        var history = new historyModel.History( historyJSON, hdaJSON, {
+            logger: ( debugging )?( console ):( null )
+        });
+
+        window.historyPanel = new historyPanel.HistoryPanel({
+            HDAViewClass    : ( Galaxy.currUser.id === historyJSON.user_id )?
+                                    ( hdaBaseView.HDAEditView ):( hdaBaseView.HDABaseView ),
+            show_deleted    : ${show_deleted_js},
+            show_hidden     : ${show_hidden_js},
+            el              : $( "#history-" + historyJSON.id ),
+            model           : history,
+            onready         : function(){
+                var panel = this;
+                $( '#toggle-deleted' ).on( 'click', function(){
+                    panel.toggleShowDeleted();
+                });
+                $( '#toggle-hidden' ).on( 'click', function(){
+                    panel.toggleShowHidden();
+                });
+                this.render();
+            }
+        });
+    });
+</script>
+
 </%def>

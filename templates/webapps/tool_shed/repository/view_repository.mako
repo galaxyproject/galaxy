@@ -6,7 +6,7 @@
 
 <%
     from galaxy.web.framework.helpers import time_ago
-    from tool_shed.util.shed_util_common import to_safe_string
+    from tool_shed.util.shed_util_common import to_html_string
 
     is_new = repository.is_new( trans.app )
     is_deprecated = repository.deprecated
@@ -25,6 +25,19 @@
         tip_str = ''
         sharable_link_label = 'Sharable link to this repository revision:'
         sharable_link_changeset_revision = changeset_revision
+    
+    if heads:
+        multiple_heads = len( heads ) > 1
+    else:
+        multiple_heads = False
+
+    if repository_metadata is None:
+        revision_installable = False
+    else:
+        if repository_metadata.downloadable is None:
+            revision_installable = 'unknown'
+        else:
+            revision_installable = repository_metadata.downloadable
 %>
 
 <%!
@@ -38,7 +51,7 @@
 
 <%def name="stylesheets()">
     ${parent.stylesheets()}
-    ${h.css('base','library','panel_layout','jquery.rating')}
+    ${h.css('base','library','jquery.rating')}
 </%def>
 
 <%def name="javascripts()">
@@ -61,6 +74,12 @@
     <div class="warningmessage">
         This repository has been marked as deprecated, so some tool shed features may be restricted.
     </div>
+%endif:
+%if multiple_heads:
+    ${render_multiple_heads_message( heads )}
+%endif
+%if deprecated_repository_dependency_tups:
+    ${render_deprecated_repository_dependencies_message( deprecated_repository_dependency_tups )}
 %endif
 
 %if len( changeset_revision_select_field.options ) > 1:
@@ -86,7 +105,7 @@
             <label>${sharable_link_label}</label>
             ${render_sharable_str( repository, changeset_revision=sharable_link_changeset_revision )}
         </div>
-        %if can_download:
+        %if can_download or can_push:
             <div class="form-row">
                 <label>Clone this repository:</label>
                 ${render_clone_str( repository )}
@@ -101,18 +120,23 @@
             %endif
         </div>
         <div class="form-row">
+            <label>Type:</label>
+            ${repository.type | h}
+            <div style="clear: both"></div>
+        </div>
+        <div class="form-row">
             <label>Synopsis:</label>
             ${repository.description | h}
         </div>
         %if repository.long_description:
-            ${render_long_description( to_safe_string( repository.long_description, to_html=True ) )}
+            ${render_long_description( to_html_string( repository.long_description ) )}
         %endif
         <div class="form-row">
             <label>Revision:</label>
             %if can_view_change_log:
                 <a href="${h.url_for( controller='repository', action='view_changelog', id=trans.app.security.encode_id( repository.id ) )}">${revision_label}</a>
             %else:
-                ${revision_label | h}
+                ${revision_label}
             %endif
         </div>
         <div class="form-row">
@@ -120,7 +144,11 @@
             ${repository.user.username | h}
         </div>
         <div class="form-row">
-            <label>Times downloaded:</label>
+            <label>This revision can be installed:</label>
+            ${revision_installable}
+        </div>
+        <div class="form-row">
+            <label>Times cloned / installed:</label>
             ${repository.times_downloaded}
         </div>
         %if trans.user_is_admin():
@@ -213,7 +241,7 @@ ${render_repository_items( metadata, containers_dict, can_set_metadata=False, re
                             %>
                             <tr>
                                 <td>${render_star_rating( name, review.rating, disabled=True )}</td>
-                                <td>${render_review_comment( to_safe_string( review.comment, to_html=True ) )}</td>
+                                <td>${render_review_comment( to_html_string( review.comment ) )}</td>
                                 <td>${time_ago( review.update_time )}</td>
                                 <td>${review.user.username}</td>
                             </tr>

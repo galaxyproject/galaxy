@@ -92,7 +92,7 @@
         </div>
         <div class="form-row">
             <label>Date uploaded:</label>
-            ${ldda.create_time.strftime( "%Y-%m-%d" )}
+            ${ldda.create_time.strftime( trans.app.config.pretty_datetime_format )}
             <div style="clear: both"></div>
         </div>
         <div class="form-row">
@@ -172,6 +172,13 @@
                     <label>Peek:</label>
                     <div><pre id="peek${ldda.id}" class="peek">${util.unicodify( ldda.display_peek() )}</pre></div>
                 </div>
+            </div>
+        %endif
+        %if ldda.extended_metadata:
+            <div class="form-row">
+                <label>Extended Metadata:</label>
+                <pre>${util.pretty_print_json(ldda.extended_metadata.data)}</pre>
+                <div style="clear: both"></div>
             </div>
         %endif
         %if trans.user_is_admin() and cntrller == 'library_admin':

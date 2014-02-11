@@ -19,7 +19,7 @@ class RequestTypeAPIController( BaseAPIController ):
         """
         rval = []
         for request_type in trans.app.security_agent.get_accessible_request_types( trans, trans.user ):
-            item = request_type.get_api_value( value_mapper={ 'id': trans.security.encode_id, 'request_form_id': trans.security.encode_id, 'sample_form_id': trans.security.encode_id } )
+            item = request_type.to_dict( value_mapper={ 'id': trans.security.encode_id, 'request_form_id': trans.security.encode_id, 'sample_form_id': trans.security.encode_id } )
             encoded_id = trans.security.encode_id( request_type.id )
             item['url'] = url_for( 'request_type', id=encoded_id )
             rval.append( item )
@@ -47,7 +47,7 @@ class RequestTypeAPIController( BaseAPIController ):
         if not trans.app.security_agent.can_access_request_type( trans.user.all_roles(), request_type ):
             trans.response.status = 400
             return "No permission to access request_type ( %s )." % str( request_type_id )
-        item = request_type.get_api_value( view='element', value_mapper={ 'id': trans.security.encode_id, 'request_form_id': trans.security.encode_id, 'sample_form_id': trans.security.encode_id } )
+        item = request_type.to_dict( view='element', value_mapper={ 'id': trans.security.encode_id, 'request_form_id': trans.security.encode_id, 'sample_form_id': trans.security.encode_id } )
         item['url'] = url_for( 'request_type', id=request_type_id )
         return item
 
@@ -92,11 +92,11 @@ class RequestTypeAPIController( BaseAPIController ):
                 permissions[ trans.app.security_agent.get_action( v.action ) ] = roles
         if permissions:
             trans.app.security_agent.set_request_type_permissions( request_type, permissions )
-        
+
         #flush objects
         trans.sa_session.add( request_type )
         trans.sa_session.flush()
         encoded_id = trans.security.encode_id( request_type.id )
-        item = request_type.get_api_value( view='element', value_mapper={ 'id': trans.security.encode_id, 'request_form_id': trans.security.encode_id, 'sample_form_id': trans.security.encode_id } )
+        item = request_type.to_dict( view='element', value_mapper={ 'id': trans.security.encode_id, 'request_form_id': trans.security.encode_id, 'sample_form_id': trans.security.encode_id } )
         item['url'] = url_for( 'request_type', id=encoded_id )
         return [ item ]

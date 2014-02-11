@@ -5,12 +5,12 @@
 
 <%
     from galaxy.web.form_builder import CheckboxField
-    from galaxy.webapps.tool_shed.util.container_util import STRSEP
-    from tool_shed.util.shed_util_common import to_safe_string
+    from tool_shed.util.container_util import STRSEP
+    from tool_shed.util.shed_util_common import to_html_string
 %>
 
 <%def name="stylesheets()">
-    ${h.css('base','panel_layout','jquery.rating')}
+    ${h.css('base','jquery.rating')}
 </%def>
 
 <%def name="javascripts()">
@@ -34,7 +34,7 @@ ${render_tool_shed_repository_actions( repository=repository, changeset_revision
         </div>
         <div class="form-row">
             <label>Repository revision:</label>
-            <a class="action-button" href="${h.url_for( controller='repository_review', action='view_or_manage_repository', id=trans.security.encode_id( repository.id ), changeset_revision=review.changeset_revision )}">${changeset_revision_label | h}</a>
+            <a class="action-button" href="${h.url_for( controller='repository_review', action='view_or_manage_repository', id=trans.security.encode_id( repository.id ), changeset_revision=review.changeset_revision )}">${changeset_revision_label}</a>
             <div style="clear: both"></div>
         </div>
         <div class="form-row">
@@ -84,7 +84,7 @@ ${render_tool_shed_repository_actions( repository=repository, changeset_revision
                                             <tr>
                                                 <td>
                                                     <div overflow-wrap:normal;overflow:hidden;word-break:keep-all;word-wrap:break-word;line-break:strict;>
-                                                        ${ to_safe_string( component_review.comment, to_html=True ) }
+                                                        ${ to_html_string( component_review.comment ) }
                                                     </div>
                                                 </td>
                                             </tr>

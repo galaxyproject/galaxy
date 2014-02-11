@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<object_store type="hierarchical">
+    <backends>
+        <object_store type="distributed" id="primary" order="0">
+            <backends>
+                <backend id="files1" type="disk" weight="1">
+                    <files_dir path="database/files1"/>
+                    <extra_dir type="temp" path="database/tmp1"/>
+                    <extra_dir type="job_work" path="database/job_working_directory1"/>
+                </backend>
+                <backend id="files2" type="disk" weight="1">
+                    <files_dir path="database/files2"/>
+                    <extra_dir type="temp" path="database/tmp2"/>
+                    <extra_dir type="job_work" path="database/job_working_directory2"/>
+                </backend>
+            </backends>
+        </object_store>
+        <object_store type="disk" id="secondary" order="1">
+            <files_dir path="database/files3"/>
+            <extra_dir type="temp" path="database/tmp3"/>
+            <extra_dir type="job_work" path="database/job_working_directory3"/>
+        </object_store>
+        <!--  Sample S3 Object Store
+
+        <object_store type="s3">
+            <auth access_key="...." secret_key="....." />
+            <bucket name="unique_bucket_name" use_reduced_redundancy="False" />
+            <connection host="" port="" is_secure="" conn_path="" />
+            <cache path="database/files/" size="100" />
+        </object_store>
+
+        -->
+    </backends>
+</object_store>
+

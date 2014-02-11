@@ -43,23 +43,18 @@ var testUploadInfo = {};
 
 // =================================================================== TESTS
 // ------------------------------------------------------------------- start a new user
-spaceghost.user.loginOrRegisterUser( email, password );
-//??: why is a reload needed here? If we don't, loggedInAs === '' ...
-spaceghost.thenOpen( spaceghost.baseUrl, function(){
+spaceghost.user.loginOrRegisterUser( email, password ).openHomePage( function(){
     var loggedInAs = spaceghost.user.loggedInAs();
     this.test.assert( loggedInAs === email, 'loggedInAs() matches email: "' + loggedInAs + '"' );
 });
 
-
 // ------------------------------------------------------------------- long form
-
 // upload a file...
 spaceghost.then( function(){
     this.test.comment( 'Test uploading a file' );
 
     var filename = '1.txt',
         filepath = this.options.scriptDir + '/../../test-data/' + filename;
-
     this.tools._uploadFile( filepath );
 
     // when an upload begins successfully main should reload with a infomessagelarge
@@ -83,6 +78,7 @@ spaceghost.historypanel.waitForHdas( function(){
         this.test.fail( 'Could not locate new hda: ' + testUploadInfo.name );
 
     } else {
+        spaceghost.debugElement( spaceghost.jsonStr( hdaInfo ) );
         this.historypanel.waitForHdaState( '#' + hdaInfo.attributes.id, 'ok',
             function whenInStateFn( newHdaInfo ){
                 //this.debug( 'newHdaInfo:\n' + this.jsonStr( newHdaInfo ) );

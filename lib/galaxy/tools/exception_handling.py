@@ -28,6 +28,6 @@ class UCSCOutWrapper( object ):
                 raise UCSCLimitException( next_line.strip() )
             else:
                 self.lookahead = next_line
-        return line 
+        return line
     def readline(self):
         return self.next()

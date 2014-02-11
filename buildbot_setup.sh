@@ -4,28 +4,6 @@ cd `dirname $0`
 
 : ${HOSTTYPE:=`uname -m`}
 
-# link to HYPHY is arch-dependent
-case "$OSTYPE" in
-    linux-gnu)
-        kernel=`uname -r | cut -f1,2 -d.`
-        HYPHY="/galaxy/software/linux$kernel-$HOSTTYPE/hyphy"
-        ;;
-    darwin*)
-        this_minor=`uname -r | awk -F. '{print ($1-4)}'`
-        machine=`machine`
-        for minor in `jot - 3 $this_minor 1`; do
-            HYPHY="/galaxy/software/macosx10.$minor-$machine/hyphy"
-            [ -d "$HYPHY" ] && break
-        done
-        [ ! -d "$HYPHY" ] && unset HYPHY
-        ;;
-    solaris2.10)
-        # For the psu-production builder which is Solaris, but jobs run on a
-        # Linux cluster
-        HYPHY="/galaxy/software/linux2.6-x86_64/hyphy"
-        ;;
-esac
-
 LINKS="
 /galaxy/data/location/add_scores.loc
 /galaxy/data/location/all_fasta.loc
@@ -65,6 +43,7 @@ LINKS="
 "
 
 SAMPLES="
+tool_conf.xml.sample
 datatypes_conf.xml.sample
 universe_wsgi.ini.sample
 tool_data_table_conf.xml.sample
@@ -119,12 +98,6 @@ case $type in
 		    rm -f tool-data/`basename $link`
 		    ln -sf $link tool-data
 		done
-		
-		if [ -d "$HYPHY" ]; then
-		    echo "Linking $HYPHY"
-		    rm -f tool-data/HYPHY
-		    ln -sf $HYPHY tool-data/HYPHY
-		fi
 		
 		if [ -d "$JARS" ]; then
 		    echo "Linking $JARS"

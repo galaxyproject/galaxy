@@ -7,34 +7,39 @@
 
 <%
     ctr = 0
-    data_tables = trans.app.tool_data_tables
-    sorted_data_table_elem_names = sorted( trans.app.tool_data_tables.data_table_elem_names )
+    sorted_data_tables = sorted( trans.app.tool_data_tables.get_tables().items() )
 %>
 
 <div class="toolForm">
-    <div class="toolFormTitle">Current data table registry contains ${len( sorted_data_table_elem_names )} data tables</div>
+    <div class="toolFormTitle">Current data table registry contains ${len( sorted_data_tables )} data tables</div>
     <div class="toolFormBody">
         <table class="manage-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
             <tr>
                 <th bgcolor="#D8D8D8">Name</th>
+                <th bgcolor="#D8D8D8">Filename</th>
                 <th bgcolor="#D8D8D8">Tool data path</th>
                 <th bgcolor="#D8D8D8">Missing index file</th>
             </tr>
-            %for data_table_elem_name in sorted_data_table_elem_names:
-                <% data_table = data_tables[ data_table_elem_name ] %>
+            %for data_table_elem_name, data_table in sorted_data_tables:
                 %if ctr % 2 == 1:
                     <tr class="odd_row">
                 %else:
                     <tr class="tr">
                 %endif
                     <td>${data_table.name}</td>
-                    <td>${data_table.tool_data_path}</td>
-                    <td>
-                        %if data_table.missing_index_file:
-                            ${data_table.missing_index_file}
+                    %for i, ( filename, file_dict ) in enumerate( data_table.filenames.iteritems() ):
+                        %if i > 0:
+                            <tr><td></td>
                         %endif
-                    </td>
-                </tr>
+                        <td>${ filename | h }</td>
+                        <td>${ file_dict.get( 'tool_data_path' ) | h }</td>
+                        <td>
+                            %if not file_dict.get( 'found' ):
+                                missing
+                            %endif
+                        </td>
+                        </tr>
+                    %endfor
                 <% ctr += 1 %>
             %endfor
         </table>

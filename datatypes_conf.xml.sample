@@ -245,6 +245,10 @@
     <datatype extension="snpmatrix" type="galaxy.datatypes.genetics:SNPMatrix" display_in_upload="true"/>
     <datatype extension="xls" type="galaxy.datatypes.tabular:Tabular"/>
     <!-- End RGenetics Datatypes -->
+    <!-- graph datatypes -->
+    <datatype extension="xgmml" type="galaxy.datatypes.graph:Xgmml" display_in_upload="true"/>
+    <datatype extension="sif" type="galaxy.datatypes.graph:Sif" display_in_upload="true"/>
+    <datatype extension="rdf" type="galaxy.datatypes.graph:Rdf" display_in_upload="true"/>
   </registration>
   <sniffers>
     <!--

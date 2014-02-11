@@ -2,9 +2,15 @@
 Demo sequencer web application framework
 """
 
+import json
+import os
 import pkg_resources
+import random
+import socket
+import string
+import sys
+import time
 
-import os, sys, time, socket, random, string
 pkg_resources.require( "Cheetah" )
 from Cheetah.Template import Template
 
@@ -19,9 +25,6 @@ import galaxy.web.framework.base
 
 from galaxy.util import asbool
 
-pkg_resources.require( "simplejson" )
-import simplejson
-
 pkg_resources.require( "Mako" )
 import mako.template
 import mako.lookup
@@ -32,7 +35,7 @@ pkg_resources.require( "amqplib" )
 
 import logging
 log = logging.getLogger( __name__ )
-    
+
 class WebApplication( galaxy.web.framework.base.WebApplication ):
     def __init__( self, demo_app, session_cookie='demosequencersession' ):
         galaxy.web.framework.base.WebApplication.__init__( self )
@@ -81,13 +84,13 @@ class DemoWebTransaction( galaxy.web.framework.base.DefaultWebTransaction ):
             return None
     def set_cookie( self, value, name='demosequencersession', path='/', age=90, version='1' ):
         """Convenience method for setting a session cookie"""
-        # The demosequencersession cookie value must be a high entropy 128 bit random number encrypted 
+        # The demosequencersession cookie value must be a high entropy 128 bit random number encrypted
         # using a server secret key.  Any other value is invalid and could pose security issues.
         self.response.cookies[name] = value
         self.response.cookies[name]['path'] = path
         self.response.cookies[name]['max-age'] = 3600 * 24 * age # 90 days
         tstamp = time.localtime ( time.time() + 3600 * 24 * age )
-        self.response.cookies[name]['expires'] = time.strftime( '%a, %d-%b-%Y %H:%M:%S GMT', tstamp ) 
+        self.response.cookies[name]['expires'] = time.strftime( '%a, %d-%b-%Y %H:%M:%S GMT', tstamp )
         self.response.cookies[name]['version'] = version
     def __update_session_cookie( self, name='galaxysession' ):
         """
@@ -108,7 +111,7 @@ class DemoWebTransaction( galaxy.web.framework.base.DefaultWebTransaction ):
         return rval
     def set_message( self, message, type=None ):
         """
-        Convenience method for setting the 'message' and 'message_type' 
+        Convenience method for setting the 'message' and 'message_type'
         element of the template context.
         """
         self.template_context['message'] = message
@@ -123,11 +126,11 @@ class DemoWebTransaction( galaxy.web.framework.base.DefaultWebTransaction ):
     def show_message( self, message, type='info', refresh_frames=[], cont=None, use_panels=False, active_view="" ):
         """
         Convenience method for displaying a simple page with a single message.
-        
+
         `type`: one of "error", "warning", "info", or "done"; determines the
                 type of dialog box and icon displayed with the message
-                
-        `refresh_frames`: names of frames in the interface that should be 
+
+        `refresh_frames`: names of frames in the interface that should be
                           refreshed when the message is displayed
         """
         return self.fill_template( "message.mako", status=type, message=message, refresh_frames=refresh_frames, cont=cont, use_panels=use_panels, active_view=active_view )
@@ -151,7 +154,7 @@ class DemoWebTransaction( galaxy.web.framework.base.DefaultWebTransaction ):
         Convenience method for displaying a simple page with a single HTML
         form.
         """
-        return self.fill_template( template, form=form, header=header, use_panels=( form.use_panels or use_panels ), 
+        return self.fill_template( template, form=form, header=header, use_panels=( form.use_panels or use_panels ),
                                     active_view=active_view )
     def fill_template(self, filename, **kwargs):
         """
@@ -160,19 +163,19 @@ class DemoWebTransaction( galaxy.web.framework.base.DefaultWebTransaction ):
         if filename.endswith( ".mako" ):
             return self.fill_template_mako( filename, **kwargs )
         else:
-            template = Template( file=os.path.join(self.app.config.template_path, filename), 
+            template = Template( file=os.path.join(self.app.config.template_path, filename),
                                  searchList=[kwargs, self.template_context, dict(caller=self, t=self, h=helpers, util=util, request=self.request, response=self.response, app=self.app)] )
             return str( template )
     def fill_template_mako( self, filename, **kwargs ):
         template = self.webapp.mako_template_lookup.get_template( filename )
-        template.output_encoding = 'utf-8' 
+        template.output_encoding = 'utf-8'
         data = dict( caller=self, t=self, trans=self, h=helpers, util=util, request=self.request, response=self.response, app=self.app )
         data.update( self.template_context )
         data.update( kwargs )
         return template.render( **data )
     def stream_template_mako( self, filename, **kwargs ):
         template = self.webapp.mako_template_lookup.get_template( filename )
-        template.output_encoding = 'utf-8' 
+        template.output_encoding = 'utf-8'
         data = dict( caller=self, t=self, trans=self, h=helpers, util=util, request=self.request, response=self.response, app=self.app )
         data.update( self.template_context )
         data.update( kwargs )
@@ -193,7 +196,7 @@ class DemoWebTransaction( galaxy.web.framework.base.DefaultWebTransaction ):
         """
         template = Template( source=template_string,
                              searchList=[context or kwargs, dict(caller=self)] )
-        return str(template)        
+        return str(template)
 
 class DemoWebAPITransaction( DemoWebTransaction ):
     def __init__( self, environ, app, webapp ):
