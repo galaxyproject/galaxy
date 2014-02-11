@@ -647,10 +647,7 @@ class JobWrapper( object ):
         if not os.path.exists( self.working_directory ):
             os.mkdir( self.working_directory )
 
-        # Restore parameters from the database
-        job = self.get_job()
-        if job.user is None and job.galaxy_session is None:
-            raise Exception( 'Job %s has no user and no session.' % job.id )
+        job = self._load_job()
 
         incoming = dict( [ ( p.name, p.value ) for p in job.parameters ] )
         incoming = self.tool.params_from_strings( incoming, self.app )
@@ -717,6 +714,14 @@ class JobWrapper( object ):
         self.extra_filenames = extra_filenames
         self.version_string_cmd = self.tool.version_string_cmd
         return extra_filenames
+
+    def _load_job( self ):
+        # Load job from database and verify it has user or session.
+        # Restore parameters from the database
+        job = self.get_job()
+        if job.user is None and job.galaxy_session is None:
+            raise Exception( 'Job %s has no user and no session.' % job.id )
+        return job
 
     def fail( self, message, exception=False, stdout="", stderr="", exit_code=None ):
         """
@@ -1398,10 +1403,8 @@ class TaskWrapper(JobWrapper):
         config files.
         """
         # Restore parameters from the database
-        job = self.get_job()
+        job = self._load_job()
         task = self.get_task()
-        if job.user is None and job.galaxy_session is None:
-            raise Exception( 'Job %s has no user and no session.' % job.id )
         incoming = dict( [ ( p.name, p.value ) for p in job.parameters ] )
         incoming = self.tool.params_from_strings( incoming, self.app )
         # Do any validation that could not be done at job creation
