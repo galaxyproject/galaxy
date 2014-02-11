@@ -649,46 +649,8 @@ class JobWrapper( object ):
 
         job = self._load_job()
 
-        incoming = dict( [ ( p.name, p.value ) for p in job.parameters ] )
-        incoming = self.tool.params_from_strings( incoming, self.app )
-        # Do any validation that could not be done at job creation
-        self.tool.handle_unvalidated_param_values( incoming, self.app )
-        # Restore input / output data lists
-        inp_data = dict( [ ( da.name, da.dataset ) for da in job.input_datasets ] )
-        out_data = dict( [ ( da.name, da.dataset ) for da in job.output_datasets ] )
-        inp_data.update( [ ( da.name, da.dataset ) for da in job.input_library_datasets ] )
-        out_data.update( [ ( da.name, da.dataset ) for da in job.output_library_datasets ] )
+        param_dict = self._build_param_dict( job, populate_special_output_file=True )
 
-        # Set up output dataset association for export history jobs. Because job
-        # uses a Dataset rather than an HDA or LDA, it's necessary to set up a
-        # fake dataset association that provides the needed attributes for
-        # preparing a job.
-        class FakeDatasetAssociation ( object ):
-            def __init__( self, dataset=None ):
-                self.dataset = dataset
-                self.file_name = dataset.file_name
-                self.metadata = dict()
-                self.children = []
-        special = self.sa_session.query( model.JobExportHistoryArchive ).filter_by( job=job ).first()
-        if not special:
-            special = self.sa_session.query( model.GenomeIndexToolData ).filter_by( job=job ).first()
-        if special:
-            out_data[ "output_file" ] = FakeDatasetAssociation( dataset=special.dataset )
-
-        # These can be passed on the command line if wanted as $__user_*__
-        incoming.update( model.User.user_template_environment( job.history and job.history.user ) )
-
-        # Build params, done before hook so hook can use
-        param_dict = self.tool.build_param_dict( incoming,
-                                                 inp_data, out_data,
-                                                 self.get_output_fnames(),
-                                                 self.working_directory )
-        # Certain tools require tasks to be completed prior to job execution
-        # ( this used to be performed in the "exec_before_job" hook, but hooks are deprecated ).
-        self.tool.exec_before_job( self.queue.app, inp_data, out_data, param_dict )
-        # Run the before queue ("exec_before_job") hook
-        self.tool.call_hook( 'exec_before_job', self.queue.app, inp_data=inp_data,
-                             out_data=out_data, tool=self.tool, param_dict=incoming)
         self.sa_session.flush()
         # Build any required config files
         config_filenames = self.tool.build_config_files( param_dict, self.working_directory )
@@ -722,6 +684,52 @@ class JobWrapper( object ):
         if job.user is None and job.galaxy_session is None:
             raise Exception( 'Job %s has no user and no session.' % job.id )
         return job
+
+    def _build_param_dict( self, job, populate_special_output_file=True ):
+        incoming = dict( [ ( p.name, p.value ) for p in job.parameters ] )
+        incoming = self.tool.params_from_strings( incoming, self.app )
+        # Do any validation that could not be done at job creation
+        self.tool.handle_unvalidated_param_values( incoming, self.app )
+        # Restore input / output data lists
+        inp_data = dict( [ ( da.name, da.dataset ) for da in job.input_datasets ] )
+        out_data = dict( [ ( da.name, da.dataset ) for da in job.output_datasets ] )
+        inp_data.update( [ ( da.name, da.dataset ) for da in job.input_library_datasets ] )
+        out_data.update( [ ( da.name, da.dataset ) for da in job.output_library_datasets ] )
+
+        if populate_special_output_file:
+            # Set up output dataset association for export history jobs. Because job
+            # uses a Dataset rather than an HDA or LDA, it's necessary to set up a
+            # fake dataset association that provides the needed attributes for
+            # preparing a job.
+            class FakeDatasetAssociation ( object ):
+                def __init__( self, dataset=None ):
+                    self.dataset = dataset
+                    self.file_name = dataset.file_name
+                    self.metadata = dict()
+                    self.children = []
+            special = self.sa_session.query( model.JobExportHistoryArchive ).filter_by( job=job ).first()
+            if not special:
+                special = self.sa_session.query( model.GenomeIndexToolData ).filter_by( job=job ).first()
+            if special:
+                out_data[ "output_file" ] = FakeDatasetAssociation( dataset=special.dataset )
+
+        # These can be passed on the command line if wanted as $__user_*__
+        incoming.update( model.User.user_template_environment( job.history and job.history.user ) )
+
+        # Build params, done before hook so hook can use
+        param_dict = self.tool.build_param_dict( incoming,
+                                                 inp_data, out_data,
+                                                 self.get_output_fnames(),
+                                                 self.working_directory )
+
+        # Certain tools require tasks to be completed prior to job execution
+        # ( this used to be performed in the "exec_before_job" hook, but hooks are deprecated ).
+        self.tool.exec_before_job( self.queue.app, inp_data, out_data, param_dict )
+        # Run the before queue ("exec_before_job") hook
+        self.tool.call_hook( 'exec_before_job', self.queue.app, inp_data=inp_data,
+                             out_data=out_data, tool=self.tool, param_dict=incoming)
+
+        return param_dict
 
     def fail( self, message, exception=False, stdout="", stderr="", exit_code=None ):
         """
@@ -1405,34 +1413,20 @@ class TaskWrapper(JobWrapper):
         # Restore parameters from the database
         job = self._load_job()
         task = self.get_task()
-        incoming = dict( [ ( p.name, p.value ) for p in job.parameters ] )
-        incoming = self.tool.params_from_strings( incoming, self.app )
-        # Do any validation that could not be done at job creation
-        self.tool.handle_unvalidated_param_values( incoming, self.app )
-        # Restore input / output data lists
-        inp_data = dict( [ ( da.name, da.dataset ) for da in job.input_datasets ] )
-        out_data = dict( [ ( da.name, da.dataset ) for da in job.output_datasets ] )
-        inp_data.update( [ ( da.name, da.dataset ) for da in job.input_library_datasets ] )
-        out_data.update( [ ( da.name, da.dataset ) for da in job.output_library_datasets ] )
+
         # DBTODO New method for generating command line for a task?
 
-        # These can be passed on the command line if wanted as $__user_*__
-        incoming.update( model.User.user_template_environment( job.history and job.history.user ) )
+        param_dict = self._build_param_dict( job, populate_special_output_file=False )
 
-        # Build params, done before hook so hook can use
-        param_dict = self.tool.build_param_dict( incoming, inp_data, out_data, self.get_output_fnames(), self.working_directory )
+        # Build dict of file name re-writes for split up tasks.
         fnames = {}
         for v in self.get_input_fnames():
             fnames[v] = os.path.join(self.working_directory, os.path.basename(v))
         for dp in [x.real_path for x in self.get_output_fnames()]:
             fnames[dp] = os.path.join(self.working_directory, os.path.basename(dp))
-        # Certain tools require tasks to be completed prior to job execution
-        # ( this used to be performed in the "exec_before_job" hook, but hooks are deprecated ).
-        self.tool.exec_before_job( self.queue.app, inp_data, out_data, param_dict )
-        # Run the before queue ("exec_before_job") hook
-        self.tool.call_hook( 'exec_before_job', self.queue.app, inp_data=inp_data,
-                             out_data=out_data, tool=self.tool, param_dict=incoming)
+
         self.sa_session.flush()
+
         # Build any required config files
         config_filenames = self.tool.build_config_files( param_dict, self.working_directory )
         for config_filename in config_filenames:
