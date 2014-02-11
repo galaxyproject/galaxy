@@ -62,6 +62,21 @@ def test_select_wrapper_multiple(tool):
     assert wrapper.fields.name == "name1,name2"
 
 
+@with_mock_tool
+def test_select_wrapper_with_path_rewritting(tool):
+    parameter = _setup_blast_tool(tool, multiple=True)
+    wrapper = SelectToolParameterWrapper( parameter, ["val1", "val2"], tool.app, other_values={}, path_rewriter=lambda v: "Rewrite<%s>" % v )
+    assert str(wrapper) == "Rewrite<val1>,Rewrite<val2>"
+    assert wrapper.fields.path == "Rewrite<path1>,Rewrite<path2>"
+
+
+@with_mock_tool
+def test_select_wrapper_drilldown_path_rewritting(tool):
+    parameter = _drilldown_parameter(tool)
+    wrapper = SelectToolParameterWrapper( parameter, ["option3"], tool.app, other_values={}, path_rewriter=lambda v: "Rewrite<%s>" % v )
+    assert str(wrapper) == "Rewrite<option3>"
+
+
 def test_raw_object_wrapper():
     obj = Bunch(x=4)
     wrapper = RawObjectWrapper(obj)

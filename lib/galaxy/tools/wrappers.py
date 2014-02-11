@@ -84,6 +84,9 @@ class InputValueWrapper( ToolParameterValueWrapper ):
         return getattr( self.value, key )
 
 
+DEFAULT_PATH_REWRITER = lambda x: x
+
+
 class SelectToolParameterWrapper( ToolParameterValueWrapper ):
     """
     Wraps a SelectTooParameter so that __str__ returns the selected value, but all other
@@ -95,26 +98,28 @@ class SelectToolParameterWrapper( ToolParameterValueWrapper ):
         Provide access to any field by name or index for this particular value.
         Only applicable for dynamic_options selects, which have more than simple 'options' defined (name, value, selected).
         """
-        def __init__( self, input, value, other_values ):
+        def __init__( self, input, value, other_values, path_rewriter ):
             self._input = input
             self._value = value
             self._other_values = other_values
             self._fields = {}
+            self._path_rewriter = path_rewriter
 
         def __getattr__( self, name ):
             if name not in self._fields:
                 self._fields[ name ] = self._input.options.get_field_by_name_for_value( name, self._value, None, self._other_values )
-            return self._input.separator.join( map( str, self._fields[ name ] ) )
+            return self._input.separator.join( map( self._path_rewriter, map( str, self._fields[ name ] ) ) )
 
-    def __init__( self, input, value, app, other_values={} ):
+    def __init__( self, input, value, app, other_values={}, path_rewriter=None ):
         self.input = input
         self.value = value
         self.input.value_label = input.value_to_display_text( value, app )
         self._other_values = other_values
-        self.fields = self.SelectToolParameterFieldWrapper( input, value, other_values )
+        self._path_rewriter = path_rewriter or DEFAULT_PATH_REWRITER
+        self.fields = self.SelectToolParameterFieldWrapper( input, value, other_values, self._path_rewriter )
 
     def __str__( self ):
-        return self.input.to_param_dict_string( self.value, other_values=self._other_values )
+        return self.input.to_param_dict_string( self.value, other_values=self._other_values, value_map=self._path_rewriter )
 
     def __getattr__( self, key ):
         return getattr( self.input, key )

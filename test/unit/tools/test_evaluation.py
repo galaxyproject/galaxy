@@ -114,6 +114,34 @@ class ToolEvaluatorTestCase(TestCase, UsesApp):
         assert open( config_filename, "r").read() == "4"
         self.assertEquals(command_line, "prog1 %s" % config_filename)
 
+    def test_arbitrary_path_rewriting_wrapped( self ):
+        self.tool.check_values = True
+        self.__test_arbitrary_path_rewriting()
+
+    def test_arbitrary_path_rewriting_unwrapped( self ):
+        self.tool.check_values = False
+        self.__test_arbitrary_path_rewriting()
+
+    def __test_arbitrary_path_rewriting( self ):
+        self.job.parameters = [ JobParameter( name="index_path", value="\"/old/path/human\"" ) ]
+        xml = XML('''<param name="index_path" type="select">
+            <option value="/old/path/human">Human</option>
+            <option value="/old/path/mouse">Mouse</option>
+        </param>''')
+        parameter = SelectToolParameter( self.tool, xml )
+        self.tool.set_params( {
+            "index_path": parameter
+        } )
+        self.tool._command_line = "prog1 $index_path"
+
+        def test_path_rewriter(v):
+            if v:
+                v = v.replace("/old", "/new")
+            return v
+        self._set_compute_environment(path_rewriter=test_path_rewriter)
+        command_line, extra_filenames = self.evaluator.build( )
+        self.assertEquals(command_line, "prog1 /new/path/human")
+
     def test_template_property_app( self ):
         self._assert_template_property_is("$__app__.config.new_file_path", self.app.config.new_file_path)
 
@@ -171,11 +199,13 @@ class TestComputeEnviornment( SimpleComputeEnvironment ):
         working_directory,
         input_paths=[ '/galaxy/files/dataset_1.dat' ],
         output_paths=[ '/galaxy/files/dataset_2.dat' ],
+        path_rewriter=None
     ):
         self._new_file_path = new_file_path
         self._working_directory = working_directory
         self._input_paths = input_paths
         self._output_paths = output_paths
+        self._path_rewriter = path_rewriter
 
     def input_paths( self ):
         return self._input_paths
@@ -188,6 +218,12 @@ class TestComputeEnviornment( SimpleComputeEnvironment ):
 
     def new_file_path(self):
         return self._new_file_path
+
+    def unstructured_path_rewriter(self):
+        if self._path_rewriter:
+            return self._path_rewriter
+        else:
+            return super(TestComputeEnviornment, self).unstructured_path_rewriter()
 
 
 class MockTool( object ):

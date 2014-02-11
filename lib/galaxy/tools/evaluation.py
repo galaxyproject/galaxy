@@ -39,6 +39,7 @@ class ToolEvaluator( object ):
         for evaluating command and config cheetah templates.
         """
         self.compute_environment = compute_environment
+        self.unstructured_path_rewriter = compute_environment.unstructured_path_rewriter()
 
         job = self.job
         incoming = dict( [ ( p.name, p.value ) for p in job.parameters ] )
@@ -107,6 +108,7 @@ class ToolEvaluator( object ):
         self.__populate_wrappers(param_dict, input_dataset_paths)
         self.__populate_input_dataset_wrappers(param_dict, input_datasets, input_dataset_paths)
         self.__populate_output_dataset_wrappers(param_dict, output_datasets, output_paths, job_working_directory)
+        self.__populate_unstructured_path_rewrites(param_dict)
         self.__populate_non_job_params(param_dict)
 
         # Return the dictionary of parameters
@@ -186,7 +188,7 @@ class ToolEvaluator( object ):
                     DatasetFilenameWrapper( dataset, **wrapper_kwds )
             elif isinstance( input, SelectToolParameter ):
                 input_values[ input.name ] = SelectToolParameterWrapper(
-                    input, input_values[ input.name ], self.app, other_values=param_dict )
+                    input, input_values[ input.name ], self.app, other_values=param_dict, path_rewriter=self.unstructured_path_rewriter )
 
             elif isinstance( input, LibraryDatasetToolParameter ):
                 # TODO: Handle input rewrites in here? How to test LibraryDatasetToolParameters?
@@ -291,6 +293,18 @@ class ToolEvaluator( object ):
         param_dict['__datatypes_config__'] = param_dict['GALAXY_DATATYPES_CONF_FILE'] = self.app.datatypes_registry.integrated_datatypes_configs
         param_dict['__admin_users__'] = self.app.config.admin_users
         param_dict['__user__'] = RawObjectWrapper( param_dict.get( '__user__', None ) )
+
+    def __populate_unstructured_path_rewrites(self, param_dict):
+
+        def rewrite_unstructured_paths( input_values, input ):
+            if isinstance( input, SelectToolParameter ):
+                input_values[ input.name ] = SelectToolParameterWrapper(
+                    input, input_values[ input.name ], self.app, other_values=param_dict, path_rewriter=self.unstructured_path_rewriter )
+
+        if not self.tool.check_values and self.unstructured_path_rewriter:
+            # The tools weren't "wrapped" yet, but need to be in order to get
+            #the paths rewritten.
+            self.__walk_inputs( self.tool.inputs, param_dict, rewrite_unstructured_paths )
 
     def build( self ):
         """

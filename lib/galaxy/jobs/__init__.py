@@ -1583,6 +1583,14 @@ class ComputeEnvironment( object ):
     def version_path( self ):
         """ Location of the version file for the underlying tool. """
 
+    @abstractmethod
+    def unstructured_path_rewriter( self ):
+        """ Return a function that takes in a value, determines if it is path
+        to be rewritten (will be passed non-path values as well - onus is on
+        this function to determine both if its input is a path and if it should
+        be rewritten.)
+        """
+
 
 class SimpleComputeEnvironment( object ):
 
@@ -1591,6 +1599,9 @@ class SimpleComputeEnvironment( object ):
 
     def sep( self ):
         return os.path.sep
+
+    def unstructured_path_rewriter( self ):
+        return lambda v: v
 
 
 class SharedComputeEnvironment( SimpleComputeEnvironment ):

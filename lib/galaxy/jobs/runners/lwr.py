@@ -67,7 +67,7 @@ class LwrJobRunner( AsynchronousJobRunner ):
     def queue_job(self, job_wrapper):
         job_destination = job_wrapper.job_destination
 
-        command_line, client, remote_job_config = self.__prepare_job( job_wrapper, job_destination )
+        command_line, client, remote_job_config, compute_environment = self.__prepare_job( job_wrapper, job_destination )
 
         if not command_line:
             return
@@ -77,6 +77,10 @@ class LwrJobRunner( AsynchronousJobRunner ):
             remote_dependency_resolution = dependency_resolution == "remote"
             requirements = job_wrapper.tool.requirements if remote_dependency_resolution else []
             rewrite_paths = not LwrJobRunner.__rewrite_parameters( client )
+            unstructured_path_rewrites = {}
+            if compute_environment:
+                unstructured_path_rewrites = compute_environment.unstructured_path_rewrites
+
             client_job_description = ClientJobDescription(
                 command_line=command_line,
                 output_files=self.get_output_files(job_wrapper),
@@ -87,6 +91,7 @@ class LwrJobRunner( AsynchronousJobRunner ):
                 requirements=requirements,
                 version_file=job_wrapper.get_version_string_path(),
                 rewrite_paths=rewrite_paths,
+                arbitrary_files=unstructured_path_rewrites,
             )
             job_id = lwr_submit_job(client, client_job_description, remote_job_config)
             log.info("lwr job submitted with job_id %s" % job_id)
@@ -110,6 +115,7 @@ class LwrJobRunner( AsynchronousJobRunner ):
         command_line = None
         client = None
         remote_job_config = None
+        compute_environment = None
         try:
             client = self.get_client_from_wrapper(job_wrapper)
             tool = job_wrapper.tool
@@ -145,7 +151,7 @@ class LwrJobRunner( AsynchronousJobRunner ):
         if not command_line:
             job_wrapper.finish( '', '' )
 
-        return command_line, client, remote_job_config
+        return command_line, client, remote_job_config, compute_environment
 
     def __prepare_input_files_locally(self, job_wrapper):
         """Run task splitting commands locally."""
@@ -380,6 +386,7 @@ class LwrComputeEnvironment( ComputeEnvironment ):
         self.lwr_client = lwr_client
         self.job_wrapper = job_wrapper
         self.local_path_config = job_wrapper.default_compute_environment()
+        self.unstructured_path_rewrites = {}
         # job_wrapper.prepare is going to expunge the job backing the following
         # computations, so precalculate these paths.
         self._wrapper_input_paths = self.local_path_config.input_paths()
@@ -438,3 +445,24 @@ class LwrComputeEnvironment( ComputeEnvironment ):
 
     def version_path( self ):
         return self._version_path
+
+    def rewriter( self, parameter_value ):
+        unstructured_path_rewrites = self.unstructured_path_rewrites
+        if parameter_value in unstructured_path_rewrites:
+            # Path previously mapped, use previous mapping.
+            return unstructured_path_rewrites[ parameter_value ]
+        if parameter_value in unstructured_path_rewrites.itervalues():
+            # Path is a rewritten remote path (this might never occur,
+            # consider dropping check...)
+            return parameter_value
+
+        rewrite, new_unstructured_path_rewrites = self.path_mapper.check_for_arbitrary_rewrite( parameter_value )
+        if rewrite:
+            unstructured_path_rewrites.update(new_unstructured_path_rewrites)
+            return rewrite
+        else:
+            # Did need to rewrite, use original path or value.
+            return parameter_value
+
+    def unstructured_path_rewriter( self ):
+        return self.rewriter
