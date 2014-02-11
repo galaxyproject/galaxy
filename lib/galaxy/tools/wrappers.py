@@ -173,6 +173,7 @@ class DatasetFilenameWrapper( ToolParameterValueWrapper ):
             self.dataset = dataset
             self.metadata = self.MetadataWrapper( dataset.metadata )
         self.false_path = getattr( dataset_path, "false_path", None )
+        self.false_extra_files_path = getattr( dataset_path, "false_extra_files_path", None )
 
     def __str__( self ):
         if self.false_path is not None:
@@ -183,6 +184,8 @@ class DatasetFilenameWrapper( ToolParameterValueWrapper ):
     def __getattr__( self, key ):
         if self.false_path is not None and key == 'file_name':
             return self.false_path
+        elif self.false_extra_files_path is not None and key == 'extra_files_path':
+            return self.false_extra_files_path
         else:
             return getattr( self.dataset, key )
 

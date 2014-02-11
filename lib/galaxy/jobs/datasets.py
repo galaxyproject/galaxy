@@ -14,10 +14,18 @@ def dataset_path_rewrites( dataset_paths ):
 
 class DatasetPath( object ):
 
-    def __init__( self, dataset_id, real_path, false_path=None, mutable=True ):
+    def __init__(
+        self,
+        dataset_id,
+        real_path,
+        false_path=None,
+        false_extra_files_path=None,
+        mutable=True
+    ):
         self.dataset_id = dataset_id
         self.real_path = real_path
         self.false_path = false_path
+        self.false_extra_files_path = false_extra_files_path
         self.mutable = mutable
 
     def __str__( self ):

@@ -8,6 +8,7 @@ from galaxy.tools.wrappers import RawObjectWrapper
 from galaxy.tools.wrappers import SelectToolParameterWrapper
 from galaxy.tools.wrappers import InputValueWrapper
 from galaxy.tools.wrappers import DatasetFilenameWrapper
+from galaxy.jobs.datasets import DatasetPath
 from galaxy.util.bunch import Bunch
 from elementtree.ElementTree import XML
 from galaxy.datatypes.metadata import MetadataSpecCollection
@@ -95,6 +96,24 @@ def test_dataset_wrapper_false_path():
     assert wrapper.file_name == new_path
 
 
+def test_dataset_false_extra_files_path():
+    dataset = MockDataset()
+
+    wrapper = DatasetFilenameWrapper(dataset)
+    assert wrapper.extra_files_path == MOCK_DATASET_EXTRA_FILES_PATH
+
+    new_path = "/new/path/dataset_123.dat"
+    dataset_path = DatasetPath(123, MOCK_DATASET_PATH, false_path=new_path)
+    wrapper = DatasetFilenameWrapper(dataset, dataset_path=dataset_path)
+    # Setting false_path is not enough to override
+    assert wrapper.extra_files_path == MOCK_DATASET_EXTRA_FILES_PATH
+
+    new_files_path = "/new/path/dataset_123_files"
+    dataset_path = DatasetPath(123, MOCK_DATASET_PATH, false_path=new_path, false_extra_files_path=new_files_path)
+    wrapper = DatasetFilenameWrapper(dataset, dataset_path=dataset_path)
+    assert wrapper.extra_files_path == new_files_path
+
+
 def _drilldown_parameter(tool):
     xml = XML( '''<param name="some_name" type="drill_down" display="checkbox" hierarchy="recurse" multiple="true">
         <options>
@@ -127,6 +146,7 @@ def _setup_blast_tool(tool, multiple=False):
 
 
 MOCK_DATASET_PATH = "/galaxy/database/files/001/dataset_123.dat"
+MOCK_DATASET_EXTRA_FILES_PATH = "/galaxy/database/files/001/dataset_123.dat"
 MOCK_DATASET_EXT = "bam"
 
 
@@ -135,6 +155,7 @@ class MockDataset(object):
     def __init__(self):
         self.metadata = MetadataSpecCollection({})
         self.file_name = MOCK_DATASET_PATH
+        self.extra_files_path = MOCK_DATASET_EXTRA_FILES_PATH
         self.ext = MOCK_DATASET_EXT
 
 
