@@ -629,6 +629,9 @@ class JobExternalOutputMetadataWrapper( object ):
     def setup_external_metadata( self, datasets, sa_session, exec_dir=None, tmp_dir=None, dataset_files_path=None,
                                  output_fnames=None, config_root=None, config_file=None, datatypes_config=None, job_metadata=None, kwds=None ):
         kwds = kwds or {}
+        if tmp_dir is None:
+            tmp_dir = MetadataTempFile.tmp_dir
+
         #fill in metadata_files_dict and return the command with args required to set metadata
         def __metadata_files_list_to_cmd_line( metadata_files ):
             def __get_filename_override():
@@ -637,13 +640,19 @@ class JobExternalOutputMetadataWrapper( object ):
                         if dataset_path.false_path and dataset_path.real_path == metadata_files.dataset.file_name:
                             return dataset_path.false_path
                 return ""
-            return "%s,%s,%s,%s,%s,%s" % ( metadata_files.filename_in, metadata_files.filename_kwds, metadata_files.filename_out, metadata_files.filename_results_code, __get_filename_override(), metadata_files.filename_override_metadata )
+            line = "%s,%s,%s,%s,%s,%s" % (
+                metadata_files.filename_in,
+                metadata_files.filename_kwds,
+                metadata_files.filename_out,
+                metadata_files.filename_results_code,
+                __get_filename_override(),
+                metadata_files.filename_override_metadata
+            )
+            return line
         if not isinstance( datasets, list ):
             datasets = [ datasets ]
         if exec_dir is None:
             exec_dir = os.path.abspath( os.getcwd() )
-        if tmp_dir is None:
-            tmp_dir = MetadataTempFile.tmp_dir
         if dataset_files_path is None:
             dataset_files_path = galaxy.model.Dataset.file_path
         if config_root is None:
