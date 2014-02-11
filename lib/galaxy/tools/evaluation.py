@@ -112,88 +112,95 @@ class ToolEvaluator( object ):
         # Return the dictionary of parameters
         return param_dict
 
-    def __populate_wrappers(self, param_dict, input_dataset_paths):
+    def __walk_inputs(self, inputs, input_values, func):
 
-        def wrap_values( inputs, input_values ):
+        def do_walk( inputs, input_values ):
             """
             Wraps parameters as neccesary.
             """
             for input in inputs.itervalues():
                 if isinstance( input, Repeat ):
                     for d in input_values[ input.name ]:
-                        wrap_values( input.inputs, d )
+                        do_walk( input.inputs, d )
                 elif isinstance( input, Conditional ):
                     values = input_values[ input.name ]
                     current = values["__current_case__"]
-                    wrap_values( input.cases[current].inputs, values )
-                elif isinstance( input, DataToolParameter ) and input.multiple:
-                    input_values[ input.name ] = \
-                        DatasetListWrapper( input_values[ input.name ],
-                                            dataset_paths=input_dataset_paths,
-                                            datatypes_registry=self.app.datatypes_registry,
-                                            tool=self.tool,
-                                            name=input.name )
-                elif isinstance( input, DataToolParameter ):
-                    ## FIXME: We're populating param_dict with conversions when
-                    ##        wrapping values, this should happen as a separate
-                    ##        step before wrapping (or call this wrapping step
-                    ##        something more generic) (but iterating this same
-                    ##        list twice would be wasteful)
-                    # Add explicit conversions by name to current parent
-                    for conversion_name, conversion_extensions, conversion_datatypes in input.conversions:
-                        # If we are at building cmdline step, then converters
-                        # have already executed
-                        conv_ext, converted_dataset = input_values[ input.name ].find_conversion_destination( conversion_datatypes )
-                        # When dealing with optional inputs, we'll provide a
-                        # valid extension to be used for None converted dataset
-                        if not conv_ext:
-                            conv_ext = conversion_extensions[0]
-                        # input_values[ input.name ] is None when optional
-                        # dataset, 'conversion' of optional dataset should
-                        # create wrapper around NoneDataset for converter output
-                        if input_values[ input.name ] and not converted_dataset:
-                            # Input that converter is based from has a value,
-                            # but converted dataset does not exist
-                            raise Exception( 'A path for explicit datatype conversion has not been found: %s --/--> %s'
-                                % ( input_values[ input.name ].extension, conversion_extensions ) )
-                        else:
-                            # Trick wrapper into using target conv ext (when
-                            # None) without actually being a tool parameter
-                            input_values[ conversion_name ] = \
-                                DatasetFilenameWrapper( converted_dataset,
-                                                        datatypes_registry=self.app.datatypes_registry,
-                                                        tool=Bunch( conversion_name=Bunch( extensions=conv_ext ) ),
-                                                        name=conversion_name )
-                    # Wrap actual input dataset
-                    dataset = input_values[ input.name ]
-                    wrapper_kwds = dict(
-                        datatypes_registry=self.app.datatypes_registry,
-                        tool=self,
-                        name=input.name
-                    )
-                    real_path = dataset.file_name
-                    if real_path in input_dataset_paths:
-                        wrapper_kwds[ "dataset_path" ] = input_dataset_paths[ real_path ]
-                    input_values[ input.name ] = \
-                        DatasetFilenameWrapper( dataset, **wrapper_kwds )
-                elif isinstance( input, SelectToolParameter ):
-                    input_values[ input.name ] = SelectToolParameterWrapper(
-                        input, input_values[ input.name ], self.app, other_values=param_dict )
-
-                elif isinstance( input, LibraryDatasetToolParameter ):
-                    # TODO: Handle input rewrites in here? How to test LibraryDatasetToolParameters?
-                    input_values[ input.name ] = LibraryDatasetValueWrapper(
-                        input, input_values[ input.name ], param_dict )
-
+                    do_walk( input.cases[current].inputs, values )
                 else:
-                    input_values[ input.name ] = InputValueWrapper(
-                        input, input_values[ input.name ], param_dict )
+                    func( input_values, input )
+
+        do_walk( inputs, input_values )
+
+    def __populate_wrappers(self, param_dict, input_dataset_paths):
+
+        def wrap_input( input_values, input ):
+            if isinstance( input, DataToolParameter ) and input.multiple:
+                input_values[ input.name ] = \
+                    DatasetListWrapper( input_values[ input.name ],
+                                        dataset_paths=input_dataset_paths,
+                                        datatypes_registry=self.app.datatypes_registry,
+                                        tool=self.tool,
+                                        name=input.name )
+            elif isinstance( input, DataToolParameter ):
+                ## FIXME: We're populating param_dict with conversions when
+                ##        wrapping values, this should happen as a separate
+                ##        step before wrapping (or call this wrapping step
+                ##        something more generic) (but iterating this same
+                ##        list twice would be wasteful)
+                # Add explicit conversions by name to current parent
+                for conversion_name, conversion_extensions, conversion_datatypes in input.conversions:
+                    # If we are at building cmdline step, then converters
+                    # have already executed
+                    conv_ext, converted_dataset = input_values[ input.name ].find_conversion_destination( conversion_datatypes )
+                    # When dealing with optional inputs, we'll provide a
+                    # valid extension to be used for None converted dataset
+                    if not conv_ext:
+                        conv_ext = conversion_extensions[0]
+                    # input_values[ input.name ] is None when optional
+                    # dataset, 'conversion' of optional dataset should
+                    # create wrapper around NoneDataset for converter output
+                    if input_values[ input.name ] and not converted_dataset:
+                        # Input that converter is based from has a value,
+                        # but converted dataset does not exist
+                        raise Exception( 'A path for explicit datatype conversion has not been found: %s --/--> %s'
+                            % ( input_values[ input.name ].extension, conversion_extensions ) )
+                    else:
+                        # Trick wrapper into using target conv ext (when
+                        # None) without actually being a tool parameter
+                        input_values[ conversion_name ] = \
+                            DatasetFilenameWrapper( converted_dataset,
+                                                    datatypes_registry=self.app.datatypes_registry,
+                                                    tool=Bunch( conversion_name=Bunch( extensions=conv_ext ) ),
+                                                    name=conversion_name )
+                # Wrap actual input dataset
+                dataset = input_values[ input.name ]
+                wrapper_kwds = dict(
+                    datatypes_registry=self.app.datatypes_registry,
+                    tool=self,
+                    name=input.name
+                )
+                real_path = dataset.file_name
+                if real_path in input_dataset_paths:
+                    wrapper_kwds[ "dataset_path" ] = input_dataset_paths[ real_path ]
+                input_values[ input.name ] = \
+                    DatasetFilenameWrapper( dataset, **wrapper_kwds )
+            elif isinstance( input, SelectToolParameter ):
+                input_values[ input.name ] = SelectToolParameterWrapper(
+                    input, input_values[ input.name ], self.app, other_values=param_dict )
+
+            elif isinstance( input, LibraryDatasetToolParameter ):
+                # TODO: Handle input rewrites in here? How to test LibraryDatasetToolParameters?
+                input_values[ input.name ] = LibraryDatasetValueWrapper(
+                    input, input_values[ input.name ], param_dict )
+            else:
+                input_values[ input.name ] = InputValueWrapper(
+                    input, input_values[ input.name ], param_dict )
 
         # HACK: only wrap if check_values is not false, this deals with external
         #       tools where the inputs don't even get passed through. These
         #       tools (e.g. UCSC) should really be handled in a special way.
         if self.tool.check_values:
-            wrap_values( self.tool.inputs, param_dict )
+            self.__walk_inputs( self.tool.inputs, param_dict, wrap_input )
 
     def __populate_input_dataset_wrappers(self, param_dict, input_datasets, input_dataset_paths):
         ## FIXME: when self.check_values==True, input datasets are being wrapped
