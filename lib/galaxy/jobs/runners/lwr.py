@@ -351,8 +351,10 @@ class LwrJobRunner( AsynchronousJobRunner ):
             metadata_kwds['exec_dir'] = remote_galaxy_home
             outputs_directory = remote_job_config['outputs_directory']
             configs_directory = remote_job_config['configs_directory']
+            working_directory = remote_job_config['working_directory']
             outputs = [Bunch(false_path=os.path.join(outputs_directory, os.path.basename(path)), real_path=path) for path in self.get_output_files(job_wrapper)]
             metadata_kwds['output_fnames'] = outputs
+            metadata_kwds['compute_tmp_dir'] = working_directory
             metadata_kwds['config_root'] = remote_galaxy_home
             default_config_file = os.path.join(remote_galaxy_home, 'universe_wsgi.ini')
             metadata_kwds['config_file'] = remote_system_properties.get('galaxy_config_file', default_config_file)

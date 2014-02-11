@@ -18,6 +18,7 @@ from os.path import abspath
 import galaxy.model
 from galaxy.util import listify, stringify_dictionary_keys, string_as_bool
 from galaxy.util.odict import odict
+from galaxy.util import in_directory
 from galaxy.web import form_builder
 from sqlalchemy.orm import object_session
 
@@ -627,10 +628,20 @@ class JobExternalOutputMetadataWrapper( object ):
         return "%s_%d" % ( dataset.__class__.__name__, dataset.id )
 
     def setup_external_metadata( self, datasets, sa_session, exec_dir=None, tmp_dir=None, dataset_files_path=None,
-                                 output_fnames=None, config_root=None, config_file=None, datatypes_config=None, job_metadata=None, kwds=None ):
+                                 output_fnames=None, config_root=None, config_file=None, datatypes_config=None, job_metadata=None, compute_tmp_dir=None, kwds=None ):
         kwds = kwds or {}
         if tmp_dir is None:
             tmp_dir = MetadataTempFile.tmp_dir
+
+        # path is calculated for Galaxy, may be different on compute - rewrite
+        # for the compute server.
+        def metadata_path_on_compute(path):
+            compute_path = path
+            log.info(compute_tmp_dir)
+            if compute_tmp_dir and tmp_dir and in_directory(path, tmp_dir):
+                path_relative = os.path.relpath(path, tmp_dir)
+                compute_path = os.path.join(compute_tmp_dir, path_relative)
+            return compute_path
 
         #fill in metadata_files_dict and return the command with args required to set metadata
         def __metadata_files_list_to_cmd_line( metadata_files ):
@@ -641,13 +652,14 @@ class JobExternalOutputMetadataWrapper( object ):
                             return dataset_path.false_path
                 return ""
             line = "%s,%s,%s,%s,%s,%s" % (
-                metadata_files.filename_in,
-                metadata_files.filename_kwds,
-                metadata_files.filename_out,
-                metadata_files.filename_results_code,
+                metadata_path_on_compute(metadata_files.filename_in),
+                metadata_path_on_compute(metadata_files.filename_kwds),
+                metadata_path_on_compute(metadata_files.filename_out),
+                metadata_path_on_compute(metadata_files.filename_results_code),
                 __get_filename_override(),
-                metadata_files.filename_override_metadata
+                metadata_path_on_compute(metadata_files.filename_override_metadata),
             )
+            log.info(line)
             return line
         if not isinstance( datasets, list ):
             datasets = [ datasets ]

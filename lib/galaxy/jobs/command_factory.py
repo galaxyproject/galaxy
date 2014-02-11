@@ -79,6 +79,7 @@ def __handle_metadata(commands_builder, job_wrapper, runner, remote_command_para
     config_root = metadata_kwds.get( 'config_root', None )
     config_file = metadata_kwds.get( 'config_file', None )
     datatypes_config = metadata_kwds.get( 'datatypes_config', None )
+    compute_tmp_dir = metadata_kwds.get( 'compute_tmp_dir', None )
     metadata_command = job_wrapper.setup_external_metadata(
         exec_dir=exec_dir,
         tmp_dir=tmp_dir,
@@ -88,6 +89,7 @@ def __handle_metadata(commands_builder, job_wrapper, runner, remote_command_para
         config_root=config_root,
         config_file=config_file,
         datatypes_config=datatypes_config,
+        compute_tmp_dir=compute_tmp_dir,
         kwds={ 'overwrite' : False }
     ) or ''
     metadata_command = metadata_command.strip()
