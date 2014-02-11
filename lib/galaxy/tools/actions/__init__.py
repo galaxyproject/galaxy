@@ -246,17 +246,10 @@ class DefaultToolAction( object ):
         else:
             # No valid inputs, we will use history defaults
             output_permissions = trans.app.security_agent.history_get_default_permissions( history )
+
         # Build name for output datasets based on tool name and input names
-        if len( input_names ) == 1:
-            on_text = input_names[0]
-        elif len( input_names ) == 2:
-            on_text = '%s and %s' % tuple(input_names[0:2])
-        elif len( input_names ) == 3:
-            on_text = '%s, %s, and %s' % tuple(input_names[0:3])
-        elif len( input_names ) > 3:
-            on_text = '%s, %s, and others' % tuple(input_names[0:2])
-        else:
-            on_text = ""
+        on_text = on_text_for_names( input_names )
+
         # Add the dbkey to the incoming parameters
         incoming[ "dbkey" ] = input_dbkey
         params = None  # wrapped params are used by change_format action and by output.label; only perform this wrapping once, as needed
@@ -489,3 +482,18 @@ class DefaultToolAction( object ):
         if on_text:
             name += ( " on " + on_text )
         return name
+
+
+def on_text_for_names( input_names ):
+    # Build name for output datasets based on tool name and input names
+    if len( input_names ) == 1:
+        on_text = input_names[0]
+    elif len( input_names ) == 2:
+        on_text = '%s and %s' % tuple(input_names[0:2])
+    elif len( input_names ) == 3:
+        on_text = '%s, %s, and %s' % tuple(input_names[0:3])
+    elif len( input_names ) > 3:
+        on_text = '%s, %s, and others' % tuple(input_names[0:2])
+    else:
+        on_text = ""
+    return on_text
