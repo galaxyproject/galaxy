@@ -56,6 +56,10 @@ if [ ! -d $GALAXY_INSTALL_TEST_SHED_TOOL_PATH ] ; then
 	mkdir -p $GALAXY_INSTALL_TEST_SHED_TOOL_PATH
 fi
 
+if [ ! -d $GALAXY_INSTALL_TEST_TOOL_DEPENDENCY_DIR ] ; then
+    mkdir -p $GALAXY_INSTALL_TEST_TOOL_DEPENDENCY_DIR
+fi
+
 test_tool_dependency_definitions () {
     # Test installation of repositories of type tool_dependency_definition.
 	if [ -f $GALAXY_INSTALL_TEST_TOOL_DEPENDENCY_DIR/stage_1_complete ] ; then
@@ -102,6 +106,7 @@ case $which in
         ;;
     # Use "-w repositories_with_tools" parameter when you want to test repositories that contain tools.
     repositories_with_tools)
+        touch $GALAXY_INSTALL_TEST_TOOL_DEPENDENCY_DIR/stage_1_complete
         test_repositories_with_tools
         ;;
     # No received parameters or any received parameter not in [ tool_dependency_definitions, repositories_with_tools ]
