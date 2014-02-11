@@ -29,6 +29,7 @@ from .output_checker import check_output
 from .datasets import TaskPathRewriter
 from .datasets import OutputsToWorkingDirectoryPathRewriter
 from .datasets import NullDatasetPathRewriter
+from .datasets import DatasetPath
 
 log = logging.getLogger( __name__ )
 
@@ -1182,18 +1183,6 @@ class JobWrapper( object ):
     def compute_outputs( self ) :
         dataset_path_rewriter = self.dataset_path_rewriter
 
-        class DatasetPath( object ):
-            def __init__( self, dataset_id, real_path, false_path=None, mutable=True ):
-                self.dataset_id = dataset_id
-                self.real_path = real_path
-                self.false_path = false_path
-                self.mutable = mutable
-
-            def __str__( self ):
-                if self.false_path is None:
-                    return self.real_path
-                else:
-                    return self.false_path
         job = self.get_job()
         # Job output datasets are combination of history, library, jeha and gitd datasets.
         special = self.sa_session.query( model.JobExportHistoryArchive ).filter_by( job=job ).first()
