@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import unittest
 import galaxy.model.mapping as mapping
 
@@ -94,6 +95,35 @@ class MappingTests( unittest.TestCase ):
         visualization.user = u
         self.persist( visualization )
         persist_and_check_rating( model.VisualizationRatingAssociation, visualization=visualization )
+
+    def test_display_name( self ):
+
+        def assert_display_name_converts_to_unicode( item, name ):
+            assert not isinstance( item.name, unicode )
+            assert isinstance( item.get_display_name(), unicode )
+            assert item.get_display_name() == name
+
+        ldda = self.model.LibraryDatasetDatasetAssociation( name='ldda_name' )
+        assert_display_name_converts_to_unicode( ldda, 'ldda_name' )
+
+        hda = self.model.HistoryDatasetAssociation( name='hda_name' )
+        assert_display_name_converts_to_unicode( hda, 'hda_name' )
+
+        history = self.model.History( name='history_name' )
+        assert_display_name_converts_to_unicode( history, 'history_name' )
+
+        library = self.model.Library( name='library_name' )
+        assert_display_name_converts_to_unicode( library, 'library_name' )
+
+        library_folder = self.model.LibraryFolder( name='library_folder' )
+        assert_display_name_converts_to_unicode( library_folder, 'library_folder' )
+
+        history = self.model.History(
+            name=u'Hello₩◎ґʟⅾ'
+        )
+        assert isinstance( history.name, unicode )
+        assert isinstance( history.get_display_name(), unicode )
+        assert history.get_display_name() == u'Hello₩◎ґʟⅾ'
 
     def test_tags( self ):
         model = self.model

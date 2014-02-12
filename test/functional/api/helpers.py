@@ -1,5 +1,13 @@
 import time
 from json import dumps
+from json import loads
+from pkg_resources import resource_string
+
+# Simple workflow that takes an input and call cat wrapper on it.
+workflow_str = resource_string( __name__, "test_workflow_1.ga" )
+# Simple workflow that takes an input and filters with random lines twice in a
+# row - first grabbing 8 lines at random and then 6.
+workflow_random_x2_str = resource_string( __name__, "test_workflow_2.ga" )
 
 
 class TestsDatasets:
@@ -56,3 +64,38 @@ class TestsDatasets:
             history_id=history_id,
             **kwds
         )
+
+
+class WorkflowPopulator( object ):
+    # Impulse is to make this a Mixin, but probably better as an object.
+
+    def __init__( self, api_test_case ):
+        self.api_test_case = api_test_case
+
+    def load_workflow( self, name, content=workflow_str, add_pja=False ):
+        workflow = loads( content )
+        workflow[ "name" ] = name
+        if add_pja:
+            tool_step = workflow[ "steps" ][ "2" ]
+            tool_step[ "post_job_actions" ][ "RenameDatasetActionout_file1" ] = dict(
+                action_type="RenameDatasetAction",
+                output_name="out_file1",
+                action_arguments=dict( newname="the_new_name" ),
+            )
+        return workflow
+
+    def load_random_x2_workflow( self, name ):
+        return self.load_workflow( name, content=workflow_random_x2_str )
+
+    def simple_workflow( self, name, **create_kwds ):
+        workflow = self.load_workflow( name )
+        return self.create_workflow( workflow, **create_kwds )
+
+    def create_workflow( self, workflow, **create_kwds ):
+        data = dict(
+            workflow=dumps( workflow ),
+            **create_kwds
+        )
+        upload_response = self.api_test_case._post( "workflows/upload", data=data )
+        uploaded_workflow_id = upload_response.json()[ "id" ]
+        return uploaded_workflow_id

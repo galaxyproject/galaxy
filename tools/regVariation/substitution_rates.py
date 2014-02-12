@@ -8,15 +8,17 @@ from galaxy import eggs
 from galaxy.tools.util.galaxyops import *
 from galaxy.tools.util import maf_utilities
 import bx.align.maf
-import sys, fileinput
+import fileinput
+import sys
 
 def stop_err(msg):
     sys.stderr.write(msg)
     sys.exit()
 
+
 if len(sys.argv) < 3:
-        stop_err("Incorrect number of arguments.")    
-    
+    stop_err("Incorrect number of arguments.")
+
 inp_file = sys.argv[1]
 out_file = sys.argv[2]
 fout = open(out_file, 'w')
@@ -37,24 +39,25 @@ def rateEstimator(block):
     len1_withgap = len(sequence1)
     mismatch = 0.0
     
-    for seq in range (1,len(block.components)):
+    for seq in range (1, len(block.components)):
         src2 = block.components[seq].src
         sequence2 = block.components[seq].text
         start2 = block.components[seq].start
         end2 = block.components[seq].end
         len2 = int(end2)-int(start2)
         for nt in range(len1_withgap):
-            if sequence1[nt] not in '-#$^*?' and sequence2[nt] not in '-#$^*?': #Not a gap or masked character
+            if sequence1[nt] not in '-#$^*?' and sequence2[nt] not in '-#$^*?':  # Not a gap or masked character
                 if sequence1[nt].upper() != sequence2[nt].upper():
                     mismatch += 1
     
-    if int_file == "None":  
-        p = mismatch/min(len1,len2)
-        print >>fout, "%s\t%s\t%s\t%s\t%s\t%s\t%d\t%d\t%.4f" %(src1,start1,end1,src2,start2,end2,min(len1,len2),mismatch,p)
+    if int_file == "None":
+        p = mismatch/min(len1, len2)
+        print >> fout, "%s\t%s\t%s\t%s\t%s\t%s\t%d\t%d\t%.4f" % ( src1, start1, end1, src2, start2, end2, min(len1, len2), mismatch, p )
     else:
         mismatches += mismatch
-        alignlen += min(len1,len2)
-              
+        alignlen += min(len1, len2)
+
+
 def main():
     skipped = 0
     not_pairwise = 0
@@ -64,7 +67,7 @@ def main():
             maf_reader = bx.align.maf.Reader( open(inp_file, 'r') )
         except:
             stop_err("Your MAF file appears to be malformed.")
-        print >>fout, "#Seq1\tStart1\tEnd1\tSeq2\tStart2\tEnd2\tL\tN\tp"
+        print >> fout, "#Seq1\tStart1\tEnd1\tSeq2\tStart2\tEnd2\tL\tN\tp"
         for block in maf_reader:
             if len(block.components) != 2:
                 not_pairwise += 1
@@ -84,7 +87,7 @@ def main():
                                 end_col=end_col_i,
                                 strand_col=strand_col_i,
                                 fix_strand=True)
-        species=None
+        species = None
         mincols = 0
         global alignlen, mismatches
         
@@ -107,12 +110,14 @@ def main():
             interval.fields.append(str(alignlen))
             interval.fields.append(str(mismatches))
             interval.fields.append(str(p))
-            print >>fout, "\t".join(interval.fields)    
+            print >> fout, "\t".join(interval.fields)
             #num_blocks += 1
     
     if not_pairwise:
-        print "Skipped %d non-pairwise blocks" %(not_pairwise)
+        print "Skipped %d non-pairwise blocks" % (not_pairwise)
     if skipped:
-        print "Skipped %d blocks as invalid" %(skipped)
+        print "Skipped %d blocks as invalid" % (skipped)
+
+
 if __name__ == "__main__":
     main()

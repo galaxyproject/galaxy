@@ -71,12 +71,39 @@ function merge (options, optionsDefault) {
         return optionsDefault;
 };
 
+// to string
+function bytesToString (size, normal_font) {
+    // identify unit
+    var unit = "";
+    if (size >= 100000000000)   { size = size / 100000000000; unit = 'TB'; } else
+    if (size >= 100000000)      { size = size / 100000000; unit = 'GB'; } else
+    if (size >= 100000)         { size = size / 100000; unit = 'MB'; } else
+    if (size >= 100)            { size = size / 100; unit = 'KB'; } else
+    if (size >  0)              { size = size * 10; unit = 'b'; } else
+        return '<strong>-</strong>';
+                                
+    // return formatted string
+    var rounded = (Math.round(size) / 10);
+    if (normal_font) {
+       return  rounded + ' ' + unit;
+    } else {
+        return '<strong>' + rounded + '</strong> ' + unit;
+    }
+};
+
+// unique ide
+function uuid(){
+    return (new Date().getTime()).toString(36);
+};
+
 // return
 return {
     cssLoadFile   : cssLoadFile,
     cssGetAttribute : cssGetAttribute,
     jsonFromUrl : jsonFromUrl,
-    merge : merge
+    merge : merge,
+    bytesToString: bytesToString,
+    uuid: uuid
 };
 
 });

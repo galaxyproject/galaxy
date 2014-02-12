@@ -61,7 +61,7 @@
                 require(['app'], function(App) {
                     // load options
                     var options = {
-                        config  : ${h.to_json_string( query_args )},
+                        config  : ${h.to_json_string( config )},
                         dataset : ${h.to_json_string( trans.security.encode_dict_ids( hda.to_dict() ) )}
                     }
 

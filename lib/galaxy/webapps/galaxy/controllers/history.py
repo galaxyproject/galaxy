@@ -13,6 +13,8 @@ from galaxy.util.odict import odict
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import error, url_for
 from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesHistoryDatasetAssociationMixin, UsesHistoryMixin
+from galaxy.web.base.controller import ExportsHistoryMixin
+from galaxy.web.base.controller import ImportsHistoryMixin
 from galaxy.web.base.controller import ERROR, INFO, SUCCESS, WARNING
 from galaxy.web.framework.helpers import grids, iff, time_ago
 
@@ -104,6 +106,7 @@ class HistoryListGrid( grids.Grid ):
     preserve_state = False
     use_async = True
     use_paging = True
+    info_text = "Histories that have been deleted for more than a time period specified by the Galaxy administrator(s) may be permanently deleted."
 
     def get_current_item( self, trans, **kwargs ):
         return trans.get_history()
@@ -186,7 +189,8 @@ class HistoryAllPublishedGrid( grids.Grid ):
         return query.filter( self.model_class.published == True ).filter( self.model_class.slug != None ).filter( self.model_class.deleted == False )
 
 class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesItemRatings,
-                         UsesHistoryMixin, UsesHistoryDatasetAssociationMixin ):
+                         UsesHistoryMixin, UsesHistoryDatasetAssociationMixin, ExportsHistoryMixin,
+                         ImportsHistoryMixin ):
     @web.expose
     def index( self, trans ):
         return ""
@@ -413,7 +417,9 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                 if not ids:
                     message = "Select a history to unshare"
                     return self.shared_list_grid( trans, status='error', message=message, **kwargs )
-                histories = [ self.get_history( trans, history_id ) for history_id in ids ]
+                # No need to check security, association below won't yield a
+                # hit if this user isn't having the history shared with her.
+                histories = [ self.get_history( trans, history_id, check_ownership=False ) for history_id in ids ]
                 for history in histories:
                     # Current user is the user with which the histories were shared
                     association = trans.sa_session.query( trans.app.model.HistoryUserShareAssociation ).filter_by( user=trans.user, history=history ).one()
@@ -667,26 +673,13 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                     # TODO: add support for importing via a file.
                     #.add_input( "file", "Archived History File", "archive_file", value=None, error=None )
                                 )
-        # Run job to do import.
-        history_imp_tool = trans.app.toolbox.get_tool( '__IMPORT_HISTORY__' )
-        incoming = { '__ARCHIVE_SOURCE__' : archive_source, '__ARCHIVE_TYPE__' : archive_type }
-        history_imp_tool.execute( trans, incoming=incoming )
+        self.queue_history_import( trans, archive_type=archive_type, archive_source=archive_source )
         return trans.show_message( "Importing history from '%s'. \
                                     This history will be visible when the import is complete" % archive_source )
 
     @web.expose
     def export_archive( self, trans, id=None, gzip=True, include_hidden=False, include_deleted=False ):
         """ Export a history to an archive. """
-        #
-        # Convert options to booleans.
-        #
-        if isinstance( gzip, basestring ):
-            gzip = ( gzip in [ 'True', 'true', 'T', 't' ] )
-        if isinstance( include_hidden, basestring ):
-            include_hidden = ( include_hidden in [ 'True', 'true', 'T', 't' ] )
-        if isinstance( include_deleted, basestring ):
-            include_deleted = ( include_deleted in [ 'True', 'true', 'T', 't' ] )
-
         #
         # Get history to export.
         #
@@ -703,35 +696,15 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         #
         # If history has already been exported and it has not changed since export, stream it.
         #
-        jeha = trans.sa_session.query( model.JobExportHistoryArchive ).filter_by( history=history ) \
-                .order_by( model.JobExportHistoryArchive.id.desc() ).first()
-        if jeha and ( jeha.job.state not in [ model.Job.states.ERROR, model.Job.states.DELETED ] ) \
-           and jeha.job.update_time > history.update_time:
-            if jeha.job.state == model.Job.states.OK:
-                # Stream archive.
-                valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-                hname = history.name
-                hname = ''.join(c in valid_chars and c or '_' for c in hname)[0:150]
-                hname = "Galaxy-History-%s.tar" % ( hname )
-                if jeha.compressed:
-                    hname += ".gz"
-                    trans.response.set_content_type( 'application/x-gzip' )
-                else:
-                    trans.response.set_content_type( 'application/x-tar' )
-                trans.response.headers["Content-Disposition"] = 'attachment; filename="%s"' % ( hname )
-                return open( trans.app.object_store.get_filename( jeha.dataset ) )
-            elif jeha.job.state in [ model.Job.states.RUNNING, model.Job.states.QUEUED, model.Job.states.WAITING ]:
+        jeha = history.latest_export
+        if jeha and jeha.up_to_date:
+            if jeha.ready:
+                return self.serve_ready_history_export( trans, jeha )
+            elif jeha.preparing:
                 return trans.show_message( "Still exporting history %(n)s; please check back soon. Link: <a href='%(s)s'>%(s)s</a>" \
                         % ( { 'n' : history.name, 's' : url_for( controller='history', action="export_archive", id=id, qualified=True ) } ) )
 
-        # Run job to do export.
-        history_exp_tool = trans.app.toolbox.get_tool( '__EXPORT_HISTORY__' )
-        params = {
-            'history_to_export' : history,
-            'compress' : gzip,
-            'include_hidden' : include_hidden,
-            'include_deleted' : include_deleted }
-        history_exp_tool.execute( trans, incoming = params, set_output_hid = True )
+        self.queue_history_export( trans, history, gzip=gzip, include_hidden=include_hidden, include_deleted=include_deleted )
         url = url_for( controller='history', action="export_archive", id=id, qualified=True )
         return trans.show_message( "Exporting History '%(n)s'. Use this link to download \
                                     the archive or import it to another Galaxy server: \

@@ -52,6 +52,8 @@
             'logo_url'                  : h.url_for(app.config.get( 'logo_url', '/')),
             'is_admin_user'             : trans.user and app.config.is_admin_user(trans.user),
             'active_view'               : active_view,
+            'ftp_upload_dir'            : app.config.get("ftp_upload_dir",  None),
+            'ftp_upload_site'           : app.config.get("ftp_upload_site",  None),
 
             ## user details
             'user'          : {

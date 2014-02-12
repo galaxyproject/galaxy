@@ -58,6 +58,24 @@ function program9(depth0,data) {
 function program11(depth0,data) {
   
   
+  return "All";
+  }
+
+function program13(depth0,data) {
+  
+  
+  return "None";
+  }
+
+function program15(depth0,data) {
+  
+  
+  return "For all selected";
+  }
+
+function program17(depth0,data) {
+  
+  
   return "Your history is empty. Click 'Get Data' on the left pane to start";
   }
 
@@ -68,7 +86,7 @@ function program11(depth0,data) {
   buffer += "\n        </div>\n\n        <div class=\"history-subtitle clear\">\n            ";
   stack1 = helpers['if'].call(depth0, depth0.nice_size, {hash:{},inverse:self.noop,fn:self.program(3, program3, data),data:data});
   if(stack1 || stack1 === 0) { buffer += stack1; }
-  buffer += "\n\n            <div class=\"history-secondary-actions\"></div>\n        </div>\n\n        <div class=\"message-container\">\n            ";
+  buffer += "\n\n            <div class=\"history-secondary-actions btn-group\"></div>\n        </div>\n\n        <div class=\"message-container\">\n            ";
   stack1 = helpers['if'].call(depth0, depth0.message, {hash:{},inverse:self.noop,fn:self.program(5, program5, data),data:data});
   if(stack1 || stack1 === 0) { buffer += stack1; }
   buffer += "\n        </div>\n\n        <div class=\"quota-message errormessage\">\n            ";
@@ -83,10 +101,28 @@ function program11(depth0,data) {
   else { stack1 = depth0.local; stack1 = typeof stack1 === functionType ? stack1.apply(depth0) : stack1; }
   if (!helpers.local) { stack1 = blockHelperMissing.call(depth0, stack1, options); }
   if(stack1 || stack1 === 0) { buffer += stack1; }
-  buffer += ".\n        </div>\n\n    </div>"
+  buffer += ".\n        </div>\n\n        <div class=\"history-dataset-actions\">\n            <div class=\"btn-group\">\n                <button class=\"history-select-all-datasets-btn btn btn-default\"\n                        data-mode=\"select\">";
+  options = {hash:{},inverse:self.noop,fn:self.program(11, program11, data),data:data};
+  if (stack1 = helpers.local) { stack1 = stack1.call(depth0, options); }
+  else { stack1 = depth0.local; stack1 = typeof stack1 === functionType ? stack1.apply(depth0) : stack1; }
+  if (!helpers.local) { stack1 = blockHelperMissing.call(depth0, stack1, options); }
+  if(stack1 || stack1 === 0) { buffer += stack1; }
+  buffer += "</button>\n                <button class=\"history-deselect-all-datasets-btn btn btn-default\"\n                        data-mode=\"select\">";
+  options = {hash:{},inverse:self.noop,fn:self.program(13, program13, data),data:data};
+  if (stack1 = helpers.local) { stack1 = stack1.call(depth0, options); }
+  else { stack1 = depth0.local; stack1 = typeof stack1 === functionType ? stack1.apply(depth0) : stack1; }
+  if (!helpers.local) { stack1 = blockHelperMissing.call(depth0, stack1, options); }
+  if(stack1 || stack1 === 0) { buffer += stack1; }
+  buffer += "</button>\n            </div>\n            <button class=\"history-dataset-action-popup-btn btn btn-default\"\n                    >";
+  options = {hash:{},inverse:self.noop,fn:self.program(15, program15, data),data:data};
+  if (stack1 = helpers.local) { stack1 = stack1.call(depth0, options); }
+  else { stack1 = depth0.local; stack1 = typeof stack1 === functionType ? stack1.apply(depth0) : stack1; }
+  if (!helpers.local) { stack1 = blockHelperMissing.call(depth0, stack1, options); }
+  if(stack1 || stack1 === 0) { buffer += stack1; }
+  buffer += "...</button>\n        </div>\n\n    </div>"
     + "\n\n    "
     + "\n    <div class=\"datasets-list\"></div>\n\n    <div class=\"empty-history-message infomessagesmall\">\n        ";
-  options = {hash:{},inverse:self.noop,fn:self.program(11, program11, data),data:data};
+  options = {hash:{},inverse:self.noop,fn:self.program(17, program17, data),data:data};
   if (stack1 = helpers.local) { stack1 = stack1.call(depth0, options); }
   else { stack1 = depth0.local; stack1 = typeof stack1 === functionType ? stack1.apply(depth0) : stack1; }
   if (!helpers.local) { stack1 = blockHelperMissing.call(depth0, stack1, options); }

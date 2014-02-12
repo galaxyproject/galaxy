@@ -152,11 +152,14 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
 
         /** filters for displaying hdas */
         this.filters = [];
+        /** selected hda ids */
+        this.selectedHdaIds = [];
 
         // states/modes the panel can be in
         /** is the panel currently showing the dataset selection controls? */
         this.selecting = attributes.selecting || false;
         this.annotationEditorShown  = attributes.annotationEditorShown || false;
+        this.tagsEditorShown  = attributes.tagsEditorShown || false;
 
         this._setUpListeners();
 
@@ -184,11 +187,11 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
 
         this.on( 'loading-history', function(){
             // show the loading indicator when loading a new history starts...
-            this.showLoadingIndicator( 'loading history...' );
+            this.showLoadingIndicator( 'loading history...', 40 );
         });
         this.on( 'loading-done', function(){
             // ...hiding it again when loading is done (or there's been an error)
-            this.hideLoadingIndicator();
+            this.hideLoadingIndicator( 40 );
         });
 
         // throw the first render up as a diff namespace using once
@@ -408,6 +411,7 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         this.model = new historyModel.History( newHistoryJSON, newHdaJSON, attributes );
         this._setUpWebStorage( attributes.initiallyExpanded, attributes.show_deleted, attributes.show_hidden );
         this._setUpModelEventHandlers();
+        this.selectedHdaIds = [];
         this.trigger( 'new-model', this );
         this.render();
         return this;
@@ -596,8 +600,8 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
             }
         }
         // search and select available to both anon/logged-in users
-        //$newRender.find( '.history-secondary-actions' ).prepend( this._renderSelectButton() );
-        //$newRender.find( '.history-dataset-actions' ).toggle( this.selecting );
+        $newRender.find( '.history-secondary-actions' ).prepend( this._renderSelectButton() );
+        $newRender.find( '.history-dataset-actions' ).toggle( this.selecting );
         $newRender.find( '.history-secondary-actions' ).prepend( this._renderSearchButton() );
 
         this._setUpBehaviours( $newRender );
@@ -687,8 +691,15 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         $where.find( '[title]' ).tooltip({ placement: 'bottom' });
 
         // anon users shouldn't have access to any of the following
-        if( ( !this.model )
-        ||  ( !Galaxy.currUser || Galaxy.currUser.isAnonymous() )
+        if( !this.model ){
+            return;
+        }
+
+        // set up the pupup for actions available when multi selecting
+        this._setUpDatasetActionsPopup( $where );
+
+        // anon users shouldn't have access to any of the following
+        if( ( !Galaxy.currUser || Galaxy.currUser.isAnonymous() )
         ||  ( Galaxy.currUser.id !== this.model.get( 'user_id' ) ) ){
             return;
         }
@@ -710,7 +721,6 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
                     }
                 }
             });
-        this._setUpDatasetActionsPopup( $where );
     },
 
     _setUpDatasetActionsPopup : function( $where ){
@@ -785,8 +795,10 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
             },
             function createAndPrepend( next ){
                 panel.scrollToTop();
-                var $whereTo = panel.$el.find( panel.datasetsSelector );
-                panel.createHdaView( hda ).$el.hide().prependTo( $whereTo ).slideDown( panel.fxSpeed );
+                var $whereTo = panel.$el.find( panel.datasetsSelector ),
+                    hdaView = panel.createHdaView( hda );
+                panel.hdaViews[ hda.id ] = hdaView;
+                hdaView.render().$el.hide().prependTo( $whereTo ).slideDown( panel.fxSpeed );
             }
         ]);
     },
@@ -796,21 +808,19 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
      */
     createHdaView : function( hda ){
         var hdaId = hda.get( 'id' ),
-            expanded = this.storage.get( 'expandedHdas' )[ hdaId ],
             hdaView = new this.HDAViewClass({
-                    model           : hda,
-                    linkTarget      : this.linkTarget,
-                    expanded        : expanded,
-                    //draggable       : true,
-                    tagsEditorShown       : this.preferences.get( 'tagsEditorShown' ),
-                    annotationEditorShown : this.preferences.get( 'annotationEditorShown' ),
-                    selectable      : this.selecting,
-                    hasUser         : this.model.ownedByCurrUser(),
-                    logger          : this.logger
-                });
+                model           : hda,
+                linkTarget      : this.linkTarget,
+                expanded        : this.storage.get( 'expandedHdas' )[ hdaId ],
+                //draggable       : true,
+                selectable      : this.selecting,
+                hasUser         : this.model.ownedByCurrUser(),
+                logger          : this.logger,
+                tagsEditorShown       : this.preferences.get( 'tagsEditorShown' ),
+                annotationEditorShown : this.preferences.get( 'annotationEditorShown' )
+            });
         this._setUpHdaListeners( hdaView );
-        this.hdaViews[ hdaId ] = hdaView;
-        return hdaView.render();
+        return hdaView;
     },
 
     /** Set up HistoryPanel listeners for HDAView events. Currently binds:
@@ -825,6 +835,17 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         });
         hdaView.on( 'body-collapsed', function( id ){
             historyView.storage.removeExpandedHda( id );
+        });
+        // maintain a list of hdas that are selected
+        hdaView.on( 'selected', function( hdaView ){
+            var id = hdaView.model.get( 'id' );
+            historyView.selectedHdaIds = _.union( historyView.selectedHdaIds, [ id ] );
+            //console.debug( 'selected', historyView.selectedHdaIds );
+        });
+        hdaView.on( 'de-selected', function( hdaView ){
+            var id = hdaView.model.get( 'id' );
+            historyView.selectedHdaIds = _.without( historyView.selectedHdaIds, id );
+            //console.debug( 'de-selected', historyView.selectedHdaIds );
         });
 //TODO: remove?
         hdaView.on( 'error', function( model, xhr, options, msg ){
@@ -876,8 +897,8 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
      */
     renderHdas : function( $whereTo ){
         $whereTo = $whereTo || this.$el;
-        this.hdaViews = {};
         var historyView = this,
+            newHdaViews = {},
             $datasetsList = $whereTo.find( this.datasetsSelector ),
             // only render the shown hdas
             //TODO: switch to more general filtered pattern
@@ -892,7 +913,13 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         if( visibleHdas.length ){
             visibleHdas.each( function( hda ){
                 // render it (NOTE: reverse order, newest on top (prepend))
-                $datasetsList.prepend( historyView.createHdaView( hda ).$el );
+                var hdaId = hda.get( 'id' ),
+                    hdaView = historyView.createHdaView( hda );
+                newHdaViews[ hdaId ] = hdaView;
+                if( _.contains( historyView.selectedHdaIds, hdaId ) ){
+                    hdaView.selected = true;
+                }
+                $datasetsList.prepend( hdaView.render().$el );
             });
             $whereTo.find( this.emptyMsgSelector ).hide();
             
@@ -900,6 +927,7 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
             //console.debug( 'emptyMsg:', $whereTo.find( this.emptyMsgSelector ) )
             $whereTo.find( this.emptyMsgSelector ).show();
         }
+        this.hdaViews = newHdaViews;
         return this.hdaViews;
     },
 
@@ -932,7 +960,9 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
 
         'click .history-search-btn'     : 'toggleSearchControls',
         'click .history-select-btn'     : function( e ){ this.toggleSelectors( this.fxSpeed ); },
-        'click .history-select-all-datasets-btn' : 'selectAllDatasets'
+
+        'click .history-select-all-datasets-btn'    : 'selectAllDatasets',
+        'click .history-deselect-all-datasets-btn'  : 'deselectAllDatasets'
     },
 
     /** Update the history size display (curr. upper right of panel).
@@ -1070,6 +1100,7 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         _.each( this.hdaViews, function( view ){
             view.showSelector( speed );
         });
+        this.selectedHdaIds = [];
     },
 
     hideSelectors : function( speed ){
@@ -1078,6 +1109,7 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         _.each( this.hdaViews, function( view ){
             view.hideSelector( speed );
         });
+        this.selectedHdaIds = [];
     },
 
     toggleSelectors : function( speed ){
@@ -1089,22 +1121,15 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
     },
 
     selectAllDatasets : function( event ){
-        var $selectBtn = this.$el.find( '.history-select-all-datasets-btn' );
-            currMode = $selectBtn.data( 'mode' );
-        if( currMode === 'select' ){
-            _.each( this.hdaViews, function( view ){
-                view.select( event );
-            });
-            $selectBtn.data( 'mode', 'deselect' );
-            $selectBtn.text( _l( 'De-select all' ) );
+        _.each( this.hdaViews, function( view ){
+            view.select( event );
+        });
+    },
 
-        } else if( currMode === 'deselect' ){
-            _.each( this.hdaViews, function( view ){
-                view.deselect( event );
-            });
-            $selectBtn.data( 'mode', 'select' );
-            $selectBtn.text( _l( 'Select all' ) );
-        }
+    deselectAllDatasets : function( event ){
+        _.each( this.hdaViews, function( view ){
+            view.deselect( event );
+        });
     },
 
     getSelectedHdaViews : function(){

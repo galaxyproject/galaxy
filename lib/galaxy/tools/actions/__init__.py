@@ -1,11 +1,9 @@
 import os
-import galaxy.tools
 
 from galaxy.exceptions import ObjectInvalid
 from galaxy.model import LibraryDatasetDatasetAssociation
 from galaxy.tools.parameters import DataToolParameter
-from galaxy.tools.parameters import SelectToolParameter
-from galaxy.tools.parameters.grouping import Conditional, Repeat
+from galaxy.tools.parameters.wrapped import WrappedParameters
 from galaxy.util.json import from_json_string
 from galaxy.util.json import to_json_string
 from galaxy.util.none_like import NoneDataset
@@ -119,63 +117,6 @@ class DefaultToolAction( object ):
         submitting the job to the job queue. If history is not specified, use
         trans.history as destination for tool's output datasets.
         """
-        def make_dict_copy( from_dict ):
-            """
-            Makes a copy of input dictionary from_dict such that all values that are dictionaries
-            result in creation of a new dictionary ( a sort of deepcopy ).  We may need to handle
-            other complex types ( e.g., lists, etc ), but not sure...
-            Yes, we need to handle lists (and now are)...
-            """
-            copy_from_dict = {}
-            for key, value in from_dict.items():
-                if type( value ).__name__ == 'dict':
-                    copy_from_dict[ key ] = make_dict_copy( value )
-                elif isinstance( value, list ):
-                    copy_from_dict[ key ] = make_list_copy( value )
-                else:
-                    copy_from_dict[ key ] = value
-            return copy_from_dict
-
-        def make_list_copy( from_list ):
-            new_list = []
-            for value in from_list:
-                if isinstance( value, dict ):
-                    new_list.append( make_dict_copy( value ) )
-                elif isinstance( value, list ):
-                    new_list.append( make_list_copy( value ) )
-                else:
-                    new_list.append( value )
-            return new_list
-
-        def wrap_values( inputs, input_values, skip_missing_values=False ):
-            # Wrap tool inputs as necessary
-            for input in inputs.itervalues():
-                if input.name not in input_values and skip_missing_values:
-                    continue
-                if isinstance( input, Repeat ):
-                    for d in input_values[ input.name ]:
-                        wrap_values( input.inputs, d, skip_missing_values=skip_missing_values )
-                elif isinstance( input, Conditional ):
-                    values = input_values[ input.name ]
-                    current = values[ "__current_case__" ]
-                    wrap_values( input.cases[current].inputs, values, skip_missing_values=skip_missing_values )
-                elif isinstance( input, DataToolParameter ) and input.multiple:
-                    input_values[ input.name ] = \
-                        galaxy.tools.DatasetListWrapper( input_values[ input.name ],
-                                                         datatypes_registry=trans.app.datatypes_registry,
-                                                         tool=tool,
-                                                         name=input.name )
-                elif isinstance( input, DataToolParameter ):
-                    input_values[ input.name ] = \
-                        galaxy.tools.DatasetFilenameWrapper( input_values[ input.name ],
-                                                             datatypes_registry=trans.app.datatypes_registry,
-                                                             tool=tool,
-                                                             name=input.name )
-                elif isinstance( input, SelectToolParameter ):
-                    input_values[ input.name ] = galaxy.tools.SelectToolParameterWrapper( input, input_values[ input.name ], tool.app, other_values=incoming )
-                else:
-                    input_values[ input.name ] = galaxy.tools.InputValueWrapper( input, input_values[ input.name ], incoming )
-
         # Set history.
         if not history:
             history = tool.get_default_history_by_trans( trans, create=True )
@@ -232,11 +173,11 @@ class DefaultToolAction( object ):
                 elif 'len' in custom_build_dict:
                     # Build is defined by len file, so use it.
                     chrom_info = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( custom_build_dict[ 'len' ] ).file_name
-                    
+
             if not chrom_info:
                 # Default to built-in build.
                 chrom_info = os.path.join( trans.app.config.len_file_path, "%s.len" % input_dbkey )
-            incoming[ "chromInfo" ] = chrom_info
+            incoming[ "chromInfo" ] = os.path.abspath( chrom_info )
         inp_data.update( db_datasets )
 
         # Determine output dataset permission/roles list
@@ -246,20 +187,14 @@ class DefaultToolAction( object ):
         else:
             # No valid inputs, we will use history defaults
             output_permissions = trans.app.security_agent.history_get_default_permissions( history )
+
         # Build name for output datasets based on tool name and input names
-        if len( input_names ) == 1:
-            on_text = input_names[0]
-        elif len( input_names ) == 2:
-            on_text = '%s and %s' % tuple(input_names[0:2])
-        elif len( input_names ) == 3:
-            on_text = '%s, %s, and %s' % tuple(input_names[0:3])
-        elif len( input_names ) > 3:
-            on_text = '%s, %s, and others' % tuple(input_names[0:2])
-        else:
-            on_text = ""
+        on_text = on_text_for_names( input_names )
+
         # Add the dbkey to the incoming parameters
         incoming[ "dbkey" ] = input_dbkey
-        params = None  # wrapped params are used by change_format action and by output.label; only perform this wrapping once, as needed
+        # wrapped params are used by change_format action and by output.label; only perform this wrapping once, as needed
+        wrapped_params = WrappedParameters( trans, tool, incoming )
         # Keep track of parent / child relationships, we'll create all the
         # datasets first, then create the associations
         parent_to_child_pairs = []
@@ -300,9 +235,6 @@ class DefaultToolAction( object ):
 
                     #process change_format tags
                     if output.change_format:
-                        if params is None:
-                            params = make_dict_copy( incoming )
-                            wrap_values( tool.inputs, params, skip_missing_values=not tool.check_values )
                         for change_elem in output.change_format:
                             for when_elem in change_elem.findall( 'when' ):
                                 check = when_elem.get( 'input', None )
@@ -311,7 +243,7 @@ class DefaultToolAction( object ):
                                         if '$' not in check:
                                             #allow a simple name or more complex specifications
                                             check = '${%s}' % check
-                                        if str( fill_template( check, context=params ) ) == when_elem.get( 'value', None ):
+                                        if str( fill_template( check, context=wrapped_params.params ) ) == when_elem.get( 'value', None ):
                                             ext = when_elem.get( 'format', ext )
                                     except:  # bad tag input value; possibly referencing a param within a different conditional when block or other nonexistent grouping construct
                                         continue
@@ -352,23 +284,7 @@ class DefaultToolAction( object ):
                 data.state = data.states.QUEUED
                 data.blurb = "queued"
                 # Set output label
-                if output.label:
-                    if params is None:
-                        params = make_dict_copy( incoming )
-                        # wrapping the params allows the tool config to contain things like
-                        # <outputs>
-                        #     <data format="input" name="output" label="Blat on ${<input_param>.name}" />
-                        # </outputs>
-                        wrap_values( tool.inputs, params, skip_missing_values=not tool.check_values )
-                    #tool (only needing to be set once) and on_string (set differently for each label) are overwritten for each output dataset label being determined
-                    params['tool'] = tool
-                    params['on_string'] = on_text
-                    data.name = fill_template( output.label, context=params )
-                else:
-                    if params is None:
-                        params = make_dict_copy( incoming )
-                        wrap_values( tool.inputs, params, skip_missing_values=not tool.check_values )
-                    data.name = self._get_default_data_name( data, tool, on_text=on_text, trans=trans, incoming=incoming, history=history, params=params, job_params=job_params )
+                data.name = self.get_output_name( output, data, tool, on_text, trans, incoming, history, wrapped_params.params, job_params )
                 # Store output
                 out_data[ name ] = data
                 if output.actions:
@@ -489,8 +405,31 @@ class DefaultToolAction( object ):
             trans.log_event( "Added job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id )
             return job, out_data
 
+    def get_output_name( self, output, dataset, tool, on_text, trans, incoming, history, params, job_params ):
+        if output.label:
+            params['tool'] = tool
+            params['on_string'] = on_text
+            return fill_template( output.label, context=params )
+        else:
+            return self._get_default_data_name( dataset, tool, on_text=on_text, trans=trans, incoming=incoming, history=history, params=params, job_params=job_params )
+
     def _get_default_data_name( self, dataset, tool, on_text=None, trans=None, incoming=None, history=None, params=None, job_params=None, **kwd ):
         name = tool.name
         if on_text:
             name += ( " on " + on_text )
         return name
+
+
+def on_text_for_names( input_names ):
+    # Build name for output datasets based on tool name and input names
+    if len( input_names ) == 1:
+        on_text = input_names[0]
+    elif len( input_names ) == 2:
+        on_text = '%s and %s' % tuple(input_names[0:2])
+    elif len( input_names ) == 3:
+        on_text = '%s, %s, and %s' % tuple(input_names[0:3])
+    elif len( input_names ) > 3:
+        on_text = '%s, %s, and others' % tuple(input_names[0:2])
+    else:
+        on_text = ""
+    return on_text

@@ -1,6 +1,7 @@
 import os
 from StringIO import StringIO
 from galaxy.tools.parameters import grouping
+from galaxy.util import listify
 from galaxy.util.odict import odict
 import galaxy.model
 from galaxy.model.orm import and_, desc
@@ -440,7 +441,16 @@ except ImportError:
         argsep = '&'
         if '?' not in url:
             argsep = '?'
-        url = url + argsep + '&'.join( [ '%s=%s' % (k, v) for k, v in params.iteritems() ] )
+        param_pairs = []
+        for key, value in params.iteritems():
+            # Handle single parameters or lists and tuples of them.
+            if isinstance( value, tuple ):
+                value = list( value )
+            elif not isinstance( value, list ):
+                value = [ value ]
+            for val in value:
+                param_pairs.append( "%s=%s" % ( key, val ) )
+        url = url + argsep + '&'.join( param_pairs )
         #req = urllib2.Request( url, headers = { 'Content-Type': 'application/json' } )
         try:
             response = urllib2.urlopen( url )

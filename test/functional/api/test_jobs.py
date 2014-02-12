@@ -82,8 +82,33 @@ class JobsApiTestCase( api.ApiTestCase, TestsDatasets ):
         self.__run_cat_tool( history_id, dataset_id )
         self._wait_for_history( history_id, assert_ok=True )
 
+        self.__assert_one_search_result( search_payload )
+
+    def test_search_param( self ):
+        history_id, dataset_id = self.__history_with_ok_dataset()
+
+        inputs = json.dumps(
+            dict(
+                input=dict(
+                    src='hda',
+                    id=dataset_id,
+                ),
+                num_lines=1,
+            )
+        )
+        search_payload = dict(
+            tool_id="random_lines1",
+            inputs=inputs,
+            state="ok",
+        )
+
+        self.__run_randomlines_tool( 1, history_id, dataset_id )
+        self._wait_for_history( history_id, assert_ok=True )
+        self.__assert_one_search_result( search_payload )
+
+    def __assert_one_search_result( self, search_payload ):
         search_response = self._post( "jobs/search", data=search_payload )
-        self._assert_status_code_is( empty_search_response, 200 )
+        self._assert_status_code_is( search_response, 200 )
         assert len( search_response.json() ) == 1, search_response.json()
 
     def __run_cat_tool( self, history_id, dataset_id ):
@@ -94,6 +119,20 @@ class JobsApiTestCase( api.ApiTestCase, TestsDatasets ):
                 input1=dict(
                     src='hda',
                     id=dataset_id
+                ),
+            ),
+            history_id=history_id,
+        )
+        self._post( "tools", data=payload )
+
+    def __run_randomlines_tool( self, lines, history_id, dataset_id ):
+        payload = self._run_tool_payload(
+            tool_id="random_lines1",
+            inputs=dict(
+                num_lines=lines,
+                input=dict(
+                    src='hda',
+                    id=dataset_id,
                 ),
             ),
             history_id=history_id,

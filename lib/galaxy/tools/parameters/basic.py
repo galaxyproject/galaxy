@@ -631,6 +631,9 @@ class BaseURLToolParameter( ToolParameter ):
         return None
 
 
+DEFAULT_VALUE_MAP = lambda x: x
+
+
 class SelectToolParameter( ToolParameter ):
     """
     Parameter that takes on one (or many) or a specific set of values.
@@ -827,7 +830,7 @@ class SelectToolParameter( ToolParameter ):
         else:
             return str( value )
 
-    def to_param_dict_string( self, value, other_values={} ):
+    def to_param_dict_string( self, value, other_values={}, value_map=DEFAULT_VALUE_MAP ):
         if value is None:
             return "None"
         if isinstance( value, list ):
@@ -842,7 +845,9 @@ class SelectToolParameter( ToolParameter ):
             else:
                 value = sanitize_param( value )
         if isinstance( value, list ):
-            value = self.separator.join( value )
+            value = self.separator.join( map( value_map, value ) )
+        else:
+            value = value_map( value )
         return value
 
     def value_to_basic( self, value, app ):
@@ -1425,7 +1430,7 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
             rval.append( val )
         return rval
 
-    def to_param_dict_string( self, value, other_values={} ):
+    def to_param_dict_string( self, value, other_values={}, value_map=DEFAULT_VALUE_MAP ):
         def get_options_list( value ):
             def get_base_option( value, options ):
                 for option in options:
@@ -1456,7 +1461,7 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
         if len( rval ) > 1:
             if not( self.repeat ):
                 assert self.multiple, "Multiple values provided but parameter is not expecting multiple values"
-        rval = self.separator.join( rval )
+        rval = self.separator.join( map( value_map, rval ) )
         if self.tool is None or self.tool.options.sanitize:
             if self.sanitizer:
                 rval = self.sanitizer.sanitize_param( rval )

@@ -46,19 +46,8 @@
         <data name="out_file1" format="txt" />
     </outputs>
     <tests>
-        <test>
-            <param name="p1|use" value="True"/>
-            <param name="p2|use" value="False"/>
-            <param name="p3|use" value="True"/>
-            <param name="p4|use" value="True" />
-            <param name="p4|file" value="simple_line.txt" />
-            <output name="out_file1">
-                <assert_contents>
-                    <has_line line="4 7 4" />
-                    <has_line line="This is a line of text." />
-                </assert_contents>
-            </output>
-        </test>
+        <!-- Can use nested conditional blocks as shown below to disambiguate
+             various nested parameters. -->
         <test>
             <conditional name="p1">
                 <param name="use" value="False"/>
@@ -80,6 +69,24 @@
                 <assert_contents>
                     <has_line line="7 4 7" />
                     <has_line line="This is a different line of text." />
+                </assert_contents>
+            </output>
+        </test>
+        <!-- Can also use a more concise, flat verison of this, but it the
+             above version is more clear and should be considered preferable.
+        -->
+        <test>
+            <param name="p1|use" value="True"/>
+            <param name="p2|use" value="False"/>
+            <param name="p3|use" value="True"/>
+            <param name="p4|use" value="True" />
+            <!-- Only need to specify enough of a suffix to disambiguate,
+                 but don't do this - it is too clever. -->
+            <param name="p4|file" value="simple_line.txt" />
+            <output name="out_file1">
+                <assert_contents>
+                    <has_line line="4 7 4" />
+                    <has_line line="This is a line of text." />
                 </assert_contents>
             </output>
         </test>

@@ -129,16 +129,12 @@ def install_and_test_repositories( app, galaxy_shed_tools_dict, galaxy_shed_tool
                     ( changeset_revision, name, owner )
                 tool_test_results_dict[ 'not_tested' ] = dict( reason=reason )
                 params = dict( do_not_test=False )
-                response_dict = \
-                    install_and_test_base_util.save_test_results_for_changeset_revision( install_and_test_base_util.galaxy_tool_shed_url,
-                                                                                         tool_test_results_dicts,
-                                                                                         tool_test_results_dict,
-                                                                                         repository_dict,
-                                                                                         params,
-                                                                                         can_update_tool_shed )
-                print 'Result of inserting tool_test_results for revision %s of repository %s owned by %s:\n%s' % \
-                    ( changeset_revision, name, owner, str( response_dict ) )
-                print '============================================================='
+                install_and_test_base_util.save_test_results_for_changeset_revision( install_and_test_base_util.galaxy_tool_shed_url,
+                                                                                     tool_test_results_dicts,
+                                                                                     tool_test_results_dict,
+                                                                                     repository_dict,
+                                                                                     params,
+                                                                                     can_update_tool_shed )
             else:
                 # See if the repository was installed in a previous test.
                 repository = install_and_test_base_util.get_repository( name, owner, changeset_revision )
@@ -157,16 +153,12 @@ def install_and_test_repositories( app, galaxy_shed_tools_dict, galaxy_shed_tool
                         tool_test_results_dict[ 'installation_errors' ][ 'current_repository' ] = error_message
                         params = dict( test_install_error=True,
                                        do_not_test=False )
-                        response_dict = \
-                            install_and_test_base_util.save_test_results_for_changeset_revision( install_and_test_base_util.galaxy_tool_shed_url,
-                                                                                                 tool_test_results_dicts,
-                                                                                                 tool_test_results_dict,
-                                                                                                 repository_dict,
-                                                                                                 params,
-                                                                                                 can_update_tool_shed )
-                        print 'Result of inserting tool_test_results for revision %s of repository %s owned by %s:\n%s' % \
-                            ( changeset_revision, name, owner, str( response_dict ) )
-                        print '============================================================='
+                        install_and_test_base_util.save_test_results_for_changeset_revision( install_and_test_base_util.galaxy_tool_shed_url,
+                                                                                             tool_test_results_dicts,
+                                                                                             tool_test_results_dict,
+                                                                                             repository_dict,
+                                                                                             params,
+                                                                                             can_update_tool_shed )
                     else:
                         # The repository was successfully installed.
                         print 'Installation succeeded for revision %s of repository %s owned by %s.' % \
@@ -179,16 +171,12 @@ def install_and_test_repositories( app, galaxy_shed_tools_dict, galaxy_shed_tool
                                                                                                repository_identifier_tup,
                                                                                                install_and_test_statistics_dict,
                                                                                                tool_test_results_dict )
-                        response_dict = \
-                            install_and_test_base_util.save_test_results_for_changeset_revision( install_and_test_base_util.galaxy_tool_shed_url,
-                                                                                                 tool_test_results_dicts,
-                                                                                                 tool_test_results_dict,
-                                                                                                 repository_dict,
-                                                                                                 params,
-                                                                                                 can_update_tool_shed )
-                        print 'Result of inserting tool_test_results for revision %s of repository %s owned by %s:\n%s' % \
-                            ( changeset_revision, name, owner, str( response_dict ) )
-                        print '============================================================='
+                        install_and_test_base_util.save_test_results_for_changeset_revision( install_and_test_base_util.galaxy_tool_shed_url,
+                                                                                             tool_test_results_dicts,
+                                                                                             tool_test_results_dict,
+                                                                                             repository_dict,
+                                                                                             params,
+                                                                                             can_update_tool_shed )
                         # Populate the installation containers (success or error) for the repository's immediate repository
                         # dependencies whose containers are not yet populated.
                         install_and_test_base_util.populate_install_containers_for_repository_dependencies( app,

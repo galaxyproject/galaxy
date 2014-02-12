@@ -46,8 +46,9 @@ function scatterplot( renderTo, config, data ){
     var zoom = d3.behavior.zoom()
         .x( interpolaterFns.x )
         .y( interpolaterFns.y )
-        .scaleExtent([ 1, 10 ]);
-//TODO: you can prog. set the zoom and pan with zoom.scale( val ) and zoom.translate([ x, y ])...
+        .scaleExtent([ 1, 30 ])
+        .scale( config.scale || 1 )
+        .translate( config.translate || [ 0, 0 ] );
 
     //console.debug( renderTo );
     var svg = d3.select( renderTo )
@@ -99,7 +100,7 @@ function scatterplot( renderTo, config, data ){
     //console.log( 'axis.y.g:', axis.y.g );
 
     // ................................ axis labels
-    var padding = 4;
+    var padding = 6;
     // x-axis label
     axis.x.label = svg.append( 'text' )
         .attr( 'class', 'axis-label' )
@@ -176,18 +177,17 @@ function scatterplot( renderTo, config, data ){
         .enter().append( 'svg:circle' )
             .classed( "glyph", true )
             .attr( "cx", function( d, i ){ return interpolaterFns.x( getX( d, i ) ); })
-            // give them a 'entry' position and style
-            .attr( "cy", config.height )
+            .attr( "cy", function( d, i ){ return interpolaterFns.y( getY( d, i ) ); })
             .attr( "r",  0 );
 
     // for all EXISTING glyphs and those that need to be added: transition anim to final state
     datapoints.transition().duration( config.animDuration )
-        .attr( "cy", function( d, i ){ return interpolaterFns.y( getY( d, i ) ); })
         .attr( "r", config.datapointSize );
     //console.log( 'datapoints:', datapoints );
 
     function _redrawDatapointsClipped(){
         return datapoints
+            //TODO: interpolates twice
             .attr( "cx", function( d, i ){ return interpolaterFns.x( getX( d, i ) ); })
             .attr( "cy", function( d, i ){ return interpolaterFns.y( getY( d, i ) ); })
             .style( 'display', 'block' )
@@ -200,21 +200,26 @@ function scatterplot( renderTo, config, data ){
                 return false;
             }).style( 'display', 'none' );
     }
+    _redrawDatapointsClipped();
 
     // .................................................................... behaviors
     function zoomed( scale, translateX, translateY ){
-        //console.debug( 'zoom', this, scale, translateX, translateY, arguments );
+        //console.debug( 'zoom', this, zoom.scale(), zoom.translate() );
+
         // re-render axis, grid, and datapoints
+        $( '.chart-info-box' ).remove();
         axis.redraw();
         _redrawDatapointsClipped();
         grid = renderGrid();
-        $( '.chart-info-box' ).remove();
-        $( svg.node() ).trigger( 'zoom.scatterplot', [] );
+
+        $( svg.node() ).trigger( 'zoom.scatterplot', {
+            scale       : zoom.scale(),
+            translate   : zoom.translate()
+        });
     }
     //TODO: programmatically set zoom/pan and save in config
     //TODO: set pan/zoom limits
     zoom.on( "zoom", zoomed );
-
 
     function infoBox( top, left, d ){
         // create an abs pos. element containing datapoint data (d) near the point (top, left)
@@ -222,7 +227,7 @@ function scatterplot( renderTo, config, data ){
         left += 8;
         return $([
             '<div class="chart-info-box" style="position: absolute">',
-                (( config.idColumn )?( '<div>' + d[ config.idColumn ] + '</div>' ):( '' )),
+                (( config.idColumn !== undefined )?( '<div>' + d[ config.idColumn ] + '</div>' ):( '' )),
                 '<div>', getX( d ), '</div>',
                 '<div>', getY( d ), '</div>',
             '</div>'

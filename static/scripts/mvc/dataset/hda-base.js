@@ -45,12 +45,16 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
         
         /** is the view currently in selection mode? */
         this.selectable = attributes.selectable || false;
+        //this.log( '\t selectable:', this.selectable );
         /** is the view currently selected? */
         this.selected   = attributes.selected || false;
+        //this.log( '\t selected:', this.selected );
         /** is the body of this hda view expanded/not? */
         this.expanded   = attributes.expanded || false;
+        //this.log( '\t expanded:', this.expanded );
         /** is the body of this hda view expanded/not? */
         this.draggable  = attributes.draggable || false;
+        //this.log( '\t draggable:', this.draggable );
         
         this._setUpListeners();
     },
@@ -412,12 +416,13 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
         // expand the body when the title is clicked or when in focus and space or enter is pressed
         'click .dataset-title-bar'      : 'toggleBodyVisibility',
         'keydown .dataset-title-bar'    : 'toggleBodyVisibility',
-        // toggle selected state
-        'click .dataset-selector'       : 'toggleSelect',
 
         // dragging - don't work, originalEvent === null
         //'dragstart .dataset-title-bar'  : 'dragStartHandler',
         //'dragend .dataset-title-bar'    : 'dragEndHandler'
+
+        // toggle selected state
+        'click .dataset-selector'       : 'toggleSelect'
     },
 
     /** Show or hide the body/details of an HDA.
@@ -489,8 +494,6 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
      *      Note: this also hides the primary actions
      */
     showSelector : function( speed ){
-        // if already shown, do nothing
-        if( this.$el.find( '.dataset-selector' ).css( 'display' ) !== 'none' ){ return; }
         speed = ( speed !== undefined )?( speed ):( this.fxSpeed );
 
         // make sure selected state is represented properly

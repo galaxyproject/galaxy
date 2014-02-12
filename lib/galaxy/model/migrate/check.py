@@ -44,6 +44,7 @@ def create_or_verify_database( url, galaxy_config_file, engine_options={}, app=N
         # Let this go, it could possibly work with db's we don't support
         log.error( "database_connection contains an unknown SQLAlchemy database dialect: %s" % dialect )
     # Create engine and metadata
+    print url, engine_options
     engine = create_engine( url, **engine_options )
 
     def migrate():

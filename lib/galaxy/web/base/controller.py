@@ -562,6 +562,49 @@ class UsesHistoryMixin( SharableItemSecurityMixin ):
         return changed
 
 
+class ExportsHistoryMixin:
+
+    def serve_ready_history_export( self, trans, jeha ):
+        assert jeha.ready
+        if jeha.compressed:
+            trans.response.set_content_type( 'application/x-gzip' )
+        else:
+            trans.response.set_content_type( 'application/x-tar' )
+        disposition = 'attachment; filename="%s"' % jeha.export_name
+        trans.response.headers["Content-Disposition"] = disposition
+        return open( trans.app.object_store.get_filename( jeha.dataset ) )
+
+    def queue_history_export( self, trans, history, gzip=True, include_hidden=False, include_deleted=False ):
+        # Convert options to booleans.
+        #
+        if isinstance( gzip, basestring ):
+            gzip = ( gzip in [ 'True', 'true', 'T', 't' ] )
+        if isinstance( include_hidden, basestring ):
+            include_hidden = ( include_hidden in [ 'True', 'true', 'T', 't' ] )
+        if isinstance( include_deleted, basestring ):
+            include_deleted = ( include_deleted in [ 'True', 'true', 'T', 't' ] )
+
+        # Run job to do export.
+        history_exp_tool = trans.app.toolbox.get_tool( '__EXPORT_HISTORY__' )
+        params = {
+            'history_to_export': history,
+            'compress': gzip,
+            'include_hidden': include_hidden,
+            'include_deleted': include_deleted
+        }
+
+        history_exp_tool.execute( trans, incoming=params, history=history, set_output_hid=True )
+
+
+class ImportsHistoryMixin:
+
+    def queue_history_import( self, trans, archive_type, archive_source ):
+        # Run job to do import.
+        history_imp_tool = trans.app.toolbox.get_tool( '__IMPORT_HISTORY__' )
+        incoming = { '__ARCHIVE_SOURCE__' : archive_source, '__ARCHIVE_TYPE__' : archive_type }
+        history_imp_tool.execute( trans, incoming=incoming )
+
+
 class UsesHistoryDatasetAssociationMixin:
     """
     Mixin for controllers that use HistoryDatasetAssociation objects.
@@ -616,11 +659,12 @@ class UsesHistoryDatasetAssociationMixin:
                                check_ownership=False, check_accessible=False )
 
         if check_accessible:
-            if not trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), hda.dataset ):
+            if( not trans.user_is_admin()
+            and not trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), hda.dataset ) ):
                 error( "You are not allowed to access this dataset" )
 
-                if check_state and hda.state == trans.model.Dataset.states.UPLOAD:
-                    error( "Please wait until this dataset finishes uploading before attempting to view it." )
+            if check_state and hda.state == trans.model.Dataset.states.UPLOAD:
+                error( "Please wait until this dataset finishes uploading before attempting to view it." )
         return hda
 
     def get_history_dataset_association_from_ids( self, trans, id, history_id ):
@@ -645,8 +689,6 @@ class UsesHistoryDatasetAssociationMixin:
             hda = self.get_history_dataset_association( trans, history, id,
                 check_ownership=True, check_accessible=True )
         return hda
-
-
 
     def get_hda_list( self, trans, hda_ids, check_ownership=True, check_accessible=False, check_state=True ):
         """
@@ -2600,13 +2642,7 @@ class SharableMixin:
                 item_name = item.name
             elif hasattr( item, 'title' ):
                 item_name = item.title
-            # Replace whitespace with '-'
-            slug_base = re.sub( "\s+", "-", item_name.lower() )
-            # Remove all non-alphanumeric characters.
-            slug_base = re.sub( "[^a-zA-Z0-9\-]", "", slug_base )
-            # Remove trailing '-'.
-            if slug_base.endswith('-'):
-                slug_base = slug_base[:-1]
+            slug_base = util.ready_name_for_url( item_name.lower() )
         else:
             slug_base = cur_slug
 

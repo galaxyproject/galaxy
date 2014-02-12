@@ -86,6 +86,12 @@ var GalaxyModal = Backbone.View.extend(
         this.$buttons.find('#' + button_id).hide();
     },
     
+    // get button
+    getButton: function(name) {
+        var button_id = this.buttonList[name];
+        return this.$buttons.find('#' + button_id);
+    },
+    
     // returns scroll top for body element
     scrollTop: function() {
         return this.$body.scrollTop();
@@ -175,7 +181,7 @@ var GalaxyModal = Backbone.View.extend(
                                 '<button type="button" class="close" style="display: none;">&times;</button>' +
                                 '<h4 class="title">' + title + '</h4>' +
                                 '</div>' +
-                            '<div class="modal-body"></div>' +
+                            '<div class="modal-body" style="position: static;"></div>' +
                             '<div class="modal-footer">' +
                                 '<div class="buttons" style="float: right;"></div>' +
                             '</div>' +

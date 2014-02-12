@@ -127,6 +127,7 @@ def app_factory( global_conf, **kwargs ):
     webapp.mapper.resource( 'form', 'forms', path_prefix='/api' )
     webapp.mapper.resource( 'request_type', 'request_types', path_prefix='/api' )
     webapp.mapper.resource( 'role', 'roles', path_prefix='/api' )
+    webapp.mapper.resource( 'ftp_file', 'ftp_files', path_prefix='/api' )
     webapp.mapper.resource( 'group', 'groups', path_prefix='/api' )
     webapp.mapper.resource_with_deleted( 'quota', 'quotas', path_prefix='/api' )
     webapp.mapper.connect( '/api/tools/{id:.+?}', action='show', controller="tools" )
@@ -153,6 +154,11 @@ def app_factory( global_conf, **kwargs ):
     # add as a non-ATOM API call to support the notion of a 'current/working' history unique to the history resource
     webapp.mapper.connect( "set_as_current", "/api/histories/{id}/set_as_current",
         controller="histories", action="set_as_current", conditions=dict( method=["POST"] ) )
+
+    webapp.mapper.connect( "history_archive_export", "/api/histories/{id}/exports",
+        controller="histories", action="archive_export", conditions=dict( method=[ "PUT" ] ) )
+    webapp.mapper.connect( "history_archive_download", "/api/histories/{id}/exports/{jeha_id}",
+        controller="histories", action="archive_download", conditions=dict( method=[ "GET" ] ) )
 
     webapp.mapper.connect( "create_api_key", "/api/users/:user_id/api_key",
         controller="users", action="api_key", user_id=None, conditions=dict( method=["POST"] ) )
