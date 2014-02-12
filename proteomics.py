@@ -6,6 +6,7 @@ import re
 import binascii
 
 from galaxy.datatypes.sniff import *
+from galaxy.datatypes import data
 from galaxy.datatypes.data import Text
 from galaxy.datatypes.xml import GenericXml
 from galaxy.datatypes.binary import Binary
