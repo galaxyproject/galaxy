@@ -2539,13 +2539,36 @@ class StoredWorkflowMenuEntry( object ):
         self.order_index = None
 
 
-class WorkflowInvocation( object ):
-    pass
+class WorkflowInvocation( object, Dictifiable ):
+    dict_collection_visible_keys = ( 'id', 'update_time', 'workflow_id' )
+    dict_element_visible_keys = ( 'id', 'update_time', 'workflow_id' )
+
+    def to_dict( self, view='collection', value_mapper = None ):
+        rval = super( WorkflowInvocation, self ).to_dict( view=view, value_mapper=value_mapper )
+        if view == 'element':
+            steps = []
+            for step in self.steps:
+                steps.append( step.to_dict() )
+            rval['steps'] = steps
+
+            #inputs = {}
+            #for step in self.steps:
+            #    if step.workflow_step.type =='data_input':
 
 
-class WorkflowInvocationStep( object ):
-    pass
+        return rval
 
+
+class WorkflowInvocationStep( object, Dictifiable ):
+    dict_collection_visible_keys = ( 'id', 'update_time', 'job_id', 'workflow_step_id' )
+    dict_element_visible_keys = ( 'id', 'update_time', 'job_id', 'workflow_step_id' )
+
+    def to_dict( self, view='collection', value_mapper = None ):
+        rval = super( WorkflowInvocationStep, self ).to_dict( view=view, value_mapper=value_mapper )
+        rval['order_index'] = self.workflow_step.order_index
+        #rval['type'] = self.workflow_step.type
+        #rval['tool_id'] = self.workflow_step.tool_id
+        return rval
 
 class MetadataFile( object ):
 

@@ -402,3 +402,41 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin):
         encoded_id = trans.security.encode_id(imported_workflow.id)
         item['url'] = url_for('workflow', id=encoded_id)
         return item
+
+    @expose_api
+    def workflow_usage(self, trans, workflow_id, **kwd):
+
+        try:
+            stored_workflow = trans.sa_session.query(self.app.model.StoredWorkflow).get(trans.security.decode_id(workflow_id))
+        except Exception, e:
+            return ("Workflow with ID='%s' can not be found\n Exception: %s") % (workflow_id, str( e ))
+        # check to see if user has permissions to selected workflow
+        if stored_workflow.user != trans.user and not trans.user_is_admin():
+            if trans.sa_session.query(trans.app.model.StoredWorkflowUserShareAssociation).filter_by(user=trans.user, stored_workflow=stored_workflow).count() == 0:
+                trans.response.status = 400
+                return("Workflow is not owned by or shared with current user")
+        results = trans.sa_session.query(self.app.model.WorkflowInvocation).filter(self.app.model.WorkflowInvocation.workflow_id==stored_workflow.id)
+        #results = trans.sa_session.query(self.app.model.WorkflowInvocation).filter(workflow=stored_workflow)
+        out = []
+        for r in results:
+            out.append( self.encode_all_ids( trans, r.to_dict(), True) )
+        return out
+
+    @expose_api
+    def workflow_usage_contents(self, trans, workflow_id, usage_id, **kwd):
+
+        try:
+            stored_workflow = trans.sa_session.query(self.app.model.StoredWorkflow).get(trans.security.decode_id(workflow_id))
+        except Exception, e:
+            return ("Workflow with ID='%s' can not be found\n Exception: %s") % (workflow_id, str( e ))
+        # check to see if user has permissions to selected workflow
+        if stored_workflow.user != trans.user and not trans.user_is_admin():
+            if trans.sa_session.query(trans.app.model.StoredWorkflowUserShareAssociation).filter_by(user=trans.user, stored_workflow=stored_workflow).count() == 0:
+                trans.response.status = 400
+                return("Workflow is not owned by or shared with current user")
+        results = trans.sa_session.query(self.app.model.WorkflowInvocation).filter(self.app.model.WorkflowInvocation.workflow_id==stored_workflow.id)
+        results = results.filter(self.app.model.WorkflowInvocation.id == trans.security.decode_id(usage_id))        
+        out = results.first()
+        if out is not None:
+            return self.encode_all_ids( trans, out.to_dict('element'), True)
+        return None

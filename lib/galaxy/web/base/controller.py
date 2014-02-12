@@ -176,6 +176,11 @@ class BaseController( object ):
             else:
                 if recursive and type(v) == dict:
                     rval[k] = self.encode_all_ids(trans, v, recursive)
+                if recursive and type(v) == list:
+                    o = []
+                    for i in v:
+                        o.append(self.encode_all_ids(trans,i,recursive))
+                    rval[k] = o
         return rval
 
     # incoming param validation
