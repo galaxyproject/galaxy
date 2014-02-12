@@ -2546,16 +2546,21 @@ class WorkflowInvocation( object, Dictifiable ):
     def to_dict( self, view='collection', value_mapper = None ):
         rval = super( WorkflowInvocation, self ).to_dict( view=view, value_mapper=value_mapper )
         if view == 'element':
-            steps = []
+            steps = {}
             for step in self.steps:
-                steps.append( step.to_dict() )
+                v = step.to_dict()
+                steps[str(v['order_index'])] = v
             rval['steps'] = steps
 
-            #inputs = {}
-            #for step in self.steps:
-            #    if step.workflow_step.type =='data_input':
-
-
+            inputs = {}
+            for step in self.steps:
+                if step.workflow_step.type =='tool':
+                    for step_input in step.workflow_step.input_connections:
+                        if step_input.output_step.type == 'data_input':
+                            for job_input in step.job.input_datasets:
+                                if job_input.name == step_input.input_name:
+                                    inputs[str(step_input.output_step.order_index)] = { "id" : job_input.dataset_id, "src" : "hda"}
+            rval['inputs'] = inputs
         return rval
 
 
@@ -2566,8 +2571,6 @@ class WorkflowInvocationStep( object, Dictifiable ):
     def to_dict( self, view='collection', value_mapper = None ):
         rval = super( WorkflowInvocationStep, self ).to_dict( view=view, value_mapper=value_mapper )
         rval['order_index'] = self.workflow_step.order_index
-        #rval['type'] = self.workflow_step.type
-        #rval['tool_id'] = self.workflow_step.tool_id
         return rval
 
 class MetadataFile( object ):
