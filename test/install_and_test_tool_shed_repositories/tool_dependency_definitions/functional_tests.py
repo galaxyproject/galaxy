@@ -33,7 +33,6 @@ import random
 import re
 import shutil
 import socket
-import string
 import tempfile
 import time
 import threading
@@ -43,8 +42,6 @@ import install_and_test_tool_shed_repositories.base.util as install_and_test_bas
 from base.tool_shed_util import parse_tool_panel_config
 
 from galaxy.app import UniverseApplication
-from galaxy.util.json import from_json_string
-from galaxy.util.json import to_json_string
 from galaxy.util import unicodify
 from galaxy.web import buildapp
 from functional_tests import generate_config_file
@@ -75,7 +72,7 @@ else:
 
 test_framework = install_and_test_base_util.TOOL_DEPENDENCY_DEFINITIONS
 
-def install_and_test_repositories( app, galaxy_shed_tools_dict, galaxy_shed_tool_conf_file ):
+def install_and_test_repositories( app, galaxy_shed_tools_dict_file, galaxy_shed_tool_conf_file, galaxy_shed_tool_path ):
     # Initialize a dictionary for the summary that will be printed to stdout.
     install_and_test_statistics_dict = install_and_test_base_util.initialize_install_and_test_statistics_dict()
     error_message = ''
@@ -234,12 +231,13 @@ def main():
                                                      os.path.join( galaxy_test_tmp_dir, 'test_migrated_tool_conf.xml' ) )
     galaxy_tool_sheds_conf_file = os.environ.get( 'GALAXY_INSTALL_TEST_TOOL_SHEDS_CONF',
                                                   os.path.join( galaxy_test_tmp_dir, 'test_tool_sheds_conf.xml' ) )
-    galaxy_shed_tools_dict = os.environ.get( 'GALAXY_INSTALL_TEST_SHED_TOOL_DICT_FILE',
-                                             os.path.join( galaxy_test_tmp_dir, 'shed_tool_dict' ) )
-    file( galaxy_shed_tools_dict, 'w' ).write( to_json_string( {} ) )
+    galaxy_shed_tools_dict_file = os.environ.get( 'GALAXY_INSTALL_TEST_SHED_TOOL_DICT_FILE',
+                                                       os.path.join( galaxy_test_tmp_dir, 'shed_tool_dict' ) )
+    install_and_test_base_util.populate_galaxy_shed_tools_dict_file( galaxy_shed_tools_dict_file,
+                                                                     shed_tools_dict=None )
     # Set the GALAXY_TOOL_SHED_TEST_FILE environment variable to the path of the shed_tools_dict file so that
     # test.base.twilltestcase.setUp will find and parse it properly.
-    os.environ[ 'GALAXY_TOOL_SHED_TEST_FILE' ] = galaxy_shed_tools_dict
+    os.environ[ 'GALAXY_TOOL_SHED_TEST_FILE' ] = galaxy_shed_tools_dict_file
     if 'GALAXY_INSTALL_TEST_TOOL_DATA_PATH' in os.environ:
         tool_data_path = os.environ.get( 'GALAXY_INSTALL_TEST_TOOL_DATA_PATH' )
     else:
@@ -285,13 +283,10 @@ def main():
     if 'GALAXY_INSTALL_TEST_TOOL_SHEDS_CONF' not in os.environ:
         file( galaxy_tool_sheds_conf_file, 'w' ).write( install_and_test_base_util.tool_sheds_conf_xml )
     # Generate the shed_tool_conf.xml file.
-    tool_conf_template_parser = string.Template( install_and_test_base_util.shed_tool_conf_xml_template )
-    shed_tool_conf_xml = tool_conf_template_parser.safe_substitute( shed_tool_path=galaxy_shed_tool_path )
-    file( galaxy_shed_tool_conf_file, 'w' ).write( shed_tool_conf_xml )
+    install_and_test_base_util.populate_shed_conf_file( galaxy_shed_tool_conf_file, galaxy_shed_tool_path, xml_elems=None )
     os.environ[ 'GALAXY_INSTALL_TEST_SHED_TOOL_CONF' ] = galaxy_shed_tool_conf_file
     # Generate the migrated_tool_conf.xml file.
-    migrated_tool_conf_xml = tool_conf_template_parser.safe_substitute( shed_tool_path=galaxy_migrated_tool_path )
-    file( galaxy_migrated_tool_conf_file, 'w' ).write( migrated_tool_conf_xml )
+    install_and_test_base_util.populate_shed_conf_file( galaxy_migrated_tool_conf_file, galaxy_migrated_tool_path, xml_elems=None )
     # Write the embedded web application's specific configuration to a temporary file. This is necessary in order for
     # the external metadata script to find the right datasets.
     kwargs = dict( admin_users = 'test@bx.psu.edu',
@@ -402,8 +397,9 @@ def main():
         print "# This run will not update the Tool Shed database."
     print "####################################################################################"
     install_and_test_statistics_dict, error_message = install_and_test_repositories( app,
-                                                                                     galaxy_shed_tools_dict,
-                                                                                     galaxy_shed_tool_conf_file )
+                                                                                     galaxy_shed_tools_dict_file,
+                                                                                     galaxy_shed_tool_conf_file,
+                                                                                     galaxy_shed_tool_path )
     try:
         install_and_test_base_util.print_install_and_test_results( 'tool dependency definitions',
                                                                    install_and_test_statistics_dict,
