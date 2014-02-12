@@ -2312,6 +2312,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                         revision_label = suc.get_revision_label( trans, repository, previous_changeset_revision, include_date=False )
                         metadata = repository_metadata.metadata
                         is_malicious = repository_metadata.malicious
+                        changeset_revision = previous_changeset_revision
             if repository_metadata:
                 skip_tool_test = repository_metadata.skip_tool_tests
                 if skip_tool_test:
@@ -2719,10 +2720,15 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                 status = "error"
         repository_type_select_field = rt_util.build_repository_type_select_field( trans, repository=repository )
         changeset_revision = repository.tip( trans.app )
+        metadata = metadata_util.get_repository_metadata_by_repository_id_changeset_revision( trans,
+                                                                                              id,
+                                                                                              changeset_revision,
+                                                                                              metadata_only=True )
         return trans.fill_template( '/webapps/tool_shed/repository/browse_repository.mako',
                                     repo=repo,
                                     repository=repository,
                                     changeset_revision=changeset_revision,
+                                    metadata=metadata,
                                     commit_message=commit_message,
                                     repository_type_select_field=repository_type_select_field,
                                     message=message,

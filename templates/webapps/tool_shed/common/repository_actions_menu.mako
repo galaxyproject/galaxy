@@ -74,7 +74,7 @@
         else:
             can_rate = False
         
-        if changeset_revision is not None:
+        if metadata is not None and changeset_revision is not None:
             if has_metadata and not is_deprecated and trans.app.security_agent.user_can_review_repositories( trans.user ):
                 can_review_repository = True
             else:
@@ -177,7 +177,7 @@
                     <a class="action-button" target="galaxy_main" href="${h.url_for( controller='repository', action='manage_repository_admins', id=trans.security.encode_id( repository.id ) )}">Manage repository administrators</a>
                 %endif
                 %if can_download:
-                    %if changeset_revision is not None:
+                    %if metadata is not None and changeset_revision is not None:
                         <a class="action-button" href="${h.url_for( controller='repository', action='export', repository_id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision )}">Export this revision</a>
                     %endif
                     <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), changeset_revision=repository.tip( trans.app ), file_type='gz' )}">Download as a .tar.gz file</a>
