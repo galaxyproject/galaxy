@@ -138,7 +138,7 @@ default_galaxy_test_port_max = 10999
 default_galaxy_test_host = '127.0.0.1'
 # The following should be an actual value (not None).  If developers manually specify their
 # tests to use the API it will not work unless a master API key is specified.
-default_galaxy_master_api_key = 123456
+default_galaxy_master_api_key = '123456'
 
 testing_single_repository_dict = {}
 if 'repository_name' in os.environ and 'repository_owner' in os.environ:
