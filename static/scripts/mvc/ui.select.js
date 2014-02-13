@@ -100,7 +100,7 @@ var View = Backbone.View.extend(
     },
     
     // remove
-    remove: function(id) {
+    del: function(id) {
         // search option
         var index = this._getIndex(id);
         
@@ -112,6 +112,11 @@ var View = Backbone.View.extend(
             // refresh
             this._refresh();
         }
+    },
+    
+    // remove
+    remove: function() {
+        this.$el.select2('destroy');
     },
     
     // update

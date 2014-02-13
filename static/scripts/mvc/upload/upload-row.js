@@ -195,6 +195,16 @@ return Backbone.View.extend({
         }
     },
 
+    // remove
+    remove: function() {
+        // trigger remove event
+        this.select_genome.remove();
+        this.select_extension.remove();
+        
+        // call the base class remove method
+        Backbone.View.prototype.remove.apply(this);
+    },
+
     //
     // handle model events
     //
