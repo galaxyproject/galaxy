@@ -5,7 +5,7 @@ define(["galaxy.modal",
         "mvc/upload/upload-model",
         "mvc/upload/upload-row",
         "mvc/upload/upload-ftp",
-        "mvc/ui/popover",
+        "mvc/ui/ui-popover",
         "mvc/ui",
         "utils/uploadbox"],
        
