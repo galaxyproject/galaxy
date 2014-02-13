@@ -29,7 +29,7 @@ class SpecifiedDateListGrid( grids.Grid ):
             return job.tool_id
     class CreateTimeColumn( grids.DateTimeColumn ):
         def get_value( self, trans, grid, job ):
-            return job.create_time.isoformat()
+            return job.create_time.strftime("%b %d, %Y, %H:%M:%S")
     class UserColumn( grids.GridColumn ):
         def get_value( self, trans, grid, job ):
             if job.user:
