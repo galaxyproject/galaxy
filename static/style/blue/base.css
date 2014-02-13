@@ -1259,16 +1259,17 @@ label{font-weight:normal}
 .upload-icon{font-size:1.2em;width:1.2em}
 .upload-icon-button{font-size:1.2em;width:1.2em;cursor:pointer}
 .upload-info{font-weight:normal;text-align:center}
-.upload-box{width:100%;height:95%;text-align:center;overflow:scroll;font-size:12px;line-height:1.33;-moz-border-radius:5px;border-radius:5px;border:1px dashed #bfbfbf;padding:10px;overflow-x:hidden;-ms-overflow-style:none}.upload-box .popover{max-width:500px;width:auto}
-.upload-box .table{width:100%}
+.upload-box{width:100%;height:95%;text-align:center;overflow:scroll;font-size:12px;line-height:1.33;-moz-border-radius:5px;border-radius:5px;border:1px dashed #bfbfbf;padding:10px;overflow-x:hidden;-ms-overflow-style:none}.upload-box .table{width:100%}
 .upload-box .table th{text-align:center;white-space:nowrap}
 .upload-box .table td{margin:0px;paddign:0px}
+.upload-box .upload-item .select2-arrow b{background-position:0 -3px}
+.upload-box .upload-item .select2-choice{max-height:20px;line-height:18px;background:transparent}
 .upload-box .mode{float:left;font-size:1.2em;width:1.2em;color:#555}
 .upload-box .title{width:130px;word-wrap:break-word;font-size:11px;float:left}
 .upload-box .text{position:absolute;display:none}.upload-box .text .text-content{font-size:11px;width:100%;height:50px;resize:none;background:inherit;color:#000}
 .upload-box .text .text-info{font-size:11px}
-.upload-box .extension{width:100px;font-size:11px}
-.upload-box .genome{width:150px;font-size:11px}
+.upload-box .extension{width:100px;min-width:100px;font-size:11px}
+.upload-box .genome{width:150px;min-width:150px;font-size:11px}
 .upload-box .size{width:60px;white-space:nowrap}
 .upload-box .info{width:130px;font-size:11px;line-height:1.2em}.upload-box .info .progress{top:1px;position:relative;width:100%;padding:0px;margin:0px;line-height:1.55em}.upload-box .info .progress .progress-bar{border-radius:inherit;-moz-border-radius:inherit}
 .upload-box .info .progress .percentage{position:absolute;text-align:center;width:100%;color:#fff}
@@ -1683,15 +1684,15 @@ div.historyItem-noPermission{filter:alpha(opacity=60);-moz-opacity:.60;opacity:.
 div.historyItem-paused{background:#d9edf7}div.historyItem-paused .state-icon{line-height:16px;font-family:FontAwesome;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}div.historyItem-paused .state-icon:before{content:"\f04c"}
 div.historyItem-new .state-icon{line-height:16px;font-family:FontAwesome;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}div.historyItem-new .state-icon:before{content:"\f071"}
 div.historyItemTitleBar.spinner .state-icon{background:url(data_running.gif) 0 1px no-repeat !important}
-div.historyItemButtons{float:right}div.historyItemButtons .icon-button.display{background-image:url(sprite-history-buttons.png);background-position:0px -48px;width:16px;height:16px;height:16px}
-div.historyItemButtons .icon-button.display:hover{background-image:url(sprite-history-buttons.png);background-position:0px -64px;width:16px;height:16px;height:16px}
-div.historyItemButtons .icon-button.display_disabled{background-image:url(sprite-history-buttons.png);background-position:0px -80px;width:16px;height:16px;height:16px}
-div.historyItemButtons .icon-button.delete{background-image:url(sprite-history-buttons.png);background-position:0px 0px;width:16px;height:16px;height:16px}
-div.historyItemButtons .icon-button.delete:hover{background-image:url(sprite-history-buttons.png);background-position:0px -16px;width:16px;height:16px;height:16px}
-div.historyItemButtons .icon-button.delete_disabled{background-image:url(sprite-history-buttons.png);background-position:0px -32px;width:16px;height:16px;height:16px}
-div.historyItemButtons .icon-button.edit{background-image:url(sprite-history-buttons.png);background-position:0px -96px;width:16px;height:16px;height:16px}
-div.historyItemButtons .icon-button.edit:hover{background-image:url(sprite-history-buttons.png);background-position:0px -112px;width:16px;height:16px;height:16px}
-div.historyItemButtons .icon-button.edit_disabled{background-image:url(sprite-history-buttons.png);background-position:0px -128px;width:16px;height:16px;height:16px}
+div.historyItemButtons{float:right}div.historyItemButtons .icon-button.display{background-image:url(sprite-history-buttons.png);background-position:0px -48px;width:16px;height:16px}
+div.historyItemButtons .icon-button.display:hover{background-image:url(sprite-history-buttons.png);background-position:0px -64px;width:16px;height:16px}
+div.historyItemButtons .icon-button.display_disabled{background-image:url(sprite-history-buttons.png);background-position:0px -80px;width:16px;height:16px}
+div.historyItemButtons .icon-button.delete{background-image:url(sprite-history-buttons.png);background-position:0px 0px;width:16px;height:16px}
+div.historyItemButtons .icon-button.delete:hover{background-image:url(sprite-history-buttons.png);background-position:0px -16px;width:16px;height:16px}
+div.historyItemButtons .icon-button.delete_disabled{background-image:url(sprite-history-buttons.png);background-position:0px -32px;width:16px;height:16px}
+div.historyItemButtons .icon-button.edit{background-image:url(sprite-history-buttons.png);background-position:0px -96px;width:16px;height:16px}
+div.historyItemButtons .icon-button.edit:hover{background-image:url(sprite-history-buttons.png);background-position:0px -112px;width:16px;height:16px}
+div.historyItemButtons .icon-button.edit_disabled{background-image:url(sprite-history-buttons.png);background-position:0px -128px;width:16px;height:16px}
 div.historyItemBody div{padding-top:2px}
 pre.peek{background:white;color:black;width:100%;font-size:10px;overflow:auto}pre.peek th{color:white;background:#5f6990}
 pre.peek table,pre.peek th,pre.peek tr,pre.peek td{font-family:Monaco,Menlo,Consolas,"Courier New",monospace;font-size:10px}

@@ -3,13 +3,15 @@ define(['utils/utils',
         'mvc/upload/upload-model',
         'mvc/upload/upload-extensions',
         'mvc/upload/upload-settings',
-        'mvc/ui.popover'],
+        'mvc/ui.popover',
+        'mvc/ui.select'],
        
         function(   Utils,
                     UploadModel,
                     UploadExtensions,
                     UploadSettings,
-                    Popover
+                    Popover,
+                    Select
                 ) {
 
 // item view
@@ -30,6 +32,12 @@ return Backbone.View.extend({
     
     // handle for settings popover
     settings: null,
+    
+    // genome selector
+    select_genome : null,
+    
+    // extension selector
+    select_extension : null,
     
     // render
     initialize: function(app, options) {
@@ -55,6 +63,28 @@ return Backbone.View.extend({
             placement   : 'bottom'
         });
 
+        // select genomes
+        this.select_genome = new Select.View({
+            css: 'genome',
+            onchange : function() {
+                self.model.set('genome', self.select_genome.value());
+            },
+            data: self.app.list_genomes,
+            container: it.find('#genome'),
+            value: self.model.get('genome')
+        });
+
+        // select extension
+        this.select_extension = new Select.View({
+            css: 'extension',
+            onchange : function() {
+                self.model.set('extension', self.select_extension.value());
+            },
+            data: self.app.list_extensions,
+            container: it.find('#extension'),
+            value: self.model.get('extension')
+        });
+        
         //
         // ui events
         //
@@ -76,16 +106,6 @@ return Backbone.View.extend({
             self.model.set('file_size', $(e.target).val().length);
         });
         
-        // handle genome selection
-        it.find('#genome').on('change', function(e) {
-            self.model.set('genome', $(e.target).val());
-        });
-        
-        // handle extension selection
-        it.find('#extension').on('change', function(e) {
-            self.model.set('extension', $(e.target).val());
-        });
-        
         // handle space to tabs button
         it.find('#space_to_tabs').on('change', function(e) {
             self.model.set('space_to_tabs', $(e.target).prop('checked'));
@@ -100,9 +120,6 @@ return Backbone.View.extend({
         this.model.on('change:status', function() {
             self._refreshStatus();
         });
-        this.model.on('change:extension', function() {
-            self._destroyExtensionInfo();
-        });
         this.model.on('change:info', function() {
             self._refreshInfo();
         });
@@ -113,11 +130,9 @@ return Backbone.View.extend({
             self._refreshFileSize();
         });
         this.model.on('remove', function() {
-            self._destroyExtensionInfo();
             self.remove();
         });
         this.app.collection.on('reset', function() {
-            self._destroyExtensionInfo();
             self.remove();
         });
     },
@@ -189,7 +204,7 @@ return Backbone.View.extend({
     {
         // update genome info on screen
         var genome = this.model.get('genome');
-        this.$el.find('#genome').val(genome);
+        this.select_genome.value(genome);
     },
         
     // progress
@@ -231,17 +246,23 @@ return Backbone.View.extend({
         
         // set new status class
         sy.addClass(status_class);
-        
+       
         // enable form fields
         if (status == 'init') {
+            // select fields
+            this.select_genome.enable();
+            this.select_extension.enable();
+       
+            // default fields
             it.find('#text-content').attr('disabled', false);
-            it.find('#genome').attr('disabled', false);
-            it.find('#extension').attr('disabled', false);
             it.find('#space_to_tabs').attr('disabled', false);
         } else {
+            // select fields
+            this.select_genome.disable();
+            this.select_extension.disable();
+       
+            // default fields
             it.find('#text-content').attr('disabled', true);
-            it.find('#genome').attr('disabled', true);
-            it.find('#extension').attr('disabled', true);
             it.find('#space_to_tabs').attr('disabled', true);
         }
         
@@ -275,7 +296,6 @@ return Backbone.View.extend({
         
         // only remove from queue if not in processing line
         if (status == 'init' || status == 'success' || status == 'error') {
-            // remove from collection
             this.app.collection.remove(this.model);
         }
     },
@@ -286,7 +306,7 @@ return Backbone.View.extend({
         // initialize
         var $el = $(this.el).find('#extension-info');
         var extension = this.model.get('extension');
-        var title = $(this.el).find('#extension').find('option:selected').text();
+        var title = this.select_extension.text();
         
         // create popup
         if (!this.extension_popup) {
@@ -323,66 +343,43 @@ return Backbone.View.extend({
         }
     },
 
-    // attach file info popup
-    _destroyExtensionInfo : function()
-    {
-        this.$el.find('#extension-info').popover('destroy');
-    },
-
     // template
     _template: function(options)
     {
-        // link this
-        var self = this;
-        
-        // construct template
-        var tmpl = '<tr id="upload-item-' + options.id + '" class="upload-item">' +
-                        '<td>' +
-                            '<div style="position: relative;">' +
-                                '<div id="mode"></div>' +
-                                '<div id="title" class="title"></div>' +
-                                '<div id="text" class="text">' +
-                                    '<div class="text-info">You can tell Galaxy to download data from web by entering URL in this box (one per line). You can also directly paste the contents of a file.</div>' +
-                                    '<textarea id="text-content" class="text-content form-control"></textarea>' +
-                                '</div>' +
+        return  '<tr id="upload-item-' + options.id + '" class="upload-item">' +
+                    '<td>' +
+                        '<div style="position: relative;">' +
+                            '<div id="mode"></div>' +
+                            '<div id="title" class="title"></div>' +
+                            '<div id="text" class="text">' +
+                                '<div class="text-info">You can tell Galaxy to download data from web by entering URL in this box (one per line). You can also directly paste the contents of a file.</div>' +
+                                '<textarea id="text-content" class="text-content form-control"></textarea>' +
                             '</div>' +
-                        '</td>' +
-                        '<td>' +
-                            '<div id="size" class="size"></div>' +
-                        '</td>';
-
-        // add file type selectore
-        tmpl +=         '<td>' +
-                            '<select id="extension" class="extension">';
-        for (key in self.app.select_extension)
-            tmpl +=             '<option value="' + self.app.select_extension[key][1] + '">' + self.app.select_extension[key][0] + '</option>';
-        tmpl +=             '</select>' +
-                            '&nbsp;&nbsp;<i id="extension-info" class="upload-icon-button fa fa-search"/>' +
-                        '</td>';                        
-
-        // add genome selector
-        tmpl +=         '<td>' +
-                            '<select id="genome" class="genome">';
-        for (key in self.app.select_genome)
-            tmpl +=             '<option value="' + self.app.select_genome[key][1] + '">' + self.app.select_genome[key][0] + '</option>';
-        tmpl +=             '</select>' +
-                        '</td>';
-        
-        // add next row
-        tmpl +=         '<td><div id="settings" class="upload-icon-button fa fa-gear"></div>' +
-                        '<td>' +
-                            '<div id="info" class="info">' +
-                                '<div class="progress">' +
-                                    '<div class="progress-bar progress-bar-success"></div>' +
-                                    '<div id="percentage" class="percentage">0%</div>' +
-                                '</div>' +
+                        '</div>' +
+                    '</td>' +
+                    '<td>' +
+                        '<div id="size" class="size"></div>' +
+                    '</td>' +
+                    '<td>' +
+                        '<div id="extension" class="extension" style="float: left;"/>&nbsp;&nbsp' +
+                        '<div id="extension-info" class="upload-icon-button fa fa-search"/>' +
+                    '</td>' +
+                    '<td>' +
+                        '<div id="genome" class="genome" />' +
+                    '</td>' +
+                    '<td><div id="settings" class="upload-icon-button fa fa-gear"></div>' +
+                    '<td>' +
+                        '<div id="info" class="info">' +
+                            '<div class="progress">' +
+                                '<div class="progress-bar progress-bar-success"></div>' +
+                                '<div id="percentage" class="percentage">0%</div>' +
                             '</div>' +
-                        '</td>' +
-                        '<td><div id="symbol" class="' + this.status_classes.init + '"></div></td>' +
-                    '</tr>';
-        
-        // return html string
-        return tmpl;
+                        '</div>' +
+                    '</td>' +
+                    '<td>' +
+                        '<div id="symbol" class="' + this.status_classes.init + '"></div>' +
+                    '</td>' +
+                '</tr>';
     }
     
 });

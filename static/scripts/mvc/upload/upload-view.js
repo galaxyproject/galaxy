@@ -42,10 +42,10 @@ return Backbone.View.extend(
     upload_size: 0,
     
     // extension types
-    select_extension :[['Auto-detect', 'auto']],
+    list_extensions :[{id: 'auto', text: 'Auto-detect'}],
     
     // genomes
-    select_genome : [['Unspecified (?)', '?']],
+    list_genomes : [],
     
     // collection
     collection : new UploadModel.Collection(),
@@ -107,32 +107,30 @@ return Backbone.View.extend(
         var self = this;
         Utils.jsonFromUrl(galaxy_config.root + "api/datatypes?upload_only=True",
             function(datatypes) {
-                for (key in datatypes)
-                    self.select_extension.push([datatypes[key], datatypes[key]]);
+                for (key in datatypes) {
+                    self.list_extensions.push({
+                        id      : datatypes[key],
+                        text    : datatypes[key]
+                    });
+                }
             });
             
         // load genomes
         Utils.jsonFromUrl(galaxy_config.root + "api/genomes",
             function(genomes) {
-                // backup default
-                var def = self.select_genome[0];
-                
-                // fill array
-                self.select_genome = [];
-                for (key in genomes)
-                    if (genomes[key].length > 1)
-                        if (genomes[key][1] !== def[1])
-                            self.select_genome.push(genomes[key]);
-                
+                for (key in genomes) {
+                    self.list_genomes.push({
+                        id      : genomes[key][1],
+                        text    : genomes[key][0]
+                    });
+                }
+                    
                 // sort
-                self.select_genome.sort(function(a, b) {
-                    return a[0] > b[0] ? 1 : a[0] < b[0] ? -1 : 0;
+                self.list_genomes.sort(function(a, b) {
+                    return a.id > b.id ? 1 : a.id < b.id ? -1 : 0;
                 });
-
-                // insert default back to array
-                self.select_genome.unshift(def);
             });
-        
+            
         // read in options
         if (options) {
             this.options = _.defaults(options, this.options);
@@ -296,15 +294,15 @@ return Backbone.View.extend(
         // configure uploadbox
         this.uploadbox.configure({url : this.options.nginx_upload_path});
         
-        // configure tool
-        tool_input = {};
-        
         // local files
         if (file_mode == 'local') {
             this.uploadbox.configure({paramname : 'files_0|file_data'});
         } else {
             this.uploadbox.configure({paramname : null});
         }
+        
+        // configure tool
+        tool_input = {};
         
         // new files
         if (file_mode == 'new') {
@@ -313,7 +311,6 @@ return Backbone.View.extend(
         
         // files from ftp
         if (file_mode == 'ftp') {
-            // add to tool configuration
             tool_input['files_0|ftp_files'] = file_path;
         }
         

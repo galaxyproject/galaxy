@@ -71,11 +71,6 @@
     overflow-x      : hidden;
     -ms-overflow-style: none;
 
-    .popover {
-        max-width: 500px;
-        width: auto;
-    }
-
     .table {
         width : 100%;
     }
@@ -89,7 +84,19 @@
         margin: 0px;
         paddign: 0px;
     }
-    
+
+    .upload-item {
+        .select2-arrow b {
+            background-position: 0 -3px;
+        }
+        
+        .select2-choice {
+            max-height: 20px;
+            line-height: 18px;
+            background: transparent;
+        }
+    }
+
     .mode {
         float: left;
         font-size: 1.2em;
@@ -119,20 +126,21 @@
         
         .text-info {
             font-size : @font-size-small;
-            // color : @gray-light;
         }
     }
     
     .extension {
         width: 100px;
+        min-width: 100px;
         font-size : @font-size-small;
     }
 
     .genome {
         width: 150px;
+        min-width: 150px;
         font-size : @font-size-small;
     }
-    
+
     .size {
         width: 60px;
         white-space: nowrap;
