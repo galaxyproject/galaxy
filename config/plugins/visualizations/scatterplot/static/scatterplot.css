@@ -1,8 +1,6 @@
 * { margin: 0; padding: 0; }
 
 /* -------------------------------------------- header */
-.chart-header > * { margin: 0; padding: 0; }
-
 .chart-header {
     margin-bottom: 16px;
     overflow: auto;
@@ -40,7 +38,7 @@ figcaption .title-info {
 /* -------------------------------------------- main layout */
 .scatterplot-editor > * { margin: 0; padding: 0; }
 .scatterplot-editor .tab-pane {
-    padding: 8px;
+    padding-top: 8px;
 }
 
 .scatterplot-editor .help-text,
@@ -134,6 +132,7 @@ figcaption .title-info {
     border: 1px solid lightgrey;
     border-radius: 3px;
     padding: 8px 8px 4px 8px;
+    overflow: auto;
 }
 
 .scatterplot-display .controls button {
@@ -144,25 +143,16 @@ figcaption .title-info {
 }
 
 .scatterplot-display .pagination-scroll-container {
-    /* float left makes this not collapse very well */
-    max-width: 540px;
-}
-
-.scatterplot-display .controls .data-prev-next {
+    max-width: 440px;
     display: inline-block;
-    margin: 0px 4px 0px 0px;
-}
-
-.scatterplot-display .controls {
-}
-
-.scatterplot-display .controls .left,
-.scatterplot-display .controls .right {
-    position: relative;
 }
 
 .scatterplot-display .controls .left {
-    float: left;
+    /*no shrinkwrap, but collapses well (with scroll)*/
+    /*display: inline;*/
+    /*will shrinkwrap*/
+    display: inline-block;
+    /*display: table-cell;*/
 }
 
 .scatterplot-display .controls .right {
@@ -186,10 +176,13 @@ figcaption .title-info {
     margin-left: 4px;
 }
 
+
 /* -------------------------------------------- chart area */
 svg.scatterplot {
     border: 1px solid lightgrey;
     border-radius: 3px;
+    /* doesn't work */
+    overflow: auto;
 }
 
 svg.scatterplot .grid-line {

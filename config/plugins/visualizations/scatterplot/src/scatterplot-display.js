@@ -53,13 +53,13 @@ var ScatterplotDisplay = Backbone.View.extend({
     template : function(){
         var html = [
             '<div class="controls clear">',
-                '<div class="left">',
-                    '<div class="page-control"></div>',
-                '</div>',
                 '<div class="right">',
                     '<p class="scatterplot-data-info"></p>',
                     '<button class="stats-toggle-btn">Stats</button>',
                     '<button class="rerender-btn">Redraw</button>',
+                '</div>',
+                '<div class="left">',
+                    '<div class="page-control"></div>',
                 '</div>',
             '</div>',
             '<svg/>', //TODO: id
