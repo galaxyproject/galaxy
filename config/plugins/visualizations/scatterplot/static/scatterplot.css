@@ -7,16 +7,34 @@
     margin-bottom: 16px;
     overflow: auto;
     background-color: #ebd9b2;
-    padding : 16px 12px 12px 12px;
+    padding : 8px 12px 8px 12px;
 }
 
 .chart-header h2 {
     margin-bottom: 4px;
 }
 
+.chart-header h2:hover {
+    text-decoration: underline;
+    cursor: pointer;
+}
+
 .chart-header p {
-    color: white;
+    color: #555;
     font-size: small;
+}
+
+figcaption {
+    margin-bottom: 8px;
+    font-size: 120%;
+}
+figcaption .title {
+    display: block;
+    font-weight: bold;
+}
+figcaption .title-info {
+    display: block;
+    font-style: italic;
 }
 
 /* -------------------------------------------- main layout */

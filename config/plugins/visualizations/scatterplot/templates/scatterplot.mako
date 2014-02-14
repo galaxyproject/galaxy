@@ -18,7 +18,6 @@
 ## ----------------------------------------------------------------------------
 <link type="text/css" rel="Stylesheet" media="screen" href="/static/style/base.css">
 <link type="text/css" rel="Stylesheet" media="screen" href="/static/style/jquery-ui/smoothness/jquery-ui.css">
-
 <link type="text/css" rel="Stylesheet" media="screen" href="/plugins/visualizations/scatterplot/static/scatterplot.css">
 
 ## ----------------------------------------------------------------------------
@@ -40,8 +39,35 @@
 
 ## ----------------------------------------------------------------------------
 <body>
-%if not embedded:
-## dataset info: only show if on own page
+%if embedded and saved_visualization:
+<figcaption>
+    <span class="title">${title}</span>
+    <span class="title-info">${info}</span>
+</figcaption>
+<figure class="scatterplot-display"></div>
+
+<script type="text/javascript">
+$(function(){
+    var model = new ScatterplotModel({
+            id      : ${h.to_json_string( visualization_id )} || undefined,
+            title   : "${title}",
+            config  : ${h.to_json_string( config, indent=2 )}
+        });
+        hdaJson = ${h.to_json_string( trans.security.encode_dict_ids( hda.to_dict() ), indent=2 )},
+        display = new ScatterplotDisplay({
+            el      : $( '.scatterplot-display' ).attr( 'id', 'scatterplot-display-' + '${visualization_id}' ),
+            model   : model,
+            dataset : hdaJson,
+            embedded: "${embedded}"
+        }).render();
+    display.fetchData();
+    //window.model = model;
+    //window.display = display;
+});
+
+</script>
+
+%else:
 <div class="chart-header">
     <h2>${title or default_title}</h2>
     <p>${info}</p>
@@ -61,10 +87,17 @@ $(function(){
             model   : model,
             dataset : hdaJson
         }).render();
-    window.editor = editor;
+    //window.editor = editor;
 
+    $( '.chart-header h2' ).click( function(){
+        var returned = prompt( 'Enter a new title:' );
+        if( returned ){
+            model.set( 'title', returned );
+        }
+    });
     model.on( 'change:title', function(){
         $( '.chart-header h2' ).text( model.get( 'title' ) );
+        document.title = model.get( 'title' ) + ' | ' + '${visualization_display_name}';
     })
 });
 
