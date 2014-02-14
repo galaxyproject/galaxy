@@ -202,6 +202,12 @@ class VisualizationListGrid( grids.Grid ):
             url_kwargs[ 'action' ] = 'saved'
         return url_kwargs
 
+    def get_display_name( self, trans, item ):
+        if trans.app.visualizations_registry and item.type in trans.app.visualizations_registry.plugins:
+            plugin = trans.app.visualizations_registry.plugins[ item.type ]
+            return plugin.config.get( 'name', item.type )
+        return item.type
+
     # Grid definition
     title = "Saved Visualizations"
     model_class = model.Visualization
@@ -209,8 +215,7 @@ class VisualizationListGrid( grids.Grid ):
     default_filter = dict( title="All", deleted="False", tags="All", sharing="All" )
     columns = [
         grids.TextColumn( "Title", key="title", attach_popup=True, link=get_url_args ),
-        #TODO: should use display name when available
-        grids.TextColumn( "Type", key="type" ),
+        grids.TextColumn( "Type", method='get_display_name' ),
         grids.TextColumn( "Dbkey", key="dbkey" ),
         grids.IndividualTagsColumn( "Tags", key="tags", model_tag_association_class=model.VisualizationTagAssociation, filterable="advanced", grid_name="VisualizationListGrid" ),
         grids.SharingStatusColumn( "Sharing", key="sharing", filterable="advanced", sortable=False ),
