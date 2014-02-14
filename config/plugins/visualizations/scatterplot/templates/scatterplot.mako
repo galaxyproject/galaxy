@@ -32,6 +32,7 @@
 <script type="text/javascript" src="/static/scripts/libs/d3.js"></script>
 
 <script type="text/javascript" src="/static/scripts/mvc/base-mvc.js"></script>
+<script type="text/javascript" src="/static/scripts/mvc/ui.js"></script>
 <script type="text/javascript" src="/static/scripts/mvc/visualization/visualization-model.js"></script>
 
 <script type="text/javascript" src="/plugins/visualizations/scatterplot/static/scatterplot-edit.js"></script>

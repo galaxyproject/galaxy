@@ -5,7 +5,7 @@ todo:
     Better separation of AJAX in scatterplot.js (maybe pass in function?)
     Labels should auto fill in chart control when dataset has column_names
     Allow column selection/config using the peek output as a base for UI
-    Allow setting perPage in config
+    Allow setting perPage in chart controls
     Allow option to auto set width/height based on screen real estate avail.
     Handle large number of pages better (Known genes hg19)
     Use d3.nest to allow grouping, pagination/filtration by group (e.g. chromCol)
@@ -243,7 +243,7 @@ var ScatterplotConfigEditor = Backbone.View.extend( LoggableMixin ).extend({
                 alert( 'Error loading data:\n' + xhr.responseText );
             })
             .then( function(){
-                editor.render();
+                editor.display.render();
             });
     },
 

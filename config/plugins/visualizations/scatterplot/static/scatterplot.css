@@ -125,13 +125,9 @@
     margin: 0px;
 }
 
-.scatterplot-display .controls .left {
-    float: left;
-}
-
-.scatterplot-display .controls .pagination {
-    display: inline-block;
-    margin: 0px;
+.scatterplot-display .pagination-scroll-container {
+    /* float left makes this not collapse very well */
+    max-width: 540px;
 }
 
 .scatterplot-display .controls .data-prev-next {
@@ -139,22 +135,16 @@
     margin: 0px 4px 0px 0px;
 }
 
-.scatterplot-display .controls .pagination-container {
-    display: inline-block;
-    overflow: auto;
-    max-width: 256px;
-    /*very tweaky*/
-    margin: 0px 8px 0px 0px;
-    height: 27px;
-    padding-top: 5px;
+.scatterplot-display .controls {
 }
-.scatterplot-display .controls .pagination-container a {
-    display: inline;
-    /* WTH, bootstrap? */
-    position: static;
-    float: none;
-    /* up from 4px -> 5px */
-    padding: 5px 10px 5px 10px;
+
+.scatterplot-display .controls .left,
+.scatterplot-display .controls .right {
+    position: relative;
+}
+
+.scatterplot-display .controls .left {
+    float: left;
 }
 
 .scatterplot-display .controls .right {

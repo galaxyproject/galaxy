@@ -237,6 +237,7 @@ function scatterplot( renderTo, config, data ){
     datapoints.on( 'mouseover', function( d, i ){
         var datapoint = d3.select( this );
         datapoint
+            .classed( 'highlight', true )
             .style( 'fill', 'red' )
             .style( 'fill-opacity', 1 );
 
@@ -273,6 +274,7 @@ function scatterplot( renderTo, config, data ){
     datapoints.on( 'mouseout', function(){
         // return the point to normal, remove hoverlines and info box
         d3.select( this )
+            .classed( 'highlight', false )
             .style( 'fill', 'black' )
             .style( 'fill-opacity', 0.2 );
         content.selectAll( '.hoverline' ).remove();

@@ -11,25 +11,15 @@ var ScatterplotDisplay = Backbone.View.extend({
     initialize : function( attributes ){
         this.data = null,
         this.dataset = attributes.dataset;
-        this.calcNumPages();
-    },
-
-    calcNumPages : function(){
-        var config = this.model.get( 'config' );
-        this.lineCount = this.dataset.metadata_data_lines,
-        this.numPages = ( this.lineCount )?( Math.ceil( this.lineCount / config.pagination.perPage ) ):( undefined );
-        if( !this.lineCount || this.numPages === undefined ){
-            console.warn( 'no data total found' );
-        }
+        this.lineCount = this.dataset.metadata_data_lines || null;
     },
 
     fetchData : function(){
-//TODO: doesn't work bc it's rendered in render()...
-        this.showLoadingIndicator( 'getting data' );
+        this.showLoadingIndicator();
         //console.debug( 'currPage', this.config.pagination.currPage );
         var view = this,
             config = this.model.get( 'config' ),
-//TODO: very tied to datasets - should be generalized eventually
+            //TODO: very tied to datasets - should be generalized eventually
             xhr = jQuery.getJSON( '/api/datasets/' + this.dataset.id, {
                 data_type   : 'raw_data',
                 provider    : 'dataset-column',
@@ -37,6 +27,7 @@ var ScatterplotDisplay = Backbone.View.extend({
                 offset      : ( config.pagination.currPage * config.pagination.perPage )
             });
         xhr.done( function( data ){
+            // no need to hide loading indicator, line info will write over that
             view.data = data.data;
             view.trigger( 'data:fetched', view );
             view.renderData();
@@ -63,6 +54,7 @@ var ScatterplotDisplay = Backbone.View.extend({
         var html = [
             '<div class="controls clear">',
                 '<div class="left">',
+                    '<div class="page-control"></div>',
                 '</div>',
                 '<div class="right">',
                     '<p class="scatterplot-data-info"></p>',
@@ -92,11 +84,24 @@ var ScatterplotDisplay = Backbone.View.extend({
     },
 
     renderLeftControls : function(){
-        if( this.lineCount ){
-            this.$el.find( '.controls .left' ).empty().append( this.renderPagination() );
-        } else {
-            this.$el.find( '.controls .left' ).empty().append( this.renderPrevNext() );
-        }
+        var display = this,
+            config = this.model.get( 'config' );
+
+        this.$el.find( '.controls .left .page-control' ).pagination({
+            startingPage : config.pagination.currPage,
+            perPage      : config.pagination.perPage,
+            totalDataSize: this.lineCount,
+            currDataSize : this.data.length
+
+        //TODO: move to named function and remove only named
+        }).off().on( 'pagination.page-change', function( event, page ){
+            //console.debug( 'pagination:page-change', page );
+            config.pagination.currPage = page;
+            display.model.set( 'config', { pagination: config.pagination });
+            //console.debug( pagination, display.model.get( 'config' ).pagination );
+            display.resetZoom();
+            display.fetchData();
+        });
         return this;
     },
 
@@ -153,83 +158,6 @@ var ScatterplotDisplay = Backbone.View.extend({
         translate = ( translate !== undefined )?( translate ):( [ 0, 0 ] );
         this.model.set( 'config', { scale: scale, translate: translate } );
         return this;
-    },
-
-    // ------------------------------------------------------------------------ data pagination
-//TODO: to pagination control
-    goToPage : function( page ){
-        var pagination = this.model.get( 'config' ).pagination;
-        //console.debug( 'goToPage', page, pagination, this.numPages );
-        if( page <= 0 ){ page = 0; }
-        if( this.numPages && page >= this.numPages ){ page = this.numPages - 1; }
-        if( page === pagination.currPage ){ return this; }
-
-        //console.debug( '\t going to page ' + page )
-        pagination.currPage = page;
-        this.model.set( 'config', { pagination: pagination });
-        this.resetZoom();
-        this.fetchData();
-        return this;
-    },
-
-    nextPage : function(){
-        var currPage = this.model.get( 'config' ).pagination.currPage;
-        return this.goToPage( currPage + 1 );
-    },
-
-    prevPage : function(){
-        var currPage = this.model.get( 'config' ).pagination.currPage;
-        return this.goToPage( currPage - 1 );
-    },
-
-    /** render previous and next pagination buttons */
-    renderPrevNext : function(){
-        var config = this.model.get( 'config' );
-        // if there's no data or there's less than one page of data - return null
-        if( !this.data ){ return null; }
-        if( config.pagination.currPage === 0 && this.data.length < config.pagination.perPage ){ return null; }
-
-        var view = this,
-            $prev = $( '<li><a href="javascript:void(0);">Prev</a></li>' )
-                .click( function(){ view.prevPage(); }),
-            $next = $( '<li><a href="javascript:void(0);">Next</a></li>' )
-                .click( function(){ view.nextPage(); });
-
-        // disable if it either end
-        if( config.pagination.currPage === 0 ){
-            $prev.addClass( 'disabled' );
-        }
-        if( this.numPages && config.pagination.currPage === ( this.numPages - 1 ) ){
-            $next.addClass( 'disabled' );
-        }
-        return $( '<ul/>' ).addClass( 'pagination data-prev-next' ).append([ $prev, $next ]);
-    },
-
-    /** render page links for each possible page (if we can) */
-    renderPagination : function(){
-        var config = this.model.get( 'config' );
-        // if there's no data, no page count, or there's less than one page of data - return null
-        if( !this.data ){ return null; }
-        if( !this.numPages ){ return null; }
-        if( config.pagination.currPage === 0 && this.data.length < config.pagination.perPage ){ return null; }
-
-        var view = this,
-            $pagesList = $( '<ul/>' ).addClass( 'pagination data-pages' );
-            pageNumClick = function( ev ){
-                view.goToPage( $( this ).data( 'page' ) );
-            };
-
-        for( var i=0; i<this.numPages; i+=1 ){
-            // add html5 data tag 'page' for later click event handler use
-            var $pageLi = $([ '<li><a href="javascript:void(0);">', i + 1, '</a></li>' ].join( '' ))
-                    .attr( 'data-page', i ).click( pageNumClick );
-            // highlight the current page
-            if( i === config.pagination.currPage ){
-                $pageLi.addClass( 'active' );
-            }
-            $pagesList.append( $pageLi );
-        }
-        return $pagesList;
     },
 
     // ------------------------------------------------------------------------ statistics display
