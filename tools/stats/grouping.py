@@ -40,7 +40,7 @@ def main():
     if sys.argv[5] != "None":
         oldfile = open(inputfile,'r')
         oldfilelines = oldfile.readlines()
-        newinputfile = inputfile+'2'
+        newinputfile = "input_cleaned.tsv"
         newfile = open(newinputfile,'w')
         asciitodelete = sys.argv[5].split(',')
         for i in range(len(asciitodelete)):
