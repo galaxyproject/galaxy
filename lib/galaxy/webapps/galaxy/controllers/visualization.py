@@ -964,16 +964,6 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
         return self.get_visualization( trans, id )
 
     @web.expose
-    def scatterplot( self, trans, dataset_id, **kwargs ):
-        """
-        Returns a page that controls and renders a scatteplot graph.
-        """
-        hda = self.get_dataset( trans, dataset_id, check_ownership=False, check_accessible=True )
-        return trans.fill_template_mako( "visualization/scatterplot.mako",
-                                         hda=hda,
-                                         query_args=kwargs )
-
-    @web.expose
     def phyloviz( self, trans, id=None, dataset_id=None, tree_index=0, **kwargs ):
         config = None
         data = None
