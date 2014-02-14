@@ -197,8 +197,7 @@ class InstallManager( object ):
                                 file_path = section_elem.get( 'file', None )
                                 if file_path:
                                     file_name = suc.strip_path( file_path )
-
-                                    if file_name in tool_configs_to_filter:
+                                    if file_name in tool_configs_to_filter or file_path in tool_configs_to_filter:
                                         elem.remove( section_elem )
                                         persist_required = True
             if persist_required:
@@ -223,7 +222,7 @@ class InstallManager( object ):
                 # The proprietary_tool_panel_elem looks something like <tool file="emboss_5/emboss_antigenic.xml" />.
                 proprietary_tool_config = proprietary_tool_panel_elem.get( 'file' )
                 proprietary_name = suc.strip_path( proprietary_tool_config )
-                if tool_config == proprietary_name:
+                if tool_config == proprietary_name or tool_config == proprietary_tool_config:
                     # The tool is loaded outside of any sections.
                     tool_sections.append( None )
                     if not is_displayed:
@@ -235,7 +234,7 @@ class InstallManager( object ):
                         # The section_elem looks something like <tool file="emboss_5/emboss_antigenic.xml" />.
                         proprietary_tool_config = section_elem.get( 'file' )
                         proprietary_name = suc.strip_path( proprietary_tool_config )
-                        if tool_config == proprietary_name:
+                        if tool_config == proprietary_name or tool_config == proprietary_tool_config:
                             # The tool is loaded inside of the section_elem.
                             tool_sections.append( ToolSection( proprietary_tool_panel_elem ) )
                             if not is_displayed:
@@ -314,7 +313,7 @@ class InstallManager( object ):
                     file_path = elem.get( 'file', None )
                     if file_path:
                         name = suc.strip_path( file_path )
-                        if name in migrated_tool_configs:
+                        if name in migrated_tool_configs or file_path in migrated_tool_configs:
                             if elem not in tool_panel_elems:
                                 tool_panel_elems.append( elem )
                 elif elem.tag == 'section':
@@ -324,7 +323,7 @@ class InstallManager( object ):
                             file_path = section_elem.get( 'file', None )
                             if file_path:
                                 name = suc.strip_path( file_path )
-                                if name in migrated_tool_configs:
+                                if name in migrated_tool_configs or file_path in migrated_tool_configs:
                                     # Append the section, not the tool.
                                     if elem not in tool_panel_elems:
                                         tool_panel_elems.append( elem )
