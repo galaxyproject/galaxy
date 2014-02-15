@@ -71,6 +71,9 @@ return Backbone.View.extend({
             container: it.find('#genome'),
             value: self.model.get('genome')
         });
+        
+        // initialize genome
+        this.model.set('genome', self.select_genome.value());
 
         // select extension
         this.select_extension = new Select.View({
@@ -82,6 +85,9 @@ return Backbone.View.extend({
             container: it.find('#extension'),
             value: self.model.get('extension')
         });
+        
+        // initialize extension
+        this.model.set('extension', self.select_extension.value());
         
         //
         // ui events

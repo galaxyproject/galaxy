@@ -42,14 +42,17 @@ return Backbone.View.extend(
     upload_size: 0,
     
     // extension types
-    list_extensions :[{
-        id          : 'auto',
-        text        : 'Auto-detect',
-        description : 'The system will attempt to detect Axt, Fasta, Fastqsolexa, Gff, Gff3, Html, Lav, Maf, Tabular, Wiggle, Bed and Interval (Bed with headers) formats. If your file is not detected properly as one of the known formats, it most likely means that it has some format problems (e.g., different number of columns on different rows). You can still coerce the system to set your data to the format you think it should be.  You can also upload compressed files, which will automatically be decompressed.'
-    }],
+    list_extensions :[],
     
     // genomes
     list_genomes : [],
+    
+    // datatype placeholder for auto-detection
+    auto: {
+        id          : 'auto',
+        text        : 'Auto-detect',
+        description : 'This system will try to detect the file type automatically. If your file is not detected properly as one of the known formats, it most likely means that it has some format problems (e.g., different number of columns on different rows). You can still coerce the system to set your data to the format you think it should be.  You can also upload compressed files, which will automatically be decompressed.'
+    },
     
     // collection
     collection : new UploadModel.Collection(),
@@ -75,7 +78,12 @@ return Backbone.View.extend(
     initialize : function(options) {
         // link this
         var self = this;
-            
+
+        // read in options
+        if (options) {
+            this.options = _.defaults(options, this.options);
+        }
+        
         // wait for galaxy history panel (workaround due to the use of iframes)
         if (!Galaxy.currHistoryPanel || !Galaxy.currHistoryPanel.model) {
             window.setTimeout(function() { self.initialize() }, 500)
@@ -122,12 +130,13 @@ return Backbone.View.extend(
                 
                 // sort
                 self.list_extensions.sort(function(a, b) {
-                    if (a.id == 'auto')
-                        return -1;
-                    if (b.id == 'auto')
-                        return 1;
                     return a.id > b.id ? 1 : a.id < b.id ? -1 : 0;
                 });
+                
+                // add auto field
+                if (!self.options.datatypes_disable_auto) {
+                    self.list_extensions.unshift(self.auto);
+                }
             });
             
         // load genomes
@@ -146,11 +155,6 @@ return Backbone.View.extend(
                 });
             });
             
-        // read in options
-        if (options) {
-            this.options = _.defaults(options, this.options);
-        }
-        
         // events
         this.collection.on('remove', function(item) {
             self._eventRemove(item);

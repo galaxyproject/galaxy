@@ -8,7 +8,8 @@ var View = Backbone.View.extend(
     optionsDefault: {
         css         : '',
         placeholder : 'No data available',
-        data        : []
+        data        : [],
+        value       : null
     },
     
     // initialize
@@ -54,17 +55,14 @@ var View = Backbone.View.extend(
         
         // get current id/value
         var after = this._getValue();
-        if(after === undefined) {
-            return null;
-        } else {
-            // fire onchange
-            if ((after != before && this.options.onchange)) {
-                this.options.onchange(after);
-            }
-            
-            // return current value
-            return after;
+        
+        // fire onchange
+        if ((after != before && this.options.onchange)) {
+            this.options.onchange(after);
         }
+            
+        // return current value
+        return after;
     },
     
     // label
@@ -133,28 +131,18 @@ var View = Backbone.View.extend(
     
     // refresh
     _refresh: function() {
-    
-        // link select data
-        var select_data = this.select_data;
-        if (!select_data || select_data.length == 0) {
-            select_data = [];
-        }
-        
         // selected
         var selected = this._getValue();
         
         // add select2 data
         this.$el.select2({
-            data                : select_data,
+            data                : this.select_data,
             containerCssClass   : this.options.css,
             placeholder         : this.options.placeholder
         });
         
-        // select
-        var index = this._getIndex(selected);
-        if (index != -1) {
-            this._setValue(selected);
-        }
+        // select previous value (if exists)
+        this._setValue(selected);
     },
     
     // get index
@@ -177,6 +165,12 @@ var View = Backbone.View.extend(
     
     // set value
     _setValue: function(new_value) {
+        var index = this._getIndex(new_value);
+        if (index == -1) {
+            if (this.select_data.length > 0) {
+                new_value = this.select_data[0].id;
+            }
+        }
         this.$el.select2('val', new_value);
     },
     

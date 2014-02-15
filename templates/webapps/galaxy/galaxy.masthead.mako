@@ -54,6 +54,7 @@
             'active_view'               : active_view,
             'ftp_upload_dir'            : app.config.get("ftp_upload_dir",  None),
             'ftp_upload_site'           : app.config.get("ftp_upload_site",  None),
+            'datatypes_disable_auto'    : app.config.get_bool("datatypes_disable_auto",  False),
 
             ## user details
             'user'          : {
