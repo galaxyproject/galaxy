@@ -1,14 +1,12 @@
 // dependencies
 define(['utils/utils',
         'mvc/upload/upload-model',
-        'mvc/upload/upload-extensions',
         'mvc/upload/upload-settings',
         'mvc/ui/ui-popover',
         'mvc/ui/ui-select'],
        
         function(   Utils,
                     UploadModel,
-                    UploadExtensions,
                     UploadSettings,
                     Popover,
                     Select
@@ -317,11 +315,11 @@ return Backbone.View.extend({
         var $el = $(this.el).find('#extension-info');
         var extension = this.model.get('extension');
         var title = this.select_extension.text();
+        var description = Utils.findPair(this.app.list_extensions, 'id', extension);
         
         // create popup
         if (!this.extension_popup) {
             this.extension_popup = new Popover.View({
-                content: UploadExtensions(extension),
                 placement: 'bottom',
                 container: $el
             });
@@ -331,7 +329,7 @@ return Backbone.View.extend({
         if (!this.extension_popup.visible) {
             this.extension_popup.title(title);
             this.extension_popup.empty();
-            this.extension_popup.append(UploadExtensions(extension));
+            this.extension_popup.append(this._templateDescription(description));
             this.extension_popup.show();
         } else {
             this.extension_popup.hide();
@@ -352,7 +350,20 @@ return Backbone.View.extend({
             this.settings.hide();
         }
     },
-
+    
+    // template
+    _templateDescription: function(options) {
+        if (options.description) {
+            var tmpl = options.description;
+            if (options.description_url) {
+                tmpl += '&nbsp;(<a href="' + options.description_url + '" target="_blank">read more</a>)';
+            }
+            return tmpl;
+        } else {
+            return 'There is no description available for this file extension.';
+        }
+    },
+    
     // template
     _template: function(options)
     {

@@ -18,12 +18,25 @@ class DatatypesController( BaseAPIController ):
         GET /api/datatypes
         Return an object containing upload datatypes.
         """
+        extension_only = asbool( kwd.get( 'extension_only', True ) )
         upload_only = asbool( kwd.get( 'upload_only', True ) )
         try:
-            if upload_only:
-                return trans.app.datatypes_registry.upload_file_formats
+            if extension_only:
+                if upload_only:
+                    return trans.app.datatypes_registry.upload_file_formats
+                else:
+                    return [ ext for ext in trans.app.datatypes_registry.datatypes_by_extension ]
             else:
-                return [ ext for ext in trans.app.datatypes_registry.datatypes_by_extension ]
+                rval = []
+                for elem in trans.app.datatypes_registry.datatype_elems:
+                    if not asbool(elem.get('display_in_upload')) and upload_only:
+                        continue
+                    keys = ['extension', 'description', 'description_url']
+                    dictionary = {}
+                    for key in keys:
+                        dictionary[key] = elem.get(key)
+                    rval.append(dictionary)
+                return rval
         except Exception, exception:
             log.error( 'could not get datatypes: %s', str( exception ), exc_info=True )
             trans.response.status = 500

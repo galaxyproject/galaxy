@@ -42,7 +42,11 @@ return Backbone.View.extend(
     upload_size: 0,
     
     // extension types
-    list_extensions :[{id: 'auto', text: 'Auto-detect'}],
+    list_extensions :[{
+        id          : 'auto',
+        text        : 'Auto-detect',
+        description : 'The system will attempt to detect Axt, Fasta, Fastqsolexa, Gff, Gff3, Html, Lav, Maf, Tabular, Wiggle, Bed and Interval (Bed with headers) formats. If your file is not detected properly as one of the known formats, it most likely means that it has some format problems (e.g., different number of columns on different rows). You can still coerce the system to set your data to the format you think it should be.  You can also upload compressed files, which will automatically be decompressed.'
+    }],
     
     // genomes
     list_genomes : [],
@@ -105,14 +109,25 @@ return Backbone.View.extend(
         
         // load extension
         var self = this;
-        Utils.jsonFromUrl(galaxy_config.root + "api/datatypes?upload_only=True",
+        Utils.jsonFromUrl(galaxy_config.root + "api/datatypes?extension_only=False",
             function(datatypes) {
                 for (key in datatypes) {
                     self.list_extensions.push({
-                        id      : datatypes[key],
-                        text    : datatypes[key]
+                        id              : datatypes[key].extension,
+                        text            : datatypes[key].extension,
+                        description     : datatypes[key].description,
+                        description_url : datatypes[key].description_url
                     });
                 }
+                
+                // sort
+                self.list_extensions.sort(function(a, b) {
+                    if (a.id == 'auto')
+                        return -1;
+                    if (b.id == 'auto')
+                        return 1;
+                    return a.id > b.id ? 1 : a.id < b.id ? -1 : 0;
+                });
             });
             
         // load genomes
