@@ -6,19 +6,19 @@ from galaxy.jobs import ComputeEnvironment
 from galaxy.jobs import JobDestination
 from galaxy.jobs.command_factory import build_command
 from galaxy.util import string_as_bool_or_none
-from galaxy.util import in_directory
 from galaxy.util.bunch import Bunch
 
 import errno
 from time import sleep
 import os
 
-from .lwr_client import ClientManager, url_to_destination_params
+from .lwr_client import build_client_manager
+from .lwr_client import url_to_destination_params
 from .lwr_client import finish_job as lwr_finish_job
 from .lwr_client import submit_job as lwr_submit_job
 from .lwr_client import ClientJobDescription
 from .lwr_client import LwrOutputs
-from .lwr_client import GalaxyOutputs
+from .lwr_client import ClientOutputs
 from .lwr_client import PathMapper
 
 log = logging.getLogger( __name__ )
@@ -41,7 +41,7 @@ class LwrJobRunner( AsynchronousJobRunner ):
         self._init_monitor_thread()
         self._init_worker_threads()
         client_manager_kwargs = {'transport_type': transport, 'cache': string_as_bool_or_none(cache)}
-        self.client_manager = ClientManager(**client_manager_kwargs)
+        self.client_manager = build_client_manager(**client_manager_kwargs)
 
     def url_to_destination( self, url ):
         """Convert a legacy URL to a job destination"""
@@ -83,13 +83,12 @@ class LwrJobRunner( AsynchronousJobRunner ):
 
             client_job_description = ClientJobDescription(
                 command_line=command_line,
-                output_files=self.get_output_files(job_wrapper),
                 input_files=self.get_input_files(job_wrapper),
+                client_outputs=self.__client_outputs(client, job_wrapper),
                 working_directory=job_wrapper.working_directory,
                 tool=job_wrapper.tool,
                 config_files=job_wrapper.extra_filenames,
                 requirements=requirements,
-                version_file=job_wrapper.get_version_string_path(),
                 rewrite_paths=rewrite_paths,
                 arbitrary_files=unstructured_path_rewrites,
             )
@@ -197,30 +196,17 @@ class LwrJobRunner( AsynchronousJobRunner ):
             stdout = run_results.get('stdout', '')
             stderr = run_results.get('stderr', '')
             exit_code = run_results.get('returncode', None)
-            lwr_outputs = LwrOutputs(run_results)
+            lwr_outputs = LwrOutputs.from_status_response(run_results)
             # Use LWR client code to transfer/copy files back
             # and cleanup job if needed.
             completed_normally = \
                 job_wrapper.get_state() not in [ model.Job.states.ERROR, model.Job.states.DELETED ]
             cleanup_job = self.app.config.cleanup_job
-            remote_work_dir_copy = LwrJobRunner.__remote_work_dir_copy( client )
-            if not remote_work_dir_copy:
-                work_dir_outputs = self.get_work_dir_outputs( job_wrapper )
-            else:
-                # They have already been copied over to look like regular outputs remotely,
-                # no need to handle them differently here.
-                work_dir_outputs = []
-            output_files = self.get_output_files( job_wrapper )
-            galaxy_outputs = GalaxyOutputs(
-                working_directory=job_wrapper.working_directory,
-                work_dir_outputs=work_dir_outputs,
-                output_files=output_files,
-                version_file=job_wrapper.get_version_string_path(),
-            )
+            client_outputs = self.__client_outputs(client, job_wrapper)
             finish_args = dict( client=client,
                                 job_completed_normally=completed_normally,
                                 cleanup_job=cleanup_job,
-                                galaxy_outputs=galaxy_outputs,
+                                client_outputs=client_outputs,
                                 lwr_outputs=lwr_outputs )
             failed = lwr_finish_job( **finish_args )
 
@@ -304,6 +290,23 @@ class LwrJobRunner( AsynchronousJobRunner ):
             job_state.old_state = True
             job_state.running = state == model.Job.states.RUNNING
             self.monitor_queue.put( job_state )
+
+    def __client_outputs( self, client, job_wrapper ):
+        remote_work_dir_copy = LwrJobRunner.__remote_work_dir_copy( client )
+        if not remote_work_dir_copy:
+            work_dir_outputs = self.get_work_dir_outputs( job_wrapper )
+        else:
+            # They have already been copied over to look like regular outputs remotely,
+            # no need to handle them differently here.
+            work_dir_outputs = []
+        output_files = self.get_output_files( job_wrapper )
+        client_outputs = ClientOutputs(
+            working_directory=job_wrapper.working_directory,
+            work_dir_outputs=work_dir_outputs,
+            output_files=output_files,
+            version_file=job_wrapper.get_version_string_path(),
+        )
+        return client_outputs
 
     @staticmethod
     def __dependency_resolution( lwr_client ):

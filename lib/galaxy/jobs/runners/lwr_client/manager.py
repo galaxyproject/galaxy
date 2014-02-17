@@ -21,15 +21,26 @@ except ImportError:
 from .client import JobClient
 from .client import InputCachingJobClient
 from .client import ObjectStoreClient
+from .client import MessageJobClient
 from .transport import get_transport
 from .util import TransferEventManager
 from .destination import url_to_destination_params
+from .amqp_exchange import LwrExchange
 
 
 from logging import getLogger
 log = getLogger(__name__)
 
 DEFAULT_TRANSFER_THREADS = 2
+
+
+def build_client_manager(**kwargs):
+    if 'job_manager' in kwargs:
+        return ClientManager(**kwargs)  # TODO: Consider more separation here.
+    elif 'url' in kwargs:
+        return MessageQueueClientManager(**kwargs)
+    else:
+        return ClientManager(**kwargs)
 
 
 class ClientManager(object):
@@ -60,20 +71,51 @@ class ClientManager(object):
             self.extra_client_kwds = {}
 
     def get_client(self, destination_params, job_id):
-        destination_params = self.__parse_destination_params(destination_params)
+        destination_params = _parse_destination_params(destination_params)
         job_manager_interface_class = self.job_manager_interface_class
         job_manager_interface_args = dict(destination_params=destination_params, **self.job_manager_interface_args)
         job_manager_interface = job_manager_interface_class(**job_manager_interface_args)
         return self.client_class(destination_params, job_id, job_manager_interface, **self.extra_client_kwds)
 
-    def __parse_destination_params(self, destination_params):
-        try:
-            unicode_type = unicode
-        except NameError:
-            unicode_type = str
-        if isinstance(destination_params, str) or isinstance(destination_params, unicode_type):
-            destination_params = url_to_destination_params(destination_params)
-        return destination_params
+    def shutdown(self):
+        pass
+
+
+class MessageQueueClientManager(object):
+
+    def __init__(self, **kwds):
+        self.url = kwds.get('url')
+        self.manager_name = kwds.get("manager", "_default_")
+        self.exchange = LwrExchange(self.url, self.manager_name)
+        self.thread = None
+        self.active = True
+
+    def listen_for_job_completes(self, callback):
+        # TODO: Call this from LWR runner.
+        def callback_wrapper(body, message):
+            callback(body)
+            message.ack()
+
+        def run():
+            self.exchange.consume("complete", callback_wrapper, check=self)
+
+        t = Thread(
+            name="lwr_client_%s_complete_callback" % self.manager_name,
+            target=run
+        )
+        t.daemon = False  # Lets not interrupt processing of this.
+        t.start()
+        self.thread = t
+
+    def shutdown(self):
+        self.active = False
+
+    def __nonzero__(self):
+        return self.active
+
+    def get_client(self, destination_params, job_id):
+        destination_params = _parse_destination_params(destination_params)
+        return MessageJobClient(destination_params, job_id, self.exchange)
 
 
 class ObjectStoreClientManager(object):
@@ -163,7 +205,8 @@ class LocalLwrInterface(object):
         if controller.response_type != 'file':
             return controller.body(result)
         else:
-            from lwr.util import copy_to_path
+            # TODO: Add to Galaxy.
+            from galaxy.util import copy_to_path
             with open(result, 'rb') as result_file:
                 copy_to_path(result_file, output_path)
 
@@ -219,6 +262,16 @@ class ClientCacher(object):
             t = Thread(target=self._transfer_worker)
             t.daemon = True
             t.start()
+
+
+def _parse_destination_params(destination_params):
+    try:
+        unicode_type = unicode
+    except NameError:
+        unicode_type = str
+    if isinstance(destination_params, str) or isinstance(destination_params, unicode_type):
+        destination_params = url_to_destination_params(destination_params)
+    return destination_params
 
 
 def _environ_default_int(variable, default="0"):

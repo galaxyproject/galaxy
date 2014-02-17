@@ -8,6 +8,7 @@ from io import open
 from ..staging import COMMAND_VERSION_FILENAME
 from ..action_mapper import FileActionMapper
 from ..action_mapper import path_type
+from ..action_mapper import MessageAction
 from ..util import PathHelper
 from ..util import directory_files
 
@@ -21,7 +22,24 @@ def submit_job(client, client_job_description, job_config=None):
     file_stager = FileStager(client, client_job_description, job_config)
     rebuilt_command_line = file_stager.get_command_line()
     job_id = file_stager.job_id
-    client.launch(rebuilt_command_line, requirements=client_job_description.requirements)
+    launch_kwds = dict(
+        command_line=rebuilt_command_line,
+        requirements=client_job_description.requirements,
+    )
+    if file_stager.job_config:
+        launch_kwds["job_config"] = file_stager.job_config
+    remote_staging = {}
+    remote_staging_actions = file_stager.transfer_tracker.remote_staging_actions
+    if remote_staging_actions:
+        remote_staging["setup"] = remote_staging_actions
+    # Somehow make the following optional.
+    remote_staging["action_mapper"] = file_stager.action_mapper.to_dict()
+    remote_staging["client_outputs"] = client_job_description.client_outputs.to_dict()
+
+    if remote_staging:
+        launch_kwds["remote_staging"] = remote_staging
+
+    client.launch(**launch_kwds)
     return job_id
 
 
@@ -100,6 +118,7 @@ class FileStager(object):
             # Remote LWR server assigned an id different than the
             # Galaxy job id, update client to reflect this.
             self.client.job_id = self.job_id
+        self.job_config = job_config
 
     def __parse_remote_separator(self, job_config):
         separator = job_config.get("system_properties", {}).get("separator", None)
@@ -195,7 +214,7 @@ class FileStager(object):
 
     def __upload_rewritten_config_files(self):
         for config_file, new_config_contents in self.job_inputs.config_files.items():
-            self.client.put_file(config_file, input_type='config', contents=new_config_contents)
+            self.transfer_tracker.handle_transfer(config_file, type='config', contents=new_config_contents)
 
     def get_command_line(self):
         """
@@ -317,29 +336,48 @@ class TransferTracker(object):
         self.job_inputs = job_inputs
         self.rewrite_paths = rewrite_paths
         self.file_renames = {}
+        self.remote_staging_actions = []
 
     def handle_transfer(self, path, type, name=None, contents=None):
+        action = self.__action_for_transfer(path, type, contents)
+
+        if action.staging_needed:
+            local_action = action.staging_action_local
+            if local_action:
+                response = self.client.put_file(path, type, name=name, contents=contents)
+                get_path = lambda: response['path']
+            else:
+                job_directory = self.client.job_directory
+                assert job_directory, "job directory required for action %s" % action
+                if not name:
+                    name = basename(path)
+                self.__add_remote_staging_input(action, name, type)
+                get_path = lambda: job_directory.calculate_path(name, type)
+            register = self.rewrite_paths or type == 'tool'  # Even if inputs not rewritten, tool must be.
+            if register:
+                self.register_rewrite(path, get_path(), type, force=True)
+        # else: # No action for this file
+
+    def __add_remote_staging_input(self, action, name, type):
+        input_dict = dict(
+            name=name,
+            type=type,
+            action=action.to_dict(),
+        )
+        self.remote_staging_actions.append(input_dict)
+
+    def __action_for_transfer(self, path, type, contents):
         if contents:
             # If contents loaded in memory, no need to write out file and copy,
             # just transfer.
-            action_type = 'transfer'
+            action = MessageAction(contents=contents, client=self.client)
         else:
             if not exists(path):
                 message = "handle_tranfer called on non-existent file - [%s]" % path
                 log.warn(message)
                 raise Exception(message)
-            action_type = self.__action(path, type).action_type
-
-        if action_type in ['transfer', 'copy']:
-            response = self.client.put_file(path, type, name=name, contents=contents)
-            register = self.rewrite_paths or type == 'tool'  # Even if inputs not rewritten, tool must be.
-            if register:
-                self.register_rewrite(path, response['path'], type, force=True)
-        elif action_type == 'none':
-            # No action for this file.
-            pass
-        else:
-            raise Exception("Unknown action type (%s) encountered for path (%s)" % (action_type, path))
+            action = self.__action(path, type)
+        return action
 
     def register_rewrite(self, local_path, remote_path, type, force=False):
         action = self.__action(local_path, type)

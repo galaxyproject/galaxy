@@ -46,6 +46,13 @@ def directory_files(directory):
     return contents
 
 
+def filter_destination_params(destination_params, prefix):
+    destination_params = destination_params or {}
+    return dict([(key[len(prefix):], destination_params[key])
+                 for key in destination_params
+                 if key.startswith(prefix)])
+
+
 class PathHelper(object):
     '''
 
