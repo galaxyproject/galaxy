@@ -156,17 +156,17 @@ var FolderContentView = Backbone.View.extend({
         // FOLDER CONTENT
         tmpl_array.push('<table id="folder_table" class="table table-condensed">');
         tmpl_array.push('   <thead>');
+        tmpl_array.push('       <th class="button_heading"></th>');
         tmpl_array.push('       <th style="text-align: center; width: 20px; "><input id="select-all-checkboxes" style="margin: 0;" type="checkbox"></th>');
-        tmpl_array.push('       <th class="button_heading">view</th>');
         tmpl_array.push('       <th>name</th>');
         tmpl_array.push('       <th>data type</th>');
         tmpl_array.push('       <th>size</th>');
         tmpl_array.push('       <th>date (UTC)</th>');
         tmpl_array.push('   </thead>');
         tmpl_array.push('   <tbody>');
-        tmpl_array.push('       <td></td>');
         tmpl_array.push('       <td><button title="Go to parent folder" type="button" data-id="<%- upper_folder_id %>" class="btn_open_folder btn btn-default btn-xs">');
-        tmpl_array.push('       <span class="fa fa-arrow-up"></span> .. go up</td>');
+        tmpl_array.push('        ..</td>');
+        tmpl_array.push('       <td></td>');
         tmpl_array.push('       <td></td>');
         tmpl_array.push('       <td></td>');
         tmpl_array.push('       <td></td>');
@@ -175,9 +175,9 @@ var FolderContentView = Backbone.View.extend({
         tmpl_array.push('       <% _.each(items, function(content_item) { %>');
         tmpl_array.push('       <tr class="folder_row light" id="<%- content_item.id %>">');
         tmpl_array.push('           <% if (content_item.get("type") === "folder") { %>'); // folder
+        tmpl_array.push('               <td>');
+        tmpl_array.push('               <span class="fa fa-folder-open"></span></td>');
         tmpl_array.push('               <td></td>');
-        tmpl_array.push('               <td><button title="Open this folder" type="button" data-id="<%- content_item.id %>" class="btn_open_folder btn btn-default btn-xs">');
-        tmpl_array.push('               <span class="fa fa-folder-open"></span> browse</td>');
         tmpl_array.push('               <td><%- content_item.get("name") %>');
         tmpl_array.push('           <% if (content_item.get("item_count") === 0) { %>'); // empty folder
         tmpl_array.push('           <span class="muted">(empty folder)</span>');
@@ -186,13 +186,11 @@ var FolderContentView = Backbone.View.extend({
         tmpl_array.push('           <td>folder</td>');
         tmpl_array.push('           <td><%= _.escape(content_item.get("item_count")) %> item(s)</td>'); // size
         tmpl_array.push('           <% } else {  %>');
-        tmpl_array.push('           <td style="text-align: center; "><input style="margin: 0;" type="checkbox"></td>');
         tmpl_array.push('       <td>');
-        tmpl_array.push('       <button title="See details of this dataset" type="button" class="library-dataset btn btn-default btn-xs">');
-        tmpl_array.push('       <span class="fa fa-eye"></span> details');
-        tmpl_array.push('       </button>');
+        tmpl_array.push('       <span class="fa fa-file"></span>');
         tmpl_array.push('       </td>');
-        tmpl_array.push('           <td><%- content_item.get("name") %></td>'); // dataset
+        tmpl_array.push('           <td style="text-align: center; "><input style="margin: 0;" type="checkbox"></td>');
+        tmpl_array.push('           <td><a href="#" class="library-dataset"><%- content_item.get("name") %><a></td>'); // dataset
         tmpl_array.push('           <td><%= _.escape(content_item.get("data_type")) %></td>'); // data type
         tmpl_array.push('           <td><%= _.escape(content_item.get("readable_size")) %></td>'); // size
         tmpl_array.push('           <% } %>  ');
@@ -416,10 +414,16 @@ var FolderContentView = Backbone.View.extend({
         // prevent default
         event.preventDefault();
 
-//TODO check whether we already have the data
+        //TODO check whether we already have the data
 
         //load the ID of the row
-        var id = $(event.target).parent().parent().attr('id');
+        var id = $(event.target).parent().parent().parent().attr('id');
+        if (typeof id === 'undefined'){
+            id = $(event.target).parent().attr('id');
+        }        
+        if (typeof id === 'undefined'){
+            id = $(event.target).parent().parent().attr('id')
+        }
 
         //create new item
         var item = new Item();
@@ -430,7 +434,7 @@ var FolderContentView = Backbone.View.extend({
         //fetch the dataset info
         item.fetch({
           success: function (item) {
-// TODO can render here already
+        // TODO can render here already
                 //fetch user histories for import purposes
                 histories.fetch({
                     success: function (histories){
@@ -811,21 +815,16 @@ var GalaxyLibraryview = Backbone.View.extend({
         // tmpl_array.push('<a href="" id="create_new_library_btn" class="btn btn-primary file ">New Library</a>');
         tmpl_array.push('<table class="table table-condensed">');
         tmpl_array.push('   <thead>');
-        tmpl_array.push('     <th class="button_heading"></th>');
         tmpl_array.push('     <th>name</th>');
         tmpl_array.push('     <th>description</th>');
         tmpl_array.push('     <th>synopsis</th> ');
-        // tmpl_array.push('     <th>model type</th> ');
         tmpl_array.push('   </thead>');
         tmpl_array.push('   <tbody>');
         tmpl_array.push('       <% _.each(libraries, function(library) { %>');
         tmpl_array.push('           <tr>');
-        tmpl_array.push('               <td><button title="Open this library" type="button" data-id="<%- library.get("root_folder_id") %>" class="btn_open_folder btn btn-default btn-xs">');
-        tmpl_array.push('               <span class="fa fa-folder-open"></span> browse</td>');
-        tmpl_array.push('               <td><%- library.get("name") %></td>');
+        tmpl_array.push('               <td><a href="#folders/<%- library.get("root_folder_id") %>"><%- library.get("name") %></a></td>');
         tmpl_array.push('               <td><%= _.escape(library.get("description")) %></td>');
         tmpl_array.push('               <td><%= _.escape(library.get("synopsis")) %></td>');
-        // tmpl_array.push('               <td><%= _.escape(library.get("model_class")) %></td>');
         tmpl_array.push('           </tr>');
         tmpl_array.push('       <% }); %>');
         tmpl_array.push('   </tbody>');
@@ -862,7 +861,7 @@ var GalaxyLibraryview = Backbone.View.extend({
             that.$el.html(template);
           },
           error: function(model, response){
-            if (response.statusCode().status === 403){
+            if (response.statusCode().status === 403){ //TODO open to public
                 mod_toastr.info('Please log in first. Redirecting to login page in 3s.');   
                 setTimeout(that.redirectToLogin, 3000);
             } else {
