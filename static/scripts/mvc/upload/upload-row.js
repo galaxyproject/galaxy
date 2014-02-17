@@ -321,7 +321,7 @@ return Backbone.View.extend({
         var $el = $(this.el).find('#extension-info');
         var extension = this.model.get('extension');
         var title = this.select_extension.text();
-        var description = Utils.findPair(this.app.list_extensions, 'id', extension);
+        var description = _.findWhere(this.app.list_extensions, {'id': extension});
         
         // create popup
         if (!this.extension_popup) {

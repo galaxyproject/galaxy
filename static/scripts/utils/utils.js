@@ -96,17 +96,6 @@ function uuid(){
     return (new Date().getTime()).toString(36);
 };
 
-// find in dict
-function findPair(arr, key, val) {
-    for (var i in arr) {
-        var item = arr[i];
-        if (item[key] == val) {
-            return item;
-        }
-    }
-    return {};
-}
-
 // return
 return {
     cssLoadFile   : cssLoadFile,
@@ -114,8 +103,7 @@ return {
     jsonFromUrl : jsonFromUrl,
     merge : merge,
     bytesToString: bytesToString,
-    uuid: uuid,
-    findPair: findPair
+    uuid: uuid
 };
 
 });
