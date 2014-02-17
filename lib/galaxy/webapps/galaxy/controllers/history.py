@@ -929,7 +929,9 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                 return trans.show_error_message( "Either you are not allowed to view this history"
                                                + " or the owner of this history has not made it accessible." )
 
-            hdas = self.get_history_datasets( trans, history_to_view, show_deleted=True, show_hidden=True )
+            # include all datasets: hidden, deleted, and purged
+            hdas = self.get_history_datasets( trans, history_to_view,
+                show_deleted=True, show_hidden=True, show_purged=True )
             for hda in hdas:
                 hda_dict = {}
                 try:
