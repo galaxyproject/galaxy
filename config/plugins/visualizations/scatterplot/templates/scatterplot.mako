@@ -87,7 +87,7 @@ $(function(){
             model   : model,
             dataset : hdaJson
         }).render();
-    //window.editor = editor;
+    window.editor = editor;
 
     $( '.chart-header h2' ).click( function(){
         var returned = prompt( 'Enter a new title:' );

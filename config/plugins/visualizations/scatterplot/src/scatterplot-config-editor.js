@@ -78,73 +78,62 @@ var ScatterplotConfigEditor = Backbone.View.extend( LoggableMixin ).extend({
         return this;
     },
 
+    /** get an object with arrays keyed with possible column types (numeric, text, all)
+     *      and if metadata_column_types is set on the dataset, add the indeces of each
+     *      column into the appropriate array.
+     *  Used to disable certain columns from being selected for x, y axes.
+     */
+    _getColumnIndecesByType : function(){
+        //TODO: not sure these contraints are necc. now
+        var types = {
+            numeric : [],
+            text    : [],
+            all     : []
+        };
+        _.each( this.dataset.metadata_column_types || [], function( type, i ){
+            if( type === 'int' || type === 'float' ){
+                types.numeric.push( i );
+            } else if( type === 'str' || type === 'list' ){
+                types.text.push( i );
+            }
+            types.all.push( i );
+        });
+        if( types.numeric.length < 2 ){
+            types.numeric = [];
+        }
+        //console.log( 'types:', JSON.stringify( types ) );
+        return types;
+    },
+
     /** controls for which columns are used to plot datapoints (and ids/additional info to attach if desired) */
     _render_dataControl : function( $where ){
-        //TODO: better handling of missing column names, column types
         $where = $where || this.$el;
         var editor  = this,
-            dataset = this.dataset,
-            column_names = dataset.metadata_column_names || [],
-            config  = this.model.get( 'config' );
-        //console.log( 'metadata_column_types:', this.dataset.metadata_column_types );
-        //console.log( 'metadata_column_names:', this.dataset.metadata_column_names );
-
-//TODO: to peek based control
-        var numericColumns = [],
-            allColumns = _.map( dataset.metadata_column_types, function( type, i ){
-                // save column data for select rendering, adding metadata name if available in dataset
-                var column = { index: i, type: type, name: ( column_names[ i ] || ( 'column ' + ( i + 1 )) ) };
-                // also add column to numerics if numeric type
-                if( ( column.type === 'int' ) || ( column.type === 'float' ) ){
-                    numericColumns.push( column );
-                }
-                return column;
-            });
-        if( numericColumns.length < 2 ){
-            numericColumns = allColumns;
-        }
-        //console.log( 'allColumns:', allColumns );
-        //console.log( 'numericColumns:', numericColumns );
+            //column_names = dataset.metadata_column_names || [],
+            config  = this.model.get( 'config' ),
+            columnTypes = this._getColumnIndecesByType();
 
         // render the html
         var $dataControl = $where.find( '.tab-pane#data-control' );
         $dataControl.html( ScatterplotConfigEditor.templates.dataControl({
-            allColumns      : allColumns,
-            numericColumns  : numericColumns
+            peek : this.dataset.peek
         }));
 
-//TODO: column selection boilerplate
-        // preset to column selectors if they were passed in the config in the query string; set up events
-        var newConfig = {
-            xColumn  : ( _.isFinite( config.xColumn ) )? ( config.xColumn ): ( numericColumns[0].index ),
-            yColumn  : ( _.isFinite( config.yColumn ) )? ( config.yColumn ): ( numericColumns[1].index ),
-            idColumn : allColumns[0].index
-        };
-        // use an idColumn from the config or attempt to get one different from the numeric
-        if( _.isFinite( config.idColumn ) ){
-            newConfig.idColumn = config.idColumn;
-        } else {
-            if( allColumns.length > 2 ){
-                var uniqueCol = _.find( allColumns, function( column, i ){
-                    return i !== newConfig.xColumn && i !== newConfig.yColumn;
-                });
-                newConfig.idColumn = uniqueCol.index;
-            }
-        }
-        config = this.model.set( 'config', newConfig, { silent: true }).get( 'config' );
+        $dataControl.find( '.peek' ).peekControl({
+            controls : [
+                { label: 'X Column',  id: 'xColumn',  selected: config.xColumn, disabled: columnTypes.text },
+                { label: 'Y Column',  id: 'yColumn',  selected: config.yColumn, disabled: columnTypes.text },
+                { label: 'ID Column', id: 'idColumn', selected: config.idColumn }
+            ]
+            //renameColumns       : true
 
-        $dataControl.find( '[name="xColumn"]' ).val( config.xColumn ).on( 'change', function(){
-            editor.model.set( 'config', { xColumn: Number( $( this ).val() ) });
+        }).on( 'peek-control.change', function( ev, data ){
+            //console.info( 'new selection:', data );
+            editor.model.set( 'config', data );
+
+        }).on( 'peek-control.rename', function( ev, data ){
+            //console.info( 'new column names', data );
         });
-        $dataControl.find( '[name="yColumn"]' ).val( config.yColumn ).on( 'change', function(){
-            editor.model.set( 'config', { yColumn: Number( $( this ).val() ) });
-        });
-        $dataControl.find( 'select[name="idColumn"]' ).val( config.idColumn ).on( 'change', function(){
-            editor.model.set( 'config', { idColumn: Number( $( this ).val() ) });
-        });
-        if( config.idColumn !== undefined ){
-            $dataControl.find( '#include-id-checkbox' ).prop( 'checked', true ).trigger( 'change' );
-        }
 
         $dataControl.find( '[title]' ).tooltip();
         return $dataControl;
