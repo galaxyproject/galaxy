@@ -44,6 +44,11 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
         /** selected hda ids */
         this.selectedHdaIds = [];
 
+        /** editor for tags - sub-view */
+        this.tagsEditor = null;
+        /** editor for annotations - sub-view */
+        this.annotationEditor = null;
+
         // states/modes the panel can be in
         /** is the panel currently showing the dataset selection controls? */
         this.selecting = attributes.selecting || false;
@@ -250,8 +255,8 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
                 selectable      : this.selecting,
                 hasUser         : this.model.ownedByCurrUser(),
                 logger          : this.logger,
-                tagsEditorShown       : !this.tagsEditor.isHidden(),
-                annotationEditorShown : !this.annotationEditor.isHidden()
+                tagsEditorShown       : ( this.tagsEditor && !this.tagsEditor.isHidden() ),
+                annotationEditorShown : ( this.annotationEditor && !this.annotationEditor.isHidden() )
             });
         this._setUpHdaListeners( hdaView );
         return hdaView;
