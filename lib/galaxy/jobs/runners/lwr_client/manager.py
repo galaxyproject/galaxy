@@ -37,7 +37,7 @@ DEFAULT_TRANSFER_THREADS = 2
 def build_client_manager(**kwargs):
     if 'job_manager' in kwargs:
         return ClientManager(**kwargs)  # TODO: Consider more separation here.
-    elif 'url' in kwargs:
+    elif kwargs.get('url', None):
         return MessageQueueClientManager(**kwargs)
     else:
         return ClientManager(**kwargs)
