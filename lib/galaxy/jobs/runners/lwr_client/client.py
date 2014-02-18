@@ -1,49 +1,18 @@
 import os
-import shutil
-import json
 from json import dumps
-from time import sleep
 
 from .destination import submit_params
 from .setup_handler import build as build_setup_handler
 from .job_directory import RemoteJobDirectory
+from .decorators import parseJson
+from .decorators import retry
+from .util import copy
+from .util import ensure_directory
 
 import logging
 log = logging.getLogger(__name__)
 
 CACHE_WAIT_SECONDS = 3
-MAX_RETRY_COUNT = 5
-RETRY_SLEEP_TIME = 0.1
-
-
-class parseJson(object):
-
-    def __call__(self, func):
-        def replacement(*args, **kwargs):
-            response = func(*args, **kwargs)
-            return json.loads(response)
-        return replacement
-
-
-class retry(object):
-
-    def __call__(self, func):
-
-        def replacement(*args, **kwargs):
-            max_count = MAX_RETRY_COUNT
-            count = 0
-            while True:
-                count += 1
-                try:
-                    return func(*args, **kwargs)
-                except:
-                    if count >= max_count:
-                        raise
-                    else:
-                        sleep(RETRY_SLEEP_TIME)
-                        continue
-
-        return replacement
 
 
 class OutputNotFoundException(Exception):
@@ -111,17 +80,78 @@ class JobClient(BaseJobClient):
         super(JobClient, self).__init__(destination_params, job_id)
         self.job_manager_interface = job_manager_interface
 
-    def _raw_execute(self, command, args={}, data=None, input_path=None, output_path=None):
-        return self.job_manager_interface.execute(command, args, data, input_path, output_path)
+    def launch(self, command_line, requirements=[], remote_staging=[], job_config=None):
+        """
+        Queue up the execution of the supplied `command_line` on the remote
+        server. Called launch for historical reasons, should be renamed to
+        enqueue or something like that.
 
-    @property
-    def _submit_params(self):
-        return submit_params(self.destination_params)
+        **Parameters**
+
+        command_line : str
+            Command to execute.
+        """
+        launch_params = dict(command_line=command_line, job_id=self.job_id)
+        submit_params_dict = submit_params(self.destination_params)
+        if submit_params_dict:
+            launch_params['params'] = dumps(submit_params_dict)
+        if requirements:
+            launch_params['requirements'] = dumps([requirement.to_dict() for requirement in requirements])
+        if remote_staging:
+            launch_params['remote_staging'] = dumps(remote_staging)
+        if job_config and self.setup_handler.local:
+            # Setup not yet called, job properties were inferred from
+            # destination arguments. Hence, must have LWR setup job
+            # before queueing.
+            setup_params = _setup_params_from_job_config(job_config)
+            launch_params["setup_params"] = dumps(setup_params)
+        return self._raw_execute("launch", launch_params)
+
+    def full_status(self):
+        """ Return a dictionary summarizing final state of job.
+        """
+        return self.raw_check_complete()
+
+    def kill(self):
+        """
+        Cancel remote job, either removing from the queue or killing it.
+        """
+        return self._raw_execute("kill", {"job_id": self.job_id})
+
+    @retry()
+    @parseJson()
+    def raw_check_complete(self):
+        """
+        Get check_complete response from the remote server.
+        """
+        check_complete_response = self._raw_execute("check_complete", {"job_id": self.job_id})
+        return check_complete_response
+
+    def get_status(self):
+        check_complete_response = self.raw_check_complete()
+        # Older LWR instances won't set status so use 'complete', at some
+        # point drop backward compatibility.
+        status = check_complete_response.get("status", None)
+        if status in ["status", None]:
+            # LEGACY: Bug in certains older LWR instances returned literal
+            # "status".
+            complete = check_complete_response["complete"] == "true"
+            old_status = "complete" if complete else "running"
+            status = old_status
+        return status
+
+    def clean(self):
+        """
+        Cleanup the remote job.
+        """
+        self._raw_execute("clean", {"job_id": self.job_id})
 
     @parseJson()
-    def input_path(self, path, input_type, name=None):
-        args = {"job_id": self.job_id, "name": name, "input_type": input_type}
-        return self._raw_execute('input_path', args)
+    def remote_setup(self, **setup_args):
+        """
+        Setup remote LWR server to run this job.
+        """
+        return self._raw_execute("setup", setup_args)
 
     def put_file(self, path, input_type, name=None, contents=None, action_type='transfer'):
         if not name:
@@ -134,8 +164,79 @@ class JobClient(BaseJobClient):
             return self._upload_file(args, contents, input_path)
         elif action_type == 'copy':
             lwr_path = self._raw_execute('input_path', args)
-            self._copy(path, lwr_path)
+            copy(path, lwr_path)
             return {'path': lwr_path}
+
+    def fetch_output(self, path, name, working_directory, action_type, output_type):
+        """
+        Fetch (transfer, copy, etc...) an output from the remote LWR server.
+
+        **Parameters**
+
+        path : str
+            Local path of the dataset.
+        name : str
+            Remote name of file (i.e. path relative to remote staging output
+            or working directory).
+        working_directory : str
+            Local working_directory for the job.
+        action_type : str
+            Where to find file on LWR (output_workdir or output). legacy is also
+            an option in this case LWR is asked for location - this will only be
+            used if targetting an older LWR server that didn't return statuses
+            allowing this to be inferred.
+        """
+        if output_type == 'legacy':
+            self._fetch_output_legacy(path, working_directory, action_type=action_type)
+        elif output_type == 'output_workdir':
+            self._fetch_work_dir_output(name, working_directory, path, action_type=action_type)
+        elif output_type == 'output':
+            self._fetch_output(path=path, name=name, action_type=action_type)
+        else:
+            raise Exception("Unknown output_type %s" % output_type)
+
+    def _raw_execute(self, command, args={}, data=None, input_path=None, output_path=None):
+        return self.job_manager_interface.execute(command, args, data, input_path, output_path)
+
+    # Deprecated
+    def _fetch_output_legacy(self, path, working_directory, action_type='transfer'):
+        # Needs to determine if output is task/working directory or standard.
+        name = os.path.basename(path)
+
+        output_type = self._get_output_type(name)
+        if output_type == "none":
+            # Just make sure the file was created.
+            if not os.path.exists(path):
+                raise OutputNotFoundException(path)
+            return
+        elif output_type in ["task"]:
+            path = os.path.join(working_directory, name)
+
+        self.__populate_output_path(name, path, output_type, action_type)
+
+    def _fetch_output(self, path, name=None, check_exists_remotely=False, action_type='transfer'):
+        if not name:
+            # Extra files will send in the path.
+            name = os.path.basename(path)
+
+        output_type = "direct"  # Task/from_work_dir outputs now handled with fetch_work_dir_output
+        self.__populate_output_path(name, path, output_type, action_type)
+
+    def _fetch_work_dir_output(self, name, working_directory, output_path, action_type='transfer'):
+        ensure_directory(output_path)
+        if action_type == 'transfer':
+            self.__raw_download_output(name, self.job_id, "work_dir", output_path)
+        else:  # Even if action is none - LWR has a different work_dir so this needs to be copied.
+            lwr_path = self._output_path(name, self.job_id, 'work_dir')['path']
+            copy(lwr_path, output_path)
+
+    def __populate_output_path(self, name, output_path, output_type, action_type):
+        ensure_directory(output_path)
+        if action_type == 'transfer':
+            self.__raw_download_output(name, self.job_id, output_type, output_path)
+        elif action_type == 'copy':
+            lwr_path = self._output_path(name, self.job_id, output_type)['path']
+            copy(lwr_path, output_path)
 
     @parseJson()
     def _upload_file(self, args, contents, input_path):
@@ -163,75 +264,6 @@ class JobClient(BaseJobClient):
         return self._raw_execute("get_output_type", {"name": name,
                                                      "job_id": self.job_id})
 
-    # Deprecated
-    def fetch_output_legacy(self, path, working_directory, action_type='transfer'):
-        # Needs to determine if output is task/working directory or standard.
-        name = os.path.basename(path)
-
-        output_type = self._get_output_type(name)
-        if output_type == "none":
-            # Just make sure the file was created.
-            if not os.path.exists(path):
-                raise OutputNotFoundException(path)
-            return
-        elif output_type in ["task"]:
-            path = os.path.join(working_directory, name)
-
-        self.__populate_output_path(name, path, output_type, action_type)
-
-    def fetch_output(self, path, name=None, check_exists_remotely=False, action_type='transfer'):
-        """
-        Download an output dataset from the remote server.
-
-        **Parameters**
-
-        path : str
-            Local path of the dataset.
-        working_directory : str
-            Local working_directory for the job.
-        """
-
-        if not name:
-            # Extra files will send in the path.
-            name = os.path.basename(path)
-
-        output_type = "direct"  # Task/from_work_dir outputs now handled with fetch_work_dir_output
-        self.__populate_output_path(name, path, output_type, action_type)
-
-    def __populate_output_path(self, name, output_path, output_type, action_type):
-        self.__ensure_directory(output_path)
-        if action_type == 'transfer':
-            self.__raw_download_output(name, self.job_id, output_type, output_path)
-        elif action_type == 'copy':
-            lwr_path = self._output_path(name, self.job_id, output_type)['path']
-            self._copy(lwr_path, output_path)
-
-    def fetch_work_dir_output(self, name, working_directory, output_path, action_type='transfer'):
-        """
-        Download an output dataset specified with from_work_dir from the
-        remote server.
-
-        **Parameters**
-
-        name : str
-            Path in job's working_directory to find output in.
-        working_directory : str
-            Local working_directory for the job.
-        output_path : str
-            Full path to output dataset.
-        """
-        self.__ensure_directory(output_path)
-        if action_type == 'transfer':
-            self.__raw_download_output(name, self.job_id, "work_dir", output_path)
-        else:  # Even if action is none - LWR has a different work_dir so this needs to be copied.
-            lwr_path = self._output_path(name, self.job_id, 'work_dir')['path']
-            self._copy(lwr_path, output_path)
-
-    def __ensure_directory(self, output_path):
-        output_path_directory = os.path.dirname(output_path)
-        if not os.path.exists(output_path_directory):
-            os.makedirs(output_path_directory)
-
     @parseJson()
     def _output_path(self, name, job_id, output_type):
         return self._raw_execute("output_path",
@@ -247,107 +279,6 @@ class JobClient(BaseJobClient):
             "output_type": output_type
         }
         self._raw_execute("download_output", output_params, output_path=output_path)
-
-    def launch(self, command_line, requirements=[], remote_staging=[], job_config=None):
-        """
-        Queue up the execution of the supplied `command_line` on the remote
-        server. Called launch for historical reasons, should be renamed to
-        enqueue or something like that.
-
-        **Parameters**
-
-        command_line : str
-            Command to execute.
-        """
-        launch_params = dict(command_line=command_line, job_id=self.job_id)
-        submit_params = self._submit_params
-        if submit_params:
-            launch_params['params'] = dumps(submit_params)
-        if requirements:
-            launch_params['requirements'] = dumps([requirement.to_dict() for requirement in requirements])
-        if remote_staging:
-            launch_params['remote_staging'] = dumps(remote_staging)
-        if job_config and self.setup_handler.local:
-            # Setup not yet called, job properties were inferred from
-            # destination arguments. Hence, must have LWR setup job
-            # before queueing.
-            setup_params = _setup_params_from_job_config(job_config)
-            launch_params["setup_params"] = dumps(setup_params)
-        return self._raw_execute("launch", launch_params)
-
-    def final_status(self):
-        """ Return a dictionary summarizing final state of job.
-        """
-        return self.raw_check_complete()
-
-    def kill(self):
-        """
-        Cancel remote job, either removing from the queue or killing it.
-        """
-        return self._raw_execute("kill", {"job_id": self.job_id})
-
-    def wait(self, max_seconds=None):
-        """
-        Wait for job to finish.
-        """
-        i = 0
-        while max_seconds is None or i < max_seconds:
-            complete_response = self.raw_check_complete()
-            if complete_response["complete"] == "true":
-                print complete_response
-                return complete_response
-            else:
-                print complete_response
-            sleep(1)
-            i += 1
-
-    @parseJson()
-    def raw_check_complete(self):
-        """
-        Get check_complete response from the remote server.
-        """
-        check_complete_response = self._raw_execute("check_complete", {"job_id": self.job_id})
-        return check_complete_response
-
-    def check_complete(self, response=None):
-        """
-        Return boolean indicating whether the job is complete.
-        """
-        if response is None:
-            response = self.raw_check_complete()
-        return response["complete"] == "true"
-
-    @retry()
-    def get_status(self):
-        check_complete_response = self.raw_check_complete()
-        # Older LWR instances won't set status so use 'complete', at some
-        # point drop backward compatibility.
-        status = check_complete_response.get("status", None)
-        # Bug in certains older LWR instances returned literal "status".
-        if status in ["status", None]:
-            complete = self.check_complete(check_complete_response)
-            old_status = "complete" if complete else "running"
-            status = old_status
-        return status
-
-    def clean(self):
-        """
-        Cleanup the remote job.
-        """
-        self._raw_execute("clean", {"job_id": self.job_id})
-
-    @parseJson()
-    def remote_setup(self, **setup_args):
-        """
-        Setup remote LWR server to run this job.
-        """
-        return self._raw_execute("setup", setup_args)
-
-    def _copy(self, source, destination):
-        source = os.path.abspath(source)
-        destination = os.path.abspath(destination)
-        if source != destination:
-            shutil.copyfile(source, destination)
 
 
 class MessageJobClient(BaseJobClient):
@@ -379,16 +310,16 @@ class MessageJobClient(BaseJobClient):
         return self.client_manager.exchange.publish("setup", launch_params)
 
     def clean(self):
-        del self.client_manager.final_status_cache[self.job_id]
+        del self.client_manager.status_cache[self.job_id]
 
-    def final_status(self):
-        final_status = self.client_manager.final_status_cache.get(self.job_id, None)
-        if final_status is None:
-            raise Exception("final_status() called before a final status was properly cached with cilent manager.")
-        return final_status
+    def full_status(self):
+        full_status = self.client_manager.status_cache.get(self.job_id, None)
+        if full_status is None:
+            raise Exception("full_status() called before a final status was properly cached with cilent manager.")
+        return full_status
 
     def kill(self):
-        log.warn("Kill not yet implemented with message queue driven LWR jobs.")
+        self.client_manager.exchange.publish("kill", dict(job_id=self.job_id))
 
 
 class InputCachingJobClient(JobClient):
@@ -443,55 +374,3 @@ def _setup_params_from_job_config(job_config):
         tool_id=tool_id,
         tool_version=tool_version
     )
-
-
-class ObjectStoreClient(object):
-
-    def __init__(self, lwr_interface):
-        self.lwr_interface = lwr_interface
-
-    @parseJson()
-    def exists(self, **kwds):
-        return self._raw_execute("object_store_exists", args=self.__data(**kwds))
-
-    @parseJson()
-    def file_ready(self, **kwds):
-        return self._raw_execute("object_store_file_ready", args=self.__data(**kwds))
-
-    @parseJson()
-    def create(self, **kwds):
-        return self._raw_execute("object_store_create", args=self.__data(**kwds))
-
-    @parseJson()
-    def empty(self, **kwds):
-        return self._raw_execute("object_store_empty", args=self.__data(**kwds))
-
-    @parseJson()
-    def size(self, **kwds):
-        return self._raw_execute("object_store_size", args=self.__data(**kwds))
-
-    @parseJson()
-    def delete(self, **kwds):
-        return self._raw_execute("object_store_delete", args=self.__data(**kwds))
-
-    @parseJson()
-    def get_data(self, **kwds):
-        return self._raw_execute("object_store_get_data", args=self.__data(**kwds))
-
-    @parseJson()
-    def get_filename(self, **kwds):
-        return self._raw_execute("object_store_get_filename", args=self.__data(**kwds))
-
-    @parseJson()
-    def update_from_file(self, **kwds):
-        return self._raw_execute("object_store_update_from_file", args=self.__data(**kwds))
-
-    @parseJson()
-    def get_store_usage_percent(self):
-        return self._raw_execute("object_store_get_store_usage_percent", args={})
-
-    def __data(self, **kwds):
-        return kwds
-
-    def _raw_execute(self, command, args={}):
-        return self.lwr_interface.execute(command, args, data=None, input_path=None, output_path=None)

@@ -6,12 +6,29 @@ from os.path import relpath
 from os.path import join
 import os.path
 import hashlib
+import shutil
 
 
 def unique_path_prefix(path):
     m = hashlib.md5()
     m.update(path)
     return m.hexdigest()
+
+
+def copy(source, destination):
+    """ Copy file from source to destination if needed (skip if source
+    is destination).
+    """
+    source = os.path.abspath(source)
+    destination = os.path.abspath(destination)
+    if source != destination:
+        shutil.copyfile(source, destination)
+
+
+def ensure_directory(file_path):
+    directory = os.path.dirname(file_path)
+    if not os.path.exists(directory):
+        os.makedirs(directory)
 
 
 def directory_files(directory):

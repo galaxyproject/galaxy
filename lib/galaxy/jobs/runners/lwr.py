@@ -52,7 +52,7 @@ class LwrJobRunner( AsynchronousJobRunner ):
         try:
             client = self.get_client_from_state(job_state)
 
-            if not hasattr(client, 'get_status'):
+            if hasattr(self.client_manager, 'ensure_has_status_update_callback'):
                 # Message queue implementation.
 
                 # TODO: Very hacky now, refactor after Dannon merges in his
@@ -60,7 +60,7 @@ class LwrJobRunner( AsynchronousJobRunner ):
                 # check_watched_item like this and instead a callback needs to
                 # be issued post job recovery allowing a message queue
                 # consumer to be setup.
-                self.client_manager.ensure_has_job_completes_callback(self.__async_complete)
+                self.client_manager.ensure_has_status_update_callback(self.__async_update)
                 return job_state
 
             status = client.get_status()
@@ -69,16 +69,20 @@ class LwrJobRunner( AsynchronousJobRunner ):
             # either way we are done I guess.
             self.mark_as_finished(job_state)
             return None
-        if status == "complete":
+        job_state = self.__update_job_state_for_lwr_status(job_state, status)
+        return job_state
+
+    def __update_job_state_for_lwr_status(self, job_state, lwr_status):
+        if lwr_status == "complete":
             self.mark_as_finished(job_state)
             return None
-        if status == "running" and not job_state.running:
+        if lwr_status == "running" and not job_state.running:
             job_state.running = True
             job_state.job_wrapper.change_state( model.Job.states.RUNNING )
         return job_state
 
-    def __async_complete( self, final_status ):
-        job_id = final_status[ "job_id" ]
+    def __async_update( self, full_status ):
+        job_id = full_status[ "job_id" ]
         job_state = self.__find_watched_job( job_id )
         if not job_state:
             # Probably finished too quickly, sleep and try again.
@@ -88,9 +92,9 @@ class LwrJobRunner( AsynchronousJobRunner ):
             sleep( 2 )
             job_state = self.__find_watched_job( job_id )
         if not job_state:
-            log.warn( "Failed to find job corresponding to final status %s in %s" % ( final_status, self.watched ) )
+            log.warn( "Failed to find job corresponding to final status %s in %s" % ( full_status, self.watched ) )
         else:
-            self.mark_as_finished( job_state )
+            self.__update_job_state_for_lwr_status(job_state, full_status["status"])
 
     def __find_watched_job( self, job_id ):
         found_job = None
@@ -227,7 +231,7 @@ class LwrJobRunner( AsynchronousJobRunner ):
         job_wrapper = job_state.job_wrapper
         try:
             client = self.get_client_from_state(job_state)
-            run_results = client.final_status()
+            run_results = client.full_status()
 
             stdout = run_results.get('stdout', '')
             stderr = run_results.get('stderr', '')
@@ -251,7 +255,7 @@ class LwrJobRunner( AsynchronousJobRunner ):
         except Exception:
             message = "Failed to communicate with remote job server."
             job_wrapper.fail( message, exception=True )
-            log.exception("failure running job %d" % job_wrapper.job_id)
+            log.exception("failure finishing job %d" % job_wrapper.job_id)
             return
         if not LwrJobRunner.__remote_metadata( client ):
             self._handle_metadata_externally( job_wrapper, resolve_requirements=True )

@@ -41,15 +41,14 @@ class ClientOutputCollector(object):
         if not action.staging_action_local:
             return False
 
-        path = action.path
-        if output_type == 'legacy':
-            working_directory = results_collector.client_outputs.working_directory
-            self.client.fetch_output_legacy(path, working_directory, action_type=action.action_type)
-        elif output_type == 'output_workdir':
-            working_directory = results_collector.client_outputs.working_directory
-            self.client.fetch_work_dir_output(name, working_directory, path, action_type=action.action_type)
-        elif output_type == 'output':
-            self.client.fetch_output(path=path, name=name, action_type=action.action_type)
+        working_directory = results_collector.client_outputs.working_directory
+        self.client.fetch_output(
+            path=action.path,
+            name=name,
+            working_directory=working_directory,
+            output_type=output_type,
+            action_type=action.action_type
+        )
         return True
 
 
