@@ -183,7 +183,7 @@ return Backbone.View.extend(
                 buttons : {
                     'Choose local file' : function() {self.uploadbox.select()},
                     'Choose FTP file'   : function() {self._eventFtp()},
-                    'Create new file'   : function() {self._eventCreate()},
+                    'Paste/Fetch data'  : function() {self._eventCreate()},
                     'Start'             : function() {self._eventStart()},
                     'Pause'             : function() {self._eventStop()},
                     'Reset'             : function() {self._eventReset()},
@@ -577,11 +577,11 @@ return Backbone.View.extend(
         {
             this.modal.enableButton('Choose local file');
             this.modal.enableButton('Choose FTP file');
-            this.modal.enableButton('Create new file');
+            this.modal.enableButton('Paste/Fetch data');
         } else {
             this.modal.disableButton('Choose local file');
             this.modal.disableButton('Choose FTP file');
-            this.modal.disableButton('Create new file');
+            this.modal.disableButton('Paste/Fetch data');
         }
         
         // ftp button
