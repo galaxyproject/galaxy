@@ -822,7 +822,12 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
         self.datasets.append( dataset )
         return dataset
 
-    def copy( self, name=None, target_user=None, activatable=False ):
+    def copy( self, name=None, target_user=None, activatable=False, all_datasets=False ):
+        """
+        Return a copy of this history using the given `name` and `target_user`.
+        If `activatable`, copy only non-deleted datasets. If `all_datasets`, copy
+        non-deleted, deleted, and purged datasets.
+        """
         # Create new history.
         if not name:
             name = self.name
@@ -845,6 +850,8 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
         # Copy HDAs.
         if activatable:
             hdas = self.activatable_datasets
+        elif all_datasets:
+            hdas = self.datasets
         else:
             hdas = self.active_datasets
         for hda in hdas:
@@ -1682,6 +1689,9 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations, 
                                          deleted=self.deleted,
                                          parent_id=parent_id,
                                          copied_from_history_dataset_association=self )
+        # update init non-keywords as well
+        hda.purged = self.purged
+
         object_session( self ).add( hda )
         object_session( self ).flush()
         hda.set_size()

@@ -783,8 +783,8 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         else:
             referer_message = "<a href='%s'>go to Galaxy's start page</a>" % url_for( '/' )
 
-        # include activatable/deleted datasets when copying?
-        include_deleted = util.string_as_bool( kwd.get( 'include_deleted', False ) )
+        # include all datasets when copying?
+        all_datasets = util.string_as_bool( kwd.get( 'all_datasets', False ) )
 
         # Do import.
         if not id:
@@ -799,7 +799,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             #dan: I can import my own history.
             #if import_history.user_id == user.id:
             #    return trans.show_error_message( "You cannot import your own history.<br>You can %s." % referer_message, use_panels=True )
-            new_history = import_history.copy( target_user=user, activatable=include_deleted )
+            new_history = import_history.copy( target_user=user, all_datasets=all_datasets )
             new_history.name = "imported: " + new_history.name
             new_history.user_id = user.id
             galaxy_session = trans.get_galaxy_session()

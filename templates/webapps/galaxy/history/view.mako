@@ -98,7 +98,7 @@ ${history_panel_javascripts()}
         %>
         %if not history[ 'purged' ]:
             <a id="import" class="btn btn-default" style="display: none;"
-               href="${h.url_for( controller='history', action='imp', id=history['id'], include_deleted=show_deleted )}">
+               href="${h.url_for( controller='history', action='imp', id=history['id'], all_datasets=show_deleted )}">
                 ${_('Import and start using history')}
             </a>
         %endif
@@ -133,7 +133,7 @@ ${history_panel_javascripts()}
             // a bit hacky
             var href = $importBtn.attr( 'href' ),
                 includeDeleted = $( this ).modeButton()[0].getMode().mode === 'exclude';
-            href = href.replace( /include_deleted=True|False/, ( includeDeleted )?( 'True' ):( 'False' ) );
+            href = href.replace( /all_datasets=True|False/, ( includeDeleted )?( 'True' ):( 'False' ) );
             $importBtn.attr( 'href', href );
             $importBtn.text( includeDeleted ? _l( 'Import with deleted datasets and start using history' )
                                             : _l( 'Import and start using history' ) );
