@@ -274,7 +274,9 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
                     return { 'error': 'Anonymous users cannot edit datasets outside their current history' }
             else:
                 payload = self._validate_and_parse_update_payload( payload )
-                hda = self.get_dataset( trans, id, check_ownership=True, check_accessible=True, check_state=True )
+                # only check_state if not deleting, otherwise cannot delete uploading files
+                check_state = not payload.get( 'deleted', False )
+                hda = self.get_dataset( trans, id, check_ownership=True, check_accessible=True, check_state=check_state )
             # get_dataset can return a string during an error
             if hda and isinstance( hda, trans.model.HistoryDatasetAssociation ):
                 changed = self.set_hda_from_dict( trans, hda, payload )
