@@ -417,12 +417,11 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin):
         try:
             stored_workflow = trans.sa_session.query(self.app.model.StoredWorkflow).get(trans.security.decode_id(workflow_id))
         except Exception, e:
-            return ("Workflow with ID='%s' can not be found\n Exception: %s") % (workflow_id, str( e ))
+            raise exceptions.ObjectNotFound()
         # check to see if user has permissions to selected workflow
         if stored_workflow.user != trans.user and not trans.user_is_admin():
             if trans.sa_session.query(trans.app.model.StoredWorkflowUserShareAssociation).filter_by(user=trans.user, stored_workflow=stored_workflow).count() == 0:
-                trans.response.status = 400
-                return("Workflow is not owned by or shared with current user")
+                raise exceptions.ItemOwnershipException()
         results = trans.sa_session.query(self.app.model.WorkflowInvocation).filter(self.app.model.WorkflowInvocation.workflow_id==stored_workflow.latest_workflow_id)
         out = []
         for r in results:
@@ -447,12 +446,11 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin):
         try:
             stored_workflow = trans.sa_session.query(self.app.model.StoredWorkflow).get(trans.security.decode_id(workflow_id))
         except Exception, e:
-            return ("Workflow with ID='%s' can not be found\n Exception: %s") % (workflow_id, str( e ))
+            raise exceptions.ObjectNotFound()
         # check to see if user has permissions to selected workflow
         if stored_workflow.user != trans.user and not trans.user_is_admin():
             if trans.sa_session.query(trans.app.model.StoredWorkflowUserShareAssociation).filter_by(user=trans.user, stored_workflow=stored_workflow).count() == 0:
-                trans.response.status = 400
-                return("Workflow is not owned by or shared with current user")
+                raise exceptions.ItemOwnershipException()
         results = trans.sa_session.query(self.app.model.WorkflowInvocation).filter(self.app.model.WorkflowInvocation.workflow_id==stored_workflow.latest_workflow_id)
         results = results.filter(self.app.model.WorkflowInvocation.id == trans.security.decode_id(usage_id))        
         out = results.first()
