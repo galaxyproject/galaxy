@@ -23,6 +23,11 @@
           <!-- More information on LWR can be found at https://lwr.readthedocs.org -->
           <!-- Uncomment following line to use libcurl to perform HTTP calls (defaults to urllib) -->
           <!-- <param id="transport">curl</param> -->
+          <!-- Uncomment following parameters (second optional) to target a message
+               queue, ensure jobs_directory is specified on destinations and all
+               file actions are remote executable. -->
+          <!-- <param id="url">amqp://guest:guest@localhost:5672//</param> -->
+          <!-- <param id="manager">_default_</param> -->
         </plugin>
         <plugin id="cli" type="runner" load="galaxy.jobs.runners.cli:ShellJobRunner" />
         <plugin id="condor" type="runner" load="galaxy.jobs.runners.condor:CondorJobRunner" />
