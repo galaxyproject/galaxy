@@ -95,8 +95,9 @@ ${history_panel_javascripts()}
 
             show_deleted_js = 'true' if show_deleted == True else ( 'null' if show_deleted == None else 'false' )
             show_hidden_js  = 'true' if show_hidden  == True else ( 'null' if show_hidden  == None else 'false' )
+            print 'user_is_owner:', user_is_owner
         %>
-        %if not history[ 'purged' ]:
+        %if not user_is_owner and not history[ 'purged' ]:
             <a id="import" class="btn btn-default" style="display: none;"
                href="${h.url_for( controller='history', action='imp', id=history['id'], all_datasets=show_deleted )}">
                 ${_('Import and start using history')}
@@ -115,6 +116,7 @@ ${history_panel_javascripts()}
 
 <script type="text/javascript">
     var debugging    = JSON.parse( sessionStorage.getItem( 'debugging' ) ) || false,
+        userIsOwner  = ${'true' if user_is_owner else 'false'},
         historyJSON  = ${h.to_json_string( history )},
         hdaJSON      = ${h.to_json_string( hdas )};
     window.hdaJSON = hdaJSON;
@@ -155,19 +157,29 @@ ${history_panel_javascripts()}
 
     require.config({
         baseUrl : "${h.url_for( '/static/scripts' )}"
-    });
-    require([ "mvc/history/history-panel" ], function( historyPanel ){
+    })([
+        %if user_is_owner:
+        'mvc/history/history-panel'
+        %else:
+        'mvc/history/readonly-history-panel'
+        %endif
+        ${  }
+    ], function( panelMod ){
+    //require([ "mvc/history/history-panel" ], function( historyPanel ){
         // history module is already in the dpn chain from the panel. We can re-scope it here.
         var historyModel = require( 'mvc/history/history-model' ),
-            hdaBaseView  = require( 'mvc/dataset/hda-base' );
+            hdaBaseView  = require( 'mvc/dataset/hda-base' ),
+            history = new historyModel.History( historyJSON, hdaJSON, {
+                logger: ( debugging )?( console ):( null )
+            });
 
-        var history = new historyModel.History( historyJSON, hdaJSON, {
-            logger: ( debugging )?( console ):( null )
-        });
-
-        window.historyPanel = new historyPanel.HistoryPanel({
-            HDAViewClass    : ( Galaxy.currUser.id === historyJSON.user_id )?
-                                    ( hdaBaseView.HDAEditView ):( hdaBaseView.HDABaseView ),
+        window.panelMod = panelMod;
+        %if user_is_owner:
+        window.panelClass = panelMod.HistoryPanel;
+        %else:
+        window.panelClass = panelMod.ReadOnlyHistoryPanel;
+        %endif
+        window.historyPanel = new panelClass({
             show_deleted    : ${show_deleted_js},
             show_hidden     : ${show_hidden_js},
             el              : $( "#history-" + historyJSON.id ),

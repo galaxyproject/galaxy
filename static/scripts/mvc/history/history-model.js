@@ -75,7 +75,7 @@ var History = Backbone.Model.extend( LoggableMixin ).extend(
         /** cached timeout id for the HDA updater */
         this.updateTimeoutId = null;
         // set up update timeout if needed
-        this.checkForUpdates();
+        //this.checkForUpdates();
     },
 
     /** set up any event listeners for this history including those to the contained HDAs

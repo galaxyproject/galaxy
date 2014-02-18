@@ -887,10 +887,13 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
 
         history_dictionary = {}
         hda_dictionaries   = []
+        user_is_owner = False
         try:
             history_to_view = self.get_history( trans, id, False )
             if not history_to_view:
                 return trans.show_error_message( "The specified history does not exist." )
+            if history_to_view.user == trans.user:
+                user_is_owner = True
 
             # Admin users can view any history
             if( ( history_to_view.user != trans.user )
@@ -925,7 +928,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                                             + 'Please contact a Galaxy administrator if the problem persists.' )
 
         return trans.fill_template_mako( "history/view.mako",
-            history=history_dictionary, hdas=hda_dictionaries,
+            history=history_dictionary, hdas=hda_dictionaries, user_is_owner=user_is_owner,
             show_deleted=show_deleted, show_hidden=show_hidden, use_panels=use_panels )
 
     @web.expose
@@ -941,9 +944,8 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         # Security check raises error if user cannot access history.
         self.security_check( trans, history, False, True)
 
-        # Get datasets.
+        # Get datasets and annotations
         datasets = self.get_history_datasets( trans, history )
-        # Get annotations.
         history.annotation = self.get_item_annotation_str( trans.sa_session, history.user, history )
         for dataset in datasets:
             dataset.annotation = self.get_item_annotation_str( trans.sa_session, history.user, dataset )
@@ -957,8 +959,9 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             else:
                 user_item_rating = 0
         ave_item_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, history )
-        return trans.stream_template_mako( "history/display.mako", item = history, item_data = datasets,
-                                            user_item_rating = user_item_rating, ave_item_rating=ave_item_rating, num_ratings=num_ratings )
+
+        return trans.stream_template_mako( "history/display.mako", item=history, item_data=datasets,
+            user_item_rating = user_item_rating, ave_item_rating=ave_item_rating, num_ratings=num_ratings )
 
     @web.expose
     @web.require_login( "share Galaxy histories" )
