@@ -10,6 +10,7 @@ from paste.httpexceptions import HTTPBadRequest, HTTPForbidden
 import logging
 log = logging.getLogger( __name__ )
 
+
 class LibrariesController( BaseAPIController ):
 
     @web.expose_api
@@ -130,7 +131,7 @@ class LibrariesController( BaseAPIController ):
         new_library['synopsis'] = synopsis
         new_library['id'] = encoded_id
         return new_library
-    
+
     def edit( self, trans, encoded_id, payload, **kwd ):
         """
         * PUT /api/libraries/{encoded_id}

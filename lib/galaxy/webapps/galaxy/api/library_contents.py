@@ -2,7 +2,7 @@
 API operations on the contents of a library.
 """
 import logging
-from galaxy import web , exceptions
+from galaxy import web, exceptions
 from galaxy.model import ExtendedMetadata, ExtendedMetadataIndex
 from galaxy.web.base.controller import BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems
 from galaxy.web.base.controller import UsesHistoryDatasetAssociationMixin
@@ -10,6 +10,7 @@ from galaxy.web.base.controller import HTTPBadRequest, url_for
 from galaxy import util
 
 log = logging.getLogger( __name__ )
+
 
 class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems,
                                  UsesHistoryDatasetAssociationMixin ):
@@ -36,6 +37,7 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         """
         rval = []
         current_user_roles = trans.get_current_user_roles()
+
         def traverse( folder ):
             admin = trans.user_is_admin()
             rval = []
@@ -50,7 +52,9 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
             for ld in folder.datasets:
                 if not admin:
                     can_access = trans.app.security_agent.can_access_dataset(
-                        current_user_roles, ld.library_dataset_dataset_association.dataset )
+                        current_user_roles,
+                        ld.library_dataset_dataset_association.dataset
+                    )
                 if (admin or can_access) and not ld.deleted:
                     #log.debug( "type(folder): %s" % type( folder ) )
                     #log.debug( "type(api_path): %s; folder.api_path: %s" % ( type(folder.api_path), folder.api_path ) )
@@ -73,20 +77,20 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
             return "Invalid library id ( %s ) specified." % str( library_id )
         #log.debug( "Root folder type: %s" % type( library.root_folder ) )
         encoded_id = 'F' + trans.security.encode_id( library.root_folder.id )
-        rval.append( dict( id = encoded_id,
-                           type = 'folder',
-                           name = '/',
-                           url = url_for( 'library_content', library_id=library_id, id=encoded_id ) ) )
+        rval.append( dict( id=encoded_id,
+                           type='folder',
+                           name='/',
+                           url=url_for( 'library_content', library_id=library_id, id=encoded_id ) ) )
         #log.debug( "Root folder attributes: %s" % str(dir(library.root_folder)) )
         library.root_folder.api_path = ''
         for content in traverse( library.root_folder ):
             encoded_id = trans.security.encode_id( content.id )
             if content.api_type == 'folder':
                 encoded_id = 'F' + encoded_id
-            rval.append( dict( id = encoded_id,
-                               type = content.api_type,
-                               name = content.api_path,
-                               url = url_for( 'library_content', library_id=library_id, id=encoded_id, ) ) )
+            rval.append( dict( id=encoded_id,
+                               type=content.api_type,
+                               name=content.api_path,
+                               url=url_for( 'library_content', library_id=library_id, id=encoded_id, ) ) )
         return rval
 
     @web.expose_api
