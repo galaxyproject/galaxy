@@ -214,13 +214,16 @@ return Backbone.View.extend(
                 title       : 'FTP files',
                 container   : button
             });
-            
-            // setup info
-            this._updateScreen();
         }
         
         // show modal
         this.modal.show();
+        
+        // refresh
+        this._updateUser();
+        
+        // setup info
+        this._updateScreen();
     },
 
     //
@@ -526,9 +529,6 @@ return Backbone.View.extend(
     
     // set screen
     _updateScreen: function () {
-        // refresh
-        this._updateUser();
-        
         /*
             update on screen info
         */
