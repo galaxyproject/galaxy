@@ -218,9 +218,10 @@ class Genomes( object ):
         # Add user's custom keys to dbkeys.
         user_keys_dict = {}
         user = trans.get_user()
-        if 'dbkeys' in user.preferences:
-            user_keys_dict = from_json_string( user.preferences[ 'dbkeys' ] )
-        dbkeys.extend( [ (attributes[ 'name' ], key ) for key, attributes in user_keys_dict.items() ] )
+        if user:
+            if 'dbkeys' in user.preferences:
+                user_keys_dict = from_json_string( user.preferences[ 'dbkeys' ] )
+            dbkeys.extend( [ (attributes[ 'name' ], key ) for key, attributes in user_keys_dict.items() ] )
 
         # Add app keys to dbkeys.
 

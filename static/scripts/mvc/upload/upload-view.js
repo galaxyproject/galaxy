@@ -90,11 +90,6 @@ return Backbone.View.extend(
             return;
         }
         
-        // check if logged in
-        if (!Galaxy.currUser.get('id')) {
-            return;
-        }
-            
         // create model
         this.ui_button = new UploadButton.Model({
             icon        : 'fa-upload',
@@ -213,19 +208,15 @@ return Backbone.View.extend(
                 complete        : function() { self._eventComplete() }
             });
             
+            // add ftp file viewer
+            var button = this.modal.getButton('Choose FTP file');
+            this.ftp = new Popover.View({
+                title       : 'FTP files',
+                container   : button
+            });
+            
             // setup info
             this._updateScreen();
-            
-            // add ftp file viewer
-            if (this.options.ftp_upload_dir && this.options.ftp_upload_site) {
-                var button = this.modal.getButton('Choose FTP file');
-                this.ftp = new Popover.View({
-                    title       : 'FTP files',
-                    container   : button
-                });
-            } else {
-                this.modal.hideButton('Choose FTP file');
-            }
         }
         
         // show modal
@@ -429,7 +420,7 @@ return Backbone.View.extend(
     //
     // events triggered by this view
     //
-
+    
     _eventFtp: function() {
         // check if popover is visible
         if (!this.ftp.visible) {
@@ -475,9 +466,6 @@ return Backbone.View.extend(
         // reset progress
         this.ui_button.set('percentage', 0);
         this.ui_button.set('status', 'success');
-        
-        // backup current history
-        this.current_history = Galaxy.currHistoryPanel.model.get('id');
         
         // update running
         this.counter.running = this.counter.announce;
@@ -526,8 +514,21 @@ return Backbone.View.extend(
         }
     },
     
+    // update uset
+    _updateUser: function() {
+        // backup current history
+        this.current_user = Galaxy.currUser.get('id');
+        this.current_history = null;
+        if (this.current_user) {
+            this.current_history = Galaxy.currHistoryPanel.model.get('id');
+        }
+    },
+    
     // set screen
     _updateScreen: function () {
+        // refresh
+        this._updateUser();
+        
         /*
             update on screen info
         */
@@ -581,6 +582,13 @@ return Backbone.View.extend(
             this.modal.disableButton('Choose local file');
             this.modal.disableButton('Choose FTP file');
             this.modal.disableButton('Create new file');
+        }
+        
+        // ftp button
+        if (this.current_user && this.options.ftp_upload_dir && this.options.ftp_upload_site) {
+            this.modal.showButton('Choose FTP file');
+        } else {
+            this.modal.hideButton('Choose FTP file');
         }
         
         // table visibility

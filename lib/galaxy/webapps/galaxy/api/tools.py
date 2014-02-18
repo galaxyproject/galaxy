@@ -64,7 +64,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMix
             trans.response.status = 500
             return { 'error': str( exc ) }
 
-    @web.expose_api
+    @web.expose_api_anonymous
     def create( self, trans, payload, **kwd ):
         """
         POST /api/tools
