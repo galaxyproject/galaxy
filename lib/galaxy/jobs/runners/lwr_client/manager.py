@@ -1,9 +1,9 @@
 from abc import ABCMeta, abstractmethod
+import threading
 try:
     from Queue import Queue
 except ImportError:
     from queue import Queue
-from threading import Thread
 from os import getenv
 try:
     from urllib import urlencode
@@ -87,25 +87,35 @@ class MessageQueueClientManager(object):
         self.url = kwds.get('url')
         self.manager_name = kwds.get("manager", "_default_")
         self.exchange = LwrExchange(self.url, self.manager_name)
-        self.thread = None
+        self.final_status_cache = {}
+        self.callback_lock = threading.Lock()
+        self.callback_thread = None
         self.active = True
 
-    def listen_for_job_completes(self, callback):
-        # TODO: Call this from LWR runner.
-        def callback_wrapper(body, message):
-            callback(body)
-            message.ack()
+    def ensure_has_job_completes_callback(self, callback):
+        with self.callback_lock:
+            if self.callback_thread is not None:
+                return
 
-        def run():
-            self.exchange.consume("complete", callback_wrapper, check=self)
+            def callback_wrapper(body, message):
+                try:
+                    if "job_id" in body:
+                        self.final_status_cache[body["job_id"]] = body
+                    callback(body)
+                except Exception:
+                    log.exception("Failure processing job status update message.")
+                message.ack()
 
-        t = Thread(
-            name="lwr_client_%s_complete_callback" % self.manager_name,
-            target=run
-        )
-        t.daemon = False  # Lets not interrupt processing of this.
-        t.start()
-        self.thread = t
+            def run():
+                self.exchange.consume("complete", callback_wrapper, check=self)
+
+            thread = threading.Thread(
+                name="lwr_client_%s_complete_callback" % self.manager_name,
+                target=run
+            )
+            thread.daemon = False  # Lets not interrupt processing of this.
+            thread.start()
+            self.callback_thread = thread
 
     def shutdown(self):
         self.active = False
@@ -115,7 +125,7 @@ class MessageQueueClientManager(object):
 
     def get_client(self, destination_params, job_id):
         destination_params = _parse_destination_params(destination_params)
-        return MessageJobClient(destination_params, job_id, self.exchange)
+        return MessageJobClient(destination_params, job_id, self)
 
 
 class ObjectStoreClientManager(object):
@@ -259,7 +269,7 @@ class ClientCacher(object):
         self.num_transfer_threads = num_transfer_threads
         self.transfer_queue = Queue()
         for i in range(num_transfer_threads):
-            t = Thread(target=self._transfer_worker)
+            t = threading.Thread(target=self._transfer_worker)
             t.daemon = True
             t.start()
 

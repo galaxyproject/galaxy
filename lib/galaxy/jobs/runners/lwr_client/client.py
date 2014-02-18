@@ -8,6 +8,9 @@ from .destination import submit_params
 from .setup_handler import build as build_setup_handler
 from .job_directory import RemoteJobDirectory
 
+import logging
+log = logging.getLogger(__name__)
+
 CACHE_WAIT_SECONDS = 3
 MAX_RETRY_COUNT = 5
 RETRY_SLEEP_TIME = 0.1
@@ -272,6 +275,11 @@ class JobClient(BaseJobClient):
             launch_params["setup_params"] = dumps(setup_params)
         return self._raw_execute("launch", launch_params)
 
+    def final_status(self):
+        """ Return a dictionary summarizing final state of job.
+        """
+        return self.raw_check_complete()
+
     def kill(self):
         """
         Cancel remote job, either removing from the queue or killing it.
@@ -314,11 +322,11 @@ class JobClient(BaseJobClient):
         check_complete_response = self.raw_check_complete()
         # Older LWR instances won't set status so use 'complete', at some
         # point drop backward compatibility.
-        complete = self.check_complete(check_complete_response)
-        old_status = "complete" if complete else "running"
-        status = check_complete_response.get("status", old_status)
+        status = check_complete_response.get("status", None)
         # Bug in certains older LWR instances returned literal "status".
-        if status not in ["complete", "running", "queued"]:
+        if status in ["status", None]:
+            complete = self.check_complete(check_complete_response)
+            old_status = "complete" if complete else "running"
             status = old_status
         return status
 
@@ -344,12 +352,12 @@ class JobClient(BaseJobClient):
 
 class MessageJobClient(BaseJobClient):
 
-    def __init__(self, destination_params, job_id, exchange):
+    def __init__(self, destination_params, job_id, client_manager):
         super(MessageJobClient, self).__init__(destination_params, job_id)
         if not self.job_directory:
             error_message = "Message-queue based LWR client requires destination define a remote job_directory to stage files into."
             raise Exception(error_message)
-        self.exchange = exchange
+        self.client_manager = client_manager
 
     def launch(self, command_line, requirements=[], remote_staging=[], job_config=None):
         """
@@ -368,7 +376,19 @@ class MessageJobClient(BaseJobClient):
             # before queueing.
             setup_params = _setup_params_from_job_config(job_config)
             launch_params["setup_params"] = setup_params
-        return self.exchange.publish("setup", launch_params)
+        return self.client_manager.exchange.publish("setup", launch_params)
+
+    def clean(self):
+        del self.client_manager.final_status_cache[self.job_id]
+
+    def final_status(self):
+        final_status = self.client_manager.final_status_cache.get(self.job_id, None)
+        if final_status is None:
+            raise Exception("final_status() called before a final status was properly cached with cilent manager.")
+        return final_status
+
+    def kill(self):
+        log.warn("Kill not yet implemented with message queue driven LWR jobs.")
 
 
 class InputCachingJobClient(JobClient):

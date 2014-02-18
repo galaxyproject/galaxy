@@ -35,12 +35,13 @@ class LwrJobRunner( AsynchronousJobRunner ):
     """
     runner_name = "LWRRunner"
 
-    def __init__( self, app, nworkers, transport=None, cache=None ):
+    def __init__( self, app, nworkers, transport=None, cache=None, url=None ):
         """Start the job runner """
         super( LwrJobRunner, self ).__init__( app, nworkers )
+        self.async_status_updates = dict()
         self._init_monitor_thread()
         self._init_worker_threads()
-        client_manager_kwargs = {'transport_type': transport, 'cache': string_as_bool_or_none(cache)}
+        client_manager_kwargs = {'transport_type': transport, 'cache': string_as_bool_or_none(cache), "url": url}
         self.client_manager = build_client_manager(**client_manager_kwargs)
 
     def url_to_destination( self, url ):
@@ -50,6 +51,18 @@ class LwrJobRunner( AsynchronousJobRunner ):
     def check_watched_item(self, job_state):
         try:
             client = self.get_client_from_state(job_state)
+
+            if not hasattr(client, 'get_status'):
+                # Message queue implementation.
+
+                # TODO: Very hacky now, refactor after Dannon merges in his
+                # message queue work, runners need the ability to disable
+                # check_watched_item like this and instead a callback needs to
+                # be issued post job recovery allowing a message queue
+                # consumer to be setup.
+                self.client_manager.ensure_has_job_completes_callback(self.__async_complete)
+                return job_state
+
             status = client.get_status()
         except Exception:
             # An orphaned job was put into the queue at app startup, so remote server went down
@@ -63,6 +76,29 @@ class LwrJobRunner( AsynchronousJobRunner ):
             job_state.running = True
             job_state.job_wrapper.change_state( model.Job.states.RUNNING )
         return job_state
+
+    def __async_complete( self, final_status ):
+        job_id = final_status[ "job_id" ]
+        job_state = self.__find_watched_job( job_id )
+        if not job_state:
+            # Probably finished too quickly, sleep and try again.
+            # Kind of a hack, why does monitor queue need to no wait
+            # get and sleep instead of doing a busy wait that would
+            # respond immediately.
+            sleep( 2 )
+            job_state = self.__find_watched_job( job_id )
+        if not job_state:
+            log.warn( "Failed to find job corresponding to final status %s in %s" % ( final_status, self.watched ) )
+        else:
+            self.mark_as_finished( job_state )
+
+    def __find_watched_job( self, job_id ):
+        found_job = None
+        for async_job_state in self.watched:
+            if str( async_job_state.job_id ) == job_id:
+                found_job = async_job_state
+                break
+        return found_job
 
     def queue_job(self, job_wrapper):
         job_destination = job_wrapper.job_destination
@@ -184,15 +220,15 @@ class LwrJobRunner( AsynchronousJobRunner ):
         return self.get_client( job_destination_params, job_id )
 
     def get_client( self, job_destination_params, job_id ):
-        return self.client_manager.get_client( job_destination_params, job_id )
+        return self.client_manager.get_client( job_destination_params, str( job_id ) )
 
     def finish_job( self, job_state ):
         stderr = stdout = ''
         job_wrapper = job_state.job_wrapper
         try:
             client = self.get_client_from_state(job_state)
+            run_results = client.final_status()
 
-            run_results = client.raw_check_complete()
             stdout = run_results.get('stdout', '')
             stderr = run_results.get('stderr', '')
             exit_code = run_results.get('returncode', None)
@@ -290,6 +326,10 @@ class LwrJobRunner( AsynchronousJobRunner ):
             job_state.old_state = True
             job_state.running = state == model.Job.states.RUNNING
             self.monitor_queue.put( job_state )
+
+    def shutdown( self ):
+        super( LwrJobRunner, self ).shutdown()
+        self.client_manager.shutdown()
 
     def __client_outputs( self, client, job_wrapper ):
         remote_work_dir_copy = LwrJobRunner.__remote_work_dir_copy( client )
