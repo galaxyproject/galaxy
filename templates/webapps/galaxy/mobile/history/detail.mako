@@ -12,7 +12,7 @@
                     if data.state in ['no state','',None]:
                         data_state = "queued"
                     else:
-                        data_state = data.state
+                        data_state = str( data.state )
                 %>
 
                 <li id="historyItemContainer-${data.id}">
