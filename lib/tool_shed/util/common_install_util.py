@@ -507,8 +507,9 @@ def handle_tool_dependencies( app, tool_shed_repository, tool_dependencies_confi
                         if tool_dependency and tool_dependency.status in [ app.install_model.ToolDependency.installation_status.INSTALLED,
                                                                            app.install_model.ToolDependency.installation_status.ERROR ]:
                             installed_tool_dependencies.append( tool_dependency )
-                            # Add the tool_dependency to the in-memory dictionaries in the installed_repository_manager.
-                            app.installed_repository_manager.handle_tool_dependency_install( tool_shed_repository, tool_dependency )
+                            if app.config.manage_dependency_relationships:
+                                # Add the tool_dependency to the in-memory dictionaries in the installed_repository_manager.
+                                app.installed_repository_manager.handle_tool_dependency_install( tool_shed_repository, tool_dependency )
         elif elem.tag == 'set_environment':
             # <set_environment version="1.0">
             #    <environment_variable name="R_SCRIPT_PATH"action="set_to">$REPOSITORY_INSTALL_DIR</environment_variable>
