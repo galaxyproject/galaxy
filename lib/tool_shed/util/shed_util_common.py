@@ -1617,6 +1617,13 @@ def remove_file( file_name ):
             except:
                 pass
 
+def __repository_query( app ):
+    if app.name == "galaxy":
+        query = app.install_model.context.query( app.install_model.ToolShedRepository )
+    else:
+        query = app.model.context.query( app.model.Repository )
+    return query
+
 def repository_was_previously_installed( trans, tool_shed_url, repository_name, repo_info_tuple ):
     """
     Find out if a repository is already installed into Galaxy - there are several scenarios where this
@@ -1866,10 +1873,3 @@ def url_join( *args ):
     for arg in args:
         parts.append( arg.strip( '/' ) )
     return '/'.join( parts )
-
-def __repository_query( app ):
-    if app.name == "galaxy":
-        query = app.install_model.context.query( app.install_model.ToolShedRepository )
-    else:
-        query = app.model.context.query( app.model.Repository )
-    return query
