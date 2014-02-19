@@ -1381,7 +1381,7 @@ class AdminToolshed( AdminGalaxy ):
             repository_dependencies = repository_dependency_util.get_repository_dependencies_for_installed_tool_shed_repository( trans, tool_shed_repository )
             repo_info_dict = repository_util.create_repo_info_dict( trans=trans,
                                                                     repository_clone_url=repository_clone_url,
-                                                                    changeset_revision=tool_shed_repository.changeset_revision,
+                                                                    changeset_revision=tool_shed_repository.installed_changeset_revision,
                                                                     ctx_rev=tool_shed_repository.ctx_rev,
                                                                     repository_owner=tool_shed_repository.owner,
                                                                     repository_name=tool_shed_repository.name,
