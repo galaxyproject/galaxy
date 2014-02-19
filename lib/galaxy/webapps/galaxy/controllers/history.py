@@ -843,35 +843,6 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             history. <br>You can <a href="%s">continue and import this history</a> or %s.
             """ % ( web.url_for(controller='history', action='imp',  id=id, confirm=True, referer=trans.request.referer ), referer_message ), use_panels=True )
 
-    # Replaced with view (below) but kept (available via manual URL editing) for now
-    @web.expose
-    def original_view( self, trans, id=None, show_deleted=False, use_panels=True ):
-        """View a history. If a history is importable, then it is viewable by any user."""
-        # Get history to view.
-        if not id:
-            return trans.show_error_message( "You must specify a history you want to view." )
-        history_to_view = self.get_history( trans, id, False)
-        # Integrity checks.
-        if not history_to_view:
-            return trans.show_error_message( "The specified history does not exist." )
-        # Admin users can view any history
-        if( ( history_to_view.user != trans.user )
-        and ( not trans.user_is_admin()  )
-        and ( not history_to_view.importable ) ):
-            error( "Either you are not allowed to view this history or the owner of this history has not made it accessible." )
-        # View history.
-        show_deleted = galaxy.util.string_as_bool( show_deleted )
-        datasets = self.get_history_datasets( trans, history_to_view, show_deleted=show_deleted )
-        try:
-            use_panels = galaxy.util.string_as_bool( use_panels )
-        except:
-            pass # already a bool
-        return trans.stream_template_mako( "history/original_view.mako",
-                                           history = history_to_view,
-                                           datasets = datasets,
-                                           show_deleted = show_deleted,
-                                           use_panels = use_panels )
-
     @web.expose
     def view( self, trans, id=None, show_deleted=False, show_hidden=False, use_panels=True ):
         """
