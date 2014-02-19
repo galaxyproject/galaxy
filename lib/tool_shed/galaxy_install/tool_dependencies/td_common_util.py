@@ -303,9 +303,19 @@ def move_directory_files( current_dir, source_dir, destination_dir ):
     destination_directory = os.path.join( destination_dir )
     if not os.path.isdir( destination_directory ):
         os.makedirs( destination_directory )
+    symlinks = []
+    regular_files = []
     for file_name in os.listdir( source_directory ):
         source_file = os.path.join( source_directory, file_name )
         destination_file = os.path.join( destination_directory, file_name )
+        files_tuple = ( source_file, destination_file )
+        if os.path.islink( source_file ):
+            symlinks.append( files_tuple )
+        else:
+            regular_files.append( files_tuple )
+    for source_file, destination_file in symlinks:
+        shutil.move( source_file, destination_file )
+    for source_file, destination_file in regular_files:
         shutil.move( source_file, destination_file )
 
 def move_file( current_dir, source, destination, rename_to=None ):
