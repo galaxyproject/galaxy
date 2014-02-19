@@ -77,6 +77,7 @@ ${history_panel_javascripts()}
 %endif
 
 <script type="text/javascript">
+    ##TODO: remove when Galaxy is either ensured or removed from the history panel
     var using_panels = ${ 'false' if not use_panels else 'true' };
     %if not use_panels:
         window.Galaxy = {};
@@ -87,113 +88,107 @@ ${history_panel_javascripts()}
 
 ## ----------------------------------------------------------------------------
 <%def name="center_panel()">
+<%
+    show_deleted = context.get( 'show_deleted', None )
+    show_hidden  = context.get( 'show_hidden',  None )
+
+    user_is_owner_json = 'true' if user_is_owner else 'false'
+    show_deleted_json  = h.to_json_string( show_deleted )
+    show_hidden_json   = h.to_json_string( show_hidden )
+
+    imp_with_deleted_url = h.url_for( controller='history', action='imp', id=history['id'], all_datasets=True )
+    imp_without_deleted_url = h.url_for( controller='history', action='imp', id=history['id'] )
+%>
+
 <div id="header" class="clear">
     <div id="history-view-controls" class="pull-right">
-        <%
-            show_deleted = context.get( 'show_deleted', None )
-            show_hidden  = context.get( 'show_hidden',  None )
-
-            show_deleted_js = 'true' if show_deleted == True else ( 'null' if show_deleted == None else 'false' )
-            show_hidden_js  = 'true' if show_hidden  == True else ( 'null' if show_hidden  == None else 'false' )
-            print 'user_is_owner:', user_is_owner
-        %>
         %if not user_is_owner and not history[ 'purged' ]:
-            <a id="import" class="btn btn-default" style="display: none;"
-               href="${h.url_for( controller='history', action='imp', id=history['id'], all_datasets=show_deleted )}">
-                ${_('Import and start using history')}
-            </a>
+            <button id="import" class="btn btn-default"></button>
         %endif
-        <button id="toggle-deleted" class="btn btn-default">
-            ${_('Exclude deleted') if show_deleted else _('Include deleted')}
-        </button>
-        <button id="toggle-hidden" class="btn btn-default">
-            ${_('Exclude hidden') if show_hidden else _('Include hidden')}
-        </button>
+        <button id="toggle-deleted" class="btn btn-default"></button>
+        <button id="toggle-hidden" class="btn btn-default"></button>
     </div>
 </div>
 
 <div id="history-${ history[ 'id' ] }" class="history-panel unified-panel-body" style="overflow: auto;"></div>
 
 <script type="text/javascript">
+    $(function(){
+        $( '#toggle-deleted' ).modeButton({
+            initialMode : "${ 'showing_deleted' if show_deleted else 'not_showing_deleted' }",
+            modes: [
+                { mode: 'showing_deleted',      html: _l( 'Exclude deleted' ) },
+                { mode: 'not_showing_deleted',  html: _l( 'Include deleted' ) }
+            ]
+        }).click( function(){
+            // allow the 'include/exclude deleted' button to control whether the 'import' button includes deleted
+            //  datasets when importing or not; when deleted datasets are shown, they'll be imported
+            $( '#import' ).modeButton( 'setMode',
+                $( this ).modeButton( 'current' ) === 'showing_deleted'? 'with_deleted': 'without_deleted' )
+        });
+
+        $( '#toggle-hidden' ).modeButton({
+            initialMode : "${ 'showing_hidden' if show_hidden else 'not_showing_hidden' }",
+            modes: [
+                { mode: 'showing_hidden',     html: _l( 'Exclude hidden' ) },
+                { mode: 'not_showing_hidden', html: _l( 'Include hidden' ) }
+            ]
+        });
+
+        $( '#import' ).modeButton({
+            switchModesOnClick : false,
+            initialMode : "${ 'with_deleted' if show_deleted else 'without_deleted' }",
+            modes: [
+                { mode: 'with_deleted', html: _l( 'Import with deleted datasets and start using history' ),
+                    onclick: function importWithDeleted(){
+                        window.location = '${imp_with_deleted_url}';
+                    }
+                },
+                { mode: 'without_deleted', html: _l( 'Import and start using history' ),
+                    onclick: function importWithoutDeleted(){
+                        window.location = '${imp_without_deleted_url}';
+                    }
+                },
+            ]
+        });
+    });
+
     var debugging    = JSON.parse( sessionStorage.getItem( 'debugging' ) ) || false,
         userIsOwner  = ${'true' if user_is_owner else 'false'},
         historyJSON  = ${h.to_json_string( history )},
         hdaJSON      = ${h.to_json_string( hdas )};
-    window.hdaJSON = hdaJSON;
-
-    $( '#toggle-deleted' ).modeButton({
-        initialMode : (${ show_deleted_js })?( 'exclude' ):( 'include' ),
-        modes: [
-            { mode: 'exclude', html: _l( 'Exclude deleted' ) },
-            { mode: 'include', html: _l( 'Include deleted' ) }
-        ]
-    }).click( function(){
-        // allow the 'include/exclude deleted' button to control whether the 'import' button includes deleted datasets
-        //  when importing or not; when deleted datasets are shown, they'll be imported
-        var $importBtn = $( '#import' );
-        if( $importBtn.size() ){
-            // a bit hacky
-            var href = $importBtn.attr( 'href' ),
-                includeDeleted = $( this ).modeButton()[0].getMode().mode === 'exclude';
-            href = href.replace( /all_datasets=True|False/, ( includeDeleted )?( 'True' ):( 'False' ) );
-            $importBtn.attr( 'href', href );
-            $importBtn.text( includeDeleted ? _l( 'Import with deleted datasets and start using history' )
-                                            : _l( 'Import and start using history' ) );
-        }
-    });
-
-    $( '#toggle-hidden' ).modeButton({
-        initialMode : (${ show_hidden_js })?( 'exclude' ):( 'include' ),
-        modes: [
-            { mode: 'exclude', html: _l( 'Exclude hidden' ) },
-            { mode: 'include', html: _l( 'Include hidden' ) }
-        ]
-    });
-
-    ##TODO: move to mako
-    if( Galaxy.currUser.id !== historyJSON.user_id ){
-        $( '#import' ).show();
-    }
+        panelToUse   = ( userIsOwner )?
+            ({ location: 'mvc/history/history-panel',           className: 'HistoryPanel' }):
+            ({ location: 'mvc/history/readonly-history-panel',  className: 'ReadOnlyHistoryPanel' });
 
     require.config({
         baseUrl : "${h.url_for( '/static/scripts' )}"
-    })([
-        %if user_is_owner:
-        'mvc/history/history-panel'
-        %else:
-        'mvc/history/readonly-history-panel'
-        %endif
-        ${  }
-    ], function( panelMod ){
-    //require([ "mvc/history/history-panel" ], function( historyPanel ){
-        // history module is already in the dpn chain from the panel. We can re-scope it here.
-        var historyModel = require( 'mvc/history/history-model' ),
-            hdaBaseView  = require( 'mvc/dataset/hda-base' ),
-            history = new historyModel.History( historyJSON, hdaJSON, {
-                logger: ( debugging )?( console ):( null )
-            });
+    })([ panelToUse.location ], function( panelMod ){
+        $(function(){
+            var panelClass = panelMod[ panelToUse.className ],
+                // history module is already in the dpn chain from the panel. We can re-scope it here.
+                historyModel = require( 'mvc/history/history-model' ),
+                hdaBaseView  = require( 'mvc/dataset/hda-base' ),
+                history = new historyModel.History( historyJSON, hdaJSON, {
+                    logger: ( debugging )?( console ):( null )
+                });
 
-        window.panelMod = panelMod;
-        %if user_is_owner:
-        window.panelClass = panelMod.HistoryPanel;
-        %else:
-        window.panelClass = panelMod.ReadOnlyHistoryPanel;
-        %endif
-        window.historyPanel = new panelClass({
-            show_deleted    : ${show_deleted_js},
-            show_hidden     : ${show_hidden_js},
-            el              : $( "#history-" + historyJSON.id ),
-            model           : history,
-            onready         : function(){
-                var panel = this;
-                $( '#toggle-deleted' ).on( 'click', function(){
-                    panel.toggleShowDeleted();
-                });
-                $( '#toggle-hidden' ).on( 'click', function(){
-                    panel.toggleShowHidden();
-                });
-                this.render();
-            }
+            window.historyPanel = new panelClass({
+                show_deleted    : ${show_deleted_json},
+                show_hidden     : ${show_hidden_json},
+                el              : $( "#history-" + historyJSON.id ),
+                model           : history,
+                onready         : function(){
+                    var panel = this;
+                    $( '#toggle-deleted' ).on( 'click', function(){
+                        panel.toggleShowDeleted();
+                    });
+                    $( '#toggle-hidden' ).on( 'click', function(){
+                        panel.toggleShowHidden();
+                    });
+                    this.render();
+                }
+            });
         });
     });
 </script>
