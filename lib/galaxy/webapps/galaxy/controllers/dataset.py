@@ -839,14 +839,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
             hda.mark_deleted()
             hda.clear_associated_files()
             trans.log_event( "Dataset id %s marked as deleted" % str(id) )
-            if hda.parent_id is None and len( hda.creating_job_associations ) > 0:
-                # Mark associated job for deletion
-                job = hda.creating_job_associations[0].job
-                if job.state in [ self.app.model.Job.states.QUEUED, self.app.model.Job.states.RUNNING, self.app.model.Job.states.NEW ]:
-                    # Are *all* of the job's other output datasets deleted?
-                    if job.check_if_output_datasets_deleted():
-                        job.mark_deleted( self.app.config.track_jobs_in_database )
-                        self.app.job_manager.job_stop_queue.put( job.id )
+            self.stop_hda_creating_job( hda )
             trans.sa_session.flush()
         except Exception, e:
             msg = 'HDA deletion failed (encoded: %s, decoded: %s)' % ( dataset_id, id )
