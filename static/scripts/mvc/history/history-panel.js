@@ -401,12 +401,6 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
     }
 });
 
-//------------------------------------------------------------------------------ TEMPLATES
-HistoryPanel.templates = {
-    historyPanel     : Handlebars.templates[ 'template-history-historyPanel' ],
-    anonHistoryPanel : Handlebars.templates[ 'template-history-historyPanel-anon' ]
-};
-
 //==============================================================================
     return {
         HistoryPanel        : HistoryPanel

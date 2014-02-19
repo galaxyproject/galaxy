@@ -272,12 +272,6 @@ var CurrentHistoryPanel = hpanel.HistoryPanel.extend(
     }
 });
 
-//------------------------------------------------------------------------------ TEMPLATES
-CurrentHistoryPanel.templates = {
-    historyPanel     : Handlebars.templates[ 'template-history-historyPanel' ],
-    anonHistoryPanel : Handlebars.templates[ 'template-history-historyPanel-anon' ]
-};
-
 //==============================================================================
     return {
         CurrentHistoryPanel        : CurrentHistoryPanel
