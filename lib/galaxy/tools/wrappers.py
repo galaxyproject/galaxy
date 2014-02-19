@@ -206,10 +206,12 @@ class DatasetListWrapper( list ):
             datasets = [datasets]
 
         def to_wrapper( dataset ):
-            real_path = dataset.file_name
             wrapper_kwds = kwargs.copy()
-            if real_path in dataset_paths:
-                wrapper_kwds[ "dataset_path" ] = dataset_paths[ real_path ]
+            if dataset:
+                #A None dataset does not have a filename
+                real_path = dataset.file_name
+                if real_path in dataset_paths:
+                    wrapper_kwds[ "dataset_path" ] = dataset_paths[ real_path ]
             return DatasetFilenameWrapper( dataset, **wrapper_kwds )
 
         list.__init__( self, map( to_wrapper, datasets ) )
