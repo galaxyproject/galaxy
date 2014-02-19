@@ -95,6 +95,7 @@ class Configuration( object ):
         self.tool_data_table_config_path = resolve_path( kwargs.get( 'tool_data_table_config_path', 'tool_data_table_conf.xml' ), self.root )
         self.shed_tool_data_table_config = resolve_path( kwargs.get( 'shed_tool_data_table_config', 'shed_tool_data_table_conf.xml' ), self.root )
         self.enable_tool_shed_check = string_as_bool( kwargs.get( 'enable_tool_shed_check', False ) )
+        self.manage_dependency_relationships = string_as_bool( kwargs.get( 'manage_dependency_relationships', True ) )
         self.running_functional_tests = string_as_bool( kwargs.get( 'running_functional_tests', False ) )
         self.hours_between_check = kwargs.get( 'hours_between_check', 12 )
         try:

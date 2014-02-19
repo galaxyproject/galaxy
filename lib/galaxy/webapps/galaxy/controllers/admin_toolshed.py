@@ -271,9 +271,10 @@ class AdminToolshed( AdminGalaxy ):
             if remove_from_disk_checked:
                 tool_shed_repository.status = trans.install_model.ToolShedRepository.installation_status.UNINSTALLED
                 tool_shed_repository.error_message = None
-                # Remove the uninstalled repository and any tool dependencies from the in-memory dictionaries in the
-                # installed_repository_manager.
-                trans.app.installed_repository_manager.handle_repository_uninstall( tool_shed_repository )
+                if trans.app.config.manage_dependency_relationships:
+                    # Remove the uninstalled repository and any tool dependencies from the in-memory dictionaries in the
+                    # installed_repository_manager.
+                    trans.app.installed_repository_manager.handle_repository_uninstall( tool_shed_repository )
             else:
                 tool_shed_repository.status = trans.install_model.ToolShedRepository.installation_status.DEACTIVATED
             trans.install_model.context.add( tool_shed_repository )
