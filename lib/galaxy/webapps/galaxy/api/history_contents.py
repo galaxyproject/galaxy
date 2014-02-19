@@ -280,6 +280,8 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             # get_dataset can return a string during an error
             if hda and isinstance( hda, trans.model.HistoryDatasetAssociation ):
                 changed = self.set_hda_from_dict( trans, hda, payload )
+                if payload.get( 'deleted', False ):
+                    self.stop_hda_creating_job( hda )
         except Exception, exception:
             log.error( 'Update of history (%s), HDA (%s) failed: %s',
                         history_id, id, str( exception ), exc_info=True )
@@ -348,6 +350,8 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
                     # flush now to preserve deleted state in case of later interruption
                     trans.sa_session.flush()
                 rval[ 'purged' ] = True
+
+            self.stop_hda_creating_job( hda )
 
             trans.sa_session.flush()
             rval[ 'deleted' ] = True
