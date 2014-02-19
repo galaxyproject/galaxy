@@ -186,8 +186,7 @@ class InstallManager( object ):
                         # Tools outside of sections.
                         file_path = elem.get( 'file', None )
                         if file_path:
-                            file_name = suc.strip_path( file_path )
-                            if file_name in tool_configs_to_filter:
+                            if file_path in tool_configs_to_filter:
                                 root.remove( elem )
                                 persist_required = True
                     elif elem.tag == 'section':
@@ -196,8 +195,7 @@ class InstallManager( object ):
                             if section_elem.tag == 'tool':
                                 file_path = section_elem.get( 'file', None )
                                 if file_path:
-                                    file_name = suc.strip_path( file_path )
-                                    if file_name in tool_configs_to_filter or file_path in tool_configs_to_filter:
+                                    if file_path in tool_configs_to_filter:
                                         elem.remove( section_elem )
                                         persist_required = True
             if persist_required:
@@ -221,8 +219,7 @@ class InstallManager( object ):
             if proprietary_tool_panel_elem.tag == 'tool':
                 # The proprietary_tool_panel_elem looks something like <tool file="emboss_5/emboss_antigenic.xml" />.
                 proprietary_tool_config = proprietary_tool_panel_elem.get( 'file' )
-                proprietary_name = suc.strip_path( proprietary_tool_config )
-                if tool_config == proprietary_name or tool_config == proprietary_tool_config:
+                if tool_config == proprietary_tool_config:
                     # The tool is loaded outside of any sections.
                     tool_sections.append( None )
                     if not is_displayed:
@@ -233,8 +230,7 @@ class InstallManager( object ):
                     if section_elem.tag == 'tool':
                         # The section_elem looks something like <tool file="emboss_5/emboss_antigenic.xml" />.
                         proprietary_tool_config = section_elem.get( 'file' )
-                        proprietary_name = suc.strip_path( proprietary_tool_config )
-                        if tool_config == proprietary_name or tool_config == proprietary_tool_config:
+                        if tool_config == proprietary_tool_config:
                             # The tool is loaded inside of the section_elem.
                             tool_sections.append( ToolSection( proprietary_tool_panel_elem ) )
                             if not is_displayed:
@@ -312,8 +308,7 @@ class InstallManager( object ):
                     # Tools outside of sections.
                     file_path = elem.get( 'file', None )
                     if file_path:
-                        name = suc.strip_path( file_path )
-                        if name in migrated_tool_configs or file_path in migrated_tool_configs:
+                        if file_path in migrated_tool_configs:
                             if elem not in tool_panel_elems:
                                 tool_panel_elems.append( elem )
                 elif elem.tag == 'section':
@@ -322,8 +317,7 @@ class InstallManager( object ):
                         if section_elem.tag == 'tool':
                             file_path = section_elem.get( 'file', None )
                             if file_path:
-                                name = suc.strip_path( file_path )
-                                if name in migrated_tool_configs or file_path in migrated_tool_configs:
+                                if file_path in migrated_tool_configs:
                                     # Append the section, not the tool.
                                     if elem not in tool_panel_elems:
                                         tool_panel_elems.append( elem )
@@ -361,10 +355,8 @@ class InstallManager( object ):
                         for tool_panel_dict in v:
                             # Keep track of tool config file names associated with entries that have been made to the
                             # migrated_tools_conf.xml file so they can be eliminated from all non-shed-related tool panel configs.
-                            tool_config_file = tool_panel_dict.get( 'tool_config', None )
-                            if tool_config_file:
-                                if tool_config_file not in tool_configs_to_filter:
-                                    tool_configs_to_filter.append( tool_config_file )
+                            if tool_config not in tool_configs_to_filter:
+                                tool_configs_to_filter.append( tool_config )
                 else:
                     print 'The tool "%s" (%s) has not been enabled because it is not defined in a proprietary tool config (%s).' \
                     % ( guid, tool_config, ", ".join( self.proprietary_tool_confs or [] ) )
