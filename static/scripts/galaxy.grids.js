@@ -847,7 +847,7 @@ var GridView = Backbone.View.extend({
             var page_link_range     = num_page_links / 2;
             var min_page            = cur_page_num - page_link_range
             var min_offset          = 0;
-            if (min_page == 0) {
+            if (min_page <= 0) {
                 // Min page is too low.
                 min_page = 1;
                 min_offset = page_link_range - ( cur_page_num - min_page );
