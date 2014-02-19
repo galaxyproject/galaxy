@@ -45,7 +45,7 @@ from sqlalchemy import and_
 from sqlalchemy.orm.exc import NoResultFound
 
 eggs.require( "pexpect" )
-eggs.require( "amqplib" )
+eggs.require( "amqp" )
 
 import logging
 log = logging.getLogger( __name__ )
