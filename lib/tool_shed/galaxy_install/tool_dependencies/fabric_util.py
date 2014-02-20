@@ -206,7 +206,11 @@ def handle_action_shell_file_paths( env_file_builder, action_dict ):
 
 def handle_command( app, tool_dependency, install_dir, cmd, return_output=False, use_fabric=False ):
     context = app.install_model.context
-    output = run_local_command( cmd, capture_output=True, stream_output=True )
+    if use_fabric:
+        with settings( warn_only=True ):
+            output = local( cmd, capture=True )
+    else:
+        output = run_local_command( cmd, capture_output=True, stream_output=True )
     log_results( cmd, output, os.path.join( install_dir, INSTALLATION_LOG ) )
     if output.return_code:
         tool_dependency.status = app.install_model.ToolDependency.installation_status.ERROR
