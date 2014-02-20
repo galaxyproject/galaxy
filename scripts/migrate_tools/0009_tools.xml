@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <toolshed name="toolshed.g2.bx.psu.edu">
     <repository owner="devteam" changeset_revision="96d2e31a3938" name="bowtie2" description="Bowtie2">
-        <tool id="bowtie2" version="0.2" file="ngs_rna/bowtie2_wrapper.xml" />
+        <tool id="bowtie2" version="0.2" file="sr_mapping/bowtie2_wrapper.xml" />
     </repository>
     <repository owner="devteam" changeset_revision="a0c8dc671a23" name="ccat" description="Control-based ChIP-seq Analysis Tool">
         <tool id="peakcalling_ccat" version="0.0.1" file="peak_calling/ccat_wrapper.xml" />
