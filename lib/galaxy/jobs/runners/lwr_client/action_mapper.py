@@ -1,4 +1,6 @@
 from json import load
+from os import makedirs
+from os.path import exists
 from os.path import abspath
 from os.path import dirname
 from os.path import join
@@ -11,6 +13,9 @@ import galaxy.util
 from galaxy.util.bunch import Bunch
 from .util import directory_files
 from .util import unique_path_prefix
+from .transport import get_file
+from .transport import post_file
+
 
 DEFAULT_MAPPED_ACTION = 'transfer'  # Not really clear to me what this should be, exception?
 DEFAULT_PATH_MAPPER_TYPE = 'prefix'
@@ -67,7 +72,7 @@ class FileActionMapper(object):
     ...     f = NamedTemporaryFile(delete=False)
     ...     f.write(config_contents.encode('UTF-8'))
     ...     f.close()
-    ...     mock_client = Bunch(default_file_action=default_action, action_config_path=f.name)
+    ...     mock_client = Bunch(default_file_action=default_action, action_config_path=f.name, files_endpoint=None)
     ...     mapper = FileActionMapper(mock_client)
     ...     mapper = FileActionMapper(config=mapper.to_dict()) # Serialize and deserialize it to make sure still works
     ...     unlink(f.name)
@@ -125,10 +130,12 @@ class FileActionMapper(object):
             config = self.__client_to_config(client)
         self.default_action = config.get("default_action", "transfer")
         self.mappers = mappers_from_dicts(config.get("paths", []))
+        self.files_endpoint = config.get("files_endpoint", None)
 
     def to_dict(self):
         return dict(
             default_action=self.default_action,
+            files_endpoint=self.files_endpoint,
             paths=map(lambda m: m.to_dict(), self.mappers)
         )
 
@@ -139,6 +146,7 @@ class FileActionMapper(object):
         else:
             config = dict()
         config["default_action"] = client.default_file_action
+        config["files_endpoint"] = client.files_endpoint
         return config
 
     def __load_action_config(self, path):
@@ -166,13 +174,29 @@ class FileActionMapper(object):
             message_template = "Unknown action_type encountered %s while trying to map path %s"
             message_args = (action_type, path)
             raise Exception(message_template % message_args)
-        return action_class(path, file_lister=file_lister)
+        action = action_class(path, file_lister=file_lister)
+        self.__process_action(action, type)
+        return action
 
     def unstructured_mappers(self):
         """ Return mappers that will map 'unstructured' files (i.e. go beyond
         mapping inputs, outputs, and config files).
         """
         return filter(lambda m: path_type.UNSTRUCTURED in m.path_types, self.mappers)
+
+    def __process_action(self, action, file_type):
+        """ Extension point to populate extra action information after an
+        action has been created.
+        """
+        if action.action_type == "remote_transfer":
+            url_base = self.files_endpoint
+            if not url_base:
+                raise Exception("Attempted to use remote_transfer action with defining a files_endpoint")
+            if "?" not in url_base:
+                url_base = "%s?" % url_base
+            # TODO: URL encode path.
+            url = "%s&path=%s&file_type=%s" % (url_base, action.path, file_type)
+            action.url = url
 
 
 class BaseAction(object):
@@ -233,7 +257,7 @@ class RemoteCopyAction(BaseAction):
     staging = STAGING_ACTION_REMOTE
 
     def to_dict(self):
-        return dict(path=self.path, action_type=RemoteCopyAction.action_type)
+        return dict(path=self.path, action_type=self.action_type)
 
     @classmethod
     def from_dict(cls, action_dict):
@@ -241,6 +265,41 @@ class RemoteCopyAction(BaseAction):
 
     def write_to_path(self, path):
         galaxy.util.copy_to_path(open(self.path, "rb"), path)
+
+    def write_from_path(self, lwr_path):
+        destination = self.path
+        parent_directory = dirname(destination)
+        if not exists(parent_directory):
+            makedirs(parent_directory)
+        with open(lwr_path, "rb") as f:
+            galaxy.util.copy_to_path(f, destination)
+
+
+class RemoteTransferAction(BaseAction):
+    """ This action indicates the LWR server should copy the file before
+    execution via direct file system copy. This is like a CopyAction, but
+    it indicates the action should occur on the LWR server instead of on
+    the client.
+    """
+    action_type = "remote_transfer"
+    staging = STAGING_ACTION_REMOTE
+
+    def __init__(self, path, file_lister=None, url=None):
+        super(RemoteTransferAction, self).__init__(path, file_lister=file_lister)
+        self.url = url
+
+    def to_dict(self):
+        return dict(path=self.path, action_type=self.action_type, url=self.url)
+
+    @classmethod
+    def from_dict(cls, action_dict):
+        return RemoteTransferAction(path=action_dict["path"], url=action_dict["url"])
+
+    def write_to_path(self, path):
+        get_file(self.url, path)
+
+    def write_from_path(self, lwr_path):
+        post_file(self.url, lwr_path)
 
 
 class MessageAction(object):
@@ -275,7 +334,8 @@ class MessageAction(object):
     def write_to_path(self, path):
         open(path, "w").write(self.contents)
 
-DICTIFIABLE_ACTION_CLASSES = [RemoteCopyAction, MessageAction]
+
+DICTIFIABLE_ACTION_CLASSES = [RemoteCopyAction, RemoteTransferAction, MessageAction]
 
 
 def from_dict(action_dict):
@@ -402,8 +462,20 @@ class FileLister(object):
 
 DEFAULT_FILE_LISTER = FileLister(dict(depth=0))
 
-ACTION_CLASSES = [NoneAction, TransferAction, CopyAction, RemoteCopyAction]
+ACTION_CLASSES = [
+    NoneAction,
+    TransferAction,
+    CopyAction,
+    RemoteCopyAction,
+    RemoteTransferAction
+]
 actions = dict([(clazz.action_type, clazz) for clazz in ACTION_CLASSES])
 
 
-__all__ = [FileActionMapper, path_type, from_dict, MessageAction]
+__all__ = [
+    FileActionMapper,
+    path_type,
+    from_dict,
+    MessageAction,
+    RemoteTransferAction,  # For testing
+]

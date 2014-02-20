@@ -59,8 +59,9 @@ class ClientManager(object):
             self.client_class = JobClient
             self.extra_client_kwds = {}
 
-    def get_client(self, destination_params, job_id):
+    def get_client(self, destination_params, job_id, **kwargs):
         destination_params = _parse_destination_params(destination_params)
+        destination_params.update(**kwargs)
         job_manager_interface_class = self.job_manager_interface_class
         job_manager_interface_args = dict(destination_params=destination_params, **self.job_manager_interface_args)
         job_manager_interface = job_manager_interface_class(**job_manager_interface_args)
@@ -112,8 +113,9 @@ class MessageQueueClientManager(object):
     def __nonzero__(self):
         return self.active
 
-    def get_client(self, destination_params, job_id):
+    def get_client(self, destination_params, job_id, **kwargs):
         destination_params = _parse_destination_params(destination_params)
+        destination_params.update(**kwargs)
         return MessageJobClient(destination_params, job_id, self)
 
 
