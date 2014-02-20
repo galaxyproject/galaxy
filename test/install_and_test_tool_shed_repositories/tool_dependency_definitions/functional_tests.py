@@ -264,6 +264,13 @@ def main():
         database_connection = os.environ[ 'GALAXY_INSTALL_TEST_DBURI' ]
     else:
         database_connection = 'sqlite:///' + os.path.join( galaxy_db_path, 'install_and_test_repositories.sqlite' )
+    if 'GALAXY_INSTALL_TEST_INSTALL_DBURI' in os.environ:
+        install_database_connection = os.environ[ 'GALAXY_INSTALL_TEST_INSTALL_DBURI' ]
+    elif asbool( os.environ.get( 'GALAXY_TEST_INSTALL_DB_MERGED', default_install_db_merged ) ):
+        install_database_connection = galaxy_database_connection
+    else:
+        install_db_path = os.path.join( galaxy_db_path, 'install.sqlite' )
+        install_database_connection = 'sqlite:///%s' % install_galaxy_db_path
     kwargs = {}
     for dir in [ galaxy_test_tmp_dir ]:
         try:
@@ -271,6 +278,7 @@ def main():
         except OSError:
             pass
     print "Database connection: ", database_connection
+    print "Install database connection: ", install_database_connection
     # Generate the shed_tool_data_table_conf.xml file.
     file( shed_tool_data_table_conf_file, 'w' ).write( install_and_test_base_util.tool_data_table_conf_xml_template )
     os.environ[ 'GALAXY_INSTALL_TEST_SHED_TOOL_DATA_TABLE_CONF' ] = shed_tool_data_table_conf_file
@@ -298,6 +306,7 @@ def main():
                    datatype_converters_config_file = "datatype_converters_conf.xml.sample",
                    file_path = galaxy_file_path,
                    id_secret = install_and_test_base_util.galaxy_encode_secret,
+                   install_database_connection = install_database_connection,
                    job_config_file = galaxy_job_conf_file,
                    job_queue_workers = 5,
                    log_destination = "stdout",
