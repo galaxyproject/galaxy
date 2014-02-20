@@ -95,7 +95,7 @@ spaceghost.openHomePage().historypanel.waitForHdas( function(){
     this.test.assertExists( emptyMsgSelector, emptyMsgSelector + ' exists' );
     this.test.assertVisible( emptyMsgSelector, 'Empty history message is visible' );
     this.test.assertSelectorHasText( emptyMsgSelector, emptyMsgStr,
-        'Message contains "' + emptyMsgStr + '"' );
+        'Message contains\n"' + emptyMsgStr + '":\n"' + this.fetchText( emptyMsgSelector ) + '"' );
 });
 
 // ------------------------------------------------------------------- name editing
@@ -157,7 +157,7 @@ spaceghost.then( function(){
 spaceghost.tools.uploadFile( filepathToUpload, function uploadCallback( _uploadInfo ){
     this.test.comment( 'uploaded file should appear in history' );
 
-    this.debug( 'uploaded HDA info: ' + this.jsonStr( _uploadInfo ) );
+    //this.debug( 'uploaded HDA info: ' + this.jsonStr( _uploadInfo ) );
     var hasHda = _uploadInfo.hdaElement,
         hasClass = _uploadInfo.hdaElement.attributes[ 'class' ],
         hasOkClass = _uploadInfo.hdaElement.attributes[ 'class' ].indexOf( wrapperOkClassName ) !== -1;
