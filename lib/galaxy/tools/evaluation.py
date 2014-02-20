@@ -181,9 +181,11 @@ class ToolEvaluator( object ):
                     tool=self,
                     name=input.name
                 )
-                real_path = dataset.file_name
-                if real_path in input_dataset_paths:
-                    wrapper_kwds[ "dataset_path" ] = input_dataset_paths[ real_path ]
+                if dataset:
+                    #A None dataset does not have a filename
+                    real_path = dataset.file_name
+                    if real_path in input_dataset_paths:
+                        wrapper_kwds[ "dataset_path" ] = input_dataset_paths[ real_path ]
                 input_values[ input.name ] = \
                     DatasetFilenameWrapper( dataset, **wrapper_kwds )
             elif isinstance( input, SelectToolParameter ):
