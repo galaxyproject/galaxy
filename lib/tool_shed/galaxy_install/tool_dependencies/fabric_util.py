@@ -133,6 +133,14 @@ def check_fabric_version():
         raise NotImplementedError( "Install Fabric version 1.0 or later." )
 
 def enqueue_output( stdout, stdout_queue, stderr, stderr_queue ):
+    '''
+    This method places streamed stdout and stderr into a threaded IPC queue target, defined as follows:
+    
+    stdio_thread = Thread( target=enqueue_output, args=( process_handle.stdout, stdout_queue, process_handle.stderr, stderr_queue ) )
+    
+    When input is received, it logs that input to the defined logger, and saves it to that thread's queue. The calling thread
+    can then retrieve that data using thread.stdout and thread.stderr.
+    '''
     stdout_logger = logging.getLogger( 'fabric_util.STDOUT' )
     stderr_logger = logging.getLogger( 'fabric_util.STDERR' )
     for line in iter( stdout.readline, b'' ):
@@ -140,13 +148,13 @@ def enqueue_output( stdout, stdout_queue, stderr, stderr_queue ):
         stdout_logger.debug( output )
         stdout_queue.put( output )
     stdout.close()
-    stdout_queue.put(None)
+    stdout_queue.put( None )
     for line in iter( stderr.readline, b'' ):
         output = line.rstrip()
         stderr_logger.debug( output )
         stderr_queue.put( output )
     stderr.close()
-    stderr_queue.put(None)
+    stderr_queue.put( None )
 
 def file_append( text, file_path, skip_if_contained=True, make_executable=True ):
     '''
@@ -786,7 +794,7 @@ def run_local_command( command, capture_output=True, stream_output=True ):
     wrapped_command = shlex.split( "/bin/sh -c '%s'" % command )
     stdout_queue = Queue()
     stderr_queue = Queue()
-    process_handle = Popen( wrapped_command, stdout=PIPE, stderr=PIPE, bufsize=1, close_fds=False, cwd=state.env['lcwd'] )
+    process_handle = Popen( wrapped_command, stdout=PIPE, stderr=PIPE, bufsize=1, close_fds=False, cwd=state.env[ 'lcwd' ] )
     stdio_thread = Thread( target=enqueue_output, args=( process_handle.stdout, stdout_queue, process_handle.stderr, stderr_queue ) )
     stdio_thread.daemon = True 
     stdio_thread.start()
