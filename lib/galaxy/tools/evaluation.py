@@ -232,10 +232,11 @@ class ToolEvaluator( object ):
                     tool=self,
                     name=name,
                 )
-                real_path = data.file_name
-                if real_path in input_dataset_paths:
-                    dataset_path = input_dataset_paths[ real_path ]
-                    wrapper_kwds[ 'dataset_path' ] = dataset_path
+                if data:
+                    real_path = data.file_name
+                    if real_path in input_dataset_paths:
+                        dataset_path = input_dataset_paths[ real_path ]
+                        wrapper_kwds[ 'dataset_path' ] = dataset_path
                 param_dict[name] = DatasetFilenameWrapper( data, **wrapper_kwds )
             if data:
                 for child in data.children:
