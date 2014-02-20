@@ -1,4 +1,4 @@
-<tool id="Grouping1" name="Group" version="2.0.0">
+<tool id="Grouping1" name="Group" version="2.1.0">
   <description>data by a column and perform aggregate operation on other columns.</description>
   <command interpreter="python">
     grouping.py 
@@ -6,6 +6,7 @@
       $input1
       $groupcol
       $ignorecase
+      $ignorelines
       #for $op in $operations
        '${op.optype}
         ${op.opcol}
@@ -17,6 +18,24 @@
     <param name="groupcol" label="Group by column" type="data_column" data_ref="input1" />
     <param name="ignorecase" type="boolean" truevalue="1" falsevalue="0">
       <label>Ignore case while grouping?</label>
+    </param>
+    <param name="ignorelines" type="select" display="checkboxes" multiple="True" label="Ignore lines beginning with these characters" help="lines beginning with these are not grouped">
+            <option value="62">&gt;</option>
+            <option value="64">@</option>
+            <option value="43">+</option>
+            <option value="60">&lt;</option>
+            <option value="42">*</option>
+            <option value="45">-</option>
+            <option value="61">=</option>
+            <option value="124">|</option>
+            <option value="63">?</option>
+            <option value="36">$</option>
+            <option value="46">.</option>
+            <option value="58">:</option>
+            <option value="38">&amp;</option>
+            <option value="37">%</option>
+            <option value="94">^</option>
+            <option value="35">&#35;</option>
     </param>
     <repeat name="operations" title="Operation">
       <param name="optype" type="select" label="Type">
