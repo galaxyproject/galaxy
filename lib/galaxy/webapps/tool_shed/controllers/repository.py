@@ -870,7 +870,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                 'admin_toolshed/update_to_changeset_revision?tool_shed_url=%s&name=%s&owner=%s&changeset_revision=%s&latest_changeset_revision=' % \
                                 ( web.url_for( '/', qualified=True ), repository.name, repository.user.username, changeset_revision ) )
         else:
-            message = 'Unable to check for updates due to an invalid Galaxy URL: <b>%s</b>.  You may need to enable cookies in your browser.  ' % galaxy_url
+            message = 'Unable to check for updates due to an invalid Galaxy URL: <b>%s</b>.  You may need to enable third-party cookies in your browser.  ' % galaxy_url
             return trans.show_error_message( message )
         if changeset_revision == repository.tip( trans.app ):
             # If changeset_revision is the repository tip, there are no additional updates.
@@ -2047,7 +2047,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             return trans.response.send_redirect( url )
         else:
             message = 'Repository installation is not possible due to an invalid Galaxy URL: <b>%s</b>.  '  % galaxy_url
-            message += 'You may need to enable cookies in your browser.  '
+            message += 'You may need to enable third-party cookies in your browser.  '
             status = 'error'
             return trans.response.send_redirect( web.url_for( controller='repository',
                                                               action='browse_valid_categories',
