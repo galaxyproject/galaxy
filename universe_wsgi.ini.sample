@@ -183,7 +183,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 #datatypes_config_file = datatypes_conf.xml
 
 # Disable the 'Auto-detect' option for file uploads
-#datatypes_disable_auto = True
+#datatypes_disable_auto = False
 
 # Visualizations config directory: where to look for individual visualization plugins.
 # The path is relative to the Galaxy root dir. To use an absolute path begin the path
