@@ -11,6 +11,7 @@
 <%inherit file="${inherit( context )}"/>
 <%namespace file="/tagging_common.mako" import="render_individual_tagging_element, render_community_tagging_element" />
 <%namespace file="/display_common.mako" import="*" />
+<%namespace file="webapps/galaxy/history/history_panel.mako" import="history_panel_javascripts" />
 
 ##
 ## Functions used by base.mako and base_panels.mako to display content.
@@ -34,7 +35,7 @@
     ${parent.javascripts()}
     ${h.js( "libs/jquery/jstorage", "libs/jquery/jquery.autocomplete", "libs/jquery/jquery.rating", 
             "galaxy.autocom_tagging" )}
-
+    ${history_panel_javascripts()}
     ${h.js( "galaxy.panels", "libs/jquery/jstorage", "libs/jquery/jquery.event.drag", "libs/jquery/jquery.event.hover","libs/jquery/jquery.mousewheel", "libs/jquery/jquery-ui", "libs/require", "libs/farbtastic" )}
 
     <script type="text/javascript">
@@ -150,6 +151,18 @@
             padding-right: 3px;
             border-right-style: solid;
             border-right-color: #66AA66;
+        }
+
+        .embedded-item.history .item-content {
+            padding: 8px;
+            background-color: white;
+            border-radius: 0px 0px 4px 4px;
+        }
+        .embedded-item.history hr {
+            margin-bottom: 2px;
+        }
+        .embedded-item.history .history-panel {
+            padding: 2px 0px 8px 0px;
         }
     </style>
 </%def>

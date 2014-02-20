@@ -753,7 +753,21 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         history.annotation = self.get_item_annotation_str( trans.sa_session, history.user, history )
         for dataset in datasets:
             dataset.annotation = self.get_item_annotation_str( trans.sa_session, history.user, dataset )
-        return trans.stream_template_mako( "/history/item_content.mako", item = history, item_data = datasets )
+
+        user_is_owner = trans.user == history.user
+        history.annotation = self.get_item_annotation_str( trans.sa_session, history.user, history )
+
+        hda_dicts = []
+        datasets = self.get_history_datasets( trans, history )
+        for hda in datasets:
+            hda_dict = self.get_hda_dict( trans, hda )
+            hda_dict[ 'annotation' ] = self.get_item_annotation_str( trans.sa_session, history.user, hda )
+            hda_dicts.append( hda_dict )
+        history_dict = self.get_history_dict( trans, history, hda_dictionaries=hda_dicts )
+        history_dict[ 'annotation' ] = history.annotation
+
+        return trans.fill_template( "history/item_content.mako", item=history, item_data=datasets,
+            user_is_owner=user_is_owner, history_dict=history_dict, hda_dicts=hda_dicts )
 
     @web.expose
     def name_autocomplete_data( self, trans, q=None, limit=None, timestamp=None ):
