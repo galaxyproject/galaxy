@@ -154,9 +154,6 @@
     <tool file="multivariate_stats/kpca.xml" />
     <tool file="multivariate_stats/kcca.xml" />
   </section>
- <section id="clustal" name="Multiple Alignments">
-    <tool file="rgenetics/rgClustalw.xml" />
- </section>
   <section id="hgv" name="Phenotype Association">
     <tool file="evolution/codingSnps.xml" />
     <tool file="evolution/add_scores.xml" />
@@ -226,9 +223,5 @@
     <tool file="gatk/variants_validate.xml" />
     <tool file="gatk/variant_eval.xml" />
     <tool file="gatk/variant_combine.xml" />
-  </section>
-  <section id="ngs-rna-tools" name="NGS: RNA Analysis">
-   <label id="rna_seq" text="RNA-seq" />
-   <label id="filtering" text="Filtering" />
   </section>
 </toolbox>
