@@ -233,12 +233,20 @@ def app_factory( global_conf, **kwargs ):
                             'permissions',
                             path_prefix='/api/libraries/:library_id',
                             parent_resources=dict( member_name='library', collection_name='libraries' ) )
-    
-    webapp.mapper.resource( 'job', 
-                            'jobs', 
+
+    webapp.mapper.resource( 'job',
+                            'jobs',
                             path_prefix='/api' )
     webapp.mapper.connect( 'job_search', '/api/jobs/search', controller='jobs', action='search', conditions=dict( method=['POST'] ) )
 
+    # Job files controllers. Only for consumption by remote job runners.
+    webapp.mapper.resource( 'file',
+                            'files',
+                            controller="job_files",
+                            name_prefix="job_",
+                            path_prefix='/api/jobs/:job_id',
+                            parent_resources=dict( member_name="job", collection_name="jobs")
+    )
 
     _add_item_extended_metadata_controller( webapp,
                                name_prefix="library_dataset_",

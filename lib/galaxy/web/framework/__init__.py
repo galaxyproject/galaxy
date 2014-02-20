@@ -278,6 +278,10 @@ def _future_expose_api_raw( func ):
     return _future_expose_api( func, to_json=False, user_required=True )
 
 
+def _future_expose_api_raw_anonymous( func ):
+    return _future_expose_api( func, to_json=False, user_required=False )
+
+
 # TODO: rename as expose_api and make default.
 def _future_expose_api( func, to_json=True, user_required=True ):
     """
