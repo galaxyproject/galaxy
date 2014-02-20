@@ -461,13 +461,16 @@ except ImportError:
     def post_request( url, data, files={} ):
         return __multipart_request( url, data, files, verb="POST" )
 
-    def put_request( url, data, files={} ):
-        return __multipart_request( url, data, files, verb="PUT" )
+    def put_request( url ):
+        return __urllib_request( url, 'PUT' )
 
     def delete_request( url ):
+        return __urllib_request( url, 'DELETE' )
+
+    def __urllib_request( url, verb ):
         opener = urllib2.build_opener(urllib2.HTTPHandler)
         request = urllib2.Request(url)
-        request.get_method = lambda: 'DELETE'
+        request.get_method = lambda: verb
         try:
             response = opener.open(request)
             return RequestsLikeResponse( response.read(), status_code=response.getcode() )
