@@ -206,9 +206,37 @@ var CurrentHistoryPanel = hpanel.HistoryPanel.extend(
     },
 
     renderBasedOnPrefs : function(){
+        console.debug( 'renderBasedOnPrefs', this.preferences.toJSON() )
         if( this.preferences.get( 'searching' ) ){
             this.showSearchControls( 0 );
         }
+    },
+
+    _renderTags : function( $where ){
+        var panel = this;
+        // render tags and show/hide based on preferences
+        hpanel.HistoryPanel.prototype._renderTags.call( this, $where );
+        if( this.preferences.get( 'tagsEditorShown' ) ){
+            this.tagsEditor.toggle( true );
+        }
+        // store preference when shown or hidden
+        this.tagsEditor.on( 'hiddenUntilActivated:shown hiddenUntilActivated:hidden',
+            function( tagsEditor ){
+                panel.preferences.set( 'tagsEditorShown', tagsEditor.hidden );
+            });
+    },
+    _renderAnnotation : function( $where ){
+        var panel = this;
+        // render annotation and show/hide based on preferences
+        hpanel.HistoryPanel.prototype._renderAnnotation.call( this, $where );
+        if( this.preferences.get( 'annotationEditorShown' ) ){
+            this.annotationEditor.toggle( true );
+        }
+        // store preference when shown or hidden
+        this.annotationEditor.on( 'hiddenUntilActivated:shown hiddenUntilActivated:hidden',
+            function( annotationEditor ){
+                panel.preferences.set( 'annotationEditorShown', annotationEditor.hidden );
+            });
     },
 
     // ........................................................................ external objects/MVC

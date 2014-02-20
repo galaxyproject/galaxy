@@ -255,8 +255,8 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
                 selectable      : this.selecting,
                 hasUser         : this.model.ownedByCurrUser(),
                 logger          : this.logger,
-                tagsEditorShown       : ( this.tagsEditor && !this.tagsEditor.isHidden() ),
-                annotationEditorShown : ( this.annotationEditor && !this.annotationEditor.isHidden() )
+                tagsEditorShown       : ( this.tagsEditor && !this.tagsEditor.hidden ),
+                annotationEditorShown : ( this.annotationEditor && !this.annotationEditor.hidden )
             });
         this._setUpHdaListeners( hdaView );
         return hdaView;
