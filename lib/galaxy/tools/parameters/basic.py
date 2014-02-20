@@ -1621,7 +1621,7 @@ class DataToolParameter( ToolParameter ):
             if type( value ) != list:
                 value = [ value ]
         field = form_builder.SelectField( self.name, self.multiple, None, self.refresh_on_change, refresh_on_change_values=self.refresh_on_change_values )
-
+        
         # CRUCIAL: the dataset_collector function needs to be local to DataToolParameter.get_html_field()
         def dataset_collector( hdas, parent_hid ):
             current_user_roles = trans.get_current_user_roles()
@@ -1659,20 +1659,18 @@ class DataToolParameter( ToolParameter ):
                 # Also collect children via association object
                 dataset_collector( hda.children, hid )
         dataset_collector( history.active_datasets_children_and_roles, None )
-        some_data = bool( field.options )
-        if some_data:
-            if value is None or len( field.options ) == 1:
-                # Ensure that the last item is always selected
-                a, b, c = field.options[-1]
-                if self.optional:
-                    field.options[-1] = a, b, False
-                else:
-                    field.options[-1] = a, b, True
+
+        set_selected = field.get_selected( return_label=True, return_value=True, multi=False ) is not None
+        # Ensure than an item is always selected
         if self.optional:
-            if not value:
-                field.add_option( "Selection is Optional", 'None', True )
-            else:
+            if set_selected:
                 field.add_option( "Selection is Optional", 'None', False )
+            else:
+                field.add_option( "Selection is Optional", 'None', True )
+        elif not set_selected and bool( field.options ):
+            # Select the last item
+            a, b, c = field.options[-1]
+            field.options[-1] = a, b, True
         return field
 
     def get_initial_value( self, trans, context, history=None ):
