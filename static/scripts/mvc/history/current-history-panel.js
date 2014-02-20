@@ -205,8 +205,8 @@ var CurrentHistoryPanel = hpanel.HistoryPanel.extend(
         return this;
     },
 
+    /** perform additional rendering based on preferences */
     renderBasedOnPrefs : function(){
-        console.debug( 'renderBasedOnPrefs', this.preferences.toJSON() )
         if( this.preferences.get( 'searching' ) ){
             this.showSearchControls( 0 );
         }
