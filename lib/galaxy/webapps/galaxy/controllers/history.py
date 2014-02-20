@@ -904,8 +904,9 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
 
     @web.expose
     def display_by_username_and_slug( self, trans, username, slug ):
-        """ Display history based on a username and slug. """
-
+        """
+        Display history based on a username and slug.
+        """
         # Get history.
         session = trans.sa_session
         user = session.query( model.User ).filter_by( username=username ).first()
@@ -931,7 +932,19 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                 user_item_rating = 0
         ave_item_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, history )
 
+        # create ownership flag for template, dictify models
+        # note: adding original annotation since this is published - get_dict returns user-based annos
+        user_is_owner = trans.user == history.user
+        hda_dicts = []
+        for hda in datasets:
+            hda_dict = self.get_hda_dict( trans, hda )
+            hda_dict[ 'annotation' ] = hda.annotation
+            hda_dicts.append( hda_dict )
+        history_dict = self.get_history_dict( trans, history, hda_dictionaries=hda_dicts )
+        history_dict[ 'annotation' ] = history.annotation
+
         return trans.stream_template_mako( "history/display.mako", item=history, item_data=datasets,
+            user_is_owner=user_is_owner, history_dict=history_dict, hda_dicts=hda_dicts,
             user_item_rating = user_item_rating, ave_item_rating=ave_item_rating, num_ratings=num_ratings )
 
     @web.expose

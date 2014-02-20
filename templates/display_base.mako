@@ -85,7 +85,7 @@
             });
             
             // Init history boxes.
-            init_history_items( $("div.historyItemWrapper"), false, "nochanges" );
+            //init_history_items( $("div.historyItemWrapper"), false, "nochanges" );
             
             // Init user item rating.
             $('.user_rating_star').rating({
@@ -115,7 +115,7 @@
 <%def name="stylesheets()">
     ${parent.stylesheets()}
     ${h.css( "autocomplete_tagging", "embed_item", "jquery.rating" )}
-    ${h.css( "history", "autocomplete_tagging", "trackster", "library", 
+    ${h.css( "autocomplete_tagging", "trackster", "library",
              "jquery-ui/smoothness/jquery-ui" )}
     
     <style type="text/css">

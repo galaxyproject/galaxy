@@ -526,7 +526,6 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         $whereTo = $whereTo || this.$el;
         var historyView = this,
             newHdaViews = {},
-            $datasetsList = $whereTo.find( this.datasetsSelector ),
             // only render the shown hdas
             //TODO: switch to more general filtered pattern
             visibleHdas  = this.model.hdas.getVisible(
@@ -536,7 +535,7 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
             );
         //console.debug( 'renderHdas, visibleHdas:', visibleHdas, $whereTo );
 //TODO: prepend to sep div, add as one
-        $datasetsList.empty();
+        $whereTo.find( this.datasetsSelector ).empty();
 
         if( visibleHdas.length ){
             visibleHdas.each( function( hda ){
@@ -547,7 +546,7 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
                 if( _.contains( historyView.selectedHdaIds, hdaId ) ){
                     hdaView.selected = true;
                 }
-                $datasetsList.prepend( hdaView.render().$el );
+                historyView.attachHdaView( hdaView.render(), $whereTo );
             });
             $whereTo.find( this.emptyMsgSelector ).hide();
 
@@ -559,6 +558,12 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         }
         this.hdaViews = newHdaViews;
         return this.hdaViews;
+    },
+
+    attachHdaView : function( hdaView, $whereTo ){
+        $whereTo = $whereTo || this.$el;
+        var $datasetsList = $whereTo.find( this.datasetsSelector );
+        $datasetsList.prepend( hdaView.$el );
     },
 
     /** Add an hda view to the panel for the given hda

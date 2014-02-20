@@ -760,7 +760,9 @@ class UsesHistoryDatasetAssociationMixin:
             return self.get_inaccessible_hda_dict( trans, hda )
         hda_dict[ 'accessible' ] = True
 
+        #TODO: I'm unclear as to which access pattern is right
         hda_dict[ 'annotation' ] = hda.get_item_annotation_str( trans.sa_session, trans.user, hda )
+        #annotation = getattr( hda, 'annotation', hda.get_item_annotation_str( trans.sa_session, trans.user, hda ) )
 
         # ---- return here if deleted AND purged OR can't access
         purged = ( hda.purged or hda.dataset.purged )
