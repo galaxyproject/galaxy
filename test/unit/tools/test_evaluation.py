@@ -168,7 +168,7 @@ class ToolEvaluatorTestCase(TestCase, UsesApp):
         if "new_file_path" not in kwds:
             kwds[ "new_file_path" ] = self.app.config.new_file_path
         self.evaluator.set_compute_environment( TestComputeEnviornment( **kwds ) )
-        self.assertIn( "exec_before_job", self.tool.hooks_called )
+        assert "exec_before_job" in self.tool.hooks_called
 
     def _setup_test_bwa_job( self ):
         self.job.input_datasets = [ self._job_dataset( 'input1', '/galaxy/files/dataset_1.dat' ) ]
