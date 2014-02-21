@@ -501,7 +501,7 @@ class Conditional( Group ):
             else:
                 input.visit_inputs( prefix, value[input.name], callback )
     def get_initial_value( self, trans, context, history=None ):
-        # State for a conditional is a plain dictionary. 
+        # State for a conditional is a plain dictionary.
         rval = {}
         # Get the default value for the 'test element' and use it
         # to determine the current case

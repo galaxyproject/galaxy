@@ -239,7 +239,7 @@ class ToolRunner( BaseUIController ):
         Redirects a user accessing a Data Source tool to its target action link.
         This method will subvert mix-mode content blocking in several browsers when
         accessing non-https data_source tools from an https galaxy server.
-        
+
         Tested as working on Safari 7.0 and FireFox 26
         Subverting did not work on Chrome 31
         """
@@ -255,13 +255,13 @@ class ToolRunner( BaseUIController ):
             trans.log_event( "Tool id '%s' does not exist" % tool_id )
             trans.response.status = 404
             return "Tool '%s' does not exist, kwd=%s " % ( tool_id, kwd )
-        
+
         if isinstance( tool, DataSourceTool ):
             link = url_for( tool.action, **tool.get_static_param_values( trans ) )
         else:
             link = url_for( controller='tool_runner', tool_id=tool.id )
         return trans.response.send_redirect( link )
-    
+
     @web.expose
     def redirect( self, trans, redirect_url=None, **kwd ):
         if not redirect_url:

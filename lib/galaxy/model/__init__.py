@@ -1850,7 +1850,7 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations, 
 
         if hda.copied_from_library_dataset_dataset_association is not None:
             rval['copied_from_ldda_id'] = hda.copied_from_library_dataset_dataset_association.id
-            
+
         if hda.history is not None:
             rval['history_id'] = hda.history.id
 
