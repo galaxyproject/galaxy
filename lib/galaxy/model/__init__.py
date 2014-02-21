@@ -2549,13 +2549,39 @@ class StoredWorkflowMenuEntry( object ):
         self.order_index = None
 
 
-class WorkflowInvocation( object ):
-    pass
+class WorkflowInvocation( object, Dictifiable ):
+    dict_collection_visible_keys = ( 'id', 'update_time', 'workflow_id' )
+    dict_element_visible_keys = ( 'id', 'update_time', 'workflow_id' )
+
+    def to_dict( self, view='collection', value_mapper = None ):
+        rval = super( WorkflowInvocation, self ).to_dict( view=view, value_mapper=value_mapper )
+        if view == 'element':
+            steps = {}
+            for step in self.steps:
+                v = step.to_dict()
+                steps[str(v['order_index'])] = v
+            rval['steps'] = steps
+
+            inputs = {}
+            for step in self.steps:
+                if step.workflow_step.type =='tool':
+                    for step_input in step.workflow_step.input_connections:
+                        if step_input.output_step.type == 'data_input':
+                            for job_input in step.job.input_datasets:
+                                if job_input.name == step_input.input_name:
+                                    inputs[str(step_input.output_step.order_index)] = { "id" : job_input.dataset_id, "src" : "hda"}
+            rval['inputs'] = inputs
+        return rval
 
 
-class WorkflowInvocationStep( object ):
-    pass
+class WorkflowInvocationStep( object, Dictifiable ):
+    dict_collection_visible_keys = ( 'id', 'update_time', 'job_id', 'workflow_step_id' )
+    dict_element_visible_keys = ( 'id', 'update_time', 'job_id', 'workflow_step_id' )
 
+    def to_dict( self, view='collection', value_mapper = None ):
+        rval = super( WorkflowInvocationStep, self ).to_dict( view=view, value_mapper=value_mapper )
+        rval['order_index'] = self.workflow_step.order_index
+        return rval
 
 class MetadataFile( object ):
 
