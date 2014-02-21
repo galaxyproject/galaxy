@@ -66,6 +66,11 @@ default_galaxy_locales = 'en'
 default_galaxy_test_file_dir = "test-data"
 os.environ[ 'GALAXY_INSTALL_TEST_TMP_DIR' ] = galaxy_test_tmp_dir
 
+# Use separate databases for Galaxy and tool shed install info by default,
+# set GALAXY_TEST_INSTALL_DB_MERGED to True to revert to merged databases
+# behavior.
+default_install_db_merged = False
+
 # This script can be run in such a way that no Tool Shed database records should be changed.
 if '-info_only' in sys.argv or 'GALAXY_INSTALL_TEST_INFO_ONLY' in os.environ:
     can_update_tool_shed = False
@@ -421,9 +426,9 @@ def main():
     if 'GALAXY_INSTALL_TEST_INSTALL_DBURI' in os.environ:
         install_database_connection = os.environ[ 'GALAXY_INSTALL_TEST_INSTALL_DBURI' ]
     elif asbool( os.environ.get( 'GALAXY_TEST_INSTALL_DB_MERGED', default_install_db_merged ) ):
-        install_database_connection = galaxy_database_connection
+        install_database_connection = database_connection
     else:
-        install_db_path = os.path.join( galaxy_db_path, 'install.sqlite' )
+        install_galaxy_db_path = os.path.join( galaxy_db_path, 'install.sqlite' )
         install_database_connection = 'sqlite:///%s' % install_galaxy_db_path
     kwargs = {}
     for dir in [ galaxy_test_tmp_dir ]:
