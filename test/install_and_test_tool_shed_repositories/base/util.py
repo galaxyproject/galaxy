@@ -890,7 +890,7 @@ def populate_install_containers_for_repository_dependencies( app, repository, re
                     ( changeset_revision, name, owner )
                 print 'due to the following error getting tool_test_results:\n%s' % str( error_message )
             else:
-                # The assumption is that the Tool SHed's install and test framework is executed no more than once per 24 hour
+                # The assumption is that the Tool Shed's install and test framework is executed no more than once per 24 hour
                 # period, so check the required repository's time_last_tested value to see if its tool_test_results column
                 # has been updated within the past 20 hours to allow for differing test run times (some may be slower than
                 # others).  The RepositoryMetadata class's to_dict() method returns the value of time_last_tested in
@@ -965,7 +965,12 @@ def populate_install_containers_for_repository_dependencies( app, repository, re
                                                                   can_update_tool_shed )
                     else:
                         # The required repository's installation failed.
-                        tool_test_results_dict[ 'installation_errors' ][ 'current_repository' ] = str( required_repository.error_message )
+                        required_repository_installation_error_dict = dict( tool_shed=galaxy_tool_shed_url,
+                                                                            name=name,
+                                                                            owner=owner,
+                                                                            changeset_revision=changeset_revision,
+                                                                            error_message=required_repository.error_message )
+                        tool_test_results_dict[ 'installation_errors' ][ 'repository_dependencies' ].append( required_repository_installation_error_dict )
                         params = dict( test_install_error=True,
                                        do_not_test=False )
                         save_test_results_for_changeset_revision( galaxy_tool_shed_url,
