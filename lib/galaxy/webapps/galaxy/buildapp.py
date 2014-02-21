@@ -138,9 +138,9 @@ def app_factory( global_conf, **kwargs ):
     webapp.mapper.resource( 'workflow', 'workflows', path_prefix='/api' )
     webapp.mapper.resource_with_deleted( 'history', 'histories', path_prefix='/api' )
     webapp.mapper.resource( 'configuration', 'configuration', path_prefix='/api' )
-    webapp.mapper.resource( 'datatype', 
-                            'datatypes', 
-                            path_prefix='/api', 
+    webapp.mapper.resource( 'datatype',
+                            'datatypes',
+                            path_prefix='/api',
                             collection={ 'sniffers': 'GET' },
                             parent_resources=dict( member_name='datatype', collection_name='datatypes' ) )
     #webapp.mapper.connect( 'run_workflow', '/api/workflow/{workflow_id}/library/{library_id}', controller='workflows', action='run', workflow_id=None, library_id=None, conditions=dict(method=["GET"]) )
@@ -180,41 +180,41 @@ def app_factory( global_conf, **kwargs ):
     # ============================
 
     webapp.mapper.connect( 'api_key_retrieval',
-                           '/api/authenticate/baseauth/', 
-                           controller='authenticate', 
-                           action='get_api_key', 
+                           '/api/authenticate/baseauth/',
+                           controller='authenticate',
+                           action='get_api_key',
                            conditions=dict( method=[ "GET" ] ) )
 
     # =======================
     # ===== LIBRARY API =====
     # =======================
-    
+
     webapp.mapper.connect( 'show_lda_item',
-                           '/api/libraries/datasets/:id', 
-                           controller='lda_datasets', 
-                           action='show', 
+                           '/api/libraries/datasets/:id',
+                           controller='lda_datasets',
+                           action='show',
                            conditions=dict( method=[ "GET" ] ) )
 
-    webapp.mapper.connect( 'download_lda_items', 
-                           '/api/libraries/datasets/download/:format', 
-                           controller='lda_datasets', 
-                           action='download', 
+    webapp.mapper.connect( 'download_lda_items',
+                           '/api/libraries/datasets/download/:format',
+                           controller='lda_datasets',
+                           action='download',
                            conditions=dict( method=[ "POST", "GET" ] ) )
 
-    webapp.mapper.connect( 'create_folder', 
-                           '/api/folders/:encoded_parent_folder_id', 
-                           controller='folders', 
-                           action='create', 
+    webapp.mapper.connect( 'create_folder',
+                           '/api/folders/:encoded_parent_folder_id',
+                           controller='folders',
+                           action='create',
                            conditions=dict( method=[ "POST" ] ) )
 
     webapp.mapper.resource_with_deleted( 'library',
-                                         'libraries', 
+                                         'libraries',
                                          path_prefix='/api' )
-    webapp.mapper.resource( 'folder', 
-                            'folders', 
+    webapp.mapper.resource( 'folder',
+                            'folders',
                             path_prefix='/api' )
 
-    webapp.mapper.resource( 'content', 
+    webapp.mapper.resource( 'content',
                             'contents',
                             controller='folder_contents',
                             name_prefix='folder_',
@@ -233,9 +233,9 @@ def app_factory( global_conf, **kwargs ):
                             'permissions',
                             path_prefix='/api/libraries/:library_id',
                             parent_resources=dict( member_name='library', collection_name='libraries' ) )
-    
-    webapp.mapper.resource( 'job', 
-                            'jobs', 
+
+    webapp.mapper.resource( 'job',
+                            'jobs',
                             path_prefix='/api' )
     webapp.mapper.connect( 'job_search', '/api/jobs/search', controller='jobs', action='search', conditions=dict( method=['POST'] ) )
 
@@ -243,7 +243,7 @@ def app_factory( global_conf, **kwargs ):
     _add_item_extended_metadata_controller( webapp,
                                name_prefix="library_dataset_",
                                path_prefix='/api/libraries/:library_id/contents/:library_content_id' )
-    
+
     _add_item_extended_metadata_controller( webapp,
                                name_prefix="history_dataset_",
                                path_prefix='/api/histories/:history_id/contents/:history_content_id' )
@@ -251,14 +251,14 @@ def app_factory( global_conf, **kwargs ):
     # ====================
     # ===== TOOLSHED =====
     # ====================
-    
+
     # Handle displaying tool help images and README file images contained in repositories installed from the tool shed.
     webapp.add_route( '/admin_toolshed/static/images/:repository_id/:image_file',
                       controller='admin_toolshed',
                       action='display_image_in_repository',
                       repository_id=None,
                       image_file=None )
-    
+
     # Galaxy API for tool shed features.
     webapp.mapper.resource( 'tool_shed_repository',
                             'tool_shed_repositories',

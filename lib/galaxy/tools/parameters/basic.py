@@ -1621,7 +1621,7 @@ class DataToolParameter( ToolParameter ):
             if type( value ) != list:
                 value = [ value ]
         field = form_builder.SelectField( self.name, self.multiple, None, self.refresh_on_change, refresh_on_change_values=self.refresh_on_change_values )
-        
+
         # CRUCIAL: the dataset_collector function needs to be local to DataToolParameter.get_html_field()
         def dataset_collector( hdas, parent_hid ):
             current_user_roles = trans.get_current_user_roles()

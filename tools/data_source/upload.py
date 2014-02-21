@@ -126,7 +126,7 @@ def add_file( dataset, registry, json_file, output_path ):
         elif is_gzipped and is_valid:
             if link_data_only == 'copy_files':
                 # We need to uncompress the temp_name file, but BAM files must remain compressed in the BGZF format
-                CHUNK_SIZE = 2**20 # 1Mb   
+                CHUNK_SIZE = 2**20 # 1Mb
                 fd, uncompressed = tempfile.mkstemp( prefix='data_id_%s_upload_gunzip_' % dataset.dataset_id, dir=os.path.dirname( output_path ), text=False )
                 gzipped_file = gzip.GzipFile( dataset.path, 'rb' )
                 while 1:
@@ -159,7 +159,7 @@ def add_file( dataset, registry, json_file, output_path ):
             elif is_bzipped and is_valid:
                 if link_data_only == 'copy_files':
                     # We need to uncompress the temp_name file
-                    CHUNK_SIZE = 2**20 # 1Mb   
+                    CHUNK_SIZE = 2**20 # 1Mb
                     fd, uncompressed = tempfile.mkstemp( prefix='data_id_%s_upload_bunzip2_' % dataset.dataset_id, dir=os.path.dirname( output_path ), text=False )
                     bzipped_file = bz2.BZ2File( dataset.path, 'rb' )
                     while 1:
