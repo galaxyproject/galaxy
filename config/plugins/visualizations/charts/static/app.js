@@ -42,7 +42,7 @@ return Backbone.View.extend(
             
         // create portlet
         if (!this.options.config.widget) {
-            this.portlet = new Portlet.View({icon : 'fa-bar-chart-o', label : 'Charts'});
+            this.portlet = new Portlet.View({icon : 'fa-bar-chart-o', title : 'Charts'});
         } else {
             this.portlet = $('<div></div>');
         }

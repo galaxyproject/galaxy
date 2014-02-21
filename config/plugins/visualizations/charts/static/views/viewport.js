@@ -25,7 +25,7 @@ return Backbone.View.extend(
         
         // add table to portlet
         this.portlet = new Portlet.View({
-            label       : '',
+            title       : '',
             icon        : 'fa-signal',
             height      : this.options.height,
             overflow    : 'hidden',
@@ -75,7 +75,7 @@ return Backbone.View.extend(
             var chart = self.app.charts.get(chart_id);
                 
             // update portlet
-            this.portlet.label(chart.get('title'));
+            this.portlet.title(chart.get('title'));
             this.portlet.setOperation('edit', function() {
                 // get chart
                 self.app.chart.copy(chart);

@@ -1,6 +1,6 @@
 // dependencies
-define(['mvc/ui/ui-portlet', 'plugin/library/table', 'plugin/library/ui', 'utils/utils', 'plugin/models/chart', 'plugin/views/groups'],
-    function(Portlet, Table, Ui, Utils, Chart, GroupsView) {
+define(['mvc/ui/ui-tabs', 'plugin/library/table', 'plugin/library/ui', 'utils/utils', 'plugin/models/chart', 'plugin/views/groups'],
+    function(Tabs, Table, Ui, Utils, Chart, GroupsView) {
 
 // widget
 return Backbone.View.extend(
@@ -79,12 +79,17 @@ return Backbone.View.extend(
             this.table.add (chart_type.title);
             this.table.append(id);
         }
-                        
-        // add table to portlet
-        var self = this;
-        this.portlet = new Portlet.View({
-            icon : 'fa-edit',
-            label : 'Create a new chart:',
+        
+        // construct element
+        var $settings = $('<div/>');
+        $settings.append(Utils.wrap(this.message.$el));
+        $settings.append(Utils.wrap((new Ui.Label({ label : 'Provide a chart title:'})).$el));
+        $settings.append(Utils.wrap(this.title.$el));
+        $settings.append(Utils.wrap((new Ui.Label({ label : 'Select a chart type:'})).$el));
+        $settings.append(Utils.wrap(this.table.$el));
+
+        // tabs
+        this.tabs = new Tabs.View({
             operations : {
                 'save'      : new Ui.ButtonIcon({
                                 icon    : 'fa-save',
@@ -103,19 +108,26 @@ return Backbone.View.extend(
                             })
             }
         });
-        this.portlet.append(this.message.$el);
-        this.portlet.append(this.dataset.$el);
-        this.portlet.append((new Ui.Label({ label : 'Provide a chart title:'})).$el);
-        this.portlet.append(this.title.$el);
-        this.portlet.append((new Ui.Label({ label : 'Select a chart type:'})).$el);
-        this.portlet.append(this.table.$el);
-        this.portlet.append(this.groups_view.$el);
-
+        
+        // add tab
+        this.tabs.add({
+            $el: $settings,
+            title: 'Start',
+            id: 'settings'
+        });
+        
+        // add tab
+        this.tabs.add({
+            $el: this.groups_view.$el,
+            title: 'Chart Groups',
+            id: 'groups'
+        });
+        
         // elements
-        this.setElement(this.portlet.$el);
+        this.setElement(this.tabs.$el);
         
         // hide back button on startup
-        this.portlet.hideOperation('back');
+        this.tabs.hideOperation('back');
         
         // model events
         var self = this;
@@ -131,15 +143,15 @@ return Backbone.View.extend(
         
         // collection events
         this.app.charts.on('add', function(chart) {
-            self.portlet.showOperation('back');
+            self.tabs.showOperation('back');
         });
         this.app.charts.on('remove', function(chart) {
             if (self.app.charts.length == 1) {
-                self.portlet.hideOperation('back');
+                self.tabs.hideOperation('back');
             }
         });
         this.app.charts.on('reset', function(chart) {
-            self.portlet.hideOperation('back');
+            self.tabs.hideOperation('back');
         });
         
         // reset

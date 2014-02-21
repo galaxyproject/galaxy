@@ -9,7 +9,7 @@ var View = Backbone.View.extend(
     
     // defaults options
     optionsDefault: {
-        label       : '',
+        title       : '',
         icon        : 'fa-tasks',
         buttons     : null,
         body        : null,
@@ -19,8 +19,10 @@ var View = Backbone.View.extend(
         overflow    : 'auto'
     },
     
-    // content
+    // elements
     $content : null,
+    $buttons : null,
+    $operations : null,
     
     // initialize
     initialize : function(options) {
@@ -28,7 +30,7 @@ var View = Backbone.View.extend(
         this.options = Utils.merge(options, this.optionsDefault);
         
         // create new element
-        this.setElement(this.template(this.options));
+        this.setElement(this._template(this.options));
         
         // link content
         this.$content = this.$el.find('#content');
@@ -79,7 +81,7 @@ var View = Backbone.View.extend(
         return this.$content;
     },
     
-    // hide modal
+    // show
     show: function(){
         // fade in
         this.$el.fadeIn('fast');
@@ -88,7 +90,7 @@ var View = Backbone.View.extend(
         this.visible = true;
     },
     
-    // hide modal
+    // hide
     hide: function(){
         // fade out
         this.$el.fadeOut('fast');
@@ -124,20 +126,20 @@ var View = Backbone.View.extend(
         $el.on('click', callback);
     },
     
-    // label
-    label: function(new_label) {
-        var $el = this.$el.find('#label');
-        if (new_label) {
-            $el.html(new_label);
+    // title
+    title: function(new_title) {
+        var $el = this.$el.find('#title');
+        if (new_title) {
+            $el.html(new_title);
         }
         return $el.html();
     },
     
-    // fill regular modal template
-    template: function(options) {
+    // fill template
+    _template: function(options) {
         var tmpl =  '<div class="toolForm">';
         
-        if (options.label || options.icon) {
+        if (options.title || options.icon) {
             tmpl +=     '<div id="title" class="toolFormTitle" style="overflow:hidden;">' +
                             '<div id="operations" style="float: right;"></div>' +
                             '<div style="overflow: hidden">';
@@ -145,7 +147,7 @@ var View = Backbone.View.extend(
             if (options.icon)
                 tmpl +=         '<i style="padding-top: 3px; float: left; font-size: 1.2em" class="icon fa ' + options.icon + '">&nbsp;</i>';
         
-            tmpl +=             '<div id="label" style="padding-top: 2px; float: left;">' + options.label + '</div>';
+            tmpl +=             '<div id="title" style="padding-top: 2px; float: left;">' + options.title + '</div>';
             
             tmpl +=         '</div>' +
                         '</div>';

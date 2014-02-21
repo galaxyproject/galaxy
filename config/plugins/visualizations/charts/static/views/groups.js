@@ -30,7 +30,7 @@ return Backbone.View.extend(
         var self = this;
         this.portlet = new Portlet.View({
             icon : '',
-            label : 'Select data columns:',
+            title : 'Select data columns:',
             height : 100,
             operations : {
                 'new'   : new Ui.ButtonIcon({

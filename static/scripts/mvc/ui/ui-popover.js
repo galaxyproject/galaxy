@@ -97,7 +97,7 @@ var View = Backbone.View.extend({
         return $el.width() + parseInt($el.css('padding-left')) + parseInt($el.css('padding-right'))
     },
     
-    // heigth
+    // height
     _get_height: function($el) {
         return $el.height() + parseInt($el.css('padding-top')) + parseInt($el.css('padding-bottom'))
     },

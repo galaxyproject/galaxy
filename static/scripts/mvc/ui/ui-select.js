@@ -20,6 +20,12 @@ var View = Backbone.View.extend(
         // create new element
         this.setElement(this._template(this.options));
         
+        // check if container exists
+        if (!this.options.container) {
+            console.log('ui-select::initialize() : container not specified.');
+            return;
+        }
+        
         // add to dom
         this.options.container.append(this.$el);
         

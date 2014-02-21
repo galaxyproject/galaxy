@@ -26,7 +26,7 @@ return Backbone.View.extend(
         var self = this;
         this.portlet = new Portlet.View({
             icon : 'fa-edit',
-            label : 'Define group properties:',
+            title : 'Define group properties:',
             operations : {
                 'save'      : new Ui.ButtonIcon({
                                 icon    : 'fa-save',

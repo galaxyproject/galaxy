@@ -33,7 +33,7 @@ return Backbone.View.extend(
         var self = this;
         this.portlet = new Portlet.View({
             icon : 'fa-list',
-            label : 'List of created charts:',
+            title : 'List of created charts:',
             height : 100,
             operations : {
                 'new'   : new Ui.ButtonIcon({
