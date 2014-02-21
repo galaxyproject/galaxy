@@ -1,5 +1,5 @@
 // dependencies
-define(['library/portlet', 'library/ui', 'library/utils'],
+define(['mvc/ui/ui-portlet', 'plugin/library/ui', 'utils/utils'],
         function(Portlet, Ui, Utils) {
 
 // widget
@@ -24,7 +24,7 @@ return Backbone.View.extend(
         this.options = Utils.merge(options, this.optionsDefault);
         
         // add table to portlet
-        this.portlet = new Portlet({
+        this.portlet = new Portlet.View({
             label       : '',
             icon        : 'fa-signal',
             height      : this.options.height,
@@ -121,7 +121,7 @@ return Backbone.View.extend(
             
         // create chart view
         var self = this;
-        require(['charts/' + chart_type], function(ChartView) {
+        require(['plugin/charts/' + chart_type], function(ChartView) {
             // create chart
             var view = new ChartView(self.app, {svg_id : svg_id, chart : chart});
             

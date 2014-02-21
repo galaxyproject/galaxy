@@ -1,7 +1,7 @@
 // dependencies
-define(['library/portlet', 'library/ui', 'library/utils',
-        'views/charts', 'views/viewport', 'views/chart', 'views/group',
-        'models/config', 'models/datasets', 'models/chart', 'models/charts', 'models/group', 'models/types'],
+define(['mvc/ui/ui-portlet', 'plugin/library/ui', 'utils/utils',
+        'plugin/views/charts', 'plugin/views/viewport', 'plugin/views/chart', 'plugin/views/group',
+        'plugin/models/config', 'plugin/models/datasets', 'plugin/models/chart', 'plugin/models/charts', 'plugin/models/group', 'plugin/models/types'],
         function(   Portlet, Ui, Utils,
                     ChartsView, ViewportView, ChartView, GroupView,
                     Config, Datasets, Chart, Charts, Group, Types
@@ -42,7 +42,7 @@ return Backbone.View.extend(
             
         // create portlet
         if (!this.options.config.widget) {
-            this.portlet = new Portlet({icon : 'fa-bar-chart-o', label : 'Charts'});
+            this.portlet = new Portlet.View({icon : 'fa-bar-chart-o', label : 'Charts'});
         } else {
             this.portlet = $('<div></div>');
         }

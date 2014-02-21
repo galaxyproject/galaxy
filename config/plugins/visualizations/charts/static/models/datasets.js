@@ -1,5 +1,5 @@
 // dependencies
-define(['library/utils'], function(Utils) {
+define(['utils/utils'], function(Utils) {
 
 // widget
 return Backbone.Model.extend(

@@ -21,7 +21,7 @@ return Backbone.View.extend({
         this.setElement(this._template());
         
         // load extension
-        Utils.jsonFromUrl(galaxy_config.root + 'api/ftp_files', function(ftp_files) { self._fill(ftp_files); });
+        Utils.get(galaxy_config.root + 'api/ftp_files', function(ftp_files) { self._fill(ftp_files); });
     },
     
     // events

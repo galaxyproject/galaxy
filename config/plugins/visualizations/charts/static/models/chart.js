@@ -1,5 +1,5 @@
 // dependencies
-define(['models/groups'], function(Groups) {
+define(['plugin/models/groups'], function(Groups) {
 
 
 // model

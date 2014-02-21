@@ -1,5 +1,5 @@
 // dependencies
-define(['library/portlet', 'library/table', 'library/ui', 'library/utils'], function(Portlet, Table, Ui, Utils) {
+define(['mvc/ui/ui-portlet', 'plugin/library/table', 'plugin/library/ui', 'utils/utils'], function(Portlet, Table, Ui, Utils) {
 
 // chart config
 return Backbone.View.extend(
@@ -28,7 +28,7 @@ return Backbone.View.extend(
         
         // add table to portlet
         var self = this;
-        this.portlet = new Portlet({
+        this.portlet = new Portlet.View({
             icon : '',
             label : 'Select data columns:',
             height : 100,

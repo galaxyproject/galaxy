@@ -112,7 +112,7 @@ return Backbone.View.extend(
         
         // load extension
         var self = this;
-        Utils.jsonFromUrl(galaxy_config.root + "api/datatypes?extension_only=False",
+        Utils.get(galaxy_config.root + "api/datatypes?extension_only=False",
             function(datatypes) {
                 for (key in datatypes) {
                     self.list_extensions.push({
@@ -135,7 +135,7 @@ return Backbone.View.extend(
             });
             
         // load genomes
-        Utils.jsonFromUrl(galaxy_config.root + "api/genomes",
+        Utils.get(galaxy_config.root + "api/genomes",
             function(genomes) {
                 for (key in genomes) {
                     self.list_genomes.push({

@@ -1,8 +1,8 @@
 // dependencies
-define(['library/utils'], function(Utils) {
+define(['utils/utils'], function(Utils) {
 
 // return
-return Backbone.View.extend(
+var View = Backbone.View.extend(
 {
     // visibility
     visible: false,
@@ -167,5 +167,9 @@ return Backbone.View.extend(
         return tmpl;
     }
 });
+
+return {
+    View : View
+}
 
 });

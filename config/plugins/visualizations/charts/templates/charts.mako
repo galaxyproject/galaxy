@@ -47,7 +47,10 @@
 
             // configure require
             require.config({
-                baseUrl: config.root + "plugins/visualizations/charts/static/",
+                baseUrl: config.root + "static/scripts/",
+                paths: {
+                    "plugin": config.root + "plugins/visualizations/charts/static/"
+                },
                 shim: {
                     "libs/underscore": { exports: "_" },
                     "libs/backbone/backbone": { exports: "Backbone" }
@@ -58,7 +61,7 @@
             var app = null;
             $(function() {   
                 // request application script
-                require(['app'], function(App) {
+                require(['plugin/app'], function(App) {
                     // load options
                     var options = {
                         config  : ${h.to_json_string( config )},

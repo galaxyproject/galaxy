@@ -1,5 +1,5 @@
 // dependencies
-define(['models/chart'], function(Chart) {
+define(['plugin/models/chart'], function(Chart) {
 
 // collection
 return Backbone.Collection.extend(

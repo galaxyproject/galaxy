@@ -7,35 +7,50 @@
 define(["libs/underscore"], function(_) {
 
 // generic function to recieve json from url
-function jsonFromUrl (url, successHandler, errorHandler) {
+function get (url, success, error) {
+    request('GET', url, {}, success, error);
+};
+
+// generic function to send json to url
+function request (method, url, data, success, error) {
+
+    // encode data into url
+    if (method == 'GET' || method == 'DELETE') {
+        if (url.indexOf('?') == -1) {
+            url += '?';
+        } else {
+            url += '&';
+        }
+        url += $.param(data)
+    }
     
-    // open url
+    // prepare request
     var xhr = new XMLHttpRequest();
-    xhr.open('GET', url, true);
-    
-    // configure request
+    xhr.open(method, url, true);
     xhr.setRequestHeader('Accept', 'application/json');
     xhr.setRequestHeader('Cache-Control', 'no-cache');
     xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
-    
-    // on completion
+    xhr.setRequestHeader('Content-Type', 'application/json');
     xhr.onloadend = function() {
         var status = xhr.status;
         if (status == 200) {
-            try
-            {
+            try {
                 response = jQuery.parseJSON(xhr.responseText);
             } catch (e) {
                 response = xhr.responseText;
             }
-            successHandler && successHandler(response);
+            success && success(response);
         } else {
-            errorHandler && errorHandler(status);
+            error && error(status);
         }
     };
-      
-    // submit request
-    xhr.send();
+    
+    // make request
+    if (method == 'GET' || method == 'DELETE') {
+        xhr.send();
+    } else {
+        xhr.send(JSON.stringify(data));
+    }
 };
 
 // get css value
@@ -96,14 +111,42 @@ function uuid(){
     return (new Date().getTime()).toString(36);
 };
 
+// wrap
+function wrap($el) {
+    var wrapper = $('<p></p>');
+    wrapper.append($el);
+    return wrapper;
+};
+
+// time
+function time() {
+    // get date object
+    var d = new Date();
+    
+    // format items
+    var hours = (d.getHours() < 10 ? "0" : "") + d.getHours();
+    var minutes = (d.getMinutes() < 10 ? "0" : "") + d.getMinutes()
+    
+    // format final stamp
+    var datetime = d.getDate() + "/"
+                + (d.getMonth() + 1)  + "/"
+                + d.getFullYear() + ", "
+                + hours + ":"
+                + minutes;
+    return datetime;
+};
+
 // return
 return {
     cssLoadFile   : cssLoadFile,
     cssGetAttribute : cssGetAttribute,
-    jsonFromUrl : jsonFromUrl,
+    get : get,
     merge : merge,
     bytesToString: bytesToString,
-    uuid: uuid
+    uuid: uuid,
+    time: time,
+    wrap: wrap,
+    request: request
 };
 
 });

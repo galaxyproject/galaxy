@@ -1,5 +1,5 @@
 // dependencies
-define(['library/portlet', 'library/table', 'library/ui', 'library/utils', 'models/chart', 'views/groups'],
+define(['mvc/ui/ui-portlet', 'plugin/library/table', 'plugin/library/ui', 'utils/utils', 'plugin/models/chart', 'plugin/views/groups'],
     function(Portlet, Table, Ui, Utils, Chart, GroupsView) {
 
 // widget
@@ -82,7 +82,7 @@ return Backbone.View.extend(
                         
         // add table to portlet
         var self = this;
-        this.portlet = new Portlet({
+        this.portlet = new Portlet.View({
             icon : 'fa-edit',
             label : 'Create a new chart:',
             operations : {

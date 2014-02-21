@@ -1,5 +1,5 @@
 // dependencies
-define(['library/utils'], function(Utils) {
+define(['utils/utils'], function(Utils) {
 
 // plugin
 return Backbone.View.extend(
@@ -55,7 +55,7 @@ return Backbone.View.extend(
     },
     
     // label
-    label : function () {
+    text : function () {
         return this.$el.find('option:selected').text();
     },
     
@@ -84,7 +84,7 @@ return Backbone.View.extend(
     },
     
     // remove
-    remove: function(value) {
+    del: function(value) {
         // remove option
         $(this.el).find('option[value=' + value + ']').remove();
         $(this.el).trigger('change');
