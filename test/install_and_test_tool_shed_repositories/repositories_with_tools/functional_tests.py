@@ -217,7 +217,12 @@ def install_and_test_repositories( app, galaxy_shed_tools_dict_file, galaxy_shed
                             install_and_test_statistics_dict.get( 'repositories_with_installation_error', [] )
                         if repository_identifier_tup not in processed_repositories_with_installation_error:
                             install_and_test_statistics_dict[ 'repositories_with_installation_error' ].append( repository_identifier_tup )
-                        tool_test_results_dict[ 'installation_errors' ][ 'current_repository' ] = error_message
+                        current_repository_installation_error_dict = dict( tool_shed=install_and_test_base_util.galaxy_tool_shed_url,
+                                                                           name=name,
+                                                                           owner=owner,
+                                                                           changeset_revision=changeset_revision,
+                                                                           error_message=error_message )
+                        tool_test_results_dict[ 'installation_errors' ][ 'current_repository' ].append( current_repository_installation_error_dict )
                         params = dict( test_install_error=True,
                                        do_not_test=False )
                         install_and_test_base_util.save_test_results_for_changeset_revision( install_and_test_base_util.galaxy_tool_shed_url,
