@@ -21,44 +21,50 @@ define([
     // LIBRARY
     var Library = Backbone.Model.extend({
       urlRoot: '/api/libraries'
-  });
+    });
 
     // FOLDER AS MODEL
     var FolderAsModel = Backbone.Model.extend({
       urlRoot: '/api/folders'
-  });
+    });
 
     // LIBRARIES
     var Libraries = Backbone.Collection.extend({
       url: '/api/libraries',
-      model: Library
-  });
+
+      model: Library,
+
+      sort_key: 'name', // default
+
+      sort_order: null, // default
+
+    });
 
     // ITEM
     var Item = Backbone.Model.extend({
         urlRoot : '/api/libraries/datasets'
-    })
+    });
 
     // FOLDER AS COLLECTION
     var Folder = Backbone.Collection.extend({
       model: Item
-  })
+    });
 
     // CONTAINER for folder contents (folders, items and metadata).
     var FolderContainer = Backbone.Model.extend({
-     defaults : {
-        folder : new Folder(),
-        full_path : "unknown",
-        urlRoot : "/api/folders/",
-        id : "unknown"
-    },
+        defaults : {
+            folder : new Folder(),
+            full_path : "unknown",
+            urlRoot : "/api/folders/",
+            id : "unknown"
+        },
     parse : function(obj) {
       this.full_path = obj[0].full_path;
           // update the inner collection
           this.get("folder").reset(obj[1].folder_contents);
           return obj;
       }
-  })
+    });
 
     // HISTORY ITEM
     var HistoryItem = Backbone.Model.extend({
@@ -75,16 +81,6 @@ define([
         url : '/api/histories',
         model : GalaxyHistory
     });
-
-    //ROUTER
-    var LibraryRouter = Backbone.Router.extend({
-        routes: {
-            "" :                 "libraries",
-            "folders/:id" :      "folder_content",
-            "folders/:folder_id/download/:format" : "download"
-        }
-    });
-
 
 // MMMMMMMMMMMMMM
 // === VIEWS ====
@@ -121,15 +117,15 @@ var FolderContentView = Backbone.View.extend({
         var tmpl_array = [];
 
         // CONTAINER
-        tmpl_array.push('<div id="library_container" style="width: 90%; margin: auto; margin-top: 2em; ">');
+        tmpl_array.push('<div class="library_container" style="width: 90%; margin: auto; margin-top: 2em; ">');
         tmpl_array.push('<h3>Data Libraries Beta Test. This is work in progress. Please report problems & ideas via <a href="mailto:galaxy-bugs@bx.psu.edu?Subject=DataLibrariesBeta_Feedback" target="_blank">email</a> and <a href="https://trello.com/c/nwYQNFPK/56-data-library-ui-progressive-display-of-folders" target="_blank">Trello</a>.</h3>');
 
         // TOOLBAR
         tmpl_array.push('<div id="library_folder_toolbar" >');
-        // tmpl_array.push('   <button title="Create New Folder" id="toolbtn_create_folder" class="btn btn-primary" type="button"><span class="fa fa-plus"></span> <span class="fa fa-folder-close"></span> folder</button>');
-        tmpl_array.push('   <button id="toolbtn_bulk_import" class="btn btn-primary" style="display: none; margin-left: 0.5em;" type="button"><span class="fa fa-external-link"></span> to history</button>');
+        tmpl_array.push('   <button title="Create New Folder" id="toolbtn_create_folder" class="btn btn-primary" type="button"><span class="fa fa-plus"></span> <span class="fa fa-folder-close"></span> folder</button>');
+        tmpl_array.push('   <button title="Import selected datasets into history" id="toolbtn_bulk_import" class="btn btn-primary" style="display: none; margin-left: 0.5em;" type="button"><span class="fa fa-external-link"></span> to history</button>');
         tmpl_array.push('   <div id="toolbtn_dl" class="btn-group" style="margin-left: 0.5em; display: none; ">');
-        tmpl_array.push('       <button id="drop_toggle" type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown">');
+        tmpl_array.push('       <button title="Download selected datasets" id="drop_toggle" type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown">');
         tmpl_array.push('       <span class="fa fa-download"></span> download <span class="caret"></span>');
         tmpl_array.push('       </button>');
         tmpl_array.push('       <ul class="dropdown-menu" role="menu">');
@@ -142,19 +138,20 @@ var FolderContentView = Backbone.View.extend({
         tmpl_array.push('</div>');
 
         // BREADCRUMBS
-        tmpl_array.push('<div class="library_breadcrumb">');
-        tmpl_array.push('<a title="Return to the list of libraries" href="#">Libraries</a> <b>|</b> ');
-        tmpl_array.push('<% _.each(path, function(path_item) { %>');
-        tmpl_array.push('<% if (path_item[0] != id) { %>');
-        tmpl_array.push('<a title="Return to this folder" href="#/folders/<%- path_item[0] %>"><%- path_item[1] %></a> <b>|</b> ');
-        tmpl_array.push('<% } else { %>');
-        tmpl_array.push('<span title="You are in this folder"><%- path_item[1] %></span>');
-        tmpl_array.push('<% } %>');
-        tmpl_array.push('<% }); %>');
-        tmpl_array.push('</div>');
+        tmpl_array.push('<ol class="breadcrumb">');
+        tmpl_array.push('   <li><a title="Return to the list of libraries" href="#">Libraries</a></li>');
+        tmpl_array.push('   <% _.each(path, function(path_item) { %>');
+        tmpl_array.push('   <% if (path_item[0] != id) { %>');
+        tmpl_array.push('   <li><a title="Return to this folder" href="#/folders/<%- path_item[0] %>"><%- path_item[1] %></a> </li> ');
+        tmpl_array.push(    '<% } else { %>');
+        tmpl_array.push('   <li class="active"><span title="You are in this folder"><%- path_item[1] %></span></li>');
+        tmpl_array.push('   <% } %>');
+        tmpl_array.push('   <% }); %>');
+        tmpl_array.push('</ol>');
+
 
         // FOLDER CONTENT
-        tmpl_array.push('<table id="folder_table" class="table table-condensed">');
+        tmpl_array.push('<table id="folder_table" class="library_table table table-condensed">');
         tmpl_array.push('   <thead>');
         tmpl_array.push('       <th class="button_heading"></th>');
         tmpl_array.push('       <th style="text-align: center; width: 20px; "><input id="select-all-checkboxes" style="margin: 0;" type="checkbox"></th>');
@@ -164,8 +161,7 @@ var FolderContentView = Backbone.View.extend({
         tmpl_array.push('       <th>date (UTC)</th>');
         tmpl_array.push('   </thead>');
         tmpl_array.push('   <tbody>');
-        tmpl_array.push('       <td><button title="Go to parent folder" type="button" data-id="<%- upper_folder_id %>" class="btn_open_folder btn btn-default btn-xs">');
-        tmpl_array.push('        ..</td>');
+        tmpl_array.push('       <td><a href="#<% if (upper_folder_id !== 0){ print("folders/" + upper_folder_id)} %>" title="Go to parent folder" class="btn_open_folder btn btn-default btn-xs">..<a></td>');
         tmpl_array.push('       <td></td>');
         tmpl_array.push('       <td></td>');
         tmpl_array.push('       <td></td>');
@@ -173,29 +169,34 @@ var FolderContentView = Backbone.View.extend({
         tmpl_array.push('       <td></td>');
         tmpl_array.push('       </tr>');
         tmpl_array.push('       <% _.each(items, function(content_item) { %>');
-        tmpl_array.push('       <tr class="folder_row light" id="<%- content_item.id %>">');
         tmpl_array.push('           <% if (content_item.get("type") === "folder") { %>'); // folder
-        tmpl_array.push('               <td>');
-        tmpl_array.push('               <span class="fa fa-folder-open"></span></td>');
-        tmpl_array.push('               <td></td>');
-        tmpl_array.push('               <td><%- content_item.get("name") %>');
-        tmpl_array.push('           <% if (content_item.get("item_count") === 0) { %>'); // empty folder
-        tmpl_array.push('           <span class="muted">(empty folder)</span>');
-        tmpl_array.push('           <% } %>');
-        tmpl_array.push('           </td>');
-        tmpl_array.push('           <td>folder</td>');
-        tmpl_array.push('           <td><%= _.escape(content_item.get("item_count")) %> item(s)</td>'); // size
+        tmpl_array.push('               <tr class="folder_row light" id="<%- content_item.id %>">');
+        tmpl_array.push('                   <td>');
+        tmpl_array.push('                       <span title="Folder" class="fa fa-folder-o"></span>');
+        tmpl_array.push('                   </td>');
+        tmpl_array.push('                   <td></td>');
+        tmpl_array.push('                   <td>');
+        tmpl_array.push('                       <a href="#folders/<%- content_item.id %>"><%- content_item.get("name") %></a>');
+        tmpl_array.push('                       <% if (content_item.get("item_count") === 0) { %>'); // empty folder
+        tmpl_array.push('                           <span class="muted">(empty folder)</span>');
+        tmpl_array.push('                       <% } %>');
+        tmpl_array.push('                   </td>');
+        tmpl_array.push('                   <td>folder</td>');
+        tmpl_array.push('                   <td><%= _.escape(content_item.get("item_count")) %> item(s)</td>'); // size
+        tmpl_array.push('                   <td><%= _.escape(content_item.get("time_updated")) %></td>'); // time updated
+        tmpl_array.push('               </tr>');
         tmpl_array.push('           <% } else {  %>');
-        tmpl_array.push('       <td>');
-        tmpl_array.push('       <span class="fa fa-file"></span>');
-        tmpl_array.push('       </td>');
-        tmpl_array.push('           <td style="text-align: center; "><input style="margin: 0;" type="checkbox"></td>');
-        tmpl_array.push('           <td><a href="#" class="library-dataset"><%- content_item.get("name") %><a></td>'); // dataset
-        tmpl_array.push('           <td><%= _.escape(content_item.get("data_type")) %></td>'); // data type
-        tmpl_array.push('           <td><%= _.escape(content_item.get("readable_size")) %></td>'); // size
-        tmpl_array.push('           <% } %>  ');
-        tmpl_array.push('           <td><%= _.escape(content_item.get("time_updated")) %></td>'); // time updated
-        tmpl_array.push('       </tr>');
+        tmpl_array.push('               <tr class="dataset_row light" id="<%- content_item.id %>">');
+        tmpl_array.push('                   <td>');
+        tmpl_array.push('                       <span title="Dataset" class="fa fa-file-o"></span>');
+        tmpl_array.push('                   </td>');
+        tmpl_array.push('                   <td style="text-align: center; "><input style="margin: 0;" type="checkbox"></td>');
+        tmpl_array.push('                   <td><a href="#" class="library-dataset"><%- content_item.get("name") %><a></td>'); // dataset
+        tmpl_array.push('                   <td><%= _.escape(content_item.get("data_type")) %></td>'); // data type
+        tmpl_array.push('                   <td><%= _.escape(content_item.get("readable_size")) %></td>'); // size
+        tmpl_array.push('                   <td><%= _.escape(content_item.get("time_updated")) %></td>'); // time updated
+        tmpl_array.push('               </tr>');
+        tmpl_array.push('               <% } %>  ');
         tmpl_array.push('       <% }); %>');
         tmpl_array.push('       ');
         tmpl_array.push('   </tbody>');
@@ -207,7 +208,7 @@ var FolderContentView = Backbone.View.extend({
     templateDatasetModal : function(){
         var tmpl_array = [];
 
-        tmpl_array.push('<div id="dataset_info_modal">');
+        tmpl_array.push('<div class="modal_table">');
         tmpl_array.push('   <table class="table table-striped table-condensed">');
         tmpl_array.push('       <tr>');
         tmpl_array.push('           <th scope="row" id="id_row" data-id="<%= _.escape(item.get("ldda_id")) %>">Name</th>');
@@ -329,12 +330,11 @@ var FolderContentView = Backbone.View.extend({
       // event binding
       events: {
             'click #select-all-checkboxes' : 'selectAll',
-            'click .folder_row' : 'selectClickedRow',
             'click #toolbtn_bulk_import' : 'modalBulkImport',
             'click #toolbtn_dl' : 'bulkDownload',
-            'click .library-dataset' : 'showDatasetDetails',
             'click #toolbtn_create_folder' : 'createFolderFromModal',
-            'click .btn_open_folder' : 'navigateToFolder'
+            'click .library-dataset' : 'showDatasetDetails',
+            'click .dataset_row' : 'selectClickedRow'
         },
 
 // MMMMMMMMMMMMMMMMMM
@@ -396,18 +396,6 @@ var FolderContentView = Backbone.View.extend({
             // return formatted string
             return (Math.round(size) / 10) + unit;
         },
-
-      // handles the click on 'open' and 'upper' folder icons
-      navigateToFolder : function(event){
-        var folder_id = $(event.target).attr('data-id');
-        if (typeof folder_id === 'undefined') {
-            return false;
-        } else if (folder_id === '0'){
-            library_router.navigate('/', {trigger: true, replace: false});
-        } else {
-            library_router.navigate('folders/' + folder_id, {trigger: true, replace: false});
-        }
-      },
 
       //show modal with current dataset info
       showDatasetDetails : function(event){
@@ -558,8 +546,6 @@ var FolderContentView = Backbone.View.extend({
                 $row = $(event.target.parentElement);
                 source = 'td';
             }
-            if (checkbox === '') {event.stopPropagation(); return;} // button in row was clicked
-            if (checkbox === undefined) {event.stopPropagation(); return;} // folder row was clicked
 
                 if (checkbox.checked){
                     if (source==='td'){
@@ -584,6 +570,9 @@ var FolderContentView = Backbone.View.extend({
             $row.find('a').removeClass('light');
             $row.addClass('dark');
             $row.find('a').addClass('dark');
+            $row.find('span').removeClass('fa-file-o');
+            $row.find('span').addClass('fa-file');
+
         },
 
         makeWhiteRow: function($row){
@@ -591,6 +580,8 @@ var FolderContentView = Backbone.View.extend({
             $row.find('a').removeClass('dark');
             $row.addClass('light');
             $row.find('a').addClass('light');
+            $row.find('span').addClass('fa-file-o');
+            $row.find('span').removeClass('fa-file');
         },
 
         // show toolbar in case something is selected
@@ -799,8 +790,72 @@ var GalaxyLibraryview = Backbone.View.extend({
         'click #create_new_library_btn' : 'show_library_modal'
     },
 
+    modal: null,
+
+    collection: null,
+
     // initialize
     initialize : function(){
+        var viewContext = this;
+        this.collection = new Libraries();
+        // this.collection.on('sort', this.render, this);
+
+        this.collection.fetch({
+          success: function(libraries){
+            viewContext.render();
+          },
+          error: function(model, response){
+
+            if (response.statusCode().status === 403){ //TODO open to public
+                mod_toastr.info('Please log in first. Redirecting to login page in 3s.');   
+                setTimeout(that.redirectToLogin, 3000);
+            } else {
+                mod_toastr.error('An error occured. Please try again.');
+            }
+          }
+        })
+        // modification of upper DOM element to show scrollbars due to the #center element inheritance
+        $("#center").css('overflow','auto');
+    },
+
+    render: function (models) {
+        var template = this.templateLibraryList();
+        var libraries_to_render = null;
+
+        if (this.collection !== null && typeof models === 'undefined'){
+            libraries_to_render = this.collection.models;
+        } else if (models !== null){
+            libraries_to_render = models;
+        } else {
+            libraries_to_render = [];
+        }
+    
+        this.$el.html(template({libraries: libraries_to_render, order: this.collection.sort_order}));
+
+    },
+
+    /** Sorts the underlying collection according to the parameters received through URL. 
+        Currently supports only sorting by name. */
+    sortLibraries: function(sort_by, order){
+        if (sort_by === 'name'){
+            if (order === 'asc'){
+                this.collection.sort_order = 'asc';
+                this.collection.comparator = function(libraryA, libraryB){
+                      if (libraryA.get('name').toLowerCase() > libraryB.get('name').toLowerCase()) return 1; // after
+                      if (libraryB.get('name').toLowerCase() > libraryA.get('name').toLowerCase()) return -1; // before
+                      return 0; // equal
+                }
+            } else if (order === 'desc'){
+                this.collection.sort_order = 'desc';
+                this.collection.comparator = function(libraryA, libraryB){
+                      if (libraryA.get('name').toLowerCase() > libraryB.get('name').toLowerCase()) return -1; // before
+                      if (libraryB.get('name').toLowerCase() > libraryA.get('name').toLowerCase()) return 1; // after
+                      return 0; // equal
+                }
+            }
+            this.collection.sort();
+        }
+
     },
 
 // MMMMMMMMMMMMMMMMMM
@@ -809,13 +864,13 @@ var GalaxyLibraryview = Backbone.View.extend({
 
     templateLibraryList: function(){
         tmpl_array = [];
-        tmpl_array.push('<div id="library_container" style="width: 90%; margin: auto; margin-top: 2em; overflow: auto !important; ">');
+        tmpl_array.push('<div class="library_container" style="width: 90%; margin: auto; margin-top: 2em; overflow: auto !important; ">');
         tmpl_array.push('');
         tmpl_array.push('<h3>Data Libraries Beta Test. This is work in progress. Please report problems & ideas via <a href="mailto:galaxy-bugs@bx.psu.edu?Subject=DataLibrariesBeta_Feedback" target="_blank">email</a> and <a href="https://trello.com/c/nwYQNFPK/56-data-library-ui-progressive-display-of-folders" target="_blank">Trello</a>.</h3>');
-        // tmpl_array.push('<a href="" id="create_new_library_btn" class="btn btn-primary file ">New Library</a>');
-        tmpl_array.push('<table class="table table-condensed">');
+        tmpl_array.push('<a href="" id="create_new_library_btn" class="btn btn-primary file ">New Library</a>');
+        tmpl_array.push('<table class="library_table table table-condensed">');
         tmpl_array.push('   <thead>');
-        tmpl_array.push('     <th>name</th>');
+        tmpl_array.push('     <th><a title="Click to reverse order" href="#sort/name/<% if(order==="desc"||order===null){print("asc")}else{print("desc")} %>">name</a> <span title="Sorted alphabetically" class="fa fa-sort-alpha-<%- order %>"></span></th>');
         tmpl_array.push('     <th>description</th>');
         tmpl_array.push('     <th>synopsis</th> ');
         tmpl_array.push('   </thead>');
@@ -831,7 +886,7 @@ var GalaxyLibraryview = Backbone.View.extend({
         tmpl_array.push('</table>');
         tmpl_array.push('</div>');
 
-        return tmpl_array.join('');
+        return _.template(tmpl_array.join(''));
     },
 
     templateNewLibraryInModal: function(){
@@ -848,38 +903,12 @@ var GalaxyLibraryview = Backbone.View.extend({
         return tmpl_array.join('');
     },
 
-    render: function () {
-        // modification of upper DOM element to show scrollbars due to the #center element inheritance
-        $("#center").css('overflow','auto');
-        
-        var that = this;
-        libraries = new Libraries();
-
-        libraries.fetch({
-          success: function (libraries) {
-            var template = _.template(that.templateLibraryList(), { libraries : libraries.models });
-            that.$el.html(template);
-          },
-          error: function(model, response){
-            if (response.statusCode().status === 403){ //TODO open to public
-                mod_toastr.info('Please log in first. Redirecting to login page in 3s.');   
-                setTimeout(that.redirectToLogin, 3000);
-            } else {
-                mod_toastr.error('An error occured. Please try again.');
-            }
-          }
-    })
-    },
-
     redirectToHome: function(){
         window.location = '../';
     },    
     redirectToLogin: function(){
         window.location = '/user/login';
     },
-
-    // own modal
-    modal : null,
 
     // show/hide create library modal
     show_library_modal : function (event){
@@ -908,6 +937,7 @@ var GalaxyLibraryview = Backbone.View.extend({
             var self = this;
             library.save(libraryDetails, {
               success: function (library) {
+                self.collection.add(library);
                 self.modal.hide();
                 self.clear_library_modal();
                 self.render();
@@ -945,23 +975,42 @@ var GalaxyLibraryview = Backbone.View.extend({
     }
 });
 
+
+//ROUTER
+var LibraryRouter = Backbone.Router.extend({
+    routes: {
+        ""                                      : "libraries",
+        "sort/:sort_by/:order"                  : "sort_libraries",
+        "folders/:id"                           : "folder_content",
+        "folders/:folder_id/download/:format"   : "download"
+    }
+});
+
 // galaxy library wrapper View
 var GalaxyLibrary = Backbone.View.extend({
-    folderContentView : null,
-    galaxyLibraryview : null,
+    // folderContentView : null,
+    // galaxyLibraryview : null,
 
     initialize : function(){
 
-        folderContentView = new FolderContentView();
         galaxyLibraryview = new GalaxyLibraryview();
         library_router = new LibraryRouter();
+        folderContentView = new FolderContentView();
 
         library_router.on('route:libraries', function() {
           // render libraries list
           galaxyLibraryview.render();
         });
 
+        library_router.on('route:sort_libraries', function(sort_by, order) {
+          // sort libraries list
+          galaxyLibraryview.sortLibraries(sort_by, order);
+          galaxyLibraryview.render();
+        });
+
         library_router.on('route:folder_content', function(id) {
+            // if (this.folderContentView === null){
+            // }
           // render folder's contents
           folderContentView.render({id: id});
         });
@@ -978,10 +1027,8 @@ var GalaxyLibrary = Backbone.View.extend({
           }
         });
 
-Backbone.history.start({pushState: false});
-
-// return this
-}
+    Backbone.history.start({pushState: false});
+    }
 });
 
 // return
