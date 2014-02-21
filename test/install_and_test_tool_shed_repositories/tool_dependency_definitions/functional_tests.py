@@ -42,6 +42,7 @@ import install_and_test_tool_shed_repositories.base.util as install_and_test_bas
 from base.tool_shed_util import parse_tool_panel_config
 
 from galaxy.app import UniverseApplication
+from galaxy.util import asbool
 from galaxy.util import unicodify
 from galaxy.web import buildapp
 from functional_tests import generate_config_file
