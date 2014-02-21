@@ -15,6 +15,9 @@
 <%def name="stylesheets()">
     ${parent.stylesheets()}
     <style type="text/css">
+        .history-panel {
+            margin-top: 8px;
+        }
     </style>
 </%def>
 
@@ -48,7 +51,7 @@
         historyJSON  = ${h.to_json_string( history_dict )},
         hdaJSON      = ${h.to_json_string( hda_dicts )};
     //window.historyJSON = historyJSON;
-    window.hdaJSON = hdaJSON;
+    //window.hdaJSON = hdaJSON;
 
     require.config({
         baseUrl : "${h.url_for( '/static/scripts' )}"

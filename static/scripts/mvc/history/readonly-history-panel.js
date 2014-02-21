@@ -107,6 +107,9 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
 
         // ---- handle models passed on init
         if( this.model ){
+            if( this.logger ){
+                this.model.logger = this.logger;
+            }
             this._setUpWebStorage( attributes.initiallyExpanded, attributes.show_deleted, attributes.show_hidden );
             this._setUpModelEventHandlers();
         }
@@ -302,6 +305,9 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
             newHistoryJSON.user = Galaxy.currUser.toJSON();
         }
         this.model = new historyModel.History( newHistoryJSON, newHdaJSON, attributes );
+        if( this.logger ){
+            this.model.logger = this.logger;
+        }
         this._setUpWebStorage( attributes.initiallyExpanded, attributes.show_deleted, attributes.show_hidden );
         this._setUpModelEventHandlers();
         this.selectedHdaIds = [];
