@@ -497,6 +497,12 @@ static_robots_txt = %(here)s/static/robots.txt
 # unaltered output.
 #sanitize_all_html = True
 
+# By default Galaxy will serve non-HTML tool output that may potentially
+# contain browser executable JavaScript content as plain text. This will for
+# instance cause SVG datasets to not render properly and so may be disabled
+# by setting the following option to True.
+#serve_xss_vulnerable_mimetypes = False
+
 # Debug enables access to various config options useful for development and
 # debugging: use_lint, use_profile, use_printdebug and use_interactive.  It
 # also causes the files used by PBS/SGE (submission script, output, and error)
