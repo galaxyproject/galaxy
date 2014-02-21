@@ -1780,12 +1780,13 @@ class DataToolParameter( ToolParameter ):
     def to_python( self, value, app ):
         # Both of these values indicate that no dataset is selected.  However, 'None'
         # indicates that the dataset is optional, while '' indicates that it is not.
-        if value is None or value == '' or value == 'None':
+        none_values = [ None, '', 'None' ]
+        if value in none_values:# is None or value == '' or value == 'None':
             return value
         if isinstance(value, str) and value.find(",") > -1:
             values = value.split(",")
             # TODO: Optimize. -John
-            return [app.model.context.query( app.model.HistoryDatasetAssociation ).get( int( val ) ) for val in values]
+            return [ app.model.context.query( app.model.HistoryDatasetAssociation ).get( int( val ) ) for val in values if val not in none_values ]
         return app.model.context.query( app.model.HistoryDatasetAssociation ).get( int( value ) )
 
     def to_param_dict_string( self, value, other_values={} ):
