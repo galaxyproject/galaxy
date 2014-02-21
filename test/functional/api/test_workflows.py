@@ -103,6 +103,29 @@ class WorkflowsApiTestCase( api.ApiTestCase, TestsDatasets ):
         pja = pjas[ 0 ]
         self._assert_has_keys( pja, "action_type", "output_name", "action_arguments" )
 
+    def test_invocation_usage( self ):
+        workflow = self.workflow_populator.load_workflow( name="test_usage" )
+        workflow_request, history_id = self._setup_workflow_run( workflow )
+        workflow_id = workflow_request[ "workflow_id" ]
+        response = self._get( "workflows/%s/usage" % workflow_id )
+        self._assert_status_code_is( response, 200 )
+        assert len( response.json() ) == 0
+        run_workflow_response = self._post( "workflows", data=workflow_request )
+        self._assert_status_code_is( run_workflow_response, 200 )
+
+        response = self._get( "workflows/%s/usage" % workflow_id )
+        self._assert_status_code_is( response, 200 )
+        usages = response.json()
+        assert len( usages ) == 1
+
+        usage_details_response = self._get( "workflows/%s/usage/%s" % ( workflow_id, usages[ 0 ][ "id" ] ) )
+        self._assert_status_code_is( usage_details_response, 200 )
+        usage_details = usage_details_response.json()
+        # Assert some high-level things about the structure of data returned.
+        self._assert_has_keys( usage_details, "inputs", "steps" )
+        for step in usage_details[ "steps" ].values():
+            self._assert_has_keys( step, "workflow_step_id", "order_index" )
+
     def test_post_job_action( self ):
         """ Tests both import and execution of post job actions.
         """
