@@ -1781,7 +1781,7 @@ class DataToolParameter( ToolParameter ):
         # Both of these values indicate that no dataset is selected.  However, 'None'
         # indicates that the dataset is optional, while '' indicates that it is not.
         none_values = [ None, '', 'None' ]
-        if value in none_values:# is None or value == '' or value == 'None':
+        if value in none_values:
             return value
         if isinstance(value, str) and value.find(",") > -1:
             values = value.split(",")
