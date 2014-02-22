@@ -20,6 +20,7 @@ from galaxy.tools.parameters.grouping import Conditional
 from galaxy.tools.parameters.grouping import ConditionalWhen
 from galaxy.tools.parameters.basic import IntegerToolParameter
 from galaxy.tools.parameters.basic import SelectToolParameter
+from galaxy.tools.parameters.basic import DataToolParameter
 from elementtree.ElementTree import XML  # Import after model, to ensure elementtree
 
 
@@ -77,6 +78,18 @@ class ToolEvaluatorTestCase(TestCase, UsesApp):
         self._set_compute_environment()
         command_line, extra_filenames = self.evaluator.build( )
         self.assertEquals( command_line, "prog1 --thresh=4 --test_param=true" )
+
+    def test_evaluation_of_optional_datasets( self ):
+        # Make sure optional dataset don't cause evaluation to break and
+        # evaluate in cheetah templates as 'None'.
+        select_xml = XML('''<param name="input1" type="data" optional="true"></param>''')
+        parameter = DataToolParameter( self.tool, select_xml )
+        self.job.parameters = [ JobParameter( name="input1", value=u'null' ) ]
+        self.tool.set_params( { "input1": parameter } )
+        self.tool._command_line = "prog1 --opt_input='${input1}'"
+        self._set_compute_environment()
+        command_line, extra_filenames = self.evaluator.build( )
+        self.assertEquals( command_line, "prog1 --opt_input='None'" )
 
     def test_evaluation_with_path_rewrites_wrapped( self ):
         self.tool.check_values = True
