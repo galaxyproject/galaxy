@@ -11,13 +11,14 @@ import logging
 import os
 import tempfile
 import time
-import pkg_resources
+
 from galaxy import eggs
-pkg_resources.require('boto')
-import boto
 from galaxy import web
 from galaxy.web.base.controller import BaseUIController
 from galaxy.util.json import to_json_string
+
+eggs.require('boto')
+import boto
 from boto.ec2.regioninfo import RegionInfo
 from boto.exception import EC2ResponseError, S3ResponseError
 from boto.s3.connection import OrdinaryCallingFormat, S3Connection
@@ -29,20 +30,24 @@ DEFAULT_KEYPAIR = 'cloudman_keypair'
 
 
 class CloudController(BaseUIController):
+    """Galaxy Cloud Functions"""
 
     def __init__(self, app):
         BaseUIController.__init__(self, app)
 
     @web.expose
-    def index(self, trans, share_string=None, ami=None, bucket_default = None):
+    def index(self, trans, share_string=None, ami=None, bucket_default=None):
+        """
+        Serves the default page requesting AWS keys
+        """
         return trans.fill_template("cloud/index.mako",
-                                    default_keypair = DEFAULT_KEYPAIR,
-                                    share_string=share_string,
-                                    ami=ami,
-                                    bucket_default=bucket_default)
+                                   default_keypair=DEFAULT_KEYPAIR,
+                                   share_string=share_string,
+                                   ami=ami,
+                                   bucket_default=bucket_default)
 
     @web.expose
-    def get_account_info(self, trans, key_id, secret, **kwargs):
+    def get_account_info(self, trans, key_id, secret):
         """
         Get EC2 Account Info
         """
@@ -54,7 +59,7 @@ class CloudController(BaseUIController):
         except EC2ResponseError, e:
             log.error("Problem starting an instance: %s\n%s" % (e, e.body))
             trans.response.status = 400
-            return e.error_message or "Instance failure, but no specific error was detected.  Please check your AWS Console."
+            return e.error_message or "Error retrieving account information.  Please verify your credentials are correct, and contact galaxy support to report this issue."
         account_info['keypairs'] = [akp.name for akp in kps]
         #Existing Clusters
         s3_conn = S3Connection(key_id, secret, calling_format=OrdinaryCallingFormat())
@@ -79,7 +84,7 @@ class CloudController(BaseUIController):
                     for line in pd_contents.split('\n'):
                         if 'vol_id' in line:
                             vol_id = line.split(':')[1].strip()
-                            v = ec2_conn.get_all_volumes(volume_ids = [vol_id])
+                            v = ec2_conn.get_all_volumes(volume_ids=[vol_id])
                             if v:
                                 zone = v[0].zone
                             else:
@@ -91,7 +96,7 @@ class CloudController(BaseUIController):
                     if key.name.endswith('.clusterName'):
                         clusters.append({'name': key.name.split('.clusterName')[0],
                                          'persistent_data': pd_contents,
-                                         'zone':zone})
+                                         'zone': zone})
         account_info['clusters'] = clusters
         account_info['zones'] = [z.name for z in ec2_conn.get_all_zones()]
         return to_json_string(account_info)
@@ -111,29 +116,25 @@ class CloudController(BaseUIController):
             return ec2_error
         else:
             user_provided_data = {'cluster_name': cluster_name,
-                                'access_key': key_id,
-                                'secret_key': secret,
-                                'instance_type': instance_type}
+                                  'access_key': key_id,
+                                  'secret_key': secret,
+                                  'instance_type': instance_type}
             if password:
                 user_provided_data['password'] = password
             if share_string:
                 user_provided_data['share_string'] = share_string
             if bucket_default:
-                user_provided_data['bucket_default']  = bucket_default
-
+                user_provided_data['bucket_default'] = bucket_default
             if not ami:
                 ami = trans.app.config.cloudlaunch_default_ami
-
             rs = run_instance(ec2_conn=ec2_conn,
-                      image_id = ami,
-                      user_provided_data=user_provided_data,
-                      key_name=kp_name,
-                      security_groups=[sg_name],
-                      placement=zone
-                      )
+                              image_id=ami,
+                              user_provided_data=user_provided_data,
+                              key_name=kp_name,
+                              security_groups=[sg_name],
+                              placement=zone)
             if rs:
                 instance = rs.instances[0]
-                ct = 0
                 while not instance.public_dns_name:
                     try:
                         instance.update()
@@ -141,7 +142,6 @@ class CloudController(BaseUIController):
                         #This can happen when update is invoked before the instance is fully registered.
                         #Prevent failure, wait it out.
                         pass
-                    ct += 1
                     time.sleep(1)
                 if kp_material:
                     #We have created a keypair.  Save to tempfile for one time retrieval.
@@ -152,14 +152,12 @@ class CloudController(BaseUIController):
                     kp_material_tag = fname[fname.rfind(PKEY_PREFIX) + len(PKEY_PREFIX):]
                 else:
                     kp_material_tag = None
-                return to_json_string({
-                    'cluster_name': cluster_name,
-                    'instance_id': rs.instances[0].id,
-                    'image_id': rs.instances[0].image_id,
-                    'public_dns_name': rs.instances[0].public_dns_name,
-                    'kp_name': kp_name,
-                    'kp_material_tag':kp_material_tag
-                    })
+                return to_json_string({'cluster_name': cluster_name,
+                                       'instance_id': rs.instances[0].id,
+                                       'image_id': rs.instances[0].image_id,
+                                       'public_dns_name': rs.instances[0].public_dns_name,
+                                       'kp_name': kp_name,
+                                       'kp_material_tag': kp_material_tag})
             else:
                 trans.response.status = 400
                 return "Instance failure, but no specific error was detected.  Please check your AWS Console."
@@ -173,16 +171,17 @@ class CloudController(BaseUIController):
                 kp_material = f.read()
                 f.close()
                 trans.response.headers['Content-Length'] = int( os.stat( expected_path ).st_size )
-                trans.response.set_content_type( "application/octet-stream" ) #force octet-stream so Safari doesn't append mime extensions to filename
+                trans.response.set_content_type( "application/octet-stream" )  # force octet-stream so Safari doesn't append mime extensions to filename
                 trans.response.headers["Content-Disposition"] = 'attachment; filename="%s.pem"' % DEFAULT_KEYPAIR
                 os.remove(expected_path)
                 return kp_material
         trans.response.status = 400
         return "Invalid identifier"
 
-# ## Cloud interaction methods
+
 def connect_ec2(a_key, s_key):
-    """ Create and return an EC2 connection object.
+    """
+    Create and return an EC2 connection object.
     """
     # Use variables for forward looking flexibility
     # AWS connection values
@@ -193,13 +192,14 @@ def connect_ec2(a_key, s_key):
     ec2_conn_path = '/'
     r = RegionInfo(name=region_name, endpoint=region_endpoint)
     ec2_conn = boto.connect_ec2(aws_access_key_id=a_key,
-                          aws_secret_access_key=s_key,
-                          api_version='2011-11-01', # needed for availability zone support
-                          is_secure=is_secure,
-                          region=r,
-                          port=ec2_port,
-                          path=ec2_conn_path)
+                                aws_secret_access_key=s_key,
+                                api_version='2011-11-01',  # needed for availability zone support
+                                is_secure=is_secure,
+                                region=r,
+                                port=ec2_port,
+                                path=ec2_conn_path)
     return ec2_conn
+
 
 def create_cm_security_group(ec2_conn, sg_name='CloudMan'):
     """ Create a security group with all authorizations required to run CloudMan.
@@ -220,11 +220,11 @@ def create_cm_security_group(ec2_conn, sg_name='CloudMan'):
         cmsg = ec2_conn.create_security_group(sg_name, 'A security group for CloudMan')
     # Add appropriate authorization rules
     # If these rules already exist, nothing will be changed in the SG
-    ports = (('80', '80'), # Web UI
-             ('20', '21'), # FTP
-             ('22', '22'), # ssh
-             ('30000', '30100'), # FTP transfer
-             ('42284', '42284')) # CloudMan UI
+    ports = (('80', '80'),  # Web UI
+             ('20', '21'),  # FTP
+             ('22', '22'),  # ssh
+             ('30000', '30100'),  # FTP transfer
+             ('42284', '42284'))  # CloudMan UI
     for port in ports:
         try:
             if not rule_exists(cmsg.rules, from_port=port[0], to_port=port[1]):
@@ -234,7 +234,7 @@ def create_cm_security_group(ec2_conn, sg_name='CloudMan'):
         except EC2ResponseError, e:
             log.error("A problem with security group authorizations: %s" % e)
     # Add rule that allows communication between instances in the same SG
-    g_rule_exists = False # Flag to indicate if group rule already exists
+    g_rule_exists = False  # Flag to indicate if group rule already exists
     for rule in cmsg.rules:
         for grant in rule.grants:
             if grant.name == cmsg.name:
@@ -250,6 +250,7 @@ def create_cm_security_group(ec2_conn, sg_name='CloudMan'):
     log.info("Done configuring '%s' security group" % cmsg.name)
     return cmsg.name
 
+
 def rule_exists(rules, from_port, to_port, ip_protocol='tcp', cidr_ip='0.0.0.0/0'):
     """ A convenience method to check if an authorization rule in a security
         group exists.
@@ -259,6 +260,7 @@ def rule_exists(rules, from_port, to_port, ip_protocol='tcp', cidr_ip='0.0.0.0/0
            rule.to_port == to_port and cidr_ip in [ip.cidr_ip for ip in rule.grants]:
             return True
     return False
+
 
 def create_key_pair(ec2_conn, key_name=DEFAULT_KEYPAIR):
     """ Create a key pair with the provided name.
@@ -278,6 +280,7 @@ def create_key_pair(ec2_conn, key_name=DEFAULT_KEYPAIR):
         log.error("Problem creating key pair '%s': %s" % (key_name, e))
         return None, None
     return kp.name, kp.material
+
 
 def run_instance(ec2_conn, user_provided_data, image_id=None,
                  kernel_id=None, ramdisk_id=None, key_name=DEFAULT_KEYPAIR,
@@ -310,6 +313,7 @@ def run_instance(ec2_conn, user_provided_data, image_id=None,
         log.warning("Problem starting an instance?")
     return rs
 
+
 def _find_placement(ec2_conn, instance_type):
     """Find a region zone that supports our requested instance type.
 
@@ -328,4 +332,3 @@ def _find_placement(ec2_conn, instance_type):
             return cur_loc
     log.error("Did not find availabilty zone in {0} for {1}".format(base, instance_type))
     return None
-
