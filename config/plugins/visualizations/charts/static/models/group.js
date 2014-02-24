@@ -4,6 +4,12 @@ define([], function() {
 // model
 return Backbone.Model.extend(
 {
+    // options
+    defaults : {
+        label           : 'Data label',
+        date            : ''
+    },
+    
     // reset
     reset: function()
     {

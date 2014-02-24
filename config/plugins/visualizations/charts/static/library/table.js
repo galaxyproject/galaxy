@@ -20,8 +20,8 @@ return Backbone.View.extend(
     
     // events
     events : {
-        'click'     : 'onclick',
-        'dblclick'  : 'ondblclick'
+        'click'     : '_onclick',
+        'dblclick'  : '_ondblclick'
     },
     
     // first
@@ -33,7 +33,7 @@ return Backbone.View.extend(
         this.options = Utils.merge(options, this.optionsDefault);
         
         // create new element
-        this.setElement(this.template(options));
+        this.setElement(this._template(options));
                 
         // initialize row
         this.row = $('<tr></tr>');
@@ -64,46 +64,26 @@ return Backbone.View.extend(
     
     // append
     append: function(id) {
-        this.commit(id);
+        this._commit(id);
     },
     
     // prepend
     prepend: function(id) {
-        this.commit(id, true);
-    },
-    
-    // commit
-    commit: function(id, prepend) {
-        // add
-        this.row.attr('id', id);
-       
-        // add row
-        if (prepend) {
-            $(this.el).find('tbody').prepend(this.row);
-        } else {
-            $(this.el).find('tbody').append(this.row);
-        }
-        
-        // row
-        this.row = $('<tr></tr>');
-        
-        // row count
-        this.row_count++;
-        this.refresh();
+        this._commit(id, true);
     },
     
     // remove
     remove: function(id) {
         $(this.el).find('#' + id).remove();
         this.row_count--;
-        this.refresh();
+        this._refresh();
     },
 
     // remove
     removeAll: function() {
         $(this.el).find('tbody').html('');
         this.row_count = 0;
-        this.refresh();
+        this._refresh();
     },
         
     // value
@@ -134,13 +114,28 @@ return Backbone.View.extend(
         }
     },
     
-    // confirm new value
-    confirm: function(new_value) {
-        this.value(new_value);
+    // commit
+    _commit: function(id, prepend) {
+        // add
+        this.row.attr('id', id);
+       
+        // add row
+        if (prepend) {
+            $(this.el).find('tbody').prepend(this.row);
+        } else {
+            $(this.el).find('tbody').append(this.row);
+        }
+        
+        // row
+        this.row = $('<tr></tr>');
+        
+        // row count
+        this.row_count++;
+        this._refresh();
     },
     
     // onclick
-    onclick: function(e) {
+    _onclick: function(e) {
         // get values
         var old_value = this.value();
         var new_value = $(e.target).closest('tr').attr('id');
@@ -150,13 +145,13 @@ return Backbone.View.extend(
             if (this.options.onconfirm) {
                 this.options.onconfirm(new_value);
             } else {
-                this.confirm(new_value);
+                this.value(new_value);
             }
         }
     },
 
-    // onclick
-    ondblclick: function(e) {
+    // ondblclick
+    _ondblclick: function(e) {
         var value = this.value();
         if (value && this.options.ondblclick) {
             this.options.ondblclick(value);
@@ -164,7 +159,7 @@ return Backbone.View.extend(
     },
         
     // refresh
-    refresh: function() {
+    _refresh: function() {
         if (this.row_count == 0) {
             this.$el.find('tmessage').show();
         } else {
@@ -173,7 +168,7 @@ return Backbone.View.extend(
     },
         
     // load html template
-    template: function(options)
+    _template: function(options)
     {
         return  '<div>' +
                     '<table class="grid">' +

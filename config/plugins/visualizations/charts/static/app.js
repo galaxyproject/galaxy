@@ -1,10 +1,10 @@
 // dependencies
 define(['mvc/ui/ui-portlet', 'plugin/library/ui', 'utils/utils',
-        'plugin/views/charts', 'plugin/views/viewport', 'plugin/views/chart', 'plugin/views/group',
-        'plugin/models/config', 'plugin/models/datasets', 'plugin/models/chart', 'plugin/models/charts', 'plugin/models/group', 'plugin/models/types'],
+        'plugin/views/charts', 'plugin/views/viewport', 'plugin/views/chart',
+        'plugin/models/config', 'plugin/models/datasets', 'plugin/models/chart', 'plugin/models/charts', 'plugin/models/types'],
         function(   Portlet, Ui, Utils,
-                    ChartsView, ViewportView, ChartView, GroupView,
-                    Config, Datasets, Chart, Charts, Group, Types
+                    ChartsView, ViewportView, ChartView,
+                    Config, Datasets, Chart, Charts, Types
                 ) {
 
 // widget
@@ -26,14 +26,12 @@ return Backbone.View.extend(
         this.types = new Types();
         this.chart = new Chart();
         this.charts = new Charts();
-        this.group = new Group();
         
         // create dataset handler
         this.datasets = new Datasets(this);
         
         // create views
         this.charts_view = new ChartsView(this);
-        this.group_view = new GroupView(this);
         this.chart_view = new ChartView(this);
         this.viewport_view = new ViewportView(this);
         
@@ -49,9 +47,8 @@ return Backbone.View.extend(
         
         // append views
         this.portlet.append(this.charts_view.$el);
-        this.portlet.append(this.group_view.$el);
         this.portlet.append(this.chart_view.$el);
-        
+
         // set element
         if (!this.options.config.widget) {
             this.setElement(this.portlet.$el);
@@ -60,7 +57,6 @@ return Backbone.View.extend(
         }
         
         // hide views
-        this.group_view.$el.hide();
         this.charts_view.$el.hide();
         
         // events

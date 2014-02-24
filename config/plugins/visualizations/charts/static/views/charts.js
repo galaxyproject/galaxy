@@ -1,5 +1,5 @@
 // dependencies
-define(['mvc/ui/ui-portlet', 'plugin/library/table', 'plugin/library/ui', 'utils/utils'], function(Portlet, Table, Ui, Utils) {
+define(['mvc/ui/ui-portlet', 'plugin/library/table', 'plugin/library/ui', 'utils/utils', 'plugin/models/group'], function(Portlet, Table, Ui, Utils, Group) {
 
 // widget
 return Backbone.View.extend(
@@ -17,11 +17,11 @@ return Backbone.View.extend(
                 // get chart
                 var chart = self.app.charts.get(chart_id);
                 self.app.chart.copy(chart);
-                               
-                // show edit
+                
+                // hide this element
                 self.$el.hide();
                 
-                // update model and show create
+                // show chart view
                 self.app.chart_view.$el.show();
             },
             onchange : function(chart_id) {

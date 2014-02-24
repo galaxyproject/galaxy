@@ -19,6 +19,11 @@ return Backbone.View.extend(
         // create new element
         this.setElement(this._template(this.options));
         
+        // initial value
+        if (this.options.value) {
+            this.$el.val(this.options.value);
+        }
+        
         // add change event
         var self = this;
         if (this.options.onchange) {

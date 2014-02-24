@@ -1,6 +1,6 @@
 // dependencies
-define(['mvc/ui/ui-tabs', 'plugin/library/table', 'plugin/library/ui', 'utils/utils', 'plugin/models/chart', 'plugin/views/groups'],
-    function(Tabs, Table, Ui, Utils, Chart, GroupsView) {
+define(['mvc/ui/ui-tabs', 'plugin/library/table', 'plugin/library/ui', 'utils/utils', 'plugin/models/chart', 'plugin/models/group', 'plugin/views/group'],
+    function(Tabs, Table, Ui, Utils, Chart, Group, GroupView) {
 
 // widget
 return Backbone.View.extend(
@@ -28,10 +28,9 @@ return Backbone.View.extend(
         this.title = new Ui.Input({placeholder: 'Chart title'});
         this.dataset = new Ui.Input({value : app.options.dataset.id, disabled: true, visible: false});
         
-        // configure dataset
-        this.groups_view = new GroupsView(this.app);
-        
-        // table
+        //
+        // table with chart types
+        //
         var self = this;
         this.table = new Table({
             header : false,
@@ -40,7 +39,7 @@ return Backbone.View.extend(
                     // show modal
                     self.app.modal.show({
                         title   : 'Switching the chart type?',
-                        body    : 'You configured data sources. If you switch chart types your configurations will be removed.',
+                        body    : 'If you continue your data selections will cleared.',
                         buttons : {
                             'Cancel'    : function() {
                                 // hide modal
@@ -51,13 +50,13 @@ return Backbone.View.extend(
                                 self.app.modal.hide();
                                 
                                 // confirm
-                                self.table.confirm(type);
+                                self.table.value(type);
                             }
                         }
                     });
                 } else {
                     // confirm
-                    self.table.confirm(type);
+                    self.table.value(type);
                 }
             },
             onchange : function(type) {
@@ -70,7 +69,7 @@ return Backbone.View.extend(
             content: 'No chart types available'
         });
         
-        // add types
+        // load chart types into table
         var types_n = 0;
         var types = app.types.attributes;
         for (var id in types){
@@ -80,47 +79,55 @@ return Backbone.View.extend(
             this.table.append(id);
         }
         
-        // construct element
-        var $settings = $('<div/>');
-        $settings.append(Utils.wrap(this.message.$el));
-        $settings.append(Utils.wrap((new Ui.Label({ label : 'Provide a chart title:'})).$el));
-        $settings.append(Utils.wrap(this.title.$el));
-        $settings.append(Utils.wrap((new Ui.Label({ label : 'Select a chart type:'})).$el));
-        $settings.append(Utils.wrap(this.table.$el));
-
+        //
         // tabs
+        //
         this.tabs = new Tabs.View({
-            operations : {
-                'save'      : new Ui.ButtonIcon({
-                                icon    : 'fa-save',
-                                tooltip : 'Save Chart',
-                                onclick : function() {
-                                    self._saveChart();
+            title_new       : 'Add Data',
+            onnew           : function() {
+                self._addGroupModel();
+            },
+            operations      : {
+                'save'  : new Ui.ButtonIcon({
+                            icon    : 'fa-save',
+                            tooltip : 'Draw Chart',
+                            title   : 'Draw',
+                            onclick : function() {
+                                // ensure that data group is available
+                                if (self.chart.groups.length == 0) {
+                                    var group = self._addGroupModel();
+                                    self.tabs.show(group.id);
                                 }
-                            }),
-                'back'      : new Ui.ButtonIcon({
-                                icon    : 'fa-caret-left',
-                                tooltip : 'Return',
-                                onclick : function() {
-                                    self.$el.hide();
-                                    self.app.charts_view.$el.show();
-                                }
-                            })
+                                
+                                // save chart
+                                self._saveChart();
+                            }
+                        }),
+                'back'  : new Ui.ButtonIcon({
+                            icon    : 'fa-caret-left',
+                            tooltip : 'Return to Viewer',
+                            title   : 'Return',
+                            onclick : function() {
+                                self.$el.hide();
+                                self.app.charts_view.$el.show();
+                            }
+                        })
             }
         });
         
-        // add tab
-        this.tabs.add({
-            $el: $settings,
-            title: 'Start',
-            id: 'settings'
-        });
+        // construct element
+        var $settings = $('<div/>');
+        $settings.append(Utils.wrap(this.message.$el));
+        $settings.append(Utils.wrap((new Ui.Label({ title : 'Provide a chart title:'})).$el));
+        $settings.append(Utils.wrap(this.title.$el));
+        $settings.append(Utils.wrap((new Ui.Label({ title : 'Select a chart type:'})).$el));
+        $settings.append(Utils.wrap(this.table.$el));
         
         // add tab
         this.tabs.add({
-            $el: this.groups_view.$el,
-            title: 'Chart Groups',
-            id: 'groups'
+            id      : 'settings',
+            title   : 'Start',
+            $el     : $settings
         });
         
         // elements
@@ -129,7 +136,7 @@ return Backbone.View.extend(
         // hide back button on startup
         this.tabs.hideOperation('back');
         
-        // model events
+        // chart events
         var self = this;
         this.chart.on('change:title', function(chart) {
             self.title.value(chart.get('title'));
@@ -141,7 +148,7 @@ return Backbone.View.extend(
             self._resetChart();
         });
         
-        // collection events
+        // charts events
         this.app.charts.on('add', function(chart) {
             self.tabs.showOperation('back');
         });
@@ -154,12 +161,66 @@ return Backbone.View.extend(
             self.tabs.hideOperation('back');
         });
         
+        // groups events
+        this.app.chart.groups.on('add', function(group) {
+            self._addGroup(group);
+        });
+        this.app.chart.groups.on('remove', function(group) {
+            self._removeGroup(group);
+        });
+        this.app.chart.groups.on('reset', function(group) {
+            self._removeAllGroups();
+        });
+                
         // reset
         this._resetChart();
     },
 
+    // new group
+    _addGroupModel: function() {
+        var group = new Group({
+            id          : Utils.uuid(),
+            dataset_id  : this.chart.get('dataset_id')
+        });
+        this.chart.groups.add(group);
+        return group;
+    },
+
+    // add group
+    _addGroup: function(group) {
+        // link this
+        var self = this;
+        
+        // create view
+        var group_view = new GroupView(this.app, {group: group});
+        
+        // number of groups
+        var count = self.chart.groups.length;
+        
+        // add new tab
+        this.tabs.add({
+            title           : count + ': Chart Data',
+            id              : group.id,
+            $el             : group_view.$el,
+            ondel           : function() {
+                self.chart.groups.remove(group.id);
+            }
+        });
+    },
+    
+    // remove group
+    _removeGroup: function(group) {
+        this.tabs.del(group.id);
+    },
+
+    // remove group
+    _removeAllGroups: function(group) {
+        this.tabs.delRemovable();
+    },
+    
     // reset
     _resetChart: function() {
+        // reset chart details
         this.chart.set('id', Utils.uuid());
         this.chart.set('dataset_id', this.app.options.dataset.id);
         this.chart.set('type', 'bardiagram');

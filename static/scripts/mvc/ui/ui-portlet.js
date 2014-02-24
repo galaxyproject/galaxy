@@ -109,12 +109,12 @@ var View = Backbone.View.extend(
         this.$buttons.find('#' + id).prop('disabled', true);
     },
     
-    // enable operation
+    // hide operation
     hideOperation: function(id) {
         this.$operations.find('#' + id).hide();
     },
 
-    // disable operation
+    // show operation
     showOperation: function(id) {
         this.$operations.find('#' + id).show();
     },
