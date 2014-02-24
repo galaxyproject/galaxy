@@ -40,7 +40,7 @@ return Backbone.View.extend(
             
         // create portlet
         if (!this.options.config.widget) {
-            this.portlet = new Portlet.View({icon : 'fa-bar-chart-o', title : 'Charts'});
+            this.portlet = new Portlet.View({icon : 'fa-bar-chart-o'});
         } else {
             this.portlet = $('<div></div>');
         }
@@ -64,6 +64,22 @@ return Backbone.View.extend(
         this.config.on('change:current_view', function() {
             self._showCurrent();
         });
+        this.config.on('change:title', function() {
+            self._refreshTitle();
+        });
+        
+        // render
+        this.render();
+    },
+    
+    // render
+    render: function() {
+        this._refreshTitle();
+    },
+    
+    // refresh title
+    _refreshTitle: function() {
+        this.portlet.title('Charts - ' + this.config.get('title'));
     },
     
     // current view

@@ -25,8 +25,7 @@ return Backbone.View.extend(
         
         // add table to portlet
         this.portlet = new Portlet.View({
-            title       : '',
-            icon        : 'fa-signal',
+            title       : 'title',
             height      : this.options.height,
             overflow    : 'hidden',
             operations  : {

@@ -25,6 +25,13 @@ return Backbone.View.extend(
                 self.app.chart_view.$el.show();
             },
             onchange : function(chart_id) {
+                // get chart
+                var chart = self.app.charts.get(chart_id);
+                
+                // update main title
+                self.app.config.set('title', chart.get('title'));
+        
+                // show viewport
                 self.app.viewport_view.show(chart_id);
             }
         });

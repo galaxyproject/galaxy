@@ -10,7 +10,7 @@ var View = Backbone.View.extend(
     // defaults options
     optionsDefault: {
         title       : '',
-        icon        : 'fa-tasks',
+        icon        : '',
         buttons     : null,
         body        : null,
         height      : null,
@@ -20,6 +20,7 @@ var View = Backbone.View.extend(
     },
     
     // elements
+    $title : null,
     $content : null,
     $buttons : null,
     $operations : null,
@@ -34,6 +35,9 @@ var View = Backbone.View.extend(
         
         // link content
         this.$content = this.$el.find('#content');
+        
+        // link title
+        this.$title = this.$el.find('#title-text');
         
         // set content height
         if (this.options.height) {
@@ -128,7 +132,7 @@ var View = Backbone.View.extend(
     
     // title
     title: function(new_title) {
-        var $el = this.$el.find('#title');
+        var $el = this.$title;
         if (new_title) {
             $el.html(new_title);
         }
@@ -147,7 +151,7 @@ var View = Backbone.View.extend(
             if (options.icon)
                 tmpl +=         '<i style="padding-top: 3px; float: left; font-size: 1.2em" class="icon fa ' + options.icon + '">&nbsp;</i>';
         
-            tmpl +=             '<div id="title" style="padding-top: 2px; float: left;">' + options.title + '</div>';
+            tmpl +=             '<div id="title-text" style="padding-top: 2px; float: left;">' + options.title + '</div>';
             
             tmpl +=         '</div>' +
                         '</div>';

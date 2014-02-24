@@ -23,11 +23,6 @@ return Backbone.View.extend(
         // configure options
         this.options = Utils.merge(options, this.optionsDefault);
         
-        // main elements
-        this.message = new Ui.Message();
-        this.title = new Ui.Input({placeholder: 'Chart title'});
-        this.dataset = new Ui.Input({value : app.options.dataset.id, disabled: true, visible: false});
-        
         //
         // table with chart types
         //
@@ -115,9 +110,21 @@ return Backbone.View.extend(
             }
         });
         
-        // construct element
+        //
+        // main/default tab
+        //
+        
+        // construct elements
+        this.title = new Ui.Input({
+            placeholder: 'Chart title',
+            onchange: function() {
+                self.app.config.set('title', self.title.value());
+            }
+        });
+        this.dataset = new Ui.Input({value : app.options.dataset.id, disabled: true, visible: false});
+        
+        // append element
         var $settings = $('<div/>');
-        $settings.append(Utils.wrap(this.message.$el));
         $settings.append(Utils.wrap((new Ui.Label({ title : 'Provide a chart title:'})).$el));
         $settings.append(Utils.wrap(this.title.$el));
         $settings.append(Utils.wrap((new Ui.Label({ title : 'Select a chart type:'})).$el));
@@ -140,6 +147,7 @@ return Backbone.View.extend(
         var self = this;
         this.chart.on('change:title', function(chart) {
             self.title.value(chart.get('title'));
+            self.app.config.set('title', chart.get('title'));
         });
         this.chart.on('change:type', function(chart) {
             self.table.value(chart.get('type'));

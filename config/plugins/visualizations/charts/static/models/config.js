@@ -9,7 +9,8 @@ return Backbone.Model.extend(
     defaults : {
         query_limit     : 20,
         query_pace      : 1000,
-        query_max       : 5
+        query_max       : 5,
+        title           : 'Create a new chart'
     }
 });
 
