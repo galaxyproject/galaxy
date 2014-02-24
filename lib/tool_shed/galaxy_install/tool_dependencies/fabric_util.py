@@ -30,11 +30,6 @@ from fabric.api import settings
 from fabric.api import prefix
 from fabric.operations import _AttributeString
 
-try:
-    from Queue import Queue, Empty
-except ImportError:
-    from queue import Queue, Empty
-
 log = logging.getLogger( __name__ )
 
 INSTALLATION_LOG = 'INSTALLATION.log'
@@ -205,13 +200,10 @@ def handle_action_shell_file_paths( env_file_builder, action_dict ):
     for shell_file_path in shell_file_paths:
         env_file_builder.append_line( action="source", value=shell_file_path )
 
-def handle_command( app, tool_dependency, install_dir, cmd, return_output=False, use_fabric=False ):
+def handle_command( app, tool_dependency, install_dir, cmd, return_output=False ):
     context = app.install_model.context
-    if use_fabric:
-        with settings( warn_only=True ):
-            output = local( cmd, capture=True )
-    else:
-        output = run_local_command( cmd, capture_output=True, stream_output=True )
+    with settings( warn_only=True ):
+        output = local( cmd, capture=True )
     log_results( cmd, output, os.path.join( install_dir, INSTALLATION_LOG ) )
     if output.return_code:
         tool_dependency.status = app.install_model.ToolDependency.installation_status.ERROR
@@ -303,7 +295,7 @@ def handle_environment_variables( app, tool_dependency, install_dir, env_var_dic
         set_prior_environment_commands.append( 'echo "%s: $%s"' % ( inherited_env_var_name, inherited_env_var_name ) )
         command = ' ; '.join( set_prior_environment_commands )
         # Run the command and capture the output.
-        command_return = handle_command( app, tool_dependency, install_dir, command, return_output=True, use_fabric=True )
+        command_return = handle_command( app, tool_dependency, install_dir, command, return_output=True )
         # And extract anything labeled with the name of the environment variable we're populating here.
         if '%s: ' % inherited_env_var_name in command_return:
             environment_variable_value = command_return.split( '\n' )
@@ -685,7 +677,7 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                         elif action_type == 'shell_command':
                             with settings( warn_only=True ):
                                 cmd = install_environment.build_command( action_dict[ 'command' ] )
-                                return_code = handle_command( app, tool_dependency, install_dir, cmd, use_fabric=False )
+                                return_code = handle_command( app, tool_dependency, install_dir, cmd )
                                 if return_code:
                                     return tool_dependency
                         elif action_type == 'template_command':
@@ -796,6 +788,8 @@ def make_tmp_dir():
         local( 'rm -rf %s' % work_dir )
 
 def run_local_command( command, capture_output=True, stream_output=True ):
+    # TODO: Overhaul this method.
+    import Queue
     wrapped_command = shlex.split( "/bin/sh -c '%s'" % command )
     stdout_queue = Queue()
     stderr_queue = Queue()
@@ -830,6 +824,8 @@ def set_galaxy_environment( galaxy_user, tool_dependency_dir, host='localhost', 
     return env
 
 def wait_for_process( process_handle, stream_output, stdout_queue, stderr_queue ):
+    # TODO: Overhaul this method.
+    import Queue
     pid = process_handle.pid
     standard_out = []
     standard_err = []
