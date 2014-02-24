@@ -38,6 +38,7 @@ except ImportError:
 log = logging.getLogger( __name__ )
 
 INSTALLATION_LOG = 'INSTALLATION.log'
+NO_CMD_OUTPUT_TIMEOUT = 600
 VIRTUALENV_URL = 'https://pypi.python.org/packages/source/v/virtualenv/virtualenv-1.9.1.tar.gz'
 
 
@@ -829,19 +830,46 @@ def set_galaxy_environment( galaxy_user, tool_dependency_dir, host='localhost', 
     return env
 
 def wait_for_process( process_handle, stream_output, stdout_queue, stderr_queue ):
+    pid = process_handle.pid
     standard_out = []
     standard_err = []
     process_handle.wait()
+    # Generate stdout.
     while True:
-        line = stdout_queue.get()
-        if line is None:
+        try:
+            line = stdout_queue.get( timeout=NO_CMD_OUTPUT_TIMEOUT )
+        except Queue.Empty:
+            err_msg = "\nShutting down process id %s because it generated no stdout for the defined timout period of %d seconds.\n" % \
+                ( pid, NO_CMD_OUTPUT_TIMEOUT )
+            print err_msg
+            standard_out.append( err_msg )
+            stdout_queue.task_done()
+            process_handle.kill()
             break
-        standard_out.append(line)
+        else:
+            if line:
+                standard_out.append( line )
+            else:
+                stdout_queue.task_done()
+                break
+    # Generate stderr.
     while True:
-        line = stderr_queue.get()
-        if line is None:
+        try:
+            line = stderr_queue.get( timeout=NO_CMD_OUTPUT_TIMEOUT )
+        except Queue.Empty:
+            err_msg = "\nShutting down process id %s because it generated no stderr for the defined timout period of %d seconds.\n" % \
+                ( pid, NO_CMD_OUTPUT_TIMEOUT )
+            print err_msg
+            standard_err.append( err_msg )
+            stderr_queue.task_done()
+            process_handle.kill()
             break
-        standard_err.append(line)
+        else:
+            if line:
+                standard_err.append( line )
+            else:
+                stderr_queue.task_done()
+                break
     stdout = '\n'.join( standard_out )
     stderr = '\n'.join( standard_err )
     return stdout, stderr
