@@ -253,7 +253,7 @@ return Backbone.View.extend(
         this.chart.set('id', Utils.uuid());
         this.chart.set('dataset_id', this.app.options.dataset.id);
         this.chart.set('type', 'bardiagram');
-        this.chart.set('title', 'Chart title');
+        this.chart.set('title', 'New Chart');
     },
     
     // create chart
@@ -265,22 +265,6 @@ return Backbone.View.extend(
             dataset_id  : this.dataset.value(),
             date        : Utils.time()
         });
-        
-        // validate
-        if (!this.chart.get('title')) {
-            this.message.update({message : 'Please enter a title for your chart.'});
-            return;
-        }
-        
-        if (!this.chart.get('type')) {
-            this.message.update({message : 'Please select a chart type.'});
-            return;
-        }
-
-        if (this.chart.groups.length == 0) {
-            this.message.update({message : 'Please configure at least one data source.'});
-            return;
-        }
         
         // create/get chart
         var current = this.app.charts.get(this.chart.id);

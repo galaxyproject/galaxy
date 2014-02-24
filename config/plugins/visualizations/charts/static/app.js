@@ -79,7 +79,11 @@ return Backbone.View.extend(
     
     // refresh title
     _refreshTitle: function() {
-        this.portlet.title('Charts - ' + this.config.get('title'));
+        var title = this.config.get('title');
+        if (title) {
+            title = ' - ' + title;
+        }
+        this.portlet.title('Charts' + title);
     },
     
     // current view
