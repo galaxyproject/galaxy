@@ -10,7 +10,7 @@ return Backbone.View.extend(
         header  : true,
         content : 'No content available.'
     },
-
+    
     // initialize
     initialize: function(app, options)
     {
@@ -85,7 +85,8 @@ return Backbone.View.extend(
         this.tabs = new Tabs.View({
             title_new       : 'Add Data',
             onnew           : function() {
-                self._addGroupModel();
+                var group = self._addGroupModel();
+                self.tabs.show(group.id);
             },
             operations      : {
                 'save'  : new Ui.ButtonIcon({
@@ -95,8 +96,7 @@ return Backbone.View.extend(
                             onclick : function() {
                                 // ensure that data group is available
                                 if (self.chart.groups.length == 0) {
-                                    var group = self._addGroupModel();
-                                    self.tabs.show(group.id);
+                                    self._addGroupModel();
                                 }
                                 
                                 // save chart
@@ -171,11 +171,27 @@ return Backbone.View.extend(
         this.app.chart.groups.on('reset', function(group) {
             self._removeAllGroups();
         });
-                
+        this.app.chart.groups.on('change:label', function(group) {
+            self._refreshLabels();
+        });
+        
         // reset
         this._resetChart();
     },
 
+    // update
+    _refreshLabels: function() {
+        var self = this;
+        var counter = 0;
+        this.chart.groups.each(function(group) {
+            var title = group.get('label', '');
+            if (title == '') {
+                title = 'Chart data';
+            }
+            self.tabs.title(group.id, ++counter + ': ' + title);
+        });
+    },
+    
     // new group
     _addGroupModel: function() {
         var group = new Group({
@@ -199,18 +215,23 @@ return Backbone.View.extend(
         
         // add new tab
         this.tabs.add({
-            title           : count + ': Chart Data',
             id              : group.id,
             $el             : group_view.$el,
             ondel           : function() {
                 self.chart.groups.remove(group.id);
             }
         });
+        
+        // update titles
+        this._refreshLabels()
     },
     
     // remove group
     _removeGroup: function(group) {
         this.tabs.del(group.id);
+        
+        // update titles
+        this._refreshLabels()
     },
 
     // remove group
