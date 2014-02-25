@@ -40,23 +40,6 @@ class ProtGff( Gff ):
         return False
 
 
-class Xls( Binary ):
-    """Class describing a binary excel spreadsheet file"""
-    file_ext = "xls"
-
-    def set_peek( self, dataset, is_multi_byte=False ):
-        if not dataset.dataset.purged:
-            dataset.peek  = "Excel Spreadsheet file"
-            dataset.blurb = data.nice_size( dataset.get_size() )
-        else:
-            dataset.peek = 'file does not exist'
-            dataset.blurb = 'file purged from disk'
-    def display_peek( self, dataset ):
-        try:
-            return dataset.peek
-        except:
-            return "Binary xls file (%s)" % ( data.nice_size( dataset.get_size() ) )
-
 class IdpDB( Binary ):
     file_ext = "idpDB"
 
