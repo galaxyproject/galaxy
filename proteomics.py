@@ -15,6 +15,43 @@ from galaxy.datatypes.interval import Gff
 
 log = logging.getLogger(__name__)
 
+
+class Wiff( Binary ):
+    """Class for wiff files."""
+    file_ext = 'wiff'
+    allow_datatype_change = False
+    composite_type = 'auto_primary_file'
+
+    def __init__(self, **kwd):
+        Binary.__init__(self, **kwd)
+        self.add_composite_file( 'wiff', 
+            description = 'AB SCIEX files in .wiff format. This can contain all needed information or only metadata.', 
+            is_binary = True )
+        self.add_composite_file( 'wiff_scan', 
+            description = 'AB SCIEX spectra file (wiff.scan), if the corresponding .wiff file only contains metadata.', 
+            optional = 'True', is_binary = True )
+
+    def generate_primary_file( self, dataset = None ):
+        rval = ['<html><head><title>Wiff Composite Dataset </title></head><p/>']
+        rval.append('<div>This composite dataset is composed of the following files:<p/><ul>')
+        for composite_name, composite_file in self.get_composite_files( dataset = dataset ).iteritems():
+            fn = composite_name
+            opt_text = ''
+            if composite_file.optional:
+                opt_text = ' (optional)'
+            if composite_file.get('description'):
+                rval.append( '<li><a href="%s" type="text/plain">%s (%s)</a>%s</li>' % ( fn, fn, composite_file.get('description'), opt_text ) )
+            else:
+                rval.append( '<li><a href="%s" type="text/plain">%s</a>%s</li>' % ( fn, fn, opt_text ) )
+        rval.append( '</ul></div></html>' )
+        return "\n".join( rval )
+
+
+
+if hasattr(Binary, 'register_unsniffable_binary_ext'):
+    Binary.register_unsniffable_binary_ext('wiff')
+
+
 class ProtGff( Gff ):
     """Tab delimited data in Gff format"""
     file_ext = "prot_gff"
