@@ -15,6 +15,7 @@ import shlex
 
 from contextlib import contextmanager
 from galaxy.util import DATABASE_MAX_STRING_SIZE
+from galaxy.util import DATABASE_MAX_STRING_SIZE_PRETTY
 from galaxy.util import shrink_string_by_size
 from galaxy.util import unicodify
 from galaxy.util.template import fill_template
@@ -227,12 +228,10 @@ def handle_command( app, tool_dependency, install_dir, cmd, return_output=False 
     stdout = output.stdout
     stderr = output.stderr
     if len( stdout ) > DATABASE_MAX_STRING_SIZE:
-        print "Process id %s stdout > %s, so only a portion will be saved in the database." % \
-            ( str( pid ), str( DATABASE_MAX_STRING_SIZE_PRETTY ) )
+        print "Length of stdout > %s, so only a portion will be saved in the database." % str( DATABASE_MAX_STRING_SIZE_PRETTY )
         stdout = shrink_string_by_size( stdout, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
     if len( stderr ) > DATABASE_MAX_STRING_SIZE:
-        print "Process id %s stderr > %s, so only a portion will be saved in the database." % \
-            ( str( pid ), str( DATABASE_MAX_STRING_SIZE_PRETTY ) )
+        print "Length of stderr > %s, so only a portion will be saved in the database." % str( DATABASE_MAX_STRING_SIZE_PRETTY )
         stderr = shrink_string_by_size( stderr, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
     if output.return_code not in [ 0 ]:
         tool_dependency.status = app.install_model.ToolDependency.installation_status.ERROR
