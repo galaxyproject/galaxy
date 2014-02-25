@@ -972,9 +972,12 @@ var TracksterView = Backbone.View.extend({
                 view.location_span.show();
                 view.chrom_select.show();
             }
+
+            // Suppress key presses so that they do impact viz.
+            e.stopPropagation();
         };
         this.nav_input = $("<input/>").addClass("nav-input").hide().bind("keyup focusout", submit_nav).appendTo(this.nav_controls);
-        this.location_span = $("<span/>").addClass("location").attr('original-title', 'Click to change location').tooltip( { placement: 'bottom' } ).appendTo(this.nav_controls);
+        this.location_span = $("<span/>").addClass("location").attr('title', 'Click to change location').tooltip( { placement: 'bottom' } ).appendTo(this.nav_controls);
         this.location_span.click(function() {
             view.location_span.hide();
             view.chrom_select.hide();
@@ -1299,7 +1302,7 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
                     view.reference_track.init();
                 }
             }
-            if (low && high) {
+            if (low !== undefined && high !== undefined) {
                 view.low = Math.max(low, 0);
                 view.high = Math.min(high, view.max_high);
             }

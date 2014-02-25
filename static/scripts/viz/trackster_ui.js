@@ -292,7 +292,7 @@ var TracksterUI = base.Base.extend({
      */
      init_keyboard_nav: function(view) {
         // Keyboard navigation. Scroll ~7% of height when scrolling up/down.
-        $(document).keydown(function(e) {
+        $(document).keyup(function(e) {
             // Do not navigate if arrow keys used in input element.
             if ($(e.srcElement).is(':input')) {
                 return;
