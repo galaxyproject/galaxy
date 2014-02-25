@@ -810,7 +810,7 @@ def run_local_command( command ):
     be captured and logged in nearly real time.  This is similar to fabric.local, but allows us to
     retain control over the process.
     """
-    wrapped_command = shlex.split( "/bin/sh -c '%s'" % command )
+    wrapped_command = shlex.split( "/bin/sh -c '%s'" % str( command ) )
     # Launch the command as subprocess.  A bufsize of 1 means line buffered.
     process_handle = subprocess.Popen( wrapped_command,
                                        stdout=subprocess.PIPE,
