@@ -14,6 +14,8 @@ import time
 import shlex
 
 from contextlib import contextmanager
+from galaxy.util import DATABASE_MAX_STRING_SIZE
+from galaxy.util import shrink_string_by_size
 from galaxy.util import unicodify
 from galaxy.util.template import fill_template
 from galaxy import eggs
@@ -34,7 +36,7 @@ from fabric.operations import _AttributeString
 log = logging.getLogger( __name__ )
 
 INSTALLATION_LOG = 'INSTALLATION.log'
-NO_CMD_OUTPUT_TIMEOUT = 600
+NO_CMD_OUTPUT_TIMEOUT = 600.0
 VIRTUALENV_URL = 'https://pypi.python.org/packages/source/v/virtualenv/virtualenv-1.9.1.tar.gz'
 
 
@@ -159,12 +161,12 @@ def enqueue_output( stdout, stdout_queue, stderr, stderr_queue ):
     is printed and saved to that thread's queue. The calling thread can then retrieve the data using
     thread.stdout and thread.stderr.
     """
-    for line in iter( stdout.readline, b'' ):
+    for line in iter( stdout.readline, '' ):
         output = line.rstrip()
         print output
         stdout_queue.put( output )
     stdout_queue.put( None )
-    for line in iter( stderr.readline, b'' ):
+    for line in iter( stderr.readline, '' ):
         output = line.rstrip()
         print output
         stderr_queue.put( output )
@@ -222,14 +224,26 @@ def handle_command( app, tool_dependency, install_dir, cmd, return_output=False 
     context = app.install_model.context
     output = run_local_command( cmd )
     log_results( cmd, output, os.path.join( install_dir, INSTALLATION_LOG ) )
-    if output.return_code not in [ None, env.ok_ret_codes ]:
+    stdout = output.stdout
+    stderr = output.stderr
+    if len( stdout ) > DATABASE_MAX_STRING_SIZE:
+        print "Process id %s stdout > %s, so only a portion will be saved in the database." % \
+            ( str( pid ), str( DATABASE_MAX_STRING_SIZE_PRETTY ) )
+        stdout = shrink_string_by_size( stdout, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
+    if len( stderr ) > DATABASE_MAX_STRING_SIZE:
+        print "Process id %s stderr > %s, so only a portion will be saved in the database." % \
+            ( str( pid ), str( DATABASE_MAX_STRING_SIZE_PRETTY ) )
+        stderr = shrink_string_by_size( stderr, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
+    if output.return_code not in [ 0 ]:
         tool_dependency.status = app.install_model.ToolDependency.installation_status.ERROR
-        if output.stderr:
-            tool_dependency.error_message = unicodify( str( output.stderr )[ :32768 ] )
-        elif output.stdout:
-            tool_dependency.error_message = unicodify( str( output.stdout )[ :32768 ] )
+        if stderr:
+            tool_dependency.error_message = unicodify( stderr )
+        elif stdout:
+            tool_dependency.error_message = unicodify( stdout )
         else:
-            tool_dependency.error_message = "Unknown error occurred executing shell command %s, return_code: %s"  % ( str( cmd ), str( output.return_code ) )
+            # We have a problem if there was no stdout and no stderr.
+            tool_dependency.error_message = "Unknown error occurred executing shell command %s, return_code: %s"  % \
+                ( str( cmd ), str( output.return_code ) )
         context.add( tool_dependency )
         context.flush()
     if return_output:
@@ -833,7 +847,6 @@ def run_local_command( command ):
                                             stdout_queue,
                                             process_handle.stderr,
                                             stderr_queue ) )
-    stdio_thread.daemon = True 
     stdio_thread.start()
     # Check the queues for output until there is nothing more to get.
     start_timer = time.time()
@@ -884,9 +897,11 @@ def run_local_command( command ):
         current_wait_time = time.time() - start_timer
         if stdout_queue.empty() and stderr_queue.empty() and current_wait_time < NO_CMD_OUTPUT_TIMEOUT:
             break
-    # Let's be tidy and join the threads we've started.
-    stdout_reader.join()
-    stderr_reader.join()
+    # Wait until each of the threads we've started terminate.  The following calls will block each thread
+    # until it terminates either normally, through an unhandled exception, or until the timeout occurs.
+    stdio_thread.join( NO_CMD_OUTPUT_TIMEOUT )
+    stdout_reader.join( NO_CMD_OUTPUT_TIMEOUT )
+    stderr_reader.join( NO_CMD_OUTPUT_TIMEOUT )
     # Close subprocess' file descriptors.
     process_handle.stdout.close()
     process_handle.stderr.close()
@@ -895,6 +910,7 @@ def run_local_command( command ):
     # Handle error condition (deal with stdout being None, too)
     output = _AttributeString( stdout.strip() if stdout else "" )
     errors = _AttributeString( stderr.strip() if stderr else "" )
+    process_handle.poll()
     output.return_code = process_handle.returncode
     output.stderr = errors
     return output
