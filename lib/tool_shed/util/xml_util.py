@@ -47,7 +47,7 @@ def create_and_write_tmp_file( elems, use_indent=False ):
 def create_element( tag, attributes=None, sub_elements=None ):
     """
     Create a new element whose tag is the value of the received tag, and whose attributes are all
-    key / value pairs in the received the attributes and sub_elements.
+    key / value pairs in the received attributes and sub_elements.
     """
     if tag:
         elem = XmlET.Element( tag )
@@ -56,14 +56,22 @@ def create_element( tag, attributes=None, sub_elements=None ):
             for k, v in attributes.items():
                 elem.set( k, v )
         if sub_elements:
-            # The received attributes is an odict as well.  These handle information that tends to be
+            # The received attributes is an odict.  These handle information that tends to be
             # long text including paragraphs (e.g., description and long_description.
             for k, v in sub_elements.items():
                 # Don't include fields that are blank.
                 if v:
-                    sub_elem = XmlET.SubElement( elem, k )
-                    if isinstance( v, list ):
-                        # If the sub_elem is a list, then it must be a list of tuples where the first
+                    if k == 'packages':
+                        # The received sub_elements is an odict whose key is 'packages' and whose
+                        # value is a list of ( name, version ) tuples.
+                        for v_tuple in v:
+                            sub_elem = XmlET.SubElement( elem, 'package' )
+                            sub_elem_name, sub_elem_version = v_tuple
+                            sub_elem.set( 'name', sub_elem_name )
+                            sub_elem.set( 'version', sub_elem_version )
+                    elif isinstance( v, list ):
+                        sub_elem = XmlET.SubElement( elem, k )
+                        # If v is a list, then it must be a list of tuples where the first
                         # item is the tag and the second item is the text value.
                         for v_tuple in v:
                             if len( v_tuple ) == 2:
@@ -74,6 +82,7 @@ def create_element( tag, attributes=None, sub_elements=None ):
                                     v_elem = XmlET.SubElement( sub_elem, v_tag )
                                     v_elem.text = v_text
                     else:
+                        sub_elem = XmlET.SubElement( elem, k )
                         sub_elem.text = v
         return elem
     return None

@@ -274,7 +274,11 @@ def handle_repository_dependencies_definition( trans, repository_dependencies_co
     return False, None, error_message
 
 def handle_repository_dependency_elem( trans, elem, unpopulate=False ):
+    """Populate or unpopulate repository tags."""
     # <repository name="molecule_datatypes" owner="test" changeset_revision="1a070566e9c6" />
+    # <repository changeset_revision="xxx" name="package_xorg_macros_1_17_1" owner="test" toolshed="yyy">
+    #    <package name="xorg_macros" version="1.17.1" />
+    # </repository>
     error_message = ''
     name = elem.get( 'name' )
     owner = elem.get( 'owner' )
@@ -285,6 +289,23 @@ def handle_repository_dependency_elem( trans, elem, unpopulate=False ):
     revised = False
     toolshed = elem.get( 'toolshed' )
     changeset_revision = elem.get( 'changeset_revision' )
+    sub_elems = elem.findall( './/' )
+    if sub_elems:
+        # At this point, a <repository> tag will point only to a package.
+        # <package name="xorg_macros" version="1.17.1" />
+        # Coerce the list to an odict().
+        sub_elements = odict()
+        packages = []
+        for sub_elem in sub_elems:
+            sub_elem_type = sub_elem.tag
+            sub_elem_name = sub_elem.get( 'name' )
+            sub_elem_version = sub_elem.get( 'version' )
+            if sub_elem_type and sub_elem_name and sub_elem_version:
+                packages.append( ( sub_elem_name, sub_elem_version ) )
+        sub_elements[ 'packages' ] = packages
+    else:
+        # Set to None.
+        sub_elements = None
     if unpopulate:
         # We're exporting the repository, so eliminate all toolshed and changeset_revision attributes from the <repository> tag.
         if toolshed or changeset_revision:
@@ -292,7 +313,7 @@ def handle_repository_dependency_elem( trans, elem, unpopulate=False ):
             attributes[ 'name' ] = name
             attributes[ 'owner' ] = owner
             attributes[ 'prior_installation_required' ] = elem.get( 'prior_installation_required', 'False' )
-            elem = xml_util.create_element( 'repository', attributes=attributes, sub_elements=None )
+            elem = xml_util.create_element( 'repository', attributes=attributes, sub_elements=sub_elements )
             revised = True
         return revised, elem, error_message
     # From here on we're populating the toolshed and changeset_revisions if necessary.
@@ -321,10 +342,12 @@ def handle_repository_dependency_elem( trans, elem, unpopulate=False ):
     return revised, elem, error_message
 
 def handle_repository_dependency_sub_elem( trans, package_altered, altered, actions_elem, action_index, action_elem, unpopulate=False ):
-    # This method populates the toolshed and changeset_revision attributes for each of the following.
-    # <action type="set_environment_for_install">
-    # <action type="setup_r_environment">
-    # <action type="setup_ruby_environment">
+    """
+    Populate or unpopulate the toolshed and changeset_revision attributes for each of the following tag sets.
+    <action type="set_environment_for_install">
+    <action type="setup_r_environment">
+    <action type="setup_ruby_environment">
+    """
     error_message = ''
     for repo_index, repo_elem in enumerate( action_elem ):
         # Make sure to skip comments and tags that are not <repository>.
@@ -343,7 +366,8 @@ def handle_repository_dependency_sub_elem( trans, package_altered, altered, acti
 
 def handle_tool_dependencies_definition( trans, tool_dependencies_config, unpopulate=False ):
     """
-    Populate or unpopulate the tooshed and changeset_revision attributes of each <repository> tag defined within a tool_dependencies.xml file.
+    Populate or unpopulate the tooshed and changeset_revision attributes of each <repository>
+    tag defined within a tool_dependencies.xml file.
     """
     altered = False
     error_message = ''
