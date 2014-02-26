@@ -452,14 +452,14 @@ WYMeditor.editor.prototype.dialog = function( dialogType, dialogFeatures, bodyHt
                                 // item_class='History').
                                 var item_elt_id = item_info.iclass + "-"  + item_id;
                                 var item_embed_html =                                     
-                                    "<p><div id='"  + item_elt_id + "' class='embedded-item " + item_info.singular.toLowerCase() + 
+                                    "<div id='"  + item_elt_id + "' class='embedded-item " + item_info.singular.toLowerCase() +
                                             " placeholder'> \
                                         <p class='title'>Embedded Galaxy " + item_info.singular + " '" + item_name + "'</p> \
                                         <p class='content'> \
                                             [Do not edit this block; Galaxy will fill it in with the annotated " +
                                             item_info.singular.toLowerCase() + " when it is displayed.] \
                                         </p> \
-                                    </div></p>";
+                                    </div>";
                                 
                                 // Insert embedded item into document.
                                 wym.insert("&nbsp;"); // Needed to prevent insertion from occurring in child element in webkit browsers.
@@ -468,18 +468,18 @@ WYMeditor.editor.prototype.dialog = function( dialogType, dialogFeatures, bodyHt
                                 // TODO: can we fix this?
                                 // Due to oddities of wym.insert() [likely due to inserting a <div> and/or a complete paragraph], an
                                 // empty paragraph (or two!) may be included either before an embedded item. Remove these paragraphs.
-                                $("#" + item_elt_id, wym._doc.body).each( function() {
-                                    // Remove previous empty paragraphs.
-                                    var removing = true;
-                                    while (removing)
-                                    {
-                                        var prev_elt = $(this).prev();
-                                        if ( prev_elt.length != 0 && jQuery.trim(prev_elt.text()) == "" )
-                                            prev_elt.remove();
-                                        else
-                                            removing = false;
-                                    }
-                                });
+                                //$("#" + item_elt_id, wym._doc.body).each( function() {
+                                //    // Remove previous empty paragraphs.
+                                //    var removing = true;
+                                //    while (removing)
+                                //    {
+                                //        var prev_elt = $(this).prev();
+                                //        if ( prev_elt.length != 0 && jQuery.trim(prev_elt.text()) == "" )
+                                //            prev_elt.remove();
+                                //        else
+                                //            removing = false;
+                                //    }
+                                //});
                                 
                             });
                             hide_modal();
