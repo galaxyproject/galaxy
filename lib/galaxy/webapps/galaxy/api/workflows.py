@@ -79,7 +79,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin):
                 user=trans.user ).join( 'stored_workflow' ).filter(
                 trans.app.model.StoredWorkflow.deleted == False ).order_by(
                 desc( trans.app.model.StoredWorkflow.update_time ) ).all():
-            item = wf_sa.stored_workflow.to_dict( value_mapper={ 'id': trans.security.encode_id  })
+            item = wf_sa.stored_workflow.to_dict( value_mapper={ 'id': trans.security.encode_id } )
             encoded_id = trans.security.encode_id(wf_sa.stored_workflow.id)
             item['url'] = url_for( 'workflow', id=encoded_id )
             rval.append(item)
@@ -127,6 +127,8 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin):
             steps[step.id] = {'id': step.id,
                               'type': step.type,
                               'tool_id': step.tool_id,
+                              'tool_version': step.tool_version,
+                              'tool_inputs': step.tool_inputs,
                               'input_steps': {}}
             for conn in step.input_connections:
                 steps[step.id]['input_steps'][conn.input_name] = {'source_step': conn.output_step_id,
@@ -139,7 +141,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin):
         """
         POST /api/workflows
 
-        We're not creating workflows from the api.  Just execute for now.
+        We're not creating workflows from the api. Just execute for now.
 
         However, we will import them if installed_repository_file is specified
         """
@@ -210,7 +212,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin):
                 else:
                     trans.response.status = 400
                     return "Unknown dataset source '%s' specified." % ds_map[k]['src']
-                if add_to_history and  hda.history != history:
+                if add_to_history and hda.history != history:
                     hda = hda.copy()
                     history.add_dataset(hda)
                 ds_map[k]['hda'] = hda
@@ -260,7 +262,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin):
                     trans.response.status = 400
                     return "Workflow cannot be run because of step upgrade messages: %s" % step.upgrade_messages
             else:
-                # This is an input step.  Make sure we have an available input.
+                # This is an input step. Make sure we have an available input.
                 if step.type == 'data_input' and str(step.id) not in ds_map:
                     trans.response.status = 400
                     return "Workflow cannot be run because an expected input step '%s' has no input dataset." % step.id
@@ -387,7 +389,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin):
         """
         # Pull parameters out of payload.
         workflow_id = payload.get('workflow_id', None)
-        if workflow_id == None:
+        if workflow_id is None:
             raise exceptions.ObjectAttributeMissingException( "Missing required parameter 'workflow_id'." )
         try:
             stored_workflow = self.get_stored_workflow( trans, workflow_id, check_ownership=False )
@@ -452,7 +454,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin):
             if trans.sa_session.query(trans.app.model.StoredWorkflowUserShareAssociation).filter_by(user=trans.user, stored_workflow=stored_workflow).count() == 0:
                 raise exceptions.ItemOwnershipException()
         results = trans.sa_session.query(self.app.model.WorkflowInvocation).filter(self.app.model.WorkflowInvocation.workflow_id==stored_workflow.latest_workflow_id)
-        results = results.filter(self.app.model.WorkflowInvocation.id == trans.security.decode_id(usage_id))        
+        results = results.filter(self.app.model.WorkflowInvocation.id == trans.security.decode_id(usage_id))
         out = results.first()
         if out is not None:
             return self.encode_all_ids( trans, out.to_dict('element'), True)
