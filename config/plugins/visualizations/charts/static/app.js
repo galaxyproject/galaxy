@@ -61,9 +61,6 @@ return Backbone.View.extend(
         
         // events
         var self = this;
-        this.config.on('change:current_view', function() {
-            self._showCurrent();
-        });
         this.config.on('change:title', function() {
             self._refreshTitle();
         });
@@ -84,11 +81,6 @@ return Backbone.View.extend(
             title = ' - ' + title;
         }
         this.portlet.title('Charts' + title);
-    },
-    
-    // current view
-    _showCurrent: function() {
-        
     },
     
     // execute command

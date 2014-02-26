@@ -96,6 +96,10 @@ return Backbone.View.extend(
                                 
                                 // save chart
                                 self._saveChart();
+                                
+                                // show viewport
+                                self.hide();
+                                self.app.charts_view.$el.show();
                             }
                         }),
                 'back'  : new Ui.ButtonIcon({
@@ -103,7 +107,7 @@ return Backbone.View.extend(
                             tooltip : 'Return to Viewer',
                             title   : 'Return',
                             onclick : function() {
-                                self.$el.hide();
+                                self.hide();
                                 self.app.charts_view.$el.show();
                             }
                         })
@@ -161,7 +165,7 @@ return Backbone.View.extend(
             self.tabs.showOperation('back');
         });
         this.app.charts.on('remove', function(chart) {
-            if (self.app.charts.length == 1) {
+            if (self.app.charts.length == 0) {
                 self.tabs.hideOperation('back');
             }
         });
@@ -185,6 +189,12 @@ return Backbone.View.extend(
         
         // reset
         this._resetChart();
+    },
+
+    // hide
+    hide: function() {
+        $('.tooltip').hide();
+        this.$el.hide();
     },
 
     // update
@@ -275,12 +285,6 @@ return Backbone.View.extend(
                 
         // update chart model
         current.copy(this.chart);
-        
-        // hide
-        this.$el.hide();
-        
-        // update main
-        this.app.charts_view.$el.show();
     }
 });
 

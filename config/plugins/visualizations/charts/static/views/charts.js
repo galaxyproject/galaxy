@@ -19,7 +19,7 @@ return Backbone.View.extend(
                 self.app.chart.copy(chart);
                 
                 // hide this element
-                self.$el.hide();
+                self.hide();
                 
                 // show chart view
                 self.app.chart_view.$el.show();
@@ -44,17 +44,19 @@ return Backbone.View.extend(
             height : 100,
             operations : {
                 'new'   : new Ui.ButtonIcon({
-                            icon : 'fa-plus',
-                            tooltip: 'Create',
+                            icon : 'fa-magic',
+                            tooltip: 'Create a new Chart',
+                            title: 'New',
                             onclick: function() {
-                                self.$el.hide();
+                                self.hide();
                                 self.app.chart.reset();
                                 self.app.chart_view.$el.show();
                             }
                         }),
                 'delete' : new Ui.ButtonIcon({
-                    icon : 'fa-minus',
-                    tooltip: 'Delete',
+                    icon : 'fa-trash-o',
+                    tooltip: 'Delete this Chart',
+                    title: 'Delete',
                     onclick: function() {
                             
                             // check if element has been selected
@@ -109,6 +111,12 @@ return Backbone.View.extend(
         });
     },
     
+    // hide
+    hide: function() {
+        $('.tooltip').hide();
+        this.$el.hide();
+    },
+    
     // append
     append : function($el) {
         this.$el.append(Utils.wrap(''));
@@ -134,6 +142,15 @@ return Backbone.View.extend(
     _removeChart: function(chart) {
         // remove from to table
         this.table.remove(chart.id);
+        
+        // check if table is empty
+        if (this.table.size() == 0) {
+            this.hide();
+            this.app.chart_view.$el.show();
+        } else {
+            // select available chart
+            this.table.value(this.app.charts.last().id);
+        }
     }
 });
 

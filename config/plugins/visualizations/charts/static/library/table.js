@@ -33,7 +33,15 @@ return Backbone.View.extend(
         this.options = Utils.merge(options, this.optionsDefault);
         
         // create new element
-        this.setElement(this._template(options));
+        var $el = $(this._template(options));
+        
+        // link sub-elements
+        this.$thead = $el.find('thead');
+        this.$tbody = $el.find('tbody');
+        this.$tmessage = $el.find('tmessage');
+        
+        // set element
+        this.setElement($el);
                 
         // initialize row
         this.row = $('<tr></tr>');
@@ -49,7 +57,7 @@ return Backbone.View.extend(
     // header
     appendHeader: function() {
         // append header row
-        $(this.el).find('thead').append(this.row);
+        this.$thead.append(this.row);
 
         // row
         this.row = $('<tr></tr>');
@@ -74,14 +82,14 @@ return Backbone.View.extend(
     
     // remove
     remove: function(id) {
-        $(this.el).find('#' + id).remove();
+        this.$tbody.find('#' + id).remove();
         this.row_count--;
         this._refresh();
     },
 
     // remove
     removeAll: function() {
-        $(this.el).find('tbody').html('');
+        this.$tbody.html('');
         this.row_count = 0;
         this._refresh();
     },
@@ -89,18 +97,18 @@ return Backbone.View.extend(
     // value
     value: function(new_value) {
         // get current id/value
-        this.before = this.$el.find('.current').attr('id');
+        this.before = this.$tbody.find('.current').attr('id');
         
         // check if new_value is defined
         if (new_value !== undefined) {
-            this.$el.find('tr').removeClass('current');
+            this.$tbody.find('tr').removeClass('current');
             if (new_value) {
-                this.$el.find('#' + new_value).addClass('current');
+                this.$tbody.find('#' + new_value).addClass('current');
             }
         }
         
         // get current id/value
-        var after = this.$el.find('.current').attr('id');
+        var after = this.$tbody.find('.current').attr('id');
         if(after === undefined) {
             return null;
         } else {
@@ -114,6 +122,11 @@ return Backbone.View.extend(
         }
     },
     
+    // size
+    size: function() {
+        return this.$tbody.find('tr').length;
+    },
+    
     // commit
     _commit: function(id, prepend) {
         // add
@@ -121,9 +134,9 @@ return Backbone.View.extend(
        
         // add row
         if (prepend) {
-            $(this.el).find('tbody').prepend(this.row);
+            this.$tbody.prepend(this.row);
         } else {
-            $(this.el).find('tbody').append(this.row);
+            this.$tbody.append(this.row);
         }
         
         // row
@@ -161,9 +174,9 @@ return Backbone.View.extend(
     // refresh
     _refresh: function() {
         if (this.row_count == 0) {
-            this.$el.find('tmessage').show();
+            this.$tmessage.show();
         } else {
-            this.$el.find('tmessage').hide();
+            this.$tmessage.hide();
         }
     },
         
