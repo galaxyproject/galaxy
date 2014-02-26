@@ -350,7 +350,7 @@ def install_package( app, elem, tool_shed_repository, tool_dependencies=None, fr
                                                                                  tool_dependency_type='package' )
                         if not can_install_tool_dependency:
                             log.debug( "Tool dependency %s version %s cannot be installed (it was probably previously installed), so returning it." % \
-                                ( str( tool_dependency.name, str( tool_dependency.version ) ) ) )
+                                ( str( tool_dependency.name ), str( tool_dependency.version ) ) )
                             return tool_dependency
                 else:
                     can_install_tool_dependency = True
