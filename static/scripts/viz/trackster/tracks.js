@@ -1302,15 +1302,28 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
                     view.reference_track.init();
                 }
             }
-            if (low !== undefined && high !== undefined) {
-                view.low = Math.max(low, 0);
-                view.high = Math.min(high, view.max_high);
-            }
-            else {
-                // Low and high undefined, so view is whole chome.
+
+            // Resolve low, high.
+            if (low === undefined && high === undefined) {
+                // Both are undefined, so view is whole chromosome.
                 view.low = 0;
                 view.high = view.max_high;
             }
+            else {
+                // Low and/or high is defined.
+                view.low = (low !== undefined ? Math.max(low, 0) : 0);
+                if (high === undefined) {
+                    // Center visualization around low.
+                    // HACK: max resolution is currently 30 bases.
+                    view.low = Math.max(view.low - 15, 0);
+                    view.high = view.low + 30;
+                }
+                else {
+                    // High is defined.
+                    view.high = Math.min(high, view.max_high);
+                }
+            }
+
             view.reset_overview();
             view.request_redraw();
         }
@@ -1338,16 +1351,8 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
         // Parse new location.
         var chrom_pos = str.split(/\s+/),
             chrom = chrom_pos[0],
-            new_low = (chrom_pos[1] ? parseInt(chrom_pos[1], 10) : null),
-            new_high = (chrom_pos[2] ? parseInt(chrom_pos[2], 10) : null);
-
-        // If no new high, new_low is the position of focus, so adjust low, high
-        // accordingly.
-        if (!new_high) {
-            // HACK: max resolution is 30 bases,so adjust low, high accordingly.
-            new_low = new_low - 15;
-            new_high = new_low + 15;
-        }
+            new_low = (chrom_pos[1] ? parseInt(chrom_pos[1], 10) : undefined),
+            new_high = (chrom_pos[2] ? parseInt(chrom_pos[2], 10) : undefined);
 
         this.change_chrom(chrom, new_low, new_high);
     },
