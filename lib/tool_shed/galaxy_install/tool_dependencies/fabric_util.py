@@ -162,14 +162,16 @@ def enqueue_output( stdout, stdout_queue, stderr, stderr_queue ):
     is printed and saved to that thread's queue. The calling thread can then retrieve the data using
     thread.stdout and thread.stderr.
     """
+    stdout_logger = logging.getLogger( 'fabric_util.STDOUT' )
+    stderr_logger = logging.getLogger( 'fabric_util.STDERR' )
     for line in iter( stdout.readline, '' ):
         output = line.rstrip()
-        print output
+        stdout_logger.debug( output )
         stdout_queue.put( output )
     stdout_queue.put( None )
     for line in iter( stderr.readline, '' ):
         output = line.rstrip()
-        print output
+        stderr_logger.debug( output )
         stderr_queue.put( output )
     stderr_queue.put( None )
 
