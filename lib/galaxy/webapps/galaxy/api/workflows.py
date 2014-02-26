@@ -143,7 +143,28 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin):
 
         We're not creating workflows from the api. Just execute for now.
 
-        However, we will import them if installed_repository_file is specified
+        However, we will import them if installed_repository_file is specified.
+
+        :param  installed_repository_file    The path of a workflow to import. Either workflow_id or installed_repository_file must be specified
+        :type   installed_repository_file    str
+
+        :param  workflow_id:                 an existing workflow id. Either workflow_id or installed_repository_file must be specified
+        :type   workflow_id:                 str
+
+        :param  parameters:                  See _update_step_parameters()
+        :type   parameters:                  dict
+
+        :param  ds_map:                      A dictionary mapping each input step id to a dictionary with 2 keys: 'src' (which can be 'ldda', 'ld' or 'hda') and 'id' (which should be the id of a LibraryDatasetDatasetAssociation, LibraryDataset or HistoryDatasetAssociation respectively)
+        :type   ds_map:                      dict
+
+        :param  no_add_to_history:           if present in the payload with any value, the input datasets will not be added to the selected history
+        :type   no_add_to_history:           str
+
+        :param  history:                     Either the name of a new history or "hist_id=HIST_ID" where HIST_ID is the id of an existing history
+        :type   history:                     str
+
+        :param  replacement_params:          A dictionary used when renaming datasets
+        :type   replacement_params:          dict
         """
 
         # Pull parameters out of payload.
