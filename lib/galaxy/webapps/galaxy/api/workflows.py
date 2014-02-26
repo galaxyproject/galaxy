@@ -168,11 +168,11 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin):
         """
 
         # Pull parameters out of payload.
-        workflow_id = payload['workflow_id']
+        workflow_id = payload.get('workflow_id', None)
         param_map = payload.get('parameters', {})
-        ds_map = payload['ds_map']
+        ds_map = payload.get('ds_map', {})
         add_to_history = 'no_add_to_history' not in payload
-        history_param = payload['history']
+        history_param = payload.get('history', '')
 
         # Get/create workflow.
         if not workflow_id:
@@ -197,6 +197,20 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin):
                 trans.response.status = 400
                 return("Workflow is not owned by or shared with current user")
         workflow = stored_workflow.latest_workflow
+
+        # Sanity checks.
+        if not workflow:
+            trans.response.status = 400
+            return "Workflow not found."
+        if len( workflow.steps ) == 0:
+            trans.response.status = 400
+            return "Workflow cannot be run because it does not have any steps"
+        if workflow.has_cycles:
+            trans.response.status = 400
+            return "Workflow cannot be run because it contains cycles"
+        if workflow.has_errors:
+            trans.response.status = 400
+            return "Workflow cannot be run because of validation errors in some steps"
 
         # Get target history.
         if history_param.startswith('hist_id='):
@@ -241,22 +255,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin):
                 trans.response.status = 400
                 return "Invalid Dataset '%s' Specified" % ds_map[k]['id']
 
-        # Sanity checks.
-        if not workflow:
-            trans.response.status = 400
-            return "Workflow not found."
-        if len( workflow.steps ) == 0:
-            trans.response.status = 400
-            return "Workflow cannot be run because it does not have any steps"
-        if workflow.has_cycles:
-            trans.response.status = 400
-            return "Workflow cannot be run because it contains cycles"
-        if workflow.has_errors:
-            trans.response.status = 400
-            return "Workflow cannot be run because of validation errors in some steps"
-
         # Build the state for each step
-        rval = {}
         for step in workflow.steps:
             step_errors = None
             input_connections_by_name = {}
@@ -291,12 +290,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin):
                 step.state = step.module.get_runtime_state()
 
         # Run each step, connecting outputs to inputs
-        outputs = util.odict.odict()
-        rval['history'] = trans.security.encode_id(history.id)
-        rval['outputs'] = []
-
         replacement_dict = payload.get('replacement_params', {})
-
         outputs = invoke(
             trans=trans,
             workflow=workflow,
@@ -308,6 +302,9 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin):
 
         # Build legacy output - should probably include more information from
         # outputs.
+        rval = {}
+        rval['history'] = trans.security.encode_id(history.id)
+        rval['outputs'] = []
         for step in workflow.steps:
             if step.type == 'tool' or step.type is None:
                 for v in outputs[ step.id ].itervalues():
