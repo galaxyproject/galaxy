@@ -21,6 +21,12 @@ from galaxy import eggs
 eggs.require( "Paste" )
 import paste
 
+XSS_VULNERABLE_MIME_TYPES = [
+    'image/svg+xml',  # Unfiltered by Galaxy and may contain JS that would be executed by some browsers.
+    'application/xml',  # Some browsers will evalute SVG embedded JS in such XML documents.
+]
+DEFAULT_MIME_TYPE = 'text/plain'  # Vulnerable mime types will be replaced with this.
+
 log = logging.getLogger(__name__)
 
 comptypes=[]  # Is this being used anywhere, why was this here? -JohnC
@@ -334,11 +340,12 @@ class Data( object ):
                         mime = trans.app.datatypes_registry.get_mimetype_by_extension( ".".split( file_path )[-1] )
                     except:
                         mime = "text/plain"
-                trans.response.set_content_type( mime )
+                self._clean_and_set_mime_type( trans, mime )
                 return open( file_path )
             else:
                 return trans.show_error_message( "Could not find '%s' on the extra files path %s." % ( filename, file_path ) )
-        trans.response.set_content_type(data.get_mime())
+        self._clean_and_set_mime_type( trans, data.get_mime() )
+
         trans.log_event( "Display dataset id: %s" % str( data.id ) )
         from galaxy import datatypes #DBTODO REMOVE THIS AT REFACTOR
         if to_ext or isinstance(data.datatype, datatypes.binary.Binary): # Saving the file, or binary file
@@ -623,6 +630,12 @@ class Data( object ):
     def chunk64_dataprovider( self, dataset, **settings ):
         dataset_source = dataproviders.dataset.DatasetDataProvider( dataset )
         return dataproviders.chunk.Base64ChunkDataProvider( dataset_source, **settings )
+
+    def _clean_and_set_mime_type(self, trans, mime):
+        if mime.lower() in XSS_VULNERABLE_MIME_TYPES:
+            if not getattr( trans.app.config, "serve_xss_vulnerable_mimetypes", True ):
+                mime = DEFAULT_MIME_TYPE
+        trans.response.set_content_type( mime )
 
 
 @dataproviders.decorators.has_dataproviders
