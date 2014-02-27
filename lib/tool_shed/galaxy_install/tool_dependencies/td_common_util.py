@@ -4,6 +4,7 @@ import re
 import shutil
 import sys
 import tarfile
+import time
 import traceback
 import urllib2
 import zipfile
@@ -13,9 +14,12 @@ from galaxy.datatypes import checkers
 
 log = logging.getLogger( __name__ )
 
+# Set no activity timeout to 20 minutes.
+NO_OUTPUT_TIMEOUT = 1200
+
 
 class CompressedFile( object ):
-    
+
     def __init__( self, file_path, mode='r' ):
         if istar( file_path ):
             self.file_type = 'tar'
@@ -30,7 +34,7 @@ class CompressedFile( object ):
             self.archive = getattr( self, method )( file_path, mode )
         else:
             raise NameError( 'File type %s specified, no open method found.' % self.file_type )
-        
+
     def extract( self, path ):
         '''Determine the path to which the archive should be extracted.'''
         contents = self.getmembers()
@@ -58,36 +62,36 @@ class CompressedFile( object ):
                     os.makedirs( extraction_path )
                 self.archive.extractall( os.path.join( extraction_path ) )
         return os.path.abspath( extraction_path )
-    
+
     def getmembers_tar( self ):
         return self.archive.getmembers()
-    
+
     def getmembers_zip( self ):
         return self.archive.infolist()
-    
+
     def getname_tar( self, item ):
         return item.name
-    
+
     def getname_zip( self, item ):
         return item.filename
-    
+
     def getmember( self, name ):
         for member in self.getmembers():
             if self.getname( member ) == name:
                 return member
-    
+
     def getmembers( self ):
         return getattr( self, 'getmembers_%s' % self.type )()
-        
+
     def getname( self, member ):
         return getattr( self, 'getname_%s' % self.type )( member )
-    
+
     def isdir( self, member ):
         return getattr( self, 'isdir_%s' % self.type )( member )
-    
+
     def isdir_tar( self, member ):
         return member.isdir()
-    
+
     def isdir_zip( self, member ):
         if member.filename.endswith( os.sep ):
             return True
@@ -97,7 +101,7 @@ class CompressedFile( object ):
         if not self.isdir( member ):
             return True
         return False
-    
+
     def open_tar( self, filepath, mode ):
         return tarfile.open( filepath, mode, errorlevel=0 )
 
@@ -146,9 +150,7 @@ def create_env_var_dict( elem, tool_dependency_install_dir=None, tool_shed_repos
     return None
 
 def download_binary( url, work_dir ):
-    '''
-    Download a pre-compiled binary from the specified URL.
-    '''
+    """Download a pre-compiled binary from the specified URL."""
     downloaded_filename = os.path.split( url )[ -1 ]
     dir = url_download( work_dir, downloaded_filename, url, extract=False )
     return downloaded_filename
@@ -178,7 +180,6 @@ def get_env_shell_file_path( installation_directory ):
             if name == env_shell_file_name:
                 return os.path.abspath( os.path.join( root, name ) )
     return None
-
 
 def get_env_shell_file_paths( app, elem ):
     # Currently only the following tag set is supported.
@@ -455,6 +456,8 @@ def url_download( install_dir, downloaded_file_name, download_url, extract=True 
     file_path = os.path.join( install_dir, downloaded_file_name )
     src = None
     dst = None
+    # Set a timer so we don't sit here forever.
+    start_time = time.time()
     try:
         src = urllib2.urlopen( download_url )
         dst = open( file_path, 'wb' )
@@ -464,8 +467,14 @@ def url_download( install_dir, downloaded_file_name, download_url, extract=True 
                 dst.write( chunk )
             else:
                 break
-    except:
-        raise
+            time_taken = time.time() - start_time
+            if time_taken > NO_OUTPUT_TIMEOUT:
+                err_msg = 'Downloading from URL %s took longer than the defined timeout period of %.1f seconds.' % \
+                    ( str( download_url ), NO_OUTPUT_TIMEOUT )
+                raise Exception( err_msg )
+    except Exception, e:
+        err_msg = err_msg = 'Error downloading from URL %s: %s' % ( str( download_url ), NO_OUTPUT_TIMEOUT )
+        raise Exception( err_msg )
     finally:
         if src:
             src.close()
