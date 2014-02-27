@@ -289,8 +289,8 @@ def handle_repository_dependency_elem( trans, elem, unpopulate=False ):
     revised = False
     toolshed = elem.get( 'toolshed' )
     changeset_revision = elem.get( 'changeset_revision' )
-    sub_elems = elem.findall( './/' )
-    if sub_elems:
+    sub_elems = [ child_elem for child_elem in list( elem ) ]
+    if len( sub_elems ) > 0:
         # At this point, a <repository> tag will point only to a package.
         # <package name="xorg_macros" version="1.17.1" />
         # Coerce the list to an odict().
