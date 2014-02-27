@@ -5,6 +5,7 @@ import logging
 import os
 import Queue
 import shutil
+import stat
 import subprocess
 import sys
 import tempfile
@@ -72,10 +73,10 @@ class EnvFileBuilder( object ):
         self.install_dir = install_dir
         self.return_code = 0
 
-    def append_line( self, skip_if_contained=True, make_executable=True, **kwd ):
+    def append_line( self, make_executable=True, **kwd ):
         env_var_dict = dict( **kwd )
         env_entry, env_file = self.create_or_update_env_shell_file( self.install_dir, env_var_dict )
-        return_code = file_append( env_entry, env_file, skip_if_contained=skip_if_contained, make_executable=make_executable )
+        return_code = file_append( env_entry, env_file, make_executable=make_executable )
         self.return_code = self.return_code or return_code
         return self.return_code
     
@@ -194,42 +195,56 @@ def enqueue_output( stdout, stdout_queue, stderr, stderr_queue ):
         stderr_queue.put( output )
     stderr_queue.put( None )
 
-def file_append( text, file_path, skip_if_contained=True, make_executable=True ):
+def file_append( text, file_path, make_executable=True ):
     """
-    Append a line to a file unless skip_if_contained is True and the line already exists in the file.
-    This method creates the file if it doesn't exist.  If make_executable is True, the permissions on
-    the file are set to executable by the owner.
+    Append a line to a file unless the line already exists in the file.  This method creates the file if
+    it doesn't exist.  If make_executable is True, the permissions on the file are set to executable by
+    the owner.
     """
-    if not os.path.exists( file_path ):
-        return_code = handle_simple_command( 'touch %s' % file_path )
-        if return_code:
-            return return_code
+    file_dir = os.path.dirname( file_path )
+    if not os.path.exists( file_dir ):
+        try:
+            os.makedirs( file_dir )
+        except Exception, e:
+            log.exception( str( e ) )
+            return 1
+    if os.path.exists( file_path ):
+        try:
+            new_env_file_contents = []
+            env_file_contents = file( file_path, 'a+' ).readlines()
+            # Clean out blank lines from the env.sh file.
+            for line in env_file_contents:
+                line = line.rstrip()
+                if line:
+                    new_env_file_contents.append( line )
+            env_file_contents = new_env_file_contents
+        except Exception, e:
+            log.exception( str( e ) )
+            return 1
+    else:
+        env_file_handle = open( file_path, 'w' )
+        env_file_handle.close()
+        env_file_contents = []
     if make_executable:
-        # Explicitly set the file to the received mode if valid.
-        with settings( hide( 'everything' ), warn_only=True ):
-            return_code = handle_simple_command( 'chmod +x %s' % file_path )
-            if return_code:
-                return return_code
+        # Explicitly set the file's executable bits.
+        try:
+            os.chmod( file_path, int( '111', base=8) | os.stat( file_path )[ stat.ST_MODE ] )
+        except Exception, e:
+            log.exception( str( e ) )
+            return 1
     return_code = 0
     # Convert the received text to a list, in order to support adding one or more lines to the file.
     if isinstance( text, basestring ):
         text = [ text ]
     for line in text:
-        # Build a regex to search for the relevant line in env.sh.
-        regex = td_common_util.egrep_escape( line )
-        if skip_if_contained:
-            # If the line exists in the file, egrep will return a success.
-            with settings( hide( 'everything' ), warn_only=True ):
-                egrep_cmd = 'egrep "^%s$" %s' % ( regex, file_path )
-                return_code = handle_simple_command( egrep_cmd )
-            if return_code == 0:
-                continue
-        # Append the current line to the file, escaping any single quotes in the line.
-        line = line.replace( "'", r"'\\''" )
-        return_code = handle_simple_command( "echo '%s' >> %s" % ( line, file_path ) )
-        if return_code:
-            # Return upon the first error encountered.
-            return return_code
+        line = line.rstrip()
+        if line not in env_file_contents:
+            env_file_contents.append( line )
+    try:
+        file( file_path, 'w' ).write( '\n'.join( env_file_contents ) )
+    except Exception, e:
+        log.exception( str( e ) )
+        return 1
     return return_code
 
 def filter_actions_after_binary_installation( actions ):
@@ -278,8 +293,8 @@ def handle_complex_command( command ):
     """
     Wrap subprocess.Popen in such a way that the stderr and stdout from running a shell command will
     be captured and logged in nearly real time.  This is similar to fabric.local, but allows us to
-    retain control over the process.  This method is considered "complex" because it uses queues and
-    threads - see handle_simple_command().
+    retain control over the process.  This method is named "complex" because it uses queues and
+    threads to execute a command while capturing and displaying the output.
     """
     wrapped_command = shlex.split( "/bin/sh -c '%s'" % str( command ) )
     # Launch the command as subprocess.  A bufsize of 1 means line buffered.
@@ -455,30 +470,6 @@ def handle_environment_variables( app, tool_dependency, install_dir, env_var_dic
             env_var_value = env_var_value.replace( to_replace, '$%s' % inherited_env_var_name )
         env_var_dict[ 'value' ] = env_var_value
     return env_var_dict
-
-def handle_simple_command( command ):
-    """
-    Use this instead of fabric.local to retain control over the process spawned to run the
-    received command.
-    """
-    wrapped_command = shlex.split( "/bin/sh -c '%s'" % str( command ) )
-    # Launch the command as subprocess.  A bufsize of 1 means line buffered.
-    try:
-        process_handle = subprocess.Popen( wrapped_command,
-                                           stdout=subprocess.PIPE,
-                                           stderr=subprocess.PIPE,
-                                           bufsize=1,
-                                           close_fds=False,
-                                           cwd=state.env[ 'lcwd' ] )
-    except OSError, e:
-        # We don't have a working directory.
-        process_handle = subprocess.Popen( wrapped_command,
-                                           stdout=subprocess.PIPE,
-                                           stderr=subprocess.PIPE )
-    stdout, stderr = process_handle.communicate()
-    if stderr:
-        log.debug( "Problem executing command %s: %s." % ( wrapped_command, stderr ) )
-    return process_handle.returncode
 
 def install_virtualenv( app, venv_dir ):
     if not os.path.exists( venv_dir ):
@@ -951,7 +942,10 @@ def make_tmp_dir():
     work_dir = tempfile.mkdtemp( prefix="tmp-toolshed-mtd" )
     yield work_dir
     if os.path.exists( work_dir ):
-        return_code = handle_simple_command( 'rm -rf %s' % work_dir )
+        try:
+            shutil.rmtree( work_dir )
+        except Exception, e:
+            log.exception( str( e ) )
 
 def set_galaxy_environment( galaxy_user, tool_dependency_dir, host='localhost', shell='/bin/bash -l -c' ):
     """General Galaxy environment configuration.  This method is not currently used."""

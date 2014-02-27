@@ -884,7 +884,7 @@ def set_environment( app, elem, tool_shed_repository, attr_tups_of_dependencies_
                     if env_var_version == '1.0':
                         # Create this tool dependency's env.sh file.
                         env_file_builder = fabric_util.EnvFileBuilder( install_dir )
-                        return_code = env_file_builder.append_line( skip_if_contained=True, make_executable=True, **env_var_dict )
+                        return_code = env_file_builder.append_line( make_executable=True, **env_var_dict )
                         if return_code:
                             error_message = 'Error creating env.sh file for tool dependency %s, return_code: %s' % \
                                 ( str( tool_dependency.name ), str( return_code ) )
