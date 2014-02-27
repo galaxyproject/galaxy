@@ -1091,8 +1091,7 @@ var TracksterView = Backbone.View.extend({
             }
         });
        
-        // Dragging in the top label track allows selecting a region
-        // to zoom in 
+        // Dragging in the top label track allows selecting a region to zoom in on selected region.
         this.top_labeltrack.bind( "dragstart", function( e, d ) {
             return $("<div/>").addClass('zoom-area').css(
                 "height", view.browser_content_div.height() + view.top_labeltrack.height() + view.nav_labeltrack.height() + 1
@@ -1116,6 +1115,27 @@ var TracksterView = Backbone.View.extend({
             $(d.proxy).remove();
             view.request_redraw();
         });
+
+        // For vertical alignment, track mouse with simple line.
+        var mouse_tracker_div = $('<div/>').addClass('mouse-pos').appendTo(parent_element);
+
+        // Show tracker only when hovering over view.
+        parent_element.hover(
+            function() {
+                mouse_tracker_div.show();
+                parent_element.mousemove(function(e) {
+                    mouse_tracker_div.css({
+                        // -1 makes it appear next to the mouse w/o obscuring clicking
+                        // and dragging on view elements.
+                        left: e.pageX - 1
+                    });
+                });
+            },
+            function() {
+                parent_element.off('mousemove');
+                mouse_tracker_div.hide();
+            }
+        );
         
         this.add_label_track( new LabelTrack( this, { content_div: this.top_labeltrack } ) );
         this.add_label_track( new LabelTrack( this, { content_div: this.nav_labeltrack } ) );
