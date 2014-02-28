@@ -10,27 +10,46 @@ workflow_str = resource_string( __name__, "test_workflow_1.ga" )
 workflow_random_x2_str = resource_string( __name__, "test_workflow_2.ga" )
 
 
-# TODO: Rework this so it is a stand-alone object like workflow
-# populator below instead of mixin.
+# Deprecated mixin, use dataset populator instead.
+# TODO: Rework existing tests to target DatasetPopulator in a setup method instead.
 class TestsDatasets:
 
     def _new_dataset( self, history_id, content='TestData123', **kwds ):
-        payload = self._upload_payload( history_id, content, **kwds )
-        run_response = self._post( "tools", data=payload )
-        self._assert_status_code_is( run_response, 200 )
-        return run_response.json()["outputs"][0]
+        return DatasetPopulator( self.galaxy_interactor ).new_dataset( history_id, content=content, **kwds)
 
     def _wait_for_history( self, history_id, assert_ok=False ):
-        wait_on_state( lambda: self._get( "histories/%s" % history_id ), assert_ok=assert_ok )
+        return DatasetPopulator( self.galaxy_interactor ).wait_for_history( history_id, assert_ok=assert_ok )
 
     def _new_history( self, **kwds ):
+        return DatasetPopulator( self.galaxy_interactor ).new_history( **kwds )
+
+    def _upload_payload( self, history_id, content, **kwds ):
+        return DatasetPopulator( self.galaxy_interactor ).upload_payload( history_id, content, **kwds )
+
+    def _run_tool_payload( self, tool_id, inputs, history_id, **kwds ):
+        return DatasetPopulator( self.galaxy_interactor ).run_tool_payload( tool_id, inputs, history_id, **kwds )
+
+
+class DatasetPopulator( object ):
+
+    def __init__( self, galaxy_interactor ):
+        self.galaxy_interactor = galaxy_interactor
+
+    def new_dataset( self, history_id, content='TestData123', **kwds ):
+        payload = self.upload_payload( history_id, content, **kwds )
+        run_response = self.galaxy_interactor.post( "tools", data=payload )
+        return run_response.json()["outputs"][0]
+
+    def wait_for_history( self, history_id, assert_ok=False ):
+        wait_on_state( lambda: self.galaxy_interactor.get( "histories/%s" % history_id ), assert_ok=assert_ok )
+
+    def new_history( self, **kwds ):
         name = kwds.get( "name", "API Test History" )
-        create_history_response = self._post( "histories", data=dict( name=name ) )
-        self._assert_status_code_is( create_history_response, 200 )
+        create_history_response = self.galaxy_interactor.post( "histories", data=dict( name=name ) )
         history_id = create_history_response.json()[ "id" ]
         return history_id
 
-    def _upload_payload( self, history_id, content, **kwds ):
+    def upload_payload( self, history_id, content, **kwds ):
         name = kwds.get( "name", "Test Dataset" )
         dbkey = kwds.get( "dbkey", "?" )
         file_type = kwds.get( "file_type", 'txt' )
@@ -44,14 +63,14 @@ class TestsDatasets:
             upload_params[ "files_0|to_posix_lines"] = kwds[ "to_posix_lines" ]
         if "space_to_tab" in kwds:
             upload_params[ "files_0|space_to_tab" ] = kwds[ "space_to_tab" ]
-        return self._run_tool_payload(
+        return self.run_tool_payload(
             tool_id='upload1',
             inputs=upload_params,
             history_id=history_id,
             upload_type='upload_dataset'
         )
 
-    def _run_tool_payload( self, tool_id, inputs, history_id, **kwds ):
+    def run_tool_payload( self, tool_id, inputs, history_id, **kwds ):
         return dict(
             tool_id=tool_id,
             inputs=json.dumps(inputs),
