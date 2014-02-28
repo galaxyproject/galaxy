@@ -1557,23 +1557,28 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                 m.stored_workflow = q.get( id )
                 user.stored_workflow_menu_entries.append( m )
             sess.flush()
-            return trans.show_message( "Menu updated", refresh_frames=['tools'] )
+            message = "Menu updated"
+            refresh_frames = ['tools']
         else:
-            user = trans.get_user()
-            ids_in_menu = set( [ x.stored_workflow_id for x in user.stored_workflow_menu_entries ] )
-            workflows = trans.sa_session.query( model.StoredWorkflow ) \
-                .filter_by( user=user, deleted=False ) \
-                .order_by( desc( model.StoredWorkflow.table.c.update_time ) ) \
-                .all()
-            shared_by_others = trans.sa_session \
-                .query( model.StoredWorkflowUserShareAssociation ) \
-                .filter_by( user=user ) \
-                .filter( model.StoredWorkflow.deleted == False ) \
-                .all()
-            return trans.fill_template( "workflow/configure_menu.mako",
-                                        workflows=workflows,
-                                        shared_by_others=shared_by_others,
-                                        ids_in_menu=ids_in_menu )
+            message = None
+            refresh_frames = []
+        user = trans.get_user()
+        ids_in_menu = set( [ x.stored_workflow_id for x in user.stored_workflow_menu_entries ] )
+        workflows = trans.sa_session.query( model.StoredWorkflow ) \
+            .filter_by( user=user, deleted=False ) \
+            .order_by( desc( model.StoredWorkflow.table.c.update_time ) ) \
+            .all()
+        shared_by_others = trans.sa_session \
+            .query( model.StoredWorkflowUserShareAssociation ) \
+            .filter_by( user=user ) \
+            .filter( model.StoredWorkflow.deleted == False ) \
+            .all()
+        return trans.fill_template( "workflow/configure_menu.mako",
+                                    workflows=workflows,
+                                    shared_by_others=shared_by_others,
+                                    ids_in_menu=ids_in_menu,
+                                    message=message,
+                                    refresh_frames=['tools'] )
 
     def _workflow_to_svg_canvas( self, trans, stored ):
         workflow = stored.latest_workflow
