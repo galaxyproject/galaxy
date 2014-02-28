@@ -48,6 +48,24 @@ class SelectToolParameterTestCase( TestCase, tools_support.UsesApp ):
         self.options_xml = '''<options><filter type="data_meta" ref="input_bam" key="dbkey"/></options>'''
         assert self.param.need_late_validation( self.trans, { "series": [ { "my_name": "42", "input_bam": basic.RuntimeValue() } ] } )
 
+    def test_filter_param_value( self ):
+        self.options_xml = '''<options from_data_table="test_table"><filter type="param_value" ref="input_bam" column="0" /></options>'''
+        assert ("testname1", "testpath1", False) in self.param.get_options( self.trans, { "input_bam": "testname1" } )
+        assert ("testname2", "testpath2", False) in self.param.get_options( self.trans, { "input_bam": "testname2" } )
+        assert len( self.param.get_options( self.trans, { "input_bam": "testname3" } ) ) == 0
+
+    def test_filter_param_value2( self ):
+        # Same test as above, but filtering on a different column.
+        self.options_xml = '''<options from_data_table="test_table"><filter type="param_value" ref="input_bam" column="1" /></options>'''
+        assert ("testname1", "testpath1", False) in self.param.get_options( self.trans, { "input_bam": "testpath1" } )
+        assert ("testname2", "testpath2", False) in self.param.get_options( self.trans, { "input_bam": "testpath2" } )
+        assert len( self.param.get_options( self.trans, { "input_bam": "testpath3" } ) ) == 0
+
+    def test_filter_nested( self ):
+        # Test filtering a parameter inside a conditional (not currently supported.)
+        self.options_xml = '''<options from_data_table="test_table"><filter type="param_value" ref="input_bam" column="1" /></options>'''
+        assert ("testname1", "testpath1", False) in self.param.get_options( self.trans, {"condtional1" : { "input_bam": "testpath1", "my_name": 42 } } )
+
     # TODO: Good deal of overlap here with DataToolParameterTestCase,
     # refactor.
     def setUp( self ):
@@ -59,6 +77,7 @@ class SelectToolParameterTestCase( TestCase, tools_support.UsesApp ):
         self.test_history = model.History()
         self.app.model.context.add( self.test_history )
         self.app.model.context.flush()
+        self.app.tool_data_tables[ "test_table" ] = MockToolDataTable()
         self.trans = bunch.Bunch(
             app=self.app,
             get_history=lambda: self.test_history,
@@ -91,3 +110,16 @@ class SelectToolParameterTestCase( TestCase, tools_support.UsesApp ):
             self._param = basic.SelectToolParameter( self.mock_tool, self.param_xml )
 
         return self._param
+
+
+class MockToolDataTable( object ):
+
+    def __init__( self ):
+        self.columns = dict(
+            name=0,
+            value=1,
+        )
+        self.missing_index_file = None
+
+    def get_fields( self ):
+        return [ [ "testname1", "testpath1" ], [ "testname2", "testpath2" ] ]
