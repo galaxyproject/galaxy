@@ -2127,6 +2127,7 @@ class LibraryDataset( object ):
                      parent_library_id = self.folder.parent_library.id,
                      folder_id = self.folder_id,
                      model_class = self.__class__.__name__,
+                     state = ldda.state,
                      name = ldda.name,
                      file_name = ldda.file_name,
                      uploaded_by = ldda.user.email,
