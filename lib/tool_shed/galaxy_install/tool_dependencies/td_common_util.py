@@ -15,7 +15,7 @@ from galaxy.datatypes import checkers
 log = logging.getLogger( __name__ )
 
 # Set no activity timeout to 20 minutes.
-NO_OUTPUT_TIMEOUT = 1200
+NO_OUTPUT_TIMEOUT = 1200.0
 
 
 class CompressedFile( object ):
@@ -473,7 +473,7 @@ def url_download( install_dir, downloaded_file_name, download_url, extract=True 
                     ( str( download_url ), NO_OUTPUT_TIMEOUT )
                 raise Exception( err_msg )
     except Exception, e:
-        err_msg = err_msg = 'Error downloading from URL %s: %s' % ( str( download_url ), NO_OUTPUT_TIMEOUT )
+        err_msg = err_msg = 'Error downloading from URL\n%s:\n%s' % ( str( download_url ), str( e ) )
         raise Exception( err_msg )
     finally:
         if src:
