@@ -1,6 +1,6 @@
 import time
-from json import dumps
-from json import loads
+import json
+import StringIO
 from pkg_resources import resource_string
 
 # Simple workflow that takes an input and call cat wrapper on it.
@@ -10,6 +10,8 @@ workflow_str = resource_string( __name__, "test_workflow_1.ga" )
 workflow_random_x2_str = resource_string( __name__, "test_workflow_2.ga" )
 
 
+# TODO: Rework this so it is a stand-alone object like workflow
+# populator below instead of mixin.
 class TestsDatasets:
 
     def _new_dataset( self, history_id, content='TestData123', **kwds ):
@@ -19,15 +21,7 @@ class TestsDatasets:
         return run_response.json()["outputs"][0]
 
     def _wait_for_history( self, history_id, assert_ok=False ):
-        while True:
-            history_details_response = self._get( "histories/%s" % history_id )
-            self._assert_status_code_is( history_details_response, 200 )
-            history_state = history_details_response.json()[ "state" ]
-            if history_state not in [ "running", "queued" ]:
-                break
-            time.sleep( .1 )
-        if assert_ok:
-            self.assertEquals( history_state, 'ok' )
+        wait_on_state( lambda: self._get( "histories/%s" % history_id ), assert_ok=assert_ok )
 
     def _new_history( self, **kwds ):
         name = kwds.get( "name", "API Test History" )
@@ -60,7 +54,7 @@ class TestsDatasets:
     def _run_tool_payload( self, tool_id, inputs, history_id, **kwds ):
         return dict(
             tool_id=tool_id,
-            inputs=dumps(inputs),
+            inputs=json.dumps(inputs),
             history_id=history_id,
             **kwds
         )
@@ -73,7 +67,7 @@ class WorkflowPopulator( object ):
         self.api_test_case = api_test_case
 
     def load_workflow( self, name, content=workflow_str, add_pja=False ):
-        workflow = loads( content )
+        workflow = json.loads( content )
         workflow[ "name" ] = name
         if add_pja:
             tool_step = workflow[ "steps" ][ "2" ]
@@ -93,9 +87,99 @@ class WorkflowPopulator( object ):
 
     def create_workflow( self, workflow, **create_kwds ):
         data = dict(
-            workflow=dumps( workflow ),
+            workflow=json.dumps( workflow ),
             **create_kwds
         )
         upload_response = self.api_test_case._post( "workflows/upload", data=data )
         uploaded_workflow_id = upload_response.json()[ "id" ]
         return uploaded_workflow_id
+
+
+class LibraryPopulator( object ):
+
+    def __init__( self, api_test_case ):
+        self.api_test_case = api_test_case
+        self.galaxy_interactor = api_test_case.galaxy_interactor
+
+    def new_private_library( self, name ):
+        library = self.new_library( name )
+        library_id = library[ "id" ]
+
+        role_id = self.user_private_role_id()
+        self.set_permissions( library_id, role_id )
+        return library
+
+    def new_library( self, name ):
+        data = dict( name=name )
+        create_response = self.galaxy_interactor.post( "libraries", data=data, admin=True )
+        return create_response.json()
+
+    def set_permissions( self, library_id, role_id=None ):
+        if role_id:
+            perm_list = json.dumps( role_id )
+        else:
+            perm_list = json.dumps( [] )
+
+        permissions = dict(
+            LIBRARY_ACCESS_in=perm_list,
+            LIBRARY_MODIFY_in=perm_list,
+            LIBRARY_ADD_in=perm_list,
+            LIBRARY_MANAGE_in=perm_list,
+        )
+        self.galaxy_interactor.post( "libraries/%s/permissions" % library_id, data=permissions, admin=True )
+
+    def user_email( self ):
+        users_response = self.galaxy_interactor.get( "users" )
+        users = users_response.json()
+        assert len( users ) == 1
+        return users[ 0 ][ "email" ]
+
+    def user_private_role_id( self ):
+        user_email = self.user_email()
+        roles_response = self.api_test_case.galaxy_interactor.get( "roles", admin=True )
+        users_roles = [ r for r in roles_response.json() if r[ "name" ] == user_email ]
+        assert len( users_roles ) == 1
+        return users_roles[ 0 ][ "id" ]
+
+    def create_dataset_request( self, library, **kwds ):
+        create_data = {
+            "folder_id": kwds.get( "folder_id", library[ "root_folder_id" ] ),
+            "create_type": "file",
+            "files_0|NAME": kwds.get( "name", "NewFile" ),
+            "upload_option": kwds.get( "upload_option", "upload_file" ),
+            "file_type": kwds.get( "file_type", "auto" ),
+            "db_key": kwds.get( "db_key", "?" ),
+        }
+        files = {
+            "files_0|file_data": kwds.get( "file", StringIO.StringIO( kwds.get( "contents", "TestData" ) ) ),
+        }
+        return create_data, files
+
+    def new_library_dataset( self, name, **create_dataset_kwds ):
+        library = self.new_private_library( name )
+        payload, files = self.create_dataset_request( library, **create_dataset_kwds )
+        url_rel = "libraries/%s/contents" % ( library[ "id" ] )
+        dataset = self.api_test_case.galaxy_interactor.post( url_rel, payload, files=files ).json()[0]
+
+        def show():
+            return self.api_test_case.galaxy_interactor.get( "libraries/%s/contents/%s" % ( library[ "id" ], dataset[ "id" ] ) )
+
+        wait_on_state(show)
+        return show().json()
+
+
+def wait_on_state( state_func, assert_ok=False, timeout=5 ):
+    delta = .1
+    iteration = 0
+    while True:
+        if (delta * iteration) > timeout:
+            assert False, "Timed out waiting on state."
+        iteration += 1
+        response = state_func()
+        assert response.status_code == 200, "Failed to fetch state update while waiting."
+        state = response.json()[ "state" ]
+        if state not in [ "running", "queued", "new" ]:
+            break
+        time.sleep( delta )
+    if assert_ok:
+        assert state == "ok", "Final state - %s - not okay." % state

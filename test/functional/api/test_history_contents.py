@@ -52,9 +52,16 @@ class HistoryContentsApiTestCase( api.ApiTestCase, TestsDatasets ):
         self._assert_status_code_is( create_response, 200 )
         assert self.__count_contents( second_history_id ) == 1
 
-    # TODO
-    #def test_lda_copy( self ):
-    #    pass
+    def test_library_copy( self ):
+        ld = LibraryPopulator( self ).new_library_dataset( "lda_test_library" )
+        create_data = dict(
+            source='library',
+            content=ld[ "id" ],
+        )
+        assert self.__count_contents( self.history_id ) == 0
+        create_response = self._post( "histories/%s/contents" % self.history_id, create_data )
+        self._assert_status_code_is( create_response, 200 )
+        assert self.__count_contents( self.history_id ) == 1
 
     def test_update( self ):
         hda1 = self._new_dataset( self.history_id )
