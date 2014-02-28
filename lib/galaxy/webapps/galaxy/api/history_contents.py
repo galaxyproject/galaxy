@@ -51,7 +51,13 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             else:
                 history = self.get_history( trans, history_id, check_ownership=True, check_accessible=True )
 
-            contents_kwds = {}
+            types = kwd.get( 'types', None ) or []
+            if types:
+                types = util.listify(types)
+            else:
+                types = ['datasets']
+
+            contents_kwds = {'types': types}
             if ids:
                 ids = map( lambda id: trans.security.decode_id( id ), ids.split( ',' ) )
                 contents_kwds[ 'ids' ] = ids
