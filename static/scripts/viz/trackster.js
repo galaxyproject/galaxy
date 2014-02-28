@@ -199,7 +199,7 @@ var TracksterView = Backbone.View.extend(
     init_editor : function ()
     {
         // set title
-        $("#center .unified-panel-title").text(view.prefs.name + " (" + view.dbkey + ")");
+        $("#center .unified-panel-title").text(view.config.get_value('name') + " (" + view.dbkey + ")");
         
         // add dataset
         if (galaxy_config.app.add_dataset)
@@ -208,7 +208,7 @@ var TracksterView = Backbone.View.extend(
                 data: { hda_ldda: 'hda', data_type: 'track_config' },
                 dataType: "json",
                 success: function(track_data) { view.add_drawable( trackster_ui.object_from_template(track_data, view, view) ); }
-            });      
+            });
 
         // initialize icons
         $("#add-bookmark-button").click(function()

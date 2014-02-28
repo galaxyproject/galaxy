@@ -1,7 +1,7 @@
 define( ["libs/underscore", "viz/visualization", "viz/trackster/util", 
          "viz/trackster/slotting", "viz/trackster/painters", "viz/trackster/filters",
-         "mvc/data", "mvc/tools" ], 
-         function(_, visualization, util, slotting, painters, filters_mod, data, tools_mod) {
+         "mvc/data", "mvc/tools", "utils/config" ], 
+         function(_, visualization, util, slotting, painters, filters_mod, data, tools_mod, config_mod) {
 
 var extend = _.extend;
 
@@ -207,26 +207,23 @@ var Drawable = function(view, container, obj_dict) {
     
     // -- Set up drawable configuration. --
 
-    this.config = new Config({
-        params: this.config_params,
-        onchange: this.config_onchange,
-        saved_values: obj_dict.prefs
-    });
-    this.prefs = this.config.get('values');
-
+    this.config = config_mod.ConfigSettingCollection.from_models_and_saved_values(this.config_params, obj_dict.prefs);
+    console.log(obj_dict.prefs);
+    this.config.each(function(s) { console.log(s.id, s.get('value')) })
+    
     // If there's no saved name, use object name.
-    if (!this.prefs.name) {
-        this.prefs.name = obj_dict.name;
+    if (!this.config.get_value('name')) {
+        this.config.set_value('name', obj_dict.name);
     }
     if (this.config_onchange) {
-        this.config.on('change:values', this.config_onchange, this);
+        this.config.on('change', this.config_onchange, this);
     }
     
     // Build Drawable HTML and behaviors.
     this.container_div = this.build_container_div();
     this.header_div = this.build_header_div();
     
-    if (this.header_div) { 
+    if (this.header_div) {
         this.container_div.append(this.header_div);
         
         // Icons container.
@@ -257,14 +254,14 @@ Drawable.prototype.action_icons_def = [
         title: "Hide/show content",
         css_class: "toggle",
         on_click_fn: function(drawable) {
-            if ( drawable.prefs.content_visible ) {
+            if ( drawable.config.get_value('content_visible') ) {
                 drawable.action_icons.toggle_icon.addClass("toggle-expand").removeClass("toggle");
                 drawable.hide_contents();
-                drawable.prefs.content_visible = false;
-            } 
+                drawable.config.set_value('content_visible', false);
+            }
             else {
                 drawable.action_icons.toggle_icon.addClass("toggle").removeClass("toggle-expand");
-                drawable.prefs.content_visible = true;
+                drawable.config.set_value('content_visible', true);
                 drawable.show_contents();
             }
         }
@@ -275,10 +272,10 @@ Drawable.prototype.action_icons_def = [
         title: "Edit settings",
         css_class: "gear",
         on_click_fn: function(drawable) {
-            var view = new ConfigView({
-                model: drawable.config
+            var view = new config_mod.ConfigSettingCollectionView({
+                collection: drawable.config
             });
-            view.render();
+            view.render_in_modal('Configure Track');
         }
     },
     // Remove.
@@ -295,7 +292,7 @@ Drawable.prototype.action_icons_def = [
 ];
 
 extend(Drawable.prototype, {
-    config_params: [ 
+    config_params: [
             { key: 'name', label: 'Name', type: 'text', default_value: '' },
             { key: 'content_visible', type: 'bool', default_value: true, hidden: true }
     ],
@@ -311,7 +308,7 @@ extend(Drawable.prototype, {
     },
 
     can_draw: function() {
-        if (this.enabled && this.prefs.content_visible) { 
+        if (this.enabled && this.config.get_value('content_visible')) {
             return true;
         }
         
@@ -330,11 +327,11 @@ extend(Drawable.prototype, {
 
     /**
      * Set drawable name.
-     */ 
+     */
     set_name: function(new_name) {
-        this.old_name = this.prefs.name;
-        this.prefs.name = new_name;
-        this.name_div.text(this.prefs.name);
+        this.old_name = this.config.get_value('name');
+        this.config.set_value('name', new_name);
+        this.name_div.text(new_name);
     },
 
     /**
@@ -342,8 +339,8 @@ extend(Drawable.prototype, {
      */
     revert_name: function() {
         if (this.old_name) {
-            this.prefs.name = this.old_name;
-            this.name_div.text(this.prefs.name);
+            this.config.set_value('name', this.old_name);
+            this.name_div.text(this.old_name);
         }
     },
 
@@ -355,7 +352,7 @@ extend(Drawable.prototype, {
         
         this.container.remove_drawable(this);
         var view = this.view;
-        this.container_div.hide(0, function() { 
+        this.container_div.hide(0, function() {
             $(this).remove();
             // HACK: is there a better way to update the view?
             view.update_intro_div();
@@ -364,7 +361,7 @@ extend(Drawable.prototype, {
 
     /**
      * Build drawable's container div; this is the parent div for all drawable's elements.
-     */ 
+     */
     build_container_div: function() {},
 
     /**
@@ -473,7 +470,7 @@ extend(DrawableCollection.prototype, Drawable.prototype, {
             dictified_drawables.push(this.drawables[i].to_dict());
         }
         return {
-            prefs: this.prefs,
+            prefs: this.config.to_key_value_dict(),
             obj_type: this.obj_type,
             drawables: dictified_drawables
         };
@@ -668,7 +665,7 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
     build_header_div: function() {
         var header_div = $("<div/>").addClass("track-header");
         header_div.append($("<div/>").addClass(this.drag_handle_class));
-        this.name_div = $("<div/>").addClass("track-name").text(this.prefs.name).appendTo(header_div);
+        this.name_div = $("<div/>").addClass("track-name").text(this.config.get_value('name')).appendTo(header_div);
         return header_div;
     },
 
@@ -829,7 +826,7 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
      */
     show_composite_track: function() {
         var composite_track = new CompositeTrack(this.view, this.view, {
-            name: this.prefs.name,
+            name: this.config.get_value('name'),
             drawables: this.drawables
         });
         var index = this.container.replace_drawable(this, composite_track, true);
@@ -898,19 +895,15 @@ var TracksterView = Backbone.View.extend({
         this.reset();
 
         // Define track configuration
-        this.config = new Config( {
-            track: this,
-            params: [
+        this.config = new config_mod.ConfigSettingCollection({
+            models: [
                 { key: 'a_color', label: 'A Color', type: 'color', default_value: "#FF0000" },
                 { key: 'c_color', label: 'C Color', type: 'color', default_value: "#00FF00" },
                 { key: 'g_color', label: 'G Color', type: 'color', default_value: "#0000FF" },
                 { key: 't_color', label: 'T Color', type: 'color', default_value: "#FF00FF" },
                 { key: 'n_color', label: 'N Color', type: 'color', default_value: "#AAAAAA" }
-            ], 
+            ],
             saved_values: obj_dict.prefs,
-            onchange: function() {
-                track.request_redraw({ clear_tile_cache: true });
-            }
         });
     },
 
@@ -1819,7 +1812,7 @@ var TracksterToolView = Backbone.View.extend({
         // already in group, add track to group.
         if (current_track.container === view) {
             // Create new group.
-            var group = new DrawableGroup(view, view, { name: track.prefs.name });
+            var group = new DrawableGroup(view, view, { name: track.config.get_value('name') });
             
             // Replace track with group.
             var index = current_track.container.replace_drawable(current_track, group, false);
@@ -1921,241 +1914,6 @@ FilterScaler.prototype.gen_val = function(feature_data) {
     // Scaling value is ratio of (filter's value compared to low) to (complete filter range).
     return ( ( parseFloat(feature_data[this.filter.index]) - this.filter.low ) / ( this.filter.high - this.filter.low ) );
 };
-
-/**
- * Configuration object.
- */
-var Config = Backbone.Model.extend({
-    initialize: function(options) {
-        // values is a simple param_key-to-value dictionary used to store
-        // param values.
-        var values = {};
-
-        // Set default values.
-        _.each(options.params, function(p) {
-            // For color parameters without a default value, assign a random color.
-            values[p.key] = (p.type === 'color' && !p.default_value ? util.get_random_color() : p.default_value );
-
-        });
-
-        // Restore saved values.
-        if (options.saved_values) {
-            _.each( this.get('params'), function(p) {
-                if (p.key in options.saved_values) {
-                    values[p.key] = options.saved_values[p.key];
-                }
-            }); 
-        }
-
-        this.set('values', values);
-    },
-
-    /**
-     * Set default value for parameter.
-     */
-    set_param_default_value: function(key, default_value) {
-        var param = _.find(this.get('params'), function(p) {
-            return p.key === key;
-        });
-
-        if (param) {
-            param.default_value = default_value;
-        }
-    },
-
-    /**
-     * Set a parameter's value. Returns true if value changed, false if value changed.
-     */
-    set_param_value: function(key, value) {
-        // Find param.
-        var param = _.find(this.get('params'), function(p) {
-            return p.key === key;
-        });
-
-        if (param) {
-            // Parse value from string.
-            if (typeof value === "string" || value instanceof String) {
-                // Parse string.
-                if (value.trim() === '') {
-                   // If empty value, use default.
-                    value = param.default_value;
-                } else if ( param.type === 'float' ) {
-                    value = parseFloat( value );
-                } else if ( param.type === 'int' ) {
-                    value = parseInt( value, 10 );
-                }
-            }
-        }
-
-        // Set value and return true if changed, false otherwise.
-        if (this.get('values')[key] !== value) {
-            this.get('values')[key] = value;
-            // HACK: custom event trigger needed to indicate that values were updated. 
-            this.trigger('change:values');
-            return true;
-        }
-        else {
-            return false;
-        }
-    }
-});
-
-var ConfigView = Backbone.View.extend({
-
-    /**
-     * Build and show form for modifying configuration. Currently uses Galaxy modals.
-     */
-    render: function() {
-        //
-        // Build config selection UI.
-        //
-
-        var track_config = this.model;
-
-        // Prevent propagation of keydown events to viz to avoid inadvertent navigation.
-        var container = $("<div/>").keydown(function(e) {
-            e.stopPropagation();
-        });
-        var param;
-        // Function to process parameters recursively
-        function handle_params( params, container ) {
-            for ( var index = 0; index < params.length; index++ ) {
-                param = params[index];
-                // Hidden params have no representation in the form
-                if ( param.hidden ) { continue; }
-                // Build row for param
-                var id = 'param_' + index;
-                var value = track_config.get('values')[ param.key ];
-                var row = $("<div class='form-row' />").appendTo( container );
-                row.append( $('<label />').attr("for", id ).text( param.label + ":" ) );
-                // Draw parameter as checkbox
-                if ( param.type === 'bool' ) {
-                    row.append( $('<input type="checkbox" />').attr("id", id ).attr("name", id ).attr( 'checked', value ) );
-                // Draw parameter as textbox
-                } 
-                else if ( param.type === 'text' ) {
-                    row.append( $('<input type="text"/>').attr("id", id ).val(value).click( function() { $(this).select(); }));
-                // Draw paramter as select area
-                } 
-                else if ( param.type === 'select' ) {
-                    var select = $('<select />').attr("id", id);
-                    for ( var i = 0; i < param.options.length; i++ ) {
-                        $("<option/>").text( param.options[i].label ).attr( "value", param.options[i].value ).appendTo( select );
-                    }
-                    select.val( value );
-                    row.append( select );
-                // Draw parameter as color picker
-                } 
-                else if ( param.type === 'color' ) {
-                    var 
-                        container_div = $("<div/>").appendTo(row),
-                        input = $('<input/>').attr({
-                            id: id,
-                            name: id
-                        }).val( value ).addClass('color-input') 
-                            .appendTo(container_div).click(function(e) {
-                            // Hide other pickers.
-                            $(".tooltip").removeClass( "in" );
-                            
-                            // Show input's color picker.
-                            var tip = $(this).siblings(".tooltip").addClass( "in" );
-                            tip.css( { 
-                                // left: $(this).position().left + ( $(input).width() / 2 ) - 60,
-                                // top: $(this).position().top + $(this.height)
-                                left: $(this).position().left + $(this).width() + 5,
-                                top: $(this).position().top + Galaxy.modal.scrollTop() - ( $(tip).height() / 2 ) + ( $(this).height() / 2 )
-                                } ).show();
-                            // Click management: 
-                            
-                            // Keep showing tip if clicking in tip.
-                            tip.click(function(e) {
-                                e.stopPropagation();
-                            });
-                            
-                            // Hide tip if clicking outside of tip.
-                            $(document).bind( "click.color-picker", function() {
-                                tip.hide();
-                                $(document).unbind( "click.color-picker" );
-                            });
-                            
-                            // No propagation to avoid triggering document click (and tip hiding) above.
-                            e.stopPropagation();
-                        }),
-                        // Icon for setting a new random color; behavior set below.
-                        new_color_icon = $("<a href='javascript:void(0)'/>").addClass("icon-button arrow-circle").appendTo(container_div)
-                                         .attr("title", "Set new random color").tooltip(),
-                        // Color picker in tool tip style.
-                        tip = $( "<div class='tooltip right' style='position: absolute;' />" ).appendTo(container_div).hide(),
-                        // Inner div for padding purposes
-                        tip_inner = $("<div class='tooltip-inner' style='text-align: inherit'></div>").appendTo(tip),
-                        tip_arrow = $("<div class='tooltip-arrow'></div>").appendTo(tip),
-                        farb_obj = $.farbtastic(tip_inner, { width: 100, height: 100, callback: input, color: value });
-                    
-                    // Clear floating.
-                    container_div.append( $("<div/>").css("clear", "both"));
-                    
-                    // Use function to fix farb_obj value.
-                    (function(fixed_farb_obj) {
-                        new_color_icon.click(function() {
-                            fixed_farb_obj.setColor(util.get_random_color());
-                        });  
-                    })(farb_obj);
-                      
-                } 
-                else {
-                    row.append( $('<input />').attr("id", id ).attr("name", id ).val( value ) ); 
-                }
-                // Help text
-                if ( param.help ) {
-                    row.append( $("<div class='help'/>").text( param.help ) );
-                }
-            }
-        }
-        // Handle top level parameters in order
-        handle_params( track_config.get('params'), container );
-
-        //
-        // Use Galaxy modal to display config.
-        //
-
-        var self = this,
-            cancel_fn = function() { Galaxy.modal.hide(); $(window).unbind("keypress.check_enter_esc"); },
-            ok_fn = function() { 
-                self.update_from_form( $(Galaxy.modal.el) );
-                Galaxy.modal.hide();
-                $(window).unbind("keypress.check_enter_esc");
-            },
-            check_enter_esc = function(e) {
-                if ((e.keyCode || e.which) === 27) { // Escape key
-                    cancel_fn();
-                } else if ((e.keyCode || e.which) === 13) { // Enter key
-                    ok_fn();
-                }
-            };
-
-        $(window).bind("keypress.check_enter_esc", check_enter_esc);
-        Galaxy.modal.show({title: "Configure", body: container, buttons : {'Cancel' : cancel_fn, 'Ok' : ok_fn } });
-    },
-
-    /**
-     * Update configuration from form.
-     */
-    update_from_form: function( container ) {
-        var model = this.model;
-        var changed = false;
-        _.each(model.get('params'), function(param, index) {
-            if ( !param.hidden ) {
-                // Get value from form element.
-                var id = 'param_' + index;
-                var value = container.find( '#' + id ).val();
-                if ( param.type === 'bool' ) {
-                    value = container.find( '#' + id ).is( ':checked' );
-                }
-                changed = model.set_param_value(param.key, value) || changed;
-            }
-        });
-    }
-});
 
 /**
  * Tiles drawn by tracks.
@@ -2376,8 +2134,8 @@ var Track = function(view, container, obj_dict) {
     this.data_url_extra_params = {};
     this.data_query_wait = ('data_query_wait' in obj_dict ? obj_dict.data_query_wait : DEFAULT_DATA_QUERY_WAIT);
     // A little ugly creating data manager right now due to transition to Backbone-based objects.
-    this.data_manager = ('data_manager' in obj_dict ? 
-                         obj_dict.data_manager : 
+    this.data_manager = ('data_manager' in obj_dict ?
+                         obj_dict.data_manager :
                          new visualization.GenomeDataManager({
                              dataset: this.dataset,
                              // HACK: simulate 'genome' attributes from view for now.
@@ -2395,13 +2153,13 @@ var Track = function(view, container, obj_dict) {
     // Height attributes: min height, max height, and visible height.
     this.min_height_px = 16;
     this.max_height_px = 800;
-    this.visible_height_px = this.prefs.height;
+    this.visible_height_px = this.config.get_value('height');
             
     //
     // Create content div, which is where track is displayed, and add to container if available.
     //
     this.content_div = $("<div class='track-content'>").appendTo(this.container_div);
-    if (this.container) { 
+    if (this.container) {
         this.container.content_div.append(this.container_div);
         if ( !("resize" in obj_dict) || obj_dict.resize ) {
             this.add_resize_handle();
@@ -2459,7 +2217,7 @@ extend(Track.prototype, Drawable.prototype, {
 
                 // Update track name.
                 if (track.tool.is_visible()) {
-                    track.set_name(track.prefs.name + track.tool_region_and_parameters_str());
+                    track.set_name(track.config.get_value('name') + track.tool_region_and_parameters_str());
                 }
                 else {
                     track.revert_name();
@@ -2475,8 +2233,8 @@ extend(Track.prototype, Drawable.prototype, {
             css_class: "arrow-split",
             on_click_fn: function(track) {
                 var template =
-                    '<strong>Tool</strong>: <%= track.tool.get("name") %><br/>' + 
-                    '<strong>Dataset</strong>: <%= track.prefs.name %><br/>' +
+                    '<strong>Tool</strong>: <%= track.tool.get("name") %><br/>' +
+                    '<strong>Dataset</strong>: <%= track.config.get("name") %><br/>' +
                     '<strong>Region(s)</strong>: <select name="regions">' +
                     '<option value="cur">current viewing area</option>' +
                     '<option value="bookmarks">bookmarks</option>' +
@@ -2492,7 +2250,7 @@ extend(Track.prototype, Drawable.prototype, {
                                 start: view.low,
                                 end: view.high
                             }),
-                            bookmarked_regions = _.map($(".bookmark"), function(elt) { 
+                            bookmarked_regions = _.map($(".bookmark"), function(elt) {
                                 return new visualization.GenomeRegion({from_str: $(elt).children(".position").text()});
                             });
 
@@ -2548,8 +2306,8 @@ extend(Track.prototype, Drawable.prototype, {
     build_header_div: function() {
         var header_div = $("<div class='track-header'/>");
         if (this.view.editor) { this.drag_div = $("<div/>").addClass(this.drag_handle_class).appendTo(header_div); }
-        this.name_div = $("<div/>").addClass("track-name").appendTo(header_div).text(this.prefs.name)
-                        .attr( "id", this.prefs.name.replace(/\s+/g,'-').replace(/[^a-zA-Z0-9\-]/g,'').toLowerCase() );
+        this.name_div = $("<div/>").addClass("track-name").appendTo(header_div).text(this.config.get_value('name'))
+                        .attr( "id", this.config.get_value('name').replace(/\s+/g,'-').replace(/[^a-zA-Z0-9\-]/g,'').toLowerCase() );
         return header_div;
     },
 
@@ -2578,7 +2336,7 @@ extend(Track.prototype, Drawable.prototype, {
         var drag_control = $( "<div class='track-resize'>" );
         // Control shows on hover over track, stays while dragging
         $(track.container_div).hover( function() { 
-            if ( track.prefs.content_visible ) {
+            if ( track.config.get_value('content_visible') ) {
                 in_handle = true;
                 drag_control.show(); 
             }
@@ -2597,10 +2355,10 @@ extend(Track.prototype, Drawable.prototype, {
             track.visible_height_px = (track.max_height_px === new_height ? 0 : new_height);
             track.on_resize();
         }).bind( "dragend", function( e, d ) {
-            track.tile_cache.clear();    
+            track.tile_cache.clear();
             in_drag = false;
             if (!in_handle) { drag_control.hide(); }
-            track.config.get('values').height = track.visible_height_px;
+            track.config.set('height', track.visible_height_px);
             track.changed();
         }).appendTo(track.container_div);
     },
@@ -2611,16 +2369,15 @@ extend(Track.prototype, Drawable.prototype, {
     set_display_modes: function(new_modes, init_mode) {
         // Set modes, init mode.
         this.display_modes = new_modes;
-        this.mode = (init_mode ? init_mode : 
-                     (this.config && this.config.get('values').mode ? 
-                      this.config.get('values').mode : this.display_modes[0])
+        this.mode = (init_mode ? init_mode :
+                     (this.config && this.config.get_value('mode') ?
+                      this.config.get_value('mode') : this.display_modes[0])
                     );
         
         this.action_icons.mode_icon.attr("title", "Set display mode (now: " + this.mode + ")");
 
         // Setup popup menu for changing modes.
-        var 
-            track = this,
+        var track = this,
             mode_mapping = {};
         for (var i = 0, len = track.display_modes.length; i < len; i++) {
             var mode = track.display_modes[i];
@@ -2822,10 +2579,10 @@ extend(Track.prototype, Drawable.prototype, {
                 min_value = Math.floor( Math.min( 0, Math.max( min_value, data.mean - 2 * data.sd ) ) );
                 max_value = Math.ceil( Math.max( 0, Math.min( max_value, data.mean + 2 * data.sd ) ) );
                 // Update config, prefs
-                track.config.set_param_default_value('min_value', min_value);
-                track.config.set_param_default_value('max_value', max_value);
-                track.prefs.min_value = min_value;
-                track.prefs.max_value = max_value;
+                track.config.set_default_value('min_value', min_value);
+                track.config.set_default_value('max_value', max_value);
+                track.config.set_value('min_value', min_value);
+                track.config.set_value('max_value', max_value);
             }
         });
     },
@@ -2879,7 +2636,7 @@ var TiledTrack = function(view, container, obj_dict) {
     
     // Add tiles_div, overlay_div to content_div.
     this.tiles_div = $("<div/>").addClass("tiles").appendTo(this.content_div);
-    if (!this.prefs.content_visible) {
+    if (!this.config.get_value('content_visible')) {
         this.tiles_div.hide();
     }
     this.overlay_div = $("<div/>").addClass("overlay").appendTo(this.content_div);
@@ -2934,13 +2691,14 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
      * Use from_dict to recreate object.
      */
     to_dict: function() {
+        console.log(this.config.to_key_value_dict());
         return {
             track_type: this.get_type(),
             dataset: {
                 id: this.dataset.id,
                 hda_ldda: this.dataset.get('hda_ldda')
             },
-            prefs: this.prefs,
+            prefs: this.config.to_key_value_dict(),
             mode: this.mode,
             filters: this.filters_manager.to_dict(),
             tool_state: (this.tool ? this.tool.state_dict() : {})
@@ -2958,7 +2716,8 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
               high: track.view.max_high, hda_ldda: track.dataset.get('hda_ldda') }, 
             function(result) {
                 var data = result.data;
-                if ( isNaN(parseFloat(track.prefs.min_value)) || isNaN(parseFloat(track.prefs.max_value)) ) {
+                if ( isNaN(parseFloat(track.config.get_value('min_value'))) ||
+                     isNaN(parseFloat(track.config.get_value('max_value'))) ) {
                     // Compute default minimum and maximum values
                     var min_value = data.min,
                         max_value = data.max;
@@ -2967,8 +2726,8 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
                     min_value = Math.floor( Math.min( 0, Math.max( min_value, data.mean - 2 * data.sd ) ) );
                     max_value = Math.ceil( Math.max( 0, Math.min( max_value, data.mean + 2 * data.sd ) ) );
                     // Update the prefs
-                    track.prefs.min_value = min_value;
-                    track.prefs.max_value = max_value;
+                    track.config.set_value('min_value', min_value);
+                    track.config.set_value('max_value', max_value);
                 }
             });
     },
@@ -2980,7 +2739,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         var track = this;
         // TODO: is it necessary to store the mode in two places (.mode and track_config)?
         track.mode = new_mode;
-        track.config.get('values').mode = new_mode;
+        track.config.set_value('mode', new_mode);
         // FIXME: find a better way to get Auto data w/o clearing cache; using mode in the
         // data manager would work if Auto data were checked for compatibility when a specific
         // mode is chosen.
@@ -3151,11 +2910,11 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
 
         if (label.length !== 0) {
             // Label already exists, so update value.
-            label.text(track.prefs[pref_name]);
+            label.text(track.config.get_value(pref_name));
         }
         else {
             // Add label.
-            label = $("<div/>").text(track.prefs[pref_name]).make_text_editable({
+            label = $("<div/>").text(track.config.get_value(pref_name)).make_text_editable({
                 num_cols: 12,
                 on_finish: function(new_val) {
                     $(".tooltip").remove();
@@ -3163,7 +2922,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
                     on_change();
                 },
                 help_text: "Set " + text + " value"
-            }).addClass('yaxislabel ' + css_class).css("color", this.prefs.label_color);
+            }).addClass('yaxislabel ' + css_class).css("color", this.config.get_value('label_color'));
             this.container_div.prepend(label);
         }
     },
@@ -3376,7 +3135,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
      */
     _draw_line_track_tile: function(result, ctx, mode, region, w_scale) {
         var canvas = ctx.canvas,
-            painter = new painters.LinePainter(result.data, region.get('start'), region.get('end'), this.prefs, mode);
+            painter = new painters.LinePainter(result.data, region.get('start'), region.get('end'), this.config.to_key_value_dict(), mode);
         painter.draw(ctx, canvas.width, canvas.height, w_scale);
         
         return new LineTrackTile(this, region, w_scale, canvas, result.data);
@@ -3691,7 +3450,7 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
     show_group: function() {
         // Create group with individual tracks.
         var group = new DrawableGroup(this.view, this.container, {
-                name: this.prefs.name
+                name: this.config.get_value('name')
             }),
             track;
         for (var i = 0; i < this.drawables.length; i++) {
@@ -3718,16 +3477,16 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
         //
         
         // Get smallest min, biggest max.
-        var min = _.min(_.map(this.drawables, function(d) { return d.prefs.min_value; })),
-            max = _.max(_.map(this.drawables, function(d) { return d.prefs.max_value; }));
+        var min = _.min(_.map(this.drawables, function(d) { return d.config.get_value('min_value'); })),
+            max = _.max(_.map(this.drawables, function(d) { return d.config.get_value('max_value') }));
             
-        this.prefs.min_value = min;
-        this.prefs.max_value = max;
+        this.config.set_value('min_value', min);
+        this.config.set_value('max_value', max);
         
         // Set all tracks to smallest min, biggest max.
         _.each(this.drawables, function(d) {
-            d.prefs.min_value = min;
-            d.prefs.max_value = max;
+            d.config.set_value('min_value', min);
+            d.config.set_value('max_value', max);
         });
     },
 
@@ -3735,10 +3494,12 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
      * Update minimum, maximum for component tracks.
      */
     update_all_min_max: function() {
-        var track = this;
+        var track = this,
+            min_value = this.config.get_value('min_value'),
+            max_value = this.config.get_value('max_value');
         _.each(this.drawables, function(d) {
-            d.prefs.min_value = track.prefs.min_value;
-            d.prefs.max_value = track.prefs.max_value;
+            d.config.set_value('min_value', min_value);
+            d.config.set_value('max_value', max_value);
         });
         this.request_draw({ clear_tile_cache: true });
     },
@@ -3861,16 +3622,16 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     display_modes: CONTINUOUS_DATA_MODES,
 
     config_params: _.union( Drawable.prototype.config_params, [
-            { key: 'color', label: 'Color', type: 'color' },
-            { key: 'min_value', label: 'Min Value', type: 'float', default_value: undefined },
-            { key: 'max_value', label: 'Max Value', type: 'float', default_value: undefined },
-            { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
-            { key: 'height', type: 'int', default_value: 30, hidden: true }
+        { key: 'color', label: 'Color', type: 'color' },
+        { key: 'min_value', label: 'Min Value', type: 'float', default_value: undefined },
+        { key: 'max_value', label: 'Max Value', type: 'float', default_value: undefined },
+        { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
+        { key: 'height', type: 'int', default_value: 30, hidden: true }
     ] ),
     
     config_onchange: function() {
-            this.set_name(this.prefs.name);
-            this.request_draw({ clear_tile_cache: true });
+        this.set_name(this.config.get_value('name'));
+        this.request_draw({ clear_tile_cache: true });
     },
     
     /**
@@ -3924,7 +3685,7 @@ extend(DiagonalHeatmapTrack.prototype, Drawable.prototype, TiledTrack.prototype,
     ] ),
 
     config_onchange: function() {
-        this.set_name(this.prefs.name);
+        this.set_name(this.config.get_value('name'));
         this.request_draw({ clear_tile_cache: true });
     },
 
@@ -3934,7 +3695,7 @@ extend(DiagonalHeatmapTrack.prototype, Drawable.prototype, TiledTrack.prototype,
     draw_tile: function(result, ctx, mode, region, w_scale) {
         // Paint onto canvas.
         var canvas = ctx.canvas,
-            painter = new painters.DiagonalHeatmapPainter(result.data, region.get('start'), region.get('end'), this.prefs, mode);
+            painter = new painters.DiagonalHeatmapPainter(result.data, region.get('start'), region.get('end'), this.config.to_key_value_dict(), mode);
         painter.draw(ctx, canvas.width, canvas.height, w_scale);
         
         return new Tile(this, region, w_scale, canvas, result.data);
@@ -3973,7 +3734,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     ] ),
 
     config_onchange: function() {
-        this.set_name(this.prefs.name);
+        this.set_name(this.config.get_value('name'));
         this.set_painter_from_config();
         this.request_draw({ clear_tile_cache: true });
     },
@@ -4158,7 +3919,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             var rows_required = this.incremental_slots(w_scale, result.data, mode);
             // HACK: use dummy painter to get required height. Painter should be extended so that get_required_height
             // works as a static function.
-            var dummy_painter = new (this.painter)(null, null, null, this.prefs, mode);
+            var dummy_painter = new (this.painter)(null, null, null, this.config.to_key_value_dict(), mode);
             return Math.max(this.min_height_px, dummy_painter.get_required_height(rows_required, canvas_width) );
         }
     },
@@ -4219,14 +3980,14 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         // Create painter.
         var filter_alpha_scaler = (this.filters_manager.alpha_filter ? new FilterScaler(this.filters_manager.alpha_filter) : null),
             filter_height_scaler = (this.filters_manager.height_filter ? new FilterScaler(this.filters_manager.height_filter) : null),
-            painter = new (this.painter)(filtered, tile_low, tile_high, this.prefs, mode, filter_alpha_scaler, filter_height_scaler, 
+            painter = new (this.painter)(filtered, tile_low, tile_high, this.config.to_key_value_dict(), mode, filter_alpha_scaler, filter_height_scaler, 
                                          // HACK: ref_seq only be defined for ReadTracks, and only the ReadPainter accepts that argument
                                          ref_seq,
                                          // Only the ReadPainer will use this function
                                          function(b) { return track.view.get_base_color(b); });
         var feature_mapper = null;
 
-        ctx.fillStyle = this.prefs.block_color;
+        ctx.fillStyle = this.config.get_value('block_color');
         ctx.font = ctx.canvas.manager.default_font;
         ctx.textAlign = "right";
         
@@ -4262,11 +4023,11 @@ extend(VariantTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         { key: 'show_labels', label: 'Show summary and sample labels', type: 'bool', default_value: true },
         { key: 'summary_height', label: 'Locus summary height', type: 'float', default_value: 20 },
         { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
-        { key: 'height', type: 'int', default_value: 0, hidden: true }
+        { key: 'height', type: 'int', default_value: 32, hidden: true }
     ] ),
     
     config_onchange: function() {
-        this.set_name(this.prefs.name);
+        this.set_name(this.config.get_value('name'));
         this.request_draw({ clear_tile_cache: true });
     },
 
@@ -4280,7 +4041,7 @@ extend(VariantTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         }
         else { // result.dataset_type === 'variant'
             var view = this.view,
-                painter = new (this.painter)(result.data, region.get('start'), region.get('end'), this.prefs, mode,
+                painter = new (this.painter)(result.data, region.get('start'), region.get('end'), this.config.to_key_value_dict(), mode,
                                              function(b) { return view.get_base_color(b); });
             painter.draw(ctx, ctx.canvas.width, ctx.canvas.height, w_scale);
             return new Tile(this, region, w_scale, ctx.canvas, result.data);
@@ -4312,7 +4073,7 @@ extend(VariantTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
                 }
             }
             
-            var dummy_painter = new (this.painter)(null, null, null, this.prefs, mode);
+            var dummy_painter = new (this.painter)(null, null, null, this.config.to_key_value_dict(), mode);
             return dummy_painter.get_required_height(num_samples);
         }
     },
@@ -4343,7 +4104,7 @@ extend(VariantTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
 
         // Add summary/sample labels if needed and not already included.
         var sample_names = this.dataset.get_metadata('sample_names');
-        if (line_track_tiles.length === 0 && this.prefs.show_labels && sample_names && sample_names.length > 1) {
+        if (line_track_tiles.length === 0 && this.config.get_value('show_labels') && sample_names && sample_names.length > 1) {
             var font_size;
 
             // Add and/or style labels.
@@ -4351,21 +4112,21 @@ extend(VariantTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
                 // Add summary and sample labels.
 
                 // Add summary label to middle of summary area.
-                font_size = this.prefs.summary_height / 2;
+                font_size = this.config.get_value('summary_height') / 2;
                 this.tiles_div.prepend(
                     $("<div/>").text('Summary').addClass('yaxislabel variant top').css({
                         'font-size': font_size + 'px',
-                        'top': (this.prefs.summary_height - font_size) / 2 + 'px'
+                        'top': (this.config.get_value('summary_height') - font_size) / 2 + 'px'
                     })
                 );
                 
                 // Show sample labels.
-                if (this.prefs.show_sample_data) {
+                if (this.config.get_value('show_sample_data')) {
                     var samples_div_html = sample_names.join('<br/>');
 
                     this.tiles_div.prepend( 
                         $("<div/>").html(samples_div_html).addClass('yaxislabel variant top sample').css({
-                            'top': this.prefs.summary_height,
+                            'top': this.config.get_value('summary_height')
                         })
                     );
                 }
@@ -4380,7 +4141,7 @@ extend(VariantTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
                 'line-height': font_size
             });
             // Color labels to preference color.
-            $(this.tiles_div).find('.yaxislabel').css('color', this.prefs.label_color);
+            $(this.tiles_div).find('.yaxislabel').css('color', this.config.get_value('label_color'));
         }
         else {
             // Remove all labels.
@@ -4414,7 +4175,7 @@ extend(ReadTrack.prototype, Drawable.prototype, TiledTrack.prototype, FeatureTra
     ] ),
 
     config_onchange: function() {
-        this.set_name(this.prefs.name);
+        this.set_name(this.config.get_value('name'));
         this.request_draw({ clear_tile_cache: true });
     }
 });
