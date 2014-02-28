@@ -115,23 +115,29 @@ var DatasetCollection = Backbone.Collection.extend({
  */
 var TabularDatasetChunkedView = Backbone.View.extend({
 
-    initialize: function(options)
-    {
+    initialize: function(options) {
+        // Row count for rendering.
+        this.row_count = 0;
+
+        // CSS colors used in table.
+        this.header_color = '#AAA';
+        this.dark_row_color = '#DDD';
+
         // load trackster button
         new TabularButtonTracksterView(options);
     },
 
-    render: function()
-    {
+    render: function() {
         // Add data table and header.
         var data_table = $('<table/>').attr({
             id: 'content_table',
             cellpadding: 0
         });
         this.$el.append(data_table);
-        var column_names = this.model.get_metadata('column_names');
+        var column_names = this.model.get_metadata('column_names'),
+            header_row = $('<tr/>').css('background-color', this.header_color).appendTo(data_table);
         if (column_names) {
-            data_table.append('<tr><th>' + column_names.join('</th><th>') + '</th></tr>');
+            header_row.append('<th>' + column_names.join('</th><th>') + '</th>');
         }
 
         // Add first chunk.
@@ -199,6 +205,11 @@ var TabularDatasetChunkedView = Backbone.View.extend({
         var cells = line.split('\t'),
             row = $('<tr>'),
             num_columns = this.model.get_metadata('columns');
+
+        if (this.row_count % 2 !== 0) {
+            row.css('background-color', this.dark_row_color);
+        }
+
         if (cells.length === num_columns) {
             _.each(cells, function(cell_contents, index) {
                 row.append(this._renderCell(cell_contents, index));
@@ -222,6 +233,8 @@ var TabularDatasetChunkedView = Backbone.View.extend({
             // Comment line, just return the one cell.
             row.append(this._renderCell(line, 0, num_columns));
         }
+
+        this.row_count++;
         return row;
     },
 
