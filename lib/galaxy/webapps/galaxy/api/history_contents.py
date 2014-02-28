@@ -33,6 +33,9 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         :param  history_id: encoded id string of the HDA's History
         :type   ids:        str
         :param  ids:        (optional) a comma separated list of encoded `HDA` ids
+        :param  types:      (optional) kinds of contents to index (currently just
+                            dataset, but dataset_collection will be added shortly).
+        :type   types:      str
 
         :rtype:     list
         :returns:   dictionaries containing summary or detailed HDA information
@@ -51,11 +54,14 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             else:
                 history = self.get_history( trans, history_id, check_ownership=True, check_accessible=True )
 
-            types = kwd.get( 'types', None ) or []
+            # Allow passing in type or types - for continuity rest of methods
+            # take in type - but this one can be passed multiple types and
+            # type=dataset,dataset_collection is a bit silly.
+            types = kwd.get( 'type', kwd.get( 'types', None ) ) or []
             if types:
                 types = util.listify(types)
             else:
-                types = ['datasets']
+                types = [ 'dataset' ]
 
             contents_kwds = {'types': types}
             if ids:
@@ -72,13 +78,14 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
                 if details and details != 'all':
                     details = util.listify( details )
 
-            for hda in history.contents_iter( **contents_kwds ):
-                encoded_hda_id = trans.security.encode_id( hda.id )
-                detailed = details == 'all' or ( encoded_hda_id in details )
-                if detailed:
-                    rval.append( self._detailed_hda_dict( trans, hda ) )
-                else:
-                    rval.append( self._summary_hda_dict( trans, history_id, hda ) )
+            for content in history.contents_iter( **contents_kwds ):
+                if isinstance(content, trans.app.model.HistoryDatasetAssociation):
+                    encoded_content_id = trans.security.encode_id( content.id )
+                    detailed = details == 'all' or ( encoded_content_id in details )
+                    if detailed:
+                        rval.append( self._detailed_hda_dict( trans, content ) )
+                    else:
+                        rval.append( self._summary_hda_dict( trans, history_id, content ) )
         except Exception, e:
             # for errors that are not specific to one hda (history lookup or summary list)
             rval = "Error in history API at listing contents: " + str( e )
@@ -144,6 +151,13 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         :returns:   dictionary containing detailed HDA information
         .. seealso:: :func:`galaxy.web.base.controller.UsesHistoryDatasetAssociationMixin.get_hda_dict`
         """
+        contents_type = kwd.get('type', 'dataset')
+        if contents_type == 'dataset':
+            return self.__show_dataset( trans, id, history_id, **kwd )
+        else:
+            return self.__handle_unknown_contents_type( trans, contents_type )
+
+    def __show_dataset( self, trans, id, history_id, **kwd ):
         try:
             hda = self.get_history_dataset_association_from_ids( trans, id, history_id )
             hda_dict = self.get_hda_dict( trans, hda )
@@ -184,11 +198,6 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         #TODO: copy existing, accessible hda - dataset controller, copy_datasets
         #TODO: convert existing, accessible hda - model.DatasetInstance(or hda.datatype).get_converter_types
         # check parameters
-        source  = payload.get('source', None)
-        content = payload.get('content', None)
-        if source not in ['library', 'hda'] or content is None:
-            trans.response.status = 400
-            return "Please define the source ('library' or 'hda') and the content."
         # retrieve history
         try:
             history = self.get_history( trans, history_id, check_ownership=True, check_accessible=False )
@@ -196,6 +205,18 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             # no way to tell if it failed bc of perms or other (all MessageExceptions)
             trans.response.status = 500
             return str( e )
+        type = payload.get('type', 'dataset')
+        if type == 'dataset':
+            return self.__create_dataset( trans, history, payload, **kwd )
+        else:
+            return self.__handle_unknown_contents_type( trans, type )
+
+    def __create_dataset( self, trans, history, payload, **kwd ):
+        source = payload.get('source', None)
+        content = payload.get('content', None)
+        if source not in ['library', 'hda'] or content is None:
+            trans.response.status = 400
+            return "Please define the source ('library' or 'hda') and the content."
         # copy from library dataset
         if source == 'library':
             # get library data set
@@ -227,7 +248,7 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
                 return str( msg_exc )
             except Exception, exc:
                 trans.response.status = 500
-                log.exception( "history: %s, source: %s, content: %s", history_id, source, content )
+                log.exception( "history: %s, source: %s, content: %s", trans.security.encode_id(history.id), source, content )
                 return str( exc )
             data_copy=hda.copy( copy_children=True )
             result=history.add_dataset( data_copy )
@@ -261,6 +282,13 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             any values that were different from the original and, therefore, updated
         """
         #TODO: PUT /api/histories/{encoded_history_id} payload = { rating: rating } (w/ no security checks)
+        contents_type = kwd.get('type', 'dataset')
+        if contents_type == "dataset":
+            return self.__update_dataset( trans, history_id, id, payload, **kwd )
+        else:
+            return self.__handle_unknown_contents_type( contents_type )
+
+    def __update_dataset( self, trans, history_id, id, payload, **kwd ):
         changed = {}
         try:
             # anon user
@@ -329,6 +357,13 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             * deleted:    if the history was marked as deleted,
             * purged:     if the history was purged
         """
+        contents_type = kwd.get('type', 'dataset')
+        if contents_type == "dataset":
+            return self.__delete_dataset( trans, history_id, id, purge=purge, **kwd )
+        else:
+            return self.__handle_unknown_contents_type( trans, contents_type )
+
+    def __delete_dataset( self, trans, history_id, id, purge, **kwd ):
         # get purge from the query or from the request body payload (a request body is optional here)
         purge = util.string_as_bool( purge )
         if kwd.get( 'payload', None ):
@@ -413,3 +448,8 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
                 pass
                 #log.warn( 'unknown key: %s', str( key ) )
         return validated_payload
+
+    def __handle_unknown_contents_type( self, trans, contents_type ):
+        # TODO: raise a message exception instead of setting status and returning dict.
+        trans.response.status = 400
+        return { 'error': 'Unknown contents type %s' % type }

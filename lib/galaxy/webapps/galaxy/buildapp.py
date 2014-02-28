@@ -75,6 +75,19 @@ def app_factory( global_conf, **kwargs ):
 
     webapp.add_api_controllers( 'galaxy.webapps.galaxy.api', app )
 
+    valid_history_contents_types = [
+        'dataset',
+    ]
+    # This must come before history contents below.
+    # Accesss HDA details via histories/:history_id/contents/datasets/:hda_id
+    webapp.mapper.resource( "typed_content",
+                            "{type:%s}s" % "|".join( valid_history_contents_types ),
+                            name_prefix="history_content_",
+                            controller='history_contents',
+                            path_prefix='/api/histories/:history_id/contents',
+                            parent_resources=dict( member_name='history', collection_name='histories' ),
+                          )
+    # Legacy access to HDA details via histories/:history_id/contents/:hda_id
     webapp.mapper.resource( 'content',
                                 'contents',
                                 controller='history_contents',
