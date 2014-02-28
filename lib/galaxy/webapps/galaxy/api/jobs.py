@@ -12,6 +12,7 @@ from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.base.controller import UsesHistoryDatasetAssociationMixin
 from galaxy.web.base.controller import UsesLibraryMixinItems
 from galaxy import exceptions
+from galaxy import util
 
 import logging
 log = logging.getLogger( __name__ )
@@ -45,24 +46,22 @@ class JobController( BaseAPIController, UsesHistoryDatasetAssociationMixin, Uses
         query = trans.sa_session.query( trans.app.model.Job ).filter(
             trans.app.model.Job.user == trans.user
         )
-        if state is not None:
-            if isinstance( state, basestring ):
-                query = query.filter( trans.app.model.Job.state == state )
-            elif isinstance( state, list ):
-                t = []
-                for s in state:
-                    t.append(  trans.app.model.Job.state == s )
-                query = query.filter( or_( *t ) )
+
+        def build_and_apply_filters( query, objects, filter_func ):
+            if objects is not None:
+                if isinstance( objects, basestring ):
+                    query = query.filter( filter_func( objects ) )
+                elif isinstance( objects, list ):
+                    t = []
+                    for obj in objects:
+                        t.append( filter_func( obj ) )
+                    query = query.filter( or_( *t ) )
+            return query
+
+        query = build_and_apply_filters( query, state, lambda s: trans.app.model.Job.state == s )
 
         tool_id = kwd.get( 'tool_id', None )
-        if tool_id is not None:
-            if isinstance( tool_id, basestring ):
-                query = query.filter( trans.app.model.Job.tool_id.like('%' + tool_id + '%') )
-            elif isinstance( tool_id, list ):
-                t = []
-                for s in tool_id:
-                    t.append(  trans.app.model.Job.tool_id.like('%' + s + '%') )
-                query = query.filter( or_( *t ) )
+        query = build_and_apply_filters( query, tool_id, lambda t: trans.app.model.Job.tool_id.like('%' + t + '%') )
 
         history_id = kwd.get( 'history_id', None )
         if history_id is not None:
