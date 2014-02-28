@@ -60,8 +60,8 @@ class JobController( BaseAPIController, UsesHistoryDatasetAssociationMixin, Uses
 
         query = build_and_apply_filters( query, state, lambda s: trans.app.model.Job.state == s )
 
-        tool_id = kwd.get( 'tool_id', None )
-        query = build_and_apply_filters( query, tool_id, lambda t: trans.app.model.Job.tool_id.like('%' + t + '%') )
+        query = build_and_apply_filters( query, kwd.get( 'tool_id', None ), lambda t: trans.app.model.Job.tool_id == t )
+        query = build_and_apply_filters( query, kwd.get( 'tool_id_like', None ), lambda t: trans.app.model.Job.tool_id.like(t) )
 
         history_id = kwd.get( 'history_id', None )
         if history_id is not None:
