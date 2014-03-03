@@ -135,6 +135,6 @@ class BiostarController( BaseUIController ):
         # Tool specific information for payload
         payload = { 'title':'Need help with "%s" tool' % ( tool.name ),
                     'content': '<br /><hr /><p>Tool name: %s</br>Tool version: %s</br>Tool ID: %s</p>' % ( tool.name, tool.version, tool.id ),
-                    'tag_val': 'galaxy ' + tag_for_tool( tool ) }
+                    'tag_val': ','.join( [ 'galaxy', tag_for_tool( tool ) ] ) }
         # Pass on to regular question method
         return self.biostar_question_redirect( trans, payload )
