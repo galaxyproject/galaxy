@@ -296,7 +296,7 @@ def handle_complex_command( command ):
     retain control over the process.  This method is named "complex" because it uses queues and
     threads to execute a command while capturing and displaying the output.
     """
-    wrapped_command = shlex.split( "/bin/sh -c '%s'" % str( command ) )
+    wrapped_command = shlex.split( '/bin/sh -c "%s"' % str( command ) )
     # Launch the command as subprocess.  A bufsize of 1 means line buffered.
     process_handle = subprocess.Popen( wrapped_command,
                                        stdout=subprocess.PIPE,
@@ -607,7 +607,7 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                         with settings( warn_only=True ):
                             for tarball_name in tarball_names:
                                 cmd = '''PATH=$PATH:$R_HOME/bin; export PATH; R_LIBS=$INSTALL_DIR; export R_LIBS;
-                                    Rscript -e "install.packages(c('%s'),lib='$INSTALL_DIR', repos=NULL, dependencies=FALSE)"''' % ( str( tarball_name ) )
+                                    Rscript -e \\"install.packages(c('%s'),lib='$INSTALL_DIR', repos=NULL, dependencies=FALSE)\\"''' % ( str( tarball_name ) )
                                 cmd = install_environment.build_command( td_common_util.evaluate_template( cmd, install_dir ) )
                                 return_code = handle_command( app, tool_dependency, install_dir, cmd )
                                 if return_code:
