@@ -17,8 +17,9 @@ from unicodedata import normalize
 _punct_re = re.compile(r'[\t !"#$%&\'()*\-/<=>?@\[\\\]^_`{|},.]+')
 
 BIOSTAR_ACTIONS = {
+    None: '',
     'new': 'p/new/post/',
-    None: ''
+    'show_tag_galaxy': 't/galaxy/'
 }
 
 
