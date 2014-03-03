@@ -108,13 +108,15 @@ var DatasetCollection = Backbone.Collection.extend({
 });
 
 /**
- * Provides table-based, dynamic view of a tabular dataset. 
- * NOTE: view's el must be in DOM already and provided when 
- * createing the view so that scrolling event can be attached
- * to the correct container.
+ * Provides a base for table-based, dynamic view of a tabular dataset. 
+ * Do not instantiate directly; use either TopLevelTabularDatasetChunkedView 
+ * or EmbeddedTabularDatasetChunkedView.
  */
 var TabularDatasetChunkedView = Backbone.View.extend({
 
+    /**
+     * Initialize view and, importantly, set a scroll element.
+     */
     initialize: function(options) {
         // Row count for rendering.
         this.row_count = 0;
@@ -147,25 +149,15 @@ var TabularDatasetChunkedView = Backbone.View.extend({
         }
 
         // -- Show new chunks during scrolling. --
-        
+
         var self = this,
-            // Element that does the scrolling.
-            scroll_elt = _.find(this.$el.parents(), function(p) {
-                return $(p).css('overflow') === 'auto';
-            }),
             // Flag to ensure that only one chunk is loaded at a time.
             loading_chunk = false;
 
-        // If no scrolling element found, use window.
-        if (!scroll_elt) { scroll_elt = window; }
-
-        // Wrap scrolling element for easy access.
-        scroll_elt = $(scroll_elt);
-
         // Set up chunk loading when scrolling using the scrolling element.
-        scroll_elt.scroll(function() {
+        this.scroll_elt.scroll(function() {
             // If not already loading a chunk and have scrolled to the bottom of this element, get next chunk.
-            if ( !loading_chunk && (self.$el.height() - scroll_elt.scrollTop() - scroll_elt.height() <= 0) ) {
+            if ( !loading_chunk && self.scrolled_to_bottom() ) {
                 loading_chunk = true;
                 $.when(self.model.get_next_chunk()).then(function(result) {
                     if (result) {
@@ -180,6 +172,13 @@ var TabularDatasetChunkedView = Backbone.View.extend({
         }).ajaxStop(function(){
            $(this).hide();
         });
+    },
+
+    /**
+     * Returns true if user has scrolled to the bottom of the view.
+     */
+    scrolled_to_bottom: function() {
+        return false;
     },
 
     // -- Helper functions. --
@@ -244,6 +243,61 @@ var TabularDatasetChunkedView = Backbone.View.extend({
             data_table.append(this._renderRow(line));
         }, this);
     }
+});
+
+/**
+ * Tabular view that is placed at the top level of page. Scrolling occurs
+ * view top-level elements outside of view.
+ */
+var TopLevelTabularDatasetChunkedView = TabularDatasetChunkedView.extend({
+
+    initialize: function(options) {
+        TabularDatasetChunkedView.prototype.initialize.call(this, options);
+
+        // Scrolling happens in top-level elements.
+        scroll_elt = _.find(this.$el.parents(), function(p) {
+            return $(p).css('overflow') === 'auto';
+        });
+
+        // If no scrolling element found, use window.
+        if (!scroll_elt) { scroll_elt = window; }
+
+        // Wrap scrolling element for easy access.
+        this.scroll_elt = $(scroll_elt);
+    },
+
+    /**
+     * Returns true if user has scrolled to the bottom of the view.
+     */
+    scrolled_to_bottom: function() {
+        return (this.$el.height() - this.scroll_elt.scrollTop() - this.scroll_elt.height() <= 0);
+    }
+
+});
+
+/**
+ * Tabular view tnat is embedded in a page. Scrolling occurs in view's el.
+ */
+var EmbeddedTabularDatasetChunkedView = TabularDatasetChunkedView.extend({
+
+    initialize: function(options) {
+        TabularDatasetChunkedView.prototype.initialize.call(this, options);
+
+        // Because view is embedded, set up div to do scrolling.
+        this.scroll_elt = this.$el.css({
+            position: 'relative',
+            overflow: 'scroll',
+            height: this.options.height || '500px'
+        });
+    },
+
+    /**
+     * Returns true if user has scrolled to the bottom of the view.
+     */
+    scrolled_to_bottom: function() {
+        return this.$el.scrollTop() + this.$el.innerHeight() >= this.el.scrollHeight;
+    }
+
 });
 
 // button for trackster visualization
@@ -513,15 +567,28 @@ var createModelAndView = function(model, view, model_config, parent_elt) {
  * Create a tabular dataset chunked view (and requisite tabular dataset model)
  * and appends to parent_elt.
  */
-var createTabularDatasetChunkedView = function(dataset_config, parent_elt) {
-    // Create view element and add to parent.
-    var view_div = $('<div/>').appendTo(parent_elt);
+var createTabularDatasetChunkedView = function(options) {
+    // Create and set model.
+    options.model = new TabularDataset(options.dataset_config);
 
-    // default viewer
-    return new TabularDatasetChunkedView({
-        el: view_div,
-        model: new TabularDataset(dataset_config)
-    }).render();
+    var parent_elt = options.parent_elt;
+    var embedded = options.embedded;
+
+    // Clean up options so that only needed options are passed to view.
+    delete options.embedded;
+    delete options.parent_elt;
+    delete options.dataset_config;
+    
+    // Create and set up view.
+    var view = (embedded ? new EmbeddedTabularDatasetChunkedView(options) :
+                           new TopLevelTabularDatasetChunkedView(options));
+    view.render();
+
+    if (parent_elt) {
+        parent_elt.append(view.$el);
+    }
+
+    return view;
 };
 
 return {
