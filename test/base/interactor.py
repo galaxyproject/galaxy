@@ -461,16 +461,21 @@ except ImportError:
     def post_request( url, data, files={} ):
         return __multipart_request( url, data, files, verb="POST" )
 
-    def put_request( url ):
-        return __urllib_request( url, 'PUT' )
+    def put_request( url, data=None ):
+        if isinstance( data, dict ):
+            assert False, "This test will fail, Galaxy's webob dependency does not parse out urlencoded PUT/PATCH entity data, API will receive empty payload."
+        return __urllib_request( url, 'PUT', json_str=data )
 
     def delete_request( url ):
         return __urllib_request( url, 'DELETE' )
 
-    def __urllib_request( url, verb ):
+    def __urllib_request( url, verb, json_str=None ):
         opener = urllib2.build_opener(urllib2.HTTPHandler)
         request = urllib2.Request(url)
         request.get_method = lambda: verb
+        if json_str:
+            request.add_header( "content-type", "application/json" )
+            request.add_data(json_str)
         try:
             response = opener.open(request)
             return RequestsLikeResponse( response.read(), status_code=response.getcode() )

@@ -130,6 +130,7 @@ class LibrariesController( BaseAPIController ):
         new_library['description'] = description
         new_library['synopsis'] = synopsis
         new_library['id'] = encoded_id
+        new_library['root_folder_id'] = trans.security.encode_id( root_folder.id )
         return new_library
 
     def edit( self, trans, encoded_id, payload, **kwd ):
