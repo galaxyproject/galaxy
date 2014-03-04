@@ -99,34 +99,37 @@ def can_add_to_key_rd_dicts( key_rd_dict, key_rd_dicts ):
 def create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_info_dicts, install_repository_dependencies=False,
                                           no_changes_checked=False, tool_panel_section_id=None, new_tool_panel_section_label=None ):
     """
-    Discover all repository dependencies and make sure all tool_shed_repository and associated repository_dependency records exist as well as
-    the dependency relationships between installed repositories.  This method is called when uninstalled repositories are being reinstalled.
-    If the user elected to install repository dependencies, all items in the all_repo_info_dicts list will be processed.  However, if repository
-    dependencies are not to be installed, only those items contained in the received repo_info_dicts list will be processed.
+    Discover all repository dependencies and make sure all tool_shed_repository and associated repository_dependency
+    records exist as well as the dependency relationships between installed repositories.  This method is called when
+    uninstalled repositories are being reinstalled.  If the user elected to install repository dependencies, all items
+    in the all_repo_info_dicts list will be processed.  However, if repository dependencies are not to be installed,
+    only those items contained in the received repo_info_dicts list will be processed.
     """
     log.debug( "Creating repository dependency objects..." )
-    # The following list will be maintained within this method to contain all created or updated tool shed repositories, including repository
-    # dependencies that may not be installed.
+    # The following list will be maintained within this method to contain all created or updated tool shed repositories,
+    # including repository dependencies that may not be installed.
     all_created_or_updated_tool_shed_repositories = []
-    # There will be a one-to-one mapping between items in 3 lists: created_or_updated_tool_shed_repositories, tool_panel_section_keys and
-    # filtered_repo_info_dicts.  The 3 lists will filter out repository dependencies that are not to be installed.
+    # There will be a one-to-one mapping between items in 3 lists: created_or_updated_tool_shed_repositories,
+    # tool_panel_section_keys and filtered_repo_info_dicts.  The 3 lists will filter out repository dependencies
+    # that are not to be installed.
     created_or_updated_tool_shed_repositories = []
     tool_panel_section_keys = []
-    # Repositories will be filtered (e.g., if already installed, if elected to not be installed, etc), so filter the associated repo_info_dicts
-    # accordingly.
+    # Repositories will be filtered (e.g., if already installed, if elected to not be installed, etc), so filter
+    # the associated repo_info_dicts accordingly.
     filtered_repo_info_dicts = []
-    # Discover all repository dependencies and retrieve information for installing them.  Even if the user elected to not install repository
-    # dependencies we have to make sure all repository dependency objects exist so that the appropriate repository dependency relationships can
-    # be built.
+    # Discover all repository dependencies and retrieve information for installing them.  Even if the user elected
+    # to not install repository dependencies we have to make sure all repository dependency objects exist so that
+    # the appropriate repository dependency relationships can be built.
     all_required_repo_info_dict = common_install_util.get_required_repo_info_dicts( trans, tool_shed_url, repo_info_dicts )
     all_repo_info_dicts = all_required_repo_info_dict.get( 'all_repo_info_dicts', [] )
     if not all_repo_info_dicts:
         # No repository dependencies were discovered so process the received repositories.
         all_repo_info_dicts = [ rid for rid in repo_info_dicts ]
     for repo_info_dict in all_repo_info_dicts:
-        # If the user elected to install repository dependencies, all items in the all_repo_info_dicts list will be processed.  However, if
-        # repository dependencies are not to be installed, only those items contained in the received repo_info_dicts list will be processed
-        # but the the all_repo_info_dicts list will be used to create all defined repository dependency relationships.
+        # If the user elected to install repository dependencies, all items in the all_repo_info_dicts list will
+        # be processed.  However, if repository dependencies are not to be installed, only those items contained
+        # in the received repo_info_dicts list will be processed but the the all_repo_info_dicts list will be used
+        # to create all defined repository dependency relationships.
         if is_in_repo_info_dicts( repo_info_dict, repo_info_dicts ) or install_repository_dependencies:
             for name, repo_info_tuple in repo_info_dict.items():
                 can_update_db_record = False
@@ -196,7 +199,7 @@ def create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_
                         suc.create_or_update_tool_shed_repository( app=trans.app,
                                                                    name=name,
                                                                    description=description,
-                                                                   installed_changeset_revision=changeset_revision,
+                                                                   installed_changeset_revision=installed_changeset_revision,
                                                                    ctx_rev=ctx_rev,
                                                                    repository_clone_url=repository_clone_url,
                                                                    metadata_dict={},
