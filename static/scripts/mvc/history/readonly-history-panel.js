@@ -635,8 +635,9 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
      *      (2) re-rendering the history
      * @returns {Boolean} new show_deleted setting
      */
-    toggleShowDeleted : function(){
-        this.storage.set( 'show_deleted', !this.storage.get( 'show_deleted' ) );
+    toggleShowDeleted : function( show ){
+        show = ( show !== undefined )?( show ):( !this.storage.get( 'show_deleted' ) );
+        this.storage.set( 'show_deleted', show );
         this.renderHdas();
         return this.storage.get( 'show_deleted' );
     },
@@ -646,8 +647,9 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
      *      (2) re-rendering the history
      * @returns {Boolean} new show_hidden setting
      */
-    toggleShowHidden : function(){
-        this.storage.set( 'show_hidden', !this.storage.get( 'show_hidden' ) );
+    toggleShowHidden : function( show ){
+        show = ( show !== undefined )?( show ):( !this.storage.get( 'show_hidden' ) );
+        this.storage.set( 'show_hidden', show );
         this.renderHdas();
         return this.storage.get( 'show_hidden' );
     },
@@ -664,17 +666,10 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         var panel = this,
             inputSelector = '.history-search-input';
 
-        function onSearch( searchFor ){
-            //console.debug( 'onSearch', searchFor, panel );
-            panel.searchFor = searchFor;
-            panel.filters = [ function( hda ){ return hda.matchesAll( panel.searchFor ); } ];
-            panel.trigger( 'search:searching', searchFor, panel );
-            panel.renderHdas();
-        }
         function onFirstSearch( searchFor ){
-            //console.debug( 'onSearch', searchFor, panel );
+            //console.debug( 'onFirstSearch', searchFor, panel );
             if( panel.model.hdas.haveDetails() ){
-                onSearch( searchFor );
+                panel.searchHdas( searchFor );
                 return;
             }
             panel.$el.find( inputSelector ).searchInput( 'toggle-loading' );
@@ -683,15 +678,8 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
                     panel.$el.find( inputSelector ).searchInput( 'toggle-loading' );
                 })
                 .done( function(){
-                    onSearch( searchFor );
+                    panel.searchHdas( searchFor );
                 });
-        }
-        function onSearchClear(){
-            //console.debug( 'onSearchClear', panel );
-            panel.searchFor = '';
-            panel.filters = [];
-            panel.trigger( 'search:clear', panel );
-            panel.renderHdas();
         }
         $where.searchInput({
                 initialVal      : panel.searchFor,
@@ -699,8 +687,8 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
                 placeholder     : 'search datasets',
                 classes         : 'history-search',
                 onfirstsearch   : onFirstSearch,
-                onsearch        : onSearch,
-                onclear         : onSearchClear
+                onsearch        : _.bind( this.searchHdas, this ),
+                onclear         : _.bind( this.clearHdaSearch, this )
             });
         return $where;
     },
@@ -731,6 +719,28 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         } else {
             this.showSearchControls( speed );
         }
+    },
+
+    /** filter hda view list to those that contain the searchFor terms
+     *      (see the search section in the HDA model for implementation of the actual searching)
+    */
+    searchHdas : function( searchFor ){
+        //note: assumes hda details are loaded
+        //console.debug( 'onSearch', searchFor, this );
+        var panel = this;
+        this.searchFor = searchFor;
+        this.filters = [ function( hda ){ return hda.matchesAll( panel.searchFor ); } ];
+        this.trigger( 'search:searching', searchFor, this );
+        this.renderHdas();
+    },
+
+    /** clear the search filters and show all views that are normally shown */
+    clearHdaSearch : function( searchFor ){
+        //console.debug( 'onSearchClear', this );
+        this.searchFor = '';
+        this.filters = [];
+        this.trigger( 'search:clear', this );
+        this.renderHdas();
     },
 
     // ........................................................................ loading indicator

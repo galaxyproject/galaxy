@@ -906,7 +906,6 @@ function LoadingIndicator( $where, options ){
 
             var $first = $( this[0] ),
                 button = $first.data( 'mode-button' );
-            console.debug( 'first, button', $first, button );
 
             if( !button ){
                 throw new Error( 'modeButton needs an options object or string name of a function' );
