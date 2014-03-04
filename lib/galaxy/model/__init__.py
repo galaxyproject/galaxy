@@ -17,6 +17,7 @@ import pexpect
 import json
 import socket
 import time
+from uuid import UUID, uuid4
 from string import Template
 from itertools import ifilter
 from itertools import chain
@@ -1172,7 +1173,7 @@ class Dataset( object ):
     file_path = "/tmp/"
     object_store = None # This get initialized in mapping.py (method init) by app.py
     engine = None
-    def __init__( self, id=None, state=None, external_filename=None, extra_files_path=None, file_size=None, purgable=True ):
+    def __init__( self, id=None, state=None, external_filename=None, extra_files_path=None, file_size=None, purgable=True, uuid=None ):
         self.id = id
         self.state = state
         self.deleted = False
@@ -1181,7 +1182,11 @@ class Dataset( object ):
         self.external_filename = external_filename
         self._extra_files_path = extra_files_path
         self.file_size = file_size
-        self.uuid = None
+        if uuid is None:
+            self.uuid = uuid4()
+        else:
+            self.uuid = UUID(str(uuid))
+        print "dataset uuid", self.uuid
 
     def get_file_name( self ):
         if not self.external_filename:
@@ -1837,7 +1842,6 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations, 
         rval = dict( id = hda.id,
                      hda_ldda = 'hda',
                      uuid = ( lambda uuid: str( uuid ) if uuid else None )( hda.dataset.uuid ),
-                     dataset_id = hda.dataset.id,
                      hid = hda.hid,
                      file_ext = hda.ext,
                      peek = ( lambda hda: hda.display_peek() if hda.peek and hda.peek != 'no peek' else None )( hda ),
@@ -2267,7 +2271,6 @@ class LibraryDatasetDatasetAssociation( DatasetInstance, HasName ):
             file_size = 0
         rval = dict( id = ldda.id,
                      hda_ldda = 'ldda',
-                     dataset_id = ldda.dataset.id,
                      model_class = self.__class__.__name__,
                      name = ldda.name,
                      deleted = ldda.deleted,
