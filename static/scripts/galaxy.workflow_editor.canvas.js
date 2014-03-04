@@ -634,21 +634,16 @@ $.extend( Workflow.prototype, {
             var node = wf.nodes[id];
             $.each( step.input_connections, function( k, v ) {
                 if ( v ) {
-                    if ($.isArray(v)) {
-                        $.each( v, function (l,x ) {
-                            var other_node = wf.nodes[ x.id ];
-                            var c = new Connector();
-                            c.connect( other_node.output_terminals[ x.output_name ],
-                                       node.input_terminals[ k ] );
-                            c.redraw();
-                        });
-                    } else {
-                        var other_node = wf.nodes[ v.id ];
+                    if ( ! $.isArray( v ) ) {
+                        v = [ v ];
+                    }
+                    $.each( v, function( l, x ) {
+                        var other_node = wf.nodes[ x.id ];
                         var c = new Connector();
-                        c.connect( other_node.output_terminals[ v.output_name ],
+                        c.connect( other_node.output_terminals[ x.output_name ],
                                    node.input_terminals[ k ] );
                         c.redraw();
-                    }
+                    });
                 }
             });
             if(using_workflow_outputs && node.type === 'tool'){
