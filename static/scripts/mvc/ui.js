@@ -885,8 +885,7 @@ function LoadingIndicator( $where, options ){
 		var modeFn = this.getMode( modeKey ).onclick;
 		if( modeFn && jQuery.type( modeFn === 'function' ) ){
             // call with the element as context (std jquery pattern)
-			modeFn.call( this.$element.get(0) );
-            return this;
+			return modeFn.call( this.$element.get(0) );
 		}
 		return undefined;
 	};
