@@ -31,7 +31,8 @@ return Backbone.View.extend(
             operations  : {
                 'edit'  : new Ui.ButtonIcon({
                     icon    : 'fa-gear',
-                    tooltip : 'Configure'
+                    tooltip : 'Customize Chart',
+                    title   : 'Customize'
                 })
             }
         });
@@ -80,13 +81,19 @@ return Backbone.View.extend(
                 self.app.chart.copy(chart);
                 
                 // show edit
-                self.app.charts_view.$el.hide();
+                self.app.charts_view.hide();
                 self.app.chart_view.$el.show();
             });
         
             // this trigger d3 update events
             $(window).trigger('resize');
         }
+    },
+    
+    // hide
+    hide: function() {
+        $('.tooltip').hide();
+        this.$el.hide();
     },
     
     // add

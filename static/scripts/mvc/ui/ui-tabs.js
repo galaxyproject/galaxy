@@ -37,9 +37,14 @@ var View = Backbone.View.extend(
         // create new element
         this.setElement($tabs);
         
+        // clear list
+        this.list = {};
+        
+        // link this
+        var self = this;
+            
         // append operations
         if (this.options.operations) {
-            var self = this;
             $.each(this.options.operations, function(name, item) {
                 item.$el.prop('id', name);
                 self.$nav.append(item.$el);
@@ -69,7 +74,7 @@ var View = Backbone.View.extend(
     add: function(options) {
         // get tab id
         var id = options.id;
-        
+
         // create tab object
         var tab = {
             $title      : $(this._template_tab(options)),
@@ -79,7 +84,7 @@ var View = Backbone.View.extend(
         
         // add to list
         this.list[id] = tab;
-        
+            
         // add a new tab either before the add-new-tab tab or behind the last tab
         if (this.options.onnew) {
             this.$nav.find('#new-tab').before(tab.$title);
@@ -102,10 +107,17 @@ var View = Backbone.View.extend(
         if (options.ondel) {
             var $del_icon = tab.$title.find('#delete');
             $del_icon.tooltip({title: 'Delete this tab', placement: 'bottom'});
-            $del_icon.on('click', function(e) {
+            $del_icon.on('click', function() {
                 $del_icon.tooltip('destroy');
                 options.ondel();
                 return false;
+            });
+        }
+        
+        // add custom click event handler
+        if (options.onclick) {
+            tab.$title.on('click', function() {
+                options.onclick();
             });
         }
     },

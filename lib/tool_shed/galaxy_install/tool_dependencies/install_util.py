@@ -350,7 +350,7 @@ def install_package( app, elem, tool_shed_repository, tool_dependencies=None, fr
                                                                                  tool_dependency_type='package' )
                         if not can_install_tool_dependency:
                             log.debug( "Tool dependency %s version %s cannot be installed (it was probably previously installed), so returning it." % \
-                                ( str( tool_dependency.name, str( tool_dependency.version ) ) ) )
+                                ( str( tool_dependency.name ), str( tool_dependency.version ) ) )
                             return tool_dependency
                 else:
                     can_install_tool_dependency = True
@@ -884,7 +884,7 @@ def set_environment( app, elem, tool_shed_repository, attr_tups_of_dependencies_
                     if env_var_version == '1.0':
                         # Create this tool dependency's env.sh file.
                         env_file_builder = fabric_util.EnvFileBuilder( install_dir )
-                        return_code = env_file_builder.append_line( skip_if_contained=True, make_executable=True, **env_var_dict )
+                        return_code = env_file_builder.append_line( make_executable=True, **env_var_dict )
                         if return_code:
                             error_message = 'Error creating env.sh file for tool dependency %s, return_code: %s' % \
                                 ( str( tool_dependency.name ), str( return_code ) )

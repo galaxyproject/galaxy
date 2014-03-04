@@ -111,7 +111,7 @@ var ButtonIcon = Backbone.View.extend(
         if (options.title) {
             str +=      '<div style="margin-right: 5px; margin-left: 5px;">' +
                             '<i class="icon fa ' + options.icon + '"/>&nbsp;' +
-                            '<span style="position: relative; font-size: 0.8em; top: -1px;">' + options.title + '</span>' +
+                            '<span style="position: relative; font-size: 0.8em; font-weight: normal; top: -1px;">' + options.title + '</span>' +
                         '</div>';
         } else {
             str +=      '<i class="icon fa ' + options.icon + '"/>';

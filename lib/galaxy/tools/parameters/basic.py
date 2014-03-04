@@ -1644,18 +1644,7 @@ class DataToolParameter( ToolParameter ):
                 # Also collect children via association object
                 dataset_collector( hda.children, hid )
         dataset_collector( history.active_datasets_children_and_roles, None )
-
-        set_selected = field.get_selected( return_label=True, return_value=True, multi=False ) is not None
-        # Ensure than an item is always selected
-        if self.optional:
-            if set_selected:
-                field.add_option( "Selection is Optional", 'None', False )
-            else:
-                field.add_option( "Selection is Optional", 'None', True )
-        elif not set_selected and bool( field.options ):
-            # Select the last item
-            a, b, c = field.options[-1]
-            field.options[-1] = a, b, True
+        self._ensure_selection( field )
         return field
 
     def get_initial_value( self, trans, context, history=None ):
@@ -1834,6 +1823,19 @@ class DataToolParameter( ToolParameter ):
             history = trans.get_history()
         assert history is not None, "%s requires a history" % class_name
         return history
+
+    def _ensure_selection( self, field ):
+        set_selected = field.get_selected( return_label=True, return_value=True, multi=False ) is not None
+        # Ensure than an item is always selected
+        if self.optional:
+            if set_selected:
+                field.add_option( "Selection is Optional", 'None', False )
+            else:
+                field.add_option( "Selection is Optional", 'None', True )
+        elif not set_selected and bool( field.options ):
+            # Select the last item
+            a, b, c = field.options[-1]
+            field.options[-1] = a, b, True
 
 
 class HiddenDataToolParameter( HiddenToolParameter, DataToolParameter ):

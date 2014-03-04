@@ -471,6 +471,8 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
         // fetch first if no details in the model
         if( this.model.inReadyState() && !this.model.hasDetails() ){
             this.model.fetch({ silent: true }).always( function( model ){
+                // re-render urls based on new hda data
+                hdaView.urls = hdaView.model.urls();
                 _renderBodyAndExpand();
             });
         } else {

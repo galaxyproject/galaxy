@@ -1017,7 +1017,8 @@ def remove_from_tool_panel( trans, repository, shed_tool_conf, uninstall ):
                             replacement_tool_version = None
                             # Since we are going to remove the tool from the section, replace it with the newest loaded version of the tool.
                             for available_tool_version in available_tool_versions:
-                                if available_tool_version.id in tool_section.elems.keys():
+                                available_tool_section_id, available_tool_section_name = available_tool_version.get_panel_section()
+                                if available_tool_version.id in tool_section.elems.keys() or section_key == available_tool_section_id:
                                     replacement_tool_key = 'tool_%s' % str( available_tool_version.id )
                                     replacement_tool_version = available_tool_version
                                     break
@@ -1057,7 +1058,8 @@ def remove_from_tool_panel( trans, repository, shed_tool_conf, uninstall ):
                         replacement_tool_version = None
                         # Since we are going to remove the tool from the section, replace it with the newest loaded version of the tool.
                         for available_tool_version in available_tool_versions:
-                            if available_tool_version.id in trans.app.toolbox.tool_panel.keys():
+                            available_tool_section_id, available_tool_section_name = available_tool_version.get_panel_section()
+                            if available_tool_version.id in trans.app.toolbox.tool_panel.keys() or not available_tool_section_id:
                                 replacement_tool_key = 'tool_%s' % str( available_tool_version.id )
                                 replacement_tool_version = available_tool_version
                                 break

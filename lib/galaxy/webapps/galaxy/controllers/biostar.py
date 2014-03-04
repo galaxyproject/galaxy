@@ -7,6 +7,7 @@ from galaxy.web.base.controller import BaseUIController, url_for, error, web
 import base64
 from galaxy.util import json
 import hmac
+import urlparse
 
 # Slugifying from Armin Ronacher (http://flask.pocoo.org/snippets/5/)
 
@@ -14,6 +15,12 @@ import re
 from unicodedata import normalize
 
 _punct_re = re.compile(r'[\t !"#$%&\'()*\-/<=>?@\[\\\]^_`{|},.]+')
+
+BIOSTAR_ACTIONS = {
+    None: '',
+    'new': 'p/new/post/',
+    'show_tag_galaxy': 't/galaxy/'
+}
 
 
 def slugify(text, delim=u'-'):
@@ -28,12 +35,9 @@ def slugify(text, delim=u'-'):
 
 # Biostar requires all keys to be present, so we start with a template
 DEFAULT_PAYLOAD = {
-    'email': "",
-    'title': "",
-    'tags': 'galaxy',
-    'tool_name': '',
-    'tool_version': '',
-    'tool_id': ''
+    'title': '',
+    'tag_val': 'galaxy',
+    'content': '',
 }
 
 
@@ -49,10 +53,32 @@ def encode_data( key, data ):
 
 def tag_for_tool( tool ):
     """
-    Generate a reasonavle biostar tag for a tool.
+    Generate a reasonable biostar tag for a tool.
     """
     return slugify( unicode( tool.name ) )
 
+def determine_cookie_domain( galaxy_hostname, biostar_hostname ):
+    if galaxy_hostname == biostar_hostname:
+        return galaxy_hostname
+    
+    sub_biostar_hostname = biostar_hostname.split( '.', 1 )[-1]
+    if sub_biostar_hostname == galaxy_hostname:
+        return galaxy_hostname
+    
+    sub_galaxy_hostname = galaxy_hostname.split( '.', 1 )[-1]
+    if sub_biostar_hostname == sub_galaxy_hostname:
+        return sub_galaxy_hostname
+    
+    return galaxy_hostname
+
+def create_cookie( trans, key_name, key, email ):
+    digest = hmac.new( key, email ).hexdigest()
+    value = "%s:%s" % (email, digest)
+    trans.set_cookie( value, name=key_name, path='/', age=90, version='1' )
+    #We need to explicitly set the domain here, in order to allow for biostar in a subdomain to work
+    galaxy_hostname = urlparse.urlsplit( url_for( '/', qualified=True ) ).hostname
+    biostar_hostname = urlparse.urlsplit( trans.app.config.biostar_url ).hostname
+    trans.response.cookies[ key_name ][ 'domain' ] = determine_cookie_domain( galaxy_hostname, biostar_hostname )
 
 class BiostarController( BaseUIController ):
     """
@@ -65,26 +91,22 @@ class BiostarController( BaseUIController ):
         Generate a redirect to a Biostar site using external authentication to
         pass Galaxy user information and information about a specific tool.
         """
-        payload = payload or {}
         # Ensure biostar integration is enabled
         if not trans.app.config.biostar_url:
             return error( "Biostar integration is not enabled" )
+        if biostar_action not in BIOSTAR_ACTIONS:
+            return error( "Invalid action specified (%s)." % ( biostar_action ) )
+        
         # Start building up the payload
+        payload = payload or {}
         payload = dict( DEFAULT_PAYLOAD, **payload )
         # Do the best we can of providing user information for the payload
         if trans.user:
-            payload['username'] = "user-" + trans.security.encode_id( trans.user.id )
-            payload['email'] = trans.user.email
-            if trans.user.username:
-                payload['display_name'] = trans.user.username
-            else:
-                payload['display_name'] = trans.user.email.split( "@" )[0]
+            email = trans.user.email
         else:
-            encoded = trans.security.encode_id( trans.galaxy_session.id )
-            payload['username'] = "anon-" + encoded
-            payload['display_name'] = "Anonymous Galaxy User"
-        data, digest = encode_data( trans.app.config.biostar_key, payload )
-        return trans.response.send_redirect( url_for( trans.app.config.biostar_url, data=data, digest=digest, name=trans.app.config.biostar_key_name, action=biostar_action ) )
+            email = "anon-%s" % ( trans.security.encode_id( trans.galaxy_session.id ) )
+        create_cookie( trans, trans.app.config.biostar_key_name, trans.app.config.biostar_key, email )
+        return trans.response.send_redirect( url_for( urlparse.urljoin( trans.app.config.biostar_url, BIOSTAR_ACTIONS[ biostar_action ] ), **payload ) )
 
     @web.expose
     def biostar_question_redirect( self, trans, payload=None ):
@@ -111,9 +133,8 @@ class BiostarController( BaseUIController ):
         if not tool:
             return error( "No tool found matching '%s'" % tool_id )
         # Tool specific information for payload
-        payload = { 'tool_name': tool.name,
-                    'tool_version': tool.version,
-                    'tool_id': tool.id,
-                    'tags': 'galaxy ' + tag_for_tool( tool ) }
+        payload = { 'title':'Need help with "%s" tool' % ( tool.name ),
+                    'content': '<br /><hr /><p>Tool name: %s</br>Tool version: %s</br>Tool ID: %s</p>' % ( tool.name, tool.version, tool.id ),
+                    'tag_val': ','.join( [ 'galaxy', tag_for_tool( tool ) ] ) }
         # Pass on to regular question method
         return self.biostar_question_redirect( trans, payload )

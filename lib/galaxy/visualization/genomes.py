@@ -210,7 +210,7 @@ class Genomes( object ):
             rval = self.genomes[ dbkey ]
         return rval
 
-    def get_dbkeys( self, trans, chrom_info=False ):
+    def get_dbkeys( self, trans, chrom_info=False, **kwd ):
         """ Returns all known dbkeys. If chrom_info is True, only dbkeys with
             chromosome lengths are returned. """
         dbkeys = []
