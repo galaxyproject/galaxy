@@ -171,6 +171,11 @@ function Node( element ) {
     this.tool_errors = {};
 }
 $.extend( Node.prototype, {
+    new_input_terminal : function( input ) {
+        var t = $("<div class='terminal input-terminal'></div>");
+        this.enable_input_terminal( t, input.name, input.extensions, input.multiple );
+        return t;
+    },
     enable_input_terminal : function( elements, name, types, multiple ) {
         var node = this;
         $(elements).each( function() {
@@ -317,8 +322,7 @@ $.extend( Node.prototype, {
         b.find( "div" ).remove();
         var ibox = $("<div class='inputs'></div>").appendTo( b );
         $.each( data.data_inputs, function( i, input ) {
-            var t = $("<div class='terminal input-terminal'></div>");
-            node.enable_input_terminal( t, input.name, input.extensions, input.multiple );
+            var t = node.new_input_terminal( input );
             var ib = $("<div class='form-row dataRow input-data-row' name='" + input.name + "'>" + input.label + "</div>" );
             ib.css({  position:'absolute',
                         left: -1000,
@@ -420,8 +424,7 @@ $.extend( Node.prototype, {
         var new_body = $("<div class='inputs'></div>");
         var old = old_body.find( "div.input-data-row");
         $.each( data.data_inputs, function( i, input ) {
-            var t = $("<div class='terminal input-terminal'></div>");
-            node.enable_input_terminal( t, input.name, input.extensions, input.multiple );
+            var t = node.new_input_terminal( input );
             // If already connected save old connection
             old_body.find( "div[name='" + input.name + "']" ).each( function() {
                 $(this).find( ".input-terminal" ).each( function() {
