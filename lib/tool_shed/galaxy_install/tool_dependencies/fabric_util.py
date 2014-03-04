@@ -211,7 +211,7 @@ def file_append( text, file_path, make_executable=True ):
     if os.path.exists( file_path ):
         try:
             new_env_file_contents = []
-            env_file_contents = file( file_path, 'a+' ).readlines()
+            env_file_contents = file( file_path, 'r' ).readlines()
             # Clean out blank lines from the env.sh file.
             for line in env_file_contents:
                 line = line.rstrip()
