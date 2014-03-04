@@ -89,6 +89,7 @@ class TagsController ( BaseUIController, UsesTagsMixin ):
             item = self._get_item( trans, item_class, trans.security.decode_id( item_id ) )
         user = trans.user
         item_class = self.get_class( item_class )
+        q = '' if q is None else q
         q = q.encode( 'utf-8' )
         if q.find( ":" ) == -1:
             return self._get_tag_autocomplete_names( trans, q, limit, timestamp, user, item, item_class )
