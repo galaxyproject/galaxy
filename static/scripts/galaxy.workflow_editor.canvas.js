@@ -605,7 +605,7 @@ $.extend( Workflow.prototype, {
         // First pass, nodes
         var using_workflow_outputs = false;
         $.each( data.steps, function( id, step ) {
-            var node = prebuild_node( "tool", step.name, step.tool_id );
+            var node = prebuild_node( step.type, step.name, step.tool_id );
             node.init_field_data( step );
             if ( step.position ) {
                 node.element.css( { top: step.position.top, left: step.position.left } );
