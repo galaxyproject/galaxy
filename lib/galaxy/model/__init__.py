@@ -1186,7 +1186,6 @@ class Dataset( object ):
             self.uuid = uuid4()
         else:
             self.uuid = UUID(str(uuid))
-        print "dataset uuid", self.uuid
 
     def get_file_name( self ):
         if not self.external_filename:
