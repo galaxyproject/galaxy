@@ -1,3 +1,4 @@
+import copy
 import logging
 import os
 import urllib
@@ -71,8 +72,8 @@ def activate_repository( trans, repository ):
 
 def get_dependencies_for_repository( trans, tool_shed_url, repo_info_dict, includes_tool_dependencies ):
     """
-    Return dictionaries containing the sets of installed and missing tool dependencies and repository dependencies associated
-    with the repository defined by the received repo_info_dict.
+    Return dictionaries containing the sets of installed and missing tool dependencies and repository
+    dependencies associated with the repository defined by the received repo_info_dict.
     """
     repository = None
     installed_rd = {}
@@ -86,15 +87,20 @@ def get_dependencies_for_repository( trans, tool_shed_url, repo_info_dict, inclu
     if tool_dependencies:
         if not includes_tool_dependencies:
             includes_tool_dependencies = True
-        # Inspect the tool_dependencies dictionary to separate the installed and missing tool dependencies.  We don't add to installed_td
-        # and missing_td here because at this point they are empty.
-        installed_td, missing_td = get_installed_and_missing_tool_dependencies_for_installing_repository( trans, tool_shed_url, tool_dependencies )
-    # In cases where a repository dependency is required only for compiling a dependent repository's tool dependency, the value of
-    # repository_dependencies will be an empty dictionary here.
+        # Inspect the tool_dependencies dictionary to separate the installed and missing tool dependencies.
+        # We don't add to installed_td and missing_td here because at this point they are empty.
+        installed_td, missing_td = \
+            get_installed_and_missing_tool_dependencies_for_installing_repository( trans, tool_shed_url, tool_dependencies )
+    # In cases where a repository dependency is required only for compiling a dependent repository's
+    # tool dependency, the value of repository_dependencies will be an empty dictionary here.
     if repository_dependencies:
         # We have a repository with one or more defined repository dependencies.
         if not repository:
-            repository = suc.get_repository_for_dependency_relationship( trans.app, tool_shed_url, name, repository_owner, changeset_revision )
+            repository = suc.get_repository_for_dependency_relationship( trans.app,
+                                                                         tool_shed_url,
+                                                                         name,
+                                                                         repository_owner,
+                                                                         changeset_revision )
         if repository and repository.metadata:
             installed_rd, missing_rd = get_installed_and_missing_repository_dependencies( trans, repository )
         else:
@@ -309,18 +315,26 @@ def get_installed_and_missing_tool_dependencies_for_installing_repository( trans
     installed_tool_dependencies = {}
     missing_tool_dependencies = {}
     if tool_dependencies_dict:
-        for td_key, val in tool_dependencies_dict.items():
+        # Make sure not to change anything in the received tool_dependencies_dict as that would be a bad side-effect!
+        tmp_tool_dependencies_dict = copy.deepcopy( tool_dependencies_dict )
+        for td_key, val in tmp_tool_dependencies_dict.items():
             # Default the status to NEVER_INSTALLED.
             tool_dependency_status = trans.install_model.ToolDependency.installation_status.NEVER_INSTALLED
             # Set environment tool dependencies are a list.
             if td_key == 'set_environment':
                 new_val = []
                 for requirement_dict in val:
-                    # {'repository_name': 'xx', 'name': 'bwa', 'version': '0.5.9', 'repository_owner': 'yy', 'changeset_revision': 'zz', 'type': 'package'}
-                    tool_dependency = tool_dependency_util.get_tool_dependency_by_name_version_type( trans.app,
-                                                                                                     requirement_dict.get( 'name', None ),
-                                                                                                     requirement_dict.get( 'version', None ),
-                                                                                                     requirement_dict.get( 'type', 'package' ) )
+                    # {'repository_name': 'xx',
+                    #  'name': 'bwa',
+                    #  'version': '0.5.9',
+                    #  'repository_owner': 'yy',
+                    #  'changeset_revision': 'zz',
+                    #  'type': 'package'}
+                    tool_dependency = \
+                        tool_dependency_util.get_tool_dependency_by_name_version_type( trans.app,
+                                                                                       requirement_dict.get( 'name', None ),
+                                                                                       requirement_dict.get( 'version', None ),
+                                                                                       requirement_dict.get( 'type', 'package' ) )
                     if tool_dependency:
                         tool_dependency_status = tool_dependency.status
                     requirement_dict[ 'status' ] = tool_dependency_status
@@ -331,7 +345,12 @@ def get_installed_and_missing_tool_dependencies_for_installing_repository( trans
                         missing_tool_dependencies[ td_key ] = new_val
             else:
                 # The val dictionary looks something like this:
-                # {'repository_name': 'xx', 'name': 'bwa', 'version': '0.5.9', 'repository_owner': 'yy', 'changeset_revision': 'zz', 'type': 'package'}
+                # {'repository_name': 'xx',
+                #  'name': 'bwa',
+                #  'version': '0.5.9',
+                #  'repository_owner': 'yy',
+                #  'changeset_revision': 'zz',
+                #  'type': 'package'}
                 tool_dependency = tool_dependency_util.get_tool_dependency_by_name_version_type( trans.app,
                                                                                                  val.get( 'name', None ),
                                                                                                  val.get( 'version', None ),
@@ -347,14 +366,16 @@ def get_installed_and_missing_tool_dependencies_for_installing_repository( trans
 
 def get_required_repo_info_dicts( trans, tool_shed_url, repo_info_dicts ):
     """
-    Inspect the list of repo_info_dicts for repository dependencies and append a repo_info_dict for each of them to the list.  All
-    repository_dependencies entries in each of the received repo_info_dicts includes all required repositories, so only one pass through
-    this method is required to retrieve all repository dependencies.
+    Inspect the list of repo_info_dicts for repository dependencies and append a repo_info_dict for each of
+    them to the list.  All repository_dependencies entries in each of the received repo_info_dicts includes
+    all required repositories, so only one pass through this method is required to retrieve all repository
+    dependencies.
     """
     all_required_repo_info_dict = {}
     all_repo_info_dicts = []
     if repo_info_dicts:
-        # We'll send tuples of ( tool_shed, repository_name, repository_owner, changeset_revision ) to the tool shed to discover repository ids.
+        # We'll send tuples of ( tool_shed, repository_name, repository_owner, changeset_revision ) to the tool
+        # shed to discover repository ids.
         required_repository_tups = []
         for repo_info_dict in repo_info_dicts:
             if repo_info_dict not in all_repo_info_dicts:
@@ -368,9 +389,10 @@ def get_required_repo_info_dicts( trans, tool_shed_url, repo_info_dicts ):
                             continue
                         repository_components_tuple = container_util.get_components_from_key( key )
                         components_list = suc.extract_components_from_tuple( repository_components_tuple )
-                        # Skip listing a repository dependency if it is required only to compile a tool dependency defined for the dependent repository since
-                        # in this case, the repository dependency is really a dependency of the dependent repository's contained tool dependency, and only if
-                        # that tool dependency requires compilation.
+                        # Skip listing a repository dependency if it is required only to compile a tool dependency
+                        # defined for the dependent repository since in this case, the repository dependency is really
+                        # a dependency of the dependent repository's contained tool dependency, and only if that
+                        # tool dependency requires compilation.
                         # For backward compatibility to the 12/20/12 Galaxy release.
                         prior_installation_required = 'False'
                         only_if_compiling_contained_td = 'False'
@@ -388,8 +410,8 @@ def get_required_repo_info_dicts( trans, tool_shed_url, repo_info_dicts ):
                                 only_if_compiling_contained_td = components_list[ 5 ]
                             except:
                                 only_if_compiling_contained_td = 'False'
-                            # Skip listing a repository dependency if it is required only to compile a tool dependency defined for the dependent repository
-                            # (see above comment).
+                            # Skip listing a repository dependency if it is required only to compile a tool dependency
+                            # defined for the dependent repository (see above comment).
                             if not util.asbool( only_if_compiling_contained_td ):
                                 if components_list not in required_repository_tups:
                                     required_repository_tups.append( components_list )
