@@ -324,8 +324,8 @@
         %if trans.app.config.biostar_url:
             ## BioStar links
             <span class="pull-right">
-                <a href="${h.url_for( controller='biostar', action='biostar_tool_question_redirect', tool_id=tool.id )}"
-                   target="_blank" class="fa fa-question-circle" title="Ask a question about this tool"></a>
+                <span class="fa fa-question-circle">&nbsp</span><a href="${h.url_for( controller='biostar', action='biostar_tool_question_redirect', tool_id=tool.id )}"
+                   target="_blank">Ask a question about this tool</a>&nbsp<span class="fa fa-external-link"></span>
             </span>
         %endif
         </div>
