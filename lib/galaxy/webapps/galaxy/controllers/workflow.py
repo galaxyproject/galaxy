@@ -219,24 +219,35 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             return trans.fill_template( "workflow/list_published.mako", grid=grid )
 
     @web.expose
-    def display_by_username_and_slug( self, trans, username, slug ):
-        """ Display workflow based on a username and slug. """
+    def display_by_username_and_slug( self, trans, username, slug, format='html' ):
+        """ 
+        Display workflow based on a username and slug. Format can be html, json, or json-download.
+        """
 
-        # Get workflow.
+        # Get workflow by username and slug. Security is handled by the display methods below.
         session = trans.sa_session
         user = session.query( model.User ).filter_by( username=username ).first()
         stored_workflow = trans.sa_session.query( model.StoredWorkflow ).filter_by( user=user, slug=slug, deleted=False ).first()
-        return self.display(trans, stored_workflow)
+        encoded_id = trans.security.encode_id( stored_workflow.id )
+        
+        # Display workflow in requested format.
+        if format == 'html':
+            return self._display( trans, stored_workflow )
+        elif format == 'json':
+            return self.for_direct_import( trans, encoded_id )
+        elif format == 'json-download':
+            return self.export_to_file( trans, encoded_id )
 
     @web.expose
     def display_by_id( self, trans, id ):
         """ Display workflow based on id. """
         # Get workflow.
         stored_workflow = self.get_stored_workflow( trans, id )
-        return self.display(trans, stored_workflow)
+        return self._display(trans, stored_workflow)
 
-    def display(self, trans, stored_workflow):
-        """ Base workflow display """
+    def _display( self, trans, stored_workflow ):
+        """ Diplay workflow as HTML page. """
+
         if stored_workflow is None:
             raise web.httpexceptions.HTTPNotFound()
         # Security check raises error if user cannot access workflow.
@@ -552,6 +563,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             stored_workflow = model.StoredWorkflow()
             stored_workflow.name = workflow_name
             stored_workflow.user = user
+            self.create_item_slug( trans.sa_session, stored_workflow )
             # And the first (empty) workflow revision
             workflow = model.Workflow()
             workflow.name = workflow_name
@@ -882,6 +894,12 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         Handles download/export workflow command.
         """
         stored = self.get_stored_workflow( trans, id, check_ownership=False, check_accessible=True )
+
+        # Export requires workflow to have a slug, so set slug if necessary.
+        if not stored.slug:
+            self.create_item_slug( trans.sa_session, stored )
+            trans.sa_session.flush()
+
         return trans.fill_template( "/workflow/export.mako", item=stored, use_panels=True )
 
     @web.expose
