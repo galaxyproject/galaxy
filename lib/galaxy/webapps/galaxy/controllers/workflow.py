@@ -313,7 +313,6 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                 share.user = other
                 session = trans.sa_session
                 session.add( share )
-                self.create_item_slug( session, stored )
                 session.flush()
                 trans.set_message( "Workflow '%s' shared with user '%s'" % ( stored.name, other.email ) )
                 return trans.response.send_redirect( url_for( controller='workflow', action='sharing', id=id ) )
@@ -505,8 +504,6 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         """ Returns workflow's name and link. """
         stored = self.get_stored_workflow( trans, id )
 
-        if self.create_item_slug( trans.sa_session, stored ):
-            trans.sa_session.flush()
         return_dict = { "name" : stored.name, "link" : url_for(controller='workflow', action="display_by_username_and_slug", username=stored.user.username, slug=stored.slug ) }
         return return_dict
 
@@ -894,11 +891,6 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         Handles download/export workflow command.
         """
         stored = self.get_stored_workflow( trans, id, check_ownership=False, check_accessible=True )
-
-        # Export requires workflow to have a slug, so set slug if necessary.
-        if not stored.slug:
-            self.create_item_slug( trans.sa_session, stored )
-            trans.sa_session.flush()
 
         return trans.fill_template( "/workflow/export.mako", item=stored, use_panels=True )
 

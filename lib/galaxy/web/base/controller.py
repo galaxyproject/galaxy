@@ -1562,10 +1562,18 @@ class UsesStoredWorkflowMixin( SharableItemSecurityMixin, UsesAnnotations ):
             workflow = trans.sa_session.query( trans.model.StoredWorkflow ).get( trans.security.decode_id( id ) )
         except TypeError:
             workflow = None
+
         if not workflow:
             error( "Workflow not found" )
         else:
-            return self.security_check( trans, workflow, check_ownership, check_accessible )
+            self.security_check( trans, workflow, check_ownership, check_accessible )
+
+            # Older workflows may be missing slugs, so set them here.
+            if not workflow.slug:
+                self.create_item_slug( trans.sa_session, workflow )
+                trans.sa_session.flush()
+
+        return workflow
 
     def get_stored_workflow_steps( self, trans, stored_workflow ):
         """ Restores states for a stored workflow's steps. """
