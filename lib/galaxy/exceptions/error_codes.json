@@ -3,7 +3,7 @@
     "name": "UNKNOWN",
     "code": 0,
     "message": "Unknown error occurred while processing request."
-    },
+   },
    {
     "name": "USER_CANNOT_RUN_AS",
     "code": 400001,
@@ -35,6 +35,21 @@
     "message": "Slug must be unique per user."
     },
    {
+    "name": "USER_REQUEST_MISSING_PARAMETER",
+    "code": 400007,
+    "message": "Request is missing parameter required to complete desired action."
+   },
+   {
+    "name": "USER_REQUEST_INVALID_PARAMETER",
+    "code": 400008,
+    "message": "Request contained invalid parameter, action could not be completed."
+   },
+   {
+    "name": "MALFORMED_ID",
+    "code": 400009,
+    "message": "The id of the resource is malformed."
+    },
+   {
     "name": "USER_NO_API_KEY",
     "code": 403001,
     "message": "API Authentication Required for this request"
@@ -53,5 +68,25 @@
     "name": "USER_OBJECT_NOT_FOUND",
     "code": 404001,
     "message": "No such object found."
+   },   
+   {
+    "name": "CONFLICT",
+    "code": 409001,
+    "message": "Database conflict prevented fulfilling the request."
+   },
+   {
+    "name": "INTERNAL_SERVER_ERROR",
+    "code": 500001,
+    "message": "Internal server error."
+   },
+   {
+    "name": "INCONSISTENT_DATABASE",
+    "code": 500001,
+    "message": "Inconsistent database prevented fulfilling the request."
+   },
+   {
+    "name": "NOT_IMPLEMENTED",
+    "code": 501001,
+    "message": "Method is not implemented."
    }
 ]

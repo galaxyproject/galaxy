@@ -135,7 +135,6 @@ def app_factory( global_conf, **kwargs ):
                                path_prefix='/api/histories/:history_id/contents/:history_content_id' )
 
     webapp.mapper.resource( 'dataset', 'datasets', path_prefix='/api' )
-    webapp.mapper.resource_with_deleted( 'library', 'libraries', path_prefix='/api' )
     webapp.mapper.resource( 'sample', 'samples', path_prefix='/api' )
     webapp.mapper.resource( 'request', 'requests', path_prefix='/api' )
     webapp.mapper.resource( 'form', 'forms', path_prefix='/api' )
@@ -205,6 +204,18 @@ def app_factory( global_conf, **kwargs ):
     # =======================
     # ===== LIBRARY API =====
     # =======================
+
+    webapp.mapper.connect( 'delete_library',
+                           '/api/libraries/:id',
+                           controller='libraries',
+                           action='delete',
+                           conditions=dict( method=[ "DELETE" ] ) )
+
+    webapp.mapper.connect( 'update_library',
+                           '/api/libraries/:id',
+                           controller='libraries',
+                           action='update',
+                           conditions=dict( method=[ "PATCH" ] ) )
 
     webapp.mapper.connect( 'show_lda_item',
                            '/api/libraries/datasets/:id',
