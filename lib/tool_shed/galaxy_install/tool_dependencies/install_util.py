@@ -300,7 +300,10 @@ def install_and_build_package_via_fabric( app, tool_dependency, actions_dict ):
     return tool_dependency
 
 def install_package( app, elem, tool_shed_repository, tool_dependencies=None, from_install_manager=False ):
-    # The value of tool_dependencies is a partial or full list of ToolDependency records associated with the tool_shed_repository.
+    """
+    Install a tool dependency package defined by the XML element elem.  The value of tool_dependencies is
+    a partial or full list of ToolDependency records associated with the tool_shed_repository.
+    """
     sa_session = app.install_model.context
     tool_dependency = None
     # The value of package_name should match the value of the "package" type in the tool config's <requirements> tag set, but it's not required.
@@ -363,8 +366,8 @@ def install_package( app, elem, tool_shed_repository, tool_dependencies=None, fr
                                                                                              type='package',
                                                                                              status=app.install_model.ToolDependency.installation_status.INSTALLING,
                                                                                              set_status=True )
-                    # Get the information about the current platform in case the tool dependency definition includes tag sets for installing
-                    # compiled binaries.
+                    # Get the information about the current platform in case the tool dependency definition includes tag sets
+                    # for installing compiled binaries.
                     platform_info_dict = tool_dependency_util.get_platform_info_dict()
                     if package_install_version == '1.0':
                         # Handle tool dependency installation using a fabric method included in the Galaxy framework.
@@ -372,24 +375,29 @@ def install_package( app, elem, tool_shed_repository, tool_dependencies=None, fr
                                                                                  platform_info_dict=platform_info_dict,
                                                                                  include_after_install_actions=True )
                         if actions_elem_tuples:
-                            # At this point we have a list of <actions> elems that are either defined within an <actions_group> tag set with <actions>
-                            # sub-elements that contains os and architecture attributes filtered by the platform into which the appropriate compiled
-                            # binary will be installed, or not defined within an <actions_group> tag set and not filtered.
+                            # At this point we have a list of <actions> elems that are either defined within an <actions_group>
+                            # tag set with <actions> sub-elements that contains os and architecture attributes filtered by the
+                            # platform into which the appropriate compiled binary will be installed, or not defined within an
+                            # <actions_group> tag set and not filtered.  Here is an example actions_elem_tuple.
+                            # [(True, [<Element 'actions' at 0x109293d10>)]
                             binary_installed = False
-                            for in_actions_group, actions_elems in actions_elem_tuples:
+                            for actions_elem_tuple in actions_elem_tuples:
+                                in_actions_group, actions_elems = actions_elem_tuple
                                 if in_actions_group:
-                                    # Platform matching is only performed inside <actions_group> tag sets, os and architecture attributes are otherwise
-                                    # ignored.
+                                    # Platform matching is only performed inside <actions_group> tag sets, os and architecture
+                                    # attributes are otherwise ignored.
+                                    can_install_from_source = False
                                     for actions_elem in actions_elems:
                                         system = actions_elem.get( 'os' )
                                         architecture = actions_elem.get( 'architecture' )
-                                        # If this <actions> element has the os and architecture attributes defined, then we only want to process until a
-                                        # successful installation is achieved.
+                                        # If this <actions> element has the os and architecture attributes defined, then we only
+                                        # want to process until a successful installation is achieved.
                                         if system and architecture:
-                                            # If an <actions> tag has been defined that matches our current platform, and the recipe specified within
-                                            # that <actions> tag has been successfully processed, skip any remaining platform-specific <actions> tags.
-                                            # We cannot break out of the look here because there may be <action> tags at the end of the <actions_group>
-                                            # tag set that must be processed.
+                                            # If an <actions> tag has been defined that matches our current platform, and the
+                                            # recipe specified within that <actions> tag has been successfully processed, skip
+                                            # any remaining platform-specific <actions> tags.  We cannot break out of the loop
+                                            # here because there may be <action> tags at the end of the <actions_group> tag set
+                                            # that must be processed.
                                             if binary_installed:
                                                 continue
                                             # No platform-specific <actions> recipe has yet resulted in a successful installation.
@@ -400,41 +408,50 @@ def install_package( app, elem, tool_shed_repository, tool_dependencies=None, fr
                                                                                   actions_elem=actions_elem, 
                                                                                   action_elem=None )
                                             if tool_dependency.status == app.install_model.ToolDependency.installation_status.INSTALLED:
-                                                # If an <actions> tag was found that matches the current platform, and the install_via_fabric method 
-                                                # did not result in an error state, set binary_installed to True in order to skip any remaining 
-                                                # platform-specific <actions> tags.
+                                                # If an <actions> tag was found that matches the current platform, and the
+                                                # install_via_fabric method did not result in an error state, set binary_installed
+                                                # to True in order to skip any remaining platform-specific <actions> tags.
                                                 binary_installed = True
                                             else:
-                                                # Process the next matching <actions> tag, or any defined <actions> tags that do not contain platform
-                                                # dependent recipes.
+                                                # Process the next matching <actions> tag, or any defined <actions> tags that do not
+                                                # contain platform dependent recipes.
                                                 log.debug( 'Error downloading binary for tool dependency %s version %s: %s' % \
                                                     ( str( package_name ), str( package_version ), str( tool_dependency.error_message ) ) )
                                         else:
-                                            # If no <actions> tags have been defined that match our current platform, or none of the matching
-                                            # <actions> tags resulted in a successful tool dependency status, proceed with one and only one
-                                            # <actions> tag that is not defined to be platform-specific.
-                                            if not binary_installed:
-                                                log.debug( 'Proceeding with install and compile recipe for tool dependency %s.' % str( tool_dependency.name ) )
-                                                # Make sure to reset for installation if attempt at binary installation resulted in an error.
-                                                can_install = True
-                                                if tool_dependency.status != app.install_model.ToolDependency.installation_status.NEVER_INSTALLED:
-                                                    removed, error_message = tool_dependency_util.remove_tool_dependency( app, tool_dependency )
-                                                    if not removed:
-                                                        log.debug( 'Error removing old files from installation directory %s: %s' % \
-                                                            ( str( tool_dependency.installation_directory( app ), str( error_message ) ) ) )
-                                                        can_install = False
-                                                if can_install:
+                                            if actions_elem.tag == 'actions':
+                                                # We've reached an <actions> tag that defines the recipe for installing and compiling from
+                                                # source.  If binary installation failed, we proceed with the recipe.
+                                                if not binary_installed:
+                                                    installation_directory = tool_dependency.installation_directory( app )
+                                                    if os.path.exists( installation_directory ):
+                                                        # Delete contents of installation directory if attempt at binary installation failed.
+                                                        installation_directory_contents = os.listdir( installation_directory )
+                                                        if installation_directory_contents:
+                                                            removed, error_message = tool_dependency_util.remove_tool_dependency( app, tool_dependency )
+                                                            if removed:
+                                                                can_install_from_source = True
+                                                            else:
+                                                                log.debug( 'Error removing old files from installation directory %s: %s' % \
+                                                                           ( str( tool_dependency.installation_directory( app ), str( error_message ) ) ) )
+                                                        else:
+                                                            can_install_from_source = True
+                                                    else:
+                                                        can_install_from_source = True
+                                                if can_install_from_source:
+                                                    # We now know that binary installation was not successful, so proceed with the <actions>
+                                                    # tag set that defines the recipe to install and compile from source.
+                                                    log.debug( 'Proceeding with install and compile recipe for tool dependency %s.' % \
+                                                               str( tool_dependency.name ) )
                                                     tool_dependency = install_via_fabric( app, 
                                                                                           tool_dependency, 
                                                                                           install_dir, 
                                                                                           package_name=package_name, 
                                                                                           actions_elem=actions_elem, 
                                                                                           action_elem=None )
-                                        # Perform any final actions that have been defined within the actions_group tag set, but outside of 
-                                        # an <actions> tag, such as a set_environment entry, or a download_file or download_by_url command to
-                                        # retrieve extra data for this tool dependency. Only do this if the tool dependency is not in an error
-                                        # state, otherwise skip this action.
                                         if actions_elem.tag == 'action' and tool_dependency.status != app.install_model.ToolDependency.installation_status.ERROR:
+                                            # If the tool dependency is not in an error state, perform any final actions that have been
+                                            # defined within the actions_group tag set, but outside of an <actions> tag, which defines
+                                            # the recipe for installing and compiling from source.
                                             tool_dependency = install_via_fabric( app, 
                                                                                   tool_dependency, 
                                                                                   install_dir, 
@@ -442,9 +459,9 @@ def install_package( app, elem, tool_shed_repository, tool_dependencies=None, fr
                                                                                   actions_elem=None, 
                                                                                   action_elem=actions_elem )
                                 else:
-                                    # <actions> tags outside of an <actions_group> tag shall not check os or architecture, and if the attributes are
-                                    # defined, they will be ignored. All <actions> tags outside of an <actions_group> tag set shall always be processed.
-                                    # This is the default and original behavior of the install_package method.
+                                    # Checks for "os" and "architecture" attributes  are not made for any <actions> tag sets outside of
+                                    # an <actions_group> tag set.  If the attributes are defined, they will be ignored. All <actions> tags
+                                    # outside of an <actions_group> tag set will always be processed.
                                     tool_dependency = install_via_fabric( app, 
                                                                           tool_dependency, 
                                                                           install_dir, 
