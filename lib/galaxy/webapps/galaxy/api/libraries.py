@@ -35,27 +35,23 @@ class LibrariesController( BaseAPIController ):
         query = trans.sa_session.query( trans.app.model.Library )
         deleted = util.string_as_bool( deleted )
         if deleted:
-            route = 'deleted_library'
             query = query.filter( trans.app.model.Library.table.c.deleted == True )
         else:
-            route = 'library'
             query = query.filter( trans.app.model.Library.table.c.deleted == False )
         current_user_role_ids = [ role.id for role in trans.get_current_user_roles() ]
         library_access_action = trans.app.security_agent.permitted_actions.LIBRARY_ACCESS.action
-        restricted_library_ids = [ lp.library_id for lp in trans.sa_session.query( trans.model.LibraryPermissions ) \
-                                                                           .filter( trans.model.LibraryPermissions.table.c.action == library_access_action ) \
-                                                                           .distinct() ]
-        accessible_restricted_library_ids = [ lp.library_id for lp in trans.sa_session.query( trans.model.LibraryPermissions ) \
+        restricted_library_ids = [ lp.library_id for lp in ( trans.sa_session.query( trans.model.LibraryPermissions )
+                                                                           .filter( trans.model.LibraryPermissions.table.c.action == library_access_action )
+                                                                           .distinct() ) ]
+        accessible_restricted_library_ids = [ lp.library_id for lp in ( trans.sa_session.query( trans.model.LibraryPermissions )
                                                                                       .filter( and_( trans.model.LibraryPermissions.table.c.action == library_access_action,
-                                                                                                     trans.model.LibraryPermissions.table.c.role_id.in_( current_user_role_ids ) ) ) ]
+                                                                                                     trans.model.LibraryPermissions.table.c.role_id.in_( current_user_role_ids ) ) ) ) ]
         query = query.filter( or_( not_( trans.model.Library.table.c.id.in_( restricted_library_ids ) ),
                            trans.model.Library.table.c.id.in_( accessible_restricted_library_ids ) ) )
         libraries = []
         for library in query:
-            item = library.to_dict( view='element' )
-            item[ 'url' ] = url_for( route, id=trans.security.encode_id( library.id ) )
-            item[ 'id' ] = trans.security.encode_id( item[ 'id' ] )
-            item[ 'root_folder_id' ] = 'F' + trans.security.encode_id( item[ 'root_folder_id' ] )
+            item = self._prepend_folder_prefix( library.to_dict( view='element',
+                value_mapper={ 'id' : trans.security.encode_id , 'root_folder_id' : trans.security.encode_id } ) )
             libraries.append( item )
         return libraries
 
@@ -91,7 +87,8 @@ class LibrariesController( BaseAPIController ):
             library = None
         if not library or not ( trans.user_is_admin() or trans.app.security_agent.can_access_library( trans.get_current_user_roles(), library ) ):
             raise exceptions.ObjectNotFound( 'Library with the id provided ( %s ) was not found' % id )
-        return library.to_dict( view='element', value_mapper={ 'id' : trans.security.encode_id , 'root_folder_id' : trans.security.encode_id } )
+        return self._prepend_folder_prefix( library.to_dict( view='element',
+            value_mapper={ 'id' : trans.security.encode_id , 'root_folder_id' : trans.security.encode_id } ) )
 
     @expose_api
     def create( self, trans, payload, **kwd ):
@@ -126,7 +123,8 @@ class LibrariesController( BaseAPIController ):
         library.root_folder = root_folder
         trans.sa_session.add_all( ( library, root_folder ) )
         trans.sa_session.flush()
-        return library.to_dict( view='element', value_mapper={ 'id' : trans.security.encode_id , 'root_folder_id' : trans.security.encode_id } )
+        return self._prepend_folder_prefix( library.to_dict( view='element',
+            value_mapper={ 'id' : trans.security.encode_id , 'root_folder_id' : trans.security.encode_id } ) )
 
     @expose_api
     def update( self, trans, id, **kwd ):
@@ -134,7 +132,7 @@ class LibrariesController( BaseAPIController ):
         * PATCH /api/libraries/{encoded_id}
            Updates the library defined by an ``encoded_id`` with the data in the payload.
 
-       .. note:: Currently, only admin users can update libraries.
+       .. note:: Currently, only admin users can update libraries. Also the library must not be `deleted`.
 
         :param  payload: (required) dictionary structure containing::
             'name':         new library's name, cannot be empty
@@ -159,7 +157,8 @@ class LibrariesController( BaseAPIController ):
             library = None
         if not library:
             raise exceptions.ObjectNotFound( 'Library with the id provided ( %s ) was not found' % id )
-
+        if library.deleted:
+            raise exceptions.RequestParameterInvalidException( 'You cannot modify a deleted library. Undelete it first.' )
         payload = kwd.get( 'payload', None )
         if payload:
             name = payload.get( 'name', None )
@@ -174,7 +173,8 @@ class LibrariesController( BaseAPIController ):
             raise exceptions.RequestParameterMissingException( "You did not specify any payload." )
         trans.sa_session.add( library )
         trans.sa_session.flush()
-        return library.to_dict( view='element', value_mapper={ 'id' : trans.security.encode_id , 'root_folder_id' : trans.security.encode_id } )
+        return self._prepend_folder_prefix( library.to_dict( view='element',
+            value_mapper={ 'id' : trans.security.encode_id , 'root_folder_id' : trans.security.encode_id } ) )
 
     @expose_api
     def delete( self, trans, id, **kwd ):
@@ -217,4 +217,24 @@ class LibrariesController( BaseAPIController ):
 
         trans.sa_session.add( library )
         trans.sa_session.flush()
-        return library.to_dict( view='element', value_mapper={ 'id' : trans.security.encode_id , 'root_folder_id' : trans.security.encode_id } )
+        return self._prepend_folder_prefix( library.to_dict( view='element',
+            value_mapper={ 'id' : trans.security.encode_id , 'root_folder_id' : trans.security.encode_id } ) )
+
+    def _prepend_folder_prefix (self, dictionary, type='library' ):
+        """
+        In Galaxy folders have 'F' as a prefix to the encoded id to distinguish between folders and libraries
+        """
+        if not ( type in [ 'library', 'folder' ] ):
+            raise TypeError( 'Prepending is not implemented for given type of dictionary.' )
+        return_dict = dictionary
+        if type == 'library':
+            if return_dict[ 'root_folder_id' ]:
+                return_dict[ 'root_folder_id' ]  = 'F' + return_dict[ 'root_folder_id' ]
+            else:
+                raise ValueError( 'Given library does not contain root_folder_id to prepend to.' )
+        elif type == 'folder':
+            if return_dict[ 'id' ]:
+                return_dict[ 'id' ] = 'F' + return_dict[ 'id' ]
+            else:
+                raise ValueError( 'Given folder does not contain id to prepend to.' )
+        return return_dict
