@@ -1111,10 +1111,12 @@ class AdminToolshed( AdminGalaxy ):
         no_changes_checked = CheckboxField.is_checked( no_changes )
         install_repository_dependencies = CheckboxField.is_checked( kwd.get( 'install_repository_dependencies', '' ) )
         install_tool_dependencies = CheckboxField.is_checked( kwd.get( 'install_tool_dependencies', '' ) )
-        shed_tool_conf, tool_path, relative_install_dir = suc.get_tool_panel_config_tool_path_install_dir( trans.app, tool_shed_repository )
+        shed_tool_conf, tool_path, relative_install_dir = \
+            suc.get_tool_panel_config_tool_path_install_dir( trans.app, tool_shed_repository )
         repository_clone_url = suc.generate_clone_url_for_installed_repository( trans.app, tool_shed_repository )
-        clone_dir = os.path.join( tool_path, suc.generate_tool_shed_repository_install_dir( repository_clone_url,
-                                                                                            tool_shed_repository.installed_changeset_revision ) )
+        clone_dir = os.path.join( tool_path,
+                                  suc.generate_tool_shed_repository_install_dir( repository_clone_url,
+                                                                                 tool_shed_repository.installed_changeset_revision ) )
         relative_install_dir = os.path.join( clone_dir, tool_shed_repository.name )
         tool_shed_url = suc.get_url_from_tool_shed( trans.app, tool_shed_repository.tool_shed )
         tool_section = None
@@ -1123,7 +1125,8 @@ class AdminToolshed( AdminGalaxy ):
         tool_panel_section_key = None
         tool_panel_section_keys = []
         metadata = tool_shed_repository.metadata
-        # Keep track of tool dependencies defined for the current repository or those defined for any of it's repository dependencies.
+        # Keep track of tool dependencies defined for the current repository or those defined for any of
+        # it's repository dependencies.
         includes_tool_dependencies = tool_shed_repository.includes_tool_dependencies
         if tool_shed_repository.includes_tools_for_display_in_tool_panel:
             # Handle the selected tool panel location for loading tools included in the tool shed repository.
@@ -1137,7 +1140,8 @@ class AdminToolshed( AdminGalaxy ):
                 # Just in case the tool_section.id differs from tool_panel_section_id, which it shouldn't...
                 tool_panel_section_id = str( tool_section.id )
         if tool_shed_repository.status == trans.install_model.ToolShedRepository.installation_status.UNINSTALLED:
-            # The repository's status must be updated from 'Uninstalled' to 'New' when initiating reinstall so the repository_installation_updater will function.
+            # The repository's status must be updated from 'Uninstalled' to 'New' when initiating reinstall
+            # so the repository_installation_updater will function.
             tool_shed_repository = suc.create_or_update_tool_shed_repository( trans.app,
                                                                               tool_shed_repository.name,
                                                                               tool_shed_repository.description,
@@ -1163,7 +1167,8 @@ class AdminToolshed( AdminGalaxy ):
             # Entering this else block occurs only if the tool_shed_repository does not include any valid tools.
             if install_repository_dependencies:
                 repository_dependencies = \
-                    repository_dependency_util.get_repository_dependencies_for_installed_tool_shed_repository( trans, tool_shed_repository )
+                    repository_dependency_util.get_repository_dependencies_for_installed_tool_shed_repository( trans,
+                                                                                                               tool_shed_repository )
             else:
                 repository_dependencies = None
             if metadata:
@@ -1220,7 +1225,8 @@ class AdminToolshed( AdminGalaxy ):
         clause_list = []
         for tsr_id in tsr_ids:
             clause_list.append( trans.install_model.ToolShedRepository.table.c.id == tsr_id )
-        query = trans.install_model.context.current.query( trans.install_model.ToolShedRepository ).filter( or_( *clause_list ) )
+        query = trans.install_model.context.current.query( trans.install_model.ToolShedRepository ) \
+                                           .filter( or_( *clause_list ) )
         return trans.fill_template( 'admin/tool_shed_repository/initiate_repository_installation.mako',
                                     encoded_kwd=encoded_kwd,
                                     query=query,
@@ -1378,7 +1384,9 @@ class AdminToolshed( AdminGalaxy ):
                 raw_text = common_util.tool_shed_get( trans.app, tool_shed_url, url )
                 readme_files_dict = json.from_json_string( raw_text )
                 tool_dependencies = metadata.get( 'tool_dependencies', None )
-            repository_dependencies = repository_dependency_util.get_repository_dependencies_for_installed_tool_shed_repository( trans, tool_shed_repository )
+            repository_dependencies = \
+                repository_dependency_util.get_repository_dependencies_for_installed_tool_shed_repository( trans,
+                                                                                                           tool_shed_repository )
             repo_info_dict = repository_util.create_repo_info_dict( trans=trans,
                                                                     repository_clone_url=repository_clone_url,
                                                                     changeset_revision=tool_shed_repository.installed_changeset_revision,

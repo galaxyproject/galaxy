@@ -132,7 +132,6 @@ def file_append( text, file_path, skip_if_contained=True, make_executable=True )
         # Explicitly set the file to the received mode if valid.
         with settings( hide( 'everything' ), warn_only=True ):
             local( 'chmod +x %s' % file_path )
-    return_code = 0
     # Convert the received text to a list, in order to support adding one or more lines to the file.
     if isinstance( text, basestring ):
         text = [ text ]
@@ -152,7 +151,6 @@ def file_append( text, file_path, skip_if_contained=True, make_executable=True )
         if return_code:
             # Return upon the first error encountered.
             return return_code
-    return return_code
 
 def filter_actions_after_binary_installation( actions ):
     '''Filter out actions that should not be processed if a binary download succeeded.'''
@@ -189,13 +187,15 @@ def handle_command( app, tool_dependency, install_dir, cmd, return_output=False 
 
 def handle_environment_variables( app, tool_dependency, install_dir, env_var_dict, set_prior_environment_commands ):
     """
-    This method works with with a combination of three tool dependency definition tag sets, which are defined in the tool_dependencies.xml file in the
-    order discussed here.  The example for this discussion is the tool_dependencies.xml file contained in the osra repository, which is available at:
+    This method works with with a combination of three tool dependency definition tag sets, which are defined
+    in the tool_dependencies.xml file in the order discussed here.  The example for this discussion is the
+    tool_dependencies.xml file contained in the osra repository, which is available at:
 
     http://testtoolshed.g2.bx.psu.edu/view/bgruening/osra
 
-    The first tag set defines a complex repository dependency like this.  This tag set ensures that changeset revision XXX of the repository named
-    package_graphicsmagick_1_3 owned by YYY in the tool shed ZZZ has been previously installed.
+    The first tag set defines a complex repository dependency like this.  This tag set ensures that changeset
+    revision XXX of the repository named package_graphicsmagick_1_3 owned by YYY in the tool shed ZZZ has been
+    previously installed.
 
     <tool_dependency>
         <package name="graphicsmagick" version="1.3.18">
@@ -203,19 +203,21 @@ def handle_environment_variables( app, tool_dependency, install_dir, env_var_dic
         </package>
         ...
 
-    * By the way, there is an env.sh file associated with version 1.3.18 of the graphicsmagick package which looks something like this (we'll reference
-    this file later in this discussion.
+    * By the way, there is an env.sh file associated with version 1.3.18 of the graphicsmagick package which looks
+    something like this (we'll reference this file later in this discussion.
     ----
     GRAPHICSMAGICK_ROOT_DIR=/<my configured tool dependency path>/graphicsmagick/1.3.18/YYY/package_graphicsmagick_1_3/XXX/gmagick;
     export GRAPHICSMAGICK_ROOT_DIR
     ----
 
-    The second tag set defines a specific package dependency that has been previously installed (guaranteed by the tag set discussed above) and compiled,
-    where the compiled dependency is needed by the tool dependency currently being installed (osra version 2.0.0 in this case) and complied in order for
-    it's installation and compilation to succeed.  This tag set is contained within the <package name="osra" version="2.0.0"> tag set, which implies that
-    version 2.0.0 of the osra package requires version 1.3.18 of the graphicsmagick package in order to successfully compile.  When this tag set is handled,
-    one of the effects is that the env.sh file associated with graphicsmagick version 1.3.18 is "sourced", which undoubtedly sets or alters certain environment
-    variables (e.g. PATH, PYTHONPATH, etc).
+    The second tag set defines a specific package dependency that has been previously installed (guaranteed by the
+    tag set discussed above) and compiled, where the compiled dependency is needed by the tool dependency currently
+    being installed (osra version 2.0.0 in this case) and complied in order for it's installation and compilation to
+    succeed.  This tag set is contained within the <package name="osra" version="2.0.0"> tag set, which implies that
+    version 2.0.0 of the osra package requires version 1.3.18 of the graphicsmagick package in order to successfully
+    compile.  When this tag set is handled, one of the effects is that the env.sh file associated with graphicsmagick
+    version 1.3.18 is "sourced", which undoubtedly sets or alters certain environment variables (e.g. PATH, PYTHONPATH,
+    etc).
 
     <!-- populate the environment variables from the dependent repositories -->
     <action type="set_environment_for_install">
@@ -224,11 +226,12 @@ def handle_environment_variables( app, tool_dependency, install_dir, env_var_dic
         </repository>
     </action>
 
-    The third tag set enables discovery of the same required package dependency discussed above for correctly compiling the osra version 2.0.0 package, but
-    in this case the package can be discovered at tool execution time.  Using the $ENV[] option as shown in this example, the value of the environment
-    variable named GRAPHICSMAGICK_ROOT_DIR (which was set in the environment using the second tag set described above) will be used to automatically alter
-    the env.sh file associated with the osra version 2.0.0 tool dependency when it is installed into Galaxy.  * Refer to where we discussed the env.sh file
-    for version 1.3.18 of the graphicsmagick package above.
+    The third tag set enables discovery of the same required package dependency discussed above for correctly compiling
+    the osra version 2.0.0 package, but in this case the package can be discovered at tool execution time.  Using the
+    $ENV[] option as shown in this example, the value of the environment variable named GRAPHICSMAGICK_ROOT_DIR (which
+    was set in the environment using the second tag set described above) will be used to automatically alter the env.sh
+    file associated with the osra version 2.0.0 tool dependency when it is installed into Galaxy.  * Refer to where we
+    discussed the env.sh file for version 1.3.18 of the graphicsmagick package above.
 
     <action type="set_environment">
         <environment_variable action="prepend_to" name="LD_LIBRARY_PATH">$ENV[GRAPHICSMAGICK_ROOT_DIR]/lib/</environment_variable>
@@ -238,8 +241,9 @@ def handle_environment_variables( app, tool_dependency, install_dir, env_var_dic
         <environment_variable action="set_to" name="OSRA_DATA_FILES">$INSTALL_DIR/share</environment_variable>
     </action>
 
-    The above tag will produce an env.sh file for version 2.0.0 of the osra package when it it installed into Galaxy that looks something like this.  Notice
-    that the path to the gmagick binary is included here since it expands the defined $ENV[GRAPHICSMAGICK_ROOT_DIR] value in the above tag set.
+    The above tag will produce an env.sh file for version 2.0.0 of the osra package when it it installed into Galaxy
+    that looks something like this.  Notice that the path to the gmagick binary is included here since it expands the
+    defined $ENV[GRAPHICSMAGICK_ROOT_DIR] value in the above tag set.
 
     ----
     LD_LIBRARY_PATH=/<my configured tool dependency path>/graphicsmagick/1.3.18/YYY/package_graphicsmagick_1_3/XXX/gmagick/lib/:$LD_LIBRARY_PATH;
@@ -416,6 +420,7 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                             for tarball_name in tarball_names:
                                 cmd = '''PATH=$PATH:$R_HOME/bin; export PATH; R_LIBS=$INSTALL_DIR; export R_LIBS;
                                     Rscript -e "install.packages(c('%s'),lib='$INSTALL_DIR', repos=NULL, dependencies=FALSE)"''' % ( str( tarball_name ) )
+                                    ( str( tarball_name ) )
                                 cmd = install_environment.build_command( td_common_util.evaluate_template( cmd, install_dir ) )
                                 return_code = handle_command( app, tool_dependency, install_dir, cmd )
                                 if return_code:
@@ -528,7 +533,8 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                                     elif os.path.exists( os.path.join( tmp_work_dir, 'Build.PL' ) ):
                                         cmd += '''perl Build.PL --install_base $INSTALL_DIR && perl Build && perl Build install'''
                                     else:
-                                        log.debug( 'No Makefile.PL or Build.PL file found in %s. Skipping installation of %s.' % ( url, perl_package_name ) )
+                                        log.debug( 'No Makefile.PL or Build.PL file found in %s. Skipping installation of %s.' % \
+                                            ( url, perl_package_name ) )
                                         return tool_dependency
                                     with lcd( tmp_work_dir ):
                                         cmd = install_environment.build_command( td_common_util.evaluate_template( cmd, install_dir ) )

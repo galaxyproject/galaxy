@@ -30,36 +30,43 @@ from mercurial import ui
 
 log = logging.getLogger( __name__ )
 
-def create_repo_info_dict( trans, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_name=None, repository=None,
-                           repository_metadata=None, tool_dependencies=None, repository_dependencies=None ):
+def create_repo_info_dict( trans, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_name=None,
+                           repository=None, repository_metadata=None, tool_dependencies=None, repository_dependencies=None ):
     """
-    Return a dictionary that includes all of the information needed to install a repository into a local Galaxy instance.  The dictionary will also
-    contain the recursive list of repository dependencies defined for the repository, as well as the defined tool dependencies.
+    Return a dictionary that includes all of the information needed to install a repository into a local
+    Galaxy instance.  The dictionary will also contain the recursive list of repository dependencies defined
+    for the repository, as well as the defined tool dependencies.
 
     This method is called from Galaxy under three scenarios:
-    1. During the tool shed repository installation process via the tool shed's get_repository_information() method.  In this case both the received
-    repository and repository_metadata will be objects., but tool_dependencies and repository_dependencies will be None
-    2. When a tool shed repository that was uninstalled from a Galaxy instance is being reinstalled with no updates available.  In this case, both
-    repository and repository_metadata will be None, but tool_dependencies and repository_dependencies will be objects previously retrieved from the
-    tool shed if the repository includes definitions for them.
-    3. When a tool shed repository that was uninstalled from a Galaxy instance is being reinstalled with updates available.  In this case, this
-    method is reached via the tool shed's get_updated_repository_information() method, and both repository and repository_metadata will be objects
-    but tool_dependencies and repository_dependencies will be None.
+    1. During the tool shed repository installation process via the tool shed's get_repository_information()
+    method.  In this case both the received repository and repository_metadata will be objects., but
+    tool_dependencies and repository_dependencies will be None.
+    2. When a tool shed repository that was uninstalled from a Galaxy instance is being reinstalled with no
+    updates available.  In this case, both repository and repository_metadata will be None, but tool_dependencies
+    and repository_dependencies will be objects previously retrieved from the tool shed if the repository includes
+    definitions for them.
+    3. When a tool shed repository that was uninstalled from a Galaxy instance is being reinstalled with updates
+    available.  In this case, this method is reached via the tool shed's get_updated_repository_information()
+    method, and both repository and repository_metadata will be objects but tool_dependencies and
+    repository_dependencies will be None.
     """
     repo_info_dict = {}
     repository = suc.get_repository_by_name_and_owner( trans.app, repository_name, repository_owner )
     if trans.webapp.name == 'tool_shed':
         # We're in the tool shed.
-        repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, trans.security.encode_id( repository.id ), changeset_revision )
+        repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans,
+                                                                                 trans.security.encode_id( repository.id ),
+                                                                                 changeset_revision )
         if repository_metadata:
             metadata = repository_metadata.metadata
             if metadata:
+                toolshed_url = str( web.url_for( '/', qualified=True ) ).rstrip( '/' )
                 # Get a dictionary of all repositories upon which the contents of the received repository depends.
                 repository_dependencies = \
                     repository_dependency_util.get_repository_dependencies_for_changeset_revision( trans=trans,
                                                                                                    repository=repository,
                                                                                                    repository_metadata=repository_metadata,
-                                                                                                   toolshed_base_url=str( web.url_for( '/', qualified=True ) ).rstrip( '/' ),
+                                                                                                   toolshed_base_url=toolshed_url,
                                                                                                    key_rd_dicts_to_be_processed=None,
                                                                                                    all_repository_dependencies=None,
                                                                                                    handled_key_rd_dicts=None,

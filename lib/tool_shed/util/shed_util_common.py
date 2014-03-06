@@ -227,18 +227,21 @@ def copy_file_from_manifest( repo, ctx, filename, dir ):
             return file_path
     return None
 
-def create_or_update_tool_shed_repository( app, name, description, installed_changeset_revision, ctx_rev, repository_clone_url, metadata_dict,
-                                           status, current_changeset_revision=None, owner='', dist_to_shed=False ):
+def create_or_update_tool_shed_repository( app, name, description, installed_changeset_revision, ctx_rev, repository_clone_url,
+                                           metadata_dict, status, current_changeset_revision=None, owner='', dist_to_shed=False ):
     """
-    Update a tool shed repository record in the Galaxy database with the new information received.  If a record defined by the received tool shed,
-    repository name and owner does not exist, create a new record with the received information.
+    Update a tool shed repository record in the Galaxy database with the new information received.
+    If a record defined by the received tool shed, repository name and owner does not exist, create
+    a new record with the received information.
     """
-    # The received value for dist_to_shed will be True if the InstallManager is installing a repository that contains tools or datatypes that used
-    # to be in the Galaxy distribution, but have been moved to the main Galaxy tool shed.
+    # The received value for dist_to_shed will be True if the InstallManager is installing a repository
+    # that contains tools or datatypes that used to be in the Galaxy distribution, but have been moved
+    # to the main Galaxy tool shed.
     if current_changeset_revision is None:
-        # The current_changeset_revision is not passed if a repository is being installed for the first time.  If a previously installed repository
-        # was later uninstalled, this value should be received as the value of that change set to which the repository had been updated just prior
-        # to it being uninstalled.
+        # The current_changeset_revision is not passed if a repository is being installed for the first
+        # time.  If a previously installed repository was later uninstalled, this value should be received
+        # as the value of that change set to which the repository had been updated just prior to it being
+        # uninstalled.
         current_changeset_revision = installed_changeset_revision
     context = app.install_model.context
     tool_shed = get_tool_shed_from_clone_url( repository_clone_url )
@@ -255,9 +258,14 @@ def create_or_update_tool_shed_repository( app, name, description, installed_cha
         deleted = False
         uninstalled = False
     tool_shed_repository = \
-        get_tool_shed_repository_by_shed_name_owner_installed_changeset_revision( app, tool_shed, name, owner, installed_changeset_revision )
+        get_tool_shed_repository_by_shed_name_owner_installed_changeset_revision( app,
+                                                                                  tool_shed,
+                                                                                  name,
+                                                                                  owner,
+                                                                                  installed_changeset_revision )
     if tool_shed_repository:
-        log.debug( "Updating an existing row for repository '%s' in the tool_shed_repository table, status set to '%s'." % ( str( name ), str( status ) ) )
+        log.debug( "Updating an existing row for repository '%s' in the tool_shed_repository table, status set to '%s'." % \
+            ( str( name ), str( status ) ) )
         tool_shed_repository.description = description
         tool_shed_repository.changeset_revision = current_changeset_revision
         tool_shed_repository.ctx_rev = ctx_rev
@@ -267,7 +275,8 @@ def create_or_update_tool_shed_repository( app, name, description, installed_cha
         tool_shed_repository.uninstalled = uninstalled
         tool_shed_repository.status = status
     else:
-        log.debug( "Adding new row for repository '%s' in the tool_shed_repository table, status set to '%s'." % ( str( name ), str( status ) ) )
+        log.debug( "Adding new row for repository '%s' in the tool_shed_repository table, status set to '%s'." % \
+            ( str( name ), str( status ) ) )
         tool_shed_repository = \
             app.install_model.ToolShedRepository( tool_shed=tool_shed,
                                                   name=name,
@@ -1028,8 +1037,8 @@ def get_repository_for_dependency_relationship( app, tool_shed, name, owner, cha
                                                                                      owner=owner,
                                                                                      changeset_revision=changeset_revision )
     if not repository:
-        # The received changeset_revision is no longer installable, so get the next changeset_revision in the repository's changelog in the
-        # tool shed that is associated with repository_metadata.
+        # The received changeset_revision is no longer installable, so get the next changeset_revision
+        # in the repository's changelog in the tool shed that is associated with repository_metadata.
         tool_shed_url = get_url_from_tool_shed( app, tool_shed )
         url = url_join( tool_shed_url,
                         'repository/next_installable_changeset_revision?name=%s&owner=%s&changeset_revision=%s' % \
@@ -1305,7 +1314,10 @@ def get_tool_shed_repository_by_id( trans, repository_id ):
                                       .first()
 
 def get_tool_shed_repository_by_shed_name_owner_changeset_revision( app, tool_shed, name, owner, changeset_revision ):
-    """Return a tool shed repository database record defined by the combination of a tool_shed, repository name, repository owner and current changeet_revision."""
+    """
+    Return a tool shed repository database record defined by the combination of a tool_shed, repository name,
+    repository owner and current changeet_revision.
+    """
     # This method is used only in Galaxy, not the tool shed.
     repository_query = __repository_query( app )
     if tool_shed.find( '//' ) > 0:
@@ -1319,7 +1331,10 @@ def get_tool_shed_repository_by_shed_name_owner_changeset_revision( app, tool_sh
                      .first()
 
 def get_tool_shed_repository_by_shed_name_owner_installed_changeset_revision( app, tool_shed, name, owner, installed_changeset_revision ):
-    """Return a tool shed repository database record defined by the combination of a tool_shed, repository name, repository owner and installed_changeet_revision."""
+    """
+    Return a tool shed repository database record defined by the combination of a tool_shed,
+    repository name, repository owner and installed_changeet_revision.
+    """
     # This method is used only in Galaxy, not the tool shed.
     repository_query = __repository_query( app )
     if tool_shed.find( '//' ) > 0:
