@@ -205,12 +205,6 @@ def app_factory( global_conf, **kwargs ):
     # ===== LIBRARY API =====
     # =======================
 
-    webapp.mapper.connect( 'delete_library',
-                           '/api/libraries/:id',
-                           controller='libraries',
-                           action='delete',
-                           conditions=dict( method=[ "DELETE" ] ) )
-
     webapp.mapper.connect( 'update_library',
                            '/api/libraries/:id',
                            controller='libraries',

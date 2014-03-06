@@ -81,7 +81,7 @@
    },
    {
     "name": "INCONSISTENT_DATABASE",
-    "code": 500001,
+    "code": 500002,
     "message": "Inconsistent database prevented fulfilling the request."
    },
    {

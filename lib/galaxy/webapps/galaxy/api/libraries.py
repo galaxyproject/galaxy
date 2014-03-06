@@ -82,12 +82,12 @@ class LibrariesController( BaseAPIController ):
         deleted = util.string_as_bool( deleted )
         try:
             decoded_library_id = trans.security.decode_id( library_id )
-        except:
+        except Exception:
             raise exceptions.MalformedId( 'Malformed library id ( %s ) specified, unable to decode.' % id )
         try:
             library = trans.sa_session.query( trans.app.model.Library ).get( decoded_library_id )
             assert library.deleted == deleted
-        except:
+        except Exception:
             library = None
         if not library or not ( trans.user_is_admin() or trans.app.security_agent.can_access_library( trans.get_current_user_roles(), library ) ):
             raise exceptions.ObjectNotFound( 'Library with the id provided ( %s ) was not found' % id )
@@ -150,12 +150,12 @@ class LibrariesController( BaseAPIController ):
 
         try:
             decoded_id = trans.security.decode_id( id )
-        except:
+        except Exception:
             raise exceptions.MalformedId( 'Malformed library id ( %s ) specified, unable to decode.' % id )
         library = None
         try:
             library = trans.sa_session.query( trans.app.model.Library ).get( decoded_id )
-        except:
+        except Exception:
             library = None
         if not library:
             raise exceptions.ObjectNotFound( 'Library with the id provided ( %s ) was not found' % id )
@@ -201,11 +201,11 @@ class LibrariesController( BaseAPIController ):
             raise exceptions.ItemAccessibilityException( 'Only administrators can delete and undelete libraries.' )
         try:
             decoded_id = trans.security.decode_id( id )
-        except:
+        except Exception:
             raise exceptions.MalformedId( 'Malformed library id ( %s ) specified, unable to decode.' % id )
         try:
             library = trans.sa_session.query( trans.app.model.Library ).get( decoded_id )
-        except:
+        except Exception:
             library = None
         if not library:
             raise exceptions.ObjectNotFound( 'Library with the id provided ( %s ) was not found' % id )
