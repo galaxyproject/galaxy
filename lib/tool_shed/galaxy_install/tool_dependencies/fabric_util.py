@@ -604,7 +604,7 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                         return tool_dependency
                     else:
                         install_environment.add_env_shell_file_paths( env_shell_file_paths )
-                    log.debug( 'Handling setup_r_environment for tool dependency %s with install_environment.env_shell_file_paths:\n%s"' % \
+                    log.debug( 'Handling setup_r_environment for tool dependency %s with install_environment.env_shell_file_paths:\n%s' % \
                                ( str( tool_dependency.name ), str( install_environment.env_shell_file_paths ) ) )
                     tarball_names = []
                     for url in action_dict[ 'r_packages' ]:
@@ -616,8 +616,10 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                     with lcd( current_dir ):
                         with settings( warn_only=True ):
                             for tarball_name in tarball_names:
-                                cmd = '''PATH=$PATH:$R_HOME/bin; export PATH; R_LIBS=$INSTALL_DIR; export R_LIBS;
-                                    Rscript -e \\"install.packages(c('%s'),lib='$INSTALL_DIR', repos=NULL, dependencies=FALSE)\\"''' % \
+                                # Use raw strings so that python won't automatically unescape the \", needed because handle_command wraps
+                                # the provided command in /bin/sh -c "<command>".
+                                cmd = r'''PATH=$PATH:$R_HOME/bin; export PATH; R_LIBS=$INSTALL_DIR; export R_LIBS;
+                                    Rscript -e \"install.packages(c('%s'),lib='$INSTALL_DIR', repos=NULL, dependencies=FALSE)\"''' % \
                                     ( str( tarball_name ) )
                                 cmd = install_environment.build_command( td_common_util.evaluate_template( cmd, install_dir ) )
                                 return_code = handle_command( app, tool_dependency, install_dir, cmd )
@@ -649,7 +651,7 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                         return tool_dependency
                     else:
                         install_environment.add_env_shell_file_paths( env_shell_file_paths )
-                    log.debug( 'Handling setup_ruby_environment for tool dependency %s with install_environment.env_shell_file_paths:\n%s"' % \
+                    log.debug( 'Handling setup_ruby_environment for tool dependency %s with install_environment.env_shell_file_paths:\n%s' % \
                                ( str( tool_dependency.name ), str( install_environment.env_shell_file_paths ) ) )
                     dir = os.path.curdir
                     current_dir = os.path.abspath( os.path.join( work_dir, dir ) )
@@ -672,9 +674,11 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                                 else:
                                     # gem file from rubygems.org with or without version number
                                     if gem_version:
-                                        # version number was specified
-                                        cmd = '''PATH=$PATH:$RUBY_HOME/bin; export PATH; GEM_HOME=$INSTALL_DIR; export GEM_HOME;
-                                            gem install %s --version "=%s"''' % ( gem, gem_version)
+                                        # Specific ruby gem version was requested.
+                                        # Use raw strings so that python won't automatically unescape the \", needed because handle_command wraps
+                                        # the provided command in /bin/sh -c "<command>".
+                                        cmd = r'''PATH=$PATH:$RUBY_HOME/bin; export PATH; GEM_HOME=$INSTALL_DIR; export GEM_HOME;
+                                            gem install %s --version \"=%s\"''' % ( gem, gem_version)
                                     else:
                                         # no version number given
                                         cmd = '''PATH=$PATH:$RUBY_HOME/bin; export PATH; GEM_HOME=$INSTALL_DIR; export GEM_HOME;
@@ -708,7 +712,7 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                         return tool_dependency
                     else:
                         install_environment.add_env_shell_file_paths( env_shell_file_paths )
-                    log.debug( 'Handling setup_perl_environment for tool dependency %s with install_environment.env_shell_file_paths:\n%s"' % \
+                    log.debug( 'Handling setup_perl_environment for tool dependency %s with install_environment.env_shell_file_paths:\n%s' % \
                                ( str( tool_dependency.name ), str( install_environment.env_shell_file_paths ) ) )
                     dir = os.path.curdir
                     current_dir = os.path.abspath( os.path.join( work_dir, dir ) )
@@ -831,7 +835,9 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                             return_code = handle_command( app, tool_dependency, install_dir, full_setup_command )
                             if return_code:
                                 return tool_dependency
-                            site_packages_command = "%s -c 'import os, sys; print os.path.join(sys.prefix, \"lib\", \"python\" + sys.version[:3], \"site-packages\")'" % os.path.join( venv_directory, "bin", "python" )
+                            # Use raw strings so that python won't automatically unescape the \", needed because handle_command wraps
+                            # the provided command in /bin/sh -c "<command>".
+                            site_packages_command = r"%s -c 'import os, sys; print os.path.join(sys.prefix, \"lib\", \"python\" + sys.version[:3], \"site-packages\")'" % os.path.join( venv_directory, "bin", "python" )
                             output = handle_command( app, tool_dependency, install_dir, site_packages_command, return_output=True )
                             if output.return_code:
                                 return tool_dependency
