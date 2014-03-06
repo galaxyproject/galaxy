@@ -5,8 +5,10 @@ from galaxy.web.framework.helpers import grids
 from galaxy.model.orm import and_
 from galaxy.model.orm import or_
 from galaxy.util import json
+from galaxy.util import listify
 import tool_shed.util.shed_util_common as suc
 import tool_shed.grids.util as grids_util
+import tool_shed.repository_types.util as rt_util
 from tool_shed.util import metadata_util
 
 from galaxy import eggs
@@ -159,16 +161,41 @@ class RepositoryGrid( grids.Grid ):
 
         def get_value( self, trans, grid, repository ):
             # This column will display the value associated with the currently displayed metadata revision.
-            try:
-                displayed_metadata_revision = repository.metadata_revisions[ -1 ]
-                if displayed_metadata_revision.includes_tools:
-                    if displayed_metadata_revision.tools_functionally_correct:
-                        return 'yes'
+            if repository.type == rt_util.UNRESTRICTED:
+                try:
+                    displayed_metadata_revision = repository.metadata_revisions[ -1 ]
+                    if displayed_metadata_revision.includes_tools:
+                        if displayed_metadata_revision.tools_functionally_correct:
+                            return 'yes'
+                        else:
+                            return 'no'
+                    return 'n/a'
+                except Exception, e:
+                    log.exception( str( e ) )
+                    return 'unknown'
+            else:
+                # Here repository.type must be rt_util.TOOL_DEPENDENCY_DEFINITION.
+                try:
+                    displayed_metadata_revision = repository.metadata_revisions[ -1 ]
+                    if displayed_metadata_revision.test_install_error:
+                        return 'no'
+                    tool_test_results = listify( displayed_metadata_revision.tool_test_results )
+                    if len( tool_test_results ) > 0:
+                        last_tool_test_result = tool_test_results[ 0 ]
+                        installation_error_dict = last_tool_test_result.get( 'installation_errors', {} )
+                        if len( installation_error_dict ) > 0:
+                            current_repository_installation_error_dicts = installation_error_dict.get( 'current_repository', [] )
+                            if len( current_repository_installation_error_dicts ) > 0:
+                                return 'no'
+                            else:
+                                return 'yes'
+                        else:
+                            return 'yes'
                     else:
                         return 'no'
-                return 'n/a'
-            except:
-                return 'n/a'
+                except Exception, e:
+                    log.exception( str( e ) )
+                    return 'unknown'
 
 
     class DescriptionColumn( grids.TextColumn ):
@@ -247,7 +274,7 @@ class RepositoryGrid( grids.Grid ):
                            attach_popup=False ),
         TypeColumn( "Type" ),
         MetadataRevisionColumn( "Metadata<br/>Revisions" ),
-        ToolsFunctionallyCorrectColumn( "Tools<br/>Verified" ),
+        ToolsFunctionallyCorrectColumn( "Tools or<br/>Package<br/>Verified" ),
         UserColumn( "Owner",
                      model_class=model.User,
                      link=( lambda item: dict( operation="repositories_by_user", id=item.id ) ),
@@ -404,7 +431,7 @@ class MyWritableRepositoriesGrid( RepositoryGrid ):
                                    attach_popup=False ),
         RepositoryGrid.TypeColumn( "Type" ),
         RepositoryGrid.MetadataRevisionColumn( "Metadata<br/>Revisions" ),
-        RepositoryGrid.ToolsFunctionallyCorrectColumn( "Tools<br/>Verified" ),
+        RepositoryGrid.ToolsFunctionallyCorrectColumn( "Tools or<br/>Package<br/>Verified" ),
         RepositoryGrid.UserColumn( "Owner",
                                    model_class=model.User,
                                    link=( lambda item: dict( operation="repositories_by_user", id=item.id ) ),
@@ -452,7 +479,7 @@ class RepositoriesByUserGrid( RepositoryGrid ):
                                           attach_popup=False ),
         RepositoryGrid.TypeColumn( "Type" ),
         RepositoryGrid.MetadataRevisionColumn( "Metadata<br/>Revisions" ),
-        RepositoryGrid.ToolsFunctionallyCorrectColumn( "Tools<br/>Verified" ),
+        RepositoryGrid.ToolsFunctionallyCorrectColumn( "Tools or<br/>Package<br/>Verified" ),
         RepositoryGrid.CategoryColumn( "Category",
                                        model_class=model.Category,
                                        key="Category.name",
@@ -489,7 +516,7 @@ class RepositoriesInCategoryGrid( RepositoryGrid ):
                                           attach_popup=False ),
         RepositoryGrid.TypeColumn( "Type" ),
         RepositoryGrid.MetadataRevisionColumn( "Metadata<br/>Revisions" ),
-        RepositoryGrid.ToolsFunctionallyCorrectColumn( "Tools<br/>Verified" ),
+        RepositoryGrid.ToolsFunctionallyCorrectColumn( "Tools or<br/>Package<br/>Verified" ),
         RepositoryGrid.UserColumn( "Owner",
                                    model_class=model.User,
                                    link=( lambda item: dict( controller="repository", operation="repositories_by_user", id=item.id ) ),
@@ -538,7 +565,7 @@ class RepositoriesIOwnGrid( RepositoryGrid ):
                                    attach_popup=False ),
         RepositoryGrid.TypeColumn( "Type" ),
         RepositoryGrid.MetadataRevisionColumn( "Metadata<br/>Revisions" ),
-        RepositoryGrid.ToolsFunctionallyCorrectColumn( "Tools<br/>Verified" ),
+        RepositoryGrid.ToolsFunctionallyCorrectColumn( "Tools or<br/>Package<br/>Verified" ),
         RepositoryGrid.DeprecatedColumn( "Deprecated" )
     ]
     columns.append( grids.MulticolFilterColumn( "Search repository name",
@@ -566,7 +593,7 @@ class RepositoriesICanAdministerGrid( RepositoryGrid ):
                                    attach_popup=False ),
         RepositoryGrid.UserColumn( "Owner" ),
         RepositoryGrid.MetadataRevisionColumn( "Metadata<br/>Revisions" ),
-        RepositoryGrid.ToolsFunctionallyCorrectColumn( "Tools<br/>Verified" ),
+        RepositoryGrid.ToolsFunctionallyCorrectColumn( "Tools or<br/>Package<br/>Verified" ),
         RepositoryGrid.DeprecatedColumn( "Deprecated" )
     ]
     columns.append( grids.MulticolFilterColumn( "Search repository name",
@@ -874,7 +901,7 @@ class DeprecatedRepositoriesIOwnGrid( RepositoriesIOwnGrid ):
                                          attach_popup=False ),
         RepositoryGrid.TypeColumn( "Type" ),
         RepositoriesIOwnGrid.MetadataRevisionColumn( "Metadata<br/>Revisions" ),
-        RepositoryGrid.ToolsFunctionallyCorrectColumn( "Tools<br/>Verified" ),
+        RepositoryGrid.ToolsFunctionallyCorrectColumn( "Tools or<br/>Package<br/>Verified" ),
         RepositoriesIOwnGrid.CategoryColumn( "Category",
                                              model_class=model.Category,
                                              key="Category.name",
@@ -1697,7 +1724,7 @@ class ValidRepositoryGrid( RepositoryGrid ):
                                           attach_popup=False ),
         RepositoryGrid.TypeColumn( "Type" ),
         InstallableRevisionColumn( "Installable Revisions" ),
-        RepositoryGrid.ToolsFunctionallyCorrectColumn( "Tools<br/>Verified" ),
+        RepositoryGrid.ToolsFunctionallyCorrectColumn( "Tools or<br/>Package<br/>Verified" ),
         RepositoryGrid.UserColumn( "Owner",
                                    model_class=model.User,
                                    attach_popup=False ),
