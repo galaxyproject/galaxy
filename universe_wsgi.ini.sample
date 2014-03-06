@@ -616,7 +616,7 @@ use_interactive = True
 # by WSGI).  This option allows you to change the header.  Note, you still need
 # to prepend 'HTTP_' to the header in this option, but your proxy server should
 # *not* include 'HTTP_' at the beginning of the header name.
-#remote_user_header = 'HTTP_REMOTE_USER'
+#remote_user_header = HTTP_REMOTE_USER
 
 # If use_remote_user is enabled, you can set this to a URL that will log your
 # users out.
