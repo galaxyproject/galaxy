@@ -11,7 +11,7 @@ return Backbone.Model.extend(
         title       : '',
         type        : '',
         date        : null,
-        state       : '',
+        state       : 'ok',
         state_info  : ''
     },
     
@@ -44,6 +44,10 @@ return Backbone.Model.extend(
     state: function(value, info) {
         this.set('state_info', info);
         this.set('state', value);
+    },
+    
+    ready: function() {
+        return (this.get('state') == 'ok') || (this.get('state') == 'failed');
     }
 });
 

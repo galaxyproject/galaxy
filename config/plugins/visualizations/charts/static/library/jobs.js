@@ -28,24 +28,29 @@ return Backbone.Model.extend(
         // configure tool
         data = {
             'tool_id'       : 'rkit',
-            'history_id'    : chart.history_id,
+            'history_id'    : chart.get('history_id'),
             'inputs'        : {
-                'input'     : chart.dataset_hid,
+                'input'     : chart.get('dataset_hid'),
                 'module'    : chart_type,
                 'options'   : request_string
             }
         }
         
+        // cleanup previous dataset file
+        var previous =  chart.get('dataset_id_job');
+        if (previous) {
+            Utils.request('PUT', config.root + 'api/histories/' + chart.get('history_id') + '/contents/' + previous, { deleted: true });
+        }
+        
         // set chart state
         chart.state('submit', 'Sending job request...');
-            
+        
         // post job
         Utils.request('POST', config.root + 'api/tools', data,
             // success handler
             function(response) {
                 if (!response.outputs || response.outputs.length == 0) {
                     chart.state('failed', 'Job submission failed. No response.');
-                    self.app.log('handle::load()', 'Job submission failed.');
                 } else {
                     // update galaxy history
                     if (Galaxy && Galaxy.currHistoryPanel) {
@@ -65,7 +70,7 @@ return Backbone.Model.extend(
                     self._loop(job.id, function(job) {
                         switch (job.state) {
                             case 'ok':
-                                chart.state('ok', 'Job completed successfully...');
+                                chart.state('success', 'Job completed successfully...');
                                 callback(job);
                                 return true;
                             case 'error':
@@ -80,8 +85,7 @@ return Backbone.Model.extend(
             },
             // error handler
             function(response) {
-                chart.state('failed', 'Job submission failed.');
-                self.app.log('handle::load()', 'Job submission failed.');
+                chart.state('failed', 'Job submission failed. Please make sure that \'R-kit\' is installed.');
             }
         );
     },

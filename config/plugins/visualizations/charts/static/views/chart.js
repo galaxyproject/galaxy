@@ -286,7 +286,7 @@ return Backbone.View.extend(
         }
         
         // trigger redraw
-        current.set('state', 'redraw');
+        current.trigger('redraw', current);
     }
 });
 

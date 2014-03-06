@@ -29,6 +29,7 @@ return Backbone.View.extend(
         // send request
         var self = this;
         this.app.datasets.request(request_dictionary, function(data) {
+            chart.set('state', 'ok');
             nv.addGraph(function() {
                 self.d3_chart = nv.models.multiBarChart();
                     
@@ -39,8 +40,6 @@ return Backbone.View.extend(
                                 .call(self.d3_chart);
      
                 nv.utils.windowResize(self.d3_chart.update);
-                
-                chart.set('state', 'ok');
             });
         });
     }

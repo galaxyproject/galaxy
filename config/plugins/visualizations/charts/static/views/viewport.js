@@ -48,10 +48,18 @@ return Backbone.View.extend(
             self._removeChart(chart.id);
         });
         
-        // replace
-        this.app.charts.on('change', function(chart) {
-            if (chart.get('state') == 'redraw') {
+        // redraw
+        this.app.charts.on('redraw', function(chart) {
+            // redraw if chart is not currently processed
+            if (chart.ready()) {
                 self._refreshChart(chart);
+            } else {
+                // redraw once current drawing process has finished
+                chart.on('change:state', function() {
+                    if (chart.ready()) {
+                        self._refreshChart(chart);
+                    }
+                });
             }
         });
     },
@@ -111,6 +119,12 @@ return Backbone.View.extend(
         // link this
         var self = this;
         
+        // check
+        if (!chart.ready()) {
+            self.app.log('viewport:_refreshChart()', 'Invalid attempt to refresh chart before completion.');
+            return;
+        }
+
         // backup chart details
         var chart_id = chart.id;
     
@@ -137,6 +151,9 @@ return Backbone.View.extend(
         
         // show chart from list
         this.showChart(chart_id);
+        
+        // clear all previous handlers (including redraw listeners)
+        chart.off('change:state');
         
         // link status handler
         chart.on('change:state', function() {
@@ -185,10 +202,10 @@ return Backbone.View.extend(
             var mode = chart_settings.mode;
             if (mode == 'execute') {
                 self.app.jobs.submit(chart, self._defaultRequestString(chart), function() {
-                    view.plot(chart, self._defaultRequestDictionary(chart))
+                    view.plot(chart, self._defaultRequestDictionary(chart));
                 });
             } else {
-                view.plot(chart, self._defaultRequestDictionary(chart))
+                view.plot(chart, self._defaultRequestDictionary(chart));
             }
         });
     },
