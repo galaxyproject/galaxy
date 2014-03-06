@@ -7,48 +7,57 @@ return Backbone.Model.extend(
     // types
     defaults: {
         'bardiagram' : {
-            title : 'Bar diagram',
-            data  : {
+            title   : 'Bar diagram',
+            columns : {
                 y : {
                     title   : 'Values for y-axis'
                 }
             }
         },
+        'histogram' : {
+            title   : 'Histogram',
+            mode    : 'execute',
+            columns : {
+                y : {
+                    title   : 'Derive frequencies'
+                }
+            }
+        },
         'horizontal' : {
-            title : 'Bar diagram (horizontal)',
-            data  : {
+            title   : 'Bar diagram (horizontal)',
+            columns : {
                 y : {
                     title   : 'Values for y-axis'
                 }
             }
         },
         'line' : {
-            title : 'Line chart',
-            data  : {
+            title   : 'Line chart',
+            columns : {
                 y : {
                     title   : 'Values for y-axis'
                 }
             }
         },
         'linewithfocus' : {
-            title : 'Line chart (with focus)',
-            data  : {
+            title   : 'Line chart (with focus)',
+            columns : {
                 y : {
                     title   : 'Values for y-axis'
                 }
             }
         },
         'piechart' : {
-            title : 'Pie chart',
-            data  : {
+            title   : 'Pie chart',
+            columns : {
                 y : {
                     title   : 'Values for y-axis'
                 }
             }
         },
         'scatterplot' : {
-            title : 'Scatter plot',
-            data  : {
+            title   : 'Scatter plot',
+            columns : {
                 x : {
                     title   : 'Values for x-axis'
                 },
@@ -58,8 +67,8 @@ return Backbone.Model.extend(
             }
         },
         'stackedarea' : {
-            title : 'Stacked area',
-            data  : {
+            title   : 'Stacked area',
+            columns : {
                 y : {
                     title   : 'Values for y-axis'
                 }

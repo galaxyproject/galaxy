@@ -7,10 +7,12 @@ return Backbone.Model.extend(
 {
     // defaults
     defaults : {
-        id      : null,
-        title   : '',
-        type    : '',
-        date    : null
+        id          : null,
+        title       : '',
+        type        : '',
+        date        : null,
+        state       : '',
+        state_info  : ''
     },
     
     // initialize
@@ -37,6 +39,11 @@ return Backbone.Model.extend(
             current.groups.add(group.clone());
         });
         current.trigger('change', current);
+    },
+    
+    state: function(value, info) {
+        this.set('state_info', info);
+        this.set('state', value);
     }
 });
 

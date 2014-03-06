@@ -97,7 +97,7 @@ return Backbone.View.extend(
                                 // save chart
                                 self._saveChart();
                                 
-                                // show viewport
+                                // show charts
                                 self.hide();
                                 self.app.charts_view.$el.show();
                             }
@@ -125,7 +125,6 @@ return Backbone.View.extend(
                 self.app.config.set('title', self.title.value());
             }
         });
-        this.dataset = new Ui.Input({value : app.options.dataset.id, disabled: true, visible: false});
         
         // append element
         var $settings = $('<div/>');
@@ -183,8 +182,8 @@ return Backbone.View.extend(
         this.app.chart.groups.on('reset', function(group) {
             self._removeAllGroups();
         });
-        this.app.chart.groups.on('change:label', function(group) {
-            self._refreshLabels();
+        this.app.chart.groups.on('change:key', function(group) {
+            self._refreshGroupKey();
         });
         
         // reset
@@ -198,11 +197,11 @@ return Backbone.View.extend(
     },
 
     // update
-    _refreshLabels: function() {
+    _refreshGroupKey: function() {
         var self = this;
         var counter = 0;
         this.chart.groups.each(function(group) {
-            var title = group.get('label', '');
+            var title = group.get('key', '');
             if (title == '') {
                 title = 'Chart data';
             }
@@ -213,8 +212,7 @@ return Backbone.View.extend(
     // new group
     _addGroupModel: function() {
         var group = new Group({
-            id          : Utils.uuid(),
-            dataset_id  : this.chart.get('dataset_id')
+            id : Utils.uuid()
         });
         this.chart.groups.add(group);
         return group;
@@ -241,7 +239,7 @@ return Backbone.View.extend(
         });
         
         // update titles
-        this._refreshLabels()
+        this._refreshGroupKey();
     },
     
     // remove group
@@ -249,7 +247,7 @@ return Backbone.View.extend(
         this.tabs.del(group.id);
         
         // update titles
-        this._refreshLabels()
+        this._refreshGroupKey();
     },
 
     // remove group
@@ -261,8 +259,10 @@ return Backbone.View.extend(
     _resetChart: function() {
         // reset chart details
         this.chart.set('id', Utils.uuid());
-        this.chart.set('dataset_id', this.app.options.dataset.id);
         this.chart.set('type', 'bardiagram');
+        this.chart.set('dataset_id', this.app.options.dataset.id);
+        this.chart.set('dataset_hid', this.app.options.dataset.hid);
+        this.chart.set('history_id', this.app.options.dataset.history_id);
         this.chart.set('title', 'New Chart');
     },
     
@@ -272,7 +272,6 @@ return Backbone.View.extend(
         this.chart.set({
             type        : this.table.value(),
             title       : this.title.value(),
-            dataset_id  : this.dataset.value(),
             date        : Utils.time()
         });
         
@@ -280,11 +279,14 @@ return Backbone.View.extend(
         var current = this.app.charts.get(this.chart.id);
         if (!current) {
             current = this.chart.clone();
+            current.copy(this.chart);
             this.app.charts.add(current);
+        } else {
+            current.copy(this.chart);
         }
-                
-        // update chart model
-        current.copy(this.chart);
+        
+        // trigger redraw
+        current.set('state', 'redraw');
     }
 });
 

@@ -82,9 +82,12 @@ return Backbone.View.extend(
     
     // remove
     remove: function(id) {
-        this.$tbody.find('#' + id).remove();
-        this.row_count--;
-        this._refresh();
+        var item = this.$tbody.find('#' + id);
+        if (item.length > 0) {
+            item.remove();
+            this.row_count--;
+            this._refresh();
+        }
     },
 
     // remove
@@ -129,6 +132,9 @@ return Backbone.View.extend(
     
     // commit
     _commit: function(id, prepend) {
+        // remove previous item with same id
+        this.remove(id);
+        
         // add
         this.row.attr('id', id);
        

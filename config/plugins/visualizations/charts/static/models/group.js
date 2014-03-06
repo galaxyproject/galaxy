@@ -6,8 +6,8 @@ return Backbone.Model.extend(
 {
     // options
     defaults : {
-        label           : 'Data label',
-        date            : ''
+        key     : 'Data label',
+        date    : ''
     },
     
     // reset

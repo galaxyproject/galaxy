@@ -35,6 +35,9 @@
                 root : '/'
             };
             
+            // link galaxy
+            var Galaxy = Galaxy || parent.Galaxy;
+
             // console protection
             window.console = window.console || {
                 log     : function(){},
@@ -67,7 +70,7 @@
                         config  : ${h.to_json_string( config )},
                         dataset : ${h.to_json_string( trans.security.encode_dict_ids( hda.to_dict() ) )}
                     }
-
+                    
                     // create application
                     app = new App(options);
                     

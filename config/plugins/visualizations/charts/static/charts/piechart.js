@@ -8,43 +8,46 @@ return Backbone.View.extend(
     initialize: function(app, options) {
         this.app        = app;
         this.options    = options;
-        this.chart      = options.chart;
     },
             
     // render
-    refresh : function(data)
+    plot : function(chart, request_dictionary)
     {
-        // loop through data groups
-        for (var key in data) {
-            // get group
-            var group = data[key];
+        // request data
+        var self = this;
+        this.app.datasets.request(request_dictionary, function(data) {
             
-            // format chart data
-            var pie_data = [];
-            for (var key in group.values) {
-                var value = group.values[key];
-                pie_data.push ({
-                    key : value.x,
-                    y   : value.y
+            // loop through data groups
+            for (var key in request_dictionary.groups) {
+                // get group
+                var group = request_dictionary.groups[key];
+                
+                // format chart data
+                var pie_data = [];
+                for (var key in group.values) {
+                    var value = group.values[key];
+                    pie_data.push ({
+                        key : value.x,
+                        y   : value.y
+                    });
+                }
+                
+                // add graph to screen
+                nv.addGraph(function() {
+                    self.chart_3d = nv.models.pieChart()
+                        .donut(true)
+                        .showLegend(false);
+                    
+                    self.options.svg.datum(pie_data)
+                                    .call(self.chart_3d);
+
+                    nv.utils.windowResize(self.chart_3d.update);
+                    
+                    // set chart state
+                    chart.set('state', 'ok');
                 });
             }
-            
-            // add graph to screen
-            var self = this;
-            nv.addGraph(function() {
-                self.chart_3d = nv.models.pieChart()
-                    .donut(true)
-                    .showLegend(false);
-                
-                d3.select(self.options.svg_id)
-                    .datum(pie_data)
-                    .call(self.chart_3d);
-
-                nv.utils.windowResize(self.chart_3d.update);
-                
-                return self.chart_3d;
-            });
-        }
+        });
     }
 });
 

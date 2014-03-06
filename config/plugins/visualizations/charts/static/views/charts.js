@@ -1,5 +1,5 @@
 // dependencies
-define(['mvc/ui/ui-portlet', 'plugin/library/table', 'plugin/library/ui', 'utils/utils', 'plugin/models/group'], function(Portlet, Table, Ui, Utils, Group) {
+define(['mvc/ui/ui-portlet', 'plugin/library/table', 'plugin/library/ui', 'utils/utils', 'plugin/models/group', 'plugin/views/viewport',], function(Portlet, Table, Ui, Utils, Group, ViewportView) {
 
 // widget
 return Backbone.View.extend(
@@ -9,6 +9,9 @@ return Backbone.View.extend(
     {
         // link app
         this.app = app;
+        
+        // create viewport
+        this.viewport_view = new ViewportView(app);
         
         // table
         this.table = new Table({
@@ -32,7 +35,7 @@ return Backbone.View.extend(
                 self.app.config.set('title', chart.get('title'));
         
                 // show viewport
-                self.app.viewport_view.show(chart_id);
+                self.viewport_view.showChart(chart_id);
             }
         });
         
@@ -89,10 +92,14 @@ return Backbone.View.extend(
         });
         this.portlet.append(this.table.$el);
         
-        // append to main
+        // append portlet with table
         if (!this.app.options.config.widget) {
             this.$el.append(this.portlet.$el);
         }
+        
+        // append view port
+        this.$el.append(Utils.wrap(''));
+        this.$el.append(this.viewport_view.$el);
         
         // events
         var self = this;
@@ -106,8 +113,7 @@ return Backbone.View.extend(
         });
         this.app.charts.on('change', function(chart) {
             // replace
-            self._removeChart(chart);
-            self._addChart(chart);
+            self._changeChart(chart);
         });
     },
     
@@ -115,12 +121,6 @@ return Backbone.View.extend(
     hide: function() {
         $('.tooltip').hide();
         this.$el.hide();
-    },
-    
-    // append
-    append : function($el) {
-        this.$el.append(Utils.wrap(''));
-        this.$el.append($el);
     },
     
     // add
@@ -146,11 +146,21 @@ return Backbone.View.extend(
         // check if table is empty
         if (this.table.size() == 0) {
             this.hide();
+            this.app.chart.reset();
             this.app.chart_view.$el.show();
         } else {
             // select available chart
             this.table.value(this.app.charts.last().id);
         }
+    },
+    
+    // change
+    _changeChart: function(chart) {
+        // add chart
+        this._addChart(chart);
+        
+        // select available chart
+        this.table.value(chart.id);
     }
 });
 

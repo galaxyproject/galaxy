@@ -1,10 +1,10 @@
 // dependencies
-define(['mvc/ui/ui-portlet', 'plugin/library/ui', 'utils/utils',
-        'plugin/views/charts', 'plugin/views/viewport', 'plugin/views/chart',
-        'plugin/models/config', 'plugin/models/datasets', 'plugin/models/chart', 'plugin/models/charts', 'plugin/models/types'],
-        function(   Portlet, Ui, Utils,
-                    ChartsView, ViewportView, ChartView,
-                    Config, Datasets, Chart, Charts, Types
+define(['mvc/ui/ui-portlet', 'plugin/library/ui', 'utils/utils', 'plugin/library/jobs', 'plugin/library/datasets',
+        'plugin/views/charts', 'plugin/views/chart',
+        'plugin/models/config', 'plugin/models/chart', 'plugin/models/charts', 'plugin/models/types'],
+        function(   Portlet, Ui, Utils, Jobs, Datasets,
+                    ChartsView, ChartView,
+                    Config, Chart, Charts, Types
                 ) {
 
 // widget
@@ -17,10 +17,13 @@ return Backbone.View.extend(
         this.options = options;
     
         // link galaxy
-        this.modal = parent.Galaxy.modal;
+        this.modal = Galaxy.modal;
         
         // create configuration model
         this.config = new Config();
+        
+        // job/data /processor
+        this.jobs = new Jobs(this);
         
         // create chart models
         this.types = new Types();
@@ -33,11 +36,7 @@ return Backbone.View.extend(
         // create views
         this.charts_view = new ChartsView(this);
         this.chart_view = new ChartView(this);
-        this.viewport_view = new ViewportView(this);
         
-        // append view port to charts viewer
-        this.charts_view.append(this.viewport_view.$el);
-            
         // create portlet
         if (!this.options.config.widget) {
             this.portlet = new Portlet.View({icon : 'fa-bar-chart-o'});

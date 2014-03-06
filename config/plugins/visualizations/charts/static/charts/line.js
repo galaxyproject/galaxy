@@ -8,30 +8,31 @@ return Backbone.View.extend(
     initialize: function(app, options) {
         this.app        = app;
         this.options    = options;
-        this.chart      = options.chart;
     },
             
     // render
-    refresh : function(data)
+    plot : function(chart, request_dictionary)
     {
-        // add graph to screen
+        // request data
         var self = this;
-        nv.addGraph(function() {
-            self.chart_3d = nv.models.lineChart();
+        this.app.datasets.request(request_dictionary, function(data) {
+            nv.addGraph(function() {
+                self.chart_3d = nv.models.lineChart();
 
-            self.chart_3d.xAxis
-                .tickFormat(d3.format(',f'));
+                self.chart_3d.xAxis
+                    .tickFormat(d3.format(',f'));
 
-            self.chart_3d.yAxis
-                .tickFormat(d3.format(',.2f'));
-            
-            d3.select(self.options.svg_id)
-                .datum(data)
-                .call(self.chart_3d);
+                self.chart_3d.yAxis
+                    .tickFormat(d3.format(',.2f'));
+                
+                self.options.svg.datum(data)
+                                .call(self.chart_3d);
 
-            nv.utils.windowResize(self.chart_3d.update);
-            
-            return self.chart_3d;
+                nv.utils.windowResize(self.chart_3d.update);
+                
+                // set chart state
+                chart.set('state', 'ok');
+            });
         });
     }
 });
