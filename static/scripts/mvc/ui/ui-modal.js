@@ -1,16 +1,15 @@
 // dependencies
-define([], function() {
+define(['utils/utils'], function(Utils) {
 
-// modal
-var GalaxyModal = Backbone.View.extend(
-{
+var View = Backbone.View.extend({
+
     // base element
     elMain: '#everything',
     
     // defaults options
     optionsDefault: {
-        title           : "galaxy-modal",
-        body            : "",
+        title           : 'ui-modal',
+        body            : '',
         backdrop        : true,
         height          : null,
         width           : null,
@@ -192,7 +191,7 @@ var GalaxyModal = Backbone.View.extend(
 });
 
 return {
-    GalaxyModal : GalaxyModal
+    View : View
 }
 
 });

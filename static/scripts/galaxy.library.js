@@ -9,10 +9,9 @@ var responses = [];
 
 // dependencies
 define([
-    "galaxy.modal", 
     "galaxy.masthead", 
     "utils/utils",
-    "libs/toastr"], function(mod_modal, mod_masthead, mod_utils, mod_toastr) {
+    "libs/toastr"], function(mod_masthead, mod_utils, mod_toastr) {
 
 // MMMMMMMMMMMMMMM
 // === Models ====

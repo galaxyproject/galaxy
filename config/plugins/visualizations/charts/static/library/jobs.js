@@ -48,7 +48,9 @@ return Backbone.Model.extend(
                     self.app.log('handle::load()', 'Job submission failed.');
                 } else {
                     // update galaxy history
-                    Galaxy.currHistoryPanel.refreshHdas();
+                    if (Galaxy && Galaxy.currHistoryPanel) {
+                        Galaxy.currHistoryPanel.refreshHdas();
+                    }
         
                     // get dataset
                     var job = response.outputs[0];

@@ -83,7 +83,7 @@
 
         ## load galaxy js-modules
         $(function() {
-            require(['galaxy.masthead', 'galaxy.menu', 'galaxy.modal', 'galaxy.frame', 'mvc/upload/upload-view'],
+            require(['galaxy.masthead', 'galaxy.menu', 'mvc/ui/ui-modal', 'galaxy.frame', 'mvc/upload/upload-view'],
             function(mod_masthead, mod_menu, mod_modal, mod_frame, GalaxyUpload)
             {
                 ## check if masthead is available
@@ -95,7 +95,7 @@
 
                 ## load global galaxy objects
                 Galaxy.masthead = new mod_masthead.GalaxyMasthead(masthead_config);
-                Galaxy.modal = new mod_modal.GalaxyModal();
+                Galaxy.modal = new mod_modal.View();
                 Galaxy.frame = new mod_frame.GalaxyFrame();
 
                 ## construct default menu options
