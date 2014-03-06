@@ -1,8 +1,8 @@
 // dependencies
-define(['mvc/ui/ui-portlet', 'plugin/library/ui', 'utils/utils', 'plugin/library/jobs', 'plugin/library/datasets',
+define(['mvc/ui/ui-modal', 'mvc/ui/ui-portlet', 'plugin/library/ui', 'utils/utils', 'plugin/library/jobs', 'plugin/library/datasets',
         'plugin/views/charts', 'plugin/views/chart',
         'plugin/models/config', 'plugin/models/chart', 'plugin/models/charts', 'plugin/models/types'],
-        function(   Portlet, Ui, Utils, Jobs, Datasets,
+        function(   Modal, Portlet, Ui, Utils, Jobs, Datasets,
                     ChartsView, ChartView,
                     Config, Chart, Charts, Types
                 ) {
@@ -16,8 +16,12 @@ return Backbone.View.extend(
         // link options
         this.options = options;
     
-        // link galaxy
-        this.modal = Galaxy.modal;
+        // link galaxy modal or create one
+        if (Galaxy && Galaxy.modal) {
+            this.modal = Galaxy.modal;
+        } else {
+            this.modal = new Modal.View();
+        }
         
         // create configuration model
         this.config = new Config();

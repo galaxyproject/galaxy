@@ -4,7 +4,7 @@ define(['utils/utils'], function(Utils) {
 var View = Backbone.View.extend({
 
     // base element
-    elMain: '#everything',
+    elMain: 'body',
     
     // defaults options
     optionsDefault: {
