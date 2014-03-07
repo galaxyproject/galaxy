@@ -2,7 +2,7 @@
 define(['plugin/library/table', 'plugin/library/ui', 'utils/utils'],
         function(Table, Ui, Utils) {
 
-// chart config
+// widget
 return Backbone.View.extend(
 {
     // columns

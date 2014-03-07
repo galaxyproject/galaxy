@@ -1,21 +1,14 @@
-define([], function() {
+define(['plugin/charts/_nvd3/config'], function(nvd3_config) {
 
-return {
+return $.extend(true, {}, nvd3_config, {
     title   : 'Histogram',
     mode    : 'execute',
     columns : {
-        y : {
-            title   : 'Derive frequencies'
+        x : {
+            title   : 'Values for x-axis'
         }
     },
     settings  : {
-        x_axis_label : {
-            title   : 'Axis label (x)',
-            info    : 'Provide a label for the \'x\' axis.',
-            type    : 'text',
-            init    : 'Breaks',
-            placeholder : 'Axis label'
-        },
         bin_size : {
             title   : 'Number of Bins',
             info    : 'Provide the number of histogram bins. The parsed data will be evenly distributed into bins according to the minimum and maximum values of the dataset.',
@@ -25,6 +18,6 @@ return {
             max     : 1000,
         }
     }
-};
+});
 
 });

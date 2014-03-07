@@ -1,5 +1,5 @@
 // dependencies
-define([], function() {
+define(['plugin/charts/_nvd3/nvd3'], function(NVD3) {
 
 // widget
 return Backbone.View.extend(
@@ -9,10 +9,10 @@ return Backbone.View.extend(
         this.app        = app;
         this.options    = options;
     },
-    
-    // draw
-    draw: function(chart, request_dictionary) {
-        
+            
+    // render
+    draw : function(chart, request_dictionary)
+    {
         // update request dataset id
         request_dictionary.id = chart.get('dataset_id_job');
         
@@ -25,29 +25,11 @@ return Backbone.View.extend(
                 y: index++
             }
         }
-        
-        // send request
-        var self = this;
-        this.app.datasets.request(request_dictionary, function(data) {
-            // set chart state
-            chart.set('state', 'ok');
-            
-            // draw graph
-            nv.addGraph(function() {
-                self.d3_chart = nv.models.multiBarChart();
-                    
-                self.d3_chart.xAxis.tickFormat(d3.format('.2f'))
-                                   .axisLabel('Breaks');
-                
-                self.d3_chart.yAxis.tickFormat(d3.format('.3f'))
-                                   .axisLabel('Frequency')
-                                   .axisLabelDistance(30);
-                
-                self.options.svg.datum(data)
-                                .call(self.d3_chart);
-     
-                nv.utils.windowResize(self.d3_chart.update);
-            });
+
+        var nvd3 = new NVD3(this.app, this.options);
+        nvd3.draw(nv.models.multiBarChart(), chart, request_dictionary, function(nvd3_model) {
+            nvd3_model.xAxis.tickFormat(d3.format('.2f'));
+            nvd3_model.yAxis.tickFormat(d3.format('.3f'));
         });
     }
 });

@@ -1,12 +1,7 @@
-define([], function() {
+define(['plugin/charts/_nvd3/config'], function(nvd3_config) {
 
-return {
-    title   : 'Line chart (with focus)',
-    columns : {
-        y : {
-            title   : 'Values for y-axis'
-        }
-    }
-};
+return $.extend(true, {}, nvd3_config, {
+    title   : 'Line with focus',
+});
 
 });

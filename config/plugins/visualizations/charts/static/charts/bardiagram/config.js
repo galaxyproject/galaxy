@@ -1,28 +1,7 @@
-define([], function() {
+define(['plugin/charts/_nvd3/config'], function(nvd3_config) {
 
-return {
+return $.extend(true, {}, nvd3_config, {
     title   : 'Bar diagram',
-    columns : {
-        y : {
-            title   : 'Values for y-axis'
-        }
-    },
-    settings  : {
-        x_axis_label : {
-            title       : 'Axis label (x)',
-            info        : 'Provide a label for the \'x\' axis.',
-            type        : 'text',
-            init        : '',
-            placeholder : 'Axis label'
-        },
-        y_axis_label : {
-            title       : 'Axis label (y)',
-            info        : 'Provide a label for the \'y\' axis.',
-            type        : 'text',
-            init        : '',
-            placeholder : 'Axis label'
-        }
-    }
-};
+});
 
 });

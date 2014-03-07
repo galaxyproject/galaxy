@@ -1,5 +1,5 @@
 // dependencies
-define(['utils/utils'], function(Utils) {
+define(['plugin/charts/_nvd3/nvd3'], function(NVD3) {
 
 // widget
 return Backbone.View.extend(
@@ -13,27 +13,8 @@ return Backbone.View.extend(
     // render
     draw : function(chart, request_dictionary)
     {
-        // request data
-        var self = this;
-        this.app.datasets.request(request_dictionary, function(data) {
-            nv.addGraph(function() {
-                self.chart_3d = nv.models.lineWithFocusChart();
-
-                self.chart_3d.xAxis
-                    .tickFormat(d3.format(',f'));
-
-                self.chart_3d.yAxis
-                    .tickFormat(d3.format(',.2f'));
-                
-                self.options.svg.datum(data)
-                                .call(self.chart_3d);
-
-                nv.utils.windowResize(self.chart_3d.update);
-                
-                // set chart state
-                chart.set('state', 'ok');
-            });
-        });
+        var nvd3 = new NVD3(this.app, this.options);
+        nvd3.draw(nv.models.lineWithFocusChart(), chart, request_dictionary);
     }
 });
 

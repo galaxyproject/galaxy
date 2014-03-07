@@ -1,5 +1,5 @@
 // dependencies
-define(['utils/utils'], function(Utils) {
+define(['plugin/charts/_nvd3/nvd3'], function(NVD3) {
 
 // widget
 return Backbone.View.extend(
@@ -13,30 +13,13 @@ return Backbone.View.extend(
     // render
     draw : function(chart, request_dictionary)
     {
-        // request data
-        var self = this;
-        this.app.datasets.request(request_dictionary, function(data) {
-            nv.addGraph(function() {
-                // make plot
-                self.d3_chart = nv.models.stackedAreaChart()
-                    .x(function(d) {
-                        return d.x
-                    })
-                    .y(function(d) {
-                        return d.y
-                    })
-                    .clipEdge(true);
-                
-                self.d3_chart.xAxis.tickFormat(function() { return ''; });
-                
-                self.options.svg.datum(data)
-                                .call(self.d3_chart);
-     
-                nv.utils.windowResize(self.d3_chart.update);
-                
-                // set chart state
-                chart.set('state', 'ok');
-            });
+        var nvd3 = new NVD3(this.app, this.options);
+        nvd3.draw(nv.models.stackedAreaChart(), chart, request_dictionary, function(nvd3_model) {
+            // make plot
+            nvd3_model.x(function(d) { return d.x })
+                      .y(function(d) { return d.y })
+                      .clipEdge(true);
+            nvd3_model.xAxis.tickFormat(function() { return ''; });
         });
     }
 });

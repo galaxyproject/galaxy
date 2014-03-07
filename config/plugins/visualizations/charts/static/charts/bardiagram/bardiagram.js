@@ -1,5 +1,5 @@
 // dependencies
-define([], function() {
+define(['plugin/charts/_nvd3/nvd3'], function(NVD3) {
 
 // widget
 return Backbone.View.extend(
@@ -13,28 +13,8 @@ return Backbone.View.extend(
     // render
     draw : function(chart, request_dictionary)
     {
-        // request data
-        var self = this;
-        this.app.datasets.request(request_dictionary, function(data) {
-            nv.addGraph(function() {
-                self.d3_chart = nv.models.multiBarChart();
-                
-                self.d3_chart.yAxis.tickFormat(d3.format('.1f'))
-                                    .axisLabel(chart.settings.get('y_axis_label', 'Frequency'))
-                                    .axisLabelDistance(30);
-                
-                self.d3_chart.xAxis.tickFormat(d3.format('.2f'))
-                                    .axisLabel(chart.settings.get('x_axis_label', 'Breaks'));
-                
-                self.options.svg.datum(data)
-                                .call(self.d3_chart);
-     
-                nv.utils.windowResize(self.d3_chart.update);
-                
-                // set chart state
-                chart.set('state', 'ok');
-            });
-        });
+        var nvd3 = new NVD3(this.app, this.options);
+        nvd3.draw(nv.models.multiBarChart(), chart, request_dictionary);
     }
 });
 
