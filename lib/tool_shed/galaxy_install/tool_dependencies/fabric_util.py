@@ -420,7 +420,6 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                             for tarball_name in tarball_names:
                                 cmd = '''PATH=$PATH:$R_HOME/bin; export PATH; R_LIBS=$INSTALL_DIR; export R_LIBS;
                                     Rscript -e "install.packages(c('%s'),lib='$INSTALL_DIR', repos=NULL, dependencies=FALSE)"''' % ( str( tarball_name ) )
-                                    ( str( tarball_name ) )
                                 cmd = install_environment.build_command( td_common_util.evaluate_template( cmd, install_dir ) )
                                 return_code = handle_command( app, tool_dependency, install_dir, cmd )
                                 if return_code:
