@@ -34,7 +34,11 @@ return Backbone.View.extend(
                 self.d3_chart = nv.models.multiBarChart();
                     
                 self.d3_chart.xAxis.tickFormat(d3.format('.2f'))
-                self.d3_chart.yAxis.tickFormat(d3.format('.1f'))
+                                   .axisLabel('Breaks');
+                
+                self.d3_chart.yAxis.tickFormat(d3.format('.3f'))
+                                   .axisLabel('Frequency')
+                                   .axisLabelDistance(30);
                 
                 self.options.svg.datum(data)
                                 .call(self.d3_chart);

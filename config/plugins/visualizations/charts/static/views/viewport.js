@@ -246,13 +246,12 @@ return Backbone.View.extend(
         var group_index = 0;
         chart.groups.each(function(group) {
             for (var key in chart_settings.columns) {
-                request_string += key + '_' + (++group_index) + ':' + group.get(key) + ', ';
+                request_string += key + '_' + (++group_index) + ':' + (parseInt(group.get(key)) + 1) + ', ';
             }
         });
         
         // return
-        return 'columns : 2';
-        //return request_string.substring(0, request_string.length - 2);
+        return request_string.substring(0, request_string.length - 2);
     },
     
     // create default chart request

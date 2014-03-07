@@ -14,20 +14,20 @@ return Backbone.Model.extend(
                 }
             }
         },
+        'horizontal' : {
+            title   : 'Bar diagram (horizontal)',
+            columns : {
+                y : {
+                    title   : 'Values for y-axis'
+                }
+            }
+        },
         'histogram' : {
             title   : 'Histogram',
             mode    : 'execute',
             columns : {
                 y : {
                     title   : 'Derive frequencies'
-                }
-            }
-        },
-        'horizontal' : {
-            title   : 'Bar diagram (horizontal)',
-            columns : {
-                y : {
-                    title   : 'Values for y-axis'
                 }
             }
         },

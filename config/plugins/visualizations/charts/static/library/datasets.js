@@ -115,7 +115,7 @@ return Backbone.Collection.extend(
                           
                             // read value from row
                             var v = row[index];
-                            if(isNaN(v)) {
+                            if(isNaN(v) || !v) {
                                 v = 0;
                             }
                       
