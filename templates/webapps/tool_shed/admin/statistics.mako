@@ -18,29 +18,37 @@
                         <td>Total repositories</td>
                         <td>${trans.app.shed_counter.repositories | h}</td>
                     </tr>
-                    ##<tr>
-                    ##    <td>Empty repositories</td>
-                    ##    <td>${trans.app.shed_counter.new_repositories | h}</td>
-                    ##</tr>
+                    <tr>
+                        <td>Unique owners</td>
+                        <td>${trans.app.shed_counter.unique_owners | h}</td>
+                    </tr>
+                    <tr>
+                        <td>Deprecated repositories</td>
+                        <td>${trans.app.shed_counter.deprecated_repositories | h}</td>
+                    </tr>
                     <tr>
                         <td>Deleted repositories</td>
                         <td>${trans.app.shed_counter.deleted_repositories | h}</td>
                     </tr>
                     <tr>
                         <td>Valid tools</td>
-                        <td>${trans.app.shed_counter.valid_tools | h}</td>
+                        <td>${trans.app.shed_counter.unique_valid_tools | h}</td>
                     </tr>
                     <tr>
-                        <td>Invalid tools</td>
-                        <td>${trans.app.shed_counter.invalid_tools | h}</td>
+                        <td>Valid versions of tools</td>
+                        <td>${trans.app.shed_counter.valid_versions_of_tools | h}</td>
                     </tr>
                     <tr>
-                        <td>Workflows</td>
+                        <td>Invalid versions of tools</td>
+                        <td>${trans.app.shed_counter.invalid_versions_of_tools | h}</td>
+                    </tr>
+                    <tr>
+                        <td>Exported Galaxy workflows</td>
                         <td>${trans.app.shed_counter.workflows | h}</td>
                     </tr>
                     <tr>
-                        <td>Proprietary datatypes</td>
-                        <td>${trans.app.shed_counter.proprietary_datatypes | h}</td>
+                        <td>Custom datatypes</td>
+                        <td>${trans.app.shed_counter.custom_datatypes | h}</td>
                     </tr>
                     <tr>
                         <td>Total clones</td>
