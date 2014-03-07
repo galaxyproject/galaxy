@@ -19,6 +19,7 @@ return Backbone.Model.extend(
     initialize: function(options)
     {
         this.groups = new Groups();
+        this.settings = new Backbone.Model();
     },
     
     // reset
@@ -26,6 +27,7 @@ return Backbone.Model.extend(
     {
         this.clear({silent: true}).set(this.defaults);
         this.groups.reset();
+        this.settings.clear();
         this.trigger('reset', this);
     },
     
@@ -33,11 +35,19 @@ return Backbone.Model.extend(
     copy: function(new_chart) {
         // copy chart/groups
         var current = this;
+        
+        // set attributes
+        current.clear({silent: true}).set(this.defaults);
         current.set(new_chart.attributes);
+        
+        // set nested models/collections
+        current.settings = new_chart.settings.clone();
         current.groups.reset();
         new_chart.groups.each(function(group) {
             current.groups.add(group.clone());
         });
+        
+        // trigger change
         current.trigger('change', current);
     },
     

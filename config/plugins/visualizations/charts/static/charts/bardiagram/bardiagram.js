@@ -11,7 +11,7 @@ return Backbone.View.extend(
     },
             
     // render
-    plot : function(chart, request_dictionary)
+    draw : function(chart, request_dictionary)
     {
         // request data
         var self = this;
@@ -19,8 +19,12 @@ return Backbone.View.extend(
             nv.addGraph(function() {
                 self.d3_chart = nv.models.multiBarChart();
                 
-                self.d3_chart.xAxis.tickFormat(d3.format('.2f'))
                 self.d3_chart.yAxis.tickFormat(d3.format('.1f'))
+                                    .axisLabel(chart.settings.get('y_axis_label', 'Frequency'))
+                                    .axisLabelDistance(30);
+                
+                self.d3_chart.xAxis.tickFormat(d3.format('.2f'))
+                                    .axisLabel(chart.settings.get('x_axis_label', 'Breaks'));
                 
                 self.options.svg.datum(data)
                                 .call(self.d3_chart);

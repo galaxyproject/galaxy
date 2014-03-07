@@ -11,7 +11,7 @@ return Backbone.View.extend(
     },
             
     // render
-    plot : function(chart, request_dictionary)
+    draw : function(chart, request_dictionary)
     {
         // request data
         var self = this;

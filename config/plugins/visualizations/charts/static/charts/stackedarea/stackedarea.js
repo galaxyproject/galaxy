@@ -11,24 +11,28 @@ return Backbone.View.extend(
     },
             
     // render
-    plot : function(chart, request_dictionary)
+    draw : function(chart, request_dictionary)
     {
         // request data
         var self = this;
         this.app.datasets.request(request_dictionary, function(data) {
             nv.addGraph(function() {
-                self.chart_3d = nv.models.lineWithFocusChart();
-
-                self.chart_3d.xAxis
-                    .tickFormat(d3.format(',f'));
-
-                self.chart_3d.yAxis
-                    .tickFormat(d3.format(',.2f'));
+                // make plot
+                self.d3_chart = nv.models.stackedAreaChart()
+                    .x(function(d) {
+                        return d.x
+                    })
+                    .y(function(d) {
+                        return d.y
+                    })
+                    .clipEdge(true);
+                
+                self.d3_chart.xAxis.tickFormat(function() { return ''; });
                 
                 self.options.svg.datum(data)
-                                .call(self.chart_3d);
-
-                nv.utils.windowResize(self.chart_3d.update);
+                                .call(self.d3_chart);
+     
+                nv.utils.windowResize(self.d3_chart.update);
                 
                 // set chart state
                 chart.set('state', 'ok');

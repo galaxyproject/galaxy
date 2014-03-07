@@ -69,6 +69,35 @@ var Button = Backbone.View.extend(
 });
 
 // plugin
+var Icon = Backbone.View.extend(
+{
+    // options
+    optionsDefault: {
+        float       : 'right',
+        icon        : '',
+        tooltip     : '',
+        placement   : 'bottom'
+    },
+    
+    // initialize
+    initialize : function(options) {
+        // get options
+        this.options = Utils.merge(options, this.optionsDefault);
+            
+        // create new element
+        this.setElement(this._template(this.options));
+        
+        // add tooltip
+        $(this.el).tooltip({title: options.tooltip, placement: 'bottom'});
+    },
+    
+    // element
+    _template: function(options) {
+        return '<span class="fa ' + options.icon + '" style="font-size: 1.2em;"/>';
+    }
+});
+
+// plugin
 var ButtonIcon = Backbone.View.extend(
 {
     // options
@@ -481,6 +510,7 @@ var Input = Backbone.View.extend(
 return {
     Label   : Label,
     Button  : Button,
+    Icon  : Icon,
     ButtonIcon : ButtonIcon,
     Input : Input,
     Anchor  : Anchor,

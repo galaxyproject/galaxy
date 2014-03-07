@@ -156,11 +156,13 @@ return Backbone.View.extend(
     
     // change
     _changeChart: function(chart) {
-        // add chart
-        this._addChart(chart);
+        if (chart.get('type')) {
+            // add chart
+            this._addChart(chart);
         
-        // select available chart
-        this.table.value(chart.id);
+            // select available chart
+            this.table.value(chart.id);
+        }
     }
 });
 

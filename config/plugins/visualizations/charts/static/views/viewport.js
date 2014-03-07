@@ -135,7 +135,7 @@ return Backbone.View.extend(
         var id = '#' + chart_id;
         
         // create element
-        var $chart_el = $(this._template({id: id, height : this.options.height}));
+        var $chart_el = $(this._template({id: id}));
         
         // add to portlet
         this.portlet.append($chart_el);
@@ -194,7 +194,7 @@ return Backbone.View.extend(
         
         // create chart view
         var self = this;
-        require(['plugin/charts/' + chart_type], function(ChartView) {
+        require(['plugin/charts/' + chart_type + '/' + chart_type], function(ChartView) {
             // create chart
             var view = new ChartView(self.app, {svg : svg});
             
@@ -202,10 +202,10 @@ return Backbone.View.extend(
             var mode = chart_settings.mode;
             if (mode == 'execute') {
                 self.app.jobs.submit(chart, self._defaultRequestString(chart), function() {
-                    view.plot(chart, self._defaultRequestDictionary(chart));
+                    view.draw(chart, self._defaultRequestDictionary(chart));
                 });
             } else {
-                view.plot(chart, self._defaultRequestDictionary(chart));
+                view.draw(chart, self._defaultRequestDictionary(chart));
             }
         });
     },
@@ -229,7 +229,7 @@ return Backbone.View.extend(
                         '<span id="icon" style="font-size: 1.2em; display: inline-block;"/>' +
                         '<span id="text" style="position: relative; margin-left: 5px; top: -1px; font-size: 1.0em;"/>' +
                     '</span>' +
-                    '<svg style="height: ' + options.height + 'px;"/>' +
+                    '<svg style="height: auto;"/>' +
                 '</div>';
     },
     

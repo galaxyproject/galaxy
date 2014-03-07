@@ -11,21 +11,14 @@ return Backbone.View.extend(
     },
             
     // render
-    plot : function(chart, request_dictionary)
+    draw : function(chart, request_dictionary)
     {
         // request data
         var self = this;
         this.app.datasets.request(request_dictionary, function(data) {
+            // add graph to screen
             nv.addGraph(function() {
-                // make plot
-                self.d3_chart = nv.models.stackedAreaChart()
-                    .x(function(d) {
-                        return d.x
-                    })
-                    .y(function(d) {
-                        return d.y
-                    })
-                    .clipEdge(true);
+                self.d3_chart = nv.models.multiBarHorizontalChart();
                 
                 self.d3_chart.xAxis.tickFormat(function() { return ''; });
                 

@@ -1,6 +1,8 @@
 // dependencies
-define(['mvc/ui/ui-tabs', 'plugin/library/table', 'plugin/library/ui', 'utils/utils', 'plugin/models/chart', 'plugin/models/group', 'plugin/views/group'],
-    function(Tabs, Table, Ui, Utils, Chart, Group, GroupView) {
+define(['mvc/ui/ui-tabs', 'plugin/library/table', 'plugin/library/ui', 'utils/utils',
+        'plugin/models/chart', 'plugin/models/group',
+        'plugin/views/group', 'plugin/views/settings'],
+    function(Tabs, Table, Ui, Utils, Chart, Group, GroupView, SettingsView) {
 
 // widget
 return Backbone.View.extend(
@@ -33,8 +35,8 @@ return Backbone.View.extend(
                 if (self.chart.groups.length > 0) {
                     // show modal
                     self.app.modal.show({
-                        title   : 'Switching the chart type?',
-                        body    : 'If you continue your data selections will cleared.',
+                        title   : 'Switching to another chart type?',
+                        body    : 'If you continue your settings and selections will be reseted.',
                         buttons : {
                             'Cancel'    : function() {
                                 // hide modal
@@ -55,11 +57,12 @@ return Backbone.View.extend(
                 }
             },
             onchange : function(type) {
+                // reset type relevant chart content
+                self.chart.groups.reset();
+                self.chart.settings.clear();
+                
                 // update chart type
                 self.chart.set({type: type});
-                    
-                // reset groups
-                self.chart.groups.reset();
             },
             content: 'No chart types available'
         });
@@ -127,17 +130,31 @@ return Backbone.View.extend(
         });
         
         // append element
-        var $settings = $('<div/>');
-        $settings.append(Utils.wrap((new Ui.Label({ title : 'Provide a chart title:'})).$el));
-        $settings.append(Utils.wrap(this.title.$el));
-        $settings.append(Utils.wrap((new Ui.Label({ title : 'Select a chart type:'})).$el));
-        $settings.append(Utils.wrap(this.table.$el));
+        var $main = $('<div/>');
+        $main.append(Utils.wrap((new Ui.Label({ title : 'Provide a chart title:'})).$el));
+        $main.append(Utils.wrap(this.title.$el));
+        $main.append(Utils.wrap((new Ui.Label({ title : 'Select a chart type:'})).$el));
+        $main.append(Utils.wrap(this.table.$el));
+        
+        // add tab
+        this.tabs.add({
+            id      : 'main',
+            title   : 'Start',
+            $el     : $main
+        });
+        
+        //
+        // main settings tab
+        //
+        
+        // create settings view
+        this.settings = new SettingsView(this.app);
         
         // add tab
         this.tabs.add({
             id      : 'settings',
-            title   : 'Start',
-            $el     : $settings
+            title   : 'Configuration',
+            $el     : this.settings.$el
         });
         
         // elements

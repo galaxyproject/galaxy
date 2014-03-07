@@ -10,8 +10,8 @@ return Backbone.View.extend(
         this.options    = options;
     },
     
-    // plot
-    plot: function(chart, request_dictionary) {
+    // draw
+    draw: function(chart, request_dictionary) {
         
         // update request dataset id
         request_dictionary.id = chart.get('dataset_id_job');
@@ -29,7 +29,10 @@ return Backbone.View.extend(
         // send request
         var self = this;
         this.app.datasets.request(request_dictionary, function(data) {
+            // set chart state
             chart.set('state', 'ok');
+            
+            // draw graph
             nv.addGraph(function() {
                 self.d3_chart = nv.models.multiBarChart();
                     
