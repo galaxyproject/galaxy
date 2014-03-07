@@ -938,10 +938,7 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
     return tool_dependency
 
 def log_results( command, fabric_AttributeString, file_path ):
-    """
-    Write attributes of fabric.operations._AttributeString (which is the output of executing command using fabric's local() method)
-    to a specified log file.
-    """
+    """Write attributes of fabric.operations._AttributeString to a specified log file."""
     if os.path.exists( file_path ):
         logfile = open( file_path, 'ab' )
     else:
