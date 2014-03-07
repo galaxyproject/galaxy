@@ -163,12 +163,13 @@ class RepositoryGrid( grids.Grid ):
             # This column will display the value associated with the currently displayed metadata revision.
             if repository.type == rt_util.UNRESTRICTED:
                 try:
-                    displayed_metadata_revision = repository.metadata_revisions[ -1 ]
-                    if displayed_metadata_revision.includes_tools:
-                        if displayed_metadata_revision.tools_functionally_correct:
-                            return 'yes'
-                        else:
-                            return 'no'
+                    if len( repository.metadata_revisions ) > 0:
+                        displayed_metadata_revision = repository.metadata_revisions[ -1 ]
+                        if displayed_metadata_revision.includes_tools:
+                            if displayed_metadata_revision.tools_functionally_correct:
+                                return 'yes'
+                            else:
+                                return 'no'
                     return 'n/a'
                 except Exception, e:
                     log.exception( str( e ) )
@@ -176,23 +177,23 @@ class RepositoryGrid( grids.Grid ):
             else:
                 # Here repository.type must be rt_util.TOOL_DEPENDENCY_DEFINITION.
                 try:
-                    displayed_metadata_revision = repository.metadata_revisions[ -1 ]
-                    if displayed_metadata_revision.test_install_error:
-                        return 'no'
-                    tool_test_results = listify( displayed_metadata_revision.tool_test_results )
-                    if len( tool_test_results ) > 0:
-                        last_tool_test_result = tool_test_results[ 0 ]
-                        installation_error_dict = last_tool_test_result.get( 'installation_errors', {} )
-                        if len( installation_error_dict ) > 0:
-                            current_repository_installation_error_dicts = installation_error_dict.get( 'current_repository', [] )
-                            if len( current_repository_installation_error_dicts ) > 0:
-                                return 'no'
+                    if len( repository.metadata_revisions ) > 0:
+                        displayed_metadata_revision = repository.metadata_revisions[ -1 ]
+                        if displayed_metadata_revision.test_install_error:
+                            return 'no'
+                        tool_test_results = listify( displayed_metadata_revision.tool_test_results )
+                        if len( tool_test_results ) > 0:
+                            last_tool_test_result = tool_test_results[ 0 ]
+                            installation_error_dict = last_tool_test_result.get( 'installation_errors', {} )
+                            if len( installation_error_dict ) > 0:
+                                current_repository_installation_error_dicts = installation_error_dict.get( 'current_repository', [] )
+                                if len( current_repository_installation_error_dicts ) > 0:
+                                    return 'no'
+                                else:
+                                    return 'yes'
                             else:
                                 return 'yes'
-                        else:
-                            return 'yes'
-                    else:
-                        return 'no'
+                    return 'no'
                 except Exception, e:
                     log.exception( str( e ) )
                     return 'unknown'
