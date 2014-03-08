@@ -4,8 +4,8 @@ return $.extend(true, {}, nvd3_config, {
     title   : 'Histogram',
     mode    : 'execute',
     columns : {
-        x : {
-            title   : 'Values for x-axis'
+        y : {
+            title   : 'Observations'
         }
     },
     settings  : {
