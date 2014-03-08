@@ -14,9 +14,7 @@ return Backbone.View.extend(
     draw : function(chart, request_dictionary)
     {
         var nvd3 = new NVD3(this.app, this.options);
-        nvd3.draw(nv.models.multiBarHorizontalChart(), chart, request_dictionary, function(nvd3_model) {
-            nvd3_model.xAxis.tickFormat(function() { return ''; });
-        });
+        nvd3.draw(nv.models.multiBarHorizontalChart(), chart, request_dictionary);
     }
 });
 

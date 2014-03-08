@@ -18,12 +18,24 @@ return Backbone.View.extend(
         this.app.datasets.request(request_dictionary, function(data) {
             nv.addGraph(function() {
                 
-                nvd3_model.yAxis.tickFormat(d3.format('.1f'))
-                                    .axisLabel(chart.settings.get('y_axis_label', 'Frequency'))
-                                    .axisLabelDistance(30);
+                if (chart.settings.get('x_axis_type') == 'hide') {
+                    nvd3_model.xAxis.tickFormat(function() { return '' });
+                } else {
+                    var tick = chart.settings.get('x_axis_tick') + chart.settings.get('x_axis_type');
+                    nvd3_model.xAxis.tickFormat(d3.format(tick));
+                }
                 
-                nvd3_model.xAxis.tickFormat(d3.format('.2f'))
-                                    .axisLabel(chart.settings.get('x_axis_label', 'Breaks'));
+                nvd3_model.xAxis.axisLabel(chart.settings.get('x_axis_label'));
+                
+                if (chart.settings.get('y_axis_type') == 'hide') {
+                    nvd3_model.yAxis.tickFormat(function() { return '' });
+                } else {
+                    var tick = chart.settings.get('y_axis_tick') + chart.settings.get('y_axis_type');
+                    nvd3_model.yAxis.tickFormat(d3.format(tick));
+                }
+                
+                nvd3_model.yAxis.axisLabel(chart.settings.get('y_axis_label'))
+                                .axisLabelDistance(30);
                 
                 if (callback) {
                     callback(nvd3_model);

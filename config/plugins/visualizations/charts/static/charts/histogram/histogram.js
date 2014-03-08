@@ -27,10 +27,7 @@ return Backbone.View.extend(
         }
 
         var nvd3 = new NVD3(this.app, this.options);
-        nvd3.draw(nv.models.multiBarChart(), chart, request_dictionary, function(nvd3_model) {
-            nvd3_model.xAxis.tickFormat(d3.format('.2f'));
-            nvd3_model.yAxis.tickFormat(d3.format('.3f'));
-        });
+        nvd3.draw(nv.models.multiBarChart(), chart, request_dictionary);
     }
 });
 

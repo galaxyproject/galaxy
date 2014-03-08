@@ -19,7 +19,6 @@ return Backbone.View.extend(
             nvd3_model.x(function(d) { return d.x })
                       .y(function(d) { return d.y })
                       .clipEdge(true);
-            nvd3_model.xAxis.tickFormat(function() { return ''; });
         });
     }
 });

@@ -93,7 +93,7 @@ return Backbone.View.extend(
             
             // create select field
             var data_def = chart_settings.columns[id];
-            var select = new Ui.Select({
+            var select = new Ui.Select.View({
                 id   : 'select_' + id,
                 gid  : id,
                 onchange : function(value) {

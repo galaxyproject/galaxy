@@ -2,7 +2,7 @@
 define(['utils/utils'], function(Utils) {
 
 // plugin
-return Backbone.View.extend(
+var View = Backbone.View.extend(
 {
     // options
     optionsDefault: {
@@ -212,5 +212,9 @@ return Backbone.View.extend(
         return tmpl;
     }
 });
+
+return {
+    View: View
+}
 
 });

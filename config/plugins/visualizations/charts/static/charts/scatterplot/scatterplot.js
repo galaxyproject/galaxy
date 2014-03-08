@@ -18,9 +18,6 @@ return Backbone.View.extend(
             nvd3_model.showDistX(true)
                       .showDistY(true)
                       .color(d3.scale.category10().range());
-            nvd3_model.xAxis.tickFormat(d3.format('.02f'));
-            nvd3_model.yAxis.tickFormat(d3.format('.02f'));
-                
         });
     }
 });

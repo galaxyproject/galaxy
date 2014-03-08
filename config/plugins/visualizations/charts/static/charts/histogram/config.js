@@ -9,8 +9,12 @@ return $.extend(true, {}, nvd3_config, {
         }
     },
     settings  : {
+        separator_custom  : {
+            title       : 'Histogram settings',
+            type        : 'separator'
+        },
         bin_size : {
-            title   : 'Number of Bins',
+            title   : 'Number of bins',
             info    : 'Provide the number of histogram bins. The parsed data will be evenly distributed into bins according to the minimum and maximum values of the dataset.',
             type    : 'slider',
             init    : 10,
