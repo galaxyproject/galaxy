@@ -37,6 +37,12 @@ return Backbone.View.extend(
                 nvd3_model.yAxis.axisLabel(chart.settings.get('y_axis_label'))
                                 .axisLabelDistance(30);
                 
+                if (chart.groups.length == 1) {
+                    nvd3_model.options({ showControls: false });
+                }
+                
+                //nvd3_model.useInteractiveGuideline(true);
+                
                 if (callback) {
                     callback(nvd3_model);
                 }
