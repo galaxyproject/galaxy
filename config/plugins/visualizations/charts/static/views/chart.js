@@ -64,6 +64,9 @@ return Backbone.View.extend(
                 // update chart type
                 self.chart.set({type: type});
             },
+            ondblclick  : function(chart_id) {
+                self.tabs.show('settings');
+            },
             content: 'No chart types available'
         });
         
