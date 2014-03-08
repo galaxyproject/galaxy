@@ -18,6 +18,11 @@ var Label = Backbone.View.extend(
         this.setElement(this._template(this.options));
     },
     
+    // title
+    title: function(new_title) {
+        this.$el.find('b').html(new_title);
+    },
+    
     // template
     _template: function(options) {
         return '<label><b>' + options.title + '</b></label>';

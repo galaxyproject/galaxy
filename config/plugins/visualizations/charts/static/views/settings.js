@@ -40,9 +40,13 @@ return Backbone.View.extend(
         if (!chart_type) {
             return;
         }
+        // get settings
+        var chart_definition = this.app.types.get(chart_type);
+        
+        // set title
+        this.form.title(chart_definition.title + ':');
         
         // update table form model
-        var chart_definition = this.app.types.get(chart_type);
         this.form.update(chart_definition.settings, this.chart.settings);
     }
 });

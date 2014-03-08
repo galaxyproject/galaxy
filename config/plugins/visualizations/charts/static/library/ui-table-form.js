@@ -8,15 +8,21 @@ var View = Backbone.View.extend(
     // initialize
     initialize: function(options) {
         // ui elements
+        this.table_title = new Ui.Label({title: options.title});
         this.table = new Table({content: options.content});
         
         // create element
         var $view = $('<div/>');
-        $view.append(Utils.wrap((new Ui.Label({title: options.title})).$el));
+        $view.append(Utils.wrap(this.table_title.$el));
         $view.append(Utils.wrap(this.table.$el));
         
         // add element
         this.setElement($view);
+    },
+    
+    // title
+    title: function(new_title) {
+        this.table_title.title(new_title);
     },
     
     // update
