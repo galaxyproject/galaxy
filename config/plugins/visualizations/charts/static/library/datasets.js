@@ -127,7 +127,7 @@ return Backbone.Collection.extend(
                         result[j].values.push(value);
                     }
                 }
-                 
+                
                 // callback
                 callback(result);
             });

@@ -111,17 +111,21 @@ return Backbone.View.extend(
             // add select field to list
             list[id] = select;
         }
-            
+        
         // get dataset
         this.app.datasets.request({id : dataset_id}, function(dataset) {
             // configure columns
             self.columns = [];
             var meta = dataset.metadata_column_types;
-            for (var key in meta){
-                self.columns.push({
-                    'label' : key + ' [' + meta[key] + ']',
-                    'value' : key
-                });
+            for (var key in meta) {
+                // check type
+                if(meta[key] == 'int' || meta[key] == 'float') {
+                    // add to selection
+                    self.columns.push({
+                        'label' : 'Column: ' + (parseInt(key) + 1) + ' [' + meta[key] + ']',
+                        'value' : key
+                    });
+                }
             }
             
             // update select fields
