@@ -4,6 +4,9 @@ define(['utils/utils'], function(Utils) {
 // widget
 return Backbone.Collection.extend(
 {
+    // list of datasets
+    list: {},
+    
     // initialize
     initialize: function(app, options)
     {
@@ -19,22 +22,31 @@ return Backbone.Collection.extend(
         // link this
         var self = this;
         
-        // wait for dataset
-        Utils.request('GET', config.root + 'api/datasets/' + options.id, {}, function(dataset) {
-            switch (dataset.state) {
-                case 'error':
-                    if (error) {
-                        error(dataset);
-                    }
-                    break;
-                default:
-                    if (options.groups) {
-                        self._fetch(options, success);
-                    } else {
-                        success(dataset);
-                    }
+        // check if column data is requested
+        if (options.groups) {
+            this._fetch(options, success);
+        } else {
+            // check if dataset is available from cache
+            var dataset = this.list[options.id];
+            if (dataset) {
+                success(dataset);
+                return;
             }
-        });
+        
+            // request dataset
+            Utils.request('GET', config.root + 'api/datasets/' + options.id, {}, function(dataset) {
+                switch (dataset.state) {
+                    case 'error':
+                        if (error) {
+                            error(dataset);
+                        }
+                        break;
+                    default:
+                        self.list[options.id] = dataset;
+                        success(dataset);
+                }
+            });
+        }
     },
     
     // fetch data columns into dataset object

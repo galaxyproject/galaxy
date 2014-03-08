@@ -1,5 +1,6 @@
 <%
     scripts = [	'jquery/jquery.js',
+                'jquery/select2.js',
     			'bootstrap.js',
     			'require.js',
     			'underscore.js',

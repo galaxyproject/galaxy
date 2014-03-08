@@ -92,7 +92,7 @@ var View = Backbone.View.extend(
             // combine field and info
             var $input = $('<div/>');
             $input.append(field.$el);
-            $input.append('<div class="toolParamHelp">' + settings_def.info + '</div>');
+            $input.append('<div class="toolParamHelp"  style="font-size: 0.9em;">' + settings_def.info + '</div>');
             
             // add row to table
             this.table.add('<span style="white-space: nowrap;">' + settings_def.title + '</span>');
