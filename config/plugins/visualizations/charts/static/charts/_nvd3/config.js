@@ -16,7 +16,7 @@ return {
             title       : 'Axis label',
             info        : 'Provide a label for the axis.',
             type        : 'text',
-            init        : '',
+            init        : 'X-axis',
             placeholder : 'Axis label'
         },
         x_axis_type : {
@@ -96,7 +96,7 @@ return {
             title       : 'Axis label',
             info        : 'Provide a label for the axis.',
             type        : 'text',
-            init        : '',
+            init        : 'Y-axis',
             placeholder : 'Axis label'
         },
         y_axis_type : {
