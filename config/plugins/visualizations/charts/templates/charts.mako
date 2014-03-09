@@ -1,12 +1,4 @@
 <%
-    scripts = [	'jquery/jquery.js',
-                'jquery/select2.js',
-    			'bootstrap.js',
-    			'require.js',
-    			'underscore.js',
-    			'backbone/backbone.js',
-                'd3.js']
-                
     root        = h.url_for( "/" )
     app_root    = root + "plugins/visualizations/charts/static/"
 %>
@@ -18,19 +10,23 @@
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
         <title>${hda.name} | ${visualization_name}</title>
 
-		%for v in scripts:
-	        <script type="text/javascript" charset="utf-8" src="${root}static/scripts/libs/${v}" ></script>
-	    %endfor
+        ${h.js( 'libs/jquery/jquery',
+                'libs/jquery/select2',
+                'libs/bootstrap',
+                'libs/require',
+                'libs/underscore',
+                'libs/backbone/backbone',
+                'libs/d3' )}
 
         ## css
-        <link type="text/css" rel="Stylesheet" media="screen" href="${root}static/style/base.css">
+        ${h.css( 'base' )}
         
         ## install nv.d3 module
-        <script type="text/javascript" charset="utf-8" src="${app_root}plugins/nv.d3.js" ></script>
-        <link type="text/css" rel="Stylesheet" media="screen" href="${app_root}plugins/nv.d3.css">
+        ${h.javascript_link( app_root + "plugins/nv.d3.js" )}
+        ${h.stylesheet_link( app_root + "plugins/nv.d3.css" )}
         
         ## load merged/minified code
-        <script type="text/javascript" charset="utf-8" src="${app_root}build-app.js" ></script>
+        ${h.javascript_link( app_root + "build-app.js" )}
     </head>
 
     <body>
