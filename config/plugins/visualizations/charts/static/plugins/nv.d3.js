@@ -2902,12 +2902,7 @@ nv.models.cumulativeLineChart = function() {
         indexLine
           .data([index]);
 
-        //When dragging the index line, turn off line transitions.
-        // Then turn them back on when done dragging.
-        var oldDuration = chart.transitionDuration();
-        chart.transitionDuration(0);
         chart.update();
-        chart.transitionDuration(oldDuration);
       }
 
       g.select('.nv-background rect')
@@ -6546,11 +6541,7 @@ nv.models.lineWithFocusChart = function() {
       brush
         .x(x2)
         .on('brush', function() {
-            //When brushing, turn off transitions because chart needs to change immediately.
-            var oldTransition = chart.transitionDuration();
-            chart.transitionDuration(0); 
             onBrush();
-            chart.transitionDuration(oldTransition);
         });
 
       if (brushExtent) brush.extent(brushExtent);
@@ -13995,7 +13986,6 @@ nv.models.stackedAreaChart = function() {
                 ? d3.format('%') : yAxisTickFormat);
 
         g.select('.nv-y.nv-axis')
-          .duration(0)
             .call(yAxis);
       }
 
