@@ -6,6 +6,9 @@
     			'underscore.js',
     			'backbone/backbone.js',
                 'd3.js']
+                
+    root        = h.url_for( "/" )
+    app_root    = root + "plugins/visualizations/charts/static/"
 %>
 
 
@@ -16,16 +19,18 @@
         <title>${hda.name} | ${visualization_name}</title>
 
 		%for v in scripts:
-	        <script type="text/javascript" charset="utf-8" src="/static/scripts/libs/${v}" ></script>
+	        <script type="text/javascript" charset="utf-8" src="${root}static/scripts/libs/${v}" ></script>
 	    %endfor
 
         ## css
-        <link type="text/css" rel="Stylesheet" media="screen" href="/static/style/base.css">
+        <link type="text/css" rel="Stylesheet" media="screen" href="${root}static/style/base.css">
         
         ## install nv.d3 module
-        <script type="text/javascript" charset="utf-8" src="/plugins/visualizations/charts/static/plugins/nv.d3.js" ></script>
-        <link type="text/css" rel="Stylesheet" media="screen" href="/plugins/visualizations/charts/static/plugins/nv.d3.css">
-
+        <script type="text/javascript" charset="utf-8" src="${app_root}plugins/nv.d3.js" ></script>
+        <link type="text/css" rel="Stylesheet" media="screen" href="${app_root}plugins/nv.d3.css">
+        
+        ## load merged/minified code
+        <script type="text/javascript" charset="utf-8" src="${app_root}build-app.js" ></script>
     </head>
 
     <body>
@@ -33,7 +38,7 @@
 
             // get configuration
             var config = {
-                root : '/'
+                root : '${root}'
             };
             
             // link galaxy
@@ -53,7 +58,7 @@
             require.config({
                 baseUrl: config.root + "static/scripts/",
                 paths: {
-                    "plugin": config.root + "plugins/visualizations/charts/static/"
+                    "plugin": "${app_root}"
                 },
                 shim: {
                     "libs/underscore": { exports: "_" },
