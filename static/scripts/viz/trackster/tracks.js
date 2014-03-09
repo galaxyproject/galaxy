@@ -208,7 +208,6 @@ var Drawable = function(view, container, obj_dict) {
     // -- Set up drawable configuration. --
 
     this.config = config_mod.ConfigSettingCollection.from_models_and_saved_values(this.config_params, obj_dict.prefs);
-    console.log(obj_dict.prefs);
     this.config.each(function(s) { console.log(s.id, s.get('value')) })
     
     // If there's no saved name, use object name.
@@ -875,7 +874,7 @@ var TracksterView = Backbone.View.extend({
 
     initialize: function(obj_dict) {
         extend(obj_dict, {
-            obj_type: "View" 
+            obj_type: "View"
         });
         DrawableCollection.call(this, "View", obj_dict.container, obj_dict);
         this.chrom = null;
@@ -895,16 +894,13 @@ var TracksterView = Backbone.View.extend({
         this.reset();
 
         // Define track configuration
-        this.config = new config_mod.ConfigSettingCollection({
-            models: [
+        this.config = config_mod.ConfigSettingCollection.from_models_and_saved_values( [
                 { key: 'a_color', label: 'A Color', type: 'color', default_value: "#FF0000" },
                 { key: 'c_color', label: 'C Color', type: 'color', default_value: "#00FF00" },
                 { key: 'g_color', label: 'G Color', type: 'color', default_value: "#0000FF" },
                 { key: 't_color', label: 'T Color', type: 'color', default_value: "#FF00FF" },
                 { key: 'n_color', label: 'N Color', type: 'color', default_value: "#AAAAAA" }
-            ],
-            saved_values: obj_dict.prefs,
-        });
+            ], obj_dict.prefs);
     },
 
     render: function() {
@@ -1151,7 +1147,8 @@ var TracksterView = Backbone.View.extend({
     },
 
     get_base_color: function(base) {
-        return this.config.get('values')[ base.toLowerCase() + '_color' ] || this.config.get('values').n_color;
+        return this.config.get_value(base.toLowerCase() + '_color') || 
+               this.config.get_value('n_color');
     }
 
 });
@@ -3740,7 +3737,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     },
 
     set_painter_from_config: function() {
-        if ( this.config.get('values').connector_style === 'arcs' ) {
+        if ( this.config.get_value('connector_style') === 'arcs' ) {
             this.painter = painters.ArcLinkedFeaturePainter;
         } else {
             this.painter = painters.LinkedFeaturePainter;
