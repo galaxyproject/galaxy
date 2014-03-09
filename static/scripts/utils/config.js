@@ -17,12 +17,13 @@ var ConfigSetting = Backbone.Model.extend({
         }
 
         if (!this.get('value')) {
-            if (this.get('type') === 'color') {
+            // Use default to set value.
+            this.set_value(this.get('default_value'));
+
+            // If no default value for color config, set random color.
+            if (!this.get('value') && this.get('type') === 'color') {
                 // For color setting, set random color.
                 this.set('value', util_mod.get_random_color());
-            }
-            else {
-                this.set_value(this.get('default_value'));
             }
         }
     },
