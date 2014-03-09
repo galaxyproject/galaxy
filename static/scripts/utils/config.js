@@ -175,9 +175,9 @@ var ConfigSettingCollectionView = Backbone.View.extend({
             // Draw parameter as select area
             else if ( type === 'select' ) {
                 var select = $('<select />').attr("id", id);
-                for ( var i = 0; i < param.options.length; i++ ) {
-                    $("<option/>").text( param.options[i].label ).attr( "value", param.options[i].value ).appendTo( select );
-                }
+                _.each(param.get('options'), function(option) {
+                    $("<option/>").text( option.label ).attr( "value", option.value ).appendTo( select );
+                });
                 select.val( value );
                 row.append( select );
             
