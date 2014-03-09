@@ -168,6 +168,26 @@ return {
             ]
 
         },
+        separator_legend : {
+            title       : 'Others',
+            type        : 'separator'
+        },
+        show_legend : {
+            title       : 'Show legend',
+            info        : 'Would you like to add a legend?',
+            type        : 'select',
+            init        : 'true',
+            data        : [
+                {
+                    label   : 'Yes',
+                    value   : 'true'
+                },
+                {
+                    label   : 'No',
+                    value   : 'false'
+                }
+            ]
+        },
     }
 };
 
