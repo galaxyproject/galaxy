@@ -10374,8 +10374,7 @@ nv.models.pie = function() {
             //.attr('d', arc);
 
         slices.select('path')
-            .attr('d', arc)
-            .attrTween('d', arcTween);
+            .attr('d', arc);
 
         if (showLabels) {
           // This does the normal label
