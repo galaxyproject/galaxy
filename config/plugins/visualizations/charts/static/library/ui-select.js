@@ -26,7 +26,7 @@ var View = Backbone.View.extend(
         
         // link elements
         this.$select = this.$el.find('#select');
-        this.$wait = this.$el.find('#wait');
+        this.$icon = this.$el.find('#icon');
         
         // initial value
         this.selected = this.options.value;
@@ -50,6 +50,8 @@ var View = Backbone.View.extend(
         // wait
         if (this.options.wait) {
             this.wait();
+        } else {
+            this.show();
         }
     },
     
@@ -85,7 +87,8 @@ var View = Backbone.View.extend(
     
     // show
     show: function() {
-        this.$wait.hide();
+        this.$icon.removeClass();
+        this.$icon.addClass('fa fa-caret-down');
         this.$select.show();
         this.$el.show();
     },
@@ -97,8 +100,9 @@ var View = Backbone.View.extend(
     
     // wait
     wait: function() {
+        this.$icon.removeClass();
+        this.$icon.addClass('fa fa-spinner fa-spin');
         this.$select.hide();
-        this.$wait.css('display','inline-block');
     },
     
     // disabled
@@ -171,9 +175,7 @@ var View = Backbone.View.extend(
             
             // update selected value
             if (this.selected) {
-                //if (this._exists(selected)) {
-                    this.$select.val(this.selected);
-                //}
+                this.$select.val(this.selected);
             }
         }
     },
@@ -191,8 +193,10 @@ var View = Backbone.View.extend(
     
     // element
     _template: function(options) {
-        var tmpl =  '<div id="' + options.id + '">' +
-                        '<i id="wait" class="fa fa-spinner fa-spin" style="font-size: 1.2em; display: none;"/>' +
+        var tmpl =  '<div id="' + options.id + '" class="styled-select">' +
+                        '<div class="button">' +
+                            '<i id="icon"/>' +
+                        '</div>' +
                         '<select id="select" class="select ' + options.cls + ' ' + options.id + '">';
         for (key in options.data) {
             // options

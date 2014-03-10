@@ -14,3 +14,37 @@
         padding: 4px 10px;
     }
 }
+
+.styled-select {
+    position: relative;
+    height: 27px;
+    overflow: hidden;
+    border: 1px solid @border-default-color;
+    -moz-border-radius: @border-radius-base;
+    border-radius: @border-radius-base;
+
+    .button {
+        position: relative;
+        width: 25px;
+        height: inherit;
+        float: right;
+        border-left: 1px solid @border-default-color;
+        font-size: 1.2em;
+        padding-left: 7px;
+        padding-top: 3px;
+        background: @btn-default-bg;
+    }
+
+    select {
+        position: absolute;
+        top: 0px;
+        height: 100%;
+        width: 100%;
+        padding-left:5px;
+        cursor: pointer;
+        background: transparent;
+        border: 0;
+        border-radius: 0;
+        -webkit-appearance: none;
+    }
+}

@@ -1,5 +1,5 @@
 // dependencies
-define(['utils/utils', 'plugin/library/ui.select'], function(Utils, Select) {
+define(['utils/utils', 'plugin/library/ui-select'], function(Utils, Select) {
 
 // plugin
 var Label = Backbone.View.extend(

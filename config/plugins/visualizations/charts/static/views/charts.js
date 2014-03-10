@@ -1,5 +1,5 @@
 // dependencies
-define(['mvc/ui/ui-portlet', 'plugin/library/table', 'plugin/library/ui', 'utils/utils', 'plugin/models/group', 'plugin/views/viewport',], function(Portlet, Table, Ui, Utils, Group, ViewportView) {
+define(['mvc/ui/ui-portlet', 'plugin/library/ui-table', 'plugin/library/ui', 'utils/utils', 'plugin/models/group', 'plugin/views/viewport',], function(Portlet, Table, Ui, Utils, Group, ViewportView) {
 
 // widget
 return Backbone.View.extend(

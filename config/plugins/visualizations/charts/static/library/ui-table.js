@@ -64,8 +64,11 @@ return Backbone.View.extend(
     },
     
     // add row cell
-    add: function($el) {
+    add: function($el, width) {
         var wrapper = $('<td></td>');
+        if (width) {
+            wrapper.css('width', width);
+        }
         wrapper.append($el);
         this.row.append(wrapper);
     },

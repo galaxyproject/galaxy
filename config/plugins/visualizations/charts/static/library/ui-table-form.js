@@ -1,5 +1,5 @@
 // dependencies
-define(['plugin/library/table', 'plugin/library/ui', 'utils/utils'],
+define(['plugin/library/ui-table', 'plugin/library/ui', 'utils/utils'],
         function(Table, Ui, Utils) {
 
 // widget
@@ -95,7 +95,7 @@ var View = Backbone.View.extend(
             $input.append('<div class="toolParamHelp"  style="font-size: 0.9em;">' + settings_def.info + '</div>');
             
             // add row to table
-            this.table.add('<span style="white-space: nowrap;">' + settings_def.title + '</span>');
+            this.table.add('<span style="white-space: nowrap;">' + settings_def.title + '</span>', '25%');
             this.table.add($input);
         } else {
             this.table.add('<h6 style="white-space: nowrap;">' + settings_def.title + ':<h6/>');

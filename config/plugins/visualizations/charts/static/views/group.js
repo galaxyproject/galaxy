@@ -1,5 +1,5 @@
 // dependencies
-define(['plugin/library/table', 'plugin/library/ui', 'utils/utils'],
+define(['plugin/library/ui-table', 'plugin/library/ui', 'utils/utils'],
         function(Table, Ui, Utils) {
 
 // widget
@@ -104,7 +104,7 @@ return Backbone.View.extend(
             });
     
             // add row to table
-            this.table.add(data_def.title);
+            this.table.add(data_def.title, '25%');
             this.table.add(select.$el);
             this.table.append(id);
             
