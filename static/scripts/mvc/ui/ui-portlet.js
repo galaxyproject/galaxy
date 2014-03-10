@@ -144,14 +144,14 @@ var View = Backbone.View.extend(
         var tmpl =  '<div class="toolForm">';
         
         if (options.title || options.icon) {
-            tmpl +=     '<div id="title" class="toolFormTitle" style="overflow:hidden;">' +
+            tmpl +=     '<div id="title" class="toolFormTitle" style="overflow:hidden; padding-bottom: 1px;">' +
                             '<div id="operations" style="float: right;"></div>' +
-                            '<div style="overflow: hidden">';
+                            '<div style="overflow: hidden; margin-bottom: 4px;">';
                             
             if (options.icon)
                 tmpl +=         '<i style="padding-top: 3px; float: left; font-size: 1.2em" class="icon fa ' + options.icon + '">&nbsp;</i>';
         
-            tmpl +=             '<div id="title-text" style="padding-top: 2px; float: left;">' + options.title + '</div>';
+            tmpl +=             '<div id="title-text" style="padding-top: 1px; float: left;">' + options.title + '</div>';
             
             tmpl +=         '</div>' +
                         '</div>';
