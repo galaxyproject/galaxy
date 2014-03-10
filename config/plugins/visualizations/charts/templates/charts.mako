@@ -11,7 +11,6 @@
         <title>${hda.name} | ${visualization_name}</title>
 
         ${h.js( 'libs/jquery/jquery',
-                'libs/jquery/select2',
                 'libs/bootstrap',
                 'libs/require',
                 'libs/underscore',
