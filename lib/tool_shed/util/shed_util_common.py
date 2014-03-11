@@ -1424,7 +1424,7 @@ def get_tool_shed_repository_status_label( trans, tool_shed_repository=None, nam
             bgcolor = trans.install_model.ToolShedRepository.states.ERROR
     else:
         bgcolor = trans.install_model.ToolShedRepository.states.WARNING
-        status_label = '%s, unknown status' % status_label
+        status_label = 'unknown status'
     return '<div class="count-box state-color-%s">%s</div>' % ( bgcolor, status_label )
 
 def get_updated_changeset_revisions( trans, name, owner, changeset_revision ):
