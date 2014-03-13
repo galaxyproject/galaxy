@@ -2,10 +2,10 @@
 API operations on a data library.
 """
 from galaxy import util
-from galaxy.util import string_as_bool
 from galaxy import web
 from galaxy import exceptions
 from galaxy.web import _future_expose_api as expose_api
+from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
 from galaxy.model.orm import and_, not_, or_
 from galaxy.web.base.controller import BaseAPIController, url_for
 
@@ -15,17 +15,15 @@ log = logging.getLogger( __name__ )
 
 class LibrariesController( BaseAPIController ):
 
-    @expose_api
-    def index( self, trans, deleted='False', **kwd ):
+    @expose_api_anonymous
+    def index( self, trans, **kwd ):
         """
-        index( self, trans, deleted='False', **kwd )
+        index( self, trans, **kwd )
         * GET /api/libraries:
-            Returns a list of summary data for all libraries that are ``non-deleted``
-        * GET /api/libraries/deleted:
-            Returns a list of summary data for ``deleted`` libraries.
+            Returns a list of summary data for all libraries.
 
-        :param  deleted: if True, show only ``deleted`` libraries, if False or nonpresent show only ``non-deleted``
-        :type   deleted: boolean
+        :param  deleted: if True, show only ``deleted`` libraries, if False show only ``non-deleted``
+        :type   deleted: boolean (optional)
 
         :returns:   list of dictionaries containing library information
         :rtype:     list
@@ -33,11 +31,17 @@ class LibrariesController( BaseAPIController ):
         .. seealso:: :attr:`galaxy.model.Library.dict_collection_visible_keys`
         """
         query = trans.sa_session.query( trans.app.model.Library )
-        deleted = util.string_as_bool( deleted )
-        if deleted:
-            query = query.filter( trans.app.model.Library.table.c.deleted == True )
-        else:
-            query = query.filter( trans.app.model.Library.table.c.deleted == False )
+        deleted = kwd.get( 'deleted', 'missing' )
+        try:
+            deleted = util.asbool( deleted )
+            if deleted:
+                query = query.filter( trans.app.model.Library.table.c.deleted == True )
+            else:
+                query = query.filter( trans.app.model.Library.table.c.deleted == False )
+        except ValueError:
+            # given value wasn't true/false so we don't filter on this parameter at all
+            pass
+
         current_user_role_ids = [ role.id for role in trans.get_current_user_roles() ]
         library_access_action = trans.app.security_agent.permitted_actions.LIBRARY_ACCESS.action
         restricted_library_ids = [ lp.library_id for lp in ( trans.sa_session.query( trans.model.LibraryPermissions )
@@ -196,7 +200,7 @@ class LibrariesController( BaseAPIController ):
 
         .. seealso:: :attr:`galaxy.model.Library.dict_element_visible_keys`
         """
-        undelete = string_as_bool( kwd.get( 'undelete', False ) )
+        undelete = util.string_as_bool( kwd.get( 'undelete', False ) )
         if not trans.user_is_admin():
             raise exceptions.ItemAccessibilityException( 'Only administrators can delete and undelete libraries.' )
         try:

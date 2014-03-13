@@ -817,20 +817,31 @@ var GalaxyLibraryview = Backbone.View.extend({
         $("#center").css('overflow','auto');
     },
 
-    render: function (models) {
+    /** Renders the libraries table either from the object's own collection, or from a given array of library models,
+     or renders an empty list in case no data is present. */
+    render: function (options) {
         var template = this.templateLibraryList();
         var libraries_to_render = null;
+        var include_deleted = false;
+        var models = null
+        if (typeof options !== 'undefined'){
+            include_deleted = typeof options.with_deleted !== 'undefined' ? options.with_deleted : false;
+            models = typeof options.models !== 'undefined' ? options.models : null;
+        }
 
-        if (this.collection !== null && typeof models === 'undefined'){
-            libraries_to_render = this.collection.models;
+        if (this.collection !== null && models === null){
+            if (include_deleted){ // show all the libraries
+              libraries_to_render = this.collection.models;
+            } else{ // show only undeleted libraries
+              libraries_to_render = this.collection.where({deleted: false});;
+            }
         } else if (models !== null){
             libraries_to_render = models;
         } else {
             libraries_to_render = [];
-        }
-    
-        this.$el.html(template({libraries: libraries_to_render, order: this.collection.sort_order}));
+            }
 
+        this.$el.html(template({libraries: libraries_to_render, order: this.collection.sort_order}));
     },
 
     /** Sorts the underlying collection according to the parameters received through URL. 
@@ -867,6 +878,9 @@ var GalaxyLibraryview = Backbone.View.extend({
         tmpl_array.push('');
         tmpl_array.push('<h3>Data Libraries Beta Test. This is work in progress. Please report problems & ideas via <a href="mailto:galaxy-bugs@bx.psu.edu?Subject=DataLibrariesBeta_Feedback" target="_blank">email</a> and <a href="https://trello.com/c/nwYQNFPK/56-data-library-ui-progressive-display-of-folders" target="_blank">Trello</a>.</h3>');
         tmpl_array.push('<a href="" id="create_new_library_btn" class="btn btn-primary file ">New Library</a>');
+        tmpl_array.push('<% if(libraries.length === 0) { %>');
+        tmpl_array.push("<div>I see no libraries. Why don't you create one?</div>");
+        tmpl_array.push('<% } else{ %>');
         tmpl_array.push('<table class="library_table table table-condensed">');
         tmpl_array.push('   <thead>');
         tmpl_array.push('     <th><a title="Click to reverse order" href="#sort/name/<% if(order==="desc"||order===null){print("asc")}else{print("desc")} %>">name</a> <span title="Sorted alphabetically" class="fa fa-sort-alpha-<%- order %>"></span></th>');
@@ -883,6 +897,7 @@ var GalaxyLibraryview = Backbone.View.extend({
         tmpl_array.push('       <% }); %>');
         tmpl_array.push('   </tbody>');
         tmpl_array.push('</table>');
+        tmpl_array.push('<% }%>');
         tmpl_array.push('</div>');
 
         return _.template(tmpl_array.join(''));
