@@ -45,13 +45,20 @@ class GalaxyInteractorApi( object ):
         fetcher = self.__dataset_fetcher( history_id )
         ## TODO: Twill version verifys dataset is 'ok' in here.
         self.twill_test_case.verify_hid( outfile, hda_id=hid, attributes=attributes, dataset_fetcher=fetcher, shed_tool_id=shed_tool_id )
-        metadata = attributes.get( 'metadata', {} )
+        metadata = attributes.get( 'metadata', {} ).copy()
+        for key, value in metadata.copy().iteritems():
+            new_key = "metadata_%s" % key
+            metadata[ new_key ] = metadata[ key ] 
+            del metadata[ key ]
+        expected_file_type = attributes.get( 'ftype', None )
+        if expected_file_type:
+            metadata[ "file_ext" ] = expected_file_type
+
         if metadata:
             dataset = self._get( "histories/%s/contents/%s" % ( history_id, hid ) ).json()
             for key, value in metadata.iteritems():
-                dataset_key = "metadata_%s" % key
                 try:
-                    dataset_value = dataset.get( dataset_key, None )
+                    dataset_value = dataset.get( key, None )
                     if dataset_value != value:
                         msg = "Dataset metadata verification for [%s] failed, expected [%s] but found [%s]."
                         msg_params = ( key, value, dataset_value )
