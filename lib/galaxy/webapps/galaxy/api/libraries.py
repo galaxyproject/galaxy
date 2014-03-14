@@ -12,7 +12,6 @@ from galaxy.web.base.controller import BaseAPIController, url_for
 import logging
 log = logging.getLogger( __name__ )
 
-
 class LibrariesController( BaseAPIController ):
 
     @expose_api_anonymous
@@ -29,6 +28,7 @@ class LibrariesController( BaseAPIController ):
         :rtype:     list
 
         .. seealso:: :attr:`galaxy.model.Library.dict_collection_visible_keys`
+
         """
         query = trans.sa_session.query( trans.app.model.Library )
         deleted = kwd.get( 'deleted', 'missing' )
@@ -54,7 +54,7 @@ class LibrariesController( BaseAPIController ):
                            trans.model.Library.table.c.id.in_( accessible_restricted_library_ids ) ) )
         libraries = []
         for library in query:
-            item = self._prepend_folder_prefix( library.to_dict( view='element',
+            item = self.prepend_folder_prefix( library.to_dict( view='element',
                 value_mapper={ 'id' : trans.security.encode_id , 'root_folder_id' : trans.security.encode_id } ) )
             libraries.append( item )
         return libraries
@@ -77,6 +77,8 @@ class LibrariesController( BaseAPIController ):
         :rtype:     dictionary
 
         .. seealso:: :attr:`galaxy.model.Library.dict_element_visible_keys`
+
+        :raises: MalformedId, ObjectNotFound
         """
         library_id = id
         deleted = util.string_as_bool( deleted )
@@ -91,7 +93,7 @@ class LibrariesController( BaseAPIController ):
             library = None
         if not library or not ( trans.user_is_admin() or trans.app.security_agent.can_access_library( trans.get_current_user_roles(), library ) ):
             raise exceptions.ObjectNotFound( 'Library with the id provided ( %s ) was not found' % id )
-        return self._prepend_folder_prefix( library.to_dict( view='element',
+        return self.prepend_folder_prefix( library.to_dict( view='element',
             value_mapper={ 'id' : trans.security.encode_id , 'root_folder_id' : trans.security.encode_id } ) )
 
     @expose_api
@@ -111,6 +113,8 @@ class LibrariesController( BaseAPIController ):
 
         :returns:   detailed library information
         :rtype:     dict
+
+        :raises: ItemAccessibilityException, RequestParameterMissingException
         """
         if not trans.user_is_admin():
             raise exceptions.ItemAccessibilityException( 'Only administrators can create libraries.' )
@@ -127,7 +131,7 @@ class LibrariesController( BaseAPIController ):
         library.root_folder = root_folder
         trans.sa_session.add_all( ( library, root_folder ) )
         trans.sa_session.flush()
-        return self._prepend_folder_prefix( library.to_dict( view='element',
+        return self.prepend_folder_prefix( library.to_dict( view='element',
             value_mapper={ 'id' : trans.security.encode_id , 'root_folder_id' : trans.security.encode_id } ) )
 
     @expose_api
@@ -146,6 +150,8 @@ class LibrariesController( BaseAPIController ):
 
         :returns:   detailed library information
         :rtype:     dict
+
+        :raises: ItemAccessibilityException, MalformedId, ObjectNotFound, RequestParameterInvalidException, RequestParameterMissingException
         """
         if not trans.user_is_admin():
             raise exceptions.ItemAccessibilityException( 'Only administrators can update libraries.' )
@@ -177,7 +183,7 @@ class LibrariesController( BaseAPIController ):
             raise exceptions.RequestParameterMissingException( "You did not specify any payload." )
         trans.sa_session.add( library )
         trans.sa_session.flush()
-        return self._prepend_folder_prefix( library.to_dict( view='element',
+        return self.prepend_folder_prefix( library.to_dict( view='element',
             value_mapper={ 'id' : trans.security.encode_id , 'root_folder_id' : trans.security.encode_id } ) )
 
     @expose_api
@@ -192,13 +198,15 @@ class LibrariesController( BaseAPIController ):
         :param  id:     the encoded id of the library to un/delete
         :type   id:     str
 
-        :param  undelete:    flag specifying whether the item should be deleted or undeleted, defaults to false:
+        :param  undelete:    (optional) flag specifying whether the item should be deleted or undeleted, defaults to false:
         :type   undelete:    bool
 
         :returns:   detailed library information
         :rtype:     dictionary
 
         .. seealso:: :attr:`galaxy.model.Library.dict_element_visible_keys`
+
+        :raises: ItemAccessibilityException, MalformedId, ObjectNotFound
         """
         undelete = util.string_as_bool( kwd.get( 'undelete', False ) )
         if not trans.user_is_admin():
@@ -221,12 +229,21 @@ class LibrariesController( BaseAPIController ):
 
         trans.sa_session.add( library )
         trans.sa_session.flush()
-        return self._prepend_folder_prefix( library.to_dict( view='element',
+        return self.prepend_folder_prefix( library.to_dict( view='element',
             value_mapper={ 'id' : trans.security.encode_id , 'root_folder_id' : trans.security.encode_id } ) )
 
-    def _prepend_folder_prefix (self, dictionary, type='library' ):
+    def prepend_folder_prefix (self, dictionary, type='library' ):
         """
-        In Galaxy folders have 'F' as a prefix to the encoded id to distinguish between folders and libraries
+        prepend_folder_prefix (self, dictionary, type='library' )
+        In Galaxy folders have an 'F' as a prefix to the encoded id to distinguish between folders and libraries
+
+        :param  dictionary:     a supported object after to_dict containing _encoded_ ids
+        :type   dictionary:     dictionary
+
+        :param  type:     string representing the type of dictionary that is passed in, defaults to 'library'
+        :type   type:     string
+
+        :raises: TypeError, ValueError
         """
         if not ( type in [ 'library', 'folder' ] ):
             raise TypeError( 'Prepending is not implemented for given type of dictionary.' )
@@ -240,5 +257,5 @@ class LibrariesController( BaseAPIController ):
             if return_dict[ 'id' ]:
                 return_dict[ 'id' ] = 'F' + return_dict[ 'id' ]
             else:
-                raise ValueError( 'Given folder does not contain id to prepend to.' )
+                raise ValueError( 'Given folder does not contain an id to prepend to.' )
         return return_dict
