@@ -126,7 +126,11 @@ return Backbone.View.extend(
     // add
     _addChart: function(chart) {
         // add title to table
-        this.table.add(chart.get('title'));
+        var title = chart.get('title');
+        if (title == '') {
+            title = 'Untitled';
+        }
+        this.table.add(title);
         
         // get chart type
         var type = this.app.types.get(chart.get('type'));

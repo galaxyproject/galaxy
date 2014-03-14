@@ -24,6 +24,9 @@
         ${h.javascript_link( app_root + "plugins/nv.d3.js" )}
         ${h.stylesheet_link( app_root + "plugins/nv.d3.css" )}
         
+        ## install boxplot module
+        ${h.javascript_link( app_root + "plugins/box.js" )}
+        
         ## load merged/minified code
         ${h.javascript_link( app_root + "build-app.js" )}
     </head>

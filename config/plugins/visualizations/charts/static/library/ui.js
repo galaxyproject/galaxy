@@ -139,7 +139,7 @@ var ButtonIcon = Backbone.View.extend(
         }
         
         // string
-        var str =   '<div id="' + options.id + '" style="margin-right: 5px; margin-bottom: 4px; float: ' + options.float + '; ' + width + '" class="' + options.cls + '">';
+        var str =   '<div id="' + options.id + '" style="margin-right: 5px; float: ' + options.float + '; ' + width + '" class="' + options.cls + '">';
     
         // title
         if (options.title) {
