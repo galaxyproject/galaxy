@@ -276,7 +276,7 @@ class ToolBox( object, Dictifiable ):
                 section = ToolSection( elem )
                 log.debug( "Loading section: %s" % elem.get( 'name' ) )
                 for section_key, section_val in val.elems.items():
-                    if section_key.startswith( 'tool_' ):
+                    if isinstance( section_val, Tool ):
                         tool_id = section_key.replace( 'tool_', '', 1 )
                         if tool_id in self.tools_by_id:
                             self.__add_tool_to_tool_panel( tool_id, section, section=True )
@@ -286,7 +286,7 @@ class ToolBox( object, Dictifiable ):
                             workflow = self.workflows_by_id[ workflow_id ]
                             section.elems[ section_key ] = workflow
                             log.debug( "Loaded workflow: %s %s" % ( workflow_id, workflow.name ) )
-                    elif isinstance( val, ToolSectionLabel ):
+                    elif isinstance( section_val, ToolSectionLabel ):
                         if section_val:
                             section.elems[ section_key ] = section_val
                             log.debug( "Loaded label: %s" % ( section_val.text ) )
