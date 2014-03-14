@@ -3,10 +3,14 @@
 <!-- visualization
         name: the title/display name of the visualization (e.g. 'Trackster', 'Fastq Stats', etc.) REQUIRED
         disabled: if included (value does not matter), this attribute will prevent the visualization being loaded
+        embeddable: if included (value does not matter), indicates that this visualization can be rendered as a DOM
+                fragment and won't render to a full page when passed the variable 'embedded' in the query string.
+                DEFAULT false.
 -->
 <!ATTLIST visualization
     name        CDATA #REQUIRED
     disabled    CDATA #IMPLIED
+    embeddable  CDATA #IMPLIED
 >
 
 <!ELEMENT description (#PCDATA)>

@@ -211,11 +211,13 @@ class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
             url = self.get_visualization_url( trans, target_object, visualization_name, param_data )
             display_name = visualization.config.get( 'name', None )
             render_target = visualization.config.get( 'render_target', 'galaxy_main' )
+            embeddable = visualization.config.get( 'embeddable', False )
             # remap some of these vars for direct use in ui.js, PopupMenu (e.g. text->html)
             return {
-                'href'  : url,
-                'html'  : display_name,
-                'target': render_target
+                'href'      : url,
+                'html'      : display_name,
+                'target'    : render_target,
+                'embeddable': embeddable
             }
 
         return None
@@ -393,6 +395,14 @@ class VisualizationsConfigParser( object ):
         returned[ 'name' ] = xml_tree.attrib.get( 'name', None )
         if not returned[ 'name' ]:
             raise ParsingException( 'visualization needs a name attribute' )
+
+        # record the embeddable flag - defaults to false
+        #   this is a design by contract promise that the visualization can be rendered inside another page
+        #   often by rendering only a DOM fragment. Since this is an advanced feature that requires a bit more
+        #   work from the creator's side - it defaults to False
+        returned[ 'embeddable' ] = False
+        if 'embeddable' in xml_tree.attrib:
+            returned[ 'embeddable' ] = xml_tree.attrib.get( 'embeddable', False ) == 'true'
 
         # a (for now) text description of what the visualization does
         description = xml_tree.find( 'description' )
