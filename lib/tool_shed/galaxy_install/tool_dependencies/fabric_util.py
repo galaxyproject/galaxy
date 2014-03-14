@@ -462,7 +462,7 @@ def handle_environment_variables( app, tool_dependency, install_dir, env_var_dic
         inherited_env_var_name = env_var_value.split( '[' )[1].split( ']' )[0]
         to_replace = '$ENV[%s]' % inherited_env_var_name
         # Build a command line that outputs VARIABLE_NAME: <the value of the variable>.
-        set_prior_environment_commands.append( 'echo "%s: $%s"' % ( inherited_env_var_name, inherited_env_var_name ) )
+        set_prior_environment_commands.append( 'echo %s: $%s' % ( inherited_env_var_name, inherited_env_var_name ) )
         command = ' ; '.join( set_prior_environment_commands )
         # Run the command and capture the output.
         command_return = handle_command( app, tool_dependency, install_dir, command, return_output=True )
