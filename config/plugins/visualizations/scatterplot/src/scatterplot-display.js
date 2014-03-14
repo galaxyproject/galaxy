@@ -184,7 +184,7 @@ var ScatterplotDisplay = Backbone.View.extend({
         //console.debug( JSON.stringify( stats, null, '  ' ) );
         var config = this.model.get( 'config' ),
             $statsTable = this.$el.find( '.stats-display' ),
-            xLabel = config.x.label, yLabel = config.y.label,
+            xLabel = config.xLabel, yLabel = config.yLabel,
             $table = $( '<table/>' ).addClass( 'table' )
                 .append([ '<thead><th></th><th>', xLabel, '</th><th>', yLabel, '</th></thead>' ].join( '' ))
                 .append( _.map( stats, function( stat, key ){

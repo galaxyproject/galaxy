@@ -5,10 +5,11 @@
     margin-bottom: 16px;
     overflow: auto;
     background-color: #ebd9b2;
-    padding : 8px 12px 8px 12px;
+    padding : 12px 12px 4px 12px;
 }
 
 .chart-header h2 {
+    margin-top: 0px;
     margin-bottom: 4px;
 }
 
@@ -63,7 +64,7 @@ figcaption .title-info {
 .file-controls .btn {
     height: 24px;
     padding: 0px 10px 0px 10px;
-    line-height: 24px;
+    line-height: 20px;
 }
 
 .file-controls .copy-btn {
