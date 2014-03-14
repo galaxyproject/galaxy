@@ -7,7 +7,7 @@ define([
 TODO:
 
 ============================================================================= */
-/** @class View/Controller for the history model.
+/** @class Editable View/Controller for the history model.
  *  @name HistoryPanel
  *
  *  Allows:
@@ -15,8 +15,6 @@ TODO:
  *      changing the name
  *      displaying and editing tags and annotations
  *      multi-selection and operations on mulitple hdas
- *  Does not allow:
- *      changing the name
  *
  *  @augments Backbone.View
  *  @borrows LoggableMixin#logger as #logger
@@ -65,8 +63,8 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
 
         this.model.on( 'change:nice_size', this.updateHistoryDiskSize, this );
 
-        this.model.hdas.on( 'change:deleted', this.handleHdaDeletionChange, this );
-        this.model.hdas.on( 'change:visible', this.handleHdaVisibleChange, this );
+        this.model.hdas.on( 'change:deleted', this._handleHdaDeletionChange, this );
+        this.model.hdas.on( 'change:visible', this._handleHdaVisibleChange, this );
         this.model.hdas.on( 'change:purged', function( hda ){
             // hafta get the new nice-size w/o the purged hda
             this.model.fetch();
@@ -74,8 +72,12 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
     },
 
     // ------------------------------------------------------------------------ panel rendering
-    /** render with history data */
+    /** render with history data
+     *  In this override, add tags, annotations, and multi select
+     *  @returns {jQuery} dom fragment as temporary container to be swapped out later
+     */
     renderModel : function( ){
+//TODO: can't call ReadOnlyHistoryPanel?
         var $newRender = $( '<div/>' );
 
         $newRender.append( HistoryPanel.templates.historyPanel( this.model.toJSON() ) );
@@ -95,6 +97,7 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
         return $newRender;
     },
 
+    /** render the tags sub-view controller */
     _renderTags : function( $where ){
         var panel = this;
         this.tagsEditor = new TagsEditor({
@@ -115,6 +118,7 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
             }).appendTo( $where.find( '.history-secondary-actions' ) )
         });
     },
+    /** render the annotation sub-view controller */
     _renderAnnotation : function( $where ){
         var panel = this;
         this.annotationEditor = new AnnotationEditor({
@@ -145,11 +149,12 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
         });
     },
 
-    /** Set up HistoryPanel js/widget behaviours */
+    /** Set up HistoryPanel js/widget behaviours
+     *  In this override, add the multi select popup menu and make the name editable
+     */
     _setUpBehaviours : function( $where ){
-        //TODO: these should be either sub-MVs, or handled by events
         $where = $where || this.$el;
-        $where.find( '[title]' ).tooltip({ placement: 'bottom' });
+        readonlyPanel.ReadOnlyHistoryPanel.prototype._setUpBehaviours.call( this, $where );
 
         // anon users shouldn't have access to any of the following
         if( !this.model ){
@@ -184,6 +189,9 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
             });
     },
 
+    /** return a new popup menu for choosing a multi selection action
+     *  ajax calls made for multiple datasets are queued
+     */
     _setUpDatasetActionsPopup : function( $where ){
         var panel = this;
         ( new PopupMenu( $where.find( '.history-dataset-action-popup-btn' ), [
@@ -226,7 +234,7 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
     /** If this hda is deleted and we're not showing deleted hdas, remove the view
      *  @param {HistoryDataAssociation} the hda to check
      */
-    handleHdaDeletionChange : function( hda ){
+    _handleHdaDeletionChange : function( hda ){
         if( hda.get( 'deleted' ) && !this.storage.get( 'show_deleted' ) ){
             this.removeHdaView( this.hdaViews[ hda.id ] );
         } // otherwise, the hdaView rendering should handle it
@@ -236,7 +244,7 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
     /** If this hda is hidden and we're not showing hidden hdas, remove the view
      *  @param {HistoryDataAssociation} the hda to check
      */
-    handleHdaVisibleChange : function( hda ){
+    _handleHdaVisibleChange : function( hda ){
         if( hda.hidden() && !this.storage.get( 'show_hidden' ) ){
             this.removeHdaView( this.hdaViews[ hda.id ] );
         } // otherwise, the hdaView rendering should handle it
@@ -245,7 +253,7 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
     /** Create an HDA view for the given HDA (but leave attachment for addHdaView above)
      *  @param {HistoryDatasetAssociation} hda
      */
-    createHdaView : function( hda ){
+    _createHdaView : function( hda ){
         var hdaId = hda.get( 'id' ),
             hdaView = new this.HDAViewClass({
                 model           : hda,
@@ -315,7 +323,7 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
             hdaView.remove();
             delete panel.hdaViews[ hdaView.model.id ];
             if( _.isEmpty( panel.hdaViews ) ){
-                panel.$el.find( panel.emptyMsgSelector ).fadeIn( panel.fxSpeed, function(){
+                panel.$emptyMessage().fadeIn( panel.fxSpeed, function(){
                     panel.trigger( 'empty-history', panel );
                 });
             }
@@ -337,6 +345,7 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
     },
 
     // ........................................................................ multi-select of hdas
+//TODO: to toggle showOrHide pattern
     /** show selectors on all visible hdas and associated controls */
     showSelectors : function( speed ){
         this.selecting = true;

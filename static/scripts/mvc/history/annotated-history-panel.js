@@ -33,16 +33,23 @@ var AnnotatedHistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
     HDAViewClass : hdaBase.HDABaseView,
 
     // ------------------------------------------------------------------------ panel rendering
+    /** render with history data
+     *  In this override:
+     *      replace the datasets list with a table,
+     *      add the history annotation,
+     *      and move the search controls
+     *  @returns {jQuery} dom fragment as temporary container to be swapped out later
+     */
     renderModel : function( ){
-        // huh?
+        // why do we need this here? why isn't className being applied?
         this.$el.addClass( this.className );
         var $newRender = readonlyPanel.ReadOnlyHistoryPanel.prototype.renderModel.call( this ),
         // move datasets from div to table
-            $datasetsList = $newRender.find( this.datasetsSelector ),
+            $datasetsList = this.$datasetsList( $newRender ),
             $datasetsTable = $( '<table/>' ).addClass( 'datasets-list datasets-table' );
         $datasetsTable.append( $datasetsList.children() );
-        $newRender.find( this.datasetsSelector ).replaceWith( $datasetsTable );
-        //TODO: it's possible to do this with css only, right?
+        $datasetsList.replaceWith( $datasetsTable );
+        //TODO: it's possible to do this with css only, right? display: table-cell, etc.?
 
         // add history annotation under subtitle
         $newRender.find( '.history-subtitle' ).after( this.renderHistoryAnnotation() );
@@ -50,11 +57,11 @@ var AnnotatedHistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
         // hide search button, move search bar beneath controls (instead of above title), show, and set up
         $newRender.find( '.history-search-btn' ).hide();
         $newRender.find( '.history-controls' ).after( $newRender.find( '.history-search-controls' ).show() );
-        this.setUpSearchInput( $newRender.find( '.history-search-input' ) );
 
         return $newRender;
     },
 
+    /** render the history's annotation as it's own field */
     renderHistoryAnnotation : function(){
         var annotation = this.model.get( 'annotation' );
         if( !annotation ){ return null; }
@@ -63,10 +70,13 @@ var AnnotatedHistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
         ].join( '' ));
     },
 
+    /** Set up/render a view for each HDA to be shown, init with model and listeners.
+     *  In this override, add table header cells to indicate the dataset, annotation columns
+     */
     renderHdas : function( $whereTo ){
         $whereTo = $whereTo || this.$el;
         var hdaViews = readonlyPanel.ReadOnlyHistoryPanel.prototype.renderHdas.call( this, $whereTo );
-        $whereTo.find( this.datasetsSelector ).prepend( $( '<tr/>' ).addClass( 'headers' ).append([
+        this.$datasetsList( $whereTo ).prepend( $( '<tr/>' ).addClass( 'headers' ).append([
             $( '<th/>' ).text( _l( 'Dataset' ) ),
             $( '<th/>' ).text( _l( 'Annotation' ) )
         ]));
@@ -74,6 +84,9 @@ var AnnotatedHistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
     },
 
     // ------------------------------------------------------------------------ hda sub-views
+    /** attach an hdaView to the panel
+     *  In this override, wrap the hdaView in a table row and cell, adding a 2nd cell for the hda annotation
+     */
     attachHdaView : function( hdaView, $whereTo ){
         $whereTo = $whereTo || this.$el;
         // build a row around the dataset with the std hdaView in the first cell and the annotation in the next
@@ -87,7 +100,7 @@ var AnnotatedHistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
                     .addClass( stateClass? stateClass.replace( '-', '-color-' ): '' ),
                 $( '<td/>' ).addClass( 'additional-info' ).text( annotation )
             ]);
-        $whereTo.find( this.datasetsSelector ).append( $tr );
+        this.$datasetsList( $whereTo ).append( $tr );
     },
 
     // ------------------------------------------------------------------------ panel events
