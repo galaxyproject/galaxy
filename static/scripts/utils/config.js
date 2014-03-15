@@ -128,13 +128,10 @@ var ConfigSettingCollection = Backbone.Collection.extend({
      * and a saved_values dictionary.
      */
     from_models_and_saved_values: function(models, saved_values) {
-        // Update models with saved values.
+        // If there are saved values, copy models and update with saved values.
         if (saved_values) {
-            _.each(models, function(m) {
-                if (saved_values[m.key]) {
-                    // Found saved value, so update model.
-                    m.value = saved_values[m.key];
-                }
+            models = _.map(models, function(m) {
+                return _.extend({}, m, { value: saved_values[m.key] });
             });
         }
         

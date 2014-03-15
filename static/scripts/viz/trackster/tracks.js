@@ -208,7 +208,6 @@ var Drawable = function(view, container, obj_dict) {
     // -- Set up drawable configuration. --
 
     this.config = config_mod.ConfigSettingCollection.from_models_and_saved_values(this.config_params, obj_dict.prefs);
-    this.config.each(function(s) { console.log(s.id, s.get('value')) })
     
     // If there's no saved name, use object name.
     if (!this.config.get_value('name')) {
@@ -2688,7 +2687,6 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
      * Use from_dict to recreate object.
      */
     to_dict: function() {
-        console.log(this.config.to_key_value_dict());
         return {
             track_type: this.get_type(),
             dataset: {
