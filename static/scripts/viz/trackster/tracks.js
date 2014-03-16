@@ -894,12 +894,13 @@ var TracksterView = Backbone.View.extend({
 
         // Define track configuration
         this.config = config_mod.ConfigSettingCollection.from_models_and_saved_values( [
+                { key: 'name', label: 'Name', type: 'text', default_value: '' },
                 { key: 'a_color', label: 'A Color', type: 'color', default_value: "#FF0000" },
                 { key: 'c_color', label: 'C Color', type: 'color', default_value: "#00FF00" },
                 { key: 'g_color', label: 'G Color', type: 'color', default_value: "#0000FF" },
                 { key: 't_color', label: 'T Color', type: 'color', default_value: "#FF00FF" },
                 { key: 'n_color', label: 'N Color', type: 'color', default_value: "#AAAAAA" }
-            ], obj_dict.prefs);
+            ], { name: obj_dict.name });
     },
 
     render: function() {
