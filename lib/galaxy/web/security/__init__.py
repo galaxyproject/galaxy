@@ -1,5 +1,7 @@
 import collections
-import os, os.path, logging
+import os
+import os.path
+import logging
 
 import pkg_resources
 pkg_resources.require( "pycrypto" )
@@ -13,6 +15,7 @@ log = logging.getLogger( __name__ )
 if os.path.exists( "/dev/urandom" ):
     # We have urandom, use it as the source of random data
     random_fd = os.open( "/dev/urandom", os.O_RDONLY )
+
     def get_random_bytes( nbytes ):
         value = os.read( random_fd, nbytes )
         # Normally we should get as much as we need
@@ -39,7 +42,7 @@ class SecurityHelper( object ):
         self.id_cipher = Blowfish.new( self.id_secret )
 
         per_kind_id_secret_base = config.get( 'per_kind_id_secret_base', self.id_secret )
-        self.id_ciphers_for_key = _cipher_cache( per_kind_id_secret_base )
+        self.id_ciphers_for_kind = _cipher_cache( per_kind_id_secret_base )
 
     def encode_id( self, obj_id, kind=None ):
         id_cipher = self.__id_cipher( kind )
@@ -84,7 +87,7 @@ class SecurityHelper( object ):
         if not kind:
             id_cipher = self.id_cipher
         else:
-            id_cipher = self.id_ciphers_for_key[ kind ]
+            id_cipher = self.id_ciphers_for_kind[ kind ]
         return id_cipher
 
 
