@@ -23,7 +23,6 @@ from galaxy.model.mapping import desc
 from galaxy.tools.parameters import visit_input_values
 from galaxy.tools.parameters.basic import DataToolParameter, DrillDownSelectToolParameter, SelectToolParameter, UnvalidatedValue
 from galaxy.tools.parameters.grouping import Conditional, Repeat
-from galaxy.util.odict import odict
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.util.topsort import CycleError, topsort, topsort_levels
 from galaxy.web import error, url_for
@@ -33,6 +32,7 @@ from galaxy.web.framework.helpers import grids, time_ago
 from galaxy.web.framework.helpers import to_unicode
 from galaxy.workflow.modules import module_factory
 from galaxy.workflow.run import invoke
+from galaxy.workflow.extract import summarize
 
 
 class StoredWorkflowListGrid( grids.Grid ):
@@ -1188,7 +1188,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         if not user:
             return trans.show_error_message( "Must be logged in to create workflows" )
         if ( job_ids is None and dataset_ids is None ) or workflow_name is None:
-            jobs, warnings = get_job_dict( trans )
+            jobs, warnings = summarize( trans )
             # Render
             return trans.fill_template(
                         "workflow/build_from_current_history.mako",
@@ -1211,7 +1211,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             dataset_ids = [ int( id ) for id in dataset_ids ]
             # Find each job, for security we (implicately) check that they are
             # associated witha job in the current history.
-            jobs, warnings = get_job_dict( trans )
+            jobs, warnings = summarize( trans )
             jobs_by_id = dict( ( job.id, job ) for job in jobs.keys() )
             steps = []
             steps_by_job_id = {}
@@ -1741,48 +1741,6 @@ def order_workflow_steps_with_levels( steps ):
         return topsort_levels( edgelist_for_workflow_steps( steps ) )
     except CycleError:
         return None
-
-
-class FakeJob( object ):
-    """
-    Fake job object for datasets that have no creating_job_associations,
-    they will be treated as "input" datasets.
-    """
-    def __init__( self, dataset ):
-        self.is_fake = True
-        self.id = "fake_%s" % dataset.id
-
-
-def get_job_dict( trans ):
-    """
-    Return a dictionary of Job -> [ Dataset ] mappings, for all finished
-    active Datasets in the current history and the jobs that created them.
-    """
-    history = trans.get_history()
-    # Get the jobs that created the datasets
-    warnings = set()
-    jobs = odict()
-    for dataset in history.active_datasets:
-        # FIXME: Create "Dataset.is_finished"
-        if dataset.state in ( 'new', 'running', 'queued' ):
-            warnings.add( "Some datasets still queued or running were ignored" )
-            continue
-
-        #if this hda was copied from another, we need to find the job that created the origial hda
-        job_hda = dataset
-        while job_hda.copied_from_history_dataset_association:
-            job_hda = job_hda.copied_from_history_dataset_association
-
-        if not job_hda.creating_job_associations:
-            jobs[ FakeJob( dataset ) ] = [ ( None, dataset ) ]
-
-        for assoc in job_hda.creating_job_associations:
-            job = assoc.job
-            if job in jobs:
-                jobs[ job ].append( ( assoc.name, dataset ) )
-            else:
-                jobs[ job ] = [ ( assoc.name, dataset ) ]
-    return jobs, warnings
 
 
 def cleanup_param_values( inputs, values ):
