@@ -268,6 +268,16 @@ class Job( object, Dictifiable ):
         self.handler = None
         self.exit_code = None
 
+    @property
+    def finished( self ):
+        states = self.states
+        return self.state in [
+            states.OK,
+            states.ERROR,
+            states.DELETED,
+            states.DELETED_NEW,
+        ]
+
     # TODO: Add accessors for members defined in SQL Alchemy for the Job table and
     # for the mapper defined to the Job table.
     def get_external_output_metadata( self ):
