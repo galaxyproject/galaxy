@@ -4,7 +4,6 @@ pkg_resources.require( "SVGFig" )
 import base64
 import httplib
 import json
-import math
 import os
 import sgmllib
 import svgfig
@@ -24,7 +23,6 @@ from galaxy.tools.parameters import visit_input_values
 from galaxy.tools.parameters.basic import DataToolParameter, DrillDownSelectToolParameter, SelectToolParameter, UnvalidatedValue
 from galaxy.tools.parameters.grouping import Conditional, Repeat
 from galaxy.util.sanitize_html import sanitize_html
-from galaxy.util.topsort import CycleError, topsort, topsort_levels
 from galaxy.web import error, url_for
 from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesStoredWorkflowMixin
 from galaxy.web.framework import form
@@ -33,6 +31,12 @@ from galaxy.web.framework.helpers import to_unicode
 from galaxy.workflow.modules import module_factory
 from galaxy.workflow.run import invoke
 from galaxy.workflow.extract import summarize
+from galaxy.workflow.steps import (
+    attach_ordered_steps,
+    order_workflow_steps,
+    edgelist_for_workflow_steps,
+    order_workflow_steps_with_levels,
+)
 
 
 class StoredWorkflowListGrid( grids.Grid ):
@@ -1692,57 +1696,6 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
 
 
 ## ---- Utility methods -------------------------------------------------------
-def attach_ordered_steps( workflow, steps ):
-    ordered_steps = order_workflow_steps( steps )
-    if ordered_steps:
-        workflow.has_cycles = False
-        for i, step in enumerate( ordered_steps ):
-            step.order_index = i
-            workflow.steps.append( step )
-    else:
-        workflow.has_cycles = True
-        workflow.steps = steps
-
-
-def edgelist_for_workflow_steps( steps ):
-    """
-    Create a list of tuples representing edges between ``WorkflowSteps`` based
-    on associated ``WorkflowStepConnection``s
-    """
-    edges = []
-    steps_to_index = dict( ( step, i ) for i, step in enumerate( steps ) )
-    for step in steps:
-        edges.append( ( steps_to_index[step], steps_to_index[step] ) )
-        for conn in step.input_connections:
-            edges.append( ( steps_to_index[conn.output_step], steps_to_index[conn.input_step] ) )
-    return edges
-
-
-def order_workflow_steps( steps ):
-    """
-    Perform topological sort of the steps, return ordered or None
-    """
-    position_data_available = True
-    for step in steps:
-        if not step.position or not 'left' in step.position or not 'top' in step.position:
-            position_data_available = False
-    if position_data_available:
-        steps.sort(cmp=lambda s1, s2: cmp( math.sqrt(s1.position['left'] ** 2 + s1.position['top'] ** 2), math.sqrt(s2.position['left'] ** 2 + s2.position['top'] ** 2)))
-    try:
-        edges = edgelist_for_workflow_steps( steps )
-        node_order = topsort( edges )
-        return [ steps[i] for i in node_order ]
-    except CycleError:
-        return None
-
-
-def order_workflow_steps_with_levels( steps ):
-    try:
-        return topsort_levels( edgelist_for_workflow_steps( steps ) )
-    except CycleError:
-        return None
-
-
 def cleanup_param_values( inputs, values ):
     """
     Remove 'Data' values from `param_values`, along with metadata cruft,
