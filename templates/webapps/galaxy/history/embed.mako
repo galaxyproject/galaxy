@@ -38,36 +38,44 @@
 </div>
 
 <script type="text/javascript">
+// Embedding the same history more than once will confuse DOM ids.
+//  In order to handle this, find this script and cache the previous node (the div above).
+//  (Since we need thisScript to be locally scoped or it will get overwritten, enclose in self-calling function)
+(function(){
+    var scripts = document.getElementsByTagName( 'script' ),
+        // this is executed immediately, so the last script will be this script
+        thisScript = scripts[ scripts.length - 1 ],
+        $embeddedHistory = $( thisScript ).prev();
 
-require.config({
-    baseUrl : "${h.url_for( '/static/scripts' )}"
-});
-require([ 'mvc/history/annotated-history-panel' ], function( panelMod ){
-
-    function toggleExpanded( ev ){
-        var $embeddedHistory = $( "#history-${encoded_history_id}" );
-        $embeddedHistory.find( '.expand-content-btn' ).toggleClass( 'toggle-expand' ).toggleClass( 'toggle' );
-        $embeddedHistory.find( ".summary-content" ).slideToggle( "fast" );
-        $embeddedHistory.find( ".annotation" ).slideToggle( "fast" );
-        $embeddedHistory.find( ".expanded-content" ).slideToggle( "fast" );
-        ev.preventDefault();
-    }
-
-    $(function(){
-        var debugging = JSON.parse( sessionStorage.getItem( 'debugging' ) ) || false,
-            historyModel = require( 'mvc/history/history-model' ),
-            $embeddedHistory = $( "#history-${encoded_history_id}" ),
-            panel = new panelMod.AnnotatedHistoryPanel({
-                el      : $embeddedHistory.find( ".history-panel" ),
-                model   : new historyModel.History(
-                    ${h.to_json_string( history_dict )},
-                    ${h.to_json_string( hda_dicts )},
-                    { logger: ( debugging )?( console ):( null ) }
-                )
-            }).render();
-
-        $embeddedHistory.find( '.expand-content-btn' ).click( toggleExpanded );
-        $embeddedHistory.find( '.toggle-embed' ).click( toggleExpanded );
+    require.config({
+        baseUrl : "${h.url_for( '/static/scripts' )}"
     });
-});
+    require([ 'mvc/history/annotated-history-panel' ], function( panelMod ){
+
+        function toggleExpanded( ev ){
+            var $embeddedHistory = $( thisScript ).prev();
+            $embeddedHistory.find( '.expand-content-btn' ).toggleClass( 'toggle-expand' ).toggleClass( 'toggle' );
+            $embeddedHistory.find( ".summary-content" ).slideToggle( "fast" );
+            $embeddedHistory.find( ".annotation" ).slideToggle( "fast" );
+            $embeddedHistory.find( ".expanded-content" ).slideToggle( "fast" );
+            ev.preventDefault();
+        }
+
+        $(function(){
+            var debugging = JSON.parse( sessionStorage.getItem( 'debugging' ) ) || false,
+                historyModel = require( 'mvc/history/history-model' ),
+                panel = new panelMod.AnnotatedHistoryPanel({
+                    el      : $embeddedHistory.find( ".history-panel" ),
+                    model   : new historyModel.History(
+                        ${h.to_json_string( history_dict )},
+                        ${h.to_json_string( hda_dicts )},
+                        { logger: ( debugging )?( console ):( null ) }
+                    )
+                }).render();
+
+            $embeddedHistory.find( '.expand-content-btn' ).click( toggleExpanded );
+            $embeddedHistory.find( '.toggle-embed' ).click( toggleExpanded );
+        });
+    });
+})();
 </script>
