@@ -47,6 +47,7 @@ class S3ObjectStore(ObjectStore):
         self.transfer_progress = 0
         self._parse_config_xml(config_xml)
         self._configure_connection()
+        self.bucket = self._get_bucket(self.bucket)
         # Clean cache only if value is set in universe_wsgi.ini
         if self.cache_size != -1:
             # Convert GBs to bytes for comparison
