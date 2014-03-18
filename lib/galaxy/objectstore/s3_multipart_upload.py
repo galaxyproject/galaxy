@@ -22,6 +22,7 @@ except ImportError:
 
 try:
     import boto
+    from boto.s3.connection import S3Connection
 except ImportError:
     boto = None
 
@@ -33,13 +34,13 @@ def map_wrap(f):
     return wrapper
 
 
-def mp_from_ids(mp_id, mp_keyname, mp_bucketname):
+def mp_from_ids(mp_id, mp_keyname, mp_bucketname, aws_access_key_id, aws_secret_access_key):
     """Get the multipart upload from the bucket and multipart IDs.
 
     This allows us to reconstitute a connection to the upload
     from within multiprocessing functions.
     """
-    conn = boto.connect_s3()
+    conn = S3Connection(aws_access_key_id, aws_secret_access_key)
     bucket = conn.lookup(mp_bucketname)
     mp = boto.s3.multipart.MultiPartUpload(bucket)
     mp.key_name = mp_keyname
@@ -48,16 +49,16 @@ def mp_from_ids(mp_id, mp_keyname, mp_bucketname):
 
 
 @map_wrap
-def transfer_part(mp_id, mp_keyname, mp_bucketname, i, part):
+def transfer_part(mp_id, mp_keyname, mp_bucketname, i, part, aws_access_key_id, aws_secret_access_key):
     """Transfer a part of a multipart upload. Designed to be run in parallel.
     """
-    mp = mp_from_ids(mp_id, mp_keyname, mp_bucketname)
+    mp = mp_from_ids(mp_id, mp_keyname, mp_bucketname, aws_access_key_id, aws_secret_access_key)
     with open(part) as t_handle:
         mp.upload_part_from_file(t_handle, i + 1)
     os.remove(part)
 
 
-def multipart_upload(bucket, s3_key_name, tarball, mb_size, use_rr=True):
+def multipart_upload(bucket, s3_key_name, tarball, mb_size, aws_access_key_id, aws_secret_access_key, use_rr=True):
     """Upload large files using Amazon's multipart upload functionality.
     """
     cores = multiprocessing.cpu_count()
@@ -74,7 +75,7 @@ def multipart_upload(bucket, s3_key_name, tarball, mb_size, use_rr=True):
 
     mp = bucket.initiate_multipart_upload(s3_key_name, reduced_redundancy=use_rr)
     with multimap(cores) as pmap:
-        for _ in pmap(transfer_part, ((mp.id, mp.key_name, mp.bucket_name, i, part)
+        for _ in pmap(transfer_part, ((mp.id, mp.key_name, mp.bucket_name, i, part, aws_access_key_id, aws_secret_access_key)
                                       for (i, part) in
                                       enumerate(split_file(tarball, mb_size, cores)))):
             pass
