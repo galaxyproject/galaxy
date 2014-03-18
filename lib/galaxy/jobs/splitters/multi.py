@@ -44,18 +44,26 @@ def do_split (job_wrapper):
 
     # For things like paired end alignment, we need two inputs to be split. Since all inputs to all
     # derived subtasks need to be correlated, allow only one input type to be split
+    # If shared_inputs are not specified, we assume all non-split inputs are shared inputs.
+    # For any input we must consider if each input is None. With optional arguments, a data input could be set to optional
     type_to_input_map = {}
     for input in parent_job.input_datasets:
-        if input.name in split_inputs:
-            type_to_input_map.setdefault(input.dataset.datatype,  []).append(input.name)
-        elif input.name in shared_inputs:
-            pass # pass original file name
-        elif auto_shared_inputs:
-            shared_inputs.append(input.name)
+        if input.dataset is None:
+            if input.name in shared_inputs:
+                shared_inputs.remove(input.name)
+            else:
+                pass
         else:
-            log_error = "The input '%s' does not define a method for implementing parallelism" % str(input.name)
-            log.exception(log_error)
-            raise Exception(log_error)
+            if input.name in split_inputs:
+                type_to_input_map.setdefault(input.dataset.datatype,  []).append(input.name)
+            elif input.name in shared_inputs:
+                pass # pass original file name
+            elif auto_shared_inputs:
+                shared_inputs.append(input.name)
+            else:
+                log_error = "The input '%s' does not define a method for implementing parallelism" % str(input.name)
+                log.exception(log_error)
+                raise Exception(log_error)
 
     if len(type_to_input_map) > 1:
         log_error = "The multi splitter does not support splitting inputs of more than one type"
