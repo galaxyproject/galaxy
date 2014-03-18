@@ -451,18 +451,21 @@ WYMeditor.editor.prototype.dialog = function( dialogType, dialogFeatures, bodyHt
                                 // all non-standard attributes when it returns its content (e.g. it will not return an element attribute of the form 
                                 // item_class='History').
                                 var item_elt_id = item_info.iclass + "-"  + item_id;
-                                var item_embed_html =                                     
-                                    "<div id='"  + item_elt_id + "' class='embedded-item " + item_info.singular.toLowerCase() +
-                                            " placeholder'> \
-                                        <p class='title'>Embedded Galaxy " + item_info.singular + " '" + item_name + "'</p> \
-                                        <p class='content'> \
-                                            [Do not edit this block; Galaxy will fill it in with the annotated " +
-                                            item_info.singular.toLowerCase() + " when it is displayed.] \
-                                        </p> \
-                                    </div>";
+                                var item_embed_html = [
+                                    "<div id='", item_elt_id, "' class='embedded-item ",
+                                            item_info.singular.toLowerCase(), " placeholder'>",
+                                        "<p class='title'>",
+                                            "Embedded Galaxy ", item_info.singular, " '", item_name, "'",
+                                        "</p>",
+                                        "<p class='content'>",
+                                            "[Do not edit this block; Galaxy will fill it in with the annotated ",
+                                            item_info.singular.toLowerCase(), " when it is displayed.]",
+                                        "</p>",
+                                    "</div>" ].join( '' );
+                                console.debug( item_embed_html );
                                 
                                 // Insert embedded item into document.
-                                wym.insert("&nbsp;"); // Needed to prevent insertion from occurring in child element in webkit browsers.
+                                //wym.insert("&nbsp;"); // Needed to prevent insertion from occurring in child element in webkit browsers.
                                 wym.insert(item_embed_html);
                                 
                                 // TODO: can we fix this?
