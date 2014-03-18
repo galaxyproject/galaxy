@@ -2,22 +2,23 @@
 Object Store plugin for the Amazon Simple Storage Service (S3)
 """
 
-import os
-import time
-import shutil
 import logging
-import threading
+import multiprocessing
+import os
+import shutil
 import subprocess
+import threading
+import time
+
 from datetime import datetime
 
-from galaxy.util import umask_fix_perms
-from galaxy.util.sleeper import Sleeper
-from galaxy.util.directory_hash import directory_hash_id
-from ..objectstore import ObjectStore, convert_bytes
 from galaxy.exceptions import ObjectNotFound
-
-import multiprocessing
+from galaxy.util import umask_fix_perms
+from galaxy.util.directory_hash import directory_hash_id
+from galaxy.util.sleeper import Sleeper
 from .s3_multipart_upload import multipart_upload
+from ..objectstore import ObjectStore, convert_bytes
+
 try:
     import boto
     from boto.s3.key import Key
@@ -326,7 +327,7 @@ class S3ObjectStore(ObjectStore):
                                                        cb=self._transfer_cb,
                                                        num_cb=10)
                     else:
-                        multipart_upload(self.bucket, key.name, source_file, mb_size, use_rr=self.use_rr)
+                        multipart_upload(self.bucket, key.name, source_file, mb_size, self.access_key, self.secret_key, use_rr=self.use_rr)
                     end_time = datetime.now()
                     log.debug("Pushed cache file '%s' to key '%s' (%s bytes transfered in %s sec)" % (source_file, rel_path, os.path.getsize(source_file), end_time - start_time))
                 return True
