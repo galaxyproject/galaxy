@@ -16,7 +16,7 @@
         <metadata name="base_name" value="Example Metadata" />
       </param>
       <!-- This ouptut tests setting input metadata above -->
-      <output name="output_of_input_metadata">
+      <output name="output_of_input_metadata" ftype="txt">
         <assert_contents>
           <has_line line="Example Metadata" />
         </assert_contents>
