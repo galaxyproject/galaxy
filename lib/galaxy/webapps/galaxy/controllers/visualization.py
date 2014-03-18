@@ -584,7 +584,8 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
         ave_item_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, visualization )
 
         # Display.
-        if trans.app.visualizations_registry and visualization.type in trans.app.visualizations_registry.plugins:
+        if( ( trans.app.visualizations_registry and visualization.type in trans.app.visualizations_registry.plugins )
+        and ( visualization.type not in trans.app.visualizations_registry.BUILT_IN_VISUALIZATIONS ) ):
             # if a registry visualization, load a version of display.mako that will load the vis into an iframe :(
             #TODO: simplest path from A to B but not optimal - will be difficult to do reg visualizations any other way
             #TODO: this will load the visualization twice (once above, once when the iframe src calls 'saved')
