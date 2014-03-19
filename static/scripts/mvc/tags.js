@@ -1,3 +1,6 @@
+define([
+], function(){
+// =============================================================================
 /** A view on any model that has a 'tags' attribute (a list of tag strings)
  *      Incorporates the select2 jQuery plugin for tags display/editing:
  *      http://ivaynberg.github.io/select2/
@@ -102,4 +105,10 @@ var TagsEditor = Backbone.View.extend( LoggableMixin ).extend( HiddenUntilActiva
 
     /** string rep */
     toString : function(){ return [ 'TagsEditor(', this.model + '', ')' ].join(''); }
+});
+
+// =============================================================================
+return {
+    TagsEditor : TagsEditor
+};
 });

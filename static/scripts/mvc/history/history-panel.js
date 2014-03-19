@@ -1,8 +1,10 @@
 define([
     "mvc/dataset/hda-model",
     "mvc/dataset/hda-edit",
-    "mvc/history/readonly-history-panel"
-], function( hdaModel, hdaEdit, readonlyPanel ){
+    "mvc/history/readonly-history-panel",
+    "mvc/tags",
+    "mvc/annotations"
+], function( hdaModel, hdaEdit, readonlyPanel, tagsMod, annotationsMod ){
 /* =============================================================================
 TODO:
 
@@ -101,7 +103,7 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
     /** render the tags sub-view controller */
     _renderTags : function( $where ){
         var panel = this;
-        this.tagsEditor = new TagsEditor({
+        this.tagsEditor = new tagsMod.TagsEditor({
             model           : this.model,
             el              : $where.find( '.history-controls .tags-display' ),
             onshowFirstTime : function(){ this.render(); },
@@ -122,7 +124,7 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
     /** render the annotation sub-view controller */
     _renderAnnotation : function( $where ){
         var panel = this;
-        this.annotationEditor = new AnnotationEditor({
+        this.annotationEditor = new annotationsMod.AnnotationEditor({
             model           : this.model,
             el              : $where.find( '.history-controls .annotation-display' ),
             onshowFirstTime : function(){ this.render(); },

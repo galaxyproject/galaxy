@@ -1,3 +1,6 @@
+define([
+], function(){
+// =============================================================================
 /** A view on any model that has a 'annotation' attribute
  */
 var AnnotationEditor = Backbone.View.extend( LoggableMixin ).extend( HiddenUntilActivatedViewMixin ).extend({
@@ -68,4 +71,9 @@ var AnnotationEditor = Backbone.View.extend( LoggableMixin ).extend( HiddenUntil
 
     /** string rep */
     toString : function(){ return [ 'AnnotationEditor(', this.model + '', ')' ].join(''); }
+});
+// =============================================================================
+return {
+    AnnotationEditor : AnnotationEditor
+};
 });

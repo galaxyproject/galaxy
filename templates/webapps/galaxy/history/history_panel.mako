@@ -92,9 +92,7 @@ onhistoryready.done( function( historyPanel ){
 <%def name="history_panel_javascripts()">
 ${h.js(
     "utils/localization",
-    "mvc/base-mvc",
-    "mvc/tags",
-    "mvc/annotations"
+    "mvc/base-mvc"
 )}
 
 ${localize_js_strings([

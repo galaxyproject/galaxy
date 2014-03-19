@@ -1,7 +1,9 @@
 define([
     "mvc/dataset/hda-model",
-    "mvc/dataset/hda-base"
-], function( hdaModel, hdaBase ){
+    "mvc/dataset/hda-base",
+    "mvc/tags",
+    "mvc/annotations"
+], function( hdaModel, hdaBase, tagsMod, annotationsMod ){
 //==============================================================================
 /** @class Editing view for HistoryDatasetAssociation.
  *  @name HDAEditView
@@ -338,7 +340,7 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
 
     _renderTags : function( $where ){
         var view = this;
-        this.tagsEditor = new TagsEditor({
+        this.tagsEditor = new tagsMod.TagsEditor({
             model           : this.model,
             el              : $where.find( '.tags-display' ),
             onshowFirstTime : function(){ this.render(); },
@@ -355,7 +357,7 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
     },
     _renderAnnotation : function( $where ){
         var view = this;
-        this.annotationEditor = new AnnotationEditor({
+        this.annotationEditor = new annotationsMod.AnnotationEditor({
             model           : this.model,
             el              : $where.find( '.annotation-display' ),
             onshowFirstTime : function(){ this.render(); },
