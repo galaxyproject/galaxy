@@ -685,7 +685,7 @@ var skeletonTemplate = [
             // deleted not purged
             '<% } else { %>',
                 '<div class="dataset-deleted-msg warningmessagesmall"><strong>',
-                    _( 'This dataset has been deleted.' ),
+                    _l( 'This dataset has been deleted.' ),
                 '</strong></div>',
             '<% } %>',
         '<% } %>',
