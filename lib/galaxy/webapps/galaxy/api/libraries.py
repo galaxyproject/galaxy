@@ -54,8 +54,7 @@ class LibrariesController( BaseAPIController ):
                            trans.model.Library.table.c.id.in_( accessible_restricted_library_ids ) ) )
         libraries = []
         for library in query:
-            item = self.prepend_folder_prefix( library.to_dict( view='element',
-                value_mapper={ 'id' : trans.security.encode_id , 'root_folder_id' : trans.security.encode_id } ) )
+            item = library.to_dict( view='element', value_mapper={ 'id' : trans.security.encode_id , 'root_folder_id' : trans.security.encode_id } )
             libraries.append( item )
         return libraries
 
@@ -93,8 +92,7 @@ class LibrariesController( BaseAPIController ):
             library = None
         if not library or not ( trans.user_is_admin() or trans.app.security_agent.can_access_library( trans.get_current_user_roles(), library ) ):
             raise exceptions.ObjectNotFound( 'Library with the id provided ( %s ) was not found' % id )
-        return self.prepend_folder_prefix( library.to_dict( view='element',
-            value_mapper={ 'id' : trans.security.encode_id , 'root_folder_id' : trans.security.encode_id } ) )
+        return library.to_dict( view='element', value_mapper={ 'id' : trans.security.encode_id , 'root_folder_id' : trans.security.encode_id } )
 
     @expose_api
     def create( self, trans, payload, **kwd ):
@@ -131,8 +129,7 @@ class LibrariesController( BaseAPIController ):
         library.root_folder = root_folder
         trans.sa_session.add_all( ( library, root_folder ) )
         trans.sa_session.flush()
-        return self.prepend_folder_prefix( library.to_dict( view='element',
-            value_mapper={ 'id' : trans.security.encode_id , 'root_folder_id' : trans.security.encode_id } ) )
+        return library.to_dict( view='element', value_mapper={ 'id' : trans.security.encode_id , 'root_folder_id' : trans.security.encode_id } )
 
     @expose_api
     def update( self, trans, id, **kwd ):
@@ -183,8 +180,7 @@ class LibrariesController( BaseAPIController ):
             raise exceptions.RequestParameterMissingException( "You did not specify any payload." )
         trans.sa_session.add( library )
         trans.sa_session.flush()
-        return self.prepend_folder_prefix( library.to_dict( view='element',
-            value_mapper={ 'id' : trans.security.encode_id , 'root_folder_id' : trans.security.encode_id } ) )
+        return library.to_dict( view='element', value_mapper={ 'id' : trans.security.encode_id , 'root_folder_id' : trans.security.encode_id } )
 
     @expose_api
     def delete( self, trans, id, **kwd ):
@@ -229,33 +225,5 @@ class LibrariesController( BaseAPIController ):
 
         trans.sa_session.add( library )
         trans.sa_session.flush()
-        return self.prepend_folder_prefix( library.to_dict( view='element',
-            value_mapper={ 'id' : trans.security.encode_id , 'root_folder_id' : trans.security.encode_id } ) )
+        return library.to_dict( view='element', value_mapper={ 'id' : trans.security.encode_id , 'root_folder_id' : trans.security.encode_id } )
 
-    def prepend_folder_prefix (self, dictionary, type='library' ):
-        """
-        prepend_folder_prefix (self, dictionary, type='library' )
-        In Galaxy folders have an 'F' as a prefix to the encoded id to distinguish between folders and libraries
-
-        :param  dictionary:     a supported object after to_dict containing _encoded_ ids
-        :type   dictionary:     dictionary
-
-        :param  type:     string representing the type of dictionary that is passed in, defaults to 'library'
-        :type   type:     string
-
-        :raises: TypeError, ValueError
-        """
-        if not ( type in [ 'library', 'folder' ] ):
-            raise TypeError( 'Prepending is not implemented for given type of dictionary.' )
-        return_dict = dictionary
-        if type == 'library':
-            if return_dict[ 'root_folder_id' ]:
-                return_dict[ 'root_folder_id' ]  = 'F' + return_dict[ 'root_folder_id' ]
-            else:
-                raise ValueError( 'Given library does not contain root_folder_id to prepend to.' )
-        elif type == 'folder':
-            if return_dict[ 'id' ]:
-                return_dict[ 'id' ] = 'F' + return_dict[ 'id' ]
-            else:
-                raise ValueError( 'Given folder does not contain an id to prepend to.' )
-        return return_dict
