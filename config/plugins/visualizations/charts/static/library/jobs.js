@@ -14,7 +14,7 @@ return Backbone.Model.extend(
     },
     
     // create job
-    submit: function(chart, request_string, callback) {
+    submit: function(chart, settings_string, columns_string, callback) {
         // link this
         var self = this;
         
@@ -28,11 +28,14 @@ return Backbone.Model.extend(
         // configure tool
         data = {
             'tool_id'       : 'rkit',
-            'history_id'    : chart.get('history_id'),
             'inputs'        : {
-                'input'     : chart.get('dataset_hid'),
+                'input'     : {
+                    'id'    : chart.get('dataset_id'),
+                    'src'   : 'hda'
+                },
                 'module'    : chart_type,
-                'options'   : request_string
+                'columns'   : columns_string,
+                'settings'  : settings_string
             }
         }
         
@@ -85,7 +88,11 @@ return Backbone.Model.extend(
             },
             // error handler
             function(response) {
-                chart.state('failed', 'Job submission failed. Please make sure that \'R-kit\' is installed.');
+                var message = '';
+                if (response && response.message && response.message.data && response.message.data.input) {
+                    message = response.message.data.input + '.';
+                }
+                chart.state('failed', 'This visualization requires processing by the R-kit. Please make sure that it is installed. ' + message);
             }
         );
     },

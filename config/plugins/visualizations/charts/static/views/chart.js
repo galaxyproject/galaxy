@@ -76,7 +76,11 @@ return Backbone.View.extend(
         for (var id in types){
             var chart_type = types[id];
             this.table.add (++types_n + '.');
-            this.table.add (chart_type.title);
+            if (chart_type.execute) {
+                this.table.add(chart_type.title + ' (requires processing)');
+            } else {
+                this.table.add (chart_type.title);
+            }
             this.table.append(id);
         }
         
@@ -280,9 +284,7 @@ return Backbone.View.extend(
         // reset chart details
         this.chart.set('id', Utils.uuid());
         this.chart.set('type', 'bardiagram');
-        this.chart.set('dataset_id', this.app.options.dataset.id);
-        this.chart.set('dataset_hid', this.app.options.dataset.hid);
-        this.chart.set('history_id', this.app.options.dataset.history_id);
+        this.chart.set('dataset_id', this.app.options.config.dataset_id);
         this.chart.set('title', 'New Chart');
     },
     
@@ -304,6 +306,9 @@ return Backbone.View.extend(
         } else {
             current.copy(this.chart);
         }
+        
+        // save
+        current.save();
         
         // trigger redraw
         current.trigger('redraw', current);

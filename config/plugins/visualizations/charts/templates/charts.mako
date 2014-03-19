@@ -15,7 +15,8 @@
                 'libs/require',
                 'libs/underscore',
                 'libs/backbone/backbone',
-                'libs/d3' )}
+                'libs/d3',
+                'mvc/base-mvc')}
 
         ## css
         ${h.css( 'base' )}
@@ -71,10 +72,9 @@
                 require(['plugin/app'], function(App) {
                     // load options
                     var options = {
-                        config  : ${h.to_json_string( config )},
-                        dataset : ${h.to_json_string( trans.security.encode_dict_ids( hda.to_dict() ) )}
+                        config  : ${h.to_json_string( config )}
                     }
-                    
+                    console.log(options);
                     // create application
                     app = new App(options);
                     

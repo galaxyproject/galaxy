@@ -1,5 +1,5 @@
 // dependencies
-define(['plugin/models/groups'], function(Groups) {
+define(['plugin/models/groups', 'mvc/visualization/visualization-model'], function(Groups) {
 
 
 // model
@@ -58,6 +58,25 @@ return Backbone.Model.extend(
     
     ready: function() {
         return (this.get('state') == 'ok') || (this.get('state') == 'failed');
+    },
+    
+    // save charts
+    save: function() {
+        /*/ create visualization
+        var vis = new Visualization({
+            type    : 'charts',
+            config  : this.attributes
+        });
+        
+        // copy attributes
+        //vis.set(this.attributes);
+        
+        // save visualization
+        vis.save()
+            .fail( function( xhr, status, message ){
+                console.error( xhr, status, message );
+                alert( 'Error loading data:\n' + xhr.responseText );
+            });*/
     }
 });
 

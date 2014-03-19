@@ -81,7 +81,8 @@ var Icon = Backbone.View.extend(
         float       : 'right',
         icon        : '',
         tooltip     : '',
-        placement   : 'bottom'
+        placement   : 'bottom',
+        title       : ''
     },
     
     // initialize
@@ -98,7 +99,10 @@ var Icon = Backbone.View.extend(
     
     // element
     _template: function(options) {
-        return '<span class="fa ' + options.icon + '" style="font-size: 1.2em;"/>';
+        return  '<div>' +
+                    '<span class="fa ' + options.icon + '" style="font-size: 1.2em;"/>&nbsp;' +
+                    options.title +
+                '</div>';
     }
 });
 

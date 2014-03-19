@@ -16,7 +16,7 @@ todo:
     Embedding
     Small multiples
     Drag & Drop other splots onto current (redraw with new axis and differentiate the datasets)
-    Remove 'chart' names
+    Remove 'chart' namessave
     Somehow link out from info box?
     
     Subclass on specific datatypes? (vcf, cuffdiff, etc.)

@@ -47,7 +47,7 @@ var View = Backbone.View.extend(
         if (this.options.operations) {
             $.each(this.options.operations, function(name, item) {
                 item.$el.prop('id', name);
-                self.$nav.append(item.$el);
+                self.$nav.find('.operations').append(item.$el);
             });
         }
         
@@ -60,7 +60,7 @@ var View = Backbone.View.extend(
             this.$nav.append($tab_new);
             
             // add tooltip
-            $tab_new.tooltip({title: 'Add a new tab', placement: 'bottom'});
+            $tab_new.tooltip({title: 'Add a new tab', placement: 'bottom', container: self.$el});
             
             // link click event
             $tab_new.on('click', function(e) {
@@ -105,10 +105,12 @@ var View = Backbone.View.extend(
         
         // add click event to remove tab
         if (options.ondel) {
+            var self = this;
             var $del_icon = tab.$title.find('#delete');
-            $del_icon.tooltip({title: 'Delete this tab', placement: 'bottom'});
+            $del_icon.tooltip({title: 'Delete this tab', placement: 'bottom', container: self.$el});
             $del_icon.on('click', function() {
                 $del_icon.tooltip('destroy');
+                self.$el.find('.tooltip').remove();
                 options.ondel();
                 return false;
             });
@@ -199,7 +201,9 @@ var View = Backbone.View.extend(
     // fill template
     _template: function(options) {
         return  '<div class="tabbable tabs-left">' +
-                    '<ul class="tab-navigation nav nav-tabs"/>' +
+                    '<ul class="tab-navigation nav nav-tabs">' +
+                        '<div class="operations" style="float: right; margin-bottom: 4px;"></div>' +
+                    '</ul>'+
                     '<div class="tab-content"/>' +
                 '</div>';
     },

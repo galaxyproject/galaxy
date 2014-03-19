@@ -199,9 +199,8 @@ return Backbone.View.extend(
             var view = new ChartView(self.app, {svg : svg});
             
             // request data
-            var mode = chart_settings.mode;
-            if (mode == 'execute') {
-                self.app.jobs.submit(chart, self._defaultRequestString(chart), function() {
+            if (chart_settings.execute) {
+                self.app.jobs.submit(chart, self._defaultSettingsString(chart), self._defaultRequestString(chart), function() {
                     view.draw(chart, self._defaultRequestDictionary(chart));
                 });
             } else {
@@ -254,6 +253,21 @@ return Backbone.View.extend(
         return request_string.substring(0, request_string.length - 2);
     },
     
+    // create default chart request
+    _defaultSettingsString : function(chart) {
+    
+        // configure settings
+        var settings_string = '';
+        
+        // add settings to settings string
+        for (key in chart.settings.attributes) {
+            settings_string += key + ':' + chart.settings.get(key) + ', ';
+        };
+        
+        // return
+        return settings_string.substring(0, settings_string.length - 2);
+    },
+
     // create default chart request
     _defaultRequestDictionary : function(chart) {
     
