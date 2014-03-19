@@ -47,7 +47,7 @@ var CurrentHistoryPanel = hpanel.HistoryPanel.extend(
     /** class to use for constructing the HDA views */
     HDAViewClass        : hdaEdit.HDAEditView,
 
-    emptyMsg            : _l( "This history is empty. Click 'Get Data' on the left pane to start" ),
+    emptyMsg            : _l( "This history is empty. Click 'Get Data' on the left tool menu to start" ),
     noneFoundMsg        : _l( "No matching datasets found" ),
 
     // ......................................................................... SET UP
@@ -202,6 +202,47 @@ var CurrentHistoryPanel = hpanel.HistoryPanel.extend(
         if( this.preferences.get( 'searching' ) ){
             this.toggleSearchControls( 0, true );
         }
+    },
+
+    /** In this override, add links to open data uploader or get data in the tools section */
+    _renderEmptyMsg : function( $whereTo ){
+        var panel = this,
+            $emptyMsg = panel.$emptyMessage( $whereTo ),
+            $toolMenu = $( '.toolMenuContainer' );
+
+        if( ( _.isEmpty( panel.hdaViews ) && !panel.searchFor )
+        &&  ( Galaxy && Galaxy.upload && $toolMenu.size() ) ){
+            $emptyMsg.empty();
+
+            $emptyMsg.html([
+                _l( 'This history is empty. ' ), _l( 'You can ' ),
+                '<a class="uploader-link" href="javascript:void(0)">',
+                    _l( 'load your own data' ),
+                '</a>',
+                _l( ' or ' ), '<a class="get-data-link" href="javascript:void(0)">',
+                    _l( 'get data from an external source' ),
+                '</a>'
+            ].join('') );
+            $emptyMsg.find( '.uploader-link' ).click( function( ev ){
+                Galaxy.upload._eventShow( ev );
+            });
+            $emptyMsg.find( '.get-data-link' ).click( function( ev ){
+                $toolMenu.parent().scrollTop( 0 );
+                $toolMenu.find( 'span:contains("Get Data")' )
+                    .click();
+                    //.fadeTo( 200, 0.1, function(){
+                    //    console.debug( this )
+                    //    $( this ).fadeTo( 200, 1.0 );
+                    //});
+            });
+
+            $emptyMsg.show();
+
+
+        } else {
+            hpanel.HistoryPanel.prototype._renderEmptyMsg.call( this, $whereTo );
+        }
+        return this;
     },
 
     /** In this override, save the search control visibility state to preferences */

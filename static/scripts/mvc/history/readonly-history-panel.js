@@ -497,6 +497,7 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
 
         // render based on anonymity, set up behaviors
         $newRender.append( ReadOnlyHistoryPanel.templates.historyPanel( this.model.toJSON() ) );
+        this.$emptyMessage( $newRender ).text( this.emptyMsg );
         // search and select available to both anon/logged-in users
         $newRender.find( '.history-secondary-actions' ).prepend( this._renderSearchButton() );
 
@@ -505,6 +506,23 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         // render hda views (if any and any shown (show_deleted/hidden)
         this.renderHdas( $newRender );
         return $newRender;
+    },
+
+    /** render the empty/none-found message */
+    _renderEmptyMsg : function( $whereTo ){
+        var panel = this,
+            $emptyMsg = panel.$emptyMessage( $whereTo );
+
+        if( !_.isEmpty( panel.hdaViews ) ){
+            $emptyMsg.hide();
+
+        } else if( panel.searchFor ){
+            $emptyMsg.text( panel.noneFoundMsg ).show();
+
+        } else {
+            $emptyMsg.text( panel.emptyMsg ).show();
+        }
+        return this;
     },
 
     /** button for opening search */
@@ -555,7 +573,7 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
             newHdaViews = {},
             // only render the shown hdas
             //TODO: switch to more general filtered pattern
-            visibleHdas  = this.model.hdas.getVisible(
+            visibleHdas = this.model.hdas.getVisible(
                 this.storage.get( 'show_deleted' ),
                 this.storage.get( 'show_hidden' ),
                 this.filters
@@ -571,20 +589,15 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
                 var hdaId = hda.get( 'id' ),
                     hdaView = panel._createHdaView( hda );
                 newHdaViews[ hdaId ] = hdaView;
+                // persist selection
                 if( _.contains( panel.selectedHdaIds, hdaId ) ){
                     hdaView.selected = true;
                 }
                 panel.attachHdaView( hdaView.render(), $whereTo );
             });
-            panel.$emptyMessage( $whereTo ).hide();
-
-        } else {
-            //this.log( 'emptyMsg:', panel.$emptyMessage( $whereTo ) )
-            panel.$emptyMessage( $whereTo )
-                .text( ( this.model.hdas.length && this.searchFor )?( this.noneFoundMsg ):( this.emptyMsg ) )
-                .show();
         }
         this.hdaViews = newHdaViews;
+        this._renderEmptyMsg( $whereTo );
         return this.hdaViews;
     },
 

@@ -81,6 +81,7 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
         var $newRender = $( '<div/>' );
 
         $newRender.append( HistoryPanel.templates.historyPanel( this.model.toJSON() ) );
+        this.$emptyMessage( $newRender ).text( this.emptyMsg );
         if( Galaxy.currUser.id && Galaxy.currUser.id === this.model.get( 'user_id' ) ){
             this._renderTags( $newRender );
             this._renderAnnotation( $newRender );
