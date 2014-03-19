@@ -660,9 +660,165 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
 });
 
 //------------------------------------------------------------------------------ TEMPLATES
+//HDABaseView.templates = {
+//    skeleton            : Handlebars.templates[ 'template-hda-skeleton' ],
+//    body                : Handlebars.templates[ 'template-hda-body' ]
+//};
+
+var skeletonTemplate = [
+'<div class="dataset hda">',
+    '<div class="dataset-warnings">',
+        // error during index fetch - show error on dataset
+        '<% if( hda.error ){ %>',
+            '<div class="errormessagesmall">',
+                _l( 'There was an error getting the data for this dataset' ), ':<%- hda.error %>',
+            '</div>',
+        '<% } %>',
+
+        '<% if( hda.deleted ){ %>',
+            // purged and deleted
+            '<% if( hda.purged ){ %>',
+                '<div class="dataset-purged-msg warningmessagesmall"><strong>',
+                    _l( 'This dataset has been deleted and removed from disk.' ),
+                '</strong></div>',
+
+            // deleted not purged
+            '<% } else { %>',
+                '<div class="dataset-deleted-msg warningmessagesmall"><strong>',
+                    _( 'This dataset has been deleted.' ),
+                '</strong></div>',
+            '<% } %>',
+        '<% } %>',
+
+        // hidden
+        '<% if( !hda.visible ){ %>',
+            '<div class="dataset-hidden-msg warningmessagesmall"><strong>',
+                _l( 'This dataset has been hidden.' ),
+            '</strong></div>',
+        '<% } %>',
+    '</div>',
+
+    // multi-select checkbox
+    '<div class="dataset-selector"><span class="fa fa-2x fa-square-o"></span></div>',
+    // space for title bar buttons
+    '<div class="dataset-primary-actions"></div>',
+
+    // adding a tabindex here allows focusing the title bar and the use of keydown to expand the dataset display
+    '<div class="dataset-title-bar clear" tabindex="0">',
+        '<span class="dataset-state-icon state-icon"></span>',
+        '<div class="dataset-title">',
+            //TODO: remove whitespace and use margin-right
+            '<span class="hda-hid"><%- hda.hid %></span> ',
+            '<span class="dataset-name"><%- hda.name %></span>',
+        '</div>',
+    '</div>',
+
+    '<div class="dataset-body"></div>',
+'</div>'
+].join( '' );
+
+var bodyTemplate = [
+'<div class="dataset-body">',
+    '<% if( hda.body ){ %>',
+        '<div class="dataset-summary">',
+            '<%= hda.body %>',
+        '</div>',
+        '<div class="dataset-actions clear">',
+            '<div class="left"></div>',
+            '<div class="right"></div>',
+        '</div>',
+
+    '<% } else { %>',
+        '<div class="dataset-summary">',
+            '<% if( hda.misc_blurb ){ %>',
+                '<div class="dataset-blurb">',
+                    '<span class="value"><%- hda.misc_blurb %></span>',
+                '</div>',
+            '<% } %>',
+
+            '<% if( hda.data_type ){ %>',
+                '<div class="dataset-datatype">',
+                    '<label class="prompt">', _l( 'format' ), '</label>',
+                    '<span class="value"><%- hda.data_type %></span>',
+                '</div>',
+            '<% } %>',
+
+            '<% if( hda.metadata_dbkey ){ %>',
+                '<div class="dataset-dbkey">',
+                    '<label class="prompt">', _l( 'database' ), '</label>',
+                    '<span class="value">',
+                        '<%- hda.metadata_dbkey %>',
+                    '</span>',
+                '</div>',
+            '<% } %>',
+
+            '<% if( hda.misc_info ){ %>',
+                '<div class="dataset-info">',
+                    '<span class="value"><%- hda.misc_info %></span>',
+                '</div>',
+            '<% } %>',
+        '</div>',
+        // end dataset-summary
+
+        '<div class="dataset-actions clear">',
+            '<div class="left"></div>',
+            '<div class="right"></div>',
+        '</div>',
+
+        '<% if( !hda.deleted ){ %>',
+            '<div class="tags-display"></div>',
+            '<div class="annotation-display"></div>',
+
+            '<div class="dataset-display-applications">',
+                //TODO: the following two should be compacted
+                '<% _.each( hda.display_apps, function( app ){ %>',
+                    '<div class="display-application">',
+                        '<span class="display-application-location"><%- app.label %></span>',
+                        '<span class="display-application-links">',
+                            '<% _.each( app.links, function( link ){ %>',
+                                '<a target="<%= target %>" href="<%= href %>">',
+                                    '<% print( _l( link.text ) ); %>',
+                                '</a>',
+                            '<% }); %>',
+                        '</span>',
+                    '</div>',
+                '<% }); %>',
+
+                '<% _.each( hda.display_types, function( app ){ %>',
+                    '<div class="display-application">',
+                        '<span class="display-application-location"><%- label %></span>',
+                        '<span class="display-application-links">',
+                            '<% _.each( app.links, function( link ){ %>',
+                                '<a target="<%= target %>" href="<%= href %>">',
+                                    '<% print( _l( link.text ) ); %>',
+                                '</a>',
+                            '<% }); %>',
+                        '</span>',
+                    '</div>',
+                '<% }); %>',
+            '</div>',
+
+            '<div class="dataset-peek">',
+                '<% if( hda.peek ){ %>',
+                    '<pre class="peek"><%= hda.peek %></pre>',
+                '<% } %>',
+            '</div>',
+
+        '<% } %>',
+        // end if !deleted
+
+    '<% } %>',
+    // end if body
+'</div>'
+].join( '' );
+
 HDABaseView.templates = {
-    skeleton            : Handlebars.templates[ 'template-hda-skeleton' ],
-    body                : Handlebars.templates[ 'template-hda-body' ]
+    skeleton            : function( hdaJSON ){
+        return _.template( skeletonTemplate, hdaJSON, { variable: 'hda' });
+    },
+    body                : function( hdaJSON ){
+        return _.template( bodyTemplate, hdaJSON, { variable: 'hda' });
+    }
 };
 
 //==============================================================================

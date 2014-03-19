@@ -966,8 +966,71 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
     }
 });
 //------------------------------------------------------------------------------ TEMPLATES
+//ReadOnlyHistoryPanel.templates = {
+//    historyPanel     : Handlebars.templates[ 'template-history-historyPanel' ]
+//};
+var _panelTemplate = [
+    '<div class="history-controls">',
+        '<div class="history-search-controls">',
+            '<div class="history-search-input"></div>',
+        '</div>',
+
+        '<div class="history-title">',
+            '<% if( history.name ){ %>',
+                '<div class="history-name"><%= history.name %></div>',
+            '<% } %>',
+        '</div>',
+
+        '<div class="history-subtitle clear">',
+            '<% if( history.nice_size ){ %>',
+                '<div class="history-size"><%= history.nice_size %></div>',
+            '<% } %>',
+            '<div class="history-secondary-actions"></div>',
+        '</div>',
+
+        '<% if( history.deleted ){ %>',
+            '<div class="warningmessagesmall"><strong>',
+                _l( 'You are currently viewing a deleted history!' ),
+            '</strong></div>',
+        '<% } %>',
+
+        '<div class="message-container">',
+            '<% if( history.message ){ %>',
+                // should already be localized
+                '<div class="<%= history.status %>message"><%= history.message %></div>',
+            '<% } %>',
+        '</div>',
+
+        '<div class="quota-message errormessage">',
+            _l( 'You are over your disk quota.' ),
+            _l( 'Tool execution is on hold until your disk usage drops below your allocated quota.' ),
+        '</div>',
+
+        '<div class="tags-display"></div>',
+        '<div class="annotation-display"></div>',
+        '<div class="history-dataset-actions">',
+            '<div class="btn-group">',
+                '<button class="history-select-all-datasets-btn btn btn-default"',
+                        'data-mode="select">', _l( 'All' ), '</button>',
+                '<button class="history-deselect-all-datasets-btn btn btn-default"',
+                        'data-mode="select">', _l( 'None' ), '</button>',
+            '</div>',
+            '<button class="history-dataset-action-popup-btn btn btn-default">',
+                _l( 'For all selected' ), '...</button>',
+        '</div>',
+    '</div>',
+    // end history controls
+
+    // where the datasets/hdas are added
+    '<div class="datasets-list"></div>',
+    '<div class="empty-history-message infomessagesmall">',
+        _l( 'Your history is empty. Click \'Get Data\' on the left pane to start' ),
+    '</div>'
+].join( '' );
 ReadOnlyHistoryPanel.templates = {
-    historyPanel     : Handlebars.templates[ 'template-history-historyPanel' ]
+    historyPanel : function( historyJSON ){
+        return _.template( _panelTemplate, historyJSON, { variable: 'history' });
+    }
 };
 
 

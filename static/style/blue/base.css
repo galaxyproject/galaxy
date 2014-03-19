@@ -1627,10 +1627,10 @@ div.permissionContainer{padding-left:20px}
 .history-panel .dataset .dataset-body{display:none;padding:0 10px 6px 8px}.history-panel .dataset .dataset-body [class$=messagesmall]{margin:0px 0px 8px 0px}
 .history-panel .dataset .dataset-body label{margin:0px;padding:0px;font-weight:normal}
 .history-panel .dataset .dataset-body .prompt{font-weight:normal;color:#555}
-.history-panel .dataset .dataset-body .prompt:after{content:':'}
+.history-panel .dataset .dataset-body .prompt:after{content:':';margin-right:4px}
 .history-panel .dataset .dataset-body .dataset-summary{margin-bottom:8px}.history-panel .dataset .dataset-body .dataset-summary .dataset-blurb{margin-bottom:2px}
 .history-panel .dataset .dataset-body .dataset-summary .dataset-datatype,.history-panel .dataset .dataset-body .dataset-summary .dataset-dbkey{display:inline}.history-panel .dataset .dataset-body .dataset-summary .dataset-datatype .value,.history-panel .dataset .dataset-body .dataset-summary .dataset-dbkey .value{font-weight:bold}
-.history-panel .dataset .dataset-body .dataset-summary .dataset-datatype .value:after{content:',';font-weight:normal;color:#555}
+.history-panel .dataset .dataset-body .dataset-summary .dataset-datatype .value:after{content:',';font-weight:normal;color:#555;margin-right:4px}
 .history-panel .dataset .dataset-body .dataset-summary .dataset-dbkey:after{content:' ';display:block;margin-bottom:8px}
 .history-panel .dataset .dataset-body .dataset-summary .dataset-info{border-radius:3px;border:1px solid rgba(153,153,153,0.30000000000000004);padding:4px;overflow:auto}.history-panel .dataset .dataset-body .dataset-summary .dataset-info .value{white-space:pre-line}
 .history-panel .dataset .dataset-body .dataset-summary .job-error-text{border-radius:3px;border:1px solid rgba(153,153,153,0.30000000000000004);padding:4px;overflow:auto;white-space:pre}
