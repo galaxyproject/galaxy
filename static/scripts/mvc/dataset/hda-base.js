@@ -660,11 +660,6 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
 });
 
 //------------------------------------------------------------------------------ TEMPLATES
-//HDABaseView.templates = {
-//    skeleton            : Handlebars.templates[ 'template-hda-skeleton' ],
-//    body                : Handlebars.templates[ 'template-hda-body' ]
-//};
-
 var skeletonTemplate = [
 '<div class="dataset hda">',
     '<div class="dataset-warnings">',

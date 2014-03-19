@@ -966,9 +966,6 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
     }
 });
 //------------------------------------------------------------------------------ TEMPLATES
-//ReadOnlyHistoryPanel.templates = {
-//    historyPanel     : Handlebars.templates[ 'template-history-historyPanel' ]
-//};
 var _panelTemplate = [
     '<div class="history-controls">',
         '<div class="history-search-controls">',
@@ -1027,6 +1024,7 @@ var _panelTemplate = [
         _l( 'Your history is empty. Click \'Get Data\' on the left pane to start' ),
     '</div>'
 ].join( '' );
+
 ReadOnlyHistoryPanel.templates = {
     historyPanel : function( historyJSON ){
         return _.template( _panelTemplate, historyJSON, { variable: 'history' });

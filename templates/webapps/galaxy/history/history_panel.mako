@@ -97,12 +97,6 @@ ${h.js(
     "mvc/annotations"
 )}
 
-##TODO: concat these
-${h.templates(
-    "history-templates",
-    "helpers-common-templates"
-)}
-
 ${localize_js_strings([
     # not needed?: "Galaxy History",
     'refresh',
