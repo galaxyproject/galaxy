@@ -1292,15 +1292,16 @@ li.folderRow:hover,li.datasetRow:hover{background-color:#f9f9f9}
 .library_table th{border-bottom:2px solid #5f6990 !important}
 .library_table a{color:#0A143D}.library_table a:hover{color:maroon}
 tr.light td{background-color:white;color:black}
-tr.light:hover td{background-color:#A2A9C8}
-tr.dark td{background-color:#8389a1;color:white}
-tr.dark:hover td{background-color:#bbbfd0;color:white}
+tr.light:hover td{background-color:#f5e8cc}
+tr.dark td{background-color:#d6b161;color:white}
+tr.dark:hover td{background-color:#ebd4a4;color:white}
 a.dark{color:white}
 .modal_table tr{border-bottom:1px solid #5f6990 !important}
 .modal_table th{border:none !important}
 .modal_table td{border:none !important}
 th.button_heading{width:2em}
 #library_folder_toolbar{margin-bottom:1em}
+#library_toolbar{margin-bottom:1em}
 img.expanderIcon{padding-right:4px}
 input.datasetCheckbox,li,ul{padding:0;margin:0}
 .rowTitle{padding:2px}

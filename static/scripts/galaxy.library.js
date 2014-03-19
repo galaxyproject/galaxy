@@ -121,10 +121,10 @@ var FolderContentView = Backbone.View.extend({
 
         // TOOLBAR
         tmpl_array.push('<div id="library_folder_toolbar" >');
-        tmpl_array.push('   <button title="Create New Folder" id="toolbtn_create_folder" class="btn btn-primary" type="button"><span class="fa fa-plus"></span> <span class="fa fa-folder-close"></span> folder</button>');
-        tmpl_array.push('   <button title="Import selected datasets into history" id="toolbtn_bulk_import" class="btn btn-primary" style="display: none; margin-left: 0.5em;" type="button"><span class="fa fa-external-link"></span> to history</button>');
+        tmpl_array.push('   <button title="Create New Folder" id="toolbtn_create_folder" class="primary-button" type="button"><span class="fa fa-plus"></span> <span class="fa fa-folder-close"></span> folder</button>');
+        tmpl_array.push('   <button title="Import selected datasets into history" id="toolbtn_bulk_import" class="primary-button" style="display: none; margin-left: 0.5em;" type="button"><span class="fa fa-external-link"></span> to history</button>');
         tmpl_array.push('   <div id="toolbtn_dl" class="btn-group" style="margin-left: 0.5em; display: none; ">');
-        tmpl_array.push('       <button title="Download selected datasets" id="drop_toggle" type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown">');
+        tmpl_array.push('       <button title="Download selected datasets" id="drop_toggle" type="button" class="primary-button dropdown-toggle" data-toggle="dropdown">');
         tmpl_array.push('       <span class="fa fa-download"></span> download <span class="caret"></span>');
         tmpl_array.push('       </button>');
         tmpl_array.push('       <ul class="dropdown-menu" role="menu">');
@@ -150,7 +150,7 @@ var FolderContentView = Backbone.View.extend({
 
 
         // FOLDER CONTENT
-        tmpl_array.push('<table id="folder_table" class="library_table table table-condensed">');
+        tmpl_array.push('<table id="folder_table" class="grid table table-condensed">');
         tmpl_array.push('   <thead>');
         tmpl_array.push('       <th class="button_heading"></th>');
         tmpl_array.push('       <th style="text-align: center; width: 20px; "><input id="select-all-checkboxes" style="margin: 0;" type="checkbox"></th>');
@@ -797,7 +797,6 @@ var GalaxyLibraryview = Backbone.View.extend({
     initialize : function(){
         var viewContext = this;
         this.collection = new Libraries();
-        // this.collection.on('sort', this.render, this);
 
         this.collection.fetch({
           success: function(libraries){
@@ -817,8 +816,9 @@ var GalaxyLibraryview = Backbone.View.extend({
         $("#center").css('overflow','auto');
     },
 
-    /** Renders the libraries table either from the object's own collection, or from a given array of library models,
-     or renders an empty list in case no data is present. */
+    /** Renders the libraries table either from the object's own collection, 
+     or from a given array of library models,
+     or renders an empty list in case no data is given. */
     render: function (options) {
         var template = this.templateLibraryList();
         var libraries_to_render = null;
@@ -874,14 +874,18 @@ var GalaxyLibraryview = Backbone.View.extend({
 
     templateLibraryList: function(){
         tmpl_array = [];
+
         tmpl_array.push('<div class="library_container" style="width: 90%; margin: auto; margin-top: 2em; overflow: auto !important; ">');
-        tmpl_array.push('');
+
         tmpl_array.push('<h3>Data Libraries Beta Test. This is work in progress. Please report problems & ideas via <a href="mailto:galaxy-bugs@bx.psu.edu?Subject=DataLibrariesBeta_Feedback" target="_blank">email</a> and <a href="https://trello.com/c/nwYQNFPK/56-data-library-ui-progressive-display-of-folders" target="_blank">Trello</a>.</h3>');
-        tmpl_array.push('<a href="" id="create_new_library_btn" class="btn btn-primary file ">New Library</a>');
+        tmpl_array.push('<div id="library_toolbar">');
+        tmpl_array.push('   <button title="Create New Library" id="create_new_library_btn" class="primary-button" type="button"><span class="fa fa-plus"></span> New Library</button>');
+        tmpl_array.push('</div>');
+
         tmpl_array.push('<% if(libraries.length === 0) { %>');
         tmpl_array.push("<div>I see no libraries. Why don't you create one?</div>");
         tmpl_array.push('<% } else{ %>');
-        tmpl_array.push('<table class="library_table table table-condensed">');
+        tmpl_array.push('<table class="grid table table-condensed">');
         tmpl_array.push('   <thead>');
         tmpl_array.push('     <th><a title="Click to reverse order" href="#sort/name/<% if(order==="desc"||order===null){print("asc")}else{print("desc")} %>">name</a> <span title="Sorted alphabetically" class="fa fa-sort-alpha-<%- order %>"></span></th>');
         tmpl_array.push('     <th>description</th>');
@@ -898,6 +902,7 @@ var GalaxyLibraryview = Backbone.View.extend({
         tmpl_array.push('   </tbody>');
         tmpl_array.push('</table>');
         tmpl_array.push('<% }%>');
+        
         tmpl_array.push('</div>');
 
         return _.template(tmpl_array.join(''));
