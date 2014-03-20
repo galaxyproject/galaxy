@@ -1,6 +1,7 @@
 define([
-    "mvc/dataset/hda-model"
-], function( hdaModel ){
+    "mvc/dataset/hda-model",
+    "mvc/base-mvc"
+], function( hdaModel, baseMVC ){
 //==============================================================================
 /** @class Model for a Galaxy history resource - both a record of user
  *      tool use and a collection of the datasets those tools produced.
@@ -11,7 +12,7 @@ define([
  *  @borrows LoggableMixin#log as #log
  *  @constructs
  */
-var History = Backbone.Model.extend( LoggableMixin ).extend(
+var History = Backbone.Model.extend( baseMVC.LoggableMixin ).extend(
 /** @lends History.prototype */{
 
     ///** logger used to record this.log messages, commonly set to console */
@@ -114,13 +115,6 @@ var History = Backbone.Model.extend( LoggableMixin ).extend(
     },
 
     // ........................................................................ common queries
-    /** is this model already associated with a user? */
-//TODO: remove
-    hasUser : function(){
-        var user = this.get( 'user' );
-        return !!( user && user.id );
-    },
-
     /** T/F is this history owned by the current user (Galaxy.currUser)
      *      Note: that this will return false for an anon user even if the history is theirs.
      */
@@ -295,7 +289,7 @@ History.getHistoryData = function getHistoryData( historyId, options ){
  *  @borrows LoggableMixin#log as #log
  *  @constructs
  */
-var HistoryCollection = Backbone.Collection.extend( LoggableMixin ).extend(
+var HistoryCollection = Backbone.Collection.extend( baseMVC.LoggableMixin ).extend(
 /** @lends HistoryCollection.prototype */{
     model   : History,
     urlRoot : galaxy_config.root + 'api/histories'

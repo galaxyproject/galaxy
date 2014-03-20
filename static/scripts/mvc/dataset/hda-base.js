@@ -1,7 +1,8 @@
 define([
-    "mvc/dataset/hda-model"
-], function( hdaModel ){
-/* global Backbone, LoggableMixin, HistoryDatasetAssociation, HDABaseView */
+    "mvc/dataset/hda-model",
+    "mvc/base-mvc"
+], function( hdaModel, baseMVC ){
+/* global Backbone */
 //==============================================================================
 /** @class Read only view for HistoryDatasetAssociation.
  *  @name HDABaseView
@@ -11,7 +12,7 @@ define([
  *  @borrows LoggableMixin#log as #log
  *  @constructs
  */
-var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
+var HDABaseView = Backbone.View.extend( baseMVC.LoggableMixin ).extend(
 /** @lends HDABaseView.prototype */{
 
     ///** logger used to record this.log messages, commonly set to console */

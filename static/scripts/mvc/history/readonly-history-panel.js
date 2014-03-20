@@ -1,10 +1,11 @@
 define([
     "mvc/history/history-model",
-    "mvc/dataset/hda-base"
-], function( historyModel, hdaBase ){
+    "mvc/dataset/hda-base",
+    "mvc/base-mvc"
+], function( historyModel, hdaBase, baseMVC ){
 // ============================================================================
 /** session storage for individual history preferences */
-var HistoryPrefs = SessionStorageModel.extend({
+var HistoryPrefs = baseMVC.SessionStorageModel.extend({
     defaults : {
 //TODO:?? expandedHdas to array?
         expandedHdas : {},
@@ -71,7 +72,7 @@ TODO:
  *  @borrows LoggableMixin#log as #log
  *  @constructs
  */
-var ReadOnlyHistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
+var ReadOnlyHistoryPanel = Backbone.View.extend( baseMVC.LoggableMixin ).extend(
 /** @lends ReadOnlyHistoryPanel.prototype */{
 
     /** logger used to record this.log messages, commonly set to console */
@@ -311,11 +312,11 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         attributes = attributes || {};
         //this.log( 'JSONToModel:', newHistoryJSON, newHdaJSON.length, attributes );
 
-        // set up the new model and render
-        if( Galaxy && Galaxy.currUser ){
-//TODO: global
-            newHistoryJSON.user = Galaxy.currUser.toJSON();
-        }
+//        // set up the new model and render
+//        if( Galaxy && Galaxy.currUser ){
+////TODO: global
+//            newHistoryJSON.user = Galaxy.currUser.toJSON();
+//        }
         var model = new historyModel.History( newHistoryJSON, newHdaJSON, attributes );
         this.setModel( model );
         return this;
@@ -334,10 +335,10 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
 
         if( model ){
             // set up the new model with user, logger, storage, events
-            if( Galaxy && Galaxy.currUser ){
-//TODO: global
-                model.user = Galaxy.currUser.toJSON();
-            }
+//            if( Galaxy && Galaxy.currUser ){
+////TODO: global
+//                model.user = Galaxy.currUser.toJSON();
+//            }
             this.model = model;
             if( this.logger ){
                 this.model.logger = this.logger;

@@ -1,5 +1,6 @@
 define([
-], function(){
+    "mvc/base-mvc"
+], function( baseMVC ){
 //==============================================================================
 /** @class (HDA) model for a Galaxy dataset
  *      related to a history.
@@ -10,7 +11,7 @@ define([
  *  @borrows LoggableMixin#log as #log
  *  @constructs
  */
-var HistoryDatasetAssociation = Backbone.Model.extend( LoggableMixin ).extend(
+var HistoryDatasetAssociation = Backbone.Model.extend( baseMVC.LoggableMixin ).extend(
 /** @lends HistoryDatasetAssociation.prototype */{
     
     ///** logger used to record this.log messages, commonly set to console */
@@ -401,7 +402,7 @@ HistoryDatasetAssociation.NOT_READY_STATES = [
  *  @borrows LoggableMixin#log as #log
  *  @constructs
  */
-var HDACollection = Backbone.Collection.extend( LoggableMixin ).extend(
+var HDACollection = Backbone.Collection.extend( baseMVC.LoggableMixin ).extend(
 /** @lends HDACollection.prototype */{
     model           : HistoryDatasetAssociation,
 

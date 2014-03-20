@@ -1,3 +1,6 @@
+define([
+], function(){
+//ASSUMES: backbone
 //==============================================================================
 /** @class Mixin to add logging capabilities to an object.
  *      Designed to allow switching an objects log output off/on at one central
@@ -188,3 +191,10 @@ var HiddenUntilActivatedViewMixin = /** @lends hiddenUntilActivatedMixin# */{
         return this.HUAVOptions.showFn.apply( this.HUAVOptions.$elementShown, arguments );
     }
 };
+
+//==============================================================================
+return {
+    LoggableMixin                   : LoggableMixin,
+    SessionStorageModel             : SessionStorageModel,
+    HiddenUntilActivatedViewMixin   : HiddenUntilActivatedViewMixin
+};});

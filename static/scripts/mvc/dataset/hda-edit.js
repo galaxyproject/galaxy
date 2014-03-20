@@ -13,7 +13,7 @@ define([
  *  @borrows LoggableMixin#log as #log
  *  @constructs
  */
-var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
+var HDAEditView = hdaBase.HDABaseView.extend(
 /** @lends HDAEditView.prototype */{
 
     // ......................................................................... set up

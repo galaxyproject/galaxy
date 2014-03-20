@@ -5,11 +5,9 @@
 /** @class Model for a saved Galaxy visualization.
  *
  *  @augments Backbone.Model
- *  @borrows LoggableMixin#logger as #logger
- *  @borrows LoggableMixin#log as #log
  *  @constructs
  */
-var Visualization = Backbone.Model.extend( LoggableMixin ).extend(
+var Visualization = Backbone.Model.extend(
 /** @lends Visualization.prototype */{
 
     ///** logger used to record this.log messages, commonly set to console */
@@ -31,7 +29,7 @@ var Visualization = Backbone.Model.extend( LoggableMixin ).extend(
      *  @see Backbone.Model#initialize
      */
     initialize : function( data ){
-        this.log( this + '.initialize', data, this.attributes );
+        //this.log( this + '.initialize', data, this.attributes );
 
         // munge config sub-object here since bbone won't handle defaults with this
         if( _.isObject( data.config ) && _.isObject( this.defaults.config ) ){
@@ -84,7 +82,7 @@ var Visualization = Backbone.Model.extend( LoggableMixin ).extend(
  *  @borrows LoggableMixin#log as #log
  *  @constructs
  */
-var VisualizationCollection = Backbone.Collection.extend( LoggableMixin ).extend(
+var VisualizationCollection = Backbone.Collection.extend(
 /** @lends VisualizationCollection.prototype */{
     model           : Visualization,
 

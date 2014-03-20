@@ -73,17 +73,11 @@ ${parent.javascripts()}
 ${history_panel_javascripts()}
 
 %if not use_panels:
-    ${h.js( 'mvc/user/user-model' )}
+<script type="text/javascript">
+window.Galaxy = {};
+</script>
 %endif
 
-<script type="text/javascript">
-    ##TODO: remove when Galaxy is either ensured or removed from the history panel
-    var using_panels = ${ 'false' if not use_panels else 'true' };
-    %if not use_panels:
-        window.Galaxy = {};
-        Galaxy.currUser = new User(${h.to_json_string( get_user_json() )});
-    %endif
-</script>
 </%def>
 
 ## ----------------------------------------------------------------------------
@@ -163,8 +157,12 @@ ${history_panel_javascripts()}
 
     require.config({
         baseUrl : "${h.url_for( '/static/scripts' )}"
-    })([ panelToUse.location ], function( panelMod ){
+    })([ 'mvc/user/user-model', panelToUse.location ], function( user, panelMod ){
         $(function(){
+            if( !Galaxy.currUser ){
+                Galaxy.currUser = new user.User( ${h.to_json_string( get_user_json() )} );
+            }
+     
             var panelClass = panelMod[ panelToUse.className ],
                 // history module is already in the dpn chain from the panel. We can re-scope it here.
                 historyModel = require( 'mvc/history/history-model' ),

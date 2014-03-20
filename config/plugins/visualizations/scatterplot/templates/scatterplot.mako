@@ -32,7 +32,6 @@ ${h.js( 'libs/jquery/jquery',
         'libs/backbone/backbone',
         'libs/d3',
         'libs/handlebars.runtime',
-        'mvc/base-mvc',
         'mvc/ui',
         'mvc/visualization/visualization-model' )}
 

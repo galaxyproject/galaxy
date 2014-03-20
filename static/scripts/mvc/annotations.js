@@ -1,9 +1,12 @@
 define([
-], function(){
+    "mvc/base-mvc"
+], function( baseMVC ){
 // =============================================================================
 /** A view on any model that has a 'annotation' attribute
  */
-var AnnotationEditor = Backbone.View.extend( LoggableMixin ).extend( HiddenUntilActivatedViewMixin ).extend({
+var AnnotationEditor = Backbone.View
+        .extend( baseMVC.LoggableMixin )
+        .extend( baseMVC.HiddenUntilActivatedViewMixin ).extend({
 
     tagName     : 'div',
     className   : 'annotation-display',

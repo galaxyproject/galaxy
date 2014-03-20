@@ -16,7 +16,8 @@ require([ "mvc/history/current-history-panel" ], function( historyPanel ){
             linkTarget      : 'galaxy_main',
             onready         : function loadAsCurrentHistoryPanel(){
                 var panel = this;
-                this.connectToQuotaMeter( Galaxy.quotaMeter ).connectToOptionsMenu( Galaxy.historyOptionsMenu );
+                this.connectToQuotaMeter( Galaxy.quotaMeter )
+                    .connectToOptionsMenu( Galaxy.historyOptionsMenu );
                 this.loadCurrentHistory()
                     .fail( function(){
                         panel.render();
@@ -92,7 +93,6 @@ onhistoryready.done( function( historyPanel ){
 <%def name="history_panel_javascripts()">
 ${h.js(
     "utils/localization",
-    "mvc/base-mvc"
 )}
 
 ${localize_js_strings([

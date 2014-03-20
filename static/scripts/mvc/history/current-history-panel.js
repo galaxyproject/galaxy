@@ -1,11 +1,12 @@
 define([
     "mvc/dataset/hda-edit",
-    "mvc/history/history-panel"
-], function( hdaEdit, hpanel ){
+    "mvc/history/history-panel",
+    "mvc/base-mvc"
+], function( hdaEdit, hpanel, baseMVC ){
 // ============================================================================
 /** session storage for history panel preferences (and to maintain state)
  */
-var HistoryPanelPrefs = SessionStorageModel.extend({
+var HistoryPanelPrefs = baseMVC.SessionStorageModel.extend({
     defaults : {
         /** is the panel currently showing the search/filter controls? */
         searching       : false,

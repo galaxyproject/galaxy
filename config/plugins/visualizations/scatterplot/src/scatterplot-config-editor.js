@@ -29,7 +29,7 @@ todo:
  *          configuring which data will be used
  *          configuring the plot display
  */
-var ScatterplotConfigEditor = Backbone.View.extend( LoggableMixin ).extend({
+var ScatterplotConfigEditor = Backbone.View.extend({
     //TODO: !should be a view on a visualization model
     //logger      : console,
     className   : 'scatterplot-control-form',
@@ -39,13 +39,13 @@ var ScatterplotConfigEditor = Backbone.View.extend( LoggableMixin ).extend({
         if( !this.model ){
             this.model = new Visualization({ type: 'scatterplot' });
         }
-        this.log( this + '.initialize, attributes:', attributes );
+        //this.log( this + '.initialize, attributes:', attributes );
 
         if( !attributes || !attributes.dataset ){
             throw new Error( "ScatterplotConfigEditor requires a dataset" );
         }
         this.dataset = attributes.dataset;
-        this.log( 'dataset:', this.dataset );
+        //this.log( 'dataset:', this.dataset );
 
         this.display = new ScatterplotDisplay({
             dataset : attributes.dataset,
