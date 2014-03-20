@@ -1,6 +1,8 @@
 import os
 from StringIO import StringIO
 from galaxy.tools.parameters import grouping
+from galaxy import eggs
+eggs.require( "requests" )
 from galaxy.util import listify
 from galaxy.util.odict import odict
 import galaxy.model
@@ -424,104 +426,7 @@ GALAXY_INTERACTORS = {
 }
 
 
-# Lets just try to use requests if it is available, but if not provide fallback
-# on custom implementations of limited requests get, put, etc... functionality.
-try:
-    from requests import get as get_request
-    from requests import post as post_request
-    from requests import put as put_request
-    from requests import delete as delete_request
-except ImportError:
-    import urllib2
-    import httplib
-
-    class RequestsLikeResponse( object ):
-
-        def __init__( self, content, status_code ):
-            self.content = content
-            self.status_code = status_code
-
-        def json( self ):
-            return loads( self.content )
-
-    def get_request( url, params={} ):
-        argsep = '&'
-        if '?' not in url:
-            argsep = '?'
-        param_pairs = []
-        for key, value in params.iteritems():
-            # Handle single parameters or lists and tuples of them.
-            if isinstance( value, tuple ):
-                value = list( value )
-            elif not isinstance( value, list ):
-                value = [ value ]
-            for val in value:
-                param_pairs.append( "%s=%s" % ( key, val ) )
-        url = url + argsep + '&'.join( param_pairs )
-        #req = urllib2.Request( url, headers = { 'Content-Type': 'application/json' } )
-        try:
-            response = urllib2.urlopen( url )
-            return RequestsLikeResponse( response.read(), status_code=response.getcode() )
-        except urllib2.HTTPError as e:
-            return RequestsLikeResponse( e.read(), status_code=e.code )
-
-    def post_request( url, data, files={} ):
-        return __multipart_request( url, data, files, verb="POST" )
-
-    def put_request( url, data=None ):
-        if isinstance( data, dict ):
-            assert False, "This test will fail, Galaxy's webob dependency does not parse out urlencoded PUT/PATCH entity data, API will receive empty payload."
-        return __urllib_request( url, 'PUT', json_str=data )
-
-    def delete_request( url ):
-        return __urllib_request( url, 'DELETE' )
-
-    def __urllib_request( url, verb, json_str=None ):
-        opener = urllib2.build_opener(urllib2.HTTPHandler)
-        request = urllib2.Request(url)
-        request.get_method = lambda: verb
-        if json_str:
-            request.add_header( "content-type", "application/json" )
-            request.add_data(json_str)
-        try:
-            response = opener.open(request)
-            return RequestsLikeResponse( response.read(), status_code=response.getcode() )
-        except urllib2.HTTPError as e:
-            return RequestsLikeResponse( e.read(), status_code=e.code )
-
-    def __multipart_request( url, data, files={}, verb="POST" ):
-        parsed_url = urllib2.urlparse.urlparse( url )
-        return __multipart( host=parsed_url.netloc, selector=parsed_url.path, fields=data.iteritems(), files=(files or {}).iteritems(), verb=verb )
-
-    # http://stackoverflow.com/a/681182
-    def __multipart(host, selector, fields, files, verb="POST"):
-        h = httplib.HTTP(host)
-        h.putrequest(verb, selector)
-        content_type, body = __encode_multipart_formdata(fields, files)
-        h.putheader('content-type', content_type)
-        h.putheader('content-length', str(len(body)))
-        h.endheaders()
-        h.send(body)
-        errcode, errmsg, headers = h.getreply()
-        return RequestsLikeResponse(h.file.read(), status_code=errcode)
-
-    def __encode_multipart_formdata(fields, files):
-        LIMIT = '----------lImIt_of_THE_fIle_eW_$'
-        CRLF = '\r\n'
-        L = []
-        for (key, value) in fields:
-            L.append('--' + LIMIT)
-            L.append('Content-Disposition: form-data; name="%s"' % key)
-            L.append('')
-            L.append(value)
-        for (key, value) in files:
-            L.append('--' + LIMIT)
-            L.append('Content-Disposition: form-data; name="%s"; filename="%s";' % (key, key))
-            L.append('Content-Type: application/octet-stream')
-            L.append('')
-            L.append(value.read())
-        L.append('--' + LIMIT + '--')
-        L.append('')
-        body = CRLF.join(L)
-        content_type = 'multipart/form-data; boundary=%s' % LIMIT
-        return content_type, body
+from requests import get as get_request
+from requests import post as post_request
+from requests import put as put_request
+from requests import delete as delete_request
