@@ -2078,8 +2078,8 @@ class LibraryFolder( object, Dictifiable, HasName ):
          # This needs to be a list
         return [ ld for ld in self.datasets if ld.library_dataset_dataset_association and not ld.library_dataset_dataset_association.dataset.deleted ]
 
-    def to_dict( self, view='collection' ):
-        rval = super( LibraryFolder, self ).to_dict( view=view )
+    def to_dict( self, view='collection', value_mapper=None ):
+        rval = super( LibraryFolder, self ).to_dict( view=view, value_mapper=value_mapper  )
         info_association, inherited = self.get_info_association()
         if info_association:
             if inherited:

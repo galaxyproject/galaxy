@@ -123,11 +123,18 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         class_name, content_id = self.__decode_library_content_id( trans, id )
         if class_name == 'LibraryFolder':
             content = self.get_library_folder( trans, content_id, check_ownership=False, check_accessible=True )
+            rval = content.to_dict( view='element', value_mapper={ 'id' : trans.security.encode_id } )
+            rval[ 'id' ] = 'F' + str( rval[ 'id' ] )
+            rval[ 'parent_id' ] = 'F' + str( trans.security.encode_id( rval[ 'parent_id' ] ) )
+            rval[ 'parent_library_id' ] = trans.security.encode_id( rval[ 'parent_library_id' ] )
         else:
             content = self.get_library_dataset( trans, content_id, check_ownership=False, check_accessible=True )
-
-        return content.to_dict( view='element', value_mapper={ 'id' : trans.security.encode_id } ) 
-        # return self.encode_all_ids( trans, content.to_dict( view='element' ) )
+            rval = content.to_dict( view='element')
+            rval[ 'id' ] = trans.security.encode_id( rval[ 'id' ] )
+            rval[ 'ldda_id' ] = trans.security.encode_id( rval[ 'ldda_id' ] )
+            rval[ 'folder_id' ] = 'F' + str( trans.security.encode_id( rval[ 'folder_id' ] ) )
+            rval[ 'parent_library_id' ] = trans.security.encode_id( rval[ 'parent_library_id' ] )
+        return rval
 
     @web.expose_api
     def create( self, trans, library_id, payload, **kwd ):
