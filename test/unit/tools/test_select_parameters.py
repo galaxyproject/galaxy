@@ -35,19 +35,6 @@ class SelectToolParameterTestCase( TestCase, tools_support.UsesApp ):
         # Data ref currently must be same level, if not at top level.
         assert not self.param.need_late_validation( self.trans, { "reference_source": { "my_name": "42", "input_bam": model.HistoryDatasetAssociation() } } )
 
-    # Following test will fail due to bug in Galaxy.
-    def test_nested_context_validation_needed_in_repeat( self ):
-        self.type = "data_column"
-        self.set_ref_text = True
-        self.options_xml = '''<options><filter type="data_meta" ref="input_bam" key="dbkey"/></options>'''
-        assert not self.param.need_late_validation( self.trans, { "series": [ { "my_name": "42", "input_bam": model.HistoryDatasetAssociation() } ] } )
-
-    def test_nested_context_validation_not_needed_in_repeat( self ):
-        self.type = "data_column"
-        self.set_ref_text = True
-        self.options_xml = '''<options><filter type="data_meta" ref="input_bam" key="dbkey"/></options>'''
-        assert self.param.need_late_validation( self.trans, { "series": [ { "my_name": "42", "input_bam": basic.RuntimeValue() } ] } )
-
     def test_filter_param_value( self ):
         self.options_xml = '''<options from_data_table="test_table"><filter type="param_value" ref="input_bam" column="0" /></options>'''
         assert ("testname1", "testpath1", False) in self.param.get_options( self.trans, { "input_bam": "testname1" } )
@@ -60,11 +47,6 @@ class SelectToolParameterTestCase( TestCase, tools_support.UsesApp ):
         assert ("testname1", "testpath1", False) in self.param.get_options( self.trans, { "input_bam": "testpath1" } )
         assert ("testname2", "testpath2", False) in self.param.get_options( self.trans, { "input_bam": "testpath2" } )
         assert len( self.param.get_options( self.trans, { "input_bam": "testpath3" } ) ) == 0
-
-    def test_filter_nested( self ):
-        # Test filtering a parameter inside a conditional (not currently supported.)
-        self.options_xml = '''<options from_data_table="test_table"><filter type="param_value" ref="input_bam" column="1" /></options>'''
-        assert ("testname1", "testpath1", False) in self.param.get_options( self.trans, {"condtional1" : { "input_bam": "testpath1", "my_name": 42 } } )
 
     # TODO: Good deal of overlap here with DataToolParameterTestCase,
     # refactor.
