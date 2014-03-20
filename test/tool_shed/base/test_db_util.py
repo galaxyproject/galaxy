@@ -75,6 +75,19 @@ def get_private_role( user ):
             return role
     raise AssertionError( "Private role not found for user '%s'" % user.email )
 
+def get_role( user, role_name ):
+    for role in user.all_roles():
+        if role.name == role_name:
+            return role
+    return None
+
+def get_repository_role_association( repository_id, role_id ):
+    rra = sa_session.query( model.RepositoryRoleAssociation ) \
+                    .filter( and_( model.RepositoryRoleAssociation.table.c.role_id == role_id,
+                                   model.RepositoryRoleAssociation.table.c.repository_id == repository_id ) ) \
+                    .first()
+    return rra
+
 def get_repository_reviews( repository_id, reviewer_user_id=None, changeset_revision=None ):
     if reviewer_user_id and changeset_revision:
         reviews = sa_session.query( model.RepositoryReview ) \
