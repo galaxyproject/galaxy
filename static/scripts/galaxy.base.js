@@ -682,8 +682,9 @@ $(document).ready( function() {
         // Put tooltips below items in panel header so that they do not overlap masthead.
         $(".unified-panel-header [title]").tooltip( { placement: 'bottom' } );
         
-        // Default tooltip location to be above item.
-        $("[title]").tooltip( { placement: 'top' } );
+        // default tooltip initialization, it will follow the data-placement tag for tooltip location
+        // and fallback to 'top' if not present
+        $("[title]").tooltip();
     }
     // Make popup menus.
     make_popup_menus();
