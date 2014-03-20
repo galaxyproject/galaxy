@@ -165,13 +165,18 @@ display: inline-block;
             float: left;
             // always initially hidden and zero width
             display: none;
-            width: 0px;
+            width: 32px;
+            height: 32px;
             //HACK: neg. on the bottom due to padding-bottom in title-bar - very tweakish
-            margin: 0px 0px -@spacing-bottom 0px;
-            padding: ( @spacing-top - 1 ) 0px 2px @spacing-left;
+            margin: 0px 0px -( @spacing-bottom ) 0px;
+            padding: ( @spacing-top + 2 ) 0px 2px ( @spacing-left - 1 );
+            font-size: 80%;
+            color: @btn-default-color;
             cursor: pointer;
-            //text-align: center;
             vertical-align: middle;
+        }
+        .dataset-selector:hover {
+            color: maroon;
         }
 
         .dataset-title-bar {
@@ -360,6 +365,7 @@ display: inline-block;
     .dataset .state-icon {
         .fa-icon;
         display: inline-block;
+        margin-right: 4px;
         vertical-align: middle;
         width: 16px;
         height: 16px;

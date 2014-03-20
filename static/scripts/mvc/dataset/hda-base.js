@@ -495,70 +495,34 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
     /** display a (fa-icon) checkbox on the left of the hda that fires events when checked
      *      Note: this also hides the primary actions
      */
-    showSelector : function( speed ){
-        speed = ( speed !== undefined )?( speed ):( this.fxSpeed );
-
+    showSelector : function(){
         // make sure selected state is represented properly
         if( this.selected ){
             this.select( null, true );
         }
 
-        // create a jq fx queue to do this sequentially: fadeout the buttons, embiggen the selector
-        var hdaView = this,
-            SELECTOR_WIDTH = 32;
+        this.selectable = true;
+        this.trigger( 'selectable', true, this );
 
-        if( speed ){
-            this.$el.queue( 'fx', function( next ){
-                $( this ).find( '.dataset-primary-actions' ).fadeOut( speed, next );
-            });
-            this.$el.queue( 'fx', function( next ){
-                $( this ).find( '.dataset-selector' ).show().animate({ width: SELECTOR_WIDTH }, speed, next );
-                $( this ).find( '.dataset-title-bar' ).animate({ 'margin-left': SELECTOR_WIDTH }, speed, next );
-                hdaView.selectable = true;
-                hdaView.trigger( 'selectable', true, hdaView );
-            });
-        // no animation
-        } else {
-            this.$el.find( '.dataset-primary-actions' ).hide();
-            this.$el.find( '.dataset-selector' ).show().css({ width : SELECTOR_WIDTH });
-            this.$el.find( '.dataset-title-bar' ).show().css({ 'margin-left' : SELECTOR_WIDTH });
-            hdaView.selectable = true;
-            hdaView.trigger( 'selectable', true, hdaView );
-        }
+        this.$( '.dataset-primary-actions' ).hide();
+        this.$( '.dataset-selector' ).show();
     },
 
     /** remove the selection checkbox */
-    hideSelector : function( speed ){
-        speed = ( speed !== undefined )?( speed ):( this.fxSpeed );
-
+    hideSelector : function(){
         // reverse the process from showSelect
         this.selectable = false;
         this.trigger( 'selectable', false, this );
 
-        if( speed ){
-            this.$el.queue( 'fx', function( next ){
-                $( this ).find( '.dataset-title-bar' ).show().css({ 'margin-left' : '0' });
-                $( this ).find( '.dataset-selector' ).animate({ width: '0px' }, speed, function(){
-                    $( this ).hide();
-                    next();
-                });
-            });
-            this.$el.queue( 'fx', function( next ){
-                $( this ).find( '.dataset-primary-actions' ).fadeIn( speed, next );
-            });
-
-        // no animation
-        } else {
-            $( this ).find( '.dataset-selector' ).css({ width : '0px' }).hide();
-            $( this ).find( '.dataset-primary-actions' ).show();
-        }
+        this.$( '.dataset-selector' ).hide();
+        this.$( '.dataset-primary-actions' ).show();
     },
 
-    toggleSelector : function( speed ){
+    toggleSelector : function(){
         if( !this.$el.find( '.dataset-selector' ).is( ':visible' ) ){
-            this.showSelector( speed );
+            this.showSelector();
         } else {
-            this.hideSelector( speed );
+            this.hideSelector();
         }
     },
 
@@ -694,7 +658,9 @@ var skeletonTemplate = [
     '</div>',
 
     // multi-select checkbox
-    '<div class="dataset-selector"><span class="fa fa-2x fa-square-o"></span></div>',
+    '<div class="dataset-selector">',
+        '<span class="fa fa-2x fa-square-o"></span>',
+    '</div>',
     // space for title bar buttons
     '<div class="dataset-primary-actions"></div>',
 

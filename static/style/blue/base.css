@@ -1617,7 +1617,8 @@ div.permissionContainer{padding-left:20px}
 .history-panel .dataset .dataset-padding{padding:6px 10px 6px 8px}
 .history-panel .dataset [class$=messagesmall]{margin:6px 10px 2px 8px;font-size:90%}
 .history-panel .dataset .help-text{font-weight:normal;color:#555}
-.history-panel .dataset .dataset-selector{float:left;display:none;width:0px;margin:0 0 -6px 0;padding:5px 0 2px 8px;cursor:pointer;vertical-align:middle}
+.history-panel .dataset .dataset-selector{float:left;display:none;width:32px;height:32px;margin:0 0 -6px 0;padding:8px 0 2px 7px;font-size:80%;color:#333;cursor:pointer;vertical-align:middle}
+.history-panel .dataset .dataset-selector:hover{color:maroon}
 .history-panel .dataset .dataset-title-bar{cursor:pointer;outline:none;padding:6px 10px 6px 8px}
 .history-panel .dataset .dataset-title-bar .dataset-title{display:inline;font-weight:bold;text-decoration:underline;word-wrap:break-word;word-break:break-all;line-height:16px}
 .history-panel .dataset .dataset-primary-actions{display:inline-block;float:right;margin:6px 10px 0}.history-panel .dataset .dataset-primary-actions .icon-btn:not(:last-child){margin:0px;border-radius:0px;border-right:none}
@@ -1654,7 +1655,7 @@ div.permissionContainer{padding-left:20px}
 .history-panel .dataset .dataset-body .dataset-display-applications .display-application:last-child{margin-bottom:8px}
 .history-panel .dataset .dataset-body .dataset-peek{margin-bottom:8px}.history-panel .dataset .dataset-body .dataset-peek pre.peek{width:100%;margin:0px;border-radius:3px;background:white;color:black;font-size:10px;overflow:auto}.history-panel .dataset .dataset-body .dataset-peek pre.peek th{color:white;background:#5f6990}
 .history-panel .dataset .dataset-body .dataset-peek pre.peek table,.history-panel .dataset .dataset-body .dataset-peek pre.peek th,.history-panel .dataset .dataset-body .dataset-peek pre.peek tr,.history-panel .dataset .dataset-body .dataset-peek pre.peek td{font-family:Monaco,Menlo,Consolas,"Courier New",monospace;font-size:10px}
-.history-panel .dataset .state-icon{font-family:FontAwesome;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;display:inline-block;vertical-align:middle;width:16px;height:16px;line-height:16px;text-align:center;font-size:16px}
+.history-panel .dataset .state-icon{font-family:FontAwesome;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;display:inline-block;margin-right:4px;vertical-align:middle;width:16px;height:16px;line-height:16px;text-align:center;font-size:16px}
 .state-icon-error{background-color:white;border-radius:8px}.state-icon-error:before{font-size:20px;line-height:16px;color:red;content:"\f057"}
 .history-panel [class$="messagesmall"]{margin:0px}
 .history-panel .editable-text{border:solid transparent 1px}

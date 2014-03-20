@@ -336,7 +336,7 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
     // ------------------------------------------------------------------------ panel events
     /** event map */
     events : _.extend( _.clone( readonlyPanel.ReadOnlyHistoryPanel.prototype.events ), {
-        'click .history-select-btn'     : function( e ){ this.toggleSelectors( this.fxSpeed ); },
+        'click .history-select-btn'                 : 'toggleSelectors',
         'click .history-select-all-datasets-btn'    : 'selectAllDatasets',
         'click .history-deselect-all-datasets-btn'  : 'deselectAllDatasets'
     }),
@@ -351,30 +351,32 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
 //TODO: to toggle showOrHide pattern
     /** show selectors on all visible hdas and associated controls */
     showSelectors : function( speed ){
+        speed = ( speed !== undefined )?( speed ):( this.fxSpeed );
         this.selecting = true;
-        this.$el.find( '.history-dataset-actions' ).slideDown( speed );
+        this.$( '.history-dataset-actions' ).slideDown( speed );
         _.each( this.hdaViews, function( view ){
-            view.showSelector( speed );
+            view.showSelector();
         });
         this.selectedHdaIds = [];
     },
 
     /** hide selectors on all visible hdas and associated controls */
     hideSelectors : function( speed ){
+        speed = ( speed !== undefined )?( speed ):( this.fxSpeed );
         this.selecting = false;
-        this.$el.find( '.history-dataset-actions' ).slideUp( speed );
+        this.$( '.history-dataset-actions' ).slideUp( speed );
         _.each( this.hdaViews, function( view ){
-            view.hideSelector( speed );
+            view.hideSelector();
         });
         this.selectedHdaIds = [];
     },
 
     /** show or hide selectors on all visible hdas and associated controls */
-    toggleSelectors : function( speed ){
+    toggleSelectors : function(){
         if( !this.selecting ){
-            this.showSelectors( speed );
+            this.showSelectors();
         } else {
-            this.hideSelectors( speed );
+            this.hideSelectors();
         }
     },
 
