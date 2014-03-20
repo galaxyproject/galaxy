@@ -286,7 +286,7 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         if contents_type == "dataset":
             return self.__update_dataset( trans, history_id, id, payload, **kwd )
         else:
-            return self.__handle_unknown_contents_type( contents_type )
+            return self.__handle_unknown_contents_type( trans, contents_type )
 
     def __update_dataset( self, trans, history_id, id, payload, **kwd ):
         changed = {}
