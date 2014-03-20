@@ -63,11 +63,13 @@ def get_installed_repository_by_id( repository_id ):
                      .filter( galaxy.model.tool_shed_install.ToolShedRepository.table.c.id == repository_id ) \
                      .first()
                      
-def get_installed_repository_by_name_owner( repository_name, owner ):
-    return install_session.query( galaxy.model.tool_shed_install.ToolShedRepository ) \
-                     .filter( and_( galaxy.model.tool_shed_install.ToolShedRepository.table.c.name == repository_name,
-                                    galaxy.model.tool_shed_install.ToolShedRepository.table.c.owner == owner ) ) \
-                     .first()
+def get_installed_repository_by_name_owner( repository_name, owner, return_multiple=False ):
+    query = install_session.query( galaxy.model.tool_shed_install.ToolShedRepository ) \
+                           .filter( and_( galaxy.model.tool_shed_install.ToolShedRepository.table.c.name == repository_name,
+                                          galaxy.model.tool_shed_install.ToolShedRepository.table.c.owner == owner ) )
+    if return_multiple:
+        return query.all()
+    return query.first()
                      
 def get_private_role( user ):
     for role in user.all_roles():
@@ -181,7 +183,7 @@ def get_galaxy_user( email ):
                      .filter( galaxy.model.User.table.c.email==email ) \
                      .first()
                      
-def get_repository_by_name_and_owner( name, owner_username ):
+def get_repository_by_name_and_owner( name, owner_username, return_multiple=False ):
     owner = get_user_by_name( owner_username )
     repository = sa_session.query( model.Repository ) \
                            .filter( and_( model.Repository.table.c.name == name,
