@@ -6,7 +6,6 @@
 <%def name="javascripts()">
     ${parent.javascripts()}
     ${h.js( "libs/require" )}
-    ${h.templates("helpers-common-templates")}
 
     <script type="text/javascript">
         require.config({ 

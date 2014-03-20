@@ -66,7 +66,6 @@
         }
     %>
 
-    ${h.templates( "helpers-common-templates" )}
     ${h.js( "mvc/base-mvc", "utils/localization", "mvc/user/user-model", "mvc/user/user-quotameter" )}
 
     ## load the frame manager
