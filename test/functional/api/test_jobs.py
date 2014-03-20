@@ -84,28 +84,6 @@ class JobsApiTestCase( api.ApiTestCase, TestsDatasets ):
 
         self.__assert_one_search_result( search_payload )
 
-    def test_search_param( self ):
-        history_id, dataset_id = self.__history_with_ok_dataset()
-
-        inputs = json.dumps(
-            dict(
-                input=dict(
-                    src='hda',
-                    id=dataset_id,
-                ),
-                num_lines=1,
-            )
-        )
-        search_payload = dict(
-            tool_id="random_lines1",
-            inputs=inputs,
-            state="ok",
-        )
-
-        self.__run_randomlines_tool( 1, history_id, dataset_id )
-        self._wait_for_history( history_id, assert_ok=True )
-        self.__assert_one_search_result( search_payload )
-
     def __assert_one_search_result( self, search_payload ):
         search_response = self._post( "jobs/search", data=search_payload )
         self._assert_status_code_is( search_response, 200 )
