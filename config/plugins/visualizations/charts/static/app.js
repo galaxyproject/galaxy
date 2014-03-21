@@ -59,8 +59,8 @@ return Backbone.View.extend(
             this.setElement(this.portlet);
         }
         
-        // hide views
-        this.charts_view.$el.hide();
+        // start with chart view
+        this.go('chart_view');
         
         // events
         var self = this;
@@ -70,6 +70,21 @@ return Backbone.View.extend(
         
         // render
         this.render();
+    },
+    
+    // loads a view and makes sure that all others are hidden
+    go: function(view_id) {
+        // pick view
+        switch (view_id) {
+            case 'chart_view' :
+                this.chart_view.show();
+                this.charts_view.hide();
+                break;
+            case 'charts_view' :
+                this.chart_view.hide();
+                this.charts_view.show();
+                break;
+        }
     },
     
     // render

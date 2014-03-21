@@ -29,7 +29,7 @@ return Backbone.View.extend(
                 self.group.set('key', self.group_key.value());
             }
         });
-        this.table = new Table({content: 'No data column.'});
+        this.table = new Table.View({content: 'No data column.'});
         
         // create element
         var $view = $('<div/>');

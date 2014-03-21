@@ -1,3 +1,44 @@
+.no-highlight {
+    -webkit-user-select: none; /* webkit (safari, chrome) browsers */
+    -moz-user-select: none; /* mozilla browsers */
+    -khtml-user-select: none; /* webkit (konqueror) browsers */
+    -ms-user-select: none; /* IE10+ */
+}
+
+.portlet-view {
+    min-width: 300px;
+
+    .portlet-title-icon {
+        float: left;
+        font-size: 1.2em;
+        padding-top: 3px;
+    }
+    
+    .portlet-title {
+        overflow: hidden;
+    }
+
+    .portlet-title-text {
+        float: left;
+        padding-top: 1px;
+    }
+    
+    .portlet-operations {
+        float: right;
+        cursor: pointer;
+    }
+    
+    .portlet-buttons {
+        height: 50px;
+        padding: 10px;
+    }
+    
+    .portlet-content {
+        height: inherit;
+        padding: 10px;
+    }
+}
+
 .popover-view {
     max-width: 700px;
     display: none;

@@ -29,14 +29,14 @@ return Backbone.View.extend(
         // table with chart types
         //
         var self = this;
-        this.table = new Table({
+        this.table = new Table.View({
             header : false,
             onconfirm : function(type) {
                 if (self.chart.groups.length > 0) {
                     // show modal
                     self.app.modal.show({
                         title   : 'Switching to another chart type?',
-                        body    : 'If you continue your settings and selections will be reseted.',
+                        body    : 'If you continue your settings and selections will be cleared.',
                         buttons : {
                             'Cancel'    : function() {
                                 // hide modal
@@ -99,17 +99,11 @@ return Backbone.View.extend(
                             tooltip : 'Draw Chart',
                             title   : 'Draw',
                             onclick : function() {
-                                // ensure that data group is available
-                                if (self.chart.groups.length == 0) {
-                                    self._addGroupModel();
-                                }
+                                // show charts
+                                self.app.go('charts_view');
                                 
                                 // save chart
                                 self._saveChart();
-                                
-                                // show charts
-                                self.hide();
-                                self.app.charts_view.$el.show();
                             }
                         }),
                 'back'  : new Ui.ButtonIcon({
@@ -117,8 +111,7 @@ return Backbone.View.extend(
                             tooltip : 'Return to Viewer',
                             title   : 'Return',
                             onclick : function() {
-                                self.hide();
-                                self.app.charts_view.$el.show();
+                                self.app.go('charts_view');
                             }
                         })
             }
@@ -215,6 +208,11 @@ return Backbone.View.extend(
     },
 
     // hide
+    show: function() {
+        this.$el.show();
+    },
+    
+    // hide
     hide: function() {
         $('.tooltip').hide();
         this.$el.hide();
@@ -297,6 +295,11 @@ return Backbone.View.extend(
             date        : Utils.time()
         });
         
+        // ensure that data group is available
+        if (this.chart.groups.length == 0) {
+            this._addGroupModel();
+        }
+        
         // create/get chart
         var current = this.app.charts.get(this.chart.id);
         if (!current) {
@@ -307,11 +310,11 @@ return Backbone.View.extend(
             current.copy(this.chart);
         }
         
-        // save
-        current.save();
-        
         // trigger redraw
         current.trigger('redraw', current);
+        
+        // save
+        this.app.charts.save();
     }
 });
 

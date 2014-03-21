@@ -1,8 +1,6 @@
-// dependencies
 define(['utils/utils'], function(Utils) {
 
-// return
-return Backbone.View.extend(
+var View = Backbone.View.extend(
 {
     // current row
     row: null,
@@ -201,5 +199,9 @@ return Backbone.View.extend(
                 '<div>';
     }
 });
+
+return {
+    View: View
+}
 
 });

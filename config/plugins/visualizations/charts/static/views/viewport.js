@@ -27,14 +27,7 @@ return Backbone.View.extend(
         this.portlet = new Portlet.View({
             title       : 'title',
             height      : this.options.height,
-            overflow    : 'hidden',
-            operations  : {
-                'edit'  : new Ui.ButtonIcon({
-                    icon    : 'fa-gear',
-                    tooltip : 'Customize Chart',
-                    title   : 'Customize'
-                })
-            }
+            overflow    : 'hidden'
         });
         
         // set this element
@@ -80,15 +73,7 @@ return Backbone.View.extend(
                 
             // update portlet
             this.portlet.title(chart.get('title'));
-            this.portlet.setOperation('edit', function() {
-                // get chart
-                self.app.chart.copy(chart);
-                
-                // show edit
-                self.app.charts_view.hide();
-                self.app.chart_view.$el.show();
-            });
-        
+            
             // show selected chart
             item.$el.show();
         
@@ -124,7 +109,7 @@ return Backbone.View.extend(
             self.app.log('viewport:_refreshChart()', 'Invalid attempt to refresh chart before completion.');
             return;
         }
-
+       
         // backup chart details
         var chart_id = chart.id;
     

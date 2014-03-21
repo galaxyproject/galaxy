@@ -92,7 +92,7 @@ return Backbone.Model.extend(
                 if (response && response.message && response.message.data && response.message.data.input) {
                     message = response.message.data.input + '.';
                 }
-                chart.state('failed', 'This visualization requires processing by the R-kit. Please make sure that it is installed. ' + message);
+                chart.state('failed', 'This visualization requires the R-kit. Please make sure it is installed. ' + message);
             }
         );
     },

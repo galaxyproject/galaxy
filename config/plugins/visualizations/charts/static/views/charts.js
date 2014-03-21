@@ -14,18 +14,11 @@ return Backbone.View.extend(
         this.viewport_view = new ViewportView(app);
         
         // table
-        this.table = new Table({
+        this.table = new Table.View({
             content     : 'Add charts to this table.',
             ondblclick  : function(chart_id) {
-                // get chart
-                var chart = self.app.charts.get(chart_id);
-                self.app.chart.copy(chart);
-                
-                // hide this element
-                self.hide();
-                
-                // show chart view
-                self.app.chart_view.$el.show();
+                // attempt to load chart editor
+                self._showChartView(chart_id);
             },
             onchange : function(chart_id) {
                 // get chart
@@ -47,32 +40,46 @@ return Backbone.View.extend(
             height : 100,
             operations : {
                 'new'   : new Ui.ButtonIcon({
-                            icon : 'fa-magic',
-                            tooltip: 'Create a new Chart',
-                            title: 'New',
-                            onclick: function() {
-                                self.hide();
-                                self.app.chart.reset();
-                                self.app.chart_view.$el.show();
-                            }
-                        }),
+                    icon    : 'fa-magic',
+                    tooltip : 'Create a new Chart',
+                    title   : 'New',
+                    onclick : function() {
+                        self.app.go('chart_view');
+                        self.app.chart.reset();
+                    }
+                }),
+                'edit'  : new Ui.ButtonIcon({
+                    icon    : 'fa-gear',
+                    tooltip : 'Customize this Chart',
+                    title   : 'Customize',
+                    onclick : function() {
+                        // check if element has been selected
+                        var chart_id = self.table.value();
+                        if (!chart_id) {
+                            return;
+                        }
+                        
+                        // attempt to load chart editor
+                        self._showChartView(chart_id);
+                    }
+                }),
                 'delete' : new Ui.ButtonIcon({
-                    icon : 'fa-trash-o',
-                    tooltip: 'Delete this Chart',
-                    title: 'Delete',
-                    onclick: function() {
+                    icon    : 'fa-trash-o',
+                    tooltip : 'Delete this Chart',
+                    title   : 'Delete',
+                    onclick : function() {
                             
-                            // check if element has been selected
-                            var chart_id = self.table.value();
-                            if (!chart_id) {
-                                return;
-                            }
-                    
-                            // title
-                            var chart = self.app.charts.get(chart_id);
-                    
-                            // show modal
-                            self.app.modal.show({
+                        // check if element has been selected
+                        var chart_id = self.table.value();
+                        if (!chart_id) {
+                            return;
+                        }
+                
+                        // title
+                        var chart = self.app.charts.get(chart_id);
+                
+                        // show modal
+                        self.app.modal.show({
                             title   : 'Are you sure?',
                             body    : 'The selected chart "' + chart.get('title') + '" will be irreversibly deleted.',
                             buttons : {
@@ -116,7 +123,12 @@ return Backbone.View.extend(
             self._changeChart(chart);
         });
     },
-    
+
+    // show
+    show: function() {
+        this.$el.show();
+    },
+        
     // hide
     hide: function() {
         $('.tooltip').hide();
@@ -147,11 +159,13 @@ return Backbone.View.extend(
         // remove from to table
         this.table.remove(chart.id);
         
+        // save
+        this.app.charts.save();
+        
         // check if table is empty
         if (this.table.size() == 0) {
-            this.hide();
+            this.app.go('chart_view');
             this.app.chart.reset();
-            this.app.chart_view.$el.show();
         } else {
             // select available chart
             this.table.value(this.app.charts.last().id);
@@ -166,6 +180,36 @@ return Backbone.View.extend(
         
             // select available chart
             this.table.value(chart.id);
+        }
+    },
+    
+    // show chart editor
+    _showChartView: function(chart_id) {
+        // get chart
+        var chart = this.app.charts.get(chart_id);
+        if (chart.ready()) {
+            // show chart view
+            this.app.go('chart_view');
+                    
+            // load chart into view
+            this.app.chart.copy(chart);
+        } else {
+            // show modal
+            var self = this;
+            this.app.modal.show({
+                title   : 'Please wait!',
+                body    : 'The selected chart "' + chart.get('title') + '" is currently being processed. Please wait...',
+                buttons : {
+                    'Close'     : function() {self.app.modal.hide();},
+                    'Retry'     : function() {
+                        // hide modal
+                        self.app.modal.hide();
+                        
+                        // retry
+                        self._showChartView(chart_id);
+                    }
+                }
+            });
         }
     }
 });

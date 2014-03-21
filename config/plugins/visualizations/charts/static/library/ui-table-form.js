@@ -9,7 +9,7 @@ var View = Backbone.View.extend(
     initialize: function(options) {
         // ui elements
         this.table_title = new Ui.Label({title: options.title});
-        this.table = new Table({content: options.content});
+        this.table = new Table.View({content: options.content});
         
         // create element
         var $view = $('<div/>');

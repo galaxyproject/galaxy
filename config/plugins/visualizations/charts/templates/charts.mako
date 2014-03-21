@@ -15,8 +15,7 @@
                 'libs/require',
                 'libs/underscore',
                 'libs/backbone/backbone',
-                'libs/d3',
-                'mvc/base-mvc')}
+                'libs/d3')}
 
         ## css
         ${h.css( 'base' )}

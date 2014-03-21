@@ -141,31 +141,31 @@ var View = Backbone.View.extend(
     
     // fill template
     _template: function(options) {
-        var tmpl =  '<div class="toolForm">';
+        var tmpl =  '<div class="toolForm portlet-view no-highlight">';
         
         if (options.title || options.icon) {
-            tmpl +=     '<div id="title" class="toolFormTitle" style="overflow: hidden;">' +
-                            '<div id="operations" style="float: right;"></div>' +
+            tmpl +=     '<div id="title" class="toolFormTitle portlet-title">' +
+                            '<div id="operations" class="portlet-operations"/>' +
                             '<div style="overflow: hidden;">';
                             
             if (options.icon)
-                tmpl +=         '<i style="padding-top: 3px; float: left; font-size: 1.2em" class="icon fa ' + options.icon + '">&nbsp;</i>';
+                tmpl +=         '<div class="portlet-title-icon fa ' + options.icon + '">&nbsp;</div>';
         
-            tmpl +=             '<div id="title-text" style="padding-top: 2px; float: left;">' + options.title + '</div>';
+            tmpl +=             '<div id="title-text" class="portlet-title-text">' + options.title + '</div>';
             
             tmpl +=         '</div>' +
                         '</div>';
         }
-        tmpl +=         '<div id="body" class="toolFormBody">';
+        tmpl +=         '<div id="body" class="toolFormBody portlet-body">';
         
         if (options.placement == 'top') {
-            tmpl +=         '<div id="buttons" class="buttons" style="height: 50px; padding: 10px;"></div>';
+            tmpl +=         '<div id="buttons" class="portlet-buttons"/>';
         }
         
-        tmpl +=             '<div id="content" class="content" style="height: inherit; padding: 10px;"></div>';
+        tmpl +=             '<div id="content" class="portlet-content"/>';
         
         if (options.placement == 'bottom') {
-            tmpl +=         '<div id="buttons" class="buttons" style="height: 50px; padding: 10px;"></div>';
+            tmpl +=         '<div id="buttons" class="portlet-buttons"/>';
         }
         
         tmpl +=         '</div>' +
