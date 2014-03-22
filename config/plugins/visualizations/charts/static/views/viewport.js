@@ -43,17 +43,7 @@ return Backbone.View.extend(
         
         // redraw
         this.app.charts.on('redraw', function(chart) {
-            // redraw if chart is not currently processed
-            if (chart.ready()) {
-                self._refreshChart(chart);
-            } else {
-                // redraw once current drawing process has finished
-                chart.on('change:state', function() {
-                    if (chart.ready()) {
-                        self._refreshChart(chart);
-                    }
-                });
-            }
+            self._drawChart(chart);
         });
     },
     
@@ -69,7 +59,7 @@ return Backbone.View.extend(
         var item = this.list[chart_id];
         if (item) {
             // get chart
-            var chart = self.app.charts.get(chart_id);
+            var chart = this.app.charts.get(chart_id);
                 
             // update portlet
             this.portlet.title(chart.get('title'));
@@ -100,13 +90,13 @@ return Backbone.View.extend(
     },
 
     // add
-    _refreshChart: function(chart) {
+    _drawChart: function(chart) {
         // link this
         var self = this;
         
         // check
         if (!chart.ready()) {
-            self.app.log('viewport:_refreshChart()', 'Invalid attempt to refresh chart before completion.');
+            self.app.log('viewport:_drawChart()', 'Invalid attempt to draw chart before completion.');
             return;
         }
        
@@ -126,16 +116,13 @@ return Backbone.View.extend(
         this.portlet.append($chart_el);
         
         // find svg element
-        var svg = d3.select(id + ' svg');
+        var svg = d3.select($chart_el.find('svg')[0]);
         
         // add chart to list
         this.list[chart_id] = {
             svg : svg,
             $el : $chart_el
         }
-        
-        // show chart from list
-        this.showChart(chart_id);
         
         // clear all previous handlers (including redraw listeners)
         chart.off('change:state');
@@ -172,7 +159,7 @@ return Backbone.View.extend(
         
         // set chart state
         chart.state('wait', 'Please wait...');
-        
+
         // identify chart type
         var chart_type = chart.get('type');
         var chart_settings = this.app.types.get(chart_type);

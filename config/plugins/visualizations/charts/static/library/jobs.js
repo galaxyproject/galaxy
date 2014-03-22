@@ -13,6 +13,20 @@ return Backbone.Model.extend(
         this.options = Utils.merge(options, this.optionsDefault);
     },
     
+    // clean
+    cleanup: function(chart) {
+        // cleanup previous dataset file
+        var previous =  chart.get('dataset_id_job');
+        if (previous) {
+            var self = this;
+            Utils.request('PUT', config.root + 'api/histories/none/contents/' + previous, { deleted: true }, function() {
+                // update galaxy history
+                self._refreshHdas();
+            });
+        }
+        
+    },
+    
     // create job
     submit: function(chart, settings_string, columns_string, callback) {
         // link this
@@ -39,11 +53,8 @@ return Backbone.Model.extend(
             }
         }
         
-        // cleanup previous dataset file
-        var previous =  chart.get('dataset_id_job');
-        if (previous) {
-            Utils.request('PUT', config.root + 'api/histories/' + chart.get('history_id') + '/contents/' + previous, { deleted: true });
-        }
+        // cleanup
+        self.cleanup(chart);
         
         // set chart state
         chart.state('submit', 'Sending job request...');
@@ -56,9 +67,7 @@ return Backbone.Model.extend(
                     chart.state('failed', 'Job submission failed. No response.');
                 } else {
                     // update galaxy history
-                    if (Galaxy && Galaxy.currHistoryPanel) {
-                        Galaxy.currHistoryPanel.refreshHdas();
-                    }
+                    self._refreshHdas();
         
                     // get dataset
                     var job = response.outputs[0];
@@ -105,6 +114,14 @@ return Backbone.Model.extend(
                 setTimeout(function() { self._loop(id, callback); }, self.app.config.get('query_timeout'));
             }
         });
+    },
+    
+    // refresh history panel
+    _refreshHdas: function() {
+        // update galaxy history
+        if (Galaxy && Galaxy.currHistoryPanel) {
+            Galaxy.currHistoryPanel.refreshHdas();
+        }
     }
 });
 

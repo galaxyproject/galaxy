@@ -65,7 +65,7 @@ return Backbone.View.extend(
                 nv.utils.windowResize(nvd3_model.update);
                 
                 // set chart state
-                chart.set('state', 'ok');
+                chart.state('ok', 'Chart has been drawn.');
             });
         });
     }

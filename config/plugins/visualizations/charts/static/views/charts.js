@@ -78,20 +78,25 @@ return Backbone.View.extend(
                         // title
                         var chart = self.app.charts.get(chart_id);
                 
-                        // show modal
-                        self.app.modal.show({
-                            title   : 'Are you sure?',
-                            body    : 'The selected chart "' + chart.get('title') + '" will be irreversibly deleted.',
-                            buttons : {
-                                'Cancel'    : function() {self.app.modal.hide();},
-                                'Delete'    : function() {
-                                    // hide modal
-                                    self.app.modal.hide();
-                                    
-                                    // remove chart
-                                    self.app.charts.remove(chart_id);
+                        // make sure that chart is ready
+                        self._wait (chart, function() {
+                            self.app.modal.show({
+                                title   : 'Are you sure?',
+                                body    : 'The selected chart "' + chart.get('title') + '" will be irreversibly deleted.',
+                                buttons : {
+                                    'Cancel'    : function() {self.app.modal.hide();},
+                                    'Delete'    : function() {
+                                        // hide modal
+                                        self.app.modal.hide();
+                                        
+                                        // remove chart
+                                        self.app.charts.remove(chart_id);
+                                        
+                                        // cleanup
+                                        self.app.jobs.cleanup(chart);
+                                    }
                                 }
-                            }
+                            });
                         });
                     }
                 }),
@@ -185,14 +190,19 @@ return Backbone.View.extend(
     
     // show chart editor
     _showChartView: function(chart_id) {
-        // get chart
+        var self = this;
         var chart = this.app.charts.get(chart_id);
+        this._wait (chart, function() {
+            self.app.go('chart_view');
+            self.app.chart.copy(chart);
+        });
+    },
+    
+    // wait for chart to be ready
+    _wait: function(chart, callback) {
+        // get chart
         if (chart.ready()) {
-            // show chart view
-            this.app.go('chart_view');
-                    
-            // load chart into view
-            this.app.chart.copy(chart);
+            callback();
         } else {
             // show modal
             var self = this;
@@ -206,7 +216,7 @@ return Backbone.View.extend(
                         self.app.modal.hide();
                         
                         // retry
-                        self._showChartView(chart_id);
+                        setTimeout(function() { self._wait(chart, callback); }, self.app.config.get('query_timeout'));
                     }
                 }
             });

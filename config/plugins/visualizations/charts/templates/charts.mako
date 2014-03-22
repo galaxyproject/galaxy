@@ -71,9 +71,10 @@
                 require(['plugin/app'], function(App) {
                     // load options
                     var options = {
+                        id      : ${h.to_json_string( visualization_id )} || undefined,
                         config  : ${h.to_json_string( config )}
                     }
-                    console.log(options);
+                    
                     // create application
                     app = new App(options);
                     

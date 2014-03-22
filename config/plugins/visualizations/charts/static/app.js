@@ -32,7 +32,7 @@ return Backbone.View.extend(
         // create chart models
         this.types = new Types();
         this.chart = new Chart();
-        this.charts = new Charts();
+        this.charts = new Charts(null, this);
         
         // create dataset handler
         this.datasets = new Datasets(this);
@@ -59,9 +59,6 @@ return Backbone.View.extend(
             this.setElement(this.portlet);
         }
         
-        // start with chart view
-        this.go('chart_view');
-        
         // events
         var self = this;
         this.config.on('change:title', function() {
@@ -70,6 +67,16 @@ return Backbone.View.extend(
         
         // render
         this.render();
+        
+        // load charts
+        this.charts.load();
+        
+        // start with chart view
+        if (this.charts.length == 0) {
+            this.go('chart_view');
+        } else {
+            this.go('charts_view');
+        }
     },
     
     // loads a view and makes sure that all others are hidden
