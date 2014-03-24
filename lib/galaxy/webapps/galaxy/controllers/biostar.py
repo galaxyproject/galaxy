@@ -75,6 +75,19 @@ class BiostarController( BaseUIController ):
         return self.biostar_question_redirect( trans, payload )
 
     @web.expose
+    def biostar_tool_bug_report( self, trans, hda=None, email=None, message=None ):
+        """
+        Generate a redirect to a Biostar site using external authentication to
+        pass Galaxy user information and information about a specific tool error.
+        """
+        try:
+            error_reporter = biostar.BiostarErrorReporter( hda, trans.app )
+            payload = error_reporter.send_report( trans.user, email=email, message=message )
+        except Exception, e:
+            return error( str( e ) )
+        return self.biostar_question_redirect( trans, payload=payload )
+        
+    @web.expose
     def biostar_logout( self, trans ):
         """
         Log out of biostar

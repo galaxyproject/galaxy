@@ -71,7 +71,10 @@
                         <textarea name="message" rows="10" cols="40"></textarea>
                     </div>
                     <div class="form-row">
-                        <input type="submit" name="submit_error_report" value="Report"/>
+                        <input type="submit" name="submit_error_report" value="Report" onclick="form.setAttribute('target', '_self');"/>
+                        %if trans.app.config.biostar_url:
+                            <input type="submit" name="submit_error_report" value="Post on Biostar" onclick="form.setAttribute('target', '_blank');"/>
+                        %endif
                     </div>
                 </form>
             </div>

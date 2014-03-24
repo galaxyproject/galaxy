@@ -7,6 +7,7 @@ import urlparse
 import re
 from unicodedata import normalize
 from galaxy.web.base.controller import url_for
+from galaxy.tools.errors import ErrorReporter
 
 _punct_re = re.compile(r'[\t !"#$%&\'()*\-/<=>?@\[\\\]^_`{|},.]+')
 
@@ -27,6 +28,8 @@ def biostar_enabled( app ):
 # Slugifying from Armin Ronacher (http://flask.pocoo.org/snippets/5/)
 def slugify(text, delim=u'-'):
     """Generates an slightly worse ASCII-only slug."""
+    if not isinstance( text, unicode ):
+        text = unicode( text )
     result = []
     for word in _punct_re.split(text.lower()):
         word = normalize('NFKD', word).encode('ascii', 'ignore')
@@ -63,7 +66,7 @@ def tag_for_tool( tool ):
     Generate a reasonable biostar tag for a tool.
     """
     #Biostar can now handle tags with spaces, do we want to generate tags differently now?
-    return slugify( unicode( tool.name ), delim='-' )
+    return slugify( tool.name, delim='-' )
 
 def populate_tag_payload( payload=None, tool=None ):
     if payload is None:
@@ -119,3 +122,18 @@ def biostar_logout( trans ):
         delete_cookie( trans, trans.app.config.biostar_key_name )
         return get_biostar_url( trans.app, biostar_action='log_out' )
     return None
+
+class BiostarErrorReporter( ErrorReporter ):
+    def _send_report( self, user, email=None, message=None, **kwd ):
+        assert biostar_enabled( self.app ), ValueError( "Biostar is not configured for this galaxy instance" )
+        assert self._can_access_dataset( user ), Exception( "You are not allowed to access this dataset." )
+        tool_version_select_field, tools, tool = \
+            self.app.toolbox.get_tool_components( self.tool_id, tool_version=None, get_loaded_tools_by_lineage=False, set_selected=True )
+        payload = { 'title': 'Bug report on "%s" tool' % ( tool.name ), 'content': self.report.replace( '\n', '<br />' ), 'tag_val':slugify( 'bug report' ) }
+        #Get footer for email from here
+        payload2 = populate_tool_payload( tool=tool )
+        if 'content' in payload2:
+            payload[ 'content' ] = "%s<br />%s" % ( payload['content'], payload2['content'] )
+        if 'tag_val' in payload2:
+            payload[ 'tag_val' ] = ','.join( [ payload2[ 'tag_val' ], payload[ 'tag_val' ] ] )
+        return payload
