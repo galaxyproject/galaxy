@@ -209,7 +209,7 @@ def app_factory( global_conf, **kwargs ):
                            '/api/libraries/:id',
                            controller='libraries',
                            action='update',
-                           conditions=dict( method=[ "PATCH" ] ) )
+                           conditions=dict( method=[ "PATCH", 'PUT' ] ) )
 
     webapp.mapper.connect( 'show_lda_item',
                            '/api/libraries/datasets/:id',
