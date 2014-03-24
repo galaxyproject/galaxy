@@ -1,8 +1,8 @@
 // dependencies
-define(['mvc/ui/ui-tabs', 'plugin/library/ui-table', 'plugin/library/ui', 'utils/utils',
+define(['mvc/ui/ui-tabs', 'plugin/library/ui-table', 'plugin/library/ui', 'mvc/ui/ui-portlet', 'utils/utils',
         'plugin/models/chart', 'plugin/models/group',
         'plugin/views/group', 'plugin/views/settings'],
-    function(Tabs, Table, Ui, Utils, Chart, Group, GroupView, SettingsView) {
+    function(Tabs, Table, Ui, Portlet, Utils, Chart, Group, GroupView, SettingsView) {
 
 // widget
 return Backbone.View.extend(
@@ -24,6 +24,38 @@ return Backbone.View.extend(
         
         // configure options
         this.options = Utils.merge(options, this.optionsDefault);
+        
+        // create portlet
+        this.portlet = new Portlet.View({
+            icon : 'fa-bar-chart-o',
+            title: 'Editor',
+            operations      : {
+                'save'  : new Ui.ButtonIcon({
+                    icon    : 'fa-save',
+                    tooltip : 'Draw Chart',
+                    title   : 'Draw',
+                    onclick : function() {
+                        // show viewport
+                        self.app.go('viewer');
+                        
+                        // save chart
+                        self._saveChart();
+                    }
+                }),
+                'back'  : new Ui.ButtonIcon({
+                    icon    : 'fa-caret-left',
+                    tooltip : 'Return to Viewer',
+                    title   : 'Return',
+                    onclick : function() {
+                        // show viewport
+                        self.app.go('viewer');
+                        
+                        // reset chart
+                        self.app.storage.load();
+                    }
+                })
+            }
+        });
         
         //
         // table with chart types
@@ -92,28 +124,6 @@ return Backbone.View.extend(
             onnew           : function() {
                 var group = self._addGroupModel();
                 self.tabs.show(group.id);
-            },
-            operations      : {
-                'save'  : new Ui.ButtonIcon({
-                            icon    : 'fa-save',
-                            tooltip : 'Draw Chart',
-                            title   : 'Draw',
-                            onclick : function() {
-                                // show charts
-                                self.app.go('charts_view');
-                                
-                                // save chart
-                                self._saveChart();
-                            }
-                        }),
-                'back'  : new Ui.ButtonIcon({
-                            icon    : 'fa-caret-left',
-                            tooltip : 'Return to Viewer',
-                            title   : 'Return',
-                            onclick : function() {
-                                self.app.go('charts_view');
-                            }
-                        })
             }
         });
         
@@ -157,8 +167,11 @@ return Backbone.View.extend(
             $el     : this.settings.$el
         });
         
+        // append tabs
+        this.portlet.append(this.tabs.$el);
+        
         // elements
-        this.setElement(this.tabs.$el);
+        this.setElement(this.portlet.$el);
         
         // hide back button on startup
         this.tabs.hideOperation('back');
@@ -166,8 +179,7 @@ return Backbone.View.extend(
         // chart events
         var self = this;
         this.chart.on('change:title', function(chart) {
-            self.title.value(chart.get('title'));
-            self.app.config.set('title', chart.get('title'));
+            self._refreshTitle();
         });
         this.chart.on('change:type', function(chart) {
             self.table.value(chart.get('type'));
@@ -175,18 +187,8 @@ return Backbone.View.extend(
         this.chart.on('reset', function(chart) {
             self._resetChart();
         });
-        
-        // charts events
-        this.app.charts.on('add', function(chart) {
-            self.tabs.showOperation('back');
-        });
-        this.app.charts.on('remove', function(chart) {
-            if (self.app.charts.length == 0) {
-                self.tabs.hideOperation('back');
-            }
-        });
-        this.app.charts.on('reset', function(chart) {
-            self.tabs.hideOperation('back');
+        this.app.chart.on('redraw', function(chart) {
+            self.portlet.showOperation('back');
         });
         
         // groups events
@@ -214,10 +216,18 @@ return Backbone.View.extend(
     
     // hide
     hide: function() {
-        $('.tooltip').hide();
         this.$el.hide();
     },
 
+    // refresh title
+    _refreshTitle: function() {
+        var title = this.chart.get('title');
+        if (title) {
+            title = ' - ' + title;
+        }
+        this.portlet.title('Charts' + title);
+    },
+    
     // update
     _refreshGroupKey: function() {
         var self = this;
@@ -284,6 +294,9 @@ return Backbone.View.extend(
         this.chart.set('type', 'bardiagram');
         this.chart.set('dataset_id', this.app.options.config.dataset_id);
         this.chart.set('title', 'New Chart');
+        
+        // reset back button
+        this.portlet.hideOperation('back');
     },
     
     // create chart
@@ -300,21 +313,11 @@ return Backbone.View.extend(
             this._addGroupModel();
         }
         
-        // create/get chart
-        var current = this.app.charts.get(this.chart.id);
-        if (!current) {
-            current = this.chart.clone();
-            current.copy(this.chart);
-            this.app.charts.add(current);
-        } else {
-            current.copy(this.chart);
-        }
-        
         // trigger redraw
-        current.trigger('redraw', current);
+        this.chart.trigger('redraw');
         
         // save
-        this.app.charts.save();
+        this.app.storage.save();
     }
 });
 

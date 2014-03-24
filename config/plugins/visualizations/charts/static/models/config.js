@@ -7,8 +7,7 @@ return Backbone.Model.extend(
     // options
     defaults : {
         query_limit     : 1000,
-        query_timeout   : 500,
-        title           : 'Create a new chart'
+        query_timeout   : 500
     }
 });
 

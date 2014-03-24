@@ -5,14 +5,8 @@ define(['mvc/ui/ui-portlet', 'plugin/library/ui', 'utils/utils'],
 // widget
 return Backbone.View.extend(
 {
-    // list
-    list: {},
-    
-    // options
-    optionsDefault :
-    {
-        height : 300
-    },
+    // height
+    height : 300,
     
     // initialize
     initialize: function(app, options)
@@ -20,117 +14,63 @@ return Backbone.View.extend(
         // link app
         this.app = app;
         
+        // link chart
+        this.chart = this.app.chart;
+        
         // link options
         this.options = Utils.merge(options, this.optionsDefault);
         
-        // add table to portlet
-        this.portlet = new Portlet.View({
-            title       : 'title',
-            height      : this.options.height,
-            overflow    : 'hidden'
-        });
-        
-        // set this element
-        this.setElement(this.portlet.$el);
+        // create element
+        this.setElement($(this._template()));
         
         // events
         var self = this;
-        
-        // remove
-        this.app.charts.on('remove', function(chart) {
-            self._removeChart(chart.id);
+        this.chart.on('redraw', function() {
+            self._draw(self.chart);
         });
-        
-        // redraw
-        this.app.charts.on('redraw', function(chart) {
-            self._drawChart(chart);
-        });
-    },
-    
-    // show
-    showChart: function(chart_id) {
-        // show
-        this.show();
-        
-        // hide all
-        this.hideCharts();
-        
-        // identify selected item from list
-        var item = this.list[chart_id];
-        if (item) {
-            // get chart
-            var chart = this.app.charts.get(chart_id);
-                
-            // update portlet
-            this.portlet.title(chart.get('title'));
-            
-            // show selected chart
-            item.$el.show();
-        
-            // this trigger d3 update events
-            $(window).trigger('resize');
-        }
-    },
-    
-    // hide charts
-    hideCharts: function() {
-        this.$el.find('.item').hide();
     },
     
     // show
     show: function() {
-        $('.tooltip').hide();
         this.$el.show();
     },
     
     // hide
     hide: function() {
-        $('.tooltip').hide();
         this.$el.hide();
     },
 
     // add
-    _drawChart: function(chart) {
+    _draw: function(chart) {
         // link this
         var self = this;
         
         // check
         if (!chart.ready()) {
-            self.app.log('viewport:_drawChart()', 'Invalid attempt to draw chart before completion.');
+            this.app.log('viewport:_drawChart()', 'Invalid attempt to draw chart before completion.');
             return;
         }
-       
-        // backup chart details
-        var chart_id = chart.id;
-    
-        // make sure that svg does not exist already
-        this._removeChart(chart_id);
-            
-        // create id
-        var id = '#' + chart_id;
         
-        // create element
-        var $chart_el = $(this._template({id: id}));
-        
-        // add to portlet
-        this.portlet.append($chart_el);
-        
-        // find svg element
-        var svg = d3.select($chart_el.find('svg')[0]);
-        
-        // add chart to list
-        this.list[chart_id] = {
-            svg : svg,
-            $el : $chart_el
+        // clear svg
+        if (this.svg) {
+            this.svg.remove();
         }
         
+        // create
+        this.svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        this.svg.setAttribute('height', this.height);
+        this.$el.append(this.svg);
+        
+        // find svg element
+        this.svg = d3.select(this.$el.find('svg')[0]);
+         
         // clear all previous handlers (including redraw listeners)
         chart.off('change:state');
         
         // link status handler
         chart.on('change:state', function() {
             // get info element
-            var $info = $chart_el.find('#info');
+            var $info = self.$el.find('#info');
             
             // get icon
             var $icon = $info.find('#icon');
@@ -168,7 +108,7 @@ return Backbone.View.extend(
         var self = this;
         require(['plugin/charts/' + chart_type + '/' + chart_type], function(ChartView) {
             // create chart
-            var view = new ChartView(self.app, {svg : svg});
+            var view = new ChartView(self.app, {svg : self.svg});
             
             // request data
             if (chart_settings.execute) {
@@ -181,31 +121,18 @@ return Backbone.View.extend(
         });
     },
     
-    // remove
-    _removeChart: function(id) {
-        var item = this.list[id];
-        if (item) {
-            // remove svg element
-            item.svg.remove();
-            
-            // find div element (if any)
-            item.$el.remove();
-        }
-    },
-    
     // template
-    _template: function(options) {
-        return '<div id="' + options.id.substr(1) + '" class="item">' +
-                    '<span id="info">' +
+    _template: function() {
+        return  '<div>' +
+                    '<div id="info" style="text-align: center; margin-top: 20px;">' +
                         '<span id="icon" style="font-size: 1.2em; display: inline-block;"/>' +
                         '<span id="text" style="position: relative; margin-left: 5px; top: -1px; font-size: 1.0em;"/>' +
-                    '</span>' +
-                    '<svg style="height: auto;"/>' +
+                    '</div>' +
                 '</div>';
     },
     
     // create default chart request
-    _defaultRequestString : function(chart) {
+    _defaultRequestString: function(chart) {
     
         // get chart settings
         var chart_settings  = this.app.types.get(chart.get('type'));
@@ -226,7 +153,7 @@ return Backbone.View.extend(
     },
     
     // create default chart request
-    _defaultSettingsString : function(chart) {
+    _defaultSettingsString: function(chart) {
     
         // configure settings
         var settings_string = '';
@@ -241,7 +168,7 @@ return Backbone.View.extend(
     },
 
     // create default chart request
-    _defaultRequestDictionary : function(chart) {
+    _defaultRequestDictionary: function(chart) {
     
         // get chart settings
         var chart_settings  = this.app.types.get(chart.get('type'));
