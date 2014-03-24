@@ -55,10 +55,12 @@ class LibrariesController( BaseAPIController ):
         libraries = []
         for library in query:
             item = library.to_dict( view='element', value_mapper={ 'id' : trans.security.encode_id , 'root_folder_id' : trans.security.encode_id } )
+            if trans.app.security_agent.library_is_public( library, contents=False ):
+                item[ 'public' ] = True
             libraries.append( item )
         return libraries
 
-    @expose_api
+    @expose_api_anonymous
     def show( self, trans, id, deleted='False', **kwd ):
         """
         show( self, trans, id, deleted='False', **kwd )
@@ -139,6 +141,9 @@ class LibrariesController( BaseAPIController ):
 
        .. note:: Currently, only admin users can update libraries. Also the library must not be `deleted`.
 
+        :param  id:      the encoded id of the library
+        :type   id:      an encoded id string
+
         :param  payload: (required) dictionary structure containing::
             'name':         new library's name, cannot be empty
             'description':  new library's description
@@ -192,7 +197,7 @@ class LibrariesController( BaseAPIController ):
         .. note:: Currently, only admin users can un/delete libraries.
 
         :param  id:     the encoded id of the library to un/delete
-        :type   id:     str
+        :type   id:     an encoded id string
 
         :param  undelete:    (optional) flag specifying whether the item should be deleted or undeleted, defaults to false:
         :type   undelete:    bool
