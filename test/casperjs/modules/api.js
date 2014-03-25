@@ -75,10 +75,61 @@ API.prototype._ajax = function _ajax( url, options ){
     if( resp.status !== 200 ){
         // grrr... this doesn't lose the \n\r\t
         //throw new APIError( resp.responseText.replace( /[\s\n\r\t]+/gm, ' ' ).replace( /"/, '' ) );
-        this.spaceghost.debug( 'api error response status code: ' + resp.status );
+        this.spaceghost.debug( 'API error: code: ' + resp.status + ', responseText: ' + resp.responseText );
+        this.spaceghost.debug( '\t responseJSON: ' + this.spaceghost.jsonStr( resp.responseJSON ) );
         throw new APIError( resp.responseText, resp.status );
     }
     return JSON.parse( resp.responseText );
+};
+
+// =================================================================== TESTING
+/** Checks whether fn raises an error with a message that contains a status and given string.
+ *      NOTE: DOES NOT work with steps. @see SpaceGhost#assertStepsRaise
+ *  @param {Function} testFn        a function that may throw an error
+ *  @param {Integer} statusExpected the HTTP status code expected
+ *  @param {String} errMsgContains  some portion of the correct error msg
+ *  @private
+ */
+API.prototype._APIRaises = function _APIRaises( testFn, statusExpected, errMsgContains ){
+    var failed = false;
+    try {
+        testFn.call( this.spaceghost );
+    } catch( err ){
+        this.spaceghost.debug( err.name + ': ' + err.status );
+        this.spaceghost.debug( err.message );
+        if( ( err.name === 'APIError' )
+        &&  ( err.status && err.status === statusExpected )
+        &&  ( err.message.indexOf( errMsgContains ) !== -1 ) ){
+            failed = true;
+
+        // re-raise other, non-searched-for errors
+        } else {
+            throw err;
+        }
+    }
+    return failed;
+};
+
+/** Simple assert raises.
+ *      NOTE: DOES NOT work with steps. @see SpaceGhost#assertStepsRaise
+ *  @param {Function} testFn        a function that may throw an error
+ *  @param {Integer} statusExpected the HTTP status code expected
+ *  @param {String} errMsgContains  some portion of the correct error msg
+ *  @param {String} msg             assertion message to display
+ */
+API.prototype.assertRaises = function assertRaises( testFn, statusExpected, errMsgContains, msg ){
+    return this.spaceghost.test.assert( this._APIRaises( testFn, statusExpected, errMsgContains ), msg  );
+};
+
+/** Simple assert does not raise.
+ *      NOTE: DOES NOT work with steps. @see SpaceGhost#assertStepsRaise
+ *  @param {Function} testFn        a function that may throw an error
+ *  @param {Integer} statusExpected the HTTP status code expected
+ *  @param {String} errMsgContains  some portion of the correct error msg
+ *  @param {String} msg             assertion message to display
+ */
+API.prototype.assertDoesntRaise = function assertDoesntRaise( testFn, statusExpected, errMsgContains, msg ){
+    return this.spaceghost.test.assert( !this._APIRaises( testFn, statusExpected, errMsgContains ), msg  );
 };
 
 // =================================================================== MISC
@@ -164,7 +215,8 @@ HistoriesAPI.prototype.urlTpls = {
     create  : 'api/histories',
     delete_ : 'api/histories/%s',
     undelete: 'api/histories/deleted/%s/undelete',
-    update  : 'api/histories/%s'
+    update  : 'api/histories/%s',
+    set_as_current : 'api/histories/%s/set_as_current'
 };
 
 HistoriesAPI.prototype.index = function index( deleted ){
@@ -179,7 +231,7 @@ HistoriesAPI.prototype.index = function index( deleted ){
 HistoriesAPI.prototype.show = function show( id, deleted ){
     this.api.spaceghost.info( 'histories.show: ' + [ id, (( deleted )?( 'w deleted' ):( '' )) ] );
 
-    id = ( id === 'most_recently_used' )?( id ):( this.api.ensureId( id ) );
+    id = ( id === 'most_recently_used' || id === 'current' )?( id ):( this.api.ensureId( id ) );
     deleted = deleted || false;
     return this.api._ajax( utils.format( this.urlTpls.show, id ), {
         data : { deleted: deleted }
@@ -217,7 +269,7 @@ HistoriesAPI.prototype.undelete = function undelete( id ){
     });
 };
 
-HistoriesAPI.prototype.update = function create( id, payload ){
+HistoriesAPI.prototype.update = function update( id, payload ){
     this.api.spaceghost.info( 'histories.update: ' + id + ',' + this.api.spaceghost.jsonStr( payload ) );
 
     // py.payload <-> ajax.data
@@ -228,6 +280,15 @@ HistoriesAPI.prototype.update = function create( id, payload ){
     return this.api._ajax( url, {
         type : 'PUT',
         data : payload
+    });
+};
+
+HistoriesAPI.prototype.set_as_current = function set_as_current( id ){
+    this.api.spaceghost.info( 'histories.set_as_current: ' + id );
+    id = this.api.ensureId( id );
+
+    return this.api._ajax( utils.format( this.urlTpls.set_as_current, id ), {
+        type : 'PUT'
     });
 };
 
@@ -297,6 +358,23 @@ HDAAPI.prototype.update = function create( historyId, id, payload ){
     });
 };
 
+HDAAPI.prototype.delete_ = function create( historyId, id, purge ){
+    this.api.spaceghost.info( 'hdas.delete_: ' + [ historyId, id ] );
+    historyId = this.api.ensureId( historyId );
+    id = this.api.ensureId( id );
+
+    // have to attach like GET param - due to body loss in jq
+    url = utils.format( this.urlTpls.update, historyId, id );
+    if( purge ){
+        url += '?purge=True';
+    }
+    return this.api._ajax( url, {
+        type : 'DELETE'
+    });
+};
+
+//TODO: delete_
+
 
 // =================================================================== TOOLS
 var ToolsAPI = function HDAAPI( api ){
@@ -348,6 +426,218 @@ ToolsAPI.prototype.create = function create( payload ){
         type : 'POST',
         data : payload
     });
+};
+
+//ToolsAPI.prototype.uploadByForm = function upload( historyId, options ){
+//    this.api.spaceghost.debug( '-------------------------------------------------' );
+//    this.api.spaceghost.info( 'tools.upload: ' + [ historyId, '(contents)', this.api.spaceghost.jsonStr( options ) ] );
+//    this.api.ensureId( historyId );
+//    options = options || {};
+//
+//    this.api.spaceghost.evaluate( function( url ){
+//        var html = [
+//            '<form action="', url, '" method="post" enctype="multipart/form-data">',
+//                '<input type="file" name="files_0|file_data">',
+//                '<input type="hidden" name="tool_id" />',
+//                '<input type="hidden" name="history_id" />',
+//                '<input type="hidden" name="inputs" />',
+//                '<button type="submit">Submit</button>',
+//            '</form>'
+//        ];
+//        document.write( html.join('') );
+//        //document.getElementsByTagName( 'body' )[0].innerHTML = html.join('');
+//    }, utils.format( this.urlTpls.create ) );
+//
+//    this.api.spaceghost.fill( 'form', {
+//        'files_0|file_data' : '1.txt',
+//        'tool_id'           : 'upload1',
+//        'history_id'        : historyId,
+//        'inputs'            : JSON.stringify({
+//            'file_type'         : 'auto',
+//            'files_0|type'      : 'upload_dataset',
+//            'to_posix_lines'    : true,
+//            'space_to_tabs'     : false,
+//            'dbkey'             : '?'
+//        })
+//    }, true );
+//    // this causes the page to switch...I think
+//};
+
+/** paste a file - either from a string (options.paste) or from a filesystem file (options.filepath) */
+ToolsAPI.prototype.uploadByPaste = function upload( historyId, options ){
+    this.api.spaceghost.info( 'tools.upload: ' + [ historyId, this.api.spaceghost.jsonStr( options ) ] );
+    this.api.ensureId( historyId );
+    options = options || {};
+
+    var inputs = {
+        'files_0|NAME'      : options.name  || 'Test Dataset',
+        'dbkey'             : options.dbkey || '?',
+        'file_type'         : options.ext   || 'auto'
+    };
+    if( options.filepath ){
+        var fs = require( 'fs' );
+        inputs[ 'files_0|url_paste' ] = fs.read( options.filepath );
+
+    } else if( options.paste ){
+        inputs[ 'files_0|url_paste' ] = options.paste;
+    }
+    if( options.posix ){
+        inputs[ 'files_0|to_posix_lines' ] = 'Yes';
+    }
+    if( options.tabs ){
+        inputs[ 'files_0|space_to_tab' ] = 'Yes';
+    }
+    return this.api._ajax( utils.format( this.urlTpls.create ), {
+        type : 'POST',
+        data : {
+            tool_id     : 'upload1',
+            upload_type : 'upload_dataset',
+            history_id  : historyId,
+            inputs      : inputs
+        }
+    });
+};
+
+/** post a file to the upload1 tool over ajax */
+ToolsAPI.prototype.upload = function upload( historyId, options ){
+    this.api.spaceghost.info( 'tools.upload: ' + [ historyId, this.api.spaceghost.jsonStr( options ) ] );
+    this.api.ensureId( historyId );
+    options = options || {};
+
+    // We can post an upload using jquery and formdata (see below), the more
+    //  difficult part is attaching the file without user intervention.
+    //  To do this we need to (unfortunately) create a form phantom can attach the file to first.
+    this.api.spaceghost.evaluate( function(){
+        $( 'body' ).append( '<input type="file" name="casperjs-upload-file" />' );
+    });
+    this.api.spaceghost.page.uploadFile( 'input[name="casperjs-upload-file"]', options.filepath );
+
+    var inputs = {
+        'file_type'         : options.ext || 'auto',
+        'files_0|type'      : 'upload_dataset',
+        'dbkey'             : options.dbkey || '?'
+    };
+    if( options.posix ){
+        inputs[ 'files_0|to_posix_lines' ] = 'Yes';
+    }
+    if( options.tabs ){
+        inputs[ 'files_0|space_to_tab' ] = 'Yes';
+    }
+    var response = this.api.spaceghost.evaluate( function( url, historyId, inputs ){
+        var file = $( 'input[name="casperjs-upload-file"]' )[0].files[0],
+            formData = new FormData(),
+            response;
+
+        formData.append( 'files_0|file_data', file );
+        formData.append( 'history_id', historyId );
+        formData.append( 'tool_id', 'upload1' );
+        formData.append( 'inputs', JSON.stringify( inputs ) );
+        $.ajax({
+            url         : url,
+            async       : false,
+            type        : 'POST',
+            data        : formData,
+            // when sending FormData don't have jq process or cache the data
+            cache       : false,
+            contentType : false,
+            processData : false,
+            // if we don't add this, payload isn't processed as JSON
+            headers     : { 'Accept': 'application/json' }
+        }).done(function( resp ){
+            response = resp;
+        });
+        // this works only bc jq is async
+        return response;
+    }, utils.format( this.urlTpls.create ), historyId, inputs );
+
+    if( !response ){
+        throw new APIError( 'Failed to upload: ' + options.filepath, 0 );
+    }
+
+    return response;
+};
+
+/** amount of time allowed to upload a file (before erroring) */
+ToolsAPI.prototype.DEFAULT_UPLOAD_TIMEOUT = 12000;
+
+/** add two casperjs steps - upload a file, wait for the job to complete, and run 'then' when they are */
+ToolsAPI.prototype.thenUpload = function thenUpload( historyId, options, then ){
+    var spaceghost = this.api.spaceghost,
+        uploadedId;
+
+    spaceghost.then( function(){
+        var returned = this.api.tools.upload( historyId, options );
+        this.debug( 'returned: ' + this.jsonStr( returned ) );
+        uploadedId = returned.outputs[0].id;
+        this.debug( 'uploadedId: ' + uploadedId );
+    });
+
+    spaceghost.then( function(){
+        this.waitFor(
+            function testHdaState(){
+                var hda = spaceghost.api.hdas.show( historyId, uploadedId );
+                spaceghost.debug( spaceghost.jsonStr( hda.state ) );
+                return !( hda.state === 'upload' || hda.state === 'queued' || hda.state === 'running' );
+            },
+            function _then(){
+                spaceghost.info( 'upload finished: ' + uploadedId );
+                if( then ){
+                    then.call( spaceghost, uploadedId );
+                }
+                //var hda = spaceghost.api.hdas.show( historyId, uploadedId );
+                //spaceghost.debug( spaceghost.jsonStr( hda ) );
+            },
+            function timeout(){
+                throw new APIError( 'timeout uploading file', 408 );
+            },
+            options.timeout || spaceghost.api.tools.DEFAULT_UPLOAD_TIMEOUT
+        );
+    });
+    return spaceghost;
+};
+
+/** add two casperjs steps - upload multiple files (described in optionsArray) and wait for all jobs to complete */
+ToolsAPI.prototype.thenUploadMultiple = function thenUploadMultiple( historyId, optionsArray, then ){
+    var spaceghost = this.api.spaceghost,
+        uploadedIds = [];
+
+    this.api.spaceghost.then( function(){
+        var spaceghost = this;
+        optionsArray.forEach( function( options ){
+            var returned = spaceghost.api.tools.upload( historyId, options );
+            spaceghost.debug( 'uploaded:' + spaceghost.jsonStr( returned ) );
+            uploadedIds.push( returned.outputs[0].id );
+        });
+    });
+
+    // wait for every hda to finish running - IOW, don't use uploadedIds
+    this.api.spaceghost.then( function(){
+        this.debug( this.jsonStr( uploadedIds ) );
+        this.waitFor(
+            function testHdaStates(){
+                var hdas = spaceghost.api.hdas.index( historyId ),
+                    running = hdas.filter( function( hda ){
+                        return ( hda.state === 'upload' || hda.state === 'queued' || hda.state === 'running' );
+                    }).map( function( hda ){
+                        return hda.id;
+                    });
+                //spaceghost.debug( 'still uploading: ' + spaceghost.jsonStr( running ) );
+                return running.length === 0;
+            },
+            function _then(){
+                var hdas = spaceghost.api.hdas.index( historyId );
+                spaceghost.debug( spaceghost.jsonStr( hdas ) );
+                if( then ){
+                    then.call( spaceghost, uploadedIds );
+                }
+            },
+            function timeout(){
+                throw new APIError( 'timeout uploading files', 408 );
+            },
+            ( options.timeout || spaceghost.api.tools.DEFAULT_UPLOAD_TIMEOUT ) * optionsArray.length
+        );
+    });
+    return spaceghost;
 };
 
 
@@ -495,7 +785,7 @@ UsersAPI.prototype.update = function create( id, payload ){
 };
 
 
-// =================================================================== HISTORIES
+// =================================================================== VISUALIZATIONS
 var VisualizationsAPI = function VisualizationsAPI( api ){
     this.api = api;
 };

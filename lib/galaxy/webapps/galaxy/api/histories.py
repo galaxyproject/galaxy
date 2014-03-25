@@ -97,32 +97,32 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin,
         history_id = id
         deleted = string_as_bool( deleted )
 
-        try:
-            if history_id == "most_recently_used":
-                if not trans.user or len( trans.user.galaxy_sessions ) <= 0:
-                    return None
-                # Most recent active history for user sessions, not deleted
-                history = trans.user.galaxy_sessions[0].histories[-1].history
+        #try:
+        if history_id == "most_recently_used":
+            if not trans.user or len( trans.user.galaxy_sessions ) <= 0:
+                return None
+            # Most recent active history for user sessions, not deleted
+            history = trans.user.galaxy_sessions[0].histories[-1].history
 
-            elif history_id == "current":
-                history = trans.get_history( create=True )
+        elif history_id == "current":
+            history = trans.get_history( create=True )
 
-            else:
-                history = self.get_history( trans, history_id, check_ownership=False,
-                                            check_accessible=True, deleted=deleted )
+        else:
+            history = self.get_history( trans, history_id, check_ownership=False,
+                                        check_accessible=True, deleted=deleted )
 
-            history_data = self.get_history_dict( trans, history )
-            history_data[ 'contents_url' ] = url_for( 'history_contents', history_id=history_id )
+        history_data = self.get_history_dict( trans, history )
+        history_data[ 'contents_url' ] = url_for( 'history_contents', history_id=history_id )
 
-        except HTTPBadRequest, bad_req:
-            trans.response.status = 400
-            raise exceptions.MessageException( bad_req.detail )
-
-        except Exception, e:
-            msg = "Error in history API at showing history detail: %s" % ( str( e ) )
-            log.exception( msg )
-            trans.response.status = 500
-            return msg
+        #except HTTPBadRequest, bad_req:
+        #    trans.response.status = 400
+        #    raise exceptions.MessageException( bad_req.detail )
+        #
+        #except Exception, e:
+        #    msg = "Error in history API at showing history detail: %s" % ( str( e ) )
+        #    log.exception( msg )
+        #    trans.response.status = 500
+        #    return msg
 
         return history_data
 

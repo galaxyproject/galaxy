@@ -81,6 +81,7 @@ class CasperJSTestCase( unittest.TestCase ):
     """
 
     # debugging flag - set to true to have casperjs tests output with --verbose=true and --logLevel=debug
+    #debug = True
     debug = False
     # bit of a hack - this is the beginning of the last string when capserjs --verbose=true --logLevel=debug
     #   use this to get subprocess to stop waiting for output
@@ -191,6 +192,7 @@ class CasperJSTestCase( unittest.TestCase ):
         except ValueError, val_err:
             if str( val_err ) == 'No JSON object could be decoded':
                 log.debug( '(error parsing returned JSON from casperjs, dumping stdout...)\n:%s', stdout_output )
+                return HeadlessJSJavascriptError( 'see log for details' )
             else:
                 raise
 
@@ -375,19 +377,29 @@ class Test_03_HistoryPanel( CasperJSTestCase ):
 class Test_04_HDAs( CasperJSTestCase ):
     """Tests for HistoryDatasetAssociation fetching, rendering, and modeling.
     """
-    def test_00_HDA_states( self ):
-        """Test structure rendering of HDAs in all the possible HDA states
-        """
-        self.run_js_script( 'hda-state-tests.js' )
+    #def test_00_HDA_states( self ):
+    #    """Test structure rendering of HDAs in all the possible HDA states
+    #    """
+    #    self.run_js_script( 'hda-state-tests.js' )
 
 
 class Test_05_API( CasperJSTestCase ):
     """Tests for API functionality and security.
     """
-    def test_00_history_api( self ):
-        """Test history API.
+    #def test_00_history_api( self ):
+    #    """Test history API.
+    #    """
+    #    self.run_js_script( 'api-history-tests.js' )
+
+    def test_01_hda_api( self ):
+        """Test HDA API.
         """
-        self.run_js_script( 'api-history-tests.js' )
+        self.run_js_script( 'api-hda-tests.js' )
+
+    def test_02_history_permissions_api( self ):
+        """Test API permissions for importable, published histories.
+        """
+        self.run_js_script( 'api-history-permission-tests.js' )
 
 
 # ==================================================================== MAIN
