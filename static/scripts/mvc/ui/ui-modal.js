@@ -115,7 +115,7 @@ var View = Backbone.View.extend({
             this.$el.remove();
             
             // remove escape event
-            $(document).off('keyup');
+            $(document).off('keyup.ui-modal');
         }
         
         // create new element
@@ -157,13 +157,11 @@ var View = Backbone.View.extend({
         // bind additional closing events
         if (this.options.closing_events) {
             // bind the ESC key to hide() function
-            if (!this.options.buttons.Pause){ // don't bind for the upload modal because of the side effects with system modal for file choosing
-                $(document).on('keyup', function(e) {
-                    if (e.keyCode == 27) {
-                        self.hide();
-                    }
-                });
-            }
+            $(document).on('keyup.ui-modal', function(e) {
+                if (e.keyCode == 27) {
+                    self.hide();
+                }
+            });
             
             // hide modal if background is clicked
             this.$el.find('.modal-backdrop').on('click', function() { self.hide(); });
