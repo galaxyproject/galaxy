@@ -950,7 +950,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         categories = suc.get_categories( trans )
         if not categories:
             message = 'No categories have been configured in this instance of the Galaxy Tool Shed.  '
-            message += 'An administrator needs to create some via the Administrator control panel before creating repositories.',
+            message += 'An administrator needs to create some via the Administrator control panel before creating repositories.'
             status = 'error'
             return trans.response.send_redirect( web.url_for( controller='repository',
                                                               action='browse_repositories',
