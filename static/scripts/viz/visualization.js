@@ -86,14 +86,6 @@ var select_datasets = function(dataset_url, add_track_async_url, filters, succes
     });
 };
 
-
-/**
- * Helper to determine if object is jQuery deferred.
- */
-var is_deferred = function ( d ) {
-    return ('promise' in d);
-};
-
 // --------- Models ---------
 
 /**
@@ -380,11 +372,10 @@ var GenomeDataManager = Cache.extend({
      * Get data from dataset.
      */
     get_data: function(region, mode, resolution, extra_params) {
-                
         // Look for entry and return if it's a deferred or if data available is compatible with mode.
         var entry = this.get_elt(region);
         if ( entry && 
-             ( is_deferred(entry) || this.get('data_mode_compatible')(entry, mode) ) ) {
+             ( util_mod.is_deferred(entry) || this.get('data_mode_compatible')(entry, mode) ) ) {
             return entry;
         }
 
@@ -405,12 +396,12 @@ var GenomeDataManager = Cache.extend({
                 // This entry has data in the requested range. Return if data
                 // is compatible and can be subsetted.
                 entry = obj_cache[entry_region.toString()];
-                if ( is_deferred(entry) || 
+                if ( util_mod.is_deferred(entry) || 
                     ( this.get('data_mode_compatible')(entry, mode) && this.get('can_subset')(entry) ) ) {
                     this.move_key_to_end(entry_region, i);
 
                     // If there's data, subset it.
-                    if ( !is_deferred(entry) ) {
+                    if ( !util_mod.is_deferred(entry) ) {
                         var subset_entry = this.subset_entry(entry, region);
                         this.set(region, subset_entry);
                         entry = subset_entry;
