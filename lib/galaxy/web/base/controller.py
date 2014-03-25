@@ -187,8 +187,11 @@ class BaseController( object ):
 
     def validate_and_sanitize_basestring_list( self, key, val ):
         if not isinstance( val, list ):
-            raise ValueError( '%s must be a list: %s' %( key, str( type( val ) ) ) )
-        return [ unicode( sanitize_html( t, 'utf-8', 'text/html' ), 'utf-8' ) for t in val ]
+            raise ValueError( '%s must be a list of strings: %s' %( key, str( type( val ) ) ) )
+        try:
+            return [ unicode( sanitize_html( t, 'utf-8', 'text/html' ), 'utf-8' ) for t in val ]
+        except TypeError, type_err:
+            raise ValueError( '%s must be a list of strings: %s' %( key, str( type_err ) ) )
 
     def validate_boolean( self, key, val ):
         if not isinstance( val, bool ):
@@ -527,6 +530,10 @@ class UsesHistoryMixin( SharableItemSecurityMixin ):
         if not history_dict[ 'annotation' ]:
             history_dict[ 'annotation' ] = ''
         #TODO: item_slug url
+        if history_dict[ 'importable' ] and history_dict[ 'slug' ]:
+            #TODO: this should be in History (or a superclass of)
+            username_and_slug = ( '/' ).join(( 'u', history.user.username, 'h', history_dict[ 'slug' ] ))
+            history_dict[ 'username_and_slug' ] = username_and_slug
 
         hda_summaries = hda_dictionaries if hda_dictionaries else self.get_hda_summary_dicts( trans, history )
         #TODO remove the following in v2
@@ -541,25 +548,68 @@ class UsesHistoryMixin( SharableItemSecurityMixin ):
         """
         Changes history data using the given dictionary new_data.
         """
-        # precondition: access of the history has already been checked
+        #precondition: ownership of the history has already been checked
+        #precondition: user is not None (many of these attributes require a user to set properly)
+        user = trans.get_user()
 
+        # published histories should always be importable
+        if 'published' in new_data and new_data[ 'published' ] and not history.importable:
+            new_data[ 'importable' ] = True
         # send what we can down into the model
         changed = history.set_from_dict( new_data )
+
         # the rest (often involving the trans) - do here
-        if 'annotation' in new_data.keys() and trans.get_user():
-            history.add_item_annotation( trans.sa_session, trans.get_user(), history, new_data[ 'annotation' ] )
+        #TODO: the next two could be an aspect/mixin
+        #TODO: also need a way to check whether they've changed - assume they have for now
+        if 'annotation' in new_data:
+            history.add_item_annotation( trans.sa_session, user, history, new_data[ 'annotation' ] )
             changed[ 'annotation' ] = new_data[ 'annotation' ]
-        if 'tags' in new_data.keys() and trans.get_user():
-            self.set_tags_from_list( trans, history, new_data[ 'tags' ], user=trans.user )
-        # importable (ctrl.history.set_accessible_async)
-        # sharing/permissions?
-        # slugs?
-        # purged - duh duh duhhhhhhnnnnnnnnnn
+
+        if 'tags' in new_data:
+            self.set_tags_from_list( trans, history, new_data[ 'tags' ], user=user )
+            changed[ 'tags' ] = new_data[ 'tags' ]
+
+        #TODO: sharing with user/permissions?
 
         if changed.keys():
             trans.sa_session.flush()
 
+            # create a slug if none exists (setting importable to false should not remove the slug)
+            if 'importable' in changed and changed[ 'importable' ] and not history.slug:
+                self._create_history_slug( trans, history )
+
         return changed
+
+    def _create_history_slug( self, trans, history ):
+        #TODO: mixins need to die a quick, horrible death
+        #   (this is duplicate from SharableMixin which can't be added to UsesHistory without exposing various urls)
+        cur_slug = history.slug
+
+        # Setup slug base.
+        if cur_slug is None or cur_slug == "":
+            # Item can have either a name or a title.
+            item_name = history.name
+            slug_base = util.ready_name_for_url( item_name.lower() )
+        else:
+            slug_base = cur_slug
+
+        # Using slug base, find a slug that is not taken. If slug is taken,
+        # add integer to end.
+        new_slug = slug_base
+        count = 1
+        while ( trans.sa_session.query( trans.app.model.History )
+                    .filter_by( user=history.user, slug=new_slug, importable=True )
+                    .count() != 0 ):
+            # Slug taken; choose a new slug based on count. This approach can
+            # handle numerous items with the same name gracefully.
+            new_slug = '%s-%i' % ( slug_base, count )
+            count += 1
+
+        # Set slug and return.
+        trans.sa_session.add( history )
+        history.slug = new_slug
+        trans.sa_session.flush()
+        return history.slug == cur_slug
 
 
 class ExportsHistoryMixin:
@@ -685,9 +735,9 @@ class UsesHistoryDatasetAssociationMixin:
         else:
             #TODO: do we really need the history?
             history = self.get_history( trans, history_id,
-                check_ownership=True, check_accessible=True, deleted=False )
+                check_ownership=False, check_accessible=True, deleted=False )
             hda = self.get_history_dataset_association( trans, history, id,
-                check_ownership=True, check_accessible=True )
+                check_ownership=False, check_accessible=True )
         return hda
 
     def get_hda_list( self, trans, hda_ids, check_ownership=True, check_accessible=False, check_state=True ):

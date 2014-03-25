@@ -2,20 +2,32 @@
 API operations on the contents of a history.
 """
 
-import logging
-from galaxy import exceptions, util, web
-from galaxy.web.base.controller import ( BaseAPIController, url_for,
-        UsesHistoryDatasetAssociationMixin, UsesHistoryMixin, UsesLibraryMixin,
-        UsesLibraryMixinItems, UsesTagsMixin )
+from galaxy import exceptions
+from galaxy import util
+from galaxy import web
+
+from galaxy.web import _future_expose_api as expose_api
+from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
+from galaxy.web import _future_expose_api_raw as expose_api_raw
+
+from galaxy.web.base.controller import BaseAPIController
+from galaxy.web.base.controller import UsesHistoryDatasetAssociationMixin
+from galaxy.web.base.controller import UsesHistoryMixin
+from galaxy.web.base.controller import UsesLibraryMixin
+from galaxy.web.base.controller import UsesLibraryMixinItems
+from galaxy.web.base.controller import UsesTagsMixin
+
+from galaxy.web.base.controller import url_for
 from galaxy.util.sanitize_html import sanitize_html
 
+import logging
 log = logging.getLogger( __name__ )
 
 
 class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociationMixin, UsesHistoryMixin,
                                  UsesLibraryMixin, UsesLibraryMixinItems, UsesTagsMixin ):
 
-    @web.expose_api_anonymous
+    @expose_api_anonymous
     def index( self, trans, history_id, ids=None, **kwd ):
         """
         index( self, trans, history_id, ids=None, **kwd )
@@ -52,7 +64,7 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
                 history = trans.history
             # otherwise, check permissions for the history first
             else:
-                history = self.get_history( trans, history_id, check_ownership=True, check_accessible=True )
+                history = self.get_history( trans, history_id, check_ownership=False, check_accessible=True )
 
             # Allow passing in type or types - for continuity rest of methods
             # take in type - but this one can be passed multiple types and
@@ -134,7 +146,7 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
                 hda.history_id, hda.id, type( exc ), str( exc ) )
             return self.get_hda_dict_with_error( trans, hda=hda, error_msg=str( exc ) )
 
-    @web.expose_api_anonymous
+    @expose_api_anonymous
     def show( self, trans, id, history_id, **kwd ):
         """
         show( self, trans, id, history_id, **kwd )
@@ -170,7 +182,7 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             trans.response.status = 500
             return msg
 
-    @web.expose_api
+    @expose_api
     def create( self, trans, history_id, payload, **kwd ):
         """
         create( self, trans, history_id, payload, **kwd )
@@ -201,6 +213,8 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         # retrieve history
         try:
             history = self.get_history( trans, history_id, check_ownership=True, check_accessible=False )
+        except exceptions.httpexceptions.HTTPException:
+            raise
         except Exception, e:
             # no way to tell if it failed bc of perms or other (all MessageExceptions)
             trans.response.status = 500
@@ -236,7 +250,8 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         elif source == 'hda':
             try:
                 #NOTE: user currently only capable of copying one of their own datasets
-                hda = self.get_dataset( trans, content )
+                hda = self.get_dataset( trans, content, check_ownership=False, check_accessible=True )
+                self.security_check( trans, hda.history, check_ownership=False, check_accessible=True )
             except ( exceptions.httpexceptions.HTTPRequestRangeNotSatisfiable,
                      exceptions.httpexceptions.HTTPBadRequest ), id_exc:
                 # wot...
@@ -259,7 +274,7 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             trans.response.status = 501
             return
 
-    @web.expose_api_anonymous
+    @expose_api_anonymous
     def update( self, trans, history_id, id, payload, **kwd ):
         """
         update( self, trans, history_id, id, payload, **kwd )
@@ -306,6 +321,7 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
                 if hda.history != trans.history:
                     trans.response.status = 401
                     return { 'error': 'Anonymous users cannot edit datasets outside their current history' }
+
             else:
                 payload = self._validate_and_parse_update_payload( payload )
                 # only check_state if not deleting, otherwise cannot delete uploading files
@@ -316,6 +332,7 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
                 changed = self.set_hda_from_dict( trans, hda, payload )
                 if payload.get( 'deleted', False ):
                     self.stop_hda_creating_job( hda )
+
         except Exception, exception:
             log.error( 'Update of history (%s), HDA (%s) failed: %s',
                         history_id, id, str( exception ), exc_info=True )
@@ -330,7 +347,7 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         return changed
 
     #TODO: allow anonymous del/purge and test security on this
-    @web.expose_api
+    @expose_api
     def delete( self, trans, history_id, id, purge=False, **kwd ):
         """
         delete( self, trans, history_id, id, **kwd )

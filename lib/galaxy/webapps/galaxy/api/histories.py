@@ -6,20 +6,26 @@ API operations on a history.
 
 import pkg_resources
 pkg_resources.require( "Paste" )
-from paste.httpexceptions import HTTPBadRequest, HTTPForbidden, HTTPInternalServerError, HTTPException
+
+from paste.httpexceptions import HTTPBadRequest
+from paste.httpexceptions import HTTPForbidden
+from paste.httpexceptions import HTTPInternalServerError
+from paste.httpexceptions import HTTPException
 
 from galaxy import exceptions
 from galaxy import web
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
 from galaxy.web import _future_expose_api_raw as expose_api_raw
-from galaxy.util import string_as_bool
-from galaxy.util import restore_text
+
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.base.controller import UsesHistoryMixin
 from galaxy.web.base.controller import UsesTagsMixin
 from galaxy.web.base.controller import ExportsHistoryMixin
 from galaxy.web.base.controller import ImportsHistoryMixin
+
+from galaxy.util import string_as_bool
+from galaxy.util import restore_text
 from galaxy.web import url_for
 
 import logging
@@ -48,27 +54,22 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin,
         #TODO: query (by name, date, etc.)
         rval = []
         deleted = string_as_bool( deleted )
-        try:
-            if trans.user:
-                histories = self.get_user_histories( trans, user=trans.user, only_deleted=deleted )
-                #for history in query:
-                for history in histories:
-                    item = history.to_dict(value_mapper={'id': trans.security.encode_id})
-                    item['url'] = url_for( 'history', id=trans.security.encode_id( history.id ) )
-                    rval.append( item )
 
-            elif trans.galaxy_session.current_history:
-                #No user, this must be session authentication with an anonymous user.
-                history = trans.galaxy_session.current_history
+        if trans.user:
+            histories = self.get_user_histories( trans, user=trans.user, only_deleted=deleted )
+
+            for history in histories:
                 item = history.to_dict(value_mapper={'id': trans.security.encode_id})
                 item['url'] = url_for( 'history', id=trans.security.encode_id( history.id ) )
-                rval.append(item)
+                rval.append( item )
 
-        except Exception, e:
-            raise
-            rval = "Error in history API"
-            log.error( rval + ": %s" % str(e) )
-            trans.response.status = 500
+        elif trans.galaxy_session.current_history:
+            #No user, this must be session authentication with an anonymous user.
+            history = trans.galaxy_session.current_history
+            item = history.to_dict(value_mapper={'id': trans.security.encode_id})
+            item['url'] = url_for( 'history', id=trans.security.encode_id( history.id ) )
+            rval.append(item)
+
         return rval
 
     @web.expose_api_anonymous
@@ -92,7 +93,6 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin,
         :returns:   detailed history information from
             :func:`galaxy.web.base.controller.UsesHistoryDatasetAssociationMixin.get_history_dict`
         """
-        #TODO: GET /api/histories/{encoded_history_id}?as_archive=True
         #TODO: GET /api/histories/s/{username}/{slug}
         history_id = id
         deleted = string_as_bool( deleted )
@@ -116,7 +116,7 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin,
 
         except HTTPBadRequest, bad_req:
             trans.response.status = 400
-            return str( bad_req )
+            raise exceptions.MessageException( bad_req.detail )
 
         except Exception, e:
             msg = "Error in history API at showing history detail: %s" % ( str( e ) )
@@ -444,7 +444,7 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin,
                 continue
             if key in ( 'name', 'genome_build', 'annotation' ):
                 validated_payload[ key ] = self.validate_and_sanitize_basestring( key, val )
-            if key in ( 'deleted', 'published' ):
+            if key in ( 'deleted', 'published', 'importable' ):
                 validated_payload[ key ] = self.validate_boolean( key, val )
             elif key == 'tags':
                 validated_payload[ key ] = self.validate_and_sanitize_basestring_list( key, val )

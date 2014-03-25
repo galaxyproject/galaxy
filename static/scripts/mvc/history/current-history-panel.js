@@ -84,7 +84,10 @@ var CurrentHistoryPanel = hpanel.HistoryPanel.extend(
         var panel = this,
             historyFn = function(){
                 // make this current and get history data with one call
-                return jQuery.post( galaxy_config.root + 'api/histories/' + historyId + '/set_as_current' );
+                return jQuery.ajax({
+                    url     : galaxy_config.root + 'api/histories/' + historyId + '/set_as_current',
+                    method  : 'PUT'
+                });
             };
         return this.loadHistoryWithHDADetails( historyId, attributes, historyFn )
             .then(function( historyData, hdaData ){
