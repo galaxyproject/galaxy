@@ -13,9 +13,6 @@ return Backbone.View.extend(
     // render
     draw : function(chart, request_dictionary)
     {
-        // update request dataset id
-        request_dictionary.id = chart.get('dataset_id_job');
-        
         // configure request
         var index = 0;
         for (var i in request_dictionary.groups) {

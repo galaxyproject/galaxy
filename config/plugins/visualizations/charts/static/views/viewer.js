@@ -32,7 +32,7 @@ return Backbone.View.extend(
                     title   : 'Customize',
                     onclick : function() {
                         // attempt to load chart editor
-                        self._wait (self.app.chart, function() {
+                        self._wait (self.chart, function() {
                             self.app.go('editor');
                         });
                     }
@@ -41,7 +41,7 @@ return Backbone.View.extend(
             }
         });
         
-        // append view port
+        // append portlet
         this.portlet.append(this.viewport_view.$el);
         
         // set element
@@ -71,23 +71,20 @@ return Backbone.View.extend(
     // refresh title
     _refreshTitle: function() {
         var title = this.chart.get('title');
-        if (title) {
-            title = ' - ' + title;
-        }
-        this.portlet.title('Charts' + title);
+        this.portlet.title(title);
     },
     
     // wait for chart to be ready
     _wait: function(chart, callback) {
         // get chart
-        if (chart.ready()) {
+        if (chart.editable()) {
             callback();
         } else {
             // show modal
             var self = this;
             this.app.modal.show({
                 title   : 'Please wait!',
-                body    : 'Your chart is currently being processed. Please wait...',
+                body    : 'Your chart is currently being processed. Please wait and try again.',
                 buttons : {
                     'Close'     : function() {self.app.modal.hide();},
                     'Retry'     : function() {

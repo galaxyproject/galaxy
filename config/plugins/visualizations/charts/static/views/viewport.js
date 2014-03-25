@@ -5,9 +5,6 @@ define(['mvc/ui/ui-portlet', 'plugin/library/ui', 'utils/utils'],
 // widget
 return Backbone.View.extend(
 {
-    // height
-    height : 300,
-    
     // initialize
     initialize: function(app, options)
     {
@@ -26,7 +23,47 @@ return Backbone.View.extend(
         // events
         var self = this;
         this.chart.on('redraw', function() {
+            // create svg element
+            self._create_svg();
+        
+            // initialize
             self._draw(self.chart);
+        });
+        
+        // link status handler
+        this.chart.on('change:state', function() {
+            // get info element
+            var $info = self.$el.find('#info');
+            
+            // get icon
+            var $icon = $info.find('#icon');
+            
+            // remove icon
+            $icon.removeClass();
+        
+            // show info
+            $info.show();
+            $info.find('#text').html(self.chart.get('state_info'));
+
+            // check status
+            var state = self.chart.get('state');
+            switch (state) {
+                case 'ok':
+                    self.chart.trigger('drawable');
+                    $info.hide();
+                    break;
+                case 'failed':
+                    self.chart.trigger('drawable');
+                    $icon.addClass('fa fa-warning');
+                    break;
+                case 'initialized':
+                    self.chart.trigger('drawable');
+                    $icon.addClass('fa fa-warning');
+                    break;
+                default:
+                    $icon.addClass('fa fa-spinner fa-spin');
+                    break;
+            }
         });
     },
     
@@ -40,62 +77,36 @@ return Backbone.View.extend(
         this.$el.hide();
     },
 
-    // add
-    _draw: function(chart) {
-        // link this
-        var self = this;
-        
-        // check
-        if (!chart.ready()) {
-            this.app.log('viewport:_drawChart()', 'Invalid attempt to draw chart before completion.');
-            return;
-        }
-        
+    // create
+    _create_svg: function() {
         // clear svg
         if (this.svg) {
             this.svg.remove();
         }
         
         // create
-        this.svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-        this.svg.setAttribute('height', this.height);
-        this.$el.append(this.svg);
+        this.$el.append($(this._template_svg()));
         
         // find svg element
         this.svg = d3.select(this.$el.find('svg')[0]);
-         
-        // clear all previous handlers (including redraw listeners)
-        chart.off('change:state');
-        
-        // link status handler
-        chart.on('change:state', function() {
-            // get info element
-            var $info = self.$el.find('#info');
-            
-            // get icon
-            var $icon = $info.find('#icon');
-            
-            // remove icon
-            $icon.removeClass();
-        
-            // show info
-            $info.show();
-            $info.find('#text').html(chart.get('state_info'));
+    },
 
-            // check status
-            var state = chart.get('state');
-            switch (state) {
-                case 'ok':
-                    $info.hide();
-                    break;
-                case 'failed':
-                    $icon.addClass('fa fa-warning');
-                    break;
-                default:
-                    $icon.addClass('fa fa-spinner fa-spin');
-                    break;
-            }
-        });
+    // add
+    _draw: function(chart) {
+        // link this
+        var self = this;
+        
+        // proceed once chart is drawable
+        if (!chart.drawable()) {
+            chart.off('drawable');
+            chart.on('drawable', function() {
+                self.chart.off('drawable');
+                if (chart.drawable()) {
+                    self._draw(chart);
+                }
+            });
+            return;
+        }
         
         // set chart state
         chart.state('wait', 'Please wait...');
@@ -103,6 +114,16 @@ return Backbone.View.extend(
         // identify chart type
         var chart_type = chart.get('type');
         var chart_settings = this.app.types.get(chart_type);
+        
+        // clean up data if there is any from previous jobs
+        if (!chart_settings.execute ||
+            (chart_settings.execute && chart.get('modified'))) {
+            // reset jobs
+            this.app.jobs.cleanup(chart);
+            
+            // reset modified flag
+            chart.set('modified', false);
+        }
         
         // create chart view
         var self = this;
@@ -112,23 +133,24 @@ return Backbone.View.extend(
             
             // request data
             if (chart_settings.execute) {
-                self.app.jobs.submit(chart, self._defaultSettingsString(chart), self._defaultRequestString(chart), function() {
+                if (chart.get('dataset_id_job') == '') {
+                    // submit job
+                    self.app.jobs.submit(chart, self._defaultSettingsString(chart), self._defaultRequestString(chart), function()  {
+                        // save
+                        this.app.storage.save();
+                        
+                        // draw
+                        view.draw(chart, self._defaultRequestDictionary(chart));
+                    });
+                } else {
+                    // load data into view
                     view.draw(chart, self._defaultRequestDictionary(chart));
-                });
+                }
             } else {
+                // load data into view
                 view.draw(chart, self._defaultRequestDictionary(chart));
             }
         });
-    },
-    
-    // template
-    _template: function() {
-        return  '<div>' +
-                    '<div id="info" style="text-align: center; margin-top: 20px;">' +
-                        '<span id="icon" style="font-size: 1.2em; display: inline-block;"/>' +
-                        '<span id="text" style="position: relative; margin-left: 5px; top: -1px; font-size: 1.0em;"/>' +
-                    '</div>' +
-                '</div>';
     },
     
     // create default chart request
@@ -175,9 +197,15 @@ return Backbone.View.extend(
        
         // configure request
         var request_dictionary = {
-            id          : chart.get('dataset_id'),
-            groups      : []
+            groups : []
         };
+        
+        // update request dataset id
+        if (chart_settings.execute) {
+            request_dictionary.id = chart.get('dataset_id_job');
+        } else {
+            request_dictionary.id = chart.get('dataset_id');
+        }
         
         // add groups to data request
         var group_index = 0;
@@ -198,7 +226,23 @@ return Backbone.View.extend(
         
         // return
         return request_dictionary;
-    }
+    },
+    
+    // template
+    _template: function() {
+        return  '<div style="height: 100%; min-height: 50px;">' +
+                    '<div id="info" style="position: absolute; margin-left: 10px; margin-top: 10px; margin-bottom: 50px;">' +
+                        '<span id="icon" style="font-size: 1.2em; display: inline-block;"/>' +
+                        '<span id="text" style="position: relative; margin-left: 5px; top: -1px; font-size: 1.0em;"/>' +
+                    '</div>' +
+                '</div>';
+    },
+    
+    // template svg element
+    _template_svg: function() {
+        return '<svg style="height: calc(100% - 80px)"/>';
+    },
+    
 });
 
 });

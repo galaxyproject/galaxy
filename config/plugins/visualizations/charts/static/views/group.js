@@ -98,6 +98,7 @@ return Backbone.View.extend(
                 gid  : id,
                 onchange : function(value) {
                     self.group.set(this.gid, value);
+                    self.chart.set('modified', true);
                 },
                 value : value,
                 wait  : true
@@ -111,6 +112,9 @@ return Backbone.View.extend(
             // add select field to list
             list[id] = select;
         }
+        
+        // loading
+        this.chart.state('wait', 'Loading metadata...');
         
         // get dataset
         this.app.datasets.request({id : dataset_id}, function(dataset) {
@@ -133,6 +137,9 @@ return Backbone.View.extend(
                 list[key].update(self.columns);
                 list[key].show();
             }
+            
+            // loading
+            self.chart.state('initialized', 'Metadata initialized...');
         });
     },
     

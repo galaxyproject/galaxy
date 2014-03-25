@@ -77,7 +77,6 @@ return Backbone.Model.extend(
         this.vis.save()
             .fail(function(xhr, status, message) {
                console.error(xhr, status, message);
-               alert( 'Error loading data:\n' + xhr.responseText );
             })
             .then(function(response) {
                 if (response && response.id) {
@@ -109,6 +108,9 @@ return Backbone.Model.extend(
         
         // reset status
         this.chart.state('ok', 'Loaded previously saved visualization.');
+        
+        // reset modified flag
+        this.chart.set('modified', false);
         
         // return
         return true;

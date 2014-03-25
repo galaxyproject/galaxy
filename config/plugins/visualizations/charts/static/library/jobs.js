@@ -17,12 +17,15 @@ return Backbone.Model.extend(
     cleanup: function(chart) {
         // cleanup previous dataset file
         var previous =  chart.get('dataset_id_job');
-        if (previous) {
+        if (previous != '') {
             var self = this;
             Utils.request('PUT', config.root + 'api/histories/none/contents/' + previous, { deleted: true }, function() {
                 // update galaxy history
                 self._refreshHdas();
             });
+            
+            // reset id
+            chart.set('dataset_id_job', '');
         }
         
     },
@@ -52,9 +55,6 @@ return Backbone.Model.extend(
                 'settings'  : settings_string
             }
         }
-        
-        // cleanup
-        self.cleanup(chart);
         
         // set chart state
         chart.state('submit', 'Sending job request...');

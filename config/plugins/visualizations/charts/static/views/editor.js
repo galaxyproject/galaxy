@@ -222,10 +222,7 @@ return Backbone.View.extend(
     // refresh title
     _refreshTitle: function() {
         var title = this.chart.get('title');
-        if (title) {
-            title = ' - ' + title;
-        }
-        this.portlet.title('Charts' + title);
+        this.portlet.title(title);
     },
     
     // update
@@ -280,6 +277,9 @@ return Backbone.View.extend(
         
         // update titles
         this._refreshGroupKey();
+        
+        // reset
+        this.chart.set('modified', true);
     },
 
     // remove group

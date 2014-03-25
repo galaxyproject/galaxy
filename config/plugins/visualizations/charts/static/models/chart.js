@@ -7,12 +7,15 @@ return Backbone.Model.extend(
 {
     // defaults
     defaults : {
-        id          : null,
-        title       : '',
-        type        : '',
-        date        : null,
-        state       : 'ok',
-        state_info  : ''
+        id              : null,
+        title           : '',
+        type            : '',
+        date            : null,
+        state           : '',
+        state_info      : '',
+        modified        : false,
+        dataset_id      : '',
+        dataset_id_job  : ''
     },
     
     // initialize
@@ -56,7 +59,11 @@ return Backbone.Model.extend(
         this.set('state', value);
     },
     
-    ready: function() {
+    drawable: function() {
+        return (this.get('state') == 'ok') || (this.get('state') == 'failed') || (this.get('state') == 'initialized');
+    },
+    
+    editable: function() {
         return (this.get('state') == 'ok') || (this.get('state') == 'failed');
     }
 });
