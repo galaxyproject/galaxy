@@ -1106,6 +1106,10 @@ var TracksterView = Backbone.View.extend({
         });
 
         // For vertical alignment, track mouse with simple line.
+        // Fixes needed for this to work:
+        // (a) make work with embedded visualizations;
+        // (b) seems to get stuck on tile overlaps.
+        /*
         var mouse_tracker_div = $('<div/>').addClass('mouse-pos').appendTo(parent_element);
 
         // Show tracker only when hovering over view.
@@ -1125,6 +1129,7 @@ var TracksterView = Backbone.View.extend({
                 mouse_tracker_div.hide();
             }
         );
+        */
         
         this.add_label_track( new LabelTrack( this, { content_div: this.top_labeltrack } ) );
         this.add_label_track( new LabelTrack( this, { content_div: this.nav_labeltrack } ) );
@@ -3053,14 +3058,21 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         var tile_drawn = $.Deferred();
         track.tile_cache.set_elt(key, tile_drawn);
         $.when.apply($, get_tile_data()).then( function() {
-            // If deferred objects ever show up in tile data, that is likely because a
-            // Deferred-subsetting interaction failed. Specifically, a Deferred for a superset 
-            // was returned but then couldn't be used). It's not clear whether this will happen 
-            // in practice, and currently the code doesn't handle it. It could probably handle it
-            // by recursively calling draw_helper.
             var tile_data = get_tile_data(),
                 tracks_data = tile_data,
                 seq_data;
+
+            // Deferreds may show up here if trying to fetch a subset of data from a superset data chunk 
+            // that cannot be subsetted. This may occur if the superset has a message. If there is a 
+            // Deferred, try again from the top. NOTE: this condition could (should?) be handled by the 
+            // GenomeDataManager in visualization module.
+            if (_.find(tile_data, function(d) { return util.is_deferred(d); })) {
+                track.tile_cache.set_elt(key, undefined);
+                $.when(track.draw_helper(region, w_scale, options)).then(function(tile) {
+                    tile_drawn.resolve(tile);
+                });
+                return;
+            }
             
             // If sequence data is available, subset to get only data in region.
             if (view.reference_track) {
