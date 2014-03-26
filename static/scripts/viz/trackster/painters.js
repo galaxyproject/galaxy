@@ -120,7 +120,7 @@ var Painter = function(data, view_start, view_end, prefs, mode) {
     this.view_start = view_start;
     this.view_end = view_end;
     // Drawing prefs
-    this.prefs = extend( {}, this.default_prefs, prefs );
+    this.prefs = extend({}, this.default_prefs, prefs);
     this.mode = mode;
 };
 

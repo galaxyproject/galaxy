@@ -403,7 +403,7 @@ var GenomeDataManager = Cache.extend({
                     // If there's data, subset it.
                     if ( !util_mod.is_deferred(entry) ) {
                         var subset_entry = this.subset_entry(entry, region);
-                        this.set(region, subset_entry);
+                        this.set_data(region, subset_entry);
                         entry = subset_entry;
                     }
 
