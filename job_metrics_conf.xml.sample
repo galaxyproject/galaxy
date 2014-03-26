@@ -15,6 +15,13 @@
   <!-- Core plugin captures Galaxy slots, start and end of job (in seconds
        since epoch) and computes runtime in seconds. -->
   <core />
+  
+  <!-- Uncomment to dump processor count for each job - linux only. -->
+  <!-- <cpuinfo /> -->
+  <!-- Uncomment to dump information about all processors for for each
+       job - this is likely too much data. Linux only. -->
+  <!-- <cpuinfo verbose="true" /> -->
+
   <!-- Uncomment following to enable plugin dumping complete environment 
        for each job, potentially useful for debuging -->
   <!-- <env /> -->
