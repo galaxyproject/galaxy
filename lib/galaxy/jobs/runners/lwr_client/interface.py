@@ -36,8 +36,13 @@ class HttpLwrInterface(LwrInteface):
 
     def __init__(self, destination_params, transport):
         self.transport = transport
-        self.remote_host = destination_params.get("url")
-        assert self.remote_host is not None, "Failed to determine url for LWR client."
+        remote_host = destination_params.get("url")
+        assert remote_host is not None, "Failed to determine url for LWR client."
+        if not remote_host.endswith("/"):
+            remote_host = "%s/" % remote_host
+        if not remote_host.startswith("http"):
+            remote_host = "http://%s" % remote_host
+        self.remote_host = remote_host
         self.private_key = destination_params.get("private_token", None)
 
     def execute(self, command, args={}, data=None, input_path=None, output_path=None):
