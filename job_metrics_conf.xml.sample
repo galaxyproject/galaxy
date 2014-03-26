@@ -22,6 +22,10 @@
        job - this is likely too much data. Linux only. -->
   <!-- <cpuinfo verbose="true" /> -->
 
+  <!-- Uncomment to dump system memory information for each job - linux
+       only. -->
+  <!-- <meminfo /> -->
+
   <!-- Uncomment following to enable plugin dumping complete environment 
        for each job, potentially useful for debuging -->
   <!-- <env /> -->
