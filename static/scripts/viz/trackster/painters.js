@@ -127,9 +127,7 @@ var Painter = function(data, view_start, view_end, prefs, mode) {
 Painter.prototype.default_prefs = {};
 
 /**
- * Draw on the context using a rectangle of width x height. w_scale is 
- * needed because it cannot be computed from width and view size alone
- * as a left_offset may be present.
+ * Draw on the context using a rectangle of width x height using scale w_scale.
  */
 Painter.prototype.draw = function(ctx, width, height, w_scale) {};
 
@@ -869,7 +867,6 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
                 case "N": // Skipped bases.
                     ctx.fillStyle = CONNECTOR_COLOR;
                     ctx.fillRect(s_start, y_start + 5, s_end - s_start, 1);
-                    //ctx.dashedLine(s_start + this.left_offset, y_start + 5, this.left_offset + s_end, y_start + 5);
                     // No change in seq_offset because sequence not used when skipping.
                     base_offset += cig_len;
                     break;
@@ -1357,9 +1354,7 @@ extend(VariantPainter.prototype, Painter.prototype, {
     },
 
     /**
-     * Draw on the context using a rectangle of width x height. w_scale is 
-     * needed because it cannot be computed from width and view size alone
-     * as a left_offset may be present.
+     * Draw on the context using a rectangle of width x height with scale w_scale.
      */
     draw: function(ctx, width, height, w_scale) {
         ctx.save();
