@@ -4,7 +4,6 @@ pkg_resources.require( "SVGFig" )
 import base64
 import httplib
 import json
-import math
 import os
 import sgmllib
 import svgfig
@@ -20,12 +19,9 @@ from galaxy import web
 from galaxy.datatypes.data import Data
 from galaxy.model.item_attrs import UsesItemRatings
 from galaxy.model.mapping import desc
+from galaxy.tools.parameters.basic import DataToolParameter
 from galaxy.tools.parameters import visit_input_values
-from galaxy.tools.parameters.basic import DataToolParameter, DrillDownSelectToolParameter, SelectToolParameter, UnvalidatedValue
-from galaxy.tools.parameters.grouping import Conditional, Repeat
-from galaxy.util.odict import odict
 from galaxy.util.sanitize_html import sanitize_html
-from galaxy.util.topsort import CycleError, topsort, topsort_levels
 from galaxy.web import error, url_for
 from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesStoredWorkflowMixin
 from galaxy.web.framework import form
@@ -33,6 +29,14 @@ from galaxy.web.framework.helpers import grids, time_ago
 from galaxy.web.framework.helpers import to_unicode
 from galaxy.workflow.modules import module_factory
 from galaxy.workflow.run import invoke
+from galaxy.workflow.extract import summarize
+from galaxy.workflow.extract import extract_workflow
+from galaxy.workflow.steps import (
+    attach_ordered_steps,
+    order_workflow_steps,
+    edgelist_for_workflow_steps,
+    order_workflow_steps_with_levels,
+)
 
 
 class StoredWorkflowListGrid( grids.Grid ):
@@ -1188,7 +1192,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         if not user:
             return trans.show_error_message( "Must be logged in to create workflows" )
         if ( job_ids is None and dataset_ids is None ) or workflow_name is None:
-            jobs, warnings = get_job_dict( trans )
+            jobs, warnings = summarize( trans )
             # Render
             return trans.fill_template(
                         "workflow/build_from_current_history.mako",
@@ -1197,82 +1201,13 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                         history=history
             )
         else:
-            # Ensure job_ids and dataset_ids are lists (possibly empty)
-            if job_ids is None:
-                job_ids = []
-            elif type( job_ids ) is not list:
-                job_ids = [ job_ids ]
-            if dataset_ids is None:
-                dataset_ids = []
-            elif type( dataset_ids ) is not list:
-                dataset_ids = [ dataset_ids ]
-            # Convert both sets of ids to integers
-            job_ids = [ int( id ) for id in job_ids ]
-            dataset_ids = [ int( id ) for id in dataset_ids ]
-            # Find each job, for security we (implicately) check that they are
-            # associated witha job in the current history.
-            jobs, warnings = get_job_dict( trans )
-            jobs_by_id = dict( ( job.id, job ) for job in jobs.keys() )
-            steps = []
-            steps_by_job_id = {}
-            hid_to_output_pair = {}
-            # Input dataset steps
-            for hid in dataset_ids:
-                step = model.WorkflowStep()
-                step.type = 'data_input'
-                step.tool_inputs = dict( name="Input Dataset" )
-                hid_to_output_pair[ hid ] = ( step, 'output' )
-                steps.append( step )
-            # Tool steps
-            for job_id in job_ids:
-                assert job_id in jobs_by_id, "Attempt to create workflow with job not connected to current history"
-                job = jobs_by_id[ job_id ]
-                tool = trans.app.toolbox.get_tool( job.tool_id )
-                param_values = job.get_param_values( trans.app, ignore_errors=True )  # If a tool was updated and e.g. had a text value changed to an integer, we don't want a traceback here
-                associations = cleanup_param_values( tool.inputs, param_values )
-                step = model.WorkflowStep()
-                step.type = 'tool'
-                step.tool_id = job.tool_id
-                step.tool_inputs = tool.params_to_strings( param_values, trans.app )
-                # NOTE: We shouldn't need to do two passes here since only
-                #       an earlier job can be used as an input to a later
-                #       job.
-                for other_hid, input_name in associations:
-                    if other_hid in hid_to_output_pair:
-                        other_step, other_name = hid_to_output_pair[ other_hid ]
-                        conn = model.WorkflowStepConnection()
-                        conn.input_step = step
-                        conn.input_name = input_name
-                        # Should always be connected to an earlier step
-                        conn.output_step = other_step
-                        conn.output_name = other_name
-                steps.append( step )
-                steps_by_job_id[ job_id ] = step
-                # Store created dataset hids
-                for assoc in job.output_datasets:
-                    hid_to_output_pair[ assoc.dataset.hid ] = ( step, assoc.name )
-            # Workflow to populate
-            workflow = model.Workflow()
-            workflow.name = workflow_name
-            # Order the steps if possible
-            attach_ordered_steps( workflow, steps )
-            # And let's try to set up some reasonable locations on the canvas
-            # (these are pretty arbitrary values)
-            levorder = order_workflow_steps_with_levels( steps )
-            base_pos = 10
-            for i, steps_at_level in enumerate( levorder ):
-                for j, index in enumerate( steps_at_level ):
-                    step = steps[ index ]
-                    step.position = dict( top=( base_pos + 120 * j ),
-                                          left=( base_pos + 220 * i ) )
-            # Store it
-            stored = model.StoredWorkflow()
-            stored.user = user
-            stored.name = workflow_name
-            workflow.stored_workflow = stored
-            stored.latest_workflow = workflow
-            trans.sa_session.add( stored )
-            trans.sa_session.flush()
+            extract_workflow(
+                trans,
+                user=user,
+                job_ids=job_ids,
+                dataset_ids=dataset_ids,
+                workflow_name=workflow_name
+            )
             # Index page with message
             return trans.show_message( "Workflow '%s' created from current history." % workflow_name )
             ## return trans.show_ok_message( "<p>Workflow '%s' created.</p><p><a target='_top' href='%s'>Click to load in workflow editor</a></p>"
@@ -1692,148 +1627,6 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
 
 
 ## ---- Utility methods -------------------------------------------------------
-def attach_ordered_steps( workflow, steps ):
-    ordered_steps = order_workflow_steps( steps )
-    if ordered_steps:
-        workflow.has_cycles = False
-        for i, step in enumerate( ordered_steps ):
-            step.order_index = i
-            workflow.steps.append( step )
-    else:
-        workflow.has_cycles = True
-        workflow.steps = steps
-
-
-def edgelist_for_workflow_steps( steps ):
-    """
-    Create a list of tuples representing edges between ``WorkflowSteps`` based
-    on associated ``WorkflowStepConnection``s
-    """
-    edges = []
-    steps_to_index = dict( ( step, i ) for i, step in enumerate( steps ) )
-    for step in steps:
-        edges.append( ( steps_to_index[step], steps_to_index[step] ) )
-        for conn in step.input_connections:
-            edges.append( ( steps_to_index[conn.output_step], steps_to_index[conn.input_step] ) )
-    return edges
-
-
-def order_workflow_steps( steps ):
-    """
-    Perform topological sort of the steps, return ordered or None
-    """
-    position_data_available = True
-    for step in steps:
-        if not step.position or not 'left' in step.position or not 'top' in step.position:
-            position_data_available = False
-    if position_data_available:
-        steps.sort(cmp=lambda s1, s2: cmp( math.sqrt(s1.position['left'] ** 2 + s1.position['top'] ** 2), math.sqrt(s2.position['left'] ** 2 + s2.position['top'] ** 2)))
-    try:
-        edges = edgelist_for_workflow_steps( steps )
-        node_order = topsort( edges )
-        return [ steps[i] for i in node_order ]
-    except CycleError:
-        return None
-
-
-def order_workflow_steps_with_levels( steps ):
-    try:
-        return topsort_levels( edgelist_for_workflow_steps( steps ) )
-    except CycleError:
-        return None
-
-
-class FakeJob( object ):
-    """
-    Fake job object for datasets that have no creating_job_associations,
-    they will be treated as "input" datasets.
-    """
-    def __init__( self, dataset ):
-        self.is_fake = True
-        self.id = "fake_%s" % dataset.id
-
-
-def get_job_dict( trans ):
-    """
-    Return a dictionary of Job -> [ Dataset ] mappings, for all finished
-    active Datasets in the current history and the jobs that created them.
-    """
-    history = trans.get_history()
-    # Get the jobs that created the datasets
-    warnings = set()
-    jobs = odict()
-    for dataset in history.active_datasets:
-        # FIXME: Create "Dataset.is_finished"
-        if dataset.state in ( 'new', 'running', 'queued' ):
-            warnings.add( "Some datasets still queued or running were ignored" )
-            continue
-
-        #if this hda was copied from another, we need to find the job that created the origial hda
-        job_hda = dataset
-        while job_hda.copied_from_history_dataset_association:
-            job_hda = job_hda.copied_from_history_dataset_association
-
-        if not job_hda.creating_job_associations:
-            jobs[ FakeJob( dataset ) ] = [ ( None, dataset ) ]
-
-        for assoc in job_hda.creating_job_associations:
-            job = assoc.job
-            if job in jobs:
-                jobs[ job ].append( ( assoc.name, dataset ) )
-            else:
-                jobs[ job ] = [ ( assoc.name, dataset ) ]
-    return jobs, warnings
-
-
-def cleanup_param_values( inputs, values ):
-    """
-    Remove 'Data' values from `param_values`, along with metadata cruft,
-    but track the associations.
-    """
-    associations = []
-    # dbkey is pushed in by the framework
-    if 'dbkey' in values:
-        del values['dbkey']
-    root_values = values
-
-    # Recursively clean data inputs and dynamic selects
-    def cleanup( prefix, inputs, values ):
-        for key, input in inputs.items():
-            if isinstance( input, ( SelectToolParameter, DrillDownSelectToolParameter ) ):
-                if input.is_dynamic and not isinstance( values[key], UnvalidatedValue ):
-                    values[key] = UnvalidatedValue( values[key] )
-            if isinstance( input, DataToolParameter ):
-                tmp = values[key]
-                values[key] = None
-                # HACK: Nested associations are not yet working, but we
-                #       still need to clean them up so we can serialize
-                # if not( prefix ):
-                if tmp:  # this is false for a non-set optional dataset
-                    if not isinstance(tmp, list):
-                        associations.append( ( tmp.hid, prefix + key ) )
-                    else:
-                        associations.extend( [ (t.hid, prefix + key) for t in tmp] )
-
-                # Cleanup the other deprecated crap associated with datasets
-                # as well. Worse, for nested datasets all the metadata is
-                # being pushed into the root. FIXME: MUST REMOVE SOON
-                key = prefix + key + "_"
-                for k in root_values.keys():
-                    if k.startswith( key ):
-                        del root_values[k]
-            elif isinstance( input, Repeat ):
-                group_values = values[key]
-                for i, rep_values in enumerate( group_values ):
-                    rep_index = rep_values['__index__']
-                    cleanup( "%s%s_%d|" % (prefix, key, rep_index ), input.inputs, group_values[i] )
-            elif isinstance( input, Conditional ):
-                group_values = values[input.name]
-                current_case = group_values['__current_case__']
-                cleanup( "%s%s|" % ( prefix, key ), input.cases[current_case].inputs, group_values )
-    cleanup( "", inputs, values )
-    return associations
-
-
 def _build_workflow_on_str(instance_ds_names):
     # Returns suffix for new histories based on multi input iteration
     num_multi_inputs = len(instance_ds_names)

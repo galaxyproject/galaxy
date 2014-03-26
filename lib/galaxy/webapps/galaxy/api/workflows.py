@@ -11,8 +11,10 @@ from galaxy import util
 from galaxy import web
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web.base.controller import BaseAPIController, url_for, UsesStoredWorkflowMixin
+from galaxy.web.base.controller import UsesHistoryMixin
 from galaxy.workflow.modules import module_factory
 from galaxy.workflow.run import invoke
+from galaxy.workflow.extract import extract_workflow
 
 
 log = logging.getLogger(__name__)
@@ -51,7 +53,7 @@ def _update_step_parameters(step, param_map):
         step.state.inputs.update(param_dict)
 
 
-class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin):
+class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHistoryMixin):
 
     @web.expose_api
     def index(self, trans, **kwd):
@@ -141,9 +143,11 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin):
         """
         POST /api/workflows
 
-        We're not creating workflows from the api. Just execute for now.
+        Run or create workflows from the api.
 
-        However, we will import them if installed_repository_file is specified.
+        If installed_repository_file or from_history_id is specified a new
+        workflow will be created for this user. Otherwise, workflow_id must be
+        specified and this API method will cause a workflow to execute.
 
         :param  installed_repository_file    The path of a workflow to import. Either workflow_id or installed_repository_file must be specified
         :type   installed_repository_file    str
@@ -165,6 +169,15 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin):
 
         :param  replacement_params:          A dictionary used when renaming datasets
         :type   replacement_params:          dict
+
+        :param  from_history_id:             Id of history to extract a workflow from. Should not be used with worfklow_id or installed_repository_file.
+        :type   from_history_id:             str
+
+        :param  job_ids:                     If from_history_id is set - this should be a list of jobs to include when extracting workflow from history.
+        :type   job_ids:                     str
+
+        :param  dataset_ids:                 If from_history_id is set - this should be a list of HDA ids corresponding to workflow inputs when extracting workflow from history.
+        :type   dataset_ids:                 str
         """
 
         # Pull parameters out of payload.
@@ -183,6 +196,24 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin):
                                                               cntrller='api',
                                                               **payload)
                 return result
+            if 'from_history_id' in payload:
+                from_history_id = payload.get( 'from_history_id' )
+                history = self.get_history( trans, from_history_id, check_ownership=False, check_accessible=True )
+                job_ids = map( trans.security.decode_id, payload.get( "job_ids", [] ) )
+                dataset_ids = map( trans.security.decode_id, payload.get( "dataset_ids", [] ) )
+                workflow_name = payload[ "workflow_name" ]
+                stored_workflow = extract_workflow(
+                    trans=trans,
+                    user=trans.get_user(),
+                    history=history,
+                    job_ids=job_ids,
+                    dataset_ids=dataset_ids,
+                    workflow_name=workflow_name,
+                )
+                item = stored_workflow.to_dict( value_mapper={ "id": trans.security.encode_id } )
+                item[ 'url' ] = url_for( 'workflow', id=item[ "id" ] )
+                return item
+
             trans.response.status = 403
             return "Either workflow_id or installed_repository_file must be specified"
         if 'installed_repository_file' in payload:
