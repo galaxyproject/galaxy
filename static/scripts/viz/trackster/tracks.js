@@ -4163,8 +4163,7 @@ extend(VariantTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
  */
 var ReadTrack = function (view, container, obj_dict) {
     FeatureTrack.call(this, view, container, obj_dict);    
-    // Choose painter based on whether there is reference data.
-    this.painter = (view.reference_track ? painters.RefBasedReadPainter : painters.ReadPainter);
+    this.painter = painters.ReadPainter;
     this.update_icons();
 };
 
