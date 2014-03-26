@@ -341,6 +341,7 @@ var FeaturePainter = function(data, view_start, view_end, prefs, mode, alpha_sca
     Painter.call(this, data, view_start, view_end, prefs, mode);
     this.alpha_scaler = (alpha_scaler ? alpha_scaler : new Scaler());
     this.height_scaler = (height_scaler ? height_scaler : new Scaler());
+    this.max_label_length = 200;
 };
 
 FeaturePainter.prototype.default_prefs = { block_color: "#FFF", connector_color: "#FFF" };
@@ -399,6 +400,7 @@ extend(FeaturePainter.prototype, {
         feature_mapper.y_translation = this.get_top_padding(width);
         return feature_mapper;
     },
+
     /** 
      * Abstract function for drawing an individual feature.
      */
@@ -645,11 +647,11 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
                 // FIXME: assumption here that the entire view starts at 0
                 if (tile_low === 0 && f_start - ctx.measureText(feature_name).width < 0) {
                     ctx.textAlign = "left";
-                    ctx.fillText(feature_name, f_end + LABEL_SPACING, y_start + 8);
+                    ctx.fillText(feature_name, f_end + LABEL_SPACING, y_start + 8, this.max_label_length);
                     draw_end += ctx.measureText(feature_name).width + LABEL_SPACING;
                 } else {
                     ctx.textAlign = "right";
-                    ctx.fillText(feature_name, f_start - LABEL_SPACING, y_start + 8);
+                    ctx.fillText(feature_name, f_start - LABEL_SPACING, y_start + 8, this.max_label_length);
                     draw_start -= ctx.measureText(feature_name).width + LABEL_SPACING;
                 }
                 //ctx.fillStyle = block_color;
@@ -1019,10 +1021,10 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
             ctx.fillStyle = this.prefs.label_color;
             if (tile_low === 0 && f_start - ctx.measureText(feature_name).width < 0) {
                 ctx.textAlign = "left";
-                ctx.fillText(feature_name, f_end + LABEL_SPACING, y_start + 8);
+                ctx.fillText(feature_name, f_end + LABEL_SPACING, y_start + 8, this.max_label_length);
             } else {
                 ctx.textAlign = "right";
-                ctx.fillText(feature_name, f_start - LABEL_SPACING, y_start + 8);
+                ctx.fillText(feature_name, f_start - LABEL_SPACING, y_start + 8, this.max_label_length);
             }
         }
         
