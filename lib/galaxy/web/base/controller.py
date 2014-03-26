@@ -41,7 +41,7 @@ from galaxy.tools.parameters import RuntimeValue, visit_input_values
 from galaxy.tools.parameters.basic import DataToolParameter
 from galaxy.util.json import to_json_string
 from galaxy.workflow.modules import ToolModule
-from galaxy.workflow.build_util import attach_ordered_steps
+from galaxy.workflow.steps import attach_ordered_steps
 
 
 log = logging.getLogger( __name__ )
