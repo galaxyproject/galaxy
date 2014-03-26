@@ -70,7 +70,7 @@ def activate_repository( trans, repository ):
             if display_path is not None:
                 datatype_util.load_installed_display_applications( trans.app, installed_repository_dict, deactivate=False )
 
-def get_dependencies_for_repository( trans, tool_shed_url, repo_info_dict, includes_tool_dependencies ):
+def get_dependencies_for_repository( trans, tool_shed_url, repo_info_dict, includes_tool_dependencies, updating=False ):
     """
     Return dictionaries containing the sets of installed and missing tool dependencies and repository
     dependencies associated with the repository defined by the received repo_info_dict.
@@ -90,7 +90,7 @@ def get_dependencies_for_repository( trans, tool_shed_url, repo_info_dict, inclu
         # Inspect the tool_dependencies dictionary to separate the installed and missing tool dependencies.
         # We don't add to installed_td and missing_td here because at this point they are empty.
         installed_td, missing_td = \
-            get_installed_and_missing_tool_dependencies_for_installing_repository( trans, tool_shed_url, tool_dependencies )
+            get_installed_and_missing_tool_dependencies_for_repository( trans, tool_shed_url, tool_dependencies )
     # In cases where a repository dependency is required only for compiling a dependent repository's
     # tool dependency, the value of repository_dependencies will be an empty dictionary here.
     if repository_dependencies:
@@ -101,10 +101,11 @@ def get_dependencies_for_repository( trans, tool_shed_url, repo_info_dict, inclu
                                                                          name,
                                                                          repository_owner,
                                                                          changeset_revision )
-        if repository and repository.metadata:
+        if not updating and repository and repository.metadata:
             installed_rd, missing_rd = get_installed_and_missing_repository_dependencies( trans, repository )
         else:
-            installed_rd, missing_rd = get_installed_and_missing_repository_dependencies_for_new_install( trans, repo_info_tuple )
+            installed_rd, missing_rd = \
+                get_installed_and_missing_repository_dependencies_for_new_or_updated_install( trans, repo_info_tuple )
         # Discover all repository dependencies and retrieve information for installing them.
         all_repo_info_dict = get_required_repo_info_dicts( trans, tool_shed_url, util.listify( repo_info_dict ) )
         has_repository_dependencies = all_repo_info_dict.get( 'has_repository_dependencies', False )
@@ -119,7 +120,8 @@ def get_dependencies_for_repository( trans, tool_shed_url, repo_info_dict, inclu
             required_tool_dependencies = {}
             for rid in required_repo_info_dicts:
                 for name, repo_info_tuple in rid.items():
-                    description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, rid_repository_dependencies, rid_tool_dependencies = \
+                    description, repository_clone_url, changeset_revision, ctx_rev, \
+                        repository_owner, rid_repository_dependencies, rid_tool_dependencies = \
                         suc.get_repo_info_tuple_contents( repo_info_tuple )
                     if rid_tool_dependencies:
                         for td_key, td_dict in rid_tool_dependencies.items():
@@ -128,7 +130,9 @@ def get_dependencies_for_repository( trans, tool_shed_url, repo_info_dict, inclu
             if required_tool_dependencies:
                 # Discover and categorize all tool dependencies defined for this repository's repository dependencies.
                 required_installed_td, required_missing_td = \
-                    get_installed_and_missing_tool_dependencies_for_installing_repository( trans, tool_shed_url, required_tool_dependencies )
+                    get_installed_and_missing_tool_dependencies_for_repository( trans,
+                                                                                tool_shed_url,
+                                                                                required_tool_dependencies )
                 if required_installed_td:
                     if not includes_tool_dependencies:
                         includes_tool_dependencies = True
@@ -168,11 +172,12 @@ def get_dependencies_for_repository( trans, tool_shed_url, repo_info_dict, inclu
 
 def get_installed_and_missing_repository_dependencies( trans, repository ):
     """
-    Return the installed and missing repository dependencies for a tool shed repository that has a record in the Galaxy database, but
-    may or may not be installed.  In this case, the repository dependencies are associated with the repository in the database.  Do not
-    include a repository dependency if it is required only to compile a tool dependency defined for the dependent repository since these
-    special kinds of repository dependencies are really a dependency of the dependent repository's contained tool dependency, and only if
-    that tool dependency requires compilation.
+    Return the installed and missing repository dependencies for a tool shed repository that has a record
+    in the Galaxy database, but may or may not be installed.  In this case, the repository dependencies are
+    associated with the repository in the database.  Do not include a repository dependency if it is required
+    only to compile a tool dependency defined for the dependent repository since these special kinds of repository
+    dependencies are really a dependency of the dependent repository's contained tool dependency, and only
+    if that tool dependency requires compilation.
     """
     missing_repository_dependencies = {}
     installed_repository_dependencies = {}
@@ -228,7 +233,7 @@ def get_installed_and_missing_repository_dependencies( trans, repository ):
                 missing_repository_dependencies[ 'description' ] = description
     return installed_repository_dependencies, missing_repository_dependencies
 
-def get_installed_and_missing_repository_dependencies_for_new_install( trans, repo_info_tuple ):
+def get_installed_and_missing_repository_dependencies_for_new_or_updated_install( trans, repo_info_tuple ):
     """
     Parse the received repository_dependencies dictionary that is associated with a repository being
     installed into Galaxy for the first time and attempt to determine repository dependencies that are
@@ -264,13 +269,13 @@ def get_installed_and_missing_repository_dependencies_for_new_install( trans, re
                                                                                                     tmp_repo_info_tuple )
                 if repository:
                     new_rd_tup = [ tool_shed,
-                                  name,
-                                  owner,
-                                  changeset_revision,
-                                  prior_installation_required,
-                                  only_if_compiling_contained_td,
-                                  repository.id,
-                                  repository.status ]
+                                   name,
+                                   owner,
+                                   changeset_revision,
+                                   prior_installation_required,
+                                   only_if_compiling_contained_td,
+                                   repository.id,
+                                   repository.status ]
                     if repository.status == trans.install_model.ToolShedRepository.installation_status.INSTALLED:
                         if new_rd_tup not in installed_rd_tups:
                             installed_rd_tups.append( new_rd_tup )
@@ -285,12 +290,12 @@ def get_installed_and_missing_repository_dependencies_for_new_install( trans, re
                                 missing_rd_tups.append( new_rd_tup )
                 else:
                     new_rd_tup = [ tool_shed,
-                                  name,
-                                  owner,
-                                  changeset_revision,
-                                  prior_installation_required,
-                                  only_if_compiling_contained_td,
-                                  None,
+                                   name,
+                                   owner,
+                                   changeset_revision,
+                                   prior_installation_required,
+                                   only_if_compiling_contained_td,
+                                   None,
                                   'Never installed' ]
                     if not util.asbool( only_if_compiling_contained_td ):
                         # A repository dependency that is not installed will not be considered missing if it's value for
@@ -307,11 +312,17 @@ def get_installed_and_missing_repository_dependencies_for_new_install( trans, re
         missing_repository_dependencies[ 'description' ] = description
     return installed_repository_dependencies, missing_repository_dependencies
 
-def get_installed_and_missing_tool_dependencies_for_installing_repository( trans, tool_shed_url, tool_dependencies_dict ):
+def get_installed_and_missing_tool_dependencies_for_repository( trans, tool_shed_url, tool_dependencies_dict ):
     """
     Return the lists of installed tool dependencies and missing tool dependencies for a set of repositories
     being installed into Galaxy.
     """
+    # FIXME: This implementation breaks when updates to a repository contain dependencies that result in
+    # multiple entries for a specific tool dependency.  A scenario where this can happen is where 2 repositories
+    # define  the same dependency internally (not using the complex repository dependency definition to a separate
+    # package repository approach).  If 2 repositories contain the same tool_dependencies.xml file, one dependency
+    # will be lost since the values in these returned dictionaries are not lists.  All tool dependency dictionaries
+    # should have lists as values.  These scenarios are probably extreme corner cases, but still should be handled.
     installed_tool_dependencies = {}
     missing_tool_dependencies = {}
     if tool_dependencies_dict:

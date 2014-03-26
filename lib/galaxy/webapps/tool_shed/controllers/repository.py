@@ -866,11 +866,13 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             no_update = 'false'
         elif galaxy_url:
             # Start building up the url to redirect back to the calling Galaxy instance.
+            params = '?tool_shed_url=%s&name=%s&owner=%s&changeset_revision=%s&latest_changeset_revision=' % \
+                ( web.url_for( '/', qualified=True ), repository.name, repository.user.username, changeset_revision )
             url = suc.url_join( galaxy_url,
-                                'admin_toolshed/update_to_changeset_revision?tool_shed_url=%s&name=%s&owner=%s&changeset_revision=%s&latest_changeset_revision=' % \
-                                ( web.url_for( '/', qualified=True ), repository.name, repository.user.username, changeset_revision ) )
+                                'admin_toolshed/update_to_changeset_revision%s' % params )
         else:
-            message = 'Unable to check for updates due to an invalid Galaxy URL: <b>%s</b>.  You may need to enable third-party cookies in your browser.  ' % galaxy_url
+            message = 'Unable to check for updates due to an invalid Galaxy URL: <b>%s</b>.  ' % galaxy_url
+            message += 'You may need to enable third-party cookies in your browser.  '
             return trans.show_error_message( message )
         if changeset_revision == repository.tip( trans.app ):
             # If changeset_revision is the repository tip, there are no additional updates.
@@ -883,15 +885,17 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                                                                      trans.security.encode_id( repository.id ),
                                                                                      changeset_revision )
             if repository_metadata:
-                # If changeset_revision is in the repository_metadata table for this repository, there are no additional updates.
+                # If changeset_revision is in the repository_metadata table for this repository, there are no
+                # additional updates.
                 if from_update_manager:
                     return no_update
                 else:
                     # Return the same value for changeset_revision and latest_changeset_revision.
                     url += latest_changeset_revision
             else:
-                # The changeset_revision column in the repository_metadata table has been updated with a new changeset_revision value since the
-                # repository was installed.  We need to find the changeset_revision to which we need to update.
+                # The changeset_revision column in the repository_metadata table has been updated with a new
+                # changeset_revision value since the repository was installed.  We need to find the changeset_revision
+                # to which we need to update.
                 update_to_changeset_hash = None
                 for changeset in repo.changelog:
                     changeset_hash = str( repo.changectx( changeset ) )
@@ -1680,6 +1684,16 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                     return encoding_util.tool_shed_encode( repository_dependencies )
         return ''
 
+    @web.expose
+    def get_repository_id( self, trans, **kwd ):
+        """Given a repository name and owner, return the encoded repository id."""
+        repository_name = kwd[ 'name' ]
+        repository_owner = kwd[ 'owner' ]
+        repository = suc.get_repository_by_name_and_owner( trans.app, repository_name, repository_owner )
+        if repository:
+            return trans.security.encode_id( repository.id )
+        return ''
+
     @web.json
     def get_repository_information( self, trans, repository_ids, changeset_revisions, **kwd ):
         """
@@ -1824,7 +1838,9 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         if not repository_metadata:
             # The received changeset_revision is no longer associated with metadata, so get the next changeset_revision in the repository
             # changelog that is associated with metadata.
-            changeset_revision = suc.get_next_downloadable_changeset_revision( repository, repo, after_changeset_revision=changeset_revision )
+            changeset_revision = suc.get_next_downloadable_changeset_revision( repository,
+                                                                               repo,
+                                                                               after_changeset_revision=changeset_revision )
             repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
         ctx = suc.get_changectx_for_changeset( repo, changeset_revision )
         repo_info_dict = repository_util.create_repo_info_dict( trans=trans,
@@ -2039,11 +2055,12 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         galaxy_url = suc.handle_galaxy_url( trans, **kwd )
         if galaxy_url:
             # Redirect back to local Galaxy to perform install.
+            params = '?tool_shed_url=%s&repository_ids=%s&changeset_revisions=%s' % \
+                ( web.url_for( '/', qualified=True ),
+                  ','.join( util.listify( repository_ids ) ),
+                  ','.join( util.listify( changeset_revisions ) ) )
             url = suc.url_join( galaxy_url,
-                                'admin_toolshed/prepare_for_install?tool_shed_url=%s&repository_ids=%s&changeset_revisions=%s' % \
-                                ( web.url_for( '/', qualified=True ),
-                                  ','.join( util.listify( repository_ids ) ),
-                                  ','.join( util.listify( changeset_revisions ) ) ) )
+                                'admin_toolshed/prepare_for_install%s' % params )
             return trans.response.send_redirect( url )
         else:
             message = 'Repository installation is not possible due to an invalid Galaxy URL: <b>%s</b>.  '  % galaxy_url
@@ -2477,9 +2494,10 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
     @web.expose
     def next_installable_changeset_revision( self, trans, **kwd ):
         """
-        Handle a request from a Galaxy instance where the changeset_revision defined for a repository in a dependency definition file is older
-        than the changeset_revision associated with the installed repository.  This will occur with repository's of type tool_dependency_definition,
-        and this scenario will occur while repository dependency hierarchies are bing installed.
+        Handle a request from a Galaxy instance where the changeset_revision defined for a repository
+        in a dependency definition file is older than the changeset_revision associated with the installed
+        repository.  This will occur with repository's of type tool_dependency_definition, and this scenario
+        will occur while repository dependency hierarchies are bing installed.
         """
         name = kwd.get( 'name', None )
         owner = kwd.get( 'owner', None )
@@ -2981,12 +2999,13 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
     @web.expose
     def updated_changeset_revisions( self, trans, **kwd ):
         """
-        Handle a request from a local Galaxy instance to retrieve the list of changeset revisions to which an installed repository can be updated.  This
-        method will return a string of comma-separated changeset revision hashes for all available updates to the received changeset revision.  Among
-        other things , this method handles the scenario where an installed tool shed repository's tool_dependency definition file defines a changeset
-        revision for a complex repository dependency that is outdated.  In other words, a defined changeset revision is older than the current changeset
-        revision for the required repository, making it impossible to discover the repository without knowledge of revisions to which it could have been
-        updated.
+        Handle a request from a local Galaxy instance to retrieve the list of changeset revisions to which an
+        installed repository can be updated.  This method will return a string of comma-separated changeset revision
+        hashes for all available updates to the received changeset revision.  Among other things , this method
+        handles the scenario where an installed tool shed repository's tool_dependency definition file defines a
+        changeset revision for a complex repository dependency that is outdated.  In other words, a defined changeset
+        revision is older than the current changeset revision for the required repository, making it impossible to
+        discover the repository without knowledge of revisions to which it could have been updated.
         """
         name = kwd.get( 'name', None )
         owner = kwd.get( 'owner', None )

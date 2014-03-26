@@ -21,7 +21,6 @@ def tool_shed_decode( value ):
     try:
         values = json.loads( value )
     except Exception, e:
-        #log.debug( "Decoding json value from tool shed for value '%s' threw exception: %s" % ( str( value ), str( e ) ) )
         pass
     if values is not None:
         try:
@@ -34,7 +33,7 @@ def tool_shed_decode( value ):
     return values
 
 def tool_shed_encode( val ):
-    if isinstance( val, dict ):
+    if isinstance( val, dict ) or isinstance( val, list ):
         value = json.dumps( val )
     else:
         value = val

@@ -90,7 +90,6 @@ def create_tool_dependency_objects( app, tool_shed_repository, relative_install_
     if tree is None:
         return tool_dependency_objects
     root = tree.getroot()
-    fabric_version_checked = False
     for elem in root:
         tool_dependency_type = elem.tag
         if tool_dependency_type == 'package':
@@ -574,8 +573,8 @@ def set_tool_dependency_attributes( app, tool_dependency, status, error_message=
     sa_session.flush()
     return tool_dependency
 
-def sync_database_with_file_system( app, tool_shed_repository, tool_dependency_name, tool_dependency_version, tool_dependency_install_dir,
-                                    tool_dependency_type='package' ):
+def sync_database_with_file_system( app, tool_shed_repository, tool_dependency_name, tool_dependency_version,
+                                    tool_dependency_install_dir, tool_dependency_type='package' ):
     """
     The installation directory defined by the received tool_dependency_install_dir exists, so check for the presence
     of fabric_util.INSTALLATION_LOG.  If the files exists, we'll assume the tool dependency is installed, but not
