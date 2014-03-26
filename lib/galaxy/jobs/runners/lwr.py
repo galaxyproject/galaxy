@@ -220,7 +220,8 @@ class LwrJobRunner( AsynchronousJobRunner ):
             job_id = "%s_%s" % (job_id, job_wrapper.task_id)
         params = job_wrapper.job_destination.params.copy()
         for key, value in params.iteritems():
-            params[key] = model.User.expand_user_properties( job_wrapper.get_job().user, value )
+            if value:
+                params[key] = model.User.expand_user_properties( job_wrapper.get_job().user, value )
         return self.get_client( params, job_id )
 
     def get_client_from_state(self, job_state):
