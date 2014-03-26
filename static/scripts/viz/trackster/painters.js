@@ -740,6 +740,20 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
      * Draw a single read from reference-based read sequence and cigar.
      */
     draw_read: function(ctx, mode, w_scale, y_start, tile_low, tile_high, feature_start, cigar, strand, read_seq) {
+        // Helper function to update base and sequnence offsets.
+        var update_base_offset = function(offset, cig_op, cig_len) {
+                if ('M=NXD'.indexOf(cig_op) !== -1) {
+                    offset += cig_len;
+                }
+                return offset;
+            },
+            update_seq_offset = function(offset, cig_op, cig_len) {
+                if ('IX'.indexOf(cig_op) !== -1) {
+                    offset += cig_len;
+                }
+                return offset;
+            };
+
         ctx.textAlign = "center";
         var tile_region = [tile_low, tile_high],
             base_offset = 0,
@@ -770,7 +784,7 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
 
                 // Make sure that block is drawn even if it too small to be rendered officially; in this case,
                 // read is drawn at 1px.
-                // TODO: need to ensure that s_start, s_end are calcuated the same for both slotting
+                // TODO: need to ensure that s_start, s_end are calculated the same for both slotting
                 // and drawing.
                 if (s_start === s_end) {
                     s_end += 1;
@@ -793,21 +807,26 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
 
             var seq_start = feature_start + base_offset,
                 // -0.5 to offset sequence between bases.
-                s_start = Math.floor( Math.max(0, -0.5 * w_scale, (seq_start - tile_low - 0.5) * w_scale) ),
+                s_start = Math.floor( Math.max(-0.5 * w_scale, (seq_start - tile_low - 0.5) * w_scale) ),
                 s_end = Math.floor( Math.max(0, (seq_start + cig_len - tile_low - 0.5) * w_scale) );
 
+            // Skip feature if it's not in tile.
             if (!is_overlap([seq_start, seq_start + cig_len], tile_region)) {
+                // Update offsets.
+                base_offset = update_base_offset(base_offset, cig_op, cig_len);
+                seq_offset = update_seq_offset(seq_offset, cig_op, cig_len);
                 continue;
             }
             
             // Make sure that read is drawn even if it too small to be rendered officially; in this case,
             // read is drawn at 1px.
-            // TODO: need to ensure that s_start, s_end are calcuated the same for both slotting
+            // TODO: need to ensure that s_start, s_end are calculated the same for both slotting
             // and drawing.
             if (s_start === s_end) {
                 s_end += 1;
             }
-                
+             
+            // Draw read feature.   
             switch (cig_op) {
                 case "H": // Hard clipping.
                 case "S": // Soft clipping.
