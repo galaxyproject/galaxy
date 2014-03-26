@@ -102,6 +102,11 @@ class HasJobMetrics:
             metric = self._text_metric( plugin, metric_name, metric_value )
             self.text_metrics.append( metric )
 
+    @property
+    def metrics( self ):
+        # TODO: Make iterable, concatenate with chain
+        return self.text_metrics + self.numeric_metrics
+
 
 class User( object, Dictifiable ):
     use_pbkdf2 = True
@@ -414,6 +419,12 @@ class Job( object, HasJobMetrics, Dictifiable ):
         self.info = info
     def set_runner_name( self, job_runner_name ):
         self.job_runner_name = job_runner_name
+
+    def get_job( self ):
+        # Added so job and task have same interface (.get_job() ) to get at
+        # underlying job object.
+        return self
+
     def set_runner_external_id( self, job_runner_external_id ):
         self.job_runner_external_id = job_runner_external_id
     def set_post_job_actions( self, post_job_actions ):

@@ -234,6 +234,11 @@ class MappingTests( unittest.TestCase ):
 
         self.persist( u, job )
 
+        task = model.Task( job=job, working_directory="/tmp", prepare_files_cmd="split.sh" )
+        task.add_metric( "gx", "galaxy_slots", 5 )
+        task.add_metric( "system", "system_name", "localhost" )
+        self.persist( task )
+
     def test_tasks( self ):
         model = self.model
         u = model.User( email="jobtest@foo.bar.baz", password="password" )

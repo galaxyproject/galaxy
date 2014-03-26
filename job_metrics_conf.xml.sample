@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<!-- If job_metrics.xml exists, this file will define the default job metric
+     plugin used for all jobs. Individual job_conf.xml destinations can
+     disable metric collection by setting metrics="off" on that destination.
+     The metrics attribute on destination definition elements can also be
+     a path - in which case that XML metrics file will be loaded and used for
+     that destination. Finally, the destination element may contain a job_metrics
+     child element (with all options defined below) to define job metrics in an
+     embedded manner directly in the job_conf.xml file.
+-->
+<job_metrics>
+  <!-- Each element in this file corresponds to a job instrumentation plugin
+       used to generate metrics in lib/galaxy/jobs/metrics/instrumenters. -->
+
+  <!-- Core plugin captures Galaxy slots, start and end of job (in seconds
+       since epoch) and computes runtime in seconds. -->
+  <core />
+</job_metrics>
