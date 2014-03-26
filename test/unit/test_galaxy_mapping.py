@@ -210,6 +210,29 @@ class MappingTests( unittest.TestCase ):
         assert hist1.name == "History 2b"
         # gvk TODO need to ad test for GalaxySessions, but not yet sure what they should look like.
 
+    def test_jobs( self ):
+        model = self.model
+        u = model.User( email="jobtest@foo.bar.baz", password="password" )
+        job = model.Job()
+        job.user = u
+        job.tool_id = "cat1"
+
+        self.persist( u, job )
+
+        loaded_job = model.session.query( model.Job ).filter( model.Job.user == u ).first()
+        assert loaded_job.tool_id == "cat1"
+
+    def test_tasks( self ):
+        model = self.model
+        u = model.User( email="jobtest@foo.bar.baz", password="password" )
+        job = model.Job()
+        task = model.Task( job=job, working_directory="/tmp", prepare_files_cmd="split.sh" )
+        job.user = u
+        self.persist( u, job, task )
+
+        loaded_task = model.session.query( model.Task ).filter( model.Task.job == job ).first()
+        assert loaded_task.prepare_input_files_cmd == "split.sh"
+
     def test_history_contents( self ):
         model = self.model
         u = model.User( email="contents@foo.bar.baz", password="password" )
