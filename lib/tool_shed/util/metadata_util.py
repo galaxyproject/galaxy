@@ -662,9 +662,11 @@ def generate_metadata_for_changeset_revision( app, repository, changeset_revisio
                 # See if we have a repository dependencies defined.
                 if name == suc.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME:
                     path_to_repository_dependencies_config = os.path.join( root, name )
-                    metadata_dict, error_message = generate_repository_dependency_metadata( app,
-                                                                                            path_to_repository_dependencies_config,
-                                                                                            metadata_dict )
+                    metadata_dict, error_message = \
+                        generate_repository_dependency_metadata( app,
+                                                                 path_to_repository_dependencies_config,
+                                                                 metadata_dict,
+                                                                 updating_installed_repository=updating_installed_repository )
                     if error_message:
                         invalid_file_tups.append( ( name, error_message ) )
                 # See if we have one or more READ_ME files.
@@ -795,7 +797,10 @@ def generate_package_dependency_metadata( app, elem, valid_tool_dependencies_dic
                 # is True, the tool dependency definition will be set as invalid.  This is currently the only case
                 # where a tool dependency definition is considered invalid.
                 repository_dependency_tup, repository_dependency_is_valid, error_message = \
-                    handle_repository_elem( app=app, repository_elem=sub_elem, only_if_compiling_contained_td=False )
+                    handle_repository_elem( app=app,
+                                            repository_elem=sub_elem,
+                                            only_if_compiling_contained_td=False,
+                                            updating_installed_repository=False )
             elif sub_elem.tag == 'install':
                 package_install_version = sub_elem.get( 'version', '1.0' )
                 if package_install_version == '1.0':
@@ -829,7 +834,8 @@ def generate_package_dependency_metadata( app, elem, valid_tool_dependencies_dic
                                                 repository_dependency_tup, repository_dependency_is_valid, error_message = \
                                                     handle_repository_elem( app=app,
                                                                             repository_elem=sub_action_elem,
-                                                                            only_if_compiling_contained_td=True )
+                                                                            only_if_compiling_contained_td=True,
+                                                                            updating_installed_repository=False )
     if requirements_dict:
         dependency_key = '%s/%s' % ( package_name, package_version )
         if repository_dependency_is_valid:
@@ -841,10 +847,10 @@ def generate_package_dependency_metadata( app, elem, valid_tool_dependencies_dic
     return valid_tool_dependencies_dict, invalid_tool_dependencies_dict, repository_dependency_tup, \
         repository_dependency_is_valid, error_message
 
-def generate_repository_dependency_metadata( app, repository_dependencies_config, metadata_dict ):
+def generate_repository_dependency_metadata( app, repository_dependencies_config, metadata_dict, updating_installed_repository=False ):
     """
-    Generate a repository dependencies dictionary based on valid information defined in the received repository_dependencies_config.  This method
-    is called from the tool shed as well as from Galaxy.
+    Generate a repository dependencies dictionary based on valid information defined in the received
+    repository_dependencies_config.  This method is called from the tool shed as well as from Galaxy.
     """
     error_message = ''
     # Make sure we're looking at a valid repository_dependencies.xml file.
@@ -861,7 +867,10 @@ def generate_repository_dependency_metadata( app, repository_dependencies_config
         valid_repository_dependency_tups = []
         for repository_elem in root.findall( 'repository' ):
             repository_dependency_tup, repository_dependency_is_valid, err_msg = \
-                handle_repository_elem( app, repository_elem, only_if_compiling_contained_td=False )
+                handle_repository_elem( app,
+                                        repository_elem,
+                                        only_if_compiling_contained_td=False,
+                                        updating_installed_repository=updating_installed_repository )
             if repository_dependency_is_valid:
                 valid_repository_dependency_tups.append( repository_dependency_tup )
             else:
@@ -885,11 +894,12 @@ def generate_repository_dependency_metadata( app, repository_dependencies_config
             metadata_dict[ 'repository_dependencies' ] = valid_repository_dependencies_dict
     return metadata_dict, error_message
 
-def generate_tool_dependency_metadata( app, repository, changeset_revision, repository_clone_url, tool_dependencies_config, metadata_dict,
-                                       original_repository_metadata=None ):
+def generate_tool_dependency_metadata( app, repository, changeset_revision, repository_clone_url, tool_dependencies_config,
+                                       metadata_dict, original_repository_metadata=None ):
     """
-    If the combination of name, version and type of each element is defined in the <requirement> tag for at least one tool in the repository,
-    then update the received metadata_dict with information from the parsed tool_dependencies_config.
+    If the combination of name, version and type of each element is defined in the <requirement> tag for
+    at least one tool in the repository, then update the received metadata_dict with information from the
+    parsed tool_dependencies_config.
     """
     error_message = ''
     if original_repository_metadata:
@@ -1171,7 +1181,7 @@ def handle_existing_tool_dependencies_that_changed_in_update( app, repository, o
                 deleted_tool_dependency_names.append( original_dependency_val_dict[ 'name' ] )
     return updated_tool_dependency_names, deleted_tool_dependency_names
 
-def handle_repository_elem( app, repository_elem, only_if_compiling_contained_td=False ):
+def handle_repository_elem( app, repository_elem, only_if_compiling_contained_td=False, updating_installed_repository=False ):
     """
     Process the received repository_elem which is a <repository> tag either from a repository_dependencies.xml
     file or a tool_dependencies.xml file.  If the former, we're generating repository dependencies metadata for
@@ -1187,14 +1197,17 @@ def handle_repository_elem( app, repository_elem, only_if_compiling_contained_td
     changeset_revision = repository_elem.get( 'changeset_revision', None )
     prior_installation_required = str( repository_elem.get( 'prior_installation_required', False ) )
     if app.name == 'galaxy':
-        # We're installing a repository into Galaxy, so make sure its contained repository dependency definition
-        # is valid.
-        if toolshed is None or name is None or owner is None or changeset_revision is None:
-            # Raise an exception here instead of returning an error_message to keep the installation from
-            # proceeding.  Reaching here implies a bug in the Tool Shed framework.
-            error_message = 'Installation halted because the following repository dependency definition is invalid:\n'
-            error_message += xml_util.xml_to_string( repository_elem, use_indent=True )
-            raise Exception( error_message )
+        if updating_installed_repository:
+            pass
+        else:
+            # We're installing a repository into Galaxy, so make sure its contained repository dependency definition
+            # is valid.
+            if toolshed is None or name is None or owner is None or changeset_revision is None:
+                # Raise an exception here instead of returning an error_message to keep the installation from
+                # proceeding.  Reaching here implies a bug in the Tool Shed framework.
+                error_message = 'Installation halted because the following repository dependency definition is invalid:\n'
+                error_message += xml_util.xml_to_string( repository_elem, use_indent=True )
+                raise Exception( error_message )
     if not toolshed:
         # Default to the current tool shed.
         toolshed = str( url_for( '/', qualified=True ) ).rstrip( '/' )
@@ -1230,6 +1243,14 @@ def handle_repository_elem( app, repository_elem, only_if_compiling_contained_td
                                                                                  updated_changeset_revision )
                     if repository:
                         return repository_dependency_tup, is_valid, error_message
+                    if updating_installed_repository:
+                        # The repository dependency was included in an update to the installed repository, so it will
+                        # not yet be installed.  Return the tuple for later installation.
+                        return repository_dependency_tup, is_valid, error_message
+            if updating_installed_repository:
+                # The repository dependency was included in an update to the installed repository, so it will not yet
+                # be installed.  Return the tuple for later installation.
+                return repository_dependency_tup, is_valid, error_message
             # Don't generate an error message for missing repository dependencies that are required only if compiling the
             # dependent repository's tool dependency.
             if not only_if_compiling_contained_td:

@@ -201,9 +201,13 @@ class AdminToolshed( AdminGalaxy ):
         repository_id = kwd.get( 'id', None )
         repository = suc.get_installed_tool_shed_repository( trans, repository_id )
         tool_shed_url = suc.get_url_from_tool_shed( trans.app, repository.tool_shed )
+        params = '?galaxy_url=%s&name=%s&owner=%s&changeset_revision=%s' % \
+            ( web.url_for( '/', qualified=True ),
+              str( repository.name ),
+              str( repository.owner ),
+              str( repository.changeset_revision ) )
         url = suc.url_join( tool_shed_url,
-                            'repository/check_for_updates?galaxy_url=%s&name=%s&owner=%s&changeset_revision=%s' % \
-                            ( web.url_for( '/', qualified=True ), repository.name, repository.owner, repository.changeset_revision ) )
+                            'repository/check_for_updates%s' % params )
         return trans.response.send_redirect( url )
 
     @web.expose
@@ -367,9 +371,10 @@ class AdminToolshed( AdminGalaxy ):
     @web.require_admin
     def get_tool_dependencies( self, trans, repository_id, repository_name, repository_owner, changeset_revision ):
         """
-        Send a request to the appropriate tool shed to retrieve the dictionary of tool dependencies defined for the received repository name,
-        owner and changeset revision.  The received repository_id is the encoded id of the installed tool shed repository in Galaxy.  We need
-        it so that we can derive the tool shed from which it was installed.
+        Send a request to the appropriate tool shed to retrieve the dictionary of tool dependencies defined for
+        the received repository name, owner and changeset revision.  The received repository_id is the encoded id
+        of the installed tool shed repository in Galaxy.  We need it so that we can derive the tool shed from which
+        it was installed.
         """
         repository = suc.get_installed_tool_shed_repository( trans, repository_id )
         tool_shed_url = suc.get_url_from_tool_shed( trans.app, repository.tool_shed )
@@ -388,8 +393,8 @@ class AdminToolshed( AdminGalaxy ):
     @web.require_admin
     def get_updated_repository_information( self, trans, repository_id, repository_name, repository_owner, changeset_revision ):
         """
-        Send a request to the appropriate tool shed to retrieve the dictionary of information required to reinstall an updated revision of an
-        uninstalled tool shed repository.
+        Send a request to the appropriate tool shed to retrieve the dictionary of information required to reinstall
+        an updated revision of an uninstalled tool shed repository.
         """
         repository = suc.get_installed_tool_shed_repository( trans, repository_id )
         tool_shed_url = suc.get_url_from_tool_shed( trans.app, repository.tool_shed )
@@ -436,13 +441,16 @@ class AdminToolshed( AdminGalaxy ):
 
     @web.expose
     @web.require_admin
-    def initiate_tool_dependency_installation( self, trans, tool_dependencies ):
+    def initiate_tool_dependency_installation( self, trans, tool_dependencies, **kwd ):
         """Install specified dependencies for repository tools."""
         # Get the tool_shed_repository from one of the tool_dependencies.
-        message = ''
+        message = kwd.get( 'message', '' )
+        status = kwd.get( 'status', 'done' )
+        err_msg = ''
         tool_shed_repository = tool_dependencies[ 0 ].tool_shed_repository
         # Get the tool_dependencies.xml file from the repository.
-        tool_dependencies_config = suc.get_config_from_disk( suc.TOOL_DEPENDENCY_DEFINITION_FILENAME, tool_shed_repository.repo_path( trans.app ) )
+        tool_dependencies_config = suc.get_config_from_disk( suc.TOOL_DEPENDENCY_DEFINITION_FILENAME,
+                                                             tool_shed_repository.repo_path( trans.app ) )
         installed_tool_dependencies = common_install_util.handle_tool_dependencies( app=trans.app,
                                                                                     tool_shed_repository=tool_shed_repository,
                                                                                     tool_dependencies_config=tool_dependencies_config,
@@ -452,13 +460,12 @@ class AdminToolshed( AdminGalaxy ):
             if installed_tool_dependency.status == trans.app.install_model.ToolDependency.installation_status.ERROR:
                 text = util.unicodify( installed_tool_dependency.error_message )
                 if text is not None:
-                    message += '  %s' % text
+                    err_msg += '  %s' % text
         tool_dependency_ids = [ trans.security.encode_id( td.id ) for td in tool_dependencies ]
-        if message:
+        if err_msg:
+            message += err_msg
             status = 'error'
-        else:
-            message = "Installed tool dependencies: %s" % ','.join( td.name for td in installed_tool_dependencies )
-            status = 'done'
+        message += "Installed tool dependencies: %s" % ','.join( td.name for td in installed_tool_dependencies )
         td_ids = [ trans.security.encode_id( td.id ) for td in tool_shed_repository.tool_dependencies ]
         return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
                                                           action='manage_tool_dependencies',
@@ -506,9 +513,10 @@ class AdminToolshed( AdminGalaxy ):
                         status = 'error'
                     else:
                         # Install the latest downloadable revision of the repository.
+                        params = '?name=%s&owner=%s&changeset_revisions=%s&galaxy_url=%s' % \
+                            ( name, owner, str( latest_downloadable_revision ), web.url_for( '/', qualified=True ) )
                         url = suc.url_join( tool_shed_url,
-                                            'repository/install_repositories_by_revision?name=%s&owner=%s&changeset_revisions=%s&galaxy_url=%s' % \
-                                            ( name, owner, latest_downloadable_revision, web.url_for( '/', qualified=True ) ) )
+                                            'repository/install_repositories_by_revision%s' % params )
                         return trans.response.send_redirect( url )
             else:
                 message = 'Cannot locate installed tool shed repository with encoded id <b>%s</b>.' % str( repository_id )
@@ -521,43 +529,74 @@ class AdminToolshed( AdminGalaxy ):
                                                           message=message,
                                                           status=status ) )
 
-
     @web.expose
     @web.require_admin
-    def install_tool_dependencies( self, trans, **kwd ):
+    def install_tool_dependencies_with_update( self, trans, **kwd ):
+        """
+        Updating an installed tool shed repository where new tool dependencies but no new repository
+        dependencies are included in the updated revision.
+        """
+        updating_repository_id = kwd.get( 'updating_repository_id', None )
+        repository = suc.get_installed_tool_shed_repository( trans, updating_repository_id )
+        # All received dependencies need to be installed - confirmed by the caller.
+        encoded_tool_dependencies_dict = kwd.get( 'encoded_tool_dependencies_dict', None )
+        if encoded_tool_dependencies_dict is not None:
+            tool_dependencies_dict = encoding_util.tool_shed_decode( encoded_tool_dependencies_dict )
+        else:
+            tool_dependencies_dict = {}
+        encoded_relative_install_dir = kwd.get( 'encoded_relative_install_dir', None )
+        if encoded_relative_install_dir is not None:
+            relative_install_dir = encoding_util.tool_shed_decode( encoded_relative_install_dir )
+        else:
+            relative_install_dir = ''
+        updating_to_changeset_revision = kwd.get( 'updating_to_changeset_revision', None )
+        updating_to_ctx_rev = kwd.get( 'updating_to_ctx_rev', None )
+        encoded_updated_metadata = kwd.get( 'encoded_updated_metadata', None )
         message = kwd.get( 'message', ''  )
         status = kwd.get( 'status', 'done' )
-        tool_dependency_ids = tool_dependency_util.get_tool_dependency_ids( as_string=False, **kwd )
-        tool_dependencies = []
-        for tool_dependency_id in tool_dependency_ids:
-            tool_dependency = tool_dependency_util.get_tool_dependency( trans, tool_dependency_id )
-            tool_dependencies.append( tool_dependency )
-        if kwd.get( 'install_tool_dependencies_button', False ):
-            # Filter tool dependencies to only those that are installed.
-            tool_dependencies_for_installation = []
-            for tool_dependency in tool_dependencies:
-                if tool_dependency.status in [ trans.install_model.ToolDependency.installation_status.UNINSTALLED,
-                                               trans.install_model.ToolDependency.installation_status.ERROR ]:
-                    tool_dependencies_for_installation.append( tool_dependency )
-            if tool_dependencies_for_installation:
-                # Redirect back to the ToolDependencyGrid before initiating installation.
-                encoded_tool_dependency_for_installation_ids = [ trans.security.encode_id( td.id ) for td in tool_dependencies_for_installation ]
-                new_kwd = dict( action='manage_tool_dependencies',
-                                operation='initiate_tool_dependency_installation',
-                                tool_dependency_ids=encoded_tool_dependency_for_installation_ids,
-                                message=message,
-                                status=status )
-                return self.tool_dependency_grid( trans, **new_kwd )
+        install_tool_dependencies = CheckboxField.is_checked( kwd.get( 'install_tool_dependencies', '' ) )
+        if 'install_tool_dependencies_with_update_button' in kwd:
+            # Now that the user has chosen whether to install tool dependencies or not, we can
+            # update the repository record with the changes in the updated revision.
+            if encoded_updated_metadata:
+                updated_metadata = encoding_util.tool_shed_decode( encoded_updated_metadata )
             else:
-                message = 'All of the selected tool dependencies are already installed.'
-                status = 'error'
-                return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
-                                                                  action='manage_repository_tool_dependencies',
-                                                                  tool_dependency_ids=tool_dependency_ids,
-                                                                  status=status,
-                                                                  message=message ) )
-        return trans.fill_template( '/admin/tool_shed_repository/install_tool_dependencies.mako',
-                                    tool_dependencies=tool_dependencies,
+                updated_metadata = None
+            repository = repository_util.update_repository_record( trans,
+                                                                   repository=repository,
+                                                                   updated_metadata_dict=updated_metadata,
+                                                                   updated_changeset_revision=updating_to_changeset_revision,
+                                                                   updated_ctx_rev=updating_to_ctx_rev )
+            if install_tool_dependencies:
+                tool_dependencies = tool_dependency_util.create_tool_dependency_objects( trans.app,
+                                                                                         repository,
+                                                                                         relative_install_dir,
+                                                                                         set_status=False )
+                message = "The installed repository named '%s' has been updated to change set revision '%s'.  " % \
+                    ( str( repository.name ), updating_to_changeset_revision )
+                self.initiate_tool_dependency_installation( trans, tool_dependencies, message=message, status=status )
+        # Handle tool dependencies check box.
+        if trans.app.config.tool_dependency_dir is None:
+            if includes_tool_dependencies:
+                message = "Tool dependencies defined in this repository can be automatically installed if you set "
+                message += "the value of your <b>tool_dependency_dir</b> setting in your Galaxy config file "
+                message += "(universe_wsgi.ini) and restart your Galaxy server."
+                status = "warning"
+            install_tool_dependencies_check_box_checked = False
+        else:
+            install_tool_dependencies_check_box_checked = True
+        install_tool_dependencies_check_box = CheckboxField( 'install_tool_dependencies',
+                                                             checked=install_tool_dependencies_check_box_checked )
+        return trans.fill_template( '/admin/tool_shed_repository/install_tool_dependencies_with_update.mako',
+                                    repository=repository,
+                                    updating_repository_id=updating_repository_id,
+                                    updating_to_ctx_rev=updating_to_ctx_rev,
+                                    updating_to_changeset_revision=updating_to_changeset_revision,
+                                    encoded_updated_metadata=encoded_updated_metadata,
+                                    encoded_relative_install_dir=encoded_relative_install_dir,
+                                    encoded_tool_dependencies_dict=encoded_tool_dependencies_dict,
+                                    install_tool_dependencies_check_box=install_tool_dependencies_check_box,
+                                    tool_dependencies_dict=tool_dependencies_dict,
                                     message=message,
                                     status=status )
 
@@ -611,7 +650,8 @@ class AdminToolshed( AdminGalaxy ):
                 # TODO: I believe this block should be removed, but make sure..
                 repositories_for_uninstallation = []
                 for repository_id in tsridslist:
-                    repository = trans.install_model.context.query( trans.install_model.ToolShedRepository ).get( trans.security.decode_id( repository_id ) )
+                    repository = trans.install_model.context.query( trans.install_model.ToolShedRepository ) \
+                                                            .get( trans.security.decode_id( repository_id ) )
                     if repository.status in [ trans.install_model.ToolShedRepository.installation_status.INSTALLED,
                                               trans.install_model.ToolShedRepository.installation_status.ERROR ]:
                         repositories_for_uninstallation.append( repository )
@@ -632,28 +672,34 @@ class AdminToolshed( AdminGalaxy ):
                 filtered_repo_info_dicts = []
                 filtered_tool_panel_section_keys = []
                 repositories_for_installation = []
-                # Some repositories may have repository dependencies that are required to be installed before the dependent repository, so we'll
-                # order the list of tsr_ids to ensure all repositories install in the required order.
+                # Some repositories may have repository dependencies that are required to be installed before the
+                # dependent repository, so we'll order the list of tsr_ids to ensure all repositories install in the
+                # required order.
                 ordered_tsr_ids, ordered_repo_info_dicts, ordered_tool_panel_section_keys = \
                     repository_util.order_components_for_installation( trans,
                                                                        tsr_ids,
                                                                        repo_info_dicts,
                                                                        tool_panel_section_keys=tool_panel_section_keys )
                 for tsr_id in ordered_tsr_ids:
-                    repository = trans.install_model.context.query( trans.install_model.ToolShedRepository ).get( trans.security.decode_id( tsr_id ) )
+                    repository = trans.install_model.context.query( trans.install_model.ToolShedRepository ) \
+                                                            .get( trans.security.decode_id( tsr_id ) )
                     if repository.status in [ trans.install_model.ToolShedRepository.installation_status.NEW,
                                               trans.install_model.ToolShedRepository.installation_status.UNINSTALLED ]:
                         repositories_for_installation.append( repository )
-                        repo_info_dict, tool_panel_section_key = repository_util.get_repository_components_for_installation( tsr_id,
-                                                                                                                             ordered_tsr_ids,
-                                                                                                                             ordered_repo_info_dicts,
-                                                                                                                             ordered_tool_panel_section_keys )
+                        repo_info_dict, tool_panel_section_key = \
+                            repository_util.get_repository_components_for_installation( tsr_id,
+                                                                                        ordered_tsr_ids,
+                                                                                        ordered_repo_info_dicts,
+                                                                                        ordered_tool_panel_section_keys )
                         filtered_repo_info_dicts.append( repo_info_dict )
                         filtered_tool_panel_section_keys.append( tool_panel_section_key )
                 if repositories_for_installation:
                     decoded_kwd[ 'repo_info_dicts' ] = filtered_repo_info_dicts
                     decoded_kwd[ 'tool_panel_section_keys' ] = filtered_tool_panel_section_keys
-                    self.install_tool_shed_repositories( trans, repositories_for_installation, reinstalling=reinstalling, **decoded_kwd )
+                    self.install_tool_shed_repositories( trans,
+                                                         repositories_for_installation,
+                                                         reinstalling=reinstalling,
+                                                         **decoded_kwd )
                 else:
                     kwd[ 'message' ] = 'All selected tool shed repositories are already installed.'
                     kwd[ 'status' ] = 'error'
@@ -772,7 +818,10 @@ class AdminToolshed( AdminGalaxy ):
                                                        trans.install_model.ToolDependency.installation_status.UNINSTALLED ]:
                             tool_dependencies_for_installation.append( tool_dependency )
                     if tool_dependencies_for_installation:
-                        self.initiate_tool_dependency_installation( trans, tool_dependencies_for_installation )
+                        self.initiate_tool_dependency_installation( trans,
+                                                                    tool_dependencies_for_installation,
+                                                                    message=message,
+                                                                    status=status )
                     else:
                         message = 'All selected tool dependencies are already installed.'
                         status = 'error'
@@ -780,14 +829,16 @@ class AdminToolshed( AdminGalaxy ):
                         message = 'Set the value of your <b>tool_dependency_dir</b> setting in your Galaxy config file (universe_wsgi.ini) '
                         message += ' and restart your Galaxy server to install tool dependencies.'
                         status = 'error'
-        installed_tool_dependencies_select_field = suc.build_tool_dependencies_select_field( trans,
-                                                                                             tool_shed_repository=tool_shed_repository,
-                                                                                             name='inst_td_ids',
-                                                                                             uninstalled_only=False )
-        uninstalled_tool_dependencies_select_field = suc.build_tool_dependencies_select_field( trans,
-                                                                                               tool_shed_repository=tool_shed_repository,
-                                                                                               name='uninstalled_tool_dependency_ids',
-                                                                                               uninstalled_only=True )
+        installed_tool_dependencies_select_field = \
+            suc.build_tool_dependencies_select_field( trans,
+                                                      tool_shed_repository=tool_shed_repository,
+                                                      name='inst_td_ids',
+                                                      uninstalled_only=False )
+        uninstalled_tool_dependencies_select_field = \
+            suc.build_tool_dependencies_select_field( trans,
+                                                      tool_shed_repository=tool_shed_repository,
+                                                      name='uninstalled_tool_dependency_ids',
+                                                      uninstalled_only=True )
         return trans.fill_template( '/admin/tool_shed_repository/manage_repository_tool_dependencies.mako',
                                     repository=tool_shed_repository,
                                     installed_tool_dependencies_select_field=installed_tool_dependencies_select_field,
@@ -836,7 +887,10 @@ class AdminToolshed( AdminGalaxy ):
                                                        trans.install_model.ToolDependency.installation_status.UNINSTALLED ]:
                             tool_dependencies_for_installation.append( tool_dependency )
                     if tool_dependencies_for_installation:
-                        self.initiate_tool_dependency_installation( trans, tool_dependencies_for_installation )
+                        self.initiate_tool_dependency_installation( trans,
+                                                                    tool_dependencies_for_installation,
+                                                                    message=message,
+                                                                    status=status )
                     else:
                         kwd[ 'message' ] = 'All selected tool dependencies are already installed.'
                         kwd[ 'status' ] = 'error'
@@ -876,18 +930,21 @@ class AdminToolshed( AdminGalaxy ):
     @web.require_admin
     def prepare_for_install( self, trans, **kwd ):
         if not suc.have_shed_tool_conf_for_install( trans ):
-            message = 'The <b>tool_config_file</b> setting in <b>universe_wsgi.ini</b> must include at least one shed tool configuration file name with a '
-            message += '<b>&lt;toolbox&gt;</b> tag that includes a <b>tool_path</b> attribute value which is a directory relative to the Galaxy installation '
-            message += 'directory in order to automatically install tools from a Galaxy tool shed (e.g., the file name <b>shed_tool_conf.xml</b> whose '
-            message += '<b>&lt;toolbox&gt;</b> tag is <b>&lt;toolbox tool_path="../shed_tools"&gt;</b>).<p/>See the '
-            message += '<a href="http://wiki.g2.bx.psu.edu/InstallingRepositoriesToGalaxy" target="_blank">Installation of Galaxy tool shed repository tools '
-            message += 'into a local Galaxy instance</a> section of the Galaxy tool shed wiki for all of the details.'
+            message = 'The <b>tool_config_file</b> setting in <b>universe_wsgi.ini</b> must include at least one '
+            message += 'shed tool configuration file name with a <b>&lt;toolbox&gt;</b> tag that includes a <b>tool_path</b> '
+            message += 'attribute value which is a directory relative to the Galaxy installation directory in order '
+            message += 'to automatically install tools from a Galaxy Tool Shed (e.g., the file name <b>shed_tool_conf.xml</b> '
+            message += 'whose <b>&lt;toolbox&gt;</b> tag is <b>&lt;toolbox tool_path="../shed_tools"&gt;</b>).<p/>See the '
+            message += '<a href="http://wiki.g2.bx.psu.edu/InstallingRepositoriesToGalaxy" target="_blank">Installation '
+            message += 'of Galaxy Tool Shed repository tools into a local Galaxy instance</a> section of the Galaxy Tool '
+            message += 'Shed wiki for all of the details.'
             return trans.show_error_message( message )
         message = kwd.get( 'message', ''  )
         status = kwd.get( 'status', 'done' )
         shed_tool_conf = kwd.get( 'shed_tool_conf', None )
         tool_shed_url = kwd.get( 'tool_shed_url', None )
-        # Handle repository dependencies, which do not include those that are required only for compiling a dependent repository's tool dependencies.
+        # Handle repository dependencies, which do not include those that are required only for compiling a dependent
+        # repository's tool dependencies.
         has_repository_dependencies = util.string_as_bool( kwd.get( 'has_repository_dependencies', False ) )
         install_repository_dependencies = kwd.get( 'install_repository_dependencies', '' )
         # Every repository will be installed into the same tool panel section or all will be installed outside of any sections.
@@ -900,13 +957,36 @@ class AdminToolshed( AdminGalaxy ):
         includes_tools_for_display_in_tool_panel = util.string_as_bool( kwd.get( 'includes_tools_for_display_in_tool_panel', False ) )
         includes_tool_dependencies = util.string_as_bool( kwd.get( 'includes_tool_dependencies', False ) )
         install_tool_dependencies = kwd.get( 'install_tool_dependencies', '' )
+        # In addition to installing new repositories, this method is called when updating an installed repository
+        # to a new changeset_revision where the update includes newly defined repository dependencies.
+        updating = util.asbool( kwd.get( 'updating', False ) )
+        updating_repository_id = kwd.get( 'updating_repository_id', None )
+        updating_to_changeset_revision = kwd.get( 'updating_to_changeset_revision', None )
+        updating_to_ctx_rev = kwd.get( 'updating_to_ctx_rev', None )
+        encoded_updated_metadata = kwd.get( 'encoded_updated_metadata', None )
         encoded_repo_info_dicts = kwd.get( 'encoded_repo_info_dicts', '' )
         if encoded_repo_info_dicts:
             encoded_repo_info_dicts = encoded_repo_info_dicts.split( encoding_util.encoding_sep )
         if not encoded_repo_info_dicts:
-            # The request originated in the tool shed via a tool search.
+            # The request originated in the tool shed via a tool search or from this controller's
+            # update_to_changeset_revision() method.
             repository_ids = kwd.get( 'repository_ids', None )
-            changeset_revisions = kwd.get( 'changeset_revisions', None )
+            if updating:
+                # We have updated an installed repository where the updates included newly defined repository
+                # and possibly tool dependencies.  We will have arrived here only if the updates include newly
+                # defined repository dependencies.  We're preparing to allow the user to elect to install these
+                # dependencies.  At this point, the repository has been updated to the latest changeset revision,
+                # but the received repository id is from the Galaxy side (the caller is this controller's
+                # update_to_changeset_revision() method.  We need to get the id of the same repository from the
+                # Tool Shed side.
+                repository = suc.get_tool_shed_repository_by_id( trans, updating_repository_id )
+                url = suc.url_join( tool_shed_url,
+                                    'repository/get_repository_id?name=%s&owner=%s' % \
+                                    ( str( repository.name ), str( repository.owner ) ) )
+                repository_ids = common_util.tool_shed_get( trans.app, tool_shed_url, url )
+                changeset_revisions = updating_to_changeset_revision
+            else:
+                changeset_revisions = kwd.get( 'changeset_revisions', None )
             # Get the information necessary to install each repository.
             url = suc.url_join( tool_shed_url,
                                 'repository/get_repository_information?repository_ids=%s&changeset_revisions=%s' % \
@@ -918,7 +998,8 @@ class AdminToolshed( AdminGalaxy ):
                 if not includes_tools:
                     includes_tools = util.string_as_bool( decoded_repo_info_dict.get( 'includes_tools', False ) )
                 if not includes_tools_for_display_in_tool_panel:
-                    includes_tools_for_display_in_tool_panel = util.string_as_bool( decoded_repo_info_dict.get( 'includes_tools_for_display_in_tool_panel', False ) )
+                    includes_tools_for_display_in_tool_panel = \
+                        util.string_as_bool( decoded_repo_info_dict.get( 'includes_tools_for_display_in_tool_panel', False ) )
                 if not has_repository_dependencies:
                     has_repository_dependencies = util.string_as_bool( repo_information_dict.get( 'has_repository_dependencies', False ) )
                 if not includes_tool_dependencies:
@@ -927,6 +1008,19 @@ class AdminToolshed( AdminGalaxy ):
         repo_info_dicts = [ encoding_util.tool_shed_decode( encoded_repo_info_dict ) for encoded_repo_info_dict in encoded_repo_info_dicts ]
         if ( not includes_tools_for_display_in_tool_panel and kwd.get( 'select_shed_tool_panel_config_button', False ) ) or \
             ( includes_tools_for_display_in_tool_panel and kwd.get( 'select_tool_panel_section_button', False ) ):
+            if updating:
+                encoded_updated_metadata_dict = kwd.get( 'encoded_updated_metadata_dict', None )
+                updated_changeset_revision = kwd.get( 'updated_changeset_revision', None )
+                updated_ctx_rev = kwd.get( 'updated_ctx_rev', None )
+                repository = suc.get_tool_shed_repository_by_id( trans, updating_repository_id )
+                decoded_updated_metadata = encoding_util.tool_shed_decode( encoded_updated_metadata )
+                # Now that the user has decided whether they will handle dependencies, we can update
+                # the repository to the latest revision.
+                repository = repository_util.update_repository_record( trans,
+                                                                       repository=repository,
+                                                                       updated_metadata_dict=decoded_updated_metadata,
+                                                                       updated_changeset_revision=updating_to_changeset_revision,
+                                                                       updated_ctx_rev=updating_to_ctx_rev )
             install_repository_dependencies = CheckboxField.is_checked( install_repository_dependencies )
             if includes_tool_dependencies:
                 install_tool_dependencies = CheckboxField.is_checked( install_tool_dependencies )
@@ -959,7 +1053,8 @@ class AdminToolshed( AdminGalaxy ):
                                           tool_panel_section_keys=tool_panel_section_keys,
                                           tool_path=tool_path,
                                           tool_shed_url=tool_shed_url )
-                encoded_kwd, query, tool_shed_repositories, encoded_repository_ids = repository_util.initiate_repository_installation( trans, installation_dict )
+                encoded_kwd, query, tool_shed_repositories, encoded_repository_ids = \
+                    repository_util.initiate_repository_installation( trans, installation_dict )
                 return trans.fill_template( 'admin/tool_shed_repository/initiate_repository_installation.mako',
                                             encoded_kwd=encoded_kwd,
                                             query=query,
@@ -976,12 +1071,14 @@ class AdminToolshed( AdminGalaxy ):
         tool_path = suc.get_tool_path_by_shed_tool_conf_filename( trans, shed_tool_conf )
         tool_panel_section_select_field = tool_util.build_tool_panel_section_select_field( trans )
         if len( repo_info_dicts ) == 1:
-            # If we're installing a single repository, see if it contains a readme or dependencies that we can display.
+            # If we're installing or updating a single repository, see if it contains a readme or
+            # dependencies that we can display.
             repo_info_dict = repo_info_dicts[ 0 ]
             dependencies_for_repository_dict = common_install_util.get_dependencies_for_repository( trans,
                                                                                                     tool_shed_url,
                                                                                                     repo_info_dict,
-                                                                                                    includes_tool_dependencies )
+                                                                                                    includes_tool_dependencies,
+                                                                                                    updating=updating )
             changeset_revision = dependencies_for_repository_dict.get( 'changeset_revision', None )
             if not has_repository_dependencies:
                 has_repository_dependencies = dependencies_for_repository_dict.get( 'has_repository_dependencies', False )
@@ -990,7 +1087,8 @@ class AdminToolshed( AdminGalaxy ):
             if not includes_tools:
                 includes_tools = dependencies_for_repository_dict.get( 'includes_tools', False )
             if not includes_tools_for_display_in_tool_panel:
-                includes_tools_for_display_in_tool_panel = dependencies_for_repository_dict.get( 'includes_tools_for_display_in_tool_panel', False )
+                includes_tools_for_display_in_tool_panel = \
+                    dependencies_for_repository_dict.get( 'includes_tools_for_display_in_tool_panel', False )
             installed_repository_dependencies = dependencies_for_repository_dict.get( 'installed_repository_dependencies', None )
             installed_tool_dependencies = dependencies_for_repository_dict.get( 'installed_tool_dependencies', None )
             missing_repository_dependencies = dependencies_for_repository_dict.get( 'missing_repository_dependencies', None )
@@ -998,19 +1096,25 @@ class AdminToolshed( AdminGalaxy ):
             name = dependencies_for_repository_dict.get( 'name', None )
             repository_owner = dependencies_for_repository_dict.get( 'repository_owner', None )
             readme_files_dict = readme_util.get_readme_files_dict_for_display( trans, tool_shed_url, repo_info_dict )
-            # We're handling 1 of 2 scenarios here: (1) we're installing a tool shed repository for the first time, so we've retrieved the list of installed
-            # and missing repository dependencies from the database (2) we're handling the scenario where an error occurred during the installation process,
-            # so we have a tool_shed_repository record in the database with associated repository dependency records.  Since we have the repository
-            # dependencies in either case, we'll merge the list of missing repository dependencies into the list of installed repository dependencies since
-            # each displayed repository dependency will display a status, whether installed or missing.
-            containers_dict = repository_util.populate_containers_dict_for_new_install( trans=trans,
-                                                                                        tool_shed_url=tool_shed_url,
-                                                                                        tool_path=tool_path,
-                                                                                        readme_files_dict=readme_files_dict,
-                                                                                        installed_repository_dependencies=installed_repository_dependencies,
-                                                                                        missing_repository_dependencies=missing_repository_dependencies,
-                                                                                        installed_tool_dependencies=installed_tool_dependencies,
-                                                                                        missing_tool_dependencies=missing_tool_dependencies )
+            # We're handling 1 of 3 scenarios here: (1) we're installing a tool shed repository for the first time, so we've
+            # retrieved the list of installed and missing repository dependencies from the database (2) we're handling the
+            # scenario where an error occurred during the installation process, so we have a tool_shed_repository record in
+            # the database with associated repository dependency records.  Since we have the repository dependencies in both
+            # of the above 2 cases, we'll merge the list of missing repository dependencies into the list of installed
+            # repository dependencies since each displayed repository dependency will display a status, whether installed or
+            # missing.  The 3rd scenario is where we're updating an installed repository and the updates include newly
+            # defined repository (and possibly tool) dependencies.  In this case, merging will result in newly defined
+            # dependencies to be lost.  We pass the updating parameter to make sure merging occurs only when appropriate.
+            containers_dict = \
+                repository_util.populate_containers_dict_for_new_install( trans=trans,
+                                                                          tool_shed_url=tool_shed_url,
+                                                                          tool_path=tool_path,
+                                                                          readme_files_dict=readme_files_dict,
+                                                                          installed_repository_dependencies=installed_repository_dependencies,
+                                                                          missing_repository_dependencies=missing_repository_dependencies,
+                                                                          installed_tool_dependencies=installed_tool_dependencies,
+                                                                          missing_tool_dependencies=missing_tool_dependencies,
+                                                                          updating=updating )
         else:
             # We're installing a list of repositories, each of which may have tool dependencies or repository dependencies.
             containers_dicts = []
@@ -1018,7 +1122,8 @@ class AdminToolshed( AdminGalaxy ):
                 dependencies_for_repository_dict = common_install_util.get_dependencies_for_repository( trans,
                                                                                                         tool_shed_url,
                                                                                                         repo_info_dict,
-                                                                                                        includes_tool_dependencies )
+                                                                                                        includes_tool_dependencies,
+                                                                                                        updating=updating )
                 changeset_revision = dependencies_for_repository_dict.get( 'changeset_revision', None )
                 if not has_repository_dependencies:
                     has_repository_dependencies = dependencies_for_repository_dict.get( 'has_repository_dependencies', False )
@@ -1027,34 +1132,39 @@ class AdminToolshed( AdminGalaxy ):
                 if not includes_tools:
                     includes_tools = dependencies_for_repository_dict.get( 'includes_tools', False )
                 if not includes_tools_for_display_in_tool_panel:
-                    includes_tools_for_display_in_tool_panel = dependencies_for_repository_dict.get( 'includes_tools_for_display_in_tool_panel', False )
+                    includes_tools_for_display_in_tool_panel = \
+                        dependencies_for_repository_dict.get( 'includes_tools_for_display_in_tool_panel', False )
                 installed_repository_dependencies = dependencies_for_repository_dict.get( 'installed_repository_dependencies', None )
                 installed_tool_dependencies = dependencies_for_repository_dict.get( 'installed_tool_dependencies', None )
                 missing_repository_dependencies = dependencies_for_repository_dict.get( 'missing_repository_dependencies', None )
                 missing_tool_dependencies = dependencies_for_repository_dict.get( 'missing_tool_dependencies', None )
                 name = dependencies_for_repository_dict.get( 'name', None )
                 repository_owner = dependencies_for_repository_dict.get( 'repository_owner', None )
-                containers_dict = repository_util.populate_containers_dict_for_new_install( trans=trans,
-                                                                                            tool_shed_url=tool_shed_url,
-                                                                                            tool_path=tool_path,
-                                                                                            readme_files_dict=None,
-                                                                                            installed_repository_dependencies=installed_repository_dependencies,
-                                                                                            missing_repository_dependencies=missing_repository_dependencies,
-                                                                                            installed_tool_dependencies=installed_tool_dependencies,
-                                                                                            missing_tool_dependencies=missing_tool_dependencies )
+                containers_dict = \
+                    repository_util.populate_containers_dict_for_new_install( trans=trans,
+                                                                              tool_shed_url=tool_shed_url,
+                                                                              tool_path=tool_path,
+                                                                              readme_files_dict=None,
+                                                                              installed_repository_dependencies=installed_repository_dependencies,
+                                                                              missing_repository_dependencies=missing_repository_dependencies,
+                                                                              installed_tool_dependencies=installed_tool_dependencies,
+                                                                              missing_tool_dependencies=missing_tool_dependencies,
+                                                                              updating=updating )
                 containers_dicts.append( containers_dict )
             # Merge all containers into a single container.
             containers_dict = repository_util.merge_containers_dicts_for_new_install( containers_dicts )
         # Handle tool dependencies check box.
         if trans.app.config.tool_dependency_dir is None:
             if includes_tool_dependencies:
-                message = "Tool dependencies defined in this repository can be automatically installed if you set the value of your <b>tool_dependency_dir</b> "
-                message += "setting in your Galaxy config file (universe_wsgi.ini) and restart your Galaxy server before installing the repository."
+                message = "Tool dependencies defined in this repository can be automatically installed if you set "
+                message += "the value of your <b>tool_dependency_dir</b> setting in your Galaxy config file "
+                message += "(universe_wsgi.ini) and restart your Galaxy server before installing the repository."
                 status = "warning"
             install_tool_dependencies_check_box_checked = False
         else:
             install_tool_dependencies_check_box_checked = True
-        install_tool_dependencies_check_box = CheckboxField( 'install_tool_dependencies', checked=install_tool_dependencies_check_box_checked )
+        install_tool_dependencies_check_box = CheckboxField( 'install_tool_dependencies',
+                                                             checked=install_tool_dependencies_check_box_checked )
         # Handle repository dependencies check box.
         install_repository_dependencies_check_box = CheckboxField( 'install_repository_dependencies', checked=True )
         encoded_repo_info_dicts = encoding_util.encoding_sep.join( encoded_repo_info_dicts )
@@ -1062,6 +1172,11 @@ class AdminToolshed( AdminGalaxy ):
         if includes_tools_for_display_in_tool_panel:
             return trans.fill_template( '/admin/tool_shed_repository/select_tool_panel_section.mako',
                                         encoded_repo_info_dicts=encoded_repo_info_dicts,
+                                        updating=updating,
+                                        updating_repository_id=updating_repository_id,
+                                        updating_to_ctx_rev=updating_to_ctx_rev,
+                                        updating_to_changeset_revision=updating_to_changeset_revision,
+                                        encoded_updated_metadata=encoded_updated_metadata,
                                         includes_tools=includes_tools,
                                         includes_tools_for_display_in_tool_panel=includes_tools_for_display_in_tool_panel,
                                         includes_tool_dependencies=includes_tool_dependencies,
@@ -1077,10 +1192,16 @@ class AdminToolshed( AdminGalaxy ):
                                         message=message,
                                         status=status )
         else:
-            # If installing repositories that includes no tools and has no repository dependencies, display a page allowing the Galaxy administrator to
-            # select a shed-related tool panel configuration file whose tool_path setting will be the location the repositories will be installed.
+            # If installing repositories that includes no tools and has no repository dependencies, display a page
+            # allowing the Galaxy administrator to select a shed-related tool panel configuration file whose tool_path
+            # setting will be the location the repositories will be installed.
             return trans.fill_template( '/admin/tool_shed_repository/select_shed_tool_panel_config.mako',
                                         encoded_repo_info_dicts=encoded_repo_info_dicts,
+                                        updating=updating,
+                                        updating_repository_id=updating_repository_id,
+                                        updating_to_ctx_rev=updating_to_ctx_rev,
+                                        updating_to_changeset_revision=updating_to_changeset_revision,
+                                        encoded_updated_metadata=encoded_updated_metadata,
                                         includes_tools=includes_tools,
                                         includes_tools_for_display_in_tool_panel=includes_tools_for_display_in_tool_panel,
                                         includes_tool_dependencies=includes_tool_dependencies,
@@ -1400,7 +1521,8 @@ class AdminToolshed( AdminGalaxy ):
         dependencies_for_repository_dict = common_install_util.get_dependencies_for_repository( trans,
                                                                                                 tool_shed_url,
                                                                                                 repo_info_dict,
-                                                                                                includes_tool_dependencies )
+                                                                                                includes_tool_dependencies,
+                                                                                                updating=False )
         changeset_revision = dependencies_for_repository_dict.get( 'changeset_revision', None )
         has_repository_dependencies = dependencies_for_repository_dict.get( 'has_repository_dependencies', False )
         includes_tool_dependencies = dependencies_for_repository_dict.get( 'includes_tool_dependencies', False )
@@ -1449,14 +1571,16 @@ class AdminToolshed( AdminGalaxy ):
             original_section_name = ''
             tool_panel_section_select_field = None
         shed_tool_conf_select_field = tool_util.build_shed_tool_conf_select_field( trans )
-        containers_dict = repository_util.populate_containers_dict_for_new_install( trans=trans,
-                                                                                    tool_shed_url=tool_shed_url,
-                                                                                    tool_path=tool_path,
-                                                                                    readme_files_dict=readme_files_dict,
-                                                                                    installed_repository_dependencies=installed_repository_dependencies,
-                                                                                    missing_repository_dependencies=missing_repository_dependencies,
-                                                                                    installed_tool_dependencies=installed_tool_dependencies,
-                                                                                    missing_tool_dependencies=missing_tool_dependencies )
+        containers_dict = \
+            repository_util.populate_containers_dict_for_new_install( trans=trans,
+                                                                      tool_shed_url=tool_shed_url,
+                                                                      tool_path=tool_path,
+                                                                      readme_files_dict=readme_files_dict,
+                                                                      installed_repository_dependencies=installed_repository_dependencies,
+                                                                      missing_repository_dependencies=missing_repository_dependencies,
+                                                                      installed_tool_dependencies=installed_tool_dependencies,
+                                                                      missing_tool_dependencies=missing_tool_dependencies,
+                                                                      updating=False )
         # Since we're reinstalling we'll merge the list of missing repository dependencies into the list of installed repository dependencies since each displayed
         # repository dependency will display a status, whether installed or missing.
         containers_dict = repository_dependency_util.merge_missing_repository_dependencies_to_installed_container( containers_dict )
@@ -1574,8 +1698,8 @@ class AdminToolshed( AdminGalaxy ):
     @web.require_admin
     def set_tool_versions( self, trans, **kwd ):
         """
-        Get the tool_versions from the tool shed for each tool in the installed revision of a selected tool shed repository and update the
-        metadata for the repository's revision in the Galaxy database.
+        Get the tool_versions from the tool shed for each tool in the installed revision of a selected tool shed
+        repository and update the metadata for the repository's revision in the Galaxy database.
         """
         repository = suc.get_installed_tool_shed_repository( trans, kwd[ 'id' ] )
         tool_shed_url = suc.get_url_from_tool_shed( trans.app, repository.tool_shed )
@@ -1720,29 +1844,17 @@ class AdminToolshed( AdminGalaxy ):
                                                                                 resetting_all_metadata_on_repository=False,
                                                                                 updating_installed_repository=True,
                                                                                 persist=True )
-                    repository.metadata = metadata_dict
-                    # Update the repository.changeset_revision column in the database.
-                    repository.changeset_revision = latest_changeset_revision
-                    repository.ctx_rev = latest_ctx_rev
-                    # Update the repository.tool_shed_status column in the database.
-                    tool_shed_status_dict = suc.get_tool_shed_status_for_installed_repository( trans.app, repository )
-                    if tool_shed_status_dict:
-                        repository.tool_shed_status = tool_shed_status_dict
-                    else:
-                        repository.tool_shed_status = None
-                    trans.install_model.context.add( repository )
-                    trans.install_model.context.flush()
                     if 'tools' in metadata_dict:
                         tool_panel_dict = metadata_dict.get( 'tool_panel_section', None )
                         if tool_panel_dict is None:
                             tool_panel_dict = suc.generate_tool_panel_dict_from_shed_tool_conf_entries( trans.app, repository )
                         repository_tools_tups = suc.get_repository_tools_tups( trans.app, metadata_dict )
                         tool_util.add_to_tool_panel( app=trans.app,
-                                                     repository_name=repository.name,
+                                                     repository_name=str( repository.name ),
                                                      repository_clone_url=repository_clone_url,
-                                                     changeset_revision=repository.installed_changeset_revision,
+                                                     changeset_revision=str( repository.installed_changeset_revision ),
                                                      repository_tools_tups=repository_tools_tups,
-                                                     owner=repository.owner,
+                                                     owner=str( repository.owner ),
                                                      shed_tool_conf=shed_tool_conf,
                                                      tool_panel_dict=tool_panel_dict,
                                                      new_install=False )
@@ -1755,19 +1867,40 @@ class AdminToolshed( AdminGalaxy ):
                                                                                          os.path.join( relative_install_dir, name ),
                                                                                          repository,
                                                                                          repository_tools_tups )
-                    # Create tool_dependency records if necessary.
-                    if 'tool_dependencies' in metadata_dict:
-                        tool_dependencies = tool_dependency_util.create_tool_dependency_objects( trans.app,
-                                                                                                 repository,
-                                                                                                 relative_install_dir,
-                                                                                                 set_status=False )
+                    if 'repository_dependencies' in metadata_dict or 'tool_dependencies' in metadata_dict:
+                        if 'repository_dependencies' in metadata_dict:
+                            # Updates received include newly defined repository dependencies, so allow the user
+                            # the option of installting them.  We cannot update the repository with the changes
+                            # until that happens, so we have to send them along.
+                            new_kwd = dict( tool_shed_url=tool_shed_url,
+                                            updating_repository_id=trans.security.encode_id( repository.id ),
+                                            updating_to_ctx_rev=latest_ctx_rev,
+                                            updating_to_changeset_revision=latest_changeset_revision,
+                                            encoded_updated_metadata=encoding_util.tool_shed_encode( metadata_dict ),
+                                            updating=True )
+                            return self.prepare_for_install( trans, **new_kwd )
+                        # Updates received did not include any newly defined repository dependencies but did include
+                        # newly defined tool dependencies.
+                        encoded_tool_dependencies_dict = encoding_util.tool_shed_encode( metadata_dict.get( 'tool_dependencies', {} ) )
+                        encoded_relative_install_dir = encoding_util.tool_shed_encode( relative_install_dir )
+                        new_kwd = dict( updating_repository_id=trans.security.encode_id( repository.id ),
+                                        updating_to_ctx_rev=latest_ctx_rev,
+                                        updating_to_changeset_revision=latest_changeset_revision,
+                                        encoded_updated_metadata=encoding_util.tool_shed_encode( metadata_dict ),
+                                        encoded_relative_install_dir=encoded_relative_install_dir,
+                                        encoded_tool_dependencies_dict=encoded_tool_dependencies_dict,
+                                        message=message,
+                                        status = status )
+                        return self.install_tool_dependencies_with_update( trans, **new_kwd )
+                    # Updates received did not include any newly defined repository dependencies or newly defined
+                    # tool dependencies.
+                    repository = repository_util.update_repository_record( trans,
+                                                                           repository=repository,
+                                                                           updated_metadata_dict=metadata_dict,
+                                                                           updated_changeset_revision=latest_changeset_revision,
+                                                                           updated_ctx_rev=latest_ctx_rev )
                     message = "The installed repository named '%s' has been updated to change set revision '%s'.  " % \
                         ( name, latest_changeset_revision )
-                    # See if any tool dependencies can be installed.
-                    shed_tool_conf, tool_path, relative_install_dir = \
-                        suc.get_tool_panel_config_tool_path_install_dir( trans.app, repository )
-                    if repository.missing_tool_dependencies:
-                        message += "Click the name of one of the missing tool dependencies listed below to install tool dependencies."
                 else:
                     message = "The directory containing the installed repository named '%s' cannot be found.  " % name
                     status = 'error'

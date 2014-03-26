@@ -41,6 +41,7 @@ from galaxy.tools.parameters import RuntimeValue, visit_input_values
 from galaxy.tools.parameters.basic import DataToolParameter
 from galaxy.util.json import to_json_string
 from galaxy.workflow.modules import ToolModule
+from galaxy.workflow.steps import attach_ordered_steps
 
 
 log = logging.getLogger( __name__ )
@@ -1676,7 +1677,6 @@ class UsesStoredWorkflowMixin( SharableItemSecurityMixin, UsesAnnotations ):
         """
         Creates a workflow from a dict. Created workflow is stored in the database and returned.
         """
-        from galaxy.webapps.galaxy.controllers.workflow import attach_ordered_steps
 
         # Put parameters in workflow mode
         trans.workflow_building_mode = True

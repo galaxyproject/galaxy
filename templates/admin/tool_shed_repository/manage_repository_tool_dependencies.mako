@@ -30,8 +30,6 @@ ${render_galaxy_repository_actions( repository )}
             <tr><th  bgcolor="#D8D8D8">Name</th><th  bgcolor="#D8D8D8">Version</th><th  bgcolor="#D8D8D8">Type</th><th bgcolor="#D8D8D8">Status</th><th bgcolor="#D8D8D8">Error</th></tr>
             %for tool_dependency in repository.tool_dependencies:
                 <%
-                    # Tool dependencies cannot be uninstalled if they have a status of 'Installed'.  Only the containing repository
-                    # can be uninstalled (only if it has no dependent repositories) if a tool dependency has been successfully installed.
                     if tool_dependency.error_message:
                         error_message = tool_dependency.error_message
                     else:
@@ -41,8 +39,7 @@ ${render_galaxy_repository_actions( repository )}
                                                        trans.install_model.ToolDependency.installation_status.UNINSTALLED ]:
                             can_install = True
                     if not can_uninstall:
-                        if tool_dependency.status not in [ trans.install_model.ToolDependency.installation_status.INSTALLED,
-                                                           trans.install_model.ToolDependency.installation_status.NEVER_INSTALLED,
+                        if tool_dependency.status not in [ trans.install_model.ToolDependency.installation_status.NEVER_INSTALLED,
                                                            trans.install_model.ToolDependency.installation_status.UNINSTALLED ]:
                             can_uninstall = True
                 %>
