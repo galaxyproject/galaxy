@@ -222,6 +222,18 @@ class MappingTests( unittest.TestCase ):
         loaded_job = model.session.query( model.Job ).filter( model.Job.user == u ).first()
         assert loaded_job.tool_id == "cat1"
 
+    def test_job_metrics( self ):
+        model = self.model
+        u = model.User( email="jobtest@foo.bar.baz", password="password" )
+        job = model.Job()
+        job.user = u
+        job.tool_id = "cat1"
+
+        job.add_metric( "gx", "galaxy_slots", 5 )
+        job.add_metric( "system", "system_name", "localhost" )
+
+        self.persist( u, job )
+
     def test_tasks( self ):
         model = self.model
         u = model.User( email="jobtest@foo.bar.baz", password="password" )

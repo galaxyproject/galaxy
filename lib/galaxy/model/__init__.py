@@ -17,6 +17,7 @@ import pexpect
 import json
 import socket
 import time
+import numbers
 from uuid import UUID, uuid4
 from string import Template
 from itertools import ifilter
@@ -85,6 +86,21 @@ class HasName:
         if isinstance(name, str):
             name = unicode(name, 'utf-8')
         return name
+
+
+class HasJobMetrics:
+
+    def _init_metrics( self ):
+        self.text_metrics = []
+        self.numeric_metrics = []
+
+    def add_metric( self, plugin, metric_name, metric_value ):
+        if isinstance( metric_value, numbers.Number ):
+            metric = self._numeric_metric( plugin, metric_name, metric_value )
+            self.numeric_metrics.append( metric )
+        else:
+            metric = self._text_metric( plugin, metric_name, metric_value )
+            self.text_metrics.append( metric )
 
 
 class User( object, Dictifiable ):
@@ -226,7 +242,31 @@ class User( object, Dictifiable ):
         return Template( in_string ).safe_substitute( environment )
 
 
-class Job( object, Dictifiable ):
+class BaseJobMetric( object ):
+
+    def __init__( self, plugin, metric_name, metric_value ):
+        self.plugin = plugin
+        self.metric_name = metric_name
+        self.metric_value = metric_value
+
+
+class JobMetricText( BaseJobMetric ):
+    pass
+
+
+class JobMetricNumeric( BaseJobMetric ):
+    pass
+
+
+class TaskMetricText( BaseJobMetric ):
+    pass
+
+
+class TaskMetricNumeric( BaseJobMetric ):
+    pass
+
+
+class Job( object, HasJobMetrics, Dictifiable ):
     dict_collection_visible_keys = [ 'id', 'state', 'exit_code', 'update_time', 'create_time' ]
     dict_element_visible_keys = [ 'id', 'state', 'exit_code', 'update_time', 'create_time'  ]
 
@@ -234,6 +274,9 @@ class Job( object, Dictifiable ):
     A job represents a request to run a tool given input datasets, tool
     parameters, and output datasets.
     """
+    _numeric_metric = JobMetricNumeric
+    _text_metric = JobMetricText
+
     states = Bunch( NEW = 'new',
                     UPLOAD = 'upload',
                     WAITING = 'waiting',
@@ -267,6 +310,7 @@ class Job( object, Dictifiable ):
         self.imported = False
         self.handler = None
         self.exit_code = None
+        self._init_metrics()
 
     @property
     def finished( self ):
@@ -472,10 +516,14 @@ class Job( object, Dictifiable ):
 
         return rval
 
-class Task( object ):
+
+class Task( object, HasJobMetrics ):
     """
     A task represents a single component of a job.
     """
+    _numeric_metric = TaskMetricNumeric
+    _text_metric = TaskMetricText
+
     states = Bunch( NEW = 'new',
                     WAITING = 'waiting',
                     QUEUED = 'queued',
@@ -498,6 +546,7 @@ class Task( object ):
         self.stderr = ""
         self.exit_code = None
         self.prepare_input_files_cmd = prepare_files_cmd
+        self._init_metrics()
 
     def get_param_values( self, app ):
         """
@@ -607,6 +656,7 @@ class Task( object ):
         self.stderr = stderr
     def set_prepare_input_files_cmd( self, prepare_input_files_cmd ):
         self.prepare_input_files_cmd = prepare_input_files_cmd
+
 
 class JobParameter( object ):
     def __init__( self, name, value ):
