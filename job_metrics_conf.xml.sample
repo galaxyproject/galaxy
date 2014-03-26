@@ -26,6 +26,10 @@
        only. -->
   <!-- <meminfo /> -->
 
+  <!-- Uncomment to record operating system each job is executed on - linux
+       only. -->
+  <!-- <uname /> -->
+
   <!-- Uncomment following to enable plugin dumping complete environment 
        for each job, potentially useful for debuging -->
   <!-- <env /> -->
