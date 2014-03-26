@@ -16,7 +16,7 @@ var ConfigSetting = Backbone.Model.extend({
             this.set(_.extend({}, defaults, options));
         }
 
-        if (!this.get('value')) {
+        if (this.get('value') === undefined) {
             // Use default to set value.
             this.set_value(this.get('default_value'));
 
