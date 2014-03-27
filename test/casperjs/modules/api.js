@@ -75,8 +75,8 @@ API.prototype._ajax = function _ajax( url, options ){
     if( resp.status !== 200 ){
         // grrr... this doesn't lose the \n\r\t
         //throw new APIError( resp.responseText.replace( /[\s\n\r\t]+/gm, ' ' ).replace( /"/, '' ) );
-        this.spaceghost.debug( 'API error: code: ' + resp.status + ', responseText: ' + resp.responseText );
-        this.spaceghost.debug( '\t responseJSON: ' + this.spaceghost.jsonStr( resp.responseJSON ) );
+        this.spaceghost.debug( 'API error: code: ' + resp.status + ', response:\n' +
+            ( resp.responseJSON? this.spaceghost.jsonStr( resp.responseJSON ) : resp.responseText ) );
         throw new APIError( resp.responseText, resp.status );
     }
     return JSON.parse( resp.responseText );
@@ -95,8 +95,6 @@ API.prototype._APIRaises = function _APIRaises( testFn, statusExpected, errMsgCo
     try {
         testFn.call( this.spaceghost );
     } catch( err ){
-        this.spaceghost.debug( err.name + ': ' + err.status );
-        this.spaceghost.debug( err.message );
         if( ( err.name === 'APIError' )
         &&  ( err.status && err.status === statusExpected )
         &&  ( err.message.indexOf( errMsgContains ) !== -1 ) ){
@@ -525,14 +523,13 @@ ToolsAPI.prototype.upload = function upload( historyId, options ){
     }
     var response = this.api.spaceghost.evaluate( function( url, historyId, inputs ){
         var file = $( 'input[name="casperjs-upload-file"]' )[0].files[0],
-            formData = new FormData(),
-            response;
+            formData = new FormData();
 
         formData.append( 'files_0|file_data', file );
         formData.append( 'history_id', historyId );
         formData.append( 'tool_id', 'upload1' );
         formData.append( 'inputs', JSON.stringify( inputs ) );
-        $.ajax({
+        return $.ajax({
             url         : url,
             async       : false,
             type        : 'POST',
@@ -543,18 +540,17 @@ ToolsAPI.prototype.upload = function upload( historyId, options ){
             processData : false,
             // if we don't add this, payload isn't processed as JSON
             headers     : { 'Accept': 'application/json' }
-        }).done(function( resp ){
-            response = resp;
         });
-        // this works only bc jq is async
-        return response;
     }, utils.format( this.urlTpls.create ), historyId, inputs );
 
-    if( !response ){
-        throw new APIError( 'Failed to upload: ' + options.filepath, 0 );
+    if( response.status !== 200 ){
+        // grrr... this doesn't lose the \n\r\t
+        //throw new APIError( response.responseText.replace( /[\s\n\r\t]+/gm, ' ' ).replace( /"/, '' ) );
+        this.api.spaceghost.debug( 'API error: code: ' + response.status + ', response:\n' +
+            ( response.responseJSON? this.api.spaceghost.jsonStr( response.responseJSON ) : response.responseText ) );
+        throw new APIError( response.responseText, response.status );
     }
-
-    return response;
+    return JSON.parse( response.responseText );
 };
 
 /** amount of time allowed to upload a file (before erroring) */

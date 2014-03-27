@@ -68,6 +68,11 @@ class RequestParameterInvalidException( MessageException ):
     status_code = 400
     err_code = error_codes.USER_REQUEST_INVALID_PARAMETER
 
+class AuthenticationRequired( MessageException ):
+    status_code = 403
+    #TODO: as 401 and send WWW-Authenticate: ???
+    err_code = error_codes.USER_NO_API_KEY
+
 class ItemAccessibilityException( MessageException ):
     status_code = 403
     err_code = error_codes.USER_CANNOT_ACCESS_ITEM
@@ -75,6 +80,10 @@ class ItemAccessibilityException( MessageException ):
 class ItemOwnershipException( MessageException ):
     status_code = 403
     err_code = error_codes.USER_DOES_NOT_OWN_ITEM
+
+class ConfigDoesNotAllowException( MessageException ):
+    status_code = 403
+    err_code = error_codes.CONFIG_DOES_NOT_ALLOW
 
 class ObjectNotFound( MessageException ):
     """ Accessed object was not found """

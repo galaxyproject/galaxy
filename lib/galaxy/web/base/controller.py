@@ -13,6 +13,7 @@ from sqlalchemy import func, and_, select
 
 from paste.httpexceptions import HTTPBadRequest, HTTPInternalServerError
 from paste.httpexceptions import HTTPNotImplemented, HTTPRequestRangeNotSatisfiable
+from galaxy import exceptions
 from galaxy.exceptions import ItemAccessibilityException, ItemDeletionException, ItemOwnershipException
 from galaxy.exceptions import MessageException
 
@@ -183,20 +184,22 @@ class BaseController( object ):
     # should probably be in sep. serializer class/object _used_ by controller
     def validate_and_sanitize_basestring( self, key, val ):
         if not isinstance( val, basestring ):
-            raise ValueError( '%s must be a string or unicode: %s' %( key, str( type( val ) ) ) )
+            raise exceptions.RequestParameterInvalidException( '%s must be a string or unicode: %s'
+                                                               %( key, str( type( val ) ) ) )
         return unicode( sanitize_html( val, 'utf-8', 'text/html' ), 'utf-8' )
 
     def validate_and_sanitize_basestring_list( self, key, val ):
-        if not isinstance( val, list ):
-            raise ValueError( '%s must be a list of strings: %s' %( key, str( type( val ) ) ) )
         try:
+            assert isinstance( val, list )
             return [ unicode( sanitize_html( t, 'utf-8', 'text/html' ), 'utf-8' ) for t in val ]
-        except TypeError, type_err:
-            raise ValueError( '%s must be a list of strings: %s' %( key, str( type_err ) ) )
+        except ( AssertionError, TypeError ), err:
+            raise exceptions.RequestParameterInvalidException( '%s must be a list of strings: %s'
+                                                               %( key, str( type( val ) ) ) )
 
     def validate_boolean( self, key, val ):
         if not isinstance( val, bool ):
-            raise ValueError( '%s must be a boolean: %s' %( key, str( type( val ) ) ) )
+            raise exceptions.RequestParameterInvalidException( '%s must be a boolean: %s'
+                                                               %( key, str( type( val ) ) ) )
         return val
 
     #TODO:
@@ -361,7 +364,9 @@ class UsesHistoryMixin( SharableItemSecurityMixin ):
     """ Mixin for controllers that use History objects. """
 
     def get_history( self, trans, id, check_ownership=True, check_accessible=False, deleted=None ):
-        """Get a History from the database by id, verifying ownership."""
+        """
+        Get a History from the database by id, verifying ownership.
+        """
         history = self.get_object( trans, id, 'History',
             check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted )
         history = self.security_check( trans, history, check_ownership, check_accessible )

@@ -377,19 +377,19 @@ class Test_03_HistoryPanel( CasperJSTestCase ):
 class Test_04_HDAs( CasperJSTestCase ):
     """Tests for HistoryDatasetAssociation fetching, rendering, and modeling.
     """
-    #def test_00_HDA_states( self ):
-    #    """Test structure rendering of HDAs in all the possible HDA states
-    #    """
-    #    self.run_js_script( 'hda-state-tests.js' )
+    def test_00_HDA_states( self ):
+        """Test structure rendering of HDAs in all the possible HDA states
+        """
+        self.run_js_script( 'hda-state-tests.js' )
 
 
 class Test_05_API( CasperJSTestCase ):
     """Tests for API functionality and security.
     """
-    #def test_00_history_api( self ):
-    #    """Test history API.
-    #    """
-    #    self.run_js_script( 'api-history-tests.js' )
+    def test_00_history_api( self ):
+        """Test history API.
+        """
+        self.run_js_script( 'api-history-tests.js' )
 
     def test_01_hda_api( self ):
         """Test HDA API.
@@ -400,6 +400,16 @@ class Test_05_API( CasperJSTestCase ):
         """Test API permissions for importable, published histories.
         """
         self.run_js_script( 'api-history-permission-tests.js' )
+
+    def test_03_anon_history_api( self ):
+        """Test API for histories using anonymous user.
+        """
+        self.run_js_script( 'api-anon-history-tests.js' )
+
+    def test_04_anon_history_api( self ):
+        """Test API permissions for importable, published histories using anonymous user.
+        """
+        self.run_js_script( 'api-anon-history-permission-tests.js' )
 
 
 # ==================================================================== MAIN

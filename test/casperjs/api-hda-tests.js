@@ -55,6 +55,7 @@ var summaryKeys = [ 'id', 'name', 'type', 'url' ],
         'metadata_comment_lines', 'metadata_data_lines'
     ];
 
+// ------------------------------------------------------------------------------------------- logged in user
 spaceghost.then( function(){
     
     // ------------------------------------------------------------------------------------------- INDEX
@@ -299,7 +300,7 @@ spaceghost.then( function(){
     this.test.comment( 'create should error with "Please define the source" when the param "from_ld_id" is not used' );
     this.api.assertRaises( function(){
         this.api.hdas.create( lastHistory.id, { bler: 'bler' } );
-    }, 400, 'Please define the source', 'create with no source failed' );
+    }, 400, "must be either 'library' or 'hda'", 'create with no source failed' );
 
     this.test.comment( 'updating using a nonsense key should fail silently' );
     returned = this.api.hdas.update( lastHistory.id, hdaShow.id, {
@@ -310,15 +311,15 @@ spaceghost.then( function(){
     spaceghost.test.comment( 'A bad id should throw an error when using show' );
     this.api.assertRaises( function(){
         this.api.hdas.show( lastHistory.id, '1234123412341234' );
-    }, 500, 'unable to decode', 'Bad Request with invalid id: show' );
+    }, 400, 'unable to decode', 'Bad Request with invalid id: show' );
     spaceghost.test.comment( 'A bad id should throw an error when using update' );
     this.api.assertRaises( function(){
         this.api.hdas.update( lastHistory.id, '1234123412341234', {} );
-    }, 400, 'invalid literal for int', 'Bad Request with invalid id: update' );
+    }, 400, 'unable to decode', 'Bad Request with invalid id: update' );
     spaceghost.test.comment( 'A bad id should throw an error when using delete' );
     this.api.assertRaises( function(){
         this.api.hdas.delete_( lastHistory.id, '1234123412341234' );
-    }, 500, 'invalid literal for int', 'Bad Request with invalid id: delete' );
+    }, 400, 'unable to decode', 'Bad Request with invalid id: delete' );
     spaceghost.test.comment( 'A bad id should throw an error when using undelete' );
 
     this.test.comment( 'updating by attempting to change type should cause an error' );
@@ -362,6 +363,8 @@ spaceghost.then( function(){
 /*
 */
 });
+//spaceghost.user.logout();
+
 
 // ===================================================================
 spaceghost.run( function(){

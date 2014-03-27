@@ -296,7 +296,8 @@ def _future_expose_api( func, to_json=True, user_required=True ):
         if user_required and trans.anonymous:
             error_code = error_codes.USER_NO_API_KEY
             # Use error codes default error message.
-            return __api_error_response( trans, err_code=error_code, status_code=403 )
+            err_msg = "API authentication required for this request"
+            return __api_error_response( trans, err_code=error_code, err_msg=err_msg, status_code=403 )
         if trans.request.body:
             try:
                 kwargs['payload'] = __extract_payload_from_request(trans, func, kwargs)

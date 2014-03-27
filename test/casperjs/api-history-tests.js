@@ -316,7 +316,11 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
     spaceghost.test.comment( 'A bad id should throw an error when using update' );
     this.api.assertRaises( function(){
         this.api.histories.update( '1234123412341234', {} );
-    }, 500, 'unable to decode', 'Bad Request with invalid id: update' );
+    }, 400, 'unable to decode', 'Bad Request with invalid id: update' );
+    spaceghost.test.comment( 'A bad id should throw an error when using set_as_current' );
+    this.api.assertRaises( function(){
+        this.api.histories.set_as_current( '1234123412341234' );
+    }, 400, 'unable to decode', 'Bad Request with invalid id: set_as_current' );
     spaceghost.test.comment( 'A bad id should throw an error when using delete' );
     this.api.assertRaises( function(){
         this.api.histories.delete_( '1234123412341234' );
@@ -346,6 +350,11 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
             returned = spaceghost.api.histories.update( newFirstHistory.id, { tags: badVal });
         }, 400, 'tags must be a list', 'type validation error' );
     });
+
+    this.test.comment( 'calling show with /deleted should raise a bad request' );
+    this.api.assertRaises( function(){
+        this.api.histories.show( newFirstHistory.id, true );
+    }, 400, 'is not deleted', 'Bad Request returned for non-deleted' );
 /*
 */
     //this.debug( this.jsonStr( historyShow ) );
