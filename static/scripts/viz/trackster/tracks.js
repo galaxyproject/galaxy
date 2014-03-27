@@ -4031,7 +4031,7 @@ extend(VariantTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         { key: 'show_labels', label: 'Show summary and sample labels', type: 'bool', default_value: true },
         { key: 'summary_height', label: 'Locus summary height', type: 'float', default_value: 20 },
         { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
-        { key: 'height', type: 'int', default_value: 32, hidden: true }
+        { key: 'height', type: 'int', default_value: 0, hidden: true }
     ] ),
     
     config_onchange: function() {
@@ -4169,8 +4169,8 @@ var ReadTrack = function (view, container, obj_dict) {
 
 extend(ReadTrack.prototype, Drawable.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
     config_params: _.union( Drawable.prototype.config_params, [
-        { key: 'block_color', label: 'Block and sense strand color', type: 'color' },
-        { key: 'reverse_strand_color', label: 'Antisense strand color', type: 'color' },
+        { key: 'block_color', label: 'Block and sense strand color', type: 'color', 'default_value': '#DDDDDD' },
+        { key: 'reverse_strand_color', label: 'Antisense strand color', type: 'color', 'default_value': '#AAAAAA' },
         { key: 'label_color', label: 'Label color', type: 'color', default_value: 'black' },
         { key: 'show_insertions', label: 'Show insertions', type: 'bool', default_value: false },
         { key: 'show_differences', label: 'Show differences only', type: 'bool', default_value: true },
