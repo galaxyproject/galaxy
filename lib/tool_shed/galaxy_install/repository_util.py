@@ -194,7 +194,7 @@ def get_repo_info_dict( trans, repository_id, changeset_revision ):
     if not repository_metadata:
         # The received changeset_revision is no longer installable, so get the next changeset_revision
         # in the repository's changelog.  This generally occurs only with repositories of type
-        # tool_dependency_definition.
+        # repository_suite_definition or tool_dependency_definition.
         next_downloadable_changeset_revision = \
             suc.get_next_downloadable_changeset_revision( repository,repo, changeset_revision )
         if next_downloadable_changeset_revision:

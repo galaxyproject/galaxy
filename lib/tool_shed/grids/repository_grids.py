@@ -175,7 +175,8 @@ class RepositoryGrid( grids.Grid ):
                     log.exception( str( e ) )
                     return 'unknown'
             else:
-                # Here repository.type must be rt_util.TOOL_DEPENDENCY_DEFINITION.
+                # Here repository.type must be either rt_util.REPOSITORY_SUITE_DEFINITION or
+                # rt_util.TOOL_DEPENDENCY_DEFINITION.
                 try:
                     if len( repository.metadata_revisions ) > 0:
                         displayed_metadata_revision = repository.metadata_revisions[ -1 ]
@@ -1771,7 +1772,7 @@ def filter_by_latest_downloadable_changeset_revision_that_has_failing_tool_tests
     """
     Inspect the latest downloadable changeset revision for the received repository to see if it
     includes at least 1 tool that has at least 1 failing test.  This will filter out repositories
-    of type tool_dependency_definition.
+    of type repository_suite_definition and tool_dependency_definition.
     """
     repository_metadata = get_latest_downloadable_repository_metadata_if_it_includes_tools( trans, repository )
     if repository_metadata \
@@ -1787,7 +1788,8 @@ def filter_by_latest_downloadable_changeset_revision_that_has_missing_tool_test_
     Inspect the latest downloadable changeset revision for the received repository to see if it
     includes tools that are either missing functional tests or functional test data.  If the
     changset revision includes tools but is missing tool test components, return the changeset
-    revision hash.  This will filter out repositories of type tool_dependency_definition.
+    revision hash.  This will filter out repositories of type repository_suite_definition and
+    tool_dependency_definition.
     """
     repository_metadata = get_latest_downloadable_repository_metadata_if_it_includes_tools( trans, repository )
     if repository_metadata and repository_metadata.missing_test_components:
@@ -1797,7 +1799,8 @@ def filter_by_latest_downloadable_changeset_revision_that_has_missing_tool_test_
 def filter_by_latest_downloadable_changeset_revision_that_has_no_failing_tool_tests( trans, repository ):
     """
     Inspect the latest downloadable changeset revision for the received repository to see if it
-    includes tools with no failing tests.  This will filter out repositories of type tool_dependency_definition.
+    includes tools with no failing tests.  This will filter out repositories of type repository_suite_definition
+    and tool_dependency_definition.
     """
     repository_metadata = get_latest_downloadable_repository_metadata_if_it_includes_tools( trans, repository )
     if repository_metadata is not None and \
@@ -1809,7 +1812,8 @@ def filter_by_latest_downloadable_changeset_revision_that_has_no_failing_tool_te
 def filter_by_latest_metadata_changeset_revision_that_has_invalid_tools( trans, repository ):
     """
     Inspect the latest changeset revision with associated metadata for the received repository
-    to see if it has invalid tools.  This will filter out repositories of type tool_dependency_definition.
+    to see if it has invalid tools.  This will filter out repositories of type repository_suite_definition
+    and tool_dependency_definition.
     """
     repository_metadata = get_latest_repository_metadata_if_it_includes_invalid_tools( trans, repository )
     if repository_metadata is not None:
@@ -1820,7 +1824,7 @@ def filter_by_latest_downloadable_changeset_revision_that_has_test_install_error
     """
     Inspect the latest downloadable changeset revision for the received repository to see if
     it has tool test installation errors.  This will return repositories of type unrestricted
-    as well as type tool_dependency_definition.
+    as well as types repository_suite_definition and tool_dependency_definition.
     """
     repository_metadata = get_latest_downloadable_repository_metadata_if_it_has_test_install_errors( trans, repository )
     # Filter further by eliminating repositories that are missing test components.
@@ -1831,7 +1835,8 @@ def filter_by_latest_downloadable_changeset_revision_that_has_test_install_error
 def filter_by_latest_downloadable_changeset_revision_with_skip_tests_checked( trans, repository ):
     """
     Inspect the latest downloadable changeset revision for the received repository to see if skip tests
-    is checked.  This will return repositories of type unrestricted as well as type tool_dependency_definition.
+    is checked.  This will return repositories of type unrestricted as well as types repository_suite_definition
+    and tool_dependency_definition.
     """
     repository_metadata = get_latest_downloadable_repository_metadata( trans, repository )
     # The skip_tool_tests attribute is a SkipToolTest table mapping backref to the RepositoryMetadata table.
@@ -1842,7 +1847,8 @@ def filter_by_latest_downloadable_changeset_revision_with_skip_tests_checked( tr
 def get_latest_downloadable_repository_metadata( trans, repository ):
     """
     Return the latest downloadable repository_metadata record for the received repository.  This will
-    return repositories of type unrestricted as well as type tool_dependency_definition.
+    return repositories of type unrestricted as well as types repository_suite_definition and
+     tool_dependency_definition.
     """
     encoded_repository_id = trans.security.encode_id( repository.id )
     repo = hg.repository( suc.get_configured_ui(), repository.repo_path( trans.app ) )
@@ -1867,7 +1873,8 @@ def get_latest_downloadable_repository_metadata( trans, repository ):
 def get_latest_downloadable_repository_metadata_if_it_includes_tools( trans, repository ):
     """
     Return the latest downloadable repository_metadata record for the received repository if its
-    includes_tools attribute is True.  This will filter out repositories of type tool_dependency_definition.
+    includes_tools attribute is True.  This will filter out repositories of type repository_suite_definition
+    and tool_dependency_definition.
     """
     repository_metadata = get_latest_downloadable_repository_metadata( trans, repository )
     if repository_metadata is not None and repository_metadata.includes_tools:
@@ -1878,7 +1885,7 @@ def get_latest_downloadable_repository_metadata_if_it_has_test_install_errors( t
     """
     Return the latest downloadable repository_metadata record for the received repository if its
     test_install_error attribute is True.  This will return repositories of type unrestricted as
-    well as type tool_dependency_definition.
+    well as types repository_suite_definition and tool_dependency_definition.
     """
     repository_metadata = get_latest_downloadable_repository_metadata( trans, repository )
     if repository_metadata is not None and repository_metadata.test_install_error:
@@ -1888,7 +1895,8 @@ def get_latest_downloadable_repository_metadata_if_it_has_test_install_errors( t
 def get_latest_repository_metadata( trans, repository ):
     """
     Return the latest repository_metadata record for the received repository if it exists.  This will
-    return repositories of type unrestricted as well as type tool_dependency_definition.
+    return repositories of type unrestricted as well as types repository_suite_definition and
+     tool_dependency_definition.
     """
     encoded_repository_id = trans.security.encode_id( repository.id )
     repo = hg.repository( suc.get_configured_ui(), repository.repo_path( trans.app ) )
@@ -1908,7 +1916,8 @@ def get_latest_repository_metadata( trans, repository ):
 def get_latest_repository_metadata_if_it_includes_invalid_tools( trans, repository ):
     """
     Return the latest repository_metadata record for the received repository that contains invalid
-    tools if one exists.  This will filter out repositories of type tool_dependency_definition.
+    tools if one exists.  This will filter out repositories of type repository_suite_definition and
+    tool_dependency_definition.
     """
     repository_metadata = get_latest_repository_metadata( trans, repository )
     if repository_metadata is not None:

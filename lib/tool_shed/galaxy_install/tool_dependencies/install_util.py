@@ -211,12 +211,13 @@ def handle_complex_repository_dependency_for_package( app, elem, package_name, p
                                                                   tool_dependency_name=package_name,
                                                                   tool_dependency_version=package_version )
         if os.path.exists( dependent_install_dir ):
-            # The install manager handles tool migration stages and the sync_database_with_file_system() method handles two
-            # scenarios: (1) where a Galaxy file system environment related to installed tool shed repositories and tool dependencies
-            # has somehow (over time )gotten out of sync with the Galaxy database tables associated with these installed items, and
-            # (2) the Tool Shed's install and test framework which installs repositories in 2 stages, those of type
-            # tool_dependency_definition followed by those containing valid tools and tool functional test components.  Neither of
-            # these scenarios apply when the install manager is running.
+            # The install manager handles tool migration stages and the sync_database_with_file_system()
+            # method handles two scenarios: (1) where a Galaxy file system environment related to installed
+            # Tool Shed repositories and tool dependencies has somehow gotten out of sync with the Galaxy
+            # database tables associated with these installed items, and (2) the Tool Shed's install and test
+            # framework which installs repositories in 2 stages, those of type tool_dependency_definition
+            # followed by those containing valid tools and tool functional test components.  Neither of these
+            # scenarios apply when the install manager is running.
             if from_install_manager:
                 can_install_tool_dependency = True
             else:
@@ -334,12 +335,13 @@ def install_package( app, elem, tool_shed_repository, tool_dependencies=None, fr
                                                                                     tool_dependency_name=package_name,
                                                                                     tool_dependency_version=package_version )
                 if os.path.exists( install_dir ):
-                    # The install manager handles tool migration stages and the sync_database_with_file_system() method handles two
-                    # scenarios: (1) where a Galaxy file system environment related to installed tool shed repositories and tool dependencies
-                    # has somehow (over time )gotten out of sync with the Galaxy database tables associated with these installed items, and
-                    # (2) the Tool Shed's install and test framework which installs repositories in 2 stages, those of type
-                    # tool_dependency_definition followed by those containing valid tools and tool functional test components.  Neither of
-                    # these scenarios apply when the install manager is running.
+                    # The install manager handles tool migration stages and the sync_database_with_file_system()
+                    # method handles two scenarios: (1) where a Galaxy file system environment related to installed
+                    # Tool Shed repositories and tool dependencies has somehow gotten out of sync with the Galaxy
+                    # database tables associated with these installed items, and (2) the Tool Shed's install and test
+                    # framework which installs repositories in 2 stages, those of type tool_dependency_definition
+                    # followed by those containing valid tools and tool functional test components.  Neither of these
+                    # scenarios apply when the install manager is running.
                     if from_install_manager:
                         can_install_tool_dependency = True
                     else:

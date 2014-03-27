@@ -2346,9 +2346,15 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                                                                                    key_rd_dicts_to_be_processed=None,
                                                                                                    all_repository_dependencies=None,
                                                                                                    handled_key_rd_dicts=None )
-                if str( repository.type ) != rt_util.TOOL_DEPENDENCY_DEFINITION:
+                if str( repository.type ) != rt_util.REPOSITORY_SUITE_DEFINITION:
                     # Handle messaging for resetting repository type to the optimal value.
-                    change_repository_type_message = tool_dependency_util.generate_message_for_repository_type_change( trans, repository )
+                    change_repository_type_message = suc.generate_message_for_repository_type_change( trans, repository )
+                    if change_repository_type_message:
+                        message += change_repository_type_message
+                        status = 'warning'
+                elif str( repository.type ) != rt_util.TOOL_DEPENDENCY_DEFINITION:
+                    # Handle messaging for resetting repository type to the optimal value.
+                    change_repository_type_message = suc.generate_message_for_repository_type_change( trans, repository )
                     if change_repository_type_message:
                         message += change_repository_type_message
                         status = 'warning'
@@ -2496,8 +2502,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         """
         Handle a request from a Galaxy instance where the changeset_revision defined for a repository
         in a dependency definition file is older than the changeset_revision associated with the installed
-        repository.  This will occur with repository's of type tool_dependency_definition, and this scenario
-        will occur while repository dependency hierarchies are bing installed.
+        repository.
         """
         name = kwd.get( 'name', None )
         owner = kwd.get( 'owner', None )

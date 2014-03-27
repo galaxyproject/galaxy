@@ -50,6 +50,9 @@ def check_archive( repository, archive ):
         if member.name in [ 'hgrc' ]:
             message = "Uploaded archives cannot contain hgrc files."
             return False, message
+        if repository.type == rt_util.REPOSITORY_SUITE_DEFINITION and member.name != suc.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME:
+            message = 'Repositories of type <b>Repsoitory suite definition</b> can contain only a single file named <b>repository_dependencies.xml</b>.'
+            return False, message
         if repository.type == rt_util.TOOL_DEPENDENCY_DEFINITION and member.name != suc.TOOL_DEPENDENCY_DEFINITION_FILENAME:
             message = 'Repositories of type <b>Tool dependency definition</b> can contain only a single file named <b>tool_dependencies.xml</b>.'
             return False, message
@@ -478,8 +481,8 @@ def handle_tool_dependencies_definition( trans, tool_dependencies_config, unpopu
 
 def repository_tag_is_valid( filename, line ):
     """
-    Checks changes made to <repository> tags in a dependency definition file being pushed to the tool shed from the command line to ensure that
-    all required attributes exist.
+    Checks changes made to <repository> tags in a dependency definition file being pushed to the
+    Tool Shed from the command line to ensure that all required attributes exist.
     """
     required_attributes = [ 'toolshed', 'name', 'owner', 'changeset_revision' ]
     defined_attributes = line.split()
@@ -490,15 +493,17 @@ def repository_tag_is_valid( filename, line ):
                 defined = True
                 break
         if not defined:
-            error_msg = 'The %s file contains a <repository> tag that is missing the required attribute %s.  ' % ( filename, required_attribute )
-            error_msg += 'Automatically populating dependency definition attributes occurs only when using the tool shed upload utility.  '
+            error_msg = 'The %s file contains a <repository> tag that is missing the required attribute %s.  ' % \
+                ( filename, required_attribute )
+            error_msg += 'Automatically populating dependency definition attributes occurs only when using '
+            error_msg += 'the Tool Shed upload utility.  '
             return False, error_msg
     return True, ''
 
 def repository_tags_are_valid( filename, change_list ):
     """
-    Make sure the any complex repository dependency definitions contain valid <repository> tags when pushing changes to the tool shed on the command
-    line.
+    Make sure the any complex repository dependency definitions contain valid <repository> tags when pushing
+    changes to the tool shed on the command line.
     """
     tag = '<repository'
     for change_dict in change_list:
@@ -519,8 +524,9 @@ def uncompress( repository, uploaded_file_name, uploaded_file_filename, isgzip=F
 
 def unpack_chunks( hg_unbundle10_obj ):
     """
-    This method provides a generator of parsed chunks of a "group" in a mercurial unbundle10 object which is created when a changeset that is pushed
-    to a tool shed repository using hg push from the command line is read using readbundle.
+    This method provides a generator of parsed chunks of a "group" in a mercurial unbundle10 object which
+    is created when a changeset that is pushed to a Tool Shed repository using hg push from the command line
+    is read using readbundle.
     """
     while True:
         length, = struct.unpack( '>l', readexactly( hg_unbundle10_obj, 4 ) )
@@ -538,8 +544,9 @@ def unpack_chunks( hg_unbundle10_obj ):
 
 def unpack_groups( hg_unbundle10_obj ):
     """
-    This method provides a generator of parsed groups from a mercurial unbundle10 object which is created when a changeset that is pushed
-    to a tool shed repository using hg push from the command line is read using readbundle.
+    This method provides a generator of parsed groups from a mercurial unbundle10 object which is
+    created when a changeset that is pushed to a Tool Shed repository using hg push from the command
+    line is read using readbundle.
     """
     # Process the changelog group.
     yield [ chunk for chunk in unpack_chunks( hg_unbundle10_obj ) ]
@@ -556,8 +563,8 @@ def unpack_groups( hg_unbundle10_obj ):
 
 def unpack_patches( hg_unbundle10_obj, remaining ):
     """
-    This method provides a generator of patches from the data field in a chunk. As there is no delimiter for this data field, a length argument is
-    required.
+    This method provides a generator of patches from the data field in a chunk. As there is no delimiter
+    for this data field, a length argument is required.
     """
     while remaining >= 12:
         start, end, blocklen = struct.unpack( '>lll', readexactly( hg_unbundle10_obj, 12 ) )

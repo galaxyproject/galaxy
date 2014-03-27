@@ -120,8 +120,28 @@ class Hg( object ):
                         for row in result_set:
                             # Should only be 1 row...
                             repository_type = str( row[ 'type' ] )
-                        if repository_type == rt_util.TOOL_DEPENDENCY_DEFINITION:
-                            # Handle repositories of type tool_dependency_definition, which can only contain a single file named tool_dependencies.xml.
+                        if repository_type == rt_util.REPOSITORY_SUITE_DEFINITION:
+                            # Handle repositories of type repository_suite_definition, which can only contain a single
+                            # file named repository_dependencies.xml.
+                            for entry in changeset_groups:
+                                if len( entry ) == 2:
+                                    # We possibly found an altered file entry.
+                                    filename, change_list = entry
+                                    if filename and isinstance( filename, str ):
+                                        if filename == suc.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME:
+                                            # Make sure the any complex repository dependency definitions contain valid <repository> tags.
+                                            is_valid, error_msg = commit_util.repository_tags_are_valid( filename, change_list )
+                                            if not is_valid:
+                                                log.debug( error_msg )
+                                                return self.__display_exception_remotely( start_response, error_msg )
+                                        else:
+                                            msg = "Only a single file named repository_dependencies.xml can be pushed to a repository "
+                                            msg += "of type 'Repository suite definition'."
+                                            log.debug( msg )
+                                            return self.__display_exception_remotely( start_response, msg )
+                        elif repository_type == rt_util.TOOL_DEPENDENCY_DEFINITION:
+                            # Handle repositories of type tool_dependency_definition, which can only contain a single
+                            # file named tool_dependencies.xml.
                             for entry in changeset_groups:
                                 if len( entry ) == 2:
                                     # We possibly found an altered file entry.
@@ -134,20 +154,24 @@ class Hg( object ):
                                                 log.debug( error_msg )
                                                 return self.__display_exception_remotely( start_response, error_msg )
                                         else:
-                                            msg = "Only a single file named tool_dependencies.xml can be pushed to a repository of type 'Tool dependency definition'."
+                                            msg = "Only a single file named tool_dependencies.xml can be pushed to a repository "
+                                            msg += "of type 'Tool dependency definition'."
                                             log.debug( msg )
                                             return self.__display_exception_remotely( start_response, msg )
                         else:
-                            # If the changeset includes changes to dependency definition files, make sure tag sets are not missing "toolshed" or
-                            # "changeset_revision" attributes since automatically populating them is not supported when pushing from the command line.
-                            # These attributes are automatically populated only when using the tool shed upload utility.
+                            # If the changeset includes changes to dependency definition files, make sure tag sets
+                            # are not missing "toolshed" or "changeset_revision" attributes since automatically populating
+                            # them is not supported when pushing from the command line.  These attributes are automatically
+                            # populated only when using the tool shed upload utility.
                             for entry in changeset_groups:
                                 if len( entry ) == 2:
                                     # We possibly found an altered file entry.
                                     filename, change_list = entry
                                     if filename and isinstance( filename, str ):
-                                        if filename in [ suc.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME, suc.TOOL_DEPENDENCY_DEFINITION_FILENAME ]:
-                                            # We check both files since tool dependency definitions files can contain complex repository dependency definitions.
+                                        if filename in [ suc.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME,
+                                                        suc.TOOL_DEPENDENCY_DEFINITION_FILENAME ]:
+                                            # We check both files since tool dependency definitions files can contain complex
+                                            # repository dependency definitions.
                                             is_valid, error_msg = commit_util.repository_tags_are_valid( filename, change_list )
                                             if not is_valid:
                                                 log.debug( error_msg )

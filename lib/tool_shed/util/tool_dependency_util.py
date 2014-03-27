@@ -198,17 +198,6 @@ def generate_message_for_orphan_tool_dependencies( trans, repository, metadata_d
         message += set_environment_orphans_str
     return message
 
-def generate_message_for_repository_type_change( trans, repository ):
-    message = ''
-    if repository.can_change_type_to( trans.app, rt_util.TOOL_DEPENDENCY_DEFINITION ):
-        tool_dependency_definition_type_class = \
-            trans.app.repository_types_registry.get_class_by_label( rt_util.TOOL_DEPENDENCY_DEFINITION )
-        message += "This repository currently contains a single file named <b>%s</b>.  If additional files will " % \
-            suc.TOOL_DEPENDENCY_DEFINITION_FILENAME
-        message += "not be added to this repository, then it's type should be set to <b>%s</b>.<br/>" % \
-            tool_dependency_definition_type_class.label
-    return message
-
 def get_download_url_for_platform( url_templates, platform_info_dict ):
     '''
     Compare the dict returned by get_platform_info() with the values specified in the url_template element. Return
@@ -583,7 +572,7 @@ def sync_database_with_file_system( app, tool_shed_repository, tool_dependency_n
     """
     # This method should be reached very rarely.  It implies that either the Galaxy environment became corrupted (i.e.,
     # the database records for installed tool dependencies is not synchronized with tool dependencies on disk) or the Tool
-    # Shed's install and test framework is running.  The Tool Shed's install and test framework which installs repositories
+    # Shed's install and test framework is running.  The Tool Shed's install and test framework installs repositories
     # in 2 stages, those of type tool_dependency_definition followed by those containing valid tools and tool functional
     # test components.
     log.debug( "Synchronizing the database with the file system..." )
