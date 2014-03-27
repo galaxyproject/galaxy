@@ -256,13 +256,14 @@ var HDAEditView = hdaBase.HDABaseView.extend(
         } else {
             var popup_menu_options = [];
             _.each( visualizations, function( linkData ) {
-                linkData.func = function(){
-                    if( Galaxy.frame.active ){
+                linkData.func = function( ev ){
+                    if( Galaxy.frame && Galaxy.frame.active ){
                         Galaxy.frame.add({
                             title       : "Visualization",
                             type        : "url",
                             content     : linkData.href
                         });
+                        ev.preventDefault();
                         return false;
                     }
                     return true;
