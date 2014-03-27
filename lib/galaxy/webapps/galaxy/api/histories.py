@@ -113,8 +113,6 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin,
         else:
             history = self.mgrs.histories.get( trans, self._decode_id( trans, history_id ),
                                                check_ownership=False, check_accessible=True, deleted=deleted )
-            #history = self._get_history( trans, self._decode_id( trans, history_id ),
-            #                             check_ownership=False, check_accessible=True, deleted=deleted )
 
         history_data = self.get_history_dict( trans, history )
         history_data[ 'contents_url' ] = url_for( 'history_contents', history_id=history_id )

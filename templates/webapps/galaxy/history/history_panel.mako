@@ -15,14 +15,10 @@ require([ "mvc/history/current-history-panel" ], function( historyPanel ){
             el              : $( "${selector_to_attach_to}" ),
             linkTarget      : 'galaxy_main',
             onready         : function loadAsCurrentHistoryPanel(){
-                var panel = this;
                 this.connectToQuotaMeter( Galaxy.quotaMeter )
                     .connectToOptionsMenu( Galaxy.historyOptionsMenu );
-                this.loadCurrentHistory()
-                    .fail( function(){
-                        panel.render();
-                    });
-                }
+                this.loadCurrentHistory();
+            }
         });
         Galaxy.currHistoryPanel = currPanel;
     });

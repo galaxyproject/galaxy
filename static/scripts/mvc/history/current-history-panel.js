@@ -154,6 +154,7 @@ var CurrentHistoryPanel = hpanel.HistoryPanel.extend(
      *  @see Backbone.View#render
      */
     render : function( speed, callback ){
+        this.log( 'render:', speed, callback );
         // send a speed of 0 to have no fade in/out performed
         speed = ( speed === undefined )?( this.fxSpeed ):( speed );
         var panel = this,

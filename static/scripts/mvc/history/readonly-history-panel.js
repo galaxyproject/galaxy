@@ -1,8 +1,9 @@
 define([
     "mvc/history/history-model",
     "mvc/dataset/hda-base",
+    "mvc/user/user-model",
     "mvc/base-mvc"
-], function( historyModel, hdaBase, baseMVC ){
+], function( historyModel, hdaBase, userModel, baseMVC ){
 // ============================================================================
 /** session storage for individual history preferences */
 var HistoryPrefs = baseMVC.SessionStorageModel.extend({
@@ -224,7 +225,7 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( baseMVC.LoggableMixin ).extend(
             parsed = {
                 message : this._bePolite( msg ),
                 details : {
-                    user    : ( user instanceof User )?( user.toJSON() ):( user + '' ),
+                    user    : ( user instanceof userModel.User )?( user.toJSON() ):( user + '' ),
                     source  : ( model instanceof Backbone.Model )?( model.toJSON() ):( model + '' ),
                     xhr     : xhr,
                     options : ( xhr )?( _.omit( options, 'xhr' ) ):( options )
@@ -485,7 +486,7 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( baseMVC.LoggableMixin ).extend(
         // we'll always need the message container
         var $newRender = $( '<div/>' ),
             $msgContainer = $( '<div/>' ).addClass( 'message-container' )
-                .css({ 'margin-left': '4px', 'margin-right': '4px' });
+                .css({ 'margin': '4px' });
         return $newRender.append( $msgContainer );
     },
 
