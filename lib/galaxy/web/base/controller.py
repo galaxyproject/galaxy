@@ -1242,7 +1242,7 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin, UsesLibraryMix
         trans.sa_session.flush()
         return imported_visualization
 
-    def create_visualization( self, trans, type, title="Untitled Genome Vis", slug=None,
+    def create_visualization( self, trans, type, title="Untitled Visualization", slug=None,
                               dbkey=None, annotation=None, config={}, save=True ):
         """
         Create visualiation and first revision.

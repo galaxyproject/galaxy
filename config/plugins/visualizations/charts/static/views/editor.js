@@ -135,7 +135,7 @@ return Backbone.View.extend(
         this.title = new Ui.Input({
             placeholder: 'Chart title',
             onchange: function() {
-                self.app.config.set('title', self.title.value());
+                self.chart.set('title', self.title.value());
             }
         });
         
@@ -223,6 +223,7 @@ return Backbone.View.extend(
     _refreshTitle: function() {
         var title = this.chart.get('title');
         this.portlet.title(title);
+        this.title.value(title);
     },
     
     // update

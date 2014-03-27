@@ -58,8 +58,6 @@ return Backbone.View.extend(
                     break;
                 case 'initialized':
                     self.chart.trigger('drawable');
-                    $icon.addClass('fa fa-warning');
-                    break;
                 default:
                     $icon.addClass('fa fa-spinner fa-spin');
                     break;
