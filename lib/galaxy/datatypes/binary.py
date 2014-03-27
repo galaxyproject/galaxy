@@ -69,6 +69,7 @@ class Binary( data.Data ):
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
+
     def get_mime( self ):
         """Returns the mime type of the datatype"""
         return 'application/octet-stream'
@@ -96,6 +97,7 @@ class Ab1( Binary ):
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
+
     def display_peek( self, dataset ):
         try:
             return dataset.peek
@@ -133,12 +135,14 @@ class Bam( Binary ):
                 version = line.split()[1]
                 break
         return version
+
     def _is_coordinate_sorted( self, file_name ):
         """See if the input BAM file is sorted from the header information."""
         params = [ "samtools", "view", "-H", file_name ]
         output = subprocess.Popen( params, stderr=subprocess.PIPE, stdout=subprocess.PIPE ).communicate()[0]
         # find returns -1 if string is not found
         return output.find( "SO:coordinate" ) != -1 or output.find( "SO:sorted" ) != -1
+
     def dataset_content_needs_grooming( self, file_name ):
         """See if file_name is a sorted BAM file"""
         version = self._get_samtools_version()
@@ -186,6 +190,7 @@ class Bam( Binary ):
             except OSError:
                 pass
             return False
+
     def groom_dataset_content( self, file_name ):
         """
         Ensures that the Bam file contents are sorted.  This function is called
@@ -221,8 +226,10 @@ class Bam( Binary ):
         # Remove temp file and empty temporary directory
         os.unlink( stderr_name )
         os.rmdir( tmp_dir )
+
     def init_meta( self, dataset, copy_from=None ):
         Binary.init_meta( self, dataset, copy_from=copy_from )
+
     def set_meta( self, dataset, overwrite = True, **kwd ):
         """ Creates the index for the BAM file. """
         # These metadata values are not accessible by users, always overwrite
@@ -247,6 +254,7 @@ class Bam( Binary ):
         dataset.metadata.bam_index = index_file
         # Remove temp file
         os.unlink( stderr_name )
+
     def sniff( self, filename ):
         # BAM is compressed in the BGZF format, and must not be uncompressed in Galaxy.
         # The first 4 bytes of any bam file is 'BAM\1', and the file is binary.
@@ -257,6 +265,7 @@ class Bam( Binary ):
             return False
         except:
             return False
+
     def set_peek( self, dataset, is_multi_byte=False ):
         if not dataset.dataset.purged:
             dataset.peek  = "Binary bam alignments file"
@@ -264,6 +273,7 @@ class Bam( Binary ):
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
+
     def display_peek( self, dataset ):
         try:
             return dataset.peek
@@ -355,6 +365,24 @@ class Bam( Binary ):
 Binary.register_sniffable_binary_format("bam", "bam", Bam)
 
 
+class Bcf( Binary):
+    """Class describing a BCF file"""
+    file_ext = "bcf"
+
+    def sniff( self, filename ):
+        # BCF is compressed in the BGZF format, and must not be uncompressed in Galaxy.
+        # The first 3 bytes of any bcf file is 'BCF', and the file is binary.
+        try:
+            header = gzip.open( filename ).read(3)
+            if binascii.b2a_hex( header ) == binascii.hexlify( 'BCF' ):
+                return True
+            return False
+        except:
+            return False
+
+Binary.register_sniffable_binary_format("bcf", "bcf", Bcf)
+
+
 class H5( Binary ):
     """Class describing an HDF5 file"""
     file_ext = "h5"
@@ -366,6 +394,7 @@ class H5( Binary ):
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
+
     def display_peek( self, dataset ):
         try:
             return dataset.peek
@@ -386,6 +415,7 @@ class Scf( Binary ):
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
+
     def display_peek( self, dataset ):
         try:
             return dataset.peek
@@ -401,6 +431,7 @@ class Sff( Binary ):
 
     def __init__( self, **kwd ):
         Binary.__init__( self, **kwd )
+
     def sniff( self, filename ):
         # The first 4 bytes of any sff file is '.sff', and the file is binary. For details
         # about the format, see http://www.ncbi.nlm.nih.gov/Traces/trace.cgi?cmd=show&f=formats&m=doc&s=format
@@ -411,6 +442,7 @@ class Sff( Binary ):
             return False
         except:
             return False
+
     def set_peek( self, dataset, is_multi_byte=False ):
         if not dataset.dataset.purged:
             dataset.peek  = "Binary sff file"
@@ -418,6 +450,7 @@ class Sff( Binary ):
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
+
     def display_peek( self, dataset ):
         try:
             return dataset.peek
@@ -440,14 +473,17 @@ class BigWig(Binary):
         Binary.__init__( self, **kwd )
         self._magic = 0x888FFC26
         self._name = "BigWig"
+
     def _unpack( self, pattern, handle ):
         return struct.unpack( pattern, handle.read( struct.calcsize( pattern ) ) )
+
     def sniff( self, filename ):
         try:
             magic = self._unpack( "I", open( filename ) )
             return magic[0] == self._magic
         except:
             return False
+
     def set_peek( self, dataset, is_multi_byte=False ):
         if not dataset.dataset.purged:
             dataset.peek  = "Binary UCSC %s file" % self._name
@@ -455,6 +491,7 @@ class BigWig(Binary):
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
+
     def display_peek( self, dataset ):
         try:
             return dataset.peek
@@ -493,12 +530,14 @@ class TwoBit (Binary):
                 return True
         except IOError:
             return False
+
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
             dataset.peek = "Binary TwoBit format nucleotide file"
             dataset.blurb = data.nice_size(dataset.get_size())
         else:
             return super(TwoBit, self).set_peek(dataset, is_multi_byte)
+
     def display_peek(self, dataset):
         try:
             return dataset.peek
