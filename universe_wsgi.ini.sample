@@ -158,7 +158,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # Enable use of an in-memory registry with bi-directional relationships
 # between repositories (i.e., in addition to lists of dependencies for a
 # repository, keep an in-memory registry of dependent items for each repository.
-#manage_dependency_relationships = True
+#manage_dependency_relationships = False
 
 # XML config file that contains data table entries for the ToolDataTableManager. This file is manually
 # maintained by the Galaxy administrator.
