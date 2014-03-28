@@ -49,7 +49,7 @@ var LibraryListView = Backbone.View.extend({
 
         this.rowViews = {};
 
-        this.preferences = new LibraryPrefs();
+        this.preferences = new LibraryPrefs({id: 'global-lib-prefs'});
 
         this.collection = new mod_library_model.Libraries();
 
