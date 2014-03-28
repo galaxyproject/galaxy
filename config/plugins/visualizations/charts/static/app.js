@@ -13,6 +13,9 @@ return Backbone.View.extend(
     // initialize
     initialize: function(options)
     {
+        // deactivate all debugs outputs
+        window.console.debug = function() {};
+        
         // link options
         this.options = options;
     
@@ -55,7 +58,7 @@ return Backbone.View.extend(
             // show viewport
             this.go('viewer');
             
-            // redraw chart
+            // draw chart
             this.chart.trigger('redraw');
         }
     },

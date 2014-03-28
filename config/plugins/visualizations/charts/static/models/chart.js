@@ -19,15 +19,26 @@ return Backbone.Model.extend(
     },
     
     // initialize
-    initialize: function(options)
-    {
+    initialize: function(options) {
         this.groups = new Groups();
         this.settings = new Backbone.Model();
+        
+        // link status handler
+        var self = this;
+        this.on('change:state', function() {
+            // check status
+            var state = self.get('state');
+            if (self.ready(state)) {
+                self.trigger('ready');
+            }
+            
+            // log
+            console.debug(state + ' : ' + self.get('state_info'));
+        });
     },
     
     // reset
-    reset: function()
-    {
+    reset: function() {
         this.clear({silent: true}).set(this.defaults);
         this.groups.reset();
         this.settings.clear();
@@ -59,12 +70,25 @@ return Backbone.Model.extend(
         this.set('state', value);
     },
     
-    drawable: function() {
-        return (this.get('state') == 'ok') || (this.get('state') == 'failed') || (this.get('state') == 'initialized');
+    ready: function() {
+        return  (this.get('state') == 'ok') ||
+                (this.get('state') == 'failed') ||
+                (this.get('state') == 'initialized');
     },
     
     editable: function() {
-        return (this.get('state') == 'ok') || (this.get('state') == 'failed');
+        return  (this.get('state') == 'ok') ||
+                (this.get('state') == 'failed');
+    },
+    
+    deferred: function(callback) {
+        if (!this.ready()) {
+            this.once('ready', function() {
+                callback();
+            });
+        } else {
+            callback();
+        }
     }
 });
 

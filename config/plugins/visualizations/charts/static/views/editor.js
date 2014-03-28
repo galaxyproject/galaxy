@@ -16,6 +16,9 @@ return Backbone.View.extend(
     // initialize
     initialize: function(app, options)
     {
+        // link this
+        var self = this;
+        
         // link application
         this.app = app;
         
@@ -60,7 +63,6 @@ return Backbone.View.extend(
         //
         // table with chart types
         //
-        var self = this;
         this.table = new Table.View({
             header : false,
             onconfirm : function(type) {
@@ -314,11 +316,15 @@ return Backbone.View.extend(
             this._addGroupModel();
         }
         
-        // trigger redraw
-        this.chart.trigger('redraw');
-        
-        // save
-        this.app.storage.save();
+        // wait until chart is ready
+        var self = this;
+        this.chart.deferred(function() {
+            // save
+            self.app.storage.save();
+            
+            // trigger redraw
+            self.chart.trigger('redraw');
+        });
     }
 });
 

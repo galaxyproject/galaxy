@@ -20,13 +20,12 @@ return Backbone.View.extend(
         // create element
         this.setElement($(this._template()));
         
+        // create svg element
+        this._create_svg();
+        
         // events
         var self = this;
         this.chart.on('redraw', function() {
-            // create svg element
-            self._create_svg();
-        
-            // initialize
             self._draw(self.chart);
         });
         
@@ -49,18 +48,13 @@ return Backbone.View.extend(
             var state = self.chart.get('state');
             switch (state) {
                 case 'ok':
-                    self.chart.trigger('drawable');
                     $info.hide();
                     break;
                 case 'failed':
-                    self.chart.trigger('drawable');
                     $icon.addClass('fa fa-warning');
                     break;
-                case 'initialized':
-                    self.chart.trigger('drawable');
                 default:
                     $icon.addClass('fa fa-spinner fa-spin');
-                    break;
             }
         });
     },
@@ -94,18 +88,9 @@ return Backbone.View.extend(
         // link this
         var self = this;
         
-        // proceed once chart is drawable
-        if (!chart.drawable()) {
-            chart.off('drawable');
-            chart.on('drawable', function() {
-                self.chart.off('drawable');
-                if (chart.drawable()) {
-                    self._draw(chart);
-                }
-            });
-            return;
-        }
-        
+        // create svg element
+        this._create_svg();
+            
         // set chart state
         chart.state('wait', 'Please wait...');
 

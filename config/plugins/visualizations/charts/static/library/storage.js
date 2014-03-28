@@ -107,7 +107,7 @@ return Backbone.Model.extend(
         }
         
         // reset status
-        this.chart.state('ok', 'Loaded previously saved visualization.');
+        this.chart.state('ok', 'Loaded previously saved visualization...');
         
         // reset modified flag
         this.chart.set('modified', false);
