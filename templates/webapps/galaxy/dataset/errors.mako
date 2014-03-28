@@ -61,7 +61,7 @@
             <div class="toolFormTitle">Error Report</div>
             <div class="toolFormBody">
                 <form name="report_error" action="${h.url_for(controller='dataset', action='report_error')}" method="post" >
-                    <input type="hidden" name="id" value="${hda.id}" />
+                    <input type="hidden" name="id" value="${trans.security.encode_id( hda.id)}" />
                     <div class="form-row">
                         <label>Your email</label>
                         <input type="text" name="email" size="40" value="${user_email}" />

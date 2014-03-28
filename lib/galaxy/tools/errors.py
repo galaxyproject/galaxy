@@ -53,10 +53,12 @@ class ErrorReporter( object ):
          # Get the dataset
         sa_session = app.model.context
         if not isinstance( hda, model.HistoryDatasetAssociation ):
+            hda_id = hda
             try:
-                hda = sa_session.query( model.HistoryDatasetAssociation ).get( hda )
+                hda = sa_session.query( model.HistoryDatasetAssociation ).get( hda_id )
+                assert hda is not None, ValueError( "No HDA yet" )
             except:
-                hda = sa_session.query( model.HistoryDatasetAssociation ).get( app.security.decode_id( hda ) )
+                hda = sa_session.query( model.HistoryDatasetAssociation ).get( app.security.decode_id( hda_id ) )
         assert isinstance( hda, model.HistoryDatasetAssociation ), ValueError( "Bad value provided for HDA (%s)." % ( hda ) )
         self.hda = hda
         # Get the associated job
