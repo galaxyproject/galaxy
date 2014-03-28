@@ -1,5 +1,6 @@
 // dependencies
-define(['plugin/models/groups', 'mvc/visualization/visualization-model'], function(Groups) {
+define(['plugin/models/groups', 'plugin/library/deferred', 'mvc/visualization/visualization-model'],
+        function(Groups, Deferred) {
 
 
 // model
@@ -22,19 +23,7 @@ return Backbone.Model.extend(
     initialize: function(options) {
         this.groups = new Groups();
         this.settings = new Backbone.Model();
-        
-        // link status handler
-        var self = this;
-        this.on('change:state', function() {
-            // check status
-            var state = self.get('state');
-            if (self.ready(state)) {
-                self.trigger('ready');
-            }
-            
-            // log
-            console.debug(state + ' : ' + self.get('state_info'));
-        });
+        this.deferred = new Deferred();
     },
     
     // reset
@@ -66,29 +55,15 @@ return Backbone.Model.extend(
     },
     
     state: function(value, info) {
-        this.set('state_info', info);
+        // set status
         this.set('state', value);
-    },
-    
-    ready: function() {
-        return  (this.get('state') == 'ok') ||
-                (this.get('state') == 'failed') ||
-                (this.get('state') == 'initialized');
-    },
-    
-    editable: function() {
-        return  (this.get('state') == 'ok') ||
-                (this.get('state') == 'failed');
-    },
-    
-    deferred: function(callback) {
-        if (!this.ready()) {
-            this.once('ready', function() {
-                callback();
-            });
-        } else {
-            callback();
-        }
+        this.set('state_info', info);
+        
+        // trigger set state
+        this.trigger('set:state');
+        
+        // log status
+        console.debug('Chart:state() - ' + info + ' (' + value + ')');
     }
 });
 

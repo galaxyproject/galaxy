@@ -1,7 +1,9 @@
 // dependencies
-define(['mvc/ui/ui-modal', 'mvc/ui/ui-portlet', 'plugin/library/ui', 'utils/utils', 'plugin/library/jobs', 'plugin/library/datasets', 'plugin/library/storage',
+define(['mvc/ui/ui-modal', 'mvc/ui/ui-portlet', 'plugin/library/ui', 'utils/utils',
+        'plugin/library/jobs', 'plugin/library/datasets', 'plugin/library/storage',
         'plugin/views/viewer', 'plugin/views/editor',
-        'plugin/models/config', 'plugin/models/chart', 'plugin/charts/types'],
+        'plugin/models/config', 'plugin/models/chart',
+        'plugin/charts/types'],
         function(   Modal, Portlet, Ui, Utils, Jobs, Datasets, Storage,
                     ViewerView, EditorView,
                     Config, Chart, Types
@@ -14,7 +16,7 @@ return Backbone.View.extend(
     initialize: function(options)
     {
         // deactivate all debugs outputs
-        window.console.debug = function() {};
+        //window.console.debug = function() {};
         
         // link options
         this.options = options;
@@ -39,7 +41,7 @@ return Backbone.View.extend(
         this.jobs = new Jobs(this);
         this.datasets = new Datasets(this);
         this.storage = new Storage(this);
-
+        
         //
         // views
         //
@@ -59,7 +61,10 @@ return Backbone.View.extend(
             this.go('viewer');
             
             // draw chart
-            this.chart.trigger('redraw');
+            var self = this;
+            this.chart.deferred.execute(function() {
+                self.chart.trigger('redraw');
+            });
         }
     },
     

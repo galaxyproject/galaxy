@@ -11,7 +11,7 @@ return Backbone.View.extend(
     },
             
     // render
-    draw : function(chart, request_dictionary)
+    draw : function(process_id, chart, request_dictionary)
     {
         // configure request
         var index = 0;
@@ -24,7 +24,7 @@ return Backbone.View.extend(
         }
 
         var nvd3 = new NVD3(this.app, this.options);
-        nvd3.draw(nv.models.multiBarChart(), chart, request_dictionary);
+        nvd3.draw(process_id, nv.models.multiBarChart(), chart, request_dictionary);
     }
 });
 

@@ -318,7 +318,7 @@ return Backbone.View.extend(
         
         // wait until chart is ready
         var self = this;
-        this.chart.deferred(function() {
+        this.chart.deferred.execute(function() {
             // save
             self.app.storage.save();
             

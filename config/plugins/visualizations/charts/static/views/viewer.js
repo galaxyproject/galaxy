@@ -77,7 +77,7 @@ return Backbone.View.extend(
     // wait for chart to be ready
     _wait: function(chart, callback) {
         // get chart
-        if (chart.editable()) {
+        if (chart.deferred.ready()) {
             callback();
         } else {
             // show modal

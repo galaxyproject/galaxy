@@ -116,6 +116,9 @@ return Backbone.View.extend(
         // loading
         this.chart.state('wait', 'Loading metadata...');
         
+        // register process
+        var process_id = this.chart.deferred.register();
+        
         // get dataset
         this.app.datasets.request({id : dataset_id}, function(dataset) {
             // configure columns
@@ -139,7 +142,10 @@ return Backbone.View.extend(
             }
             
             // loading
-            self.chart.state('initialized', 'Metadata initialized...');
+            self.chart.state('wait', 'Metadata initialized...');
+            
+            // unregister
+            self.chart.deferred.done(process_id);
         });
     },
     

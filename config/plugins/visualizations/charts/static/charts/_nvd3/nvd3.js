@@ -11,7 +11,7 @@ return Backbone.View.extend(
     },
             
     // render
-    draw : function(nvd3_model, chart, request_dictionary, callback)
+    draw : function(process_id, nvd3_model, chart, request_dictionary, callback)
     {
         // request data
         var self = this;
@@ -66,6 +66,9 @@ return Backbone.View.extend(
                 
                 // set chart state
                 chart.state('ok', 'Chart has been drawn.');
+                
+                // unregister process
+                chart.deferred.done(process_id);
             });
         });
     }

@@ -11,7 +11,7 @@ return Backbone.View.extend(
     },
             
     // render
-    draw : function(chart, request_dictionary)
+    draw : function(process_id, chart, request_dictionary)
     {
         // request data
         var self = this;
@@ -45,6 +45,9 @@ return Backbone.View.extend(
                     
                     // set chart state
                     chart.set('state', 'ok');
+                    
+                    // unregister process
+                    chart.deferred.done(process_id);
                 });
             }
         });

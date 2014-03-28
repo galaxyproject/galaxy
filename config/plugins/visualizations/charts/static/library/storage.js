@@ -98,6 +98,9 @@ return Backbone.Model.extend(
         // main
         this.chart.set(chart_dict.attributes);
         
+        // set state
+        this.chart.state('ok', 'Loading saved visualization...');
+        
         // get settings
         this.chart.settings.set(chart_dict.settings);
         
@@ -105,9 +108,6 @@ return Backbone.Model.extend(
         for (var j in chart_dict.groups) {
             this.chart.groups.add(new Group(chart_dict.groups[j]));
         }
-        
-        // reset status
-        this.chart.state('ok', 'Loaded previously saved visualization...');
         
         // reset modified flag
         this.chart.set('modified', false);

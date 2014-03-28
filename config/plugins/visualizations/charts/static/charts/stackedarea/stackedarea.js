@@ -11,10 +11,10 @@ return Backbone.View.extend(
     },
             
     // render
-    draw : function(chart, request_dictionary)
+    draw : function(process_id, chart, request_dictionary)
     {
         var nvd3 = new NVD3(this.app, this.options);
-        nvd3.draw(nv.models.stackedAreaChart(), chart, request_dictionary, function(nvd3_model) {
+        nvd3.draw(process_id, nv.models.stackedAreaChart(), chart, request_dictionary, function(nvd3_model) {
             // make plot
             nvd3_model.x(function(d) { return d.x })
                       .y(function(d) { return d.y })

@@ -30,7 +30,7 @@ return Backbone.View.extend(
         });
         
         // link status handler
-        this.chart.on('change:state', function() {
+        this.chart.on('set:state', function() {
             // get info element
             var $info = self.$el.find('#info');
             
@@ -93,6 +93,9 @@ return Backbone.View.extend(
             
         // set chart state
         chart.state('wait', 'Please wait...');
+        
+        // register process
+        var process_id = chart.deferred.register();
 
         // identify chart type
         var chart_type = chart.get('type');
@@ -118,20 +121,24 @@ return Backbone.View.extend(
             if (chart_settings.execute) {
                 if (chart.get('dataset_id_job') == '') {
                     // submit job
-                    self.app.jobs.submit(chart, self._defaultSettingsString(chart), self._defaultRequestString(chart), function()  {
-                        // save
-                        this.app.storage.save();
+                    self.app.jobs.submit(chart, self._defaultSettingsString(chart), self._defaultRequestString(chart),
+                        function() {
+                            // save
+                            this.app.storage.save();
                         
-                        // draw
-                        view.draw(chart, self._defaultRequestDictionary(chart));
-                    });
+                            // draw
+                            view.draw(process_id, chart, self._defaultRequestDictionary(chart));
+                        },
+                        function() {
+                            chart.deferred.done(process_id);
+                        });
                 } else {
                     // load data into view
-                    view.draw(chart, self._defaultRequestDictionary(chart));
+                    view.draw(process_id, chart, self._defaultRequestDictionary(chart));
                 }
             } else {
                 // load data into view
-                view.draw(chart, self._defaultRequestDictionary(chart));
+                view.draw(process_id, chart, self._defaultRequestDictionary(chart));
             }
         });
     },

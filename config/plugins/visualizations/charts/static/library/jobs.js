@@ -27,11 +27,10 @@ return Backbone.Model.extend(
             // reset id
             chart.set('dataset_id_job', '');
         }
-        
     },
     
     // create job
-    submit: function(chart, settings_string, columns_string, callback) {
+    submit: function(chart, settings_string, columns_string, success, error) {
         // link this
         var self = this;
         
@@ -57,7 +56,7 @@ return Backbone.Model.extend(
         }
         
         // set chart state
-        chart.state('submit', 'Sending job request...');
+        chart.state('wait', 'Sending job request...');
         
         // post job
         Utils.request('POST', config.root + 'api/tools', data,
@@ -65,6 +64,9 @@ return Backbone.Model.extend(
             function(response) {
                 if (!response.outputs || response.outputs.length == 0) {
                     chart.state('failed', 'Job submission failed. No response.');
+                    
+                    // call error
+                    error && error();
                 } else {
                     // update galaxy history
                     self._refreshHdas();
@@ -73,7 +75,7 @@ return Backbone.Model.extend(
                     var job = response.outputs[0];
                     
                     // check dataset
-                    chart.state('queued', 'Job has been queued...');
+                    chart.state('wait', 'Job has been queued...');
                     
                     // backup resulting dataset id
                     chart.set('dataset_id_job', job.id);
@@ -82,14 +84,28 @@ return Backbone.Model.extend(
                     self._loop(job.id, function(job) {
                         switch (job.state) {
                             case 'ok':
-                                chart.state('success', 'Job completed successfully...');
-                                callback(job);
+                                // update state
+                                chart.state('wait', 'Job completed successfully...');
+                               
+                                // execute success
+                                success(job);
+                               
+                                // stop loop
                                 return true;
                             case 'error':
+                                // update state
                                 chart.state('failed', 'Job has failed. Please check the history for details.');
+                               
+                                // call error
+                                error && error();
+                               
+                                // stop loop
                                 return true;
                             case 'running':
-                                chart.state('running', 'Job is running...');
+                                // wait
+                                chart.state('wait', 'Job is running...');
+                               
+                                // continue loop
                                 return false;
                         }
                     });
@@ -101,7 +117,12 @@ return Backbone.Model.extend(
                 if (response && response.message && response.message.data && response.message.data.input) {
                     message = response.message.data.input + '.';
                 }
+                // update state
                 chart.state('failed', 'This visualization requires the R-kit. Please make sure it is installed. ' + message);
+                
+                // call error
+                error && error();
+                      
             }
         );
     },

@@ -36,8 +36,7 @@
 
             // get configuration
             var config = {
-                root    : '${root}',
-                debug   : false
+                root    : '${root}'
             };
             
             // link galaxy
