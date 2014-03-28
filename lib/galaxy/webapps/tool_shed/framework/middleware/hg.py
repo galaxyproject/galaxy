@@ -40,27 +40,30 @@ class Hg( object ):
 
     def __call__( self, environ, start_response ):
         cmd = self.__get_hg_command( **environ )
-        if cmd == 'changegroup':
-            # This is an hg clone from the command line.  When doing this, the following 5 commands, in order,
-            # will be retrieved from environ:
-            # between -> heads -> changegroup -> capabilities -> listkeys
-            #
-            # Increment the value of the times_downloaded column in the repository table for the cloned repository.
-            if 'PATH_INFO' in environ:
-                # Instantiate a database connection
-                engine = sqlalchemy.create_engine( self.db_url )
-                connection = engine.connect()
-                path_info = environ[ 'PATH_INFO' ].lstrip( '/' )
-                user_id, repository_name = self.__get_user_id_repository_name_from_path_info( connection, path_info )
-                sql_cmd = "SELECT times_downloaded FROM repository WHERE user_id = %d AND name = '%s'" % ( user_id, repository_name.lower() )
-                result_set = connection.execute( sql_cmd )
-                for row in result_set:
-                    # Should only be 1 row...
-                    times_downloaded = row[ 'times_downloaded' ]
-                times_downloaded += 1
-                sql_cmd = "UPDATE repository SET times_downloaded = %d WHERE user_id = %d AND name = '%s'" % ( times_downloaded, user_id, repository_name.lower() )
-                connection.execute( sql_cmd )
-                connection.close()
+        # The 'getbundle' command indicates that a mercurial client is getting a bundle of one or more changesets, indicating
+        # a clone or a pull.
+        if cmd == 'getbundle':
+            common, _ = environ[ 'HTTP_X_HGARG_1' ].split( '&' )
+            # The 'common' parameter indicates the full sha-1 hash of the changeset the client currently has checked out. If
+            # this is 0000000000000000000000000000000000000000, then the client is performing a fresh checkout. If it has any
+            # other value, the client is getting updates to an existing checkout.
+            if common == 'common=0000000000000000000000000000000000000000':
+                # Increment the value of the times_downloaded column in the repository table for the cloned repository.
+                if 'PATH_INFO' in environ:
+                    # Instantiate a database connection
+                    engine = sqlalchemy.create_engine( self.db_url )
+                    connection = engine.connect()
+                    path_info = environ[ 'PATH_INFO' ].lstrip( '/' )
+                    user_id, repository_name = self.__get_user_id_repository_name_from_path_info( connection, path_info )
+                    sql_cmd = "SELECT times_downloaded FROM repository WHERE user_id = %d AND name = '%s'" % ( user_id, repository_name.lower() )
+                    result_set = connection.execute( sql_cmd )
+                    for row in result_set:
+                        # Should only be 1 row...
+                        times_downloaded = row[ 'times_downloaded' ]
+                    times_downloaded += 1
+                    sql_cmd = "UPDATE repository SET times_downloaded = %d WHERE user_id = %d AND name = '%s'" % ( times_downloaded, user_id, repository_name.lower() )
+                    connection.execute( sql_cmd )
+                    connection.close()
         elif cmd in [ 'unbundle', 'pushkey' ]:
             # This is an hg push from the command line.  When doing this, the following commands, in order,
             # will be retrieved from environ (see the docs at http://mercurial.selenic.com/wiki/WireProtocol):
