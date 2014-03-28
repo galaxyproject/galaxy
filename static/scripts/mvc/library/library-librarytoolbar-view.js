@@ -23,15 +23,17 @@ var ToolbarView = Backbone.View.extend({
 
   delegate_modal: function(event){
     // probably should refactor to have this functionality in this view, not in the library view
-    galaxyLibraryview.show_library_modal(event);
+    libraryListView.show_library_modal(event);
   },
 
   // include or exclude deleted libraries from the view
   check_include_deleted: function(event){
     if (event.target.checked){
-        galaxyLibraryview.render( {'with_deleted': true} );
+        libraryListView.preferences.set({'with_deleted': true});
+        libraryListView.render();
     } else{
-        galaxyLibraryview.render({'with_deleted': false});
+        libraryListView.preferences.set({'with_deleted': false});
+        libraryListView.render();
     }
   },
 

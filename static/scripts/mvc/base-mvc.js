@@ -53,6 +53,7 @@ var LoggableMixin =  /** @lends LoggableMixin# */{
  */
 var SessionStorageModel = Backbone.Model.extend({
     initialize : function( initialAttrs ){
+        initialAttrs = initialAttrs || {};
         // create unique id if none provided
         initialAttrs.id = ( !_.isString( initialAttrs.id ) )?( _.uniqueId() ):( initialAttrs.id );
         this.id = initialAttrs.id;

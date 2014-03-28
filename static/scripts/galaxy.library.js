@@ -36,23 +36,19 @@ var LibraryRouter = Backbone.Router.extend({
 var GalaxyLibrary = Backbone.View.extend({
 
     initialize : function(){
-        toolbarView = new mod_librarytoolbar_view.ToolbarView();
-        galaxyLibraryview = new mod_librarylist_view.GalaxyLibraryview();
+        // toolbarView = new mod_librarytoolbar_view.ToolbarView();
+        toolbarView = null;
+        // libraryListView = new mod_librarylist_view.LibraryListView();
+        libraryListView = null;
         library_router = new LibraryRouter();
-        
+
         folderContentView = null;
 
         library_router.on('route:libraries', function() {
           // initialize and render the toolbar first
           toolbarView = new mod_librarytoolbar_view.ToolbarView();
           // initialize and render libraries second
-          galaxyLibraryview = new mod_librarylist_view.GalaxyLibraryview();
-        });
-
-        library_router.on('route:sort_libraries', function(sort_by, order) {
-          // sort libraries list
-          galaxyLibraryview.sortLibraries(sort_by, order);
-          galaxyLibraryview.render();
+          libraryListView = new mod_librarylist_view.LibraryListView();
         });
 
         library_router.on('route:folder_content', function(id) {

@@ -3,7 +3,19 @@ define([], function() {
 
     // LIBRARY
     var Library = Backbone.Model.extend({
-      urlRoot: '/api/libraries/'
+      urlRoot: '/api/libraries/',
+
+      /** based on show_deleted
+       *      would this lib show in the list of lib's?
+       *  @param {Boolean} show_deleted are we showing deleted libraries?
+       */
+      isVisible : function(show_deleted){
+          var isVisible = true;
+          if( (!show_delete) && (this.get('deleted')) ){
+              isVisible = false;
+          }
+          return isVisible;
+      }
     });
 
     // FOLDER AS MODEL
@@ -19,8 +31,25 @@ define([], function() {
 
       sort_key: 'name', // default
 
-      sort_order: null // default
+      sort_order: null, // default
 
+      initialize : function(options){
+          options = options || {};
+      },
+
+      /** Get every 'shown' library in this collection based on deleted filter
+       *  @param {Boolean} show_deleted are we showing deleted libraries?
+       *  @returns array of library models
+       */
+      getVisible : function(show_deleted, filters){
+          filters = filters || [];
+          // always filter by show deleted first
+          var filteredLibraries = new Libraries( this.filter( function( item ){
+              return item.isVisible(show_deleted);
+          }));
+
+          return filteredLibraries;
+      }
     });
 
     // ITEM

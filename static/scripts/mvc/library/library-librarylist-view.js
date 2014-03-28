@@ -1,42 +1,61 @@
 // dependencies
 define([
-    "galaxy.masthead", 
+    "galaxy.masthead",
+    "mvc/base-mvc", 
     "utils/utils",
     "libs/toastr",
-    "mvc/library/library-model"], 
-function(mod_masthead, 
+    "mvc/library/library-model",
+    "mvc/library/library-libraryrow-view"], 
+function(mod_masthead,
+         mod_baseMVC, 
          mod_utils, 
          mod_toastr,
-         mod_library_model) {
+         mod_library_model,
+         mod_library_libraryrow_view) {
+
+// ============================================================================
+/** session storage for library preferences */
+var LibraryPrefs = mod_baseMVC.SessionStorageModel.extend({
+    defaults : {
+        with_deleted : false
+    }
+});
 
 // galaxy library view
-var GalaxyLibraryview = Backbone.View.extend({
+var LibraryListView = Backbone.View.extend({
     el: '#libraries_element',
 
     events: {
-        'click .edit_library_btn'   : 'edit_button_event',
-        'click .save_library_btn'   : 'save_library_modification',
-        'click .cancel_library_btn' : 'cancel_library_modification',
-        'click .delete_library_btn' : 'delete_library',
-        'click .undelete_library_btn' : 'undelete_library'
+        'click .edit_library_btn'       : 'edit_button_event',
+        'click .save_library_btn'       : 'save_library_modification',
+        'click .cancel_library_btn'     : 'cancel_library_modification',
+        'click .delete_library_btn'     : 'delete_library',
+        'click .undelete_library_btn'   : 'undelete_library',
+        'click .sort-libraries-link'    : 'sort_clicked'
     },
 
     modal: null,
 
     collection: null,
 
+    preferences: null,
+
+    // map of library model ids to library views = cache
+    rowViews: {},
+
     // initialize
     initialize : function(){
         var viewContext = this;
+
+        this.rowViews = {};
+
+        this.preferences = new LibraryPrefs();
+
         this.collection = new mod_library_model.Libraries();
 
         this.collection.fetch({
           success: function(libraries){
             viewContext.render();
-            // initialize the library tooltips
-            $("#center [data-toggle]").tooltip();
-            // modification of upper DOM element to show scrollbars due to the #center element inheritance
-            $("#center").css('overflow','auto');
           },
           error: function(model, response){
             mod_toastr.error('An error occured. Please try again.');
@@ -50,7 +69,7 @@ var GalaxyLibraryview = Backbone.View.extend({
     render: function (options) {
         var template = this.templateLibraryList();
         var libraries_to_render = null;
-        var include_deleted = false;
+        var include_deleted = this.preferences.get('with_deleted');
         var models = null
         if (typeof options !== 'undefined'){
             include_deleted = typeof options.with_deleted !== 'undefined' ? options.with_deleted : false;
@@ -69,10 +88,52 @@ var GalaxyLibraryview = Backbone.View.extend({
             libraries_to_render = [];
             }
 
-        this.$el.html(template({libraries: libraries_to_render, order: this.collection.sort_order}));
+        this.$el.html(template({length: libraries_to_render.length, order: this.collection.sort_order}));
+
+        this.renderRows(libraries_to_render);
+        // initialize the library tooltips
+        $("#center [data-toggle]").tooltip();
+        // modification of upper DOM element to show scrollbars due to the #center element inheritance
+        $("#center").css('overflow','auto');
     },
 
-    /** Sorts the underlying collection according to the parameters received through URL. 
+    renderRows: function(libraries_to_render){
+        for (var i = 0; i < libraries_to_render.length; i++) {
+          var library = libraries_to_render[i];
+          var cachedView = _.findWhere(this.rowViews, {id: library.get('id')});
+          if (cachedView !== undefined){
+            this.$el.find('#library_list_body').append(cachedView.el);
+          } else {
+            var rowView = new mod_library_libraryrow_view.LibraryRowView(library);
+            this.$el.find('#library_list_body').append(rowView.el);
+            // save new rowView to cache
+            this.rowViews[library.get('id')] = rowView; 
+          }
+        };
+    },
+
+    /** Handle the user toggling the deleted visibility by:
+     *      (1) storing the new value in the persistent storage
+     *      (2) re-rendering the list
+     * @returns {Boolean} new show_hidden setting
+     */
+    // toggleShowHidden : function( show ){
+    //     show = ( show !== undefined )?( show ):( !this.storage.get( 'show_hidden' ) );
+    //     this.storage.set( 'show_hidden', show );
+    //     this.renderRows();
+    //     return this.storage.get( 'show_hidden' );
+    // },
+    
+    sort_clicked : function(){
+        if (this.collection.sort_order == 'asc'){
+            this.sortLibraries('name','desc');
+        } else {
+            this.sortLibraries('name','asc');
+        }
+        this.render();
+    },
+
+    /** Sorts the underlying collection according to the parameters received. 
         Currently supports only sorting by name. */
     sortLibraries: function(sort_by, order){
         if (sort_by === 'name'){
@@ -104,31 +165,18 @@ var GalaxyLibraryview = Backbone.View.extend({
         tmpl_array = [];
 
         tmpl_array.push('<div class="library_container table-responsive">');
-        tmpl_array.push('<% if(libraries.length === 0) { %>');
+        tmpl_array.push('<% if(length === 0) { %>');
         tmpl_array.push("<div>I see no libraries. Why don't you create one?</div>");
         tmpl_array.push('<% } else{ %>');
         tmpl_array.push('<table class="grid table table-condensed">');
         tmpl_array.push('   <thead>');
-        tmpl_array.push('     <th style="width:30%;"><a title="Click to reverse order" href="#sort/name/<% if(order==="desc"||order===null){print("asc")}else{print("desc")} %>">name</a> <span title="Sorted alphabetically" class="fa fa-sort-alpha-<%- order %>"></span></th>');
+        tmpl_array.push('     <th style="width:30%;"><a class="sort-libraries-link" title="Click to reverse order" href="#">name</a> <span title="Sorted alphabetically" class="fa fa-sort-alpha-<%- order %>"></span></th>');
         tmpl_array.push('     <th style="width:22%;">description</th>');
         tmpl_array.push('     <th style="width:22%;">synopsis</th> ');
         tmpl_array.push('     <th style="width:26%;"></th> ');
         tmpl_array.push('   </thead>');
-        tmpl_array.push('   <tbody>');
-        tmpl_array.push('       <% _.each(libraries, function(library) { %>');
-        tmpl_array.push('           <tr class="<% if(library.get("deleted") === true){print("active");}%>" data-id="<%- library.get("id") %>">');
-        tmpl_array.push('               <td><span data-toggle="tooltip" data-placement="top" title="Item is public" class="fa fa-globe fa-lg"></span> <a href="#folders/<%- library.get("root_folder_id") %>"><%- library.get("name") %></a></td>');
-        tmpl_array.push('               <td><%= _.escape(library.get("description")) %></td>');
-        tmpl_array.push('               <td><%= _.escape(library.get("synopsis")) %></td>');
-        tmpl_array.push('               <td class="right-center">');
-        tmpl_array.push('                   <button data-toggle="tooltip" data-placement="top" title="Modify library" class="primary-button btn-xs edit_library_btn" type="button"><span class="fa fa-pencil"></span></button>');
-        tmpl_array.push('                   <button data-toggle="tooltip" data-placement="top" title="Save changes" class="primary-button btn-xs save_library_btn" type="button" style="display:none;"><span class="fa fa-floppy-o"> Save</span></button>');
-        tmpl_array.push('                   <button data-toggle="tooltip" data-placement="top" title="Discard changes" class="primary-button btn-xs cancel_library_btn" type="button" style="display:none;"><span class="fa fa-times"> Cancel</span></button>');
-        tmpl_array.push('                   <button data-toggle="tooltip" data-placement="top" title="Delete library (can be undeleted later)" class="primary-button btn-xs delete_library_btn" type="button" style="display:none;"><span class="fa fa-trash-o"> Delete</span></button>');
-        tmpl_array.push('                   <button data-toggle="tooltip" data-placement="top" title="Undelete library" class="primary-button btn-xs undelete_library_btn" type="button" style="display:none;"><span class="fa fa-unlock"> Undelete</span></button>');
-        tmpl_array.push('               </td>');
-        tmpl_array.push('           </tr>');
-        tmpl_array.push('       <% }); %>');
+        tmpl_array.push('   <tbody id="library_list_body">');
+        // library item views will attach here
         tmpl_array.push('   </tbody>');
         tmpl_array.push('</table>');
         tmpl_array.push('<% }%>');
@@ -202,11 +250,15 @@ var GalaxyLibraryview = Backbone.View.extend({
     toggle_library_modification: function($library_row){
         var library = this.collection.get($library_row.data('id'));
 
+        $library_row.find('.public_lib_ico').toggle();
+        $library_row.find('.deleted_lib_ico').toggle();
         $library_row.find('.edit_library_btn').toggle();
+        $library_row.find('.upload_library_btn').toggle();
+        $library_row.find('.permission_library_btn').toggle();
         $library_row.find('.save_library_btn').toggle();
         $library_row.find('.cancel_library_btn').toggle();
         if (library.get('deleted')){
-            $library_row.find('.undelete_library_btn').toggle();
+            // $library_row.find('.undelete_library_btn').toggle();
         } else {
             $library_row.find('.delete_library_btn').toggle();
         }
@@ -369,7 +421,7 @@ var GalaxyLibraryview = Backbone.View.extend({
 
 // return
 return {
-    GalaxyLibraryview: GalaxyLibraryview
+    LibraryListView: LibraryListView
 };
 
 });
