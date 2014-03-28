@@ -56,7 +56,7 @@
 			$(".errormessage").html(message)
 		} else {
 			var div = document.createElement("div");
-			div.className = "errormessage"
+			div.className = "errormessage";
 			div.innerHTML = message;
 			document.body.insertBefore(div, document.body.firstChild);
 			}
@@ -78,7 +78,7 @@
 		    var validForm = true;
 		    
 		    var email = $('#email_input').val();
-		    var name = $('#name_input').val()
+		    var name = $('#name_input').val();
 		    if (email.length > 255){ renderError(error_text_email_long); validForm = false;}
 		    else if (!validateString(email,"email")){ renderError(error_text_email); validForm = false;}
 		    else if (!($('#password_input').val() === $('#password_check_input').val())){ renderError(error_text_password_match); validForm = false;}
