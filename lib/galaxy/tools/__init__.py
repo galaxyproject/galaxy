@@ -2841,7 +2841,7 @@ class Tool( object, Dictifiable ):
                     if outdata == dataset:
                         continue
                     new_data = primary_data.copy()
-                    dataset.history.add( new_data )
+                    dataset.history.add_dataset( new_data )
                     self.sa_session.add( new_data )
                     self.sa_session.flush()
         return primary_datasets
