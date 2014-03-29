@@ -1,7 +1,7 @@
 <tool id="multi_output" name="Multi_Output" description="multi_output" force_history_refresh="True" version="0.1.0">
   <command>
     echo "Hello" > $report;
-    echo "World" > '${__new_file_path__}/primary_${report.id}_moo_visible_?'
+    echo "World Contents" > '${__new_file_path__}/primary_${report.id}_world_visible_?'
   </command>
   <inputs>
     <param name="input" type="integer" value="7" />
@@ -16,6 +16,11 @@
         <assert_contents>
           <has_line line="Hello" />
         </assert_contents>
+        <discovered_dataset designation="world">
+          <assert_contents>
+            <has_line line="World Contents" />
+          </assert_contents>
+        </discovered_dataset>
       </output>
     </test>
   </tests>
