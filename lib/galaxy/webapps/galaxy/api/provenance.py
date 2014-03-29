@@ -46,6 +46,7 @@ class BaseProvenanceController( BaseAPIController, UsesHistoryMixin ):
             return {
                 "id": trans.security.encode_id(item.id),
                 "uuid": ( lambda uuid: str( uuid ) if uuid else None )( item.dataset.uuid),
+                "job_id": trans.security.encode_id( job.id ),
                 "tool_id": job.tool_id,
                 "parameters": self._get_job_record(trans, job, follow),
                 "stderr": job.stderr,
