@@ -1,11 +1,14 @@
 """ Code allowing tools to define extra files associated with an output datset.
 """
 import os
+import re
 import glob
 import json
 
 
 from galaxy import jobs
+
+DEFAULT_EXTRA_FILENAME_PATTERN = re.compile(r"primary_(?P<id>\d+)_(?P<designation>[^_]+)_(?P<visible>[^_]+)_(?P<ext>[^_]+)(_(?P<dbkey>[^_]+))?")
 
 
 def collect_primary_datatasets( tool, output, job_working_directory ):
@@ -34,19 +37,14 @@ def collect_primary_datatasets( tool, output, job_working_directory ):
         for filename in filenames:
             if not name in primary_datasets:
                 primary_datasets[name] = {}
-            fields = os.path.basename(filename).split("_")
-            fields.pop(0)
-            parent_id = int(fields.pop(0))
-            designation = fields.pop(0)
-            visible = fields.pop(0).lower()
-            if visible == "visible":
-                visible = True
-            else:
-                visible = False
-            ext = fields.pop(0).lower()
-            dbkey = outdata.dbkey
-            if fields:
-                dbkey = fields[ 0 ]
+            fields_match = DEFAULT_EXTRA_FILENAME_PATTERN.match( os.path.basename(filename) )
+            if not fields_match:
+                # Before I guess pop() would just have thrown an IndexError
+                raise Exception( "Problem parsing metadata fields for file %s" % filename )
+            designation = fields_match.group( "designation" )
+            visible = fields_match.group( "visible" ).lower() == "visible"
+            ext = fields_match.group( "ext" ).lower()
+            dbkey = fields_match.group( "dbkey" ) or outdata.dbkey
             # Create new primary dataset
             primary_data = app.model.HistoryDatasetAssociation( extension=ext,
                                                                 designation=designation,
