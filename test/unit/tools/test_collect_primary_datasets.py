@@ -5,6 +5,8 @@ import unittest
 import tools_support
 
 from galaxy import model
+from galaxy import util
+from galaxy.tools.parameters import output_collect
 
 DEFAULT_TOOL_OUTPUT = "out1"
 DEFAULT_EXTRA_NAME = "test1"
@@ -114,6 +116,75 @@ class CollectPrimaryDatasetsTestCase( unittest.TestCase, tools_support.UsesApp, 
         extra_job_assoc = filter( lambda job_assoc: job_assoc.name.startswith( "__" ), self.job.output_datasets )[ 0 ]
         assert extra_job_assoc.name == "__new_primary_file_out1|test1__"
 
+    def test_pattern_override_designation( self ):
+        self._replace_output_collectors( '''<output><discover_datasets pattern="__designation__" directory="subdir" ext="txt" /></output>''' )
+        self._setup_extra_file( subdir="subdir", filename="foo.txt" )
+        primary_outputs = self._collect( )[ DEFAULT_TOOL_OUTPUT ]
+        assert len( primary_outputs ) == 1
+        created_hda = primary_outputs.values()[ 0 ]
+        assert "foo.txt" in created_hda.name
+        assert created_hda.ext == "txt"
+
+    def test_name_and_ext_pattern( self ):
+        self._replace_output_collectors( '''<output><discover_datasets pattern="__name_and_ext__" directory="subdir" /></output>''' )
+        self._setup_extra_file( subdir="subdir", filename="foo1.txt" )
+        self._setup_extra_file( subdir="subdir", filename="foo2.tabular" )
+        primary_outputs = self._collect( )[ DEFAULT_TOOL_OUTPUT ]
+        assert len( primary_outputs ) == 2
+        assert primary_outputs[ "foo1" ].ext == "txt"
+        assert primary_outputs[ "foo2" ].ext == "tabular"
+
+    def test_custom_pattern( self ):
+        # Hypothetical oral metagenomic classifier that populates a directory
+        # of files based on name and genome. Use custom regex pattern to grab
+        # and classify these files.
+        self._replace_output_collectors( '''<output><discover_datasets pattern="(?P&lt;designation&gt;.*)__(?P&lt;dbkey&gt;.*).fasta" directory="genome_breakdown" ext="fasta" /></output>''' )
+        self._setup_extra_file( subdir="genome_breakdown", filename="samp1__hg19.fasta" )
+        self._setup_extra_file( subdir="genome_breakdown", filename="samp2__lactLact.fasta" )
+        self._setup_extra_file( subdir="genome_breakdown", filename="samp3__hg19.fasta" )
+        self._setup_extra_file( subdir="genome_breakdown", filename="samp4__lactPlan.fasta" )
+        self._setup_extra_file( subdir="genome_breakdown", filename="samp5__fusoNucl.fasta" )
+
+        # Put a file in directory we don't care about, just to make sure
+        # it doesn't get picked up by pattern.
+        self._setup_extra_file( subdir="genome_breakdown", filename="overview.txt" )
+
+        primary_outputs = self._collect( )[ DEFAULT_TOOL_OUTPUT ]
+        assert len( primary_outputs ) == 5
+        genomes = dict( samp1="hg19", samp2="lactLact", samp3="hg19", samp4="lactPlan", samp5="fusoNucl" )
+        for key, hda in primary_outputs.iteritems():
+            assert hda.dbkey == genomes[ key ]
+
+    def test_name_versus_designation( self ):
+        """ This test demonstrates the difference between name and desgination
+        in grouping patterns and named patterns such as __designation__,
+        __name__, __designation_and_ext__, and __name_and_ext__.
+        """
+        self._replace_output_collectors( '''<output>
+            <discover_datasets pattern="__name_and_ext__" directory="subdir_for_name_discovery" />
+            <discover_datasets pattern="__designation_and_ext__" directory="subdir_for_designation_discovery" />
+        </output>''')
+        self._setup_extra_file( subdir="subdir_for_name_discovery", filename="example1.txt" )
+        self._setup_extra_file( subdir="subdir_for_designation_discovery", filename="example2.txt" )
+        primary_outputs = self._collect( )[ DEFAULT_TOOL_OUTPUT ]
+        name_output = primary_outputs[ "example1" ]
+        designation_output = primary_outputs[ "example2" ]
+        # While name is also used for designation, designation is not the name -
+        # it is used in the calculation of the name however...
+        assert name_output.name == "example1"
+        assert designation_output.name == "%s (%s)" % ( self.hda.name, "example2" )
+
+    def test_cannot_read_files_outside_job_directory( self ):
+        self._replace_output_collectors( '''<output>
+            <discover_datasets pattern="__name_and_ext__" directory="../../secrets" />
+        </output>''')
+        exception_thrown = False
+        try:
+            self._collect( )
+        except Exception:
+            exception_thrown = True
+        assert exception_thrown
+
     def _collect_default_extra( self, **kwargs ):
         return self._collect( **kwargs )[ DEFAULT_TOOL_OUTPUT ][ DEFAULT_EXTRA_NAME ]
 
@@ -121,6 +192,12 @@ class CollectPrimaryDatasetsTestCase( unittest.TestCase, tools_support.UsesApp, 
         if not job_working_directory:
             job_working_directory = self.test_directory
         return self.tool.collect_primary_datasets( self.outputs, job_working_directory )
+
+    def _replace_output_collectors( self, xml_str ):
+        # Rewrite tool as if it had been created with output containing
+        # supplied dataset_collector elem.
+        elem = util.parse_xml_string( xml_str )
+        self.tool.outputs[ DEFAULT_TOOL_OUTPUT ].dataset_collectors = output_collect.dataset_collectors_from_elem( elem )
 
     def _append_job_json( self, object, output_path=None, line_type="new_primary_dataset" ):
         object[ "type" ] = line_type
@@ -133,7 +210,8 @@ class CollectPrimaryDatasetsTestCase( unittest.TestCase, tools_support.UsesApp, 
 
     def _setup_extra_file( self, **kwargs ):
         path = kwargs.get( "path", None )
-        if not path:
+        filename = kwargs.get( "filename", None )
+        if not path and not filename:
             name = kwargs.get( "name", DEFAULT_EXTRA_NAME )
             visible = kwargs.get( "visible", "visible" )
             ext = kwargs.get( "ext", "data" )
@@ -142,6 +220,13 @@ class CollectPrimaryDatasetsTestCase( unittest.TestCase, tools_support.UsesApp, 
             path = os.path.join( directory, "primary_%s_%s_%s_%s" % template_args )
             if "dbkey" in kwargs:
                 path = "%s_%s" % ( path, kwargs[ "dbkey" ] )
+        if not path:
+            assert filename
+            subdir = kwargs.get( "subdir", "." )
+            path = os.path.join( self.test_directory, subdir, filename )
+        directory = os.path.dirname( path )
+        if not os.path.exists( directory ):
+            os.makedirs( directory )
         contents = kwargs.get( "contents", "test contents" )
         open( path, "w" ).write( contents )
         return path

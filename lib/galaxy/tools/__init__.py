@@ -1413,6 +1413,7 @@ class Tool( object, Dictifiable ):
             output.hidden = string_as_bool( data_elem.get("hidden", "") )
             output.tool = self
             output.actions = ToolOutputActionGroup( output, data_elem.find( 'actions' ) )
+            output.dataset_collectors = output_collect.dataset_collectors_from_elem( data_elem )
             self.outputs[ output.name ] = output
 
     # TODO: Include the tool's name in any parsing warnings.

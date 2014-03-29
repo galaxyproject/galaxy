@@ -1,0 +1,43 @@
+<tool id="multi_output_configured" name="Multi_Output_Configured" description="multi_output_configured" force_history_refresh="True" version="0.1.0">
+  <command>
+    echo "Hello" > $report;
+    mkdir subdir1;
+    echo "This" > subdir1/this.txt;
+    echo "That" > subdir1/that.txt;
+    mkdir subdir2;
+    echo "1" > subdir2/CUSTOM_1.txt;
+    echo "2" > subdir2/CUSTOM_2.tabular;
+    echo "3" > subdir2/CUSTOM_3.txt;
+  </command>
+  <inputs>
+    <param name="input" type="integer" value="7" />
+  </inputs>
+  <outputs>
+    <data format="txt" name="report">
+      <discover_datasets pattern="__designation_and_ext__" directory="subdir1" />
+      <discover_datasets pattern="CUSTOM_(?P&lt;designation&gt;.+)\.(?P&lt;ext&gt;.+)" directory="subdir2" />
+    </data>
+  </outputs>
+  <tests>
+    <test>
+      <param name="input" value="7" />
+      <output name="report">
+        <assert_contents>
+          <has_line line="Hello" />
+        </assert_contents>
+        <discovered_dataset designation="this" ftype="txt">
+          <assert_contents><has_line line="This" /></assert_contents>
+        </discovered_dataset>
+        <discovered_dataset designation="that" ftype="txt">
+          <assert_contents><has_line line="That" /></assert_contents>
+        </discovered_dataset>
+        <discovered_dataset designation="1" ftype="txt">
+          <assert_contents><has_line line="1" /></assert_contents>
+        </discovered_dataset>
+        <discovered_dataset designation="2" ftype="tabular">
+          <assert_contents><has_line line="2" /></assert_contents>
+        </discovered_dataset>
+      </output>
+    </test>
+  </tests>
+</tool>
