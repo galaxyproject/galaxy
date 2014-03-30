@@ -313,6 +313,76 @@ class RepositoryGrid( grids.Grid ):
                                .outerjoin( model.Category.table )
 
 
+class CertifiedLevelOneRepositoryGrid( RepositoryGrid ):
+    columns = [ c for c in RepositoryGrid.columns ]
+
+    def build_initial_query( self, trans, **kwd ):
+        clause_list = []
+        for repository in trans.sa_session.query( model.Repository ) \
+                                          .filter( and_( model.Repository.table.c.deleted == False,
+                                                         model.Repository.table.c.deprecated == False ) ):
+            repo = hg.repository( suc.get_configured_ui(), repository.repo_path( trans.app ) )
+            # Get the list of latest installable changeset revision for each repository since that is all
+            # that is currently configured for testing.
+            if repository.type in [ rt_util.REPOSITORY_SUITE_DEFINITION, rt_util.TOOL_DEPENDENCY_DEFINITION ]:
+                # We can use the changelog tip.
+                latest_changeset_revision = str( repo.changectx( repo.changelog.tip() ) )
+            else:
+                latest_changeset_revision = suc.get_latest_downloadable_changeset_revision( trans, repository, repo )
+            if latest_changeset_revision not in [ None, suc.INITIAL_CHANGELOG_HASH ]:
+                encoded_repository_id = trans.security.encode_id( repository.id )
+                repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans,
+                                                                                         encoded_repository_id,
+                                                                                         latest_changeset_revision )
+                # Filter out repository revisions that have not been tested.
+                if repository_metadata.time_last_tested is not None and repository_metadata.tool_test_results is not None:
+                    if repository.type in [ rt_util.REPOSITORY_SUITE_DEFINITION, rt_util.TOOL_DEPENDENCY_DEFINITION ]:
+                        # Look in the tool_test_results dictionary for installation errors.
+                        try:
+                            tool_test_results_dict = repository_metadata.tool_test_results[ -1 ]
+                        except Exception, e:
+                            # The repository is not certified.
+                            continue
+                        if 'installation_errors' in tool_test_results_dict:
+                            continue
+                        # The revision is level 1 certified
+                        clause_list.append( "%s=%d and %s='%s'" % ( model.RepositoryMetadata.table.c.repository_id,
+                                                                    repository.id,
+                                                                    model.RepositoryMetadata.table.c.changeset_revision,
+                                                                    changeset_revision ) )
+                else:
+                    # We have an unrestricted repository.
+                    if latest_changeset_revision.includes_tools:
+                        if latest_changeset_revision.tools_functionally_correct:
+                            # The revision is level 1 certified
+                            clause_list.append( "%s=%d and %s='%s'" % ( model.RepositoryMetadata.table.c.repository_id,
+                                                                        repository.id,
+                                                                        model.RepositoryMetadata.table.c.changeset_revision,
+                                                                        changeset_revision ) )
+                    else:
+                        # Look in the tool_test_results dictionary for installation errors.
+                        try:
+                            tool_test_results_dict = repository_metadata.tool_test_results[ -1 ]
+                        except Exception, e:
+                            # The repository is not certified.
+                            continue
+                        if 'installation_errors' in tool_test_results_dict:
+                            continue
+                        # The revision is level 1 certified
+                        clause_list.append( "%s=%d and %s='%s'" % ( model.RepositoryMetadata.table.c.repository_id,
+                                                                    repository.id,
+                                                                    model.RepositoryMetadata.table.c.changeset_revision,
+                                                                    changeset_revision ) )
+        return trans.sa_session.query( model.Repository ) \
+                               .filter( and_( model.Repository.table.c.deleted == False,
+                                              model.Repository.table.c.deprecated == False ) ) \
+                               .join( model.RepositoryMetadata.table ) \
+                               .filter( or_( *clause_list ) ) \
+                               .join( model.User.table ) \
+                               .outerjoin( model.RepositoryCategoryAssociation.table ) \
+                               .outerjoin( model.Category.table )
+
+
 class EmailAlertsRepositoryGrid( RepositoryGrid ):
     columns = [
         RepositoryGrid.NameColumn( "Name",
