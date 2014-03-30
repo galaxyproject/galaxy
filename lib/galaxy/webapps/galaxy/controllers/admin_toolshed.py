@@ -405,10 +405,6 @@ class AdminToolshed( AdminGalaxy ):
         repo_information_dict = json.from_json_string( raw_text )
         return repo_information_dict
 
-    def get_versions_of_tool( self, app, guid ):
-        tool_version = tool_util.get_tool_version( app, guid )
-        return tool_version.get_version_ids( app, reverse=True )
-
     @web.expose
     @web.require_admin
     def import_workflow( self, trans, workflow_name, repository_id, **kwd ):
@@ -1973,7 +1969,8 @@ class AdminToolshed( AdminGalaxy ):
                         tool_config = os.path.join( shed_config_dict.get( 'tool_path' ), tool_config )
                     tool = trans.app.toolbox.load_tool( os.path.abspath( tool_config ), guid=tool_metadata[ 'guid' ] )
                     if tool:
-                        tool_lineage = self.get_versions_of_tool( trans.app, tool.id )
+                        tool_version = tool_util.get_tool_version( trans.app, str( tool.id ) )
+                        tool_lineage = tool_version.get_version_ids( trans.app, reverse=True )
                     break
         return trans.fill_template( "/admin/tool_shed_repository/view_tool_metadata.mako",
                                     repository=repository,

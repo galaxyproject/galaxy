@@ -63,7 +63,9 @@ from galaxy.web import url_for
 from galaxy.web.form_builder import SelectField
 from galaxy.model.item_attrs import Dictifiable
 from galaxy.model import Workflow
-from tool_shed.util import shed_util_common
+from tool_shed.util import common_util
+from tool_shed.util import encoding_util
+from tool_shed.util import shed_util_common as suc
 from .loader import load_tool, template_macro_params
 from .wrappers import (
     ToolParameterValueWrapper,
@@ -227,9 +229,10 @@ class ToolBox( object, Dictifiable ):
                 return shed_config_dict
         return default
 
-    def __add_tool_to_tool_panel( self, tool_id, panel_component, section=False ):
+    def __add_tool_to_tool_panel( self, tool, panel_component, section=False ):
         # See if a version of this tool is already loaded into the tool panel.  The value of panel_component
         # will be a ToolSection (if the value of section=True) or self.tool_panel (if section=False).
+        tool_id = str( tool.id )
         tool = self.tools_by_id[ tool_id ]
         if section:
             panel_dict = panel_component.elems
@@ -244,7 +247,14 @@ class ToolBox( object, Dictifiable ):
                 if loaded_version_key in panel_dict:
                     already_loaded = True
                     break
-        if not already_loaded:
+        if already_loaded:
+            if tool.lineage_ids.index( tool_id ) > tool.lineage_ids.index( lineage_id ):
+                key = 'tool_%s' % tool.id
+                index = panel_dict.keys().index( loaded_version_key )
+                del panel_dict[ loaded_version_key ]
+                panel_dict.insert( index, key, tool )
+                log.debug( "Loaded tool id: %s, version: %s into tool panel." % ( tool.id, tool.version ) )
+        else:
             inserted = False
             key = 'tool_%s' % tool.id
             # The value of panel_component is the in-memory tool panel dictionary.
@@ -253,22 +263,62 @@ class ToolBox( object, Dictifiable ):
                     panel_dict.insert( index, key, tool )
                     inserted = True
             if not inserted:
-                # If the tool is not defined in integrated_tool_panel.xml, append it to the tool panel.
-                panel_dict[ key ] = tool
-            log.debug( "Loaded tool id: %s, version: %s into tool panel." % ( tool.id, tool.version ) )
-        elif tool.lineage_ids.index( tool_id ) > tool.lineage_ids.index( lineage_id ):
-            key = 'tool_%s' % tool.id
-            index = panel_dict.keys().index( loaded_version_key )
-            del panel_dict[ loaded_version_key ]
-            panel_dict.insert( index, key, tool )
-            log.debug( "Loaded tool id: %s, version: %s into tool panel." % ( tool.id, tool.version ) )
+                if tool.guid is None or \
+                    tool.tool_shed is None or \
+                    tool.repository_name is None or \
+                    tool.repository_owner is None or \
+                    tool.installed_changeset_revision is None:
+                    # We have a tool that was not installed from the Tool Shed, but is also not yet defined in
+                    # integrated_tool_panel.xml, so append it to the tool panel.
+                    panel_dict[ key ] = tool
+                    log.debug( "Loaded tool id: %s, version: %s into tool panel.." % ( tool.id, tool.version ) )
+                else:
+                    # We are in the process of installing the tool.  The version lineage chain will not yet be
+                    # built on the Galaxy side, so we have to get it from the Tool Shed.
+                    tool_shed_url = suc.get_url_from_tool_shed( self.app, str( tool.tool_shed ) )
+                    # get_versions_of_tool( self, trans, name, owner, changeset_revision, encoded_guid )
+                    params = '?name=%s&owner=%s&changeset_revision=%s&encoded_guid=%s' % \
+                        ( str( tool.repository_name ),
+                          str( tool.repository_owner ),
+                          str( tool.installed_changeset_revision ),
+                          encoding_util.tool_shed_encode( tool.guid ) )
+                    url = suc.url_join( tool_shed_url, 'repository/get_versions_of_tool%s' % params )
+                    try:
+                        # For backward compatibility - some versions of the Tool Shed will not have the
+                        # get_versions_of_tool() method.
+                        raw_text = common_util.tool_shed_get( self.app, tool_shed_url, url )
+                        tool_lineage_ids = json.loads( raw_text )
+                    except Exception, e:
+                        log.exception( "Error with url\n%s\n%s" % ( str( url ), str( e ) ) )
+                        tool_lineage_ids = []
+                    for lineage_id in tool_lineage_ids:
+                        if lineage_id in self.tools_by_id:
+                            loaded_version_key = 'tool_%s' % lineage_id
+                            if loaded_version_key in panel_dict:
+                                if not already_loaded:
+                                    already_loaded = True
+                                # Even though a version of the tool is loaded in the tool panel, we need to find out if it
+                                # is the most recent version.
+                                key = 'tool_%s' % tool.guid
+                                index = panel_dict.keys().index( loaded_version_key )
+                                if loaded_version_key > key:
+                                    index = panel_dict.keys().index( loaded_version_key )
+                                    del panel_dict[ loaded_version_key ]
+                                    panel_dict.insert( index, key, tool )
+                                    log.debug( "Loaded tool id: %s, version: %s into tool panel..." % ( tool.id, tool.version ) )
+                                    inserted = True
+                                    break
+                    if not already_loaded:
+                        # If the tool is not defined in integrated_tool_panel.xml, append it to the tool panel.
+                        panel_dict[ key ] = tool
+                        log.debug( "Loaded tool id: %s, version: %s into tool panel...." % ( tool.id, tool.version ) )
 
     def load_tool_panel( self ):
         for key, val in self.integrated_tool_panel.items():
             if isinstance( val, Tool ):
                 tool_id = key.replace( 'tool_', '', 1 )
                 if tool_id in self.tools_by_id:
-                    self.__add_tool_to_tool_panel( tool_id, self.tool_panel, section=False )
+                    self.__add_tool_to_tool_panel( val, self.tool_panel, section=False )
             elif isinstance( val, Workflow ):
                 workflow_id = key.replace( 'workflow_', '', 1 )
                 if workflow_id in self.workflows_by_id:
@@ -288,7 +338,7 @@ class ToolBox( object, Dictifiable ):
                     if isinstance( section_val, Tool ):
                         tool_id = section_key.replace( 'tool_', '', 1 )
                         if tool_id in self.tools_by_id:
-                            self.__add_tool_to_tool_panel( tool_id, section, section=True )
+                            self.__add_tool_to_tool_panel( section_val, section, section=True )
                     elif isinstance( section_val, Workflow ):
                         workflow_id = section_key.replace( 'workflow_', '', 1 )
                         if workflow_id in self.workflows_by_id:
@@ -431,8 +481,8 @@ class ToolBox( object, Dictifiable ):
     def __get_tool_version( self, tool_id ):
         """Return a ToolVersion if one exists for the tool_id"""
         return self.app.install_model.context.query( self.app.install_model.ToolVersion ) \
-                              .filter( self.app.install_model.ToolVersion.table.c.tool_id == tool_id ) \
-                              .first()
+                                             .filter( self.app.install_model.ToolVersion.table.c.tool_id == tool_id ) \
+                                             .first()
 
     def __get_tool_shed_repository( self, tool_shed, name, owner, installed_changeset_revision ):
         return self.app.install_model.context.query( self.app.install_model.ToolShedRepository ) \
@@ -546,14 +596,15 @@ class ToolBox( object, Dictifiable ):
                                 tta = self.app.model.ToolTagAssociation( tool_id=tool.id, tag_id=tag.id )
                                 self.sa_session.add( tta )
                                 self.sa_session.flush()
-                #if tool.id not in self.tools_by_id:
-                # Allow for the same tool to be loaded into multiple places in the tool panel.  We have to handle the case where the tool is contained
-                # in a repository installed from the tool shed, and the Galaxy administrator has retrieved updates to the installed repository.  In this
-                # case, the tool may have been updated, but the version was not changed, so the tool should always be reloaded here.  We used to only load
-                # the tool if it's it was not found in self.tools_by_id, but performing that check did not enable this scenario.
+                # Allow for the same tool to be loaded into multiple places in the tool panel.  We have to handle
+                # the case where the tool is contained in a repository installed from the tool shed, and the Galaxy
+                # administrator has retrieved updates to the installed repository.  In this case, the tool may have
+                # been updated, but the version was not changed, so the tool should always be reloaded here.  We used
+                # to only load the tool if it's it was not found in self.tools_by_id, but performing that check did
+                # not enable this scenario.
                 self.tools_by_id[ tool.id ] = tool
                 if load_panel_dict:
-                    self.__add_tool_to_tool_panel( tool.id, panel_dict, section=isinstance( panel_dict, ToolSection ) )
+                    self.__add_tool_to_tool_panel( tool, panel_dict, section=isinstance( panel_dict, ToolSection ) )
             # Always load the tool into the integrated_panel_dict, or it will not be included in the integrated_tool_panel.xml file.
             if key in integrated_panel_dict or index is None:
                 integrated_panel_dict[ key ] = tool
@@ -1020,8 +1071,8 @@ class Tool( object, Dictifiable ):
     def tool_version( self ):
         """Return a ToolVersion if one exists for our id"""
         return self.app.install_model.context.query( self.app.install_model.ToolVersion ) \
-                              .filter( self.app.install_model.ToolVersion.table.c.tool_id == self.id ) \
-                              .first()
+                                             .filter( self.app.install_model.ToolVersion.table.c.tool_id == self.id ) \
+                                             .first()
 
     @property
     def tool_versions( self ):
@@ -1043,11 +1094,11 @@ class Tool( object, Dictifiable ):
     def tool_shed_repository( self ):
         # If this tool is included in an installed tool shed repository, return it.
         if self.tool_shed:
-            return shed_util_common.get_tool_shed_repository_by_shed_name_owner_installed_changeset_revision( self.app,
-                                                                                                                          self.tool_shed,
-                                                                                                                          self.repository_name,
-                                                                                                                          self.repository_owner,
-                                                                                                                          self.installed_changeset_revision )
+            return suc.get_tool_shed_repository_by_shed_name_owner_installed_changeset_revision( self.app,
+                                                                                                 self.tool_shed,
+                                                                                                 self.repository_name,
+                                                                                                 self.repository_owner,
+                                                                                                 self.installed_changeset_revision )
         return None
 
     def __get_job_tool_configuration(self, job_params=None):
@@ -1359,7 +1410,7 @@ class Tool( object, Dictifiable ):
                 lock = threading.Lock()
                 lock.acquire( True )
                 try:
-                    self.help.text = shed_util_common.set_image_paths( self.app, self.repository_id, self.help.text )
+                    self.help.text = suc.set_image_paths( self.app, self.repository_id, self.help.text )
                 except Exception, e:
                     log.exception( "Exception in parse_help, so images may not be properly displayed:\n%s" % str( e ) )
                 finally:

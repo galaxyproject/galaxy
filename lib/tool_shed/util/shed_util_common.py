@@ -1180,9 +1180,9 @@ def get_repository_in_tool_shed( trans, id ):
 
 def get_repository_metadata_by_changeset_revision( trans, id, changeset_revision ):
     """Get metadata for a specified repository change set from the database."""
-    # Make sure there are no duplicate records, and return the single unique record for the changeset_revision.  Duplicate records were somehow
-    # created in the past.  The cause of this issue has been resolved, but we'll leave this method as is for a while longer to ensure all duplicate
-    # records are removed.
+    # Make sure there are no duplicate records, and return the single unique record for the changeset_revision.
+    # Duplicate records were somehow created in the past.  The cause of this issue has been resolved, but we'll
+    # leave this method as is for a while longer to ensure all duplicate records are removed.
     all_metadata_records = trans.sa_session.query( trans.model.RepositoryMetadata ) \
                                            .filter( and_( trans.model.RepositoryMetadata.table.c.repository_id == trans.security.decode_id( id ),
                                                           trans.model.RepositoryMetadata.table.c.changeset_revision == changeset_revision ) ) \

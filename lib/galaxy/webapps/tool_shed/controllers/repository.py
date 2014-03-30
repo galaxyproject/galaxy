@@ -89,12 +89,13 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
     def browse_categories( self, trans, **kwd ):
         # The request came from the tool shed.
         if 'f-free-text-search' in kwd:
-            # Trick to enable searching repository name, description from the CategoryGrid.  What we've done is rendered the search box for the
-            # RepositoryGrid on the grid.mako template for the CategoryGrid.  See ~/templates/webapps/tool_shed/category/grid.mako.  Since we
-            # are searching repositories and not categories, redirect to browse_repositories().
+            # Trick to enable searching repository name, description from the CategoryGrid.
+            # What we've done is rendered the search box for the RepositoryGrid on the grid.mako
+            # template for the CategoryGrid.  See ~/templates/webapps/tool_shed/category/grid.mako.
+            # Since we are searching repositories and not categories, redirect to browse_repositories().
             if 'id' in kwd and 'f-free-text-search' in kwd and kwd[ 'id' ] == kwd[ 'f-free-text-search' ]:
-                # The value of 'id' has been set to the search string, which is a repository name.  We'll try to get the desired encoded repository
-                # id to pass on.
+                # The value of 'id' has been set to the search string, which is a repository name.
+                # We'll try to get the desired encoded repository id to pass on.
                 try:
                     repository_name = kwd[ 'id' ]
                     repository = suc.get_repository_by_name( trans.app, repository_name )
@@ -1906,41 +1907,35 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                      readme_files_dict=readme_files_dict,
                      repo_info_dict=repo_info_dict )
 
-    def get_versions_of_tool( self, trans, repository, repository_metadata, guid ):
+    @web.json
+    def get_versions_of_tool( self, trans, name, owner, changeset_revision, encoded_guid ):
+        #def get_versions_of_tool( self, trans, repository_id, repository_metadata, guid ):
         """
-        Return the tool lineage in descendant order for the received guid contained in the received
-        repsitory_metadata.tool_versions.
+        Return the tool version lineage chain in descending order for the received guid contained
+        in the repsitory_metadata.tool_versions column associated with the received changeset_revision
+        whose associated repository is associated with the received name and owner.
         """
-        encoded_id = trans.security.encode_id( repository.id )
-        repo_dir = repository.repo_path( trans.app )
-        repo = hg.repository( suc.get_configured_ui(), repo_dir )
-        # Initialize the tool lineage
-        tool_guid_lineage = [ guid ]
-        # Get all ancestor guids of the received guid.
-        current_child_guid = guid
-        for changeset in suc.reversed_upper_bounded_changelog( repo, repository_metadata.changeset_revision ):
-            ctx = repo.changectx( changeset )
-            rm = suc.get_repository_metadata_by_changeset_revision( trans, encoded_id, str( ctx ) )
-            if rm:
-                parent_guid = rm.tool_versions.get( current_child_guid, None )
-                if parent_guid:
-                    tool_guid_lineage.append( parent_guid )
-                    current_child_guid = parent_guid
-        # Get all descendant guids of the received guid.
-        current_parent_guid = guid
-        for changeset in suc.reversed_lower_upper_bounded_changelog( repo,
-                                                                     repository_metadata.changeset_revision,
-                                                                     repository.tip( trans.app ) ):
-            ctx = repo.changectx( changeset )
-            rm = suc.get_repository_metadata_by_changeset_revision( trans, encoded_id, str( ctx ) )
-            if rm:
-                tool_versions = rm.tool_versions
-                for child_guid, parent_guid in tool_versions.items():
-                    if parent_guid == current_parent_guid:
-                        tool_guid_lineage.insert( 0, child_guid )
-                        current_parent_guid = child_guid
-                        break
-        return tool_guid_lineage
+        guid = encoding_util.tool_shed_decode( encoded_guid )
+        repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
+        version_lineage = []
+        if repository:
+            repository_id = trans.security.encode_id( repository.id )
+            repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans,
+                                                                                     repository_id,
+                                                                                     changeset_revision )
+            if not repository_metadata:
+                repo_dir = repository.repo_path( trans.app )
+                repo = hg.repository( suc.get_configured_ui(), repo_dir )
+                updated_changeset_revision = suc.get_next_downloadable_changeset_revision( repository,
+                                                                                           repo,
+                                                                                           changeset_revision )
+                if updated_changeset_revision:
+                    repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans,
+                                                                                             repository_id,
+                                                                                             updated_changeset_revision )
+            if repository_metadata:
+                version_lineage = tool_util.get_version_lineage_for_tool( trans, repository_id, repository_metadata, guid )
+        return version_lineage
 
     @web.expose
     def help( self, trans, **kwd ):
@@ -3284,29 +3279,35 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                             guid = tool_metadata_dict[ 'guid' ]
                             full_path_to_tool_config = os.path.abspath( relative_path_to_tool_config )
                             full_path_to_dir, tool_config_filename = os.path.split( full_path_to_tool_config )
-                            can_use_disk_file = tool_util.can_use_tool_config_disk_file( trans, repository, repo, full_path_to_tool_config, changeset_revision )
+                            can_use_disk_file = tool_util.can_use_tool_config_disk_file( trans,
+                                                                                         repository,
+                                                                                         repo,
+                                                                                         full_path_to_tool_config,
+                                                                                         changeset_revision )
                             if can_use_disk_file:
                                 trans.app.config.tool_data_path = work_dir
-                                tool, valid, message, sample_files = tool_util.handle_sample_files_and_load_tool_from_disk( trans,
-                                                                                                                            repo_files_dir,
-                                                                                                                            repository_id,
-                                                                                                                            full_path_to_tool_config,
-                                                                                                                            work_dir )
+                                tool, valid, message, sample_files = \
+                                    tool_util.handle_sample_files_and_load_tool_from_disk( trans,
+                                                                                           repo_files_dir,
+                                                                                           repository_id,
+                                                                                           full_path_to_tool_config,
+                                                                                           work_dir )
                                 if message:
                                     status = 'error'
                             else:
-                                tool, message, sample_files = tool_util.handle_sample_files_and_load_tool_from_tmp_config( trans,
-                                                                                                                           repo,
-                                                                                                                           repository_id,
-                                                                                                                           changeset_revision,
-                                                                                                                           tool_config_filename,
-                                                                                                                           work_dir )
+                                tool, message, sample_files = \
+                                    tool_util.handle_sample_files_and_load_tool_from_tmp_config( trans,
+                                                                                                 repo,
+                                                                                                 repository_id,
+                                                                                                 changeset_revision,
+                                                                                                 tool_config_filename,
+                                                                                                 work_dir )
                                 if message:
                                     status = 'error'
                             suc.remove_dir( work_dir )
                             break
                     if guid:
-                        tool_lineage = self.get_versions_of_tool( trans, repository, repository_metadata, guid )
+                        tool_lineage = tool_util.get_version_lineage_for_tool( trans, repository_id, repository_metadata, guid )
         else:
             repository_metadata_id = None
             metadata = None

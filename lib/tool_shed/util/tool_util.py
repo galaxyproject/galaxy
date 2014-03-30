@@ -524,6 +524,42 @@ def get_tool_version_association( app, parent_tool_version, tool_version ):
                                     app.install_model.ToolVersionAssociation.table.c.tool_id == tool_version.id ) ) \
                      .first()
 
+def get_version_lineage_for_tool( trans, repository_id, repository_metadata, guid ):
+    """
+    Return the tool version lineage chain in descendant order for the received guid contained in the received
+    repsitory_metadata.tool_versions.
+    """
+    repository = suc.get_repository_by_id( trans, repository_id )
+    repo_dir = repository.repo_path( trans.app )
+    repo = hg.repository( suc.get_configured_ui(), repo_dir )
+    # Initialize the tool lineage
+    version_lineage = [ guid ]
+    # Get all ancestor guids of the received guid.
+    current_child_guid = guid
+    for changeset in suc.reversed_upper_bounded_changelog( repo, repository_metadata.changeset_revision ):
+        ctx = repo.changectx( changeset )
+        rm = suc.get_repository_metadata_by_changeset_revision( trans, repository_id, str( ctx ) )
+        if rm:
+            parent_guid = rm.tool_versions.get( current_child_guid, None )
+            if parent_guid:
+                version_lineage.append( parent_guid )
+                current_child_guid = parent_guid
+    # Get all descendant guids of the received guid.
+    current_parent_guid = guid
+    for changeset in suc.reversed_lower_upper_bounded_changelog( repo,
+                                                                 repository_metadata.changeset_revision,
+                                                                 repository.tip( trans.app ) ):
+        ctx = repo.changectx( changeset )
+        rm = suc.get_repository_metadata_by_changeset_revision( trans, repository_id, str( ctx ) )
+        if rm:
+            tool_versions = rm.tool_versions
+            for child_guid, parent_guid in tool_versions.items():
+                if parent_guid == current_parent_guid:
+                    version_lineage.insert( 0, child_guid )
+                    current_parent_guid = child_guid
+                    break
+    return version_lineage
+
 def handle_missing_data_table_entry( app, relative_install_dir, tool_path, repository_tools_tups ):
     """
     Inspect each tool to see if any have input parameters that are dynamically generated select lists that require entries in the
