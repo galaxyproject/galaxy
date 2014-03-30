@@ -261,57 +261,67 @@ class ToolBox( object, Dictifiable ):
             for index, integrated_panel_key in enumerate( self.integrated_tool_panel.keys() ):
                 if key == integrated_panel_key:
                     panel_dict.insert( index, key, tool )
-                    inserted = True
+                    if not inserted:
+                        inserted = True
             if not inserted:
-                if tool.guid is None or \
-                    tool.tool_shed is None or \
-                    tool.repository_name is None or \
-                    tool.repository_owner is None or \
-                    tool.installed_changeset_revision is None:
-                    # We have a tool that was not installed from the Tool Shed, but is also not yet defined in
-                    # integrated_tool_panel.xml, so append it to the tool panel.
-                    panel_dict[ key ] = tool
-                    log.debug( "Loaded tool id: %s, version: %s into tool panel.." % ( tool.id, tool.version ) )
-                else:
-                    # We are in the process of installing the tool.  The version lineage chain will not yet be
-                    # built on the Galaxy side, so we have to get it from the Tool Shed.
-                    tool_shed_url = suc.get_url_from_tool_shed( self.app, str( tool.tool_shed ) )
-                    # get_versions_of_tool( self, trans, name, owner, changeset_revision, encoded_guid )
-                    params = '?name=%s&owner=%s&changeset_revision=%s&encoded_guid=%s' % \
-                        ( str( tool.repository_name ),
-                          str( tool.repository_owner ),
-                          str( tool.installed_changeset_revision ),
-                          encoding_util.tool_shed_encode( tool.guid ) )
-                    url = suc.url_join( tool_shed_url, 'repository/get_versions_of_tool%s' % params )
-                    try:
-                        # For backward compatibility - some versions of the Tool Shed will not have the
-                        # get_versions_of_tool() method.
-                        raw_text = common_util.tool_shed_get( self.app, tool_shed_url, url )
-                        tool_lineage_ids = json.loads( raw_text )
-                    except Exception, e:
-                        log.exception( "Error with url\n%s\n%s" % ( str( url ), str( e ) ) )
-                        tool_lineage_ids = []
-                    for lineage_id in tool_lineage_ids:
-                        if lineage_id in self.tools_by_id:
-                            loaded_version_key = 'tool_%s' % lineage_id
-                            if loaded_version_key in panel_dict:
-                                if not already_loaded:
-                                    already_loaded = True
-                                # Even though a version of the tool is loaded in the tool panel, we need to find out if it
-                                # is the most recent version.
-                                key = 'tool_%s' % tool.guid
-                                index = panel_dict.keys().index( loaded_version_key )
-                                if loaded_version_key > key:
-                                    index = panel_dict.keys().index( loaded_version_key )
-                                    del panel_dict[ loaded_version_key ]
-                                    panel_dict.insert( index, key, tool )
-                                    log.debug( "Loaded tool id: %s, version: %s into tool panel..." % ( tool.id, tool.version ) )
-                                    inserted = True
-                                    break
-                    if not already_loaded:
-                        # If the tool is not defined in integrated_tool_panel.xml, append it to the tool panel.
+                # Check the tool's installed versions.
+                for lineage_id in tool.tool_version_ids:
+                    lineage_id_key = 'tool_%s' % lineage_id
+                    for index, integrated_panel_key in enumerate( self.integrated_tool_panel.keys() ):
+                        if lineage_id_key == integrated_panel_key:
+                            panel_dict.insert( index, key, tool )
+                            if not inserted:
+                                inserted = True
+                if not inserted:
+                    if tool.guid is None or \
+                        tool.tool_shed is None or \
+                        tool.repository_name is None or \
+                        tool.repository_owner is None or \
+                        tool.installed_changeset_revision is None:
+                        # We have a tool that was not installed from the Tool Shed, but is also not yet defined in
+                        # integrated_tool_panel.xml, so append it to the tool panel.
                         panel_dict[ key ] = tool
-                        log.debug( "Loaded tool id: %s, version: %s into tool panel...." % ( tool.id, tool.version ) )
+                        log.debug( "Loaded tool id: %s, version: %s into tool panel.." % ( tool.id, tool.version ) )
+                    else:
+                        # We are in the process of installing the tool.  The version lineage chain will not yet be
+                        # built on the Galaxy side, so we have to get it from the Tool Shed.
+                        tool_shed_url = suc.get_url_from_tool_shed( self.app, str( tool.tool_shed ) )
+                        # get_versions_of_tool( self, trans, name, owner, changeset_revision, encoded_guid )
+                        params = '?name=%s&owner=%s&changeset_revision=%s&encoded_guid=%s' % \
+                            ( str( tool.repository_name ),
+                              str( tool.repository_owner ),
+                              str( tool.installed_changeset_revision ),
+                              encoding_util.tool_shed_encode( tool.guid ) )
+                        url = suc.url_join( tool_shed_url, 'repository/get_versions_of_tool%s' % params )
+                        try:
+                            # For backward compatibility - some versions of the Tool Shed will not have the
+                            # get_versions_of_tool() method.
+                            raw_text = common_util.tool_shed_get( self.app, tool_shed_url, url )
+                            tool_lineage_ids = json.loads( raw_text )
+                        except Exception, e:
+                            log.exception( "Error with url\n%s\n%s" % ( str( url ), str( e ) ) )
+                            tool_lineage_ids = []
+                        for lineage_id in tool_lineage_ids:
+                            if lineage_id in self.tools_by_id:
+                                loaded_version_key = 'tool_%s' % lineage_id
+                                if loaded_version_key in panel_dict:
+                                    if not already_loaded:
+                                        already_loaded = True
+                                    # Even though a version of the tool is loaded in the tool panel, we need to find out if it
+                                    # is the most recent version.
+                                    key = 'tool_%s' % tool.guid
+                                    index = panel_dict.keys().index( loaded_version_key )
+                                    if loaded_version_key > key:
+                                        index = panel_dict.keys().index( loaded_version_key )
+                                        del panel_dict[ loaded_version_key ]
+                                        panel_dict.insert( index, key, tool )
+                                        log.debug( "Loaded tool id: %s, version: %s into tool panel..." % ( tool.id, tool.version ) )
+                                        inserted = True
+                                        break
+                        if not already_loaded:
+                            # If the tool is not defined in integrated_tool_panel.xml, append it to the tool panel.
+                            panel_dict[ key ] = tool
+                            log.debug( "Loaded tool id: %s, version: %s into tool panel...." % ( tool.id, tool.version ) )
 
     def load_tool_panel( self ):
         for key, val in self.integrated_tool_panel.items():
