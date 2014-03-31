@@ -50,14 +50,19 @@ class ToolRunner( BaseUIController ):
         return self.get_toolbox().get_tool_components( tool_id, tool_version, get_loaded_tools_by_lineage, set_selected )
 
     @web.expose
-    def index(self, trans, tool_id=None, from_noframe=None, **kwd):
+    def index( self, trans, tool_id=None, from_noframe=None, **kwd ):
         # No tool id passed, redirect to main page
         if tool_id is None:
             return trans.response.send_redirect( url_for( controller="root", action="welcome" ) )
+        # When the tool form is initially loaded, the received kwd will not include a 'refresh'
+        # entry (which only is included when another option is selected in the tool_version_select_field),
+        # so the default selected option should be the most recent version of the tool.  The following 
+        # check will mae sure this occurs.
+        refreshed_on_change = kwd.get( 'refresh', False )
         tool_version_select_field, tools, tool = self.__get_tool_components( tool_id,
                                                                              tool_version=None,
                                                                              get_loaded_tools_by_lineage=False,
-                                                                             set_selected=True )
+                                                                             set_selected=refreshed_on_change )
         # No tool matching the tool id, display an error (shouldn't happen)
         if not tool:
             log.error( "index called with tool id '%s' but no such tool exists", tool_id )

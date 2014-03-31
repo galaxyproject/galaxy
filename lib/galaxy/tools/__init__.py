@@ -265,7 +265,7 @@ class ToolBox( object, Dictifiable ):
                         inserted = True
             if not inserted:
                 # Check the tool's installed versions.
-                for lineage_id in tool.tool_version_ids:
+                for lineage_id in tool.lineage_ids:
                     lineage_id_key = 'tool_%s' % lineage_id
                     for index, integrated_panel_key in enumerate( self.integrated_tool_panel.keys() ):
                         if lineage_id_key == integrated_panel_key:
@@ -504,14 +504,15 @@ class ToolBox( object, Dictifiable ):
 
     def get_tool_components( self, tool_id, tool_version=None, get_loaded_tools_by_lineage=False, set_selected=False ):
         """
-        Retrieve all loaded versions of a tool from the toolbox and return a select list enabling selection of a different version, the list of the tool's
-        loaded versions, and the specified tool.
+        Retrieve all loaded versions of a tool from the toolbox and return a select list enabling
+        selection of a different version, the list of the tool's loaded versions, and the specified tool.
         """
         toolbox = self
         tool_version_select_field = None
         tools = []
         tool = None
-        # Backwards compatibility for datasource tools that have default tool_id configured, but which are now using only GALAXY_URL.
+        # Backwards compatibility for datasource tools that have default tool_id configured, but which
+        # are now using only GALAXY_URL.
         tool_ids = listify( tool_id )
         for tool_id in tool_ids:
             if get_loaded_tools_by_lineage:
@@ -534,11 +535,11 @@ class ToolBox( object, Dictifiable ):
             refresh_on_change_values.append( tool.id )
         select_field = SelectField( name='tool_id', refresh_on_change=True, refresh_on_change_values=refresh_on_change_values )
         for option_tup in options:
-            selected = set_selected and option_tup[1] == tool_id
+            selected = set_selected and option_tup[ 1 ] == tool_id
             if selected:
-                select_field.add_option( 'version %s' % option_tup[0], option_tup[1], selected=True )
+                select_field.add_option( 'version %s' % option_tup[ 0 ], option_tup[ 1 ], selected=True )
             else:
-                select_field.add_option( 'version %s' % option_tup[0], option_tup[1] )
+                select_field.add_option( 'version %s' % option_tup[ 0 ], option_tup[ 1 ] )
         return select_field
 
     def load_tool_tag_set( self, elem, panel_dict, integrated_panel_dict, tool_path, load_panel_dict, guid=None, index=None ):
