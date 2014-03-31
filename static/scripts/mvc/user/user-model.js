@@ -30,7 +30,8 @@ var User = Backbone.Model.extend( baseMVC.LoggableMixin ).extend(
         email                   : "",
         total_disk_usage        : 0,
         nice_total_disk_usage   : "",
-        quota_percent           : null
+        quota_percent           : null,
+        is_admin                : false
     },
 
     /** Set up and bind events
@@ -45,6 +46,10 @@ var User = Backbone.Model.extend( baseMVC.LoggableMixin ).extend(
 
     isAnonymous : function(){
         return ( !this.get( 'email' ) );
+    },
+
+    isAdmin : function(){
+        return ( this.get( 'is_admin' ) );
     },
 
     /** Load a user with the API using an id.

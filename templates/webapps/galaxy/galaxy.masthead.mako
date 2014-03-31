@@ -9,6 +9,7 @@
         user_dict[ 'quota_percent' ] = trans.app.quota_agent.get_percent( trans=trans )
         users_api_controller = trans.webapp.api_controllers[ 'users' ]
         user_dict[ 'tags_used' ] = users_api_controller.get_user_tags_used( trans, user=trans.user )
+        user_dict[ 'is_admin' ] = trans.user_is_admin()
     else:
         usage = 0
         percent = None
@@ -50,7 +51,7 @@
             'terms_url'                 : app.config.get("terms_url", ""),
             'allow_user_creation'       : app.config.allow_user_creation,
             'logo_url'                  : h.url_for(app.config.get( 'logo_url', '/')),
-            'is_admin_user'             : trans.user and app.config.is_admin_user(trans.user),
+            'is_admin_user'             : trans.user_is_admin(),
             'active_view'               : active_view,
             'ftp_upload_dir'            : app.config.get("ftp_upload_dir",  None),
             'ftp_upload_site'           : app.config.get("ftp_upload_site",  None),
