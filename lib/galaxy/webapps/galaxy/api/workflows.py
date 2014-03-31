@@ -76,6 +76,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
             item = wf.to_dict( value_mapper={ 'id': trans.security.encode_id } )
             encoded_id = trans.security.encode_id(wf.id)
             item['url'] = url_for('workflow', id=encoded_id)
+            item['owner'] = wf.user.username
             rval.append(item)
         for wf_sa in trans.sa_session.query( trans.app.model.StoredWorkflowUserShareAssociation ).filter_by(
                 user=trans.user ).join( 'stored_workflow' ).filter(
@@ -84,6 +85,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
             item = wf_sa.stored_workflow.to_dict( value_mapper={ 'id': trans.security.encode_id } )
             encoded_id = trans.security.encode_id(wf_sa.stored_workflow.id)
             item['url'] = url_for( 'workflow', id=encoded_id )
+            item['owner'] = wf_sa.stored_workflow.user.username
             rval.append(item)
         return rval
 
@@ -111,6 +113,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
             return "That workflow does not exist."
         item = stored_workflow.to_dict( view='element', value_mapper={ 'id': trans.security.encode_id } )
         item['url'] = url_for('workflow', id=workflow_id)
+        item['owner'] = stored_workflow.user.username
         latest_workflow = stored_workflow.latest_workflow
         inputs = {}
         for step in latest_workflow.steps:
