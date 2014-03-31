@@ -282,11 +282,11 @@ var HDAEditView = hdaBase.HDABaseView.extend(
 
         //TODO: this won't localize easily
         $newRender.find( '.dataset-deleted-msg' ).append(
-            _l( 'Click <a href="javascript:void(0);" class="dataset-undelete">here</a> to undelete it' +
+            _l( ' Click <a href="javascript:void(0);" class="dataset-undelete">here</a> to undelete it' +
             ' or <a href="javascript:void(0);" class="dataset-purge">here</a> to immediately remove it from disk' ));
 
         $newRender.find( '.dataset-hidden-msg' ).append(
-            _l( 'Click <a href="javascript:void(0);" class="dataset-unhide">here</a> to unhide it' ));
+            _l( ' Click <a href="javascript:void(0);" class="dataset-unhide">here</a> to unhide it' ));
 
         return $newRender;
     },
