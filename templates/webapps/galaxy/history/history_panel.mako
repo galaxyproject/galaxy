@@ -123,7 +123,7 @@ ${localize_js_strings([
 ])}
 
 <script type="text/javascript">
-var debugging = JSON.parse( sessionStorage.getItem( 'debugging' ) ) || false,
+var //debugging = JSON.parse( sessionStorage.getItem( 'debugging' ) ) || false,
     // use deferred to allow multiple callbacks (.done())
     onhistoryready = jQuery.Deferred();
 

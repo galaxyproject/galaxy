@@ -53,8 +53,11 @@ var LoggableMixin =  /** @lends LoggableMixin# */{
  */
 var SessionStorageModel = Backbone.Model.extend({
     initialize : function( initialAttrs ){
-        // create unique id if none provided
-        initialAttrs.id = ( !_.isString( initialAttrs.id ) )?( _.uniqueId() ):( initialAttrs.id );
+        // check for sessionStorage and error if no id is provided
+        this._checkEnabledSessionStorage();
+        if( !initialAttrs.id ){
+            throw new Error( 'SessionStorageModel requires an id in the initial attributes' );
+        }
         this.id = initialAttrs.id;
 
         // load existing from storage (if any), clear any attrs set by bbone before init is called,
@@ -67,6 +70,15 @@ var SessionStorageModel = Backbone.Model.extend({
         this.on( 'change', function(){
             this.save();
         });
+    },
+
+    _checkEnabledSessionStorage : function(){
+        try {
+            return sessionStorage.length;
+        } catch( err ){
+            alert( 'Please enable cookies in your browser for this Galaxy site' );
+            return false;
+        }
     },
 
     /** override of bbone sync to save to sessionStorage rather than REST
