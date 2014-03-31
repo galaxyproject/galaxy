@@ -10,6 +10,7 @@
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
         <title>${hda.name} | ${visualization_name}</title>
 
+        ## install shared libraries
         ${h.js( 'libs/jquery/jquery',
                 'libs/bootstrap',
                 'libs/require',
@@ -17,16 +18,16 @@
                 'libs/backbone/backbone',
                 'libs/d3')}
 
-        ## css
+        ## shared css
         ${h.css( 'base' )}
-        
+
         ## install nv.d3 module
         ${h.javascript_link( app_root + "plugins/nv.d3.js" )}
         ${h.stylesheet_link( app_root + "plugins/nv.d3.css" )}
-        
+
         ## install boxplot module
         ##${h.javascript_link( app_root + "plugins/box.js" )}
-        
+
         ## load merged/minified code
         ${h.javascript_link( app_root + "build-app.js" )}
     </head>

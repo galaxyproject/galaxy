@@ -44,7 +44,7 @@ return Backbone.View.extend(
                     nv.utils.windowResize(self.chart_3d.update);
                     
                     // set chart state
-                    chart.set('state', 'ok');
+                    chart.state('ok', 'Pie chart drawn.');
                     
                     // unregister process
                     chart.deferred.done(process_id);

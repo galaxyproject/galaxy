@@ -5,6 +5,9 @@ define(['plugin/library/ui-table', 'plugin/library/ui', 'utils/utils'],
 // widget
 var View = Backbone.View.extend(
 {
+    // elements
+    list: [],
+    
     // initialize
     initialize: function(options) {
         // ui elements
@@ -30,14 +33,28 @@ var View = Backbone.View.extend(
         // reset table
         this.table.removeAll();
         
+        // reset list
+        this.list = [];
+        
         // load settings elements into table
         for (var id in settings) {
             this._add(id, settings[id], model);
+        }
+        
+        // trigger change
+        for (var id in this.list) {
+            var onchange = this.list[id].options.onchange;
+            if (onchange) {
+                onchange();
+            }
         }
     },
     
     // add table row
     _add: function(id, settings_def, model) {
+        // link this
+        var self = this;
+        
         // field wrapper
         var field = null;
         
@@ -47,8 +64,9 @@ var View = Backbone.View.extend(
             // text input field
             case 'text' :
                 field = new Ui.Input({
-                            placeholder: settings_def.placeholder,
-                            onchange: function() {
+                            id          : id,
+                            placeholder : settings_def.placeholder,
+                            onchange    : function() {
                                 model.set(id, field.value());
                             }
                         });
@@ -56,18 +74,23 @@ var View = Backbone.View.extend(
             // select field
             case 'select' :
                 field = new Ui.Select.View({
-                            data: settings_def.data,
-                            onchange: function() {
-                                model.set(id, field.value());
-                            }
-                        });
-                break;
-            // slider input field
-            case 'slider' :
-                field = new Ui.Input({
-                            placeholder: settings_def.placeholder,
-                            onchange: function() {
-                                model.set(id, field.value());
+                            id          : id,
+                            data        : settings_def.data,
+                            onchange    : function() {
+                                // set new value
+                                var selected = field.value();
+                                model.set(id, selected);
+                                
+                                // find selected dictionary
+                                var dict = _.findWhere(settings_def.data, {value: selected});
+                                if (dict) {
+                                    if (dict.show) {
+                                        self.$el.find('#' + dict.show).fadeIn('fast');
+                                    }
+                                    if (dict.hide) {
+                                        self.$el.find('#' + dict.hide).fadeOut('fast');
+                                    }
+                                }
                             }
                         });
                 break;
@@ -88,6 +111,9 @@ var View = Backbone.View.extend(
                 model.set(id, settings_def.init);
             }
             field.value(model.get(id));
+            
+            // add list
+            this.list[id] = field;
             
             // combine field and info
             var $input = $('<div/>');

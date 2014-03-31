@@ -27,8 +27,8 @@ return Backbone.View.extend(
             title: 'Viewport',
             operations: {
                 edit_button: new Ui.ButtonIcon({
-                    icon    : 'fa-gear',
-                    tooltip : 'Customize Chart',
+                    icon    : 'fa-edit',
+                    tooltip : 'Customize this chart',
                     title   : 'Customize',
                     onclick : function() {
                         // attempt to load chart editor
@@ -36,8 +36,29 @@ return Backbone.View.extend(
                             self.app.go('editor');
                         });
                     }
-                })
-                
+                }),
+                /*picture_button: new Ui.ButtonIcon({
+                    icon    : 'fa-camera',
+                    tooltip : 'Download SVG-file',
+                    title   : 'Screenshot',
+                    onclick : function() {
+                        // attempt to load chart editor
+                        self._wait (self.chart, function() {
+                            self._screenshot();
+                        });
+                    }
+                }),
+                settings_button: new Ui.ButtonIcon({
+                    icon    : 'fa-gear',
+                    tooltip : 'Configure this application',
+                    title   : 'Application',
+                    onclick : function() {
+                        // attempt to load chart editor
+                        self._wait (self.chart, function() {
+                            self.app.go('editor');
+                        });
+                    }
+                })*/
             }
         });
         
@@ -72,6 +93,17 @@ return Backbone.View.extend(
     _refreshTitle: function() {
         var title = this.chart.get('title');
         this.portlet.title(title);
+    },
+    
+    // download svg file
+    _screenshot: function() {
+        // Encode the SVG
+        var serializer = new XMLSerializer();
+        var xmlString = serializer.serializeToString(this.viewport_view.svg.node());
+        var imgData = 'data:image/svg+xml;base64,' + btoa(xmlString);
+        //Use the download attribute (or a shim) to provide a link
+        //this.portlet.append('<a href="' + imgData + '" download>Download</a>');
+        window.location.href = 'data:application/x-download/;charset=utf-8,' + encodeURIComponent(xmlString);
     },
     
     // wait for chart to be ready

@@ -43,7 +43,7 @@ return Backbone.Model.extend(
        
         // configure tool
         data = {
-            'tool_id'       : 'rkit',
+            'tool_id'       : 'chartskit',
             'inputs'        : {
                 'input'     : {
                     'id'    : chart.get('dataset_id'),
@@ -80,6 +80,9 @@ return Backbone.Model.extend(
                     // backup resulting dataset id
                     chart.set('dataset_id_job', job.id);
                     
+                    // save
+                    this.app.storage.save();
+                      
                     // wait for job completion
                     self._loop(job.id, function(job) {
                         switch (job.state) {
@@ -118,7 +121,7 @@ return Backbone.Model.extend(
                     message = response.message.data.input + '.';
                 }
                 // update state
-                chart.state('failed', 'This visualization requires the R-kit. Please make sure it is installed. ' + message);
+                chart.state('failed', 'This visualization requires the Charts-Kit. Please make sure it is installed. ' + message);
                 
                 // call error
                 error && error();

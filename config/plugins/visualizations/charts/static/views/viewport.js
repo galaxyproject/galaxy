@@ -80,7 +80,8 @@ return Backbone.View.extend(
         this.$el.append($(this._template_svg()));
         
         // find svg element
-        this.svg = d3.select(this.$el.find('svg')[0]);
+        this.svg_el = this.$el.find('svg');
+        this.svg = d3.select(this.svg_el[0]);
     },
 
     // add
@@ -123,10 +124,6 @@ return Backbone.View.extend(
                     // submit job
                     self.app.jobs.submit(chart, self._defaultSettingsString(chart), self._defaultRequestString(chart),
                         function() {
-                            // save
-                            this.app.storage.save();
-                        
-                            // draw
                             view.draw(process_id, chart, self._defaultRequestDictionary(chart));
                         },
                         function() {

@@ -18,23 +18,13 @@ return Backbone.View.extend(
         this.app.datasets.request(request_dictionary, function(data) {
             nv.addGraph(function() {
                 // x axis
-                if (chart.settings.get('x_axis_type') == 'hide') {
-                    nvd3_model.xAxis.tickFormat(function() { return '' });
-                } else {
-                    var tick = chart.settings.get('x_axis_tick') + chart.settings.get('x_axis_type');
-                    nvd3_model.xAxis.tickFormat(d3.format(tick));
-                }
+                self._axis(nvd3_model.xAxis, chart.settings.get('x_axis_type'), chart.settings.get('x_axis_tick'));
                 
                 // x axis label
                 nvd3_model.xAxis.axisLabel(chart.settings.get('x_axis_label'));
                 
                 // y axis
-                if (chart.settings.get('y_axis_type') == 'hide') {
-                    nvd3_model.yAxis.tickFormat(function() { return '' });
-                } else {
-                    var tick = chart.settings.get('y_axis_tick') + chart.settings.get('y_axis_type');
-                    nvd3_model.yAxis.tickFormat(d3.format(tick));
-                }
+                self._axis(nvd3_model.yAxis, chart.settings.get('y_axis_type'), chart.settings.get('y_axis_tick'));
                 
                 // y axis label
                 nvd3_model.yAxis.axisLabel(chart.settings.get('y_axis_label'))
@@ -71,6 +61,19 @@ return Backbone.View.extend(
                 chart.deferred.done(process_id);
             });
         });
+    },
+    
+    // make axis
+    _axis: function(axis, type, tick) {
+        switch (type) {
+            case 'hide':
+                axis.tickFormat(function() { return '' });
+                break;
+            case 'auto':
+                break;
+            default:
+                axis.tickFormat(d3.format(tick + type));
+        }
     }
 });
 

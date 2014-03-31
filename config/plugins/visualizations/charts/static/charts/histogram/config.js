@@ -14,9 +14,6 @@ return $.extend(true, {}, nvd3_config, {
         },
         y_axis_label : {
             init : 'Density'
-        },
-        y_axis_tick : {
-            init : '.3'
         }
     }
 });

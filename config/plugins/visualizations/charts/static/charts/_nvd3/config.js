@@ -23,35 +23,47 @@ return {
             title       : 'Axis value type',
             info        : 'Select the value type of the axis.',
             type        : 'select',
-            init        : 'f',
+            init        : 'auto',
             data        : [
                 {
                     label   : '-- Do not show values --',
-                    value   : 'hide'
+                    value   : 'hide',
+                    hide    : 'x_axis_tick'
+                },
+                {
+                    label   : 'Auto',
+                    value   : 'auto',
+                    hide    : 'x_axis_tick'
                 },
                 {
                     label   : 'Float',
-                    value   : 'f'
+                    value   : 'f',
+                    show    : 'x_axis_tick'
                 },
                 {
                     label   : 'Exponent',
-                    value   : 'e'
+                    value   : 'e',
+                    show    : 'x_axis_tick'
                 },
                 {
                     label   : 'Integer',
-                    value   : 'd'
+                    value   : 'd',
+                    hide    : 'x_axis_tick'
                 },
                 {
                     label   : 'Percentage',
-                    value   : 'p'
+                    value   : 'p',
+                    show    : 'x_axis_tick'
                 },
                 {
                     label   : 'Rounded',
-                    value   : 'r'
+                    value   : 'r',
+                    show    : 'x_axis_tick'
                 },
                 {
                     label   : 'SI-prefix',
-                    value   : 's'
+                    value   : 's',
+                    show    : 'x_axis_tick'
                 }
             ]
         },
@@ -103,35 +115,47 @@ return {
             title       : 'Axis value type',
             info        : 'Select the value type of the axis.',
             type        : 'select',
-            init        : 'f',
+            init        : 'auto',
             data        : [
                 {
                     label   : '-- Do not show values --',
-                    value   : 'hide'
+                    value   : 'hide',
+                    hide    : 'y_axis_tick'
+                },
+                {
+                    label   : 'Auto',
+                    value   : 'auto',
+                    hide    : 'y_axis_tick'
                 },
                 {
                     label   : 'Float',
-                    value   : 'f'
+                    value   : 'f',
+                    show    : 'y_axis_tick'
                 },
                 {
                     label   : 'Exponent',
-                    value   : 'e'
+                    value   : 'e',
+                    show    : 'y_axis_tick'
                 },
                 {
                     label   : 'Integer',
-                    value   : 'd'
+                    value   : 'd',
+                    hide    : 'y_axis_tick'
                 },
                 {
                     label   : 'Percentage',
-                    value   : 'p'
+                    value   : 'p',
+                    show    : 'y_axis_tick'
                 },
                 {
                     label   : 'Rounded',
-                    value   : 'r'
+                    value   : 'r',
+                    show    : 'y_axis_tick'
                 },
                 {
                     label   : 'SI-prefix',
-                    value   : 's'
+                    value   : 's',
+                    show    : 'y_axis_tick'
                 }
             ]
         },
