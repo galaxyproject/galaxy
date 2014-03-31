@@ -1907,36 +1907,6 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                      readme_files_dict=readme_files_dict,
                      repo_info_dict=repo_info_dict )
 
-    @web.json
-    def get_versions_of_tool( self, trans, name, owner, changeset_revision, encoded_guid ):
-        #def get_versions_of_tool( self, trans, repository_id, repository_metadata, guid ):
-        """
-        Return the tool version lineage chain in descending order for the received guid contained
-        in the repsitory_metadata.tool_versions column associated with the received changeset_revision
-        whose associated repository is associated with the received name and owner.
-        """
-        guid = encoding_util.tool_shed_decode( encoded_guid )
-        repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
-        version_lineage = []
-        if repository:
-            repository_id = trans.security.encode_id( repository.id )
-            repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans,
-                                                                                     repository_id,
-                                                                                     changeset_revision )
-            if not repository_metadata:
-                repo_dir = repository.repo_path( trans.app )
-                repo = hg.repository( suc.get_configured_ui(), repo_dir )
-                updated_changeset_revision = suc.get_next_downloadable_changeset_revision( repository,
-                                                                                           repo,
-                                                                                           changeset_revision )
-                if updated_changeset_revision:
-                    repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans,
-                                                                                             repository_id,
-                                                                                             updated_changeset_revision )
-            if repository_metadata:
-                version_lineage = tool_util.get_version_lineage_for_tool( trans, repository_id, repository_metadata, guid )
-        return version_lineage
-
     @web.expose
     def help( self, trans, **kwd ):
         message = kwd.get( 'message', ''  )
