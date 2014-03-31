@@ -22,9 +22,16 @@ var LibraryRowView = Backbone.View.extend({
     this.set_up_visual_features(library);
   },
 
-  set_up_visual_features: function(library){
+  set_up_visual_features: function(library, options){
     if (library.get('deleted') === true){
       this.$el.addClass('active');
+      this.$el.find('.public_lib_ico').hide();
+      this.$el.find('.undelete_library_btn').show();
+      this.$el.find('.upload_library_btn').hide();
+      this.$el.find('.edit_library_btn').hide();
+      this.$el.find('.permission_library_btn').hide();
+      this.$el.find('.cancel_library_btn').hide();
+      this.$el.find('.delete_library_btn').hide();
     }
     this.$el.show();
   },

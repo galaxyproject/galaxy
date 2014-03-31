@@ -33,13 +33,16 @@ class LibrariesController( BaseAPIController ):
         query = trans.sa_session.query( trans.app.model.Library )
         deleted = kwd.get( 'deleted', 'missing' )
         try:
-            deleted = util.asbool( deleted )
+            if not trans.user_is_admin(): # non-admins can't see deleted libraries
+                deleted = False
+            else:
+                deleted = util.asbool( deleted )
             if deleted:
                 query = query.filter( trans.app.model.Library.table.c.deleted == True )
             else:
                 query = query.filter( trans.app.model.Library.table.c.deleted == False )
         except ValueError:
-            # given value wasn't true/false so we don't filter on this parameter at all
+            # given value wasn't true/false but the user is admin so we don't filter on this parameter at all
             pass
 
         current_user_role_ids = [ role.id for role in trans.get_current_user_roles() ]
@@ -57,6 +60,16 @@ class LibrariesController( BaseAPIController ):
             item = library.to_dict( view='element', value_mapper={ 'id' : trans.security.encode_id , 'root_folder_id' : trans.security.encode_id } )
             if trans.app.security_agent.library_is_public( library, contents=False ):
                 item[ 'public' ] = True
+            current_user_roles = trans.get_current_user_roles()
+            # can_user_add = trans.app.security_agent.can_add_library_item( current_user_roles, library.root_folder )
+            if not trans.user_is_admin():
+                item['can_user_add'] = trans.app.security_agent.can_add_library_item( current_user_roles, library )
+                item['can_user_modify'] = trans.app.security_agent.can_modify_library_item( current_user_roles, library )
+                item['can_user_manage'] = trans.app.security_agent.can_manage_library_item( current_user_roles, library )
+            else:
+                item['can_user_add'] = True
+                item['can_user_modify'] = True
+                item['can_user_manage'] = True
             libraries.append( item )
         return libraries
 
