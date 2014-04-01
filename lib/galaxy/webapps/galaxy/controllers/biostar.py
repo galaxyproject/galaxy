@@ -18,12 +18,14 @@ class BiostarController( BaseUIController ):
         pass Galaxy user information and optional information about a specific tool.
         """
         try:
-            url = biostar.get_biostar_url( trans.app, payload=payload, biostar_action=biostar_action )
+            url, payload = biostar.get_biostar_url( trans.app, payload=payload, biostar_action=biostar_action )
         except Exception, e:
             return error( str( e ) )
         # Only create/log in biostar user if is registered Galaxy user
         if trans.user:
             biostar.create_cookie( trans, trans.app.config.biostar_key_name, trans.app.config.biostar_key, trans.user.email )
+        if payload:
+            return trans.fill_template( "biostar/post_redirect.mako", post_url=url, form_inputs=payload )
         return trans.response.send_redirect( url )
 
     @web.expose
@@ -85,8 +87,8 @@ class BiostarController( BaseUIController ):
             payload = error_reporter.send_report( trans.user, email=email, message=message )
         except Exception, e:
             return error( str( e ) )
-        return self.biostar_question_redirect( trans, payload=payload )
-        
+        return self.biostar_redirect( trans, payload=payload, biostar_action='new_post' )
+
     @web.expose
     def biostar_logout( self, trans ):
         """

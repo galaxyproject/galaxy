@@ -8,14 +8,22 @@ import re
 from unicodedata import normalize
 from galaxy.web.base.controller import url_for
 from galaxy.tools.errors import ErrorReporter
+from . import smart_str
 
 _punct_re = re.compile(r'[\t !"#$%&\'()*\-/<=>?@\[\\\]^_`{|},.]+')
 
 DEFAULT_GALAXY_TAG = 'galaxy'
 
+# Default values for new posts to Biostar
+DEFAULT_PAYLOAD = {
+    'title': '',
+    'tag_val': DEFAULT_GALAXY_TAG,
+    'content': '',
+}
+
 BIOSTAR_ACTIONS = {
     None: { 'url': lambda x: '', 'uses_payload': False },
-    'new_post': { 'url': lambda x: 'p/new/post/', 'uses_payload': True },
+    'new_post': { 'url': lambda x: 'p/new/external/post/', 'uses_payload': True, 'hmac_values':{'content':'digest'} },
     'show_tags': { 'url': lambda x: 't/%s/' % ( "+".join( ( x.get( 'tag_val' ) or DEFAULT_GALAXY_TAG ).split( ',' ) ) ), 'uses_payload':False },
     'log_out': { 'url': lambda x: 'site/logout/', 'uses_payload': False }
 }
@@ -37,13 +45,6 @@ def slugify(text, delim=u'-'):
             result.append(word)
     return unicode(delim.join(result))
 
-# Default values for new posts to Biostar
-DEFAULT_PAYLOAD = {
-    'title': '',
-    'tag_val': DEFAULT_GALAXY_TAG,
-    'content': '',
-}
-
 def get_biostar_url( app, payload=None, biostar_action=None ):
     # Ensure biostar integration is enabled
     if not biostar_enabled( app ):
@@ -54,12 +55,17 @@ def get_biostar_url( app, payload=None, biostar_action=None ):
     # Start building up the payload
     payload = payload or {}
     payload = dict( DEFAULT_PAYLOAD, **payload )
+    payload[ 'name' ] = app.config.biostar_key_name
+    for hmac_value_name, hmac_parameter_name in biostar_action.get( 'hmac_values', {} ).items():
+        #Biostar requires ascii only on HMAC'd things
+        payload[ hmac_value_name ] = smart_str( payload.get( hmac_value_name, '' ), encoding='ascii', errors='replace' )
+        payload[ hmac_parameter_name ] = hmac.new( app.config.biostar_key, payload[ hmac_value_name ] ).hexdigest()
     #generate url, can parse payload info
     url = str( urlparse.urljoin( app.config.biostar_url, biostar_action.get( 'url' )( payload ) ) )
     if not biostar_action.get( 'uses_payload' ):
         payload = {}
-    url = url_for( url, **payload )
-    return url
+    url = url_for( url )
+    return url, payload
 
 def tag_for_tool( tool ):
     """
@@ -120,7 +126,7 @@ def biostar_logged_in( trans ):
 def biostar_logout( trans ):
     if biostar_enabled( trans.app ):
         delete_cookie( trans, trans.app.config.biostar_key_name )
-        return get_biostar_url( trans.app, biostar_action='log_out' )
+        return get_biostar_url( trans.app, biostar_action='log_out' )[0]
     return None
 
 class BiostarErrorReporter( ErrorReporter ):
@@ -129,11 +135,13 @@ class BiostarErrorReporter( ErrorReporter ):
         assert self._can_access_dataset( user ), Exception( "You are not allowed to access this dataset." )
         tool_version_select_field, tools, tool = \
             self.app.toolbox.get_tool_components( self.tool_id, tool_version=None, get_loaded_tools_by_lineage=False, set_selected=True )
-        payload = { 'title': 'Bug report on "%s" tool' % ( tool.name ), 'content': self.report.replace( '\n', '<br />' ), 'tag_val':slugify( 'bug report' ) }
+        payload = { 'title': 'Bug report on "%s" tool' % ( tool.name ), 'content': self.report.replace( '\n', '<br />' ).replace( '\r', '' ), 'tag_val':slugify( 'bug report' ) }
         #Get footer for email from here
         payload2 = populate_tool_payload( tool=tool )
         if 'content' in payload2:
             payload[ 'content' ] = "%s<br />%s" % ( payload['content'], payload2['content'] )
         if 'tag_val' in payload2:
             payload[ 'tag_val' ] = ','.join( [ payload2[ 'tag_val' ], payload[ 'tag_val' ] ] )
+        if 'submit' not in payload:
+            payload[ 'submit' ] = 1 #Automatically post bug reports to biostar
         return payload
