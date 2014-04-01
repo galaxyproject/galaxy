@@ -109,6 +109,14 @@ Scaler.prototype.gen_val = function(input) {
 };
 
 /**
+ * Results from painter.draw()
+ */
+var DrawResults = function(options) {
+    this.incomplete_features = options.incomplete_features;
+    this.feature_mapper = options.feature_mapper;
+};
+
+/**
  * Base class for painters
  *
  * -- Mode and prefs are both optional
@@ -369,7 +377,9 @@ extend(FeaturePainter.prototype, {
      * a FeaturePositionMapper object with information about where features were drawn.
      */
     draw: function(ctx, width, height, w_scale, slots) {
-        var data = this.data, view_start = this.view_start, view_end = this.view_end;
+        var data = this.data, 
+            view_start = this.view_start, 
+            view_end = this.view_end;
 
         ctx.save();
 
@@ -378,7 +388,8 @@ extend(FeaturePainter.prototype, {
 
         var y_scale = this.get_row_height(),
             feature_mapper = new FeaturePositionMapper(y_scale),
-            x_draw_coords;
+            x_draw_coords,
+            incomplete_features = [];
 
         for (var i = 0, len = data.length; i < len; i++) {
             var feature = data[i],
@@ -394,12 +405,21 @@ extend(FeaturePainter.prototype, {
             if ( (this.mode === "Dense" || slot !== null) && ( feature_start < view_end && feature_end > view_start ) ) {
                 x_draw_coords = this.draw_element(ctx, this.mode, feature, slot, view_start, view_end, w_scale, y_scale, width);
                 feature_mapper.map_feature_data(feature, slot, x_draw_coords[0], x_draw_coords[1]);
+
+                // Add to incomplete features if it's not drawn completely in region.
+                if (feature_start < view_start || feature_end > view_end) {
+                    incomplete_features.push(feature);
+                }
             }
         }
 
         ctx.restore();
+
         feature_mapper.y_translation = this.get_top_padding(width);
-        return feature_mapper;
+        return new DrawResults({
+            incomplete_features: incomplete_features,
+            feature_mapper: feature_mapper
+        });
     },
 
     /** 

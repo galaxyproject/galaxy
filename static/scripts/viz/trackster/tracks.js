@@ -1943,13 +1943,16 @@ var LineTrackTile = function(track, region, w_scale, canvas, data) {
 };
 LineTrackTile.prototype.predisplay_actions = function() {};
 
-var FeatureTrackTile = function(track, region, w_scale, canvas, data, mode, message, all_slotted, feature_mapper) {
+var FeatureTrackTile = function(track, region, w_scale, canvas, data, mode, message, all_slotted, 
+                                feature_mapper, incomplete_features, seq_data) {
     // Attribute init.
     Tile.call(this, track, region, w_scale, canvas, data);
     this.mode = mode;
     this.all_slotted = all_slotted;
     this.feature_mapper = feature_mapper;
     this.has_icons = false;
+    this.incomplete_features = incomplete_features;
+    this.seq_data = seq_data;
     
     // Add message + action icons to tile's html.
     /*
@@ -3768,6 +3771,25 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         
         var track = this,
             i;
+
+        //
+        // Draw incomplete features across tiles.
+        //
+
+        // Gather incomplete features together.
+        var all_incomplete_features = {};
+        _.each(_.pluck(tiles, 'incomplete_features'), function(inc_features) {
+            _.each(inc_features, function(feature) {
+                all_incomplete_features[feature[0]] = feature;
+            });
+        });
+
+        // Draw features on each tile.
+        var self = this;
+        _.each(tiles, function(tile) {
+            self.draw_tile({ 'data': _.values(all_incomplete_features) }, tile.canvas.getContext('2d'), 
+                           tile.mode, tile.region, w_scale, tile.seq_data, true);
+        });
                 
         // If mode is Coverage and tiles do not share max, redraw tiles as necessary using new max.
         /*
@@ -3945,7 +3967,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
      * @param w_scale pixels per base
      * @param ref_seq reference sequence data
      */
-    draw_tile: function(result, ctx, mode, region, w_scale, ref_seq) {
+    draw_tile: function(result, ctx, mode, region, w_scale, ref_seq, cur_tile) {
         var track = this,
             canvas = ctx.canvas,
             tile_low = region.get('start'),
@@ -4005,11 +4027,18 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         
         if (result.data) {
             // Draw features.
-            feature_mapper = painter.draw(ctx, canvas.width, canvas.height, w_scale, slots);
+            var draw_results = painter.draw(ctx, canvas.width, canvas.height, w_scale, slots);
+            feature_mapper = draw_results.feature_mapper;
+            incomplete_features = draw_results.incomplete_features;
             feature_mapper.translation = -left_offset;
         }
         
-        return new FeatureTrackTile(track, region, w_scale, canvas, result.data, mode, result.message, all_slotted, feature_mapper);        
+        // If not drawing on current tile, create new tile.
+        if (!cur_tile) {
+            return new FeatureTrackTile(track, region, w_scale, canvas, result.data, mode, 
+                                        result.message, all_slotted, feature_mapper, 
+                                        incomplete_features, ref_seq);
+        }
     }
 });
 
