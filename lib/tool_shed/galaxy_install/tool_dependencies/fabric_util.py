@@ -837,7 +837,7 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                                 return tool_dependency
                             # Use raw strings so that python won't automatically unescape the quotes before passing the command
                             # to subprocess.Popen.
-                            site_packages_command = r"%s -c 'import os, sys; print os.path.join(sys.prefix, \"lib\", \"python\" + sys.version[:3], \"site-packages\")'" % os.path.join( venv_directory, "bin", "python" )
+                            site_packages_command = r"""%s -c 'import os, sys; print os.path.join(sys.prefix, "lib", "python" + sys.version[:3], "site-packages")'""" % os.path.join( venv_directory, "bin", "python" )
                             output = handle_command( app, tool_dependency, install_dir, site_packages_command, return_output=True )
                             if output.return_code:
                                 return tool_dependency
