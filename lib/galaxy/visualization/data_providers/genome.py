@@ -971,7 +971,10 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
         threshold = float( max_vals )/ num_reads
         iterator = itertools.chain( iter( [ first_read ] ), iterator )
 
-        if iterator_type == 'sequential':
+        # Use specified iterator type, save for when threshold is >= 1.
+        # A threshold of >= 1 indicates all reads are to be returned, so no 
+        # sampling needed and seqential iterator will be used.
+        if iterator_type == 'sequential' or threshold >= 1:
             read_iterator = iterator
         elif iterator_type == 'random':           
             read_iterator = _random_read_iterator( iterator, threshold )
