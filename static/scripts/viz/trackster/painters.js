@@ -389,8 +389,9 @@ extend(FeaturePainter.prototype, {
                 // feature may not be due to lack of space.
                 slot = (slots && slots[feature_uid] !== undefined ? slots[feature_uid] : null);
                 
-            // Draw feature if there's overlap and mode is dense or feature is slotted (as it must be for all non-dense modes).
-            if ( ( feature_start < view_end && feature_end > view_start ) && (this.mode === "Dense" || slot !== null) ) {
+            // Draw feature if (a) mode is dense or feature is slotted (as it must be for all non-dense modes) and 
+            // (b) there's overlap between the feature and drawing region.
+            if ( (this.mode === "Dense" || slot !== null) && ( feature_start < view_end && feature_end > view_start ) ) {
                 x_draw_coords = this.draw_element(ctx, this.mode, feature, slot, view_start, view_end, w_scale, y_scale, width);
                 feature_mapper.map_feature_data(feature, slot, x_draw_coords[0], x_draw_coords[1]);
             }
