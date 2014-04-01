@@ -1952,6 +1952,9 @@ var FeatureTrackTile = function(track, region, w_scale, canvas, data, mode, mess
     this.has_icons = false;
     
     // Add message + action icons to tile's html.
+    /*
+    This does not work right now because a random set of reads is returned by the server. 
+    When the server can respond with more data systematically, renable these icons.
     if (message) {
         this.has_icons = true;
         
@@ -1999,6 +2002,7 @@ var FeatureTrackTile = function(track, region, w_scale, canvas, data, mode, mess
             e.stopPropagation();
         });
     }
+    */
 };
 extend(FeatureTrackTile.prototype, Tile.prototype);
 

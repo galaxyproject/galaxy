@@ -2,7 +2,7 @@
 API operations on the contents of a history dataset.
 """
 from galaxy import web
-from galaxy.visualization.data_providers.genome import FeatureLocationIndexDataProvider
+from galaxy.visualization.data_providers.genome import FeatureLocationIndexDataProvider, SamDataProvider, BamDataProvider
 from galaxy.web.base.controller import BaseAPIController, UsesVisualizationMixin, UsesHistoryDatasetAssociationMixin
 from galaxy.web.base.controller import UsesHistoryMixin
 from galaxy.web.framework.helpers import is_true
@@ -146,6 +146,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
         extra_info = None
         mode = kwargs.get( "mode", "Auto" )
         data_provider_registry = trans.app.data_provider_registry
+        indexer = None
 
         # Coverage mode uses index data.
         if mode == "Coverage":
@@ -192,16 +193,26 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
         if max_vals is None:
             max_vals = data_provider.get_default_max_vals()
 
-        # Get reference sequence for region; this is used by providers for aligned reads.
+        # Get reference sequence and mean depth for region; these is used by providers for aligned reads.
         ref_seq = None
-        if dataset.dbkey:
-            data_dict = self.app.genomes.reference( trans, dbkey=dataset.dbkey, chrom=chrom, low=low, high=high )
-            if data_dict:
-                ref_seq = data_dict[ 'data' ]
+        mean_depth = None
+        if isinstance( data_provider, (SamDataProvider, BamDataProvider ) ):
+            # Get reference sequence.
+            if dataset.dbkey:
+                data_dict = self.app.genomes.reference( trans, dbkey=dataset.dbkey, chrom=chrom, low=low, high=high )
+                if data_dict:
+                    ref_seq = data_dict[ 'data' ]
+
+            # Get mean depth.
+            if not indexer:
+                indexer = data_provider_registry.get_data_provider( trans, original_dataset=dataset, source='index' )
+            stats = indexer.get_data( chrom, low, high, stats=True )
+            mean_depth = stats[ 'data' ][ 'mean' ]
+
 
         # Get and return data from data_provider.
         result = data_provider.get_data( chrom, int( low ), int( high ), int( start_val ), int( max_vals ),
-                                         ref_seq=ref_seq, **kwargs )
+                                         ref_seq=ref_seq, mean_depth=mean_depth, **kwargs )
         result.update( { 'dataset_type': data_provider.dataset_type, 'extra_info': extra_info } )
         return result
 
