@@ -135,7 +135,8 @@ def create_repository_and_import_archive( trans, repository_archive_dict, import
             ( str( name ), str( username ))
         import_results_tups.append( ( ok, ( str( name ), str( username ) ), results_message ) )
     else:
-        if repository_archive_dict[ 'status' ] is None:
+        status = repository_archive_dict.get( 'status', None )
+        if status is None:
             # The repository does not yet exist in this Tool Shed and the current user is authorized to import
             # the current archive file.
             type = repository_archive_dict.get( 'type', 'unrestricted' )
@@ -154,7 +155,7 @@ def create_repository_and_import_archive( trans, repository_archive_dict, import
                 # exist in the current Tool Shed, the category will not be created, so it will not be associated with
                 # the repository.
                 category_ids = []
-                category_names = repository_archive_dict[ 'category_names' ]
+                category_names = repository_archive_dict.get( 'category_names', [] )
                 for category_name in category_names:
                     category = suc.get_category_by_name( trans, category_name )
                     if category is None:
@@ -182,8 +183,7 @@ def create_repository_and_import_archive( trans, repository_archive_dict, import
         else:
             # The repository either already exists in this Tool Shed or the current user is not authorized to create it.
             ok = True
-            results_message += 'Import not necessary: repository status for this Tool Shed is: %s.' % \
-                str( repository_archive_dict[ 'status' ] )
+            results_message += 'Import not necessary: repository status for this Tool Shed is: %s.' % str( status )
             import_results_tups.append( ( ok, ( str( name ), str( username ) ), results_message ) )
     return import_results_tups
 
