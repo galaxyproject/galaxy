@@ -218,50 +218,6 @@ var LibraryRowView = Backbone.View.extend({
     });
   },
 
-  toggle_library_modification: function($library_row){
-      var library = this.collection.get($library_row.data('id'));
-
-      $library_row.find('.public_lib_ico').toggle();
-      $library_row.find('.deleted_lib_ico').toggle();
-      $library_row.find('.edit_library_btn').toggle();
-      $library_row.find('.upload_library_btn').toggle();
-      $library_row.find('.permission_library_btn').toggle();
-      $library_row.find('.save_library_btn').toggle();
-      $library_row.find('.cancel_library_btn').toggle();
-      if (library.get('deleted')){
-      } else {
-          $library_row.find('.delete_library_btn').toggle();
-      }
-
-      if ($library_row.find('.edit_library_btn').is(':hidden')){
-          // library name
-          var current_library_name = library.get('name');
-          var new_html = '<input type="text" class="form-control input_library_name" placeholder="name">';
-          $library_row.children('td').eq(0).html(new_html);
-          if (typeof current_library_name !== undefined){
-              $library_row.find('.input_library_name').val(current_library_name);
-          }
-          // library description
-          var current_library_description = library.get('description');
-          var new_html = '<input type="text" class="form-control input_library_description" placeholder="description">';
-          $library_row.children('td').eq(1).html(new_html);
-          if (typeof current_library_description !== undefined){
-              $library_row.find('.input_library_description').val(current_library_description);
-          }
-          // library synopsis
-          var current_library_synopsis = library.get('synopsis');
-          var new_html = '<input type="text" class="form-control input_library_synopsis" placeholder="synopsis">';
-          $library_row.children('td').eq(2).html(new_html);
-          if (typeof current_library_synopsis !== undefined){
-              $library_row.find('.input_library_synopsis').val(current_library_synopsis);
-          }
-      } else {
-          $library_row.children('td').eq(0).html(library.get('name'));
-          $library_row.children('td').eq(1).html(library.get('description'));
-          $library_row.children('td').eq(2).html(library.get('synopsis'));
-      }
-  },
-
   templateRow: function() {
     tmpl_array = [];
 
