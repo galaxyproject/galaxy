@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <toolshed name="toolshed.g2.bx.psu.edu">
-    <repository owner="devteam" name="analyze_covariates" changeset_revision="be6bede22459" description="Analyze Covariates">
+    <repository owner="devteam" name="analyze_covariates" changeset_revision="738bc749f9a3" description="Analyze Covariates">
         <tool id="gatk_analyze_covariates" version="0.0.5" file="gatk/analyze_covariates.xml" />
     </repository>
     <repository owner="devteam" name="basecoverage" changeset_revision="1e6a9e97fa41" description="Base Coverage of all intervals">
