@@ -115,6 +115,10 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                 return trans.response.send_redirect( web.url_for( controller='repository',
                                                                   action='browse_repositories',
                                                                   **kwd ) )
+        title = trans.app.repository_grid_filter_manager.get_grid_title( trans,
+                                                                         trailing_string='by Category',
+                                                                         default='Categories' )
+        self.category_grid.title = title
         return self.category_grid( trans, **kwd )
 
     @web.expose
@@ -400,12 +404,16 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                                               operation='view_or_manage_repository',
                                                               id=trans.security.encode_id( repository.id ),
                                                               changeset_revision=selected_changeset_revision ) )
+        title = trans.app.repository_grid_filter_manager.get_grid_title( trans,
+                                                                         trailing_string='',
+                                                                         default='Repositories' )
+        self.repository_grid.title = title
         return self.repository_grid( trans, **kwd )
 
     @web.expose
     def browse_repositories_by_user( self, trans, **kwd ):
         """Display the list of repositories owned by a specified user."""
-        # Eliminate the current filters if any exist.
+        # Eliminate the current search filters if any exist.
         for k, v in kwd.items():
             if k.startswith( 'f-' ):
                 del kwd[ k ]
@@ -433,7 +441,15 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                                                       changeset_revision=selected_changeset_revision ) )
         if user_id:
             user = suc.get_user( trans, user_id )
-            self.repositories_by_user_grid.title = "Repositories owned by %s" % user.username
+            trailing_string = 'Owned by %s' % str( user.username )
+            default = 'Repositories Owned by %s' % str( user.username )
+        else:
+            trailing_string = ''
+            default='Repositories'
+        title = trans.app.repository_grid_filter_manager.get_grid_title( trans,
+                                                                         trailing_string=trailing_string,
+                                                                         default=default )
+        self.repositories_by_user_grid.title = title
         return self.repositories_by_user_grid( trans, **kwd )
 
     @web.expose
@@ -519,7 +535,15 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         if category_id:
             category = suc.get_category( trans, category_id )
             if category:
-                self.repositories_in_category_grid.title = 'Category %s' % str( category.name )
+                trailing_string = 'in Category %s' % str( category.name )
+            else:
+                trailing_string = 'in Category'
+        else:
+            trailing_string = 'in Category'
+        title = trans.app.repository_grid_filter_manager.get_grid_title( trans,
+                                                                         trailing_string=trailing_string,
+                                                                         default='Repositories' )
+        self.repositories_in_category_grid.title = title
         return self.repositories_in_category_grid( trans, **kwd )
 
     @web.expose
@@ -767,6 +791,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
 
     @web.expose
     def browse_valid_categories( self, trans, **kwd ):
+        """Filter repositories per category by those that are valid for installing into Galaxy."""
         # The request came from Galaxy, so restrict category links to display only valid repository changeset revisions.
         galaxy_url = suc.handle_galaxy_url( trans, **kwd )
         if galaxy_url:
@@ -797,10 +822,15 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                 return trans.response.send_redirect( web.url_for( controller='repository',
                                                                   action='browse_valid_repositories',
                                                                   **kwd ) )
+        title = trans.app.repository_grid_filter_manager.get_grid_title( trans,
+                                                                         trailing_string='by Category',
+                                                                         default='Categories of Valid Repositories' )
+        self.valid_category_grid.title = title
         return self.valid_category_grid( trans, **kwd )
 
     @web.expose
     def browse_valid_repositories( self, trans, **kwd ):
+        """Filter repositories to those that are installable into Galaxy."""
         galaxy_url = suc.handle_galaxy_url( trans, **kwd )
         if galaxy_url:
             kwd[ 'galaxy_url' ] = galaxy_url
@@ -843,6 +873,10 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                                                         url_args=url_args,
                                                                         allow_multiple=False,
                                                                         async_compatible=False ) ]
+        title = trans.app.repository_grid_filter_manager.get_grid_title( trans,
+                                                                         trailing_string='',
+                                                                         default='Valid Repositories' )
+        self.valid_repository_grid.title = title
         return self.valid_repository_grid( trans, **kwd )
 
     @web.expose
@@ -1962,7 +1996,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         repository_metadata = trans.sa_session.query( trans.model.RepositoryMetadata ).first()
         current_user = trans.user
         # TODO: move the following to some in-memory register so these queries can be done once
-        # at startup.  The in-memory registe can then be managed during the current session.
+        # at startup.  The in-memory register can then be managed during the current session.
         can_administer_repositories = False
         has_reviewed_repositories = False
         has_deprecated_repositories = False

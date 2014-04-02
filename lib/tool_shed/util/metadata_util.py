@@ -1349,6 +1349,63 @@ def is_downloadable( metadata_dict ):
         return True
     return False
 
+def is_level_one_certified( trans, repository ):
+    """
+    Return True if the latest installable changeset_revision of the received repository is level one certified.
+    """
+    if repository.deleted:
+        return ( None, False )
+    repo = hg.repository( suc.get_configured_ui(), repository.repo_path( trans.app ) )
+    # Get the latest installable changeset revision since that is all that is currently configured for testing.
+    latest_installable_changeset_revision = suc.get_latest_downloadable_changeset_revision( trans, repository, repo )
+    if latest_installable_changeset_revision not in [ None, suc.INITIAL_CHANGELOG_HASH ]:
+        encoded_repository_id = trans.security.encode_id( repository.id )
+        repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans,
+                                                                                 encoded_repository_id,
+                                                                                 latest_installable_changeset_revision )
+        if repository_metadata:
+            # Filter out repository revisions that have not been tested.
+            if repository_metadata.time_last_tested is not None and repository_metadata.tool_test_results is not None:
+                if repository.type in [ rt_util.REPOSITORY_SUITE_DEFINITION, rt_util.TOOL_DEPENDENCY_DEFINITION ]:
+                    # Look in the tool_test_results dictionary for installation errors.
+                    try:
+                        tool_test_results_dict = repository_metadata.tool_test_results[ 0 ]
+                    except Exception, e:
+                        message = 'Error attempting to retrieve install and test results for repository %s:\n' % str( repository.name )
+                        message += '%s' % str( e )
+                        log.exception( message )
+                        return ( latest_installable_changeset_revision, False )
+                    if 'installation_errors' in tool_test_results_dict:
+                        return ( latest_installable_changeset_revision, False )
+                    return ( latest_installable_changeset_revision, True )
+                else:
+                    # We have a repository with type Unrestricted.
+                    if repository_metadata.includes_tools:
+                        if repository_metadata.tools_functionally_correct:
+                            return ( latest_installable_changeset_revision, True )
+                        return ( latest_installable_changeset_revision, False )
+                    else:
+                        # Look in the tool_test_results dictionary for installation errors.
+                        try:
+                            tool_test_results_dict = repository_metadata.tool_test_results[ 0 ]
+                        except Exception, e:
+                            message = 'Error attempting to retrieve install and test results for repository %s:\n' % str( repository.name )
+                            message += '%s' % str( e )
+                            log.exception( message )
+                            return ( latest_installable_changeset_revision, False )
+                        if 'installation_errors' in tool_test_results_dict:
+                            return ( latest_installable_changeset_revision, False )
+                        return ( latest_installable_changeset_revision, True )
+            else:
+                # No test results.
+                return ( latest_installable_changeset_revision, False )
+        else:
+            # No repository_metadata.
+            return ( latest_installable_changeset_revision, False )
+    else:
+        # No installable changeset_revision.
+        return ( None, False )
+
 def new_datatypes_metadata_required( trans, repository_metadata, metadata_dict ):
     """
     Compare the last saved metadata for each datatype in the repository with the new metadata in metadata_dict to determine if a new

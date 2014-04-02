@@ -41,11 +41,28 @@ class CategoryGrid( grids.Grid ):
     class RepositoriesColumn( grids.TextColumn ):
 
         def get_value( self, trans, grid, category ):
+            # TODO: we should probably keep an in-memory register to improve speed here.
             if category.repositories:
                 viewable_repositories = 0
                 for rca in category.repositories:
-                    if not rca.repository.deleted and not rca.repository.deprecated:
-                        viewable_repositories += 1
+                    repository = rca.repository
+                    filter = trans.app.repository_grid_filter_manager.get_filter( trans )
+                    if filter == trans.app.repository_grid_filter_manager.filters.CERTIFIED_LEVEL_ONE:
+                        if not repository.deprecated:
+                            is_level_one_certified_tuple = metadata_util.is_level_one_certified( trans, repository )
+                            latest_installable_changeset_revision, is_level_one_certified = is_level_one_certified_tuple
+                            if is_level_one_certified:
+                                viewable_repositories += 1
+                    elif filter == trans.app.repository_grid_filter_manager.filters.CERTIFIED_LEVEL_ONE_SUITES:
+                        if repository.type == rt_util.REPOSITORY_SUITE_DEFINITION and not repository.deprecated:
+                            is_level_one_certified_tuple = metadata_util.is_level_one_certified( trans, repository )
+                            latest_installable_changeset_revision, is_level_one_certified = is_level_one_certified_tuple
+                            if is_level_one_certified:
+                                viewable_repositories += 1
+                    else:
+                        # The value filter is None.
+                        if not repository.deleted and not repository.deprecated:
+                            viewable_repositories += 1
                 return viewable_repositories
             return 0
 
@@ -305,82 +322,32 @@ class RepositoryGrid( grids.Grid ):
     use_paging = False
 
     def build_initial_query( self, trans, **kwd ):
-        return trans.sa_session.query( model.Repository ) \
-                               .filter( and_( model.Repository.table.c.deleted == False,
-                                              model.Repository.table.c.deprecated == False ) ) \
-                               .join( model.User.table ) \
-                               .outerjoin( model.RepositoryCategoryAssociation.table ) \
-                               .outerjoin( model.Category.table )
-
-
-class CertifiedLevelOneRepositoryGrid( RepositoryGrid ):
-    columns = [ c for c in RepositoryGrid.columns ]
-
-    def build_initial_query( self, trans, **kwd ):
-        clause_list = []
-        for repository in trans.sa_session.query( model.Repository ) \
-                                          .filter( and_( model.Repository.table.c.deleted == False,
-                                                         model.Repository.table.c.deprecated == False ) ):
-            repo = hg.repository( suc.get_configured_ui(), repository.repo_path( trans.app ) )
-            # Get the list of latest installable changeset revision for each repository since that is all
-            # that is currently configured for testing.
-            if repository.type in [ rt_util.REPOSITORY_SUITE_DEFINITION, rt_util.TOOL_DEPENDENCY_DEFINITION ]:
-                # We can use the changelog tip.
-                latest_changeset_revision = str( repo.changectx( repo.changelog.tip() ) )
-            else:
-                latest_changeset_revision = suc.get_latest_downloadable_changeset_revision( trans, repository, repo )
-            if latest_changeset_revision not in [ None, suc.INITIAL_CHANGELOG_HASH ]:
-                encoded_repository_id = trans.security.encode_id( repository.id )
-                repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans,
-                                                                                         encoded_repository_id,
-                                                                                         latest_changeset_revision )
-                # Filter out repository revisions that have not been tested.
-                if repository_metadata.time_last_tested is not None and repository_metadata.tool_test_results is not None:
-                    if repository.type in [ rt_util.REPOSITORY_SUITE_DEFINITION, rt_util.TOOL_DEPENDENCY_DEFINITION ]:
-                        # Look in the tool_test_results dictionary for installation errors.
-                        try:
-                            tool_test_results_dict = repository_metadata.tool_test_results[ -1 ]
-                        except Exception, e:
-                            # The repository is not certified.
-                            continue
-                        if 'installation_errors' in tool_test_results_dict:
-                            continue
-                        # The revision is level 1 certified
-                        clause_list.append( "%s=%d and %s='%s'" % ( model.RepositoryMetadata.table.c.repository_id,
-                                                                    repository.id,
-                                                                    model.RepositoryMetadata.table.c.changeset_revision,
-                                                                    changeset_revision ) )
-                else:
-                    # We have an unrestricted repository.
-                    if latest_changeset_revision.includes_tools:
-                        if latest_changeset_revision.tools_functionally_correct:
-                            # The revision is level 1 certified
-                            clause_list.append( "%s=%d and %s='%s'" % ( model.RepositoryMetadata.table.c.repository_id,
-                                                                        repository.id,
-                                                                        model.RepositoryMetadata.table.c.changeset_revision,
-                                                                        changeset_revision ) )
-                    else:
-                        # Look in the tool_test_results dictionary for installation errors.
-                        try:
-                            tool_test_results_dict = repository_metadata.tool_test_results[ -1 ]
-                        except Exception, e:
-                            # The repository is not certified.
-                            continue
-                        if 'installation_errors' in tool_test_results_dict:
-                            continue
-                        # The revision is level 1 certified
-                        clause_list.append( "%s=%d and %s='%s'" % ( model.RepositoryMetadata.table.c.repository_id,
-                                                                    repository.id,
-                                                                    model.RepositoryMetadata.table.c.changeset_revision,
-                                                                    changeset_revision ) )
-        return trans.sa_session.query( model.Repository ) \
-                               .filter( and_( model.Repository.table.c.deleted == False,
-                                              model.Repository.table.c.deprecated == False ) ) \
-                               .join( model.RepositoryMetadata.table ) \
-                               .filter( or_( *clause_list ) ) \
-                               .join( model.User.table ) \
-                               .outerjoin( model.RepositoryCategoryAssociation.table ) \
-                               .outerjoin( model.Category.table )
+        filter = trans.app.repository_grid_filter_manager.get_filter( trans )
+        if filter == trans.app.repository_grid_filter_manager.filters.CERTIFIED_LEVEL_ONE:
+            clause_list = get_certified_level_one_clause_list( trans )
+            return trans.sa_session.query( model.Repository ) \
+                                   .join( model.RepositoryMetadata.table ) \
+                                   .filter( or_( *clause_list ) ) \
+                                   .join( model.User.table ) \
+                                   .outerjoin( model.RepositoryCategoryAssociation.table ) \
+                                   .outerjoin( model.Category.table )
+        if filter == trans.app.repository_grid_filter_manager.filters.CERTIFIED_LEVEL_ONE_SUITES:
+            clause_list = get_certified_level_one_clause_list( trans )
+            return trans.sa_session.query( model.Repository ) \
+                                   .filter( model.Repository.type == rt_util.REPOSITORY_SUITE_DEFINITION ) \
+                                   .join( model.RepositoryMetadata.table ) \
+                                   .filter( or_( *clause_list ) ) \
+                                   .join( model.User.table ) \
+                                   .outerjoin( model.RepositoryCategoryAssociation.table ) \
+                                   .outerjoin( model.Category.table )
+        else:
+            # The filter is None.
+            return trans.sa_session.query( model.Repository ) \
+                                   .filter( and_( model.Repository.table.c.deleted == False,
+                                                  model.Repository.table.c.deprecated == False ) ) \
+                                   .join( model.User.table ) \
+                                   .outerjoin( model.RepositoryCategoryAssociation.table ) \
+                                   .outerjoin( model.Category.table )
 
 
 class EmailAlertsRepositoryGrid( RepositoryGrid ):
@@ -566,13 +533,35 @@ class RepositoriesByUserGrid( RepositoryGrid ):
 
     def build_initial_query( self, trans, **kwd ):
         decoded_user_id = trans.security.decode_id( kwd[ 'user_id' ] )
-        return trans.sa_session.query( model.Repository ) \
-                               .filter( and_( model.Repository.table.c.deleted == False,
-                                              model.Repository.table.c.deprecated == False,
-                                              model.Repository.table.c.user_id == decoded_user_id ) ) \
-                               .join( model.User.table ) \
-                               .outerjoin( model.RepositoryCategoryAssociation.table ) \
-                               .outerjoin( model.Category.table )
+        filter = trans.app.repository_grid_filter_manager.get_filter( trans )
+        if filter == trans.app.repository_grid_filter_manager.filters.CERTIFIED_LEVEL_ONE:
+            clause_list = get_certified_level_one_clause_list( trans )
+            return trans.sa_session.query( model.Repository ) \
+                                   .filter( model.Repository.table.c.user_id == decoded_user_id ) \
+                                   .join( model.RepositoryMetadata.table ) \
+                                   .filter( or_( *clause_list ) ) \
+                                   .join( model.User.table ) \
+                                   .outerjoin( model.RepositoryCategoryAssociation.table ) \
+                                   .outerjoin( model.Category.table )
+        if filter == trans.app.repository_grid_filter_manager.filters.CERTIFIED_LEVEL_ONE_SUITES:
+            clause_list = get_certified_level_one_clause_list( trans )
+            return trans.sa_session.query( model.Repository ) \
+                                   .filter( and_( model.Repository.type == rt_util.REPOSITORY_SUITE_DEFINITION,
+                                                  model.Repository.table.c.user_id == decoded_user_id ) ) \
+                                   .join( model.RepositoryMetadata.table ) \
+                                   .filter( or_( *clause_list ) ) \
+                                   .join( model.User.table ) \
+                                   .outerjoin( model.RepositoryCategoryAssociation.table ) \
+                                   .outerjoin( model.Category.table )
+        else:
+            # The value of filter is None.
+            return trans.sa_session.query( model.Repository ) \
+                                   .filter( and_( model.Repository.table.c.deleted == False,
+                                                  model.Repository.table.c.deprecated == False,
+                                                  model.Repository.table.c.user_id == decoded_user_id ) ) \
+                                   .join( model.User.table ) \
+                                   .outerjoin( model.RepositoryCategoryAssociation.table ) \
+                                   .outerjoin( model.Category.table )
 
 
 class RepositoriesInCategoryGrid( RepositoryGrid ):
@@ -610,22 +599,63 @@ class RepositoriesInCategoryGrid( RepositoryGrid ):
 
     def build_initial_query( self, trans, **kwd ):
         category_id = kwd.get( 'id', None )
-        if category_id:
-            category = suc.get_category( trans, category_id )
-            if category:
-                return trans.sa_session.query( model.Repository ) \
-                                       .filter( and_( model.Repository.table.c.deleted == False,
-                                                      model.Repository.table.c.deprecated == False ) ) \
-                                       .join( model.User.table ) \
-                                       .outerjoin( model.RepositoryCategoryAssociation.table ) \
-                                       .outerjoin( model.Category.table ) \
-                                       .filter( model.Category.table.c.name == category.name )
-        return trans.sa_session.query( model.Repository ) \
-                               .filter( and_( model.Repository.table.c.deleted == False,
-                                              model.Repository.table.c.deprecated == False ) ) \
-                               .join( model.User.table ) \
-                               .outerjoin( model.RepositoryCategoryAssociation.table ) \
-                               .outerjoin( model.Category.table )
+        filter = trans.app.repository_grid_filter_manager.get_filter( trans )
+        if filter == trans.app.repository_grid_filter_manager.filters.CERTIFIED_LEVEL_ONE:
+            clause_list = get_certified_level_one_clause_list( trans )
+            if category_id:
+                category = suc.get_category( trans, category_id )
+                if category:
+                    return trans.sa_session.query( model.Repository ) \
+                                           .join( model.RepositoryMetadata.table ) \
+                                           .filter( or_( *clause_list ) ) \
+                                           .join( model.User.table ) \
+                                           .outerjoin( model.RepositoryCategoryAssociation.table ) \
+                                           .outerjoin( model.Category.table ) \
+                                           .filter( model.Category.table.c.name == category.name )
+            return trans.sa_session.query( model.Repository ) \
+                                   .join( model.RepositoryMetadata.table ) \
+                                   .filter( or_( *clause_list ) ) \
+                                   .join( model.User.table ) \
+                                   .outerjoin( model.RepositoryCategoryAssociation.table ) \
+                                   .outerjoin( model.Category.table )
+        if filter == trans.app.repository_grid_filter_manager.filters.CERTIFIED_LEVEL_ONE_SUITES:
+            clause_list = get_certified_level_one_clause_list( trans )
+            if category_id:
+                category = suc.get_category( trans, category_id )
+                if category:
+                    return trans.sa_session.query( model.Repository ) \
+                                           .filter( model.Repository.type == rt_util.REPOSITORY_SUITE_DEFINITION ) \
+                                           .join( model.RepositoryMetadata.table ) \
+                                           .filter( or_( *clause_list ) ) \
+                                           .join( model.User.table ) \
+                                           .outerjoin( model.RepositoryCategoryAssociation.table ) \
+                                           .outerjoin( model.Category.table ) \
+                                           .filter( model.Category.table.c.name == category.name )
+            return trans.sa_session.query( model.Repository ) \
+                                   .filter( model.Repository.type == rt_util.REPOSITORY_SUITE_DEFINITION ) \
+                                   .join( model.RepositoryMetadata.table ) \
+                                   .filter( or_( *clause_list ) ) \
+                                   .join( model.User.table ) \
+                                   .outerjoin( model.RepositoryCategoryAssociation.table ) \
+                                   .outerjoin( model.Category.table )
+        else:
+            # The value of filter is None.
+            if category_id:
+                category = suc.get_category( trans, category_id )
+                if category:
+                    return trans.sa_session.query( model.Repository ) \
+                                           .filter( and_( model.Repository.table.c.deleted == False,
+                                                          model.Repository.table.c.deprecated == False ) ) \
+                                           .join( model.User.table ) \
+                                           .outerjoin( model.RepositoryCategoryAssociation.table ) \
+                                           .outerjoin( model.Category.table ) \
+                                           .filter( model.Category.table.c.name == category.name )
+            return trans.sa_session.query( model.Repository ) \
+                                   .filter( and_( model.Repository.table.c.deleted == False,
+                                                  model.Repository.table.c.deprecated == False ) ) \
+                                   .join( model.User.table ) \
+                                   .outerjoin( model.RepositoryCategoryAssociation.table ) \
+                                   .outerjoin( model.Category.table )
 
 
 class RepositoriesIOwnGrid( RepositoryGrid ):
@@ -767,8 +797,8 @@ class MyWritableRepositoriesMissingToolTestComponentsGrid( RepositoriesMissingTo
                 if username in allow_push_usernames:
                     user_clause_list.append( model.Repository.table.c.id == repository.id )
         if user_clause_list:
-            # We have the list of repositories that the current user is authorized to update, so filter further by latest installable revisions that contain
-            # tools with missing tool test components.
+            # We have the list of repositories that the current user is authorized to update, so filter
+            # further by latest installable revisions that contain tools with missing tool test components.
             revision_clause_list = []
             for repository in trans.sa_session.query( model.Repository ) \
                                               .filter( and_( model.Repository.table.c.deprecated == False,
@@ -854,8 +884,8 @@ class MyWritableRepositoriesWithTestInstallErrorsGrid( RepositoriesWithTestInsta
                 if username in allow_push_usernames:
                     user_clause_list.append( model.Repository.table.c.id == repository.id )
         if user_clause_list:
-            # We have the list of repositories that the current user is authorized to update, so filter further by latest installable revisions that contain
-            # tools with missing tool test components.
+            # We have the list of repositories that the current user is authorized to update, so filter
+            # further by latest installable revisions that contain tools with missing tool test components.
             revision_clause_list = []
             for repository in trans.sa_session.query( model.Repository ) \
                                               .filter( and_( model.Repository.table.c.deprecated == False,
@@ -941,8 +971,8 @@ class MyWritableRepositoriesWithSkipTestsCheckedGrid( RepositoriesWithSkipTestsC
                 if username in allow_push_usernames:
                     user_clause_list.append( model.Repository.table.c.id == repository.id )
         if user_clause_list:
-            # We have the list of repositories that the current user is authorized to update, so filter further by latest installable revisions that contain
-            # tools with missing tool test components.
+            # We have the list of repositories that the current user is authorized to update, so filter
+            # further by latest installable revisions that contain tools with missing tool test components.
             revision_clause_list = []
             for repository in trans.sa_session.query( model.Repository ) \
                                               .filter( and_( model.Repository.table.c.deprecated == False,
@@ -1060,8 +1090,8 @@ class MyWritableRepositoriesWithFailingToolTestsGrid( RepositoriesWithFailingToo
                 if username in allow_push_usernames:
                     user_clause_list.append( model.Repository.table.c.id == repository.id )
         if user_clause_list:
-            # We have the list of repositories that the current user is authorized to update, so filter further by latest installable revisions that contain
-            # tools with at least 1 failing tool test.
+            # We have the list of repositories that the current user is authorized to update, so filter
+            # further by latest installable revisions that contain tools with at least 1 failing tool test.
             revision_clause_list = []
             for repository in trans.sa_session.query( model.Repository ) \
                                               .filter( and_( model.Repository.table.c.deprecated == False,
@@ -1107,8 +1137,8 @@ class RepositoriesWithNoFailingToolTestsGrid( RepositoryGrid ):
     use_paging = False
 
     def build_initial_query( self, trans, **kwd ):
-        # We have the list of repositories that the current user is authorized to update, so filter further by latest installable revisions that contain
-        # tools with at least 1 failing tool test.
+        # We have the list of repositories that the current user is authorized to update, so filter
+        # further by latest installable revisions that contain tools with at least 1 failing tool test.
         revision_clause_list = []
         for repository in trans.sa_session.query( model.Repository ) \
                                           .filter( and_( model.Repository.table.c.deprecated == False,
@@ -1148,8 +1178,9 @@ class MyWritableRepositoriesWithNoFailingToolTestsGrid( RepositoriesWithNoFailin
                 if username in allow_push_usernames:
                     user_clause_list.append( model.Repository.table.c.id == repository.id )
         if user_clause_list:
-            # We have the list of repositories that the current user is authorized to update, so filter further by latest installable revisions that contain
-            # at least 1 tool, no missing tool test components, and no failing tool tests.
+            # We have the list of repositories that the current user is authorized to update, so filter
+            # further by latest installable revisions that contain at least 1 tool, no missing tool test
+            # components, and no failing tool tests.
             revision_clause_list = []
             for repository in trans.sa_session.query( model.Repository ) \
                                               .filter( and_( model.Repository.table.c.deprecated == False,
@@ -1254,8 +1285,8 @@ class MyWritableRepositoriesWithInvalidToolsGrid( RepositoriesWithInvalidToolsGr
                 if username in allow_push_usernames:
                     user_clause_list.append( model.Repository.table.c.id == repository.id )
         if user_clause_list:
-            # We have the list of repositories that the current user is authorized to update, so filter further by latest metadata revisions that contain
-            # invalid tools.
+            # We have the list of repositories that the current user is authorized to update, so filter
+            # further by latest metadata revisions that contain invalid tools.
             revision_clause_list = []
             for repository in trans.sa_session.query( model.Repository ) \
                                               .filter( and_( model.Repository.table.c.deprecated == False,
@@ -1709,16 +1740,33 @@ class ValidCategoryGrid( CategoryGrid ):
     class RepositoriesColumn( grids.TextColumn ):
 
         def get_value( self, trans, grid, category ):
+            # TODO: We should probably keep in in-memory register for speed improvements.
             if category.repositories:
                 viewable_repositories = 0
                 for rca in category.repositories:
                     repository = rca.repository
-                    if not repository.deleted and not repository.deprecated and repository.downloadable_revisions:
-                        viewable_repositories += 1
+                    filter = trans.app.repository_grid_filter_manager.get_filter( trans )
+                    if filter == trans.app.repository_grid_filter_manager.filters.CERTIFIED_LEVEL_ONE:
+                        if not repository.deprecated and repository.downloadable_revisions:
+                            is_level_one_certified_tuple = metadata_util.is_level_one_certified( trans, repository )
+                            latest_installable_changeset_revision, is_level_one_certified = is_level_one_certified_tuple
+                            if is_level_one_certified:
+                                viewable_repositories += 1
+                    if filter == trans.app.repository_grid_filter_manager.filters.CERTIFIED_LEVEL_ONE_SUITES:
+                        if repository.type == rt_util.REPOSITORY_SUITE_DEFINITION and \
+                            not repository.deprecated and repository.downloadable_revisions:
+                            is_level_one_certified_tuple = metadata_util.is_level_one_certified( trans, repository )
+                            latest_installable_changeset_revision, is_level_one_certified = is_level_one_certified_tuple
+                            if is_level_one_certified:
+                                viewable_repositories += 1
+                    else:
+                        # The value of filter is None.
+                        if not repository.deleted and not repository.deprecated and repository.downloadable_revisions:
+                            viewable_repositories += 1
                 return viewable_repositories
             return 0
 
-    title = "Categories of valid repositories"
+    title = "Categories of Valid Repositories"
     model_class = model.Category
     template='/webapps/tool_shed/category/valid_grid.mako'
     default_sort_key = "name"
@@ -1786,7 +1834,7 @@ class ValidRepositoryGrid( RepositoryGrid ):
                 return select_field.options[ 0 ][ 0 ]
             return ''
 
-    title = "Valid repositories"
+    title = "Valid Repositories"
     columns = [
         RepositoryGrid.NameColumn( "Name",
                                    key="name",
@@ -1815,26 +1863,72 @@ class ValidRepositoryGrid( RepositoryGrid ):
     use_paging = False
 
     def build_initial_query( self, trans, **kwd ):
+        filter = trans.app.repository_grid_filter_manager.get_filter( trans )
         if 'id' in kwd:
-            # The user is browsing categories of valid repositories, so filter the request by the received id, which is a category id.
+            # The user is browsing categories of valid repositories, so filter the request by the received id,
+            # which is a category id.
+            if filter == trans.app.repository_grid_filter_manager.filters.CERTIFIED_LEVEL_ONE:
+                clause_list = get_certified_level_one_clause_list( trans )
+                return trans.sa_session.query( model.Repository ) \
+                                       .join( model.RepositoryMetadata.table ) \
+                                       .filter( or_( *clause_list ) ) \
+                                       .join( model.User.table ) \
+                                       .join( model.RepositoryCategoryAssociation.table ) \
+                                       .join( model.Category.table ) \
+                                       .filter( and_( model.Category.table.c.id == trans.security.decode_id( kwd[ 'id' ] ),
+                                                      model.RepositoryMetadata.table.c.downloadable == True ) )
+            if filter == trans.app.repository_grid_filter_manager.filters.CERTIFIED_LEVEL_ONE_SUITES:
+                clause_list = get_certified_level_one_clause_list( trans )
+                return trans.sa_session.query( model.Repository ) \
+                                       .filter( model.Repository.type == rt_util.REPOSITORY_SUITE_DEFINITION ) \
+                                       .join( model.RepositoryMetadata.table ) \
+                                       .filter( or_( *clause_list ) ) \
+                                       .join( model.User.table ) \
+                                       .join( model.RepositoryCategoryAssociation.table ) \
+                                       .join( model.Category.table ) \
+                                       .filter( and_( model.Category.table.c.id == trans.security.decode_id( kwd[ 'id' ] ),
+                                                      model.RepositoryMetadata.table.c.downloadable == True ) )
+            else:
+                # The value of filter is None.
+                return trans.sa_session.query( model.Repository ) \
+                                       .filter( and_( model.Repository.table.c.deleted == False,
+                                                      model.Repository.table.c.deprecated == False ) ) \
+                                       .join( model.RepositoryMetadata.table ) \
+                                       .join( model.User.table ) \
+                                       .join( model.RepositoryCategoryAssociation.table ) \
+                                       .join( model.Category.table ) \
+                                       .filter( and_( model.Category.table.c.id == trans.security.decode_id( kwd[ 'id' ] ),
+                                                      model.RepositoryMetadata.table.c.downloadable == True ) )
+        # The user performed a free text search on the ValidCategoryGrid.
+        if filter == trans.app.repository_grid_filter_manager.filters.CERTIFIED_LEVEL_ONE:
+            clause_list = get_certified_level_one_clause_list( trans )
+            return trans.sa_session.query( model.Repository ) \
+                                   .join( model.RepositoryMetadata.table ) \
+                                   .filter( or_( *clause_list ) ) \
+                                   .join( model.User.table ) \
+                                   .outerjoin( model.RepositoryCategoryAssociation.table ) \
+                                   .outerjoin( model.Category.table ) \
+                                   .filter( model.RepositoryMetadata.table.c.downloadable == True )
+        if filter == trans.app.repository_grid_filter_manager.filters.CERTIFIED_LEVEL_ONE_SUITES:
+            clause_list = get_certified_level_one_clause_list( trans )
+            return trans.sa_session.query( model.Repository ) \
+                                   .filter( model.Repository.type == rt_util.REPOSITORY_SUITE_DEFINITION ) \
+                                   .join( model.RepositoryMetadata.table ) \
+                                   .filter( or_( *clause_list ) ) \
+                                   .join( model.User.table ) \
+                                   .outerjoin( model.RepositoryCategoryAssociation.table ) \
+                                   .outerjoin( model.Category.table ) \
+                                   .filter( model.RepositoryMetadata.table.c.downloadable == True )
+        else:
+            # The value of filter is None.
             return trans.sa_session.query( model.Repository ) \
                                    .filter( and_( model.Repository.table.c.deleted == False,
                                                   model.Repository.table.c.deprecated == False ) ) \
                                    .join( model.RepositoryMetadata.table ) \
                                    .join( model.User.table ) \
-                                   .join( model.RepositoryCategoryAssociation.table ) \
-                                   .join( model.Category.table ) \
-                                   .filter( and_( model.Category.table.c.id == trans.security.decode_id( kwd[ 'id' ] ),
-                                                  model.RepositoryMetadata.table.c.downloadable == True ) )
-        # The user performed a free text search on the ValidCategoryGrid.
-        return trans.sa_session.query( model.Repository ) \
-                               .filter( and_( model.Repository.table.c.deleted == False,
-                                              model.Repository.table.c.deprecated == False ) ) \
-                               .join( model.RepositoryMetadata.table ) \
-                               .join( model.User.table ) \
-                               .outerjoin( model.RepositoryCategoryAssociation.table ) \
-                               .outerjoin( model.Category.table ) \
-                               .filter( model.RepositoryMetadata.table.c.downloadable == True )
+                                   .outerjoin( model.RepositoryCategoryAssociation.table ) \
+                                   .outerjoin( model.Category.table ) \
+                                   .filter( model.RepositoryMetadata.table.c.downloadable == True )
 
 # ------ utility methods -------------------
 
@@ -1913,6 +2007,20 @@ def filter_by_latest_downloadable_changeset_revision_with_skip_tests_checked( tr
     if repository_metadata is not None and repository_metadata.skip_tool_tests:
         return repository_metadata.changeset_revision
     return None
+
+def get_certified_level_one_clause_list( trans ):
+    clause_list = []
+    for repository in trans.sa_session.query( model.Repository ) \
+                                      .filter( and_( model.Repository.table.c.deleted == False,
+                                                     model.Repository.table.c.deprecated == False ) ):
+        is_level_one_certified_tuple = metadata_util.is_level_one_certified( trans, repository )
+        latest_installable_changeset_revision, is_level_one_certified = is_level_one_certified_tuple
+        if is_level_one_certified:
+            clause_list.append( "%s=%d and %s='%s'" % ( model.RepositoryMetadata.table.c.repository_id,
+                                                        repository.id,
+                                                        model.RepositoryMetadata.table.c.changeset_revision,
+                                                        latest_installable_changeset_revision ) )
+    return clause_list
 
 def get_latest_downloadable_repository_metadata( trans, repository ):
     """
