@@ -894,14 +894,12 @@ var BackboneTrack = Backbone.Model.extend(CustomToJSON).extend({
         this.set('dataset', new data_mod.Dataset(options.dataset));
 
         // -- Set up config settings. -- 
-
-        this.set('config', config_mod.ConfigSettingCollection.from_config_dict(options.prefs));
-
-        // Set up some minimal config.
-        this.get('config').add( [
+        var models =  [
             { key: 'name', value: this.get('dataset').get('name') },
             { key: 'color' }
-        ] );
+        ];
+
+        this.set('config', config_mod.ConfigSettingCollection.from_models_and_saved_values(models, options.prefs));
 
         // -- Set up data manager. --
         var preloaded_data = this.get('preloaded_data');
@@ -993,7 +991,9 @@ var GenomeVisualization = Visualization.extend(CustomToJSON).extend({
     initialize: function(options) {
         // Replace drawables with tracks.
         this.set('drawables', new BackboneTrackCollection(options.tracks));
-        this.set('config', config_mod.ConfigSettingCollection.from_config_dict(options.prefs || {}));
+
+        var models = [];
+        this.set('config', config_mod.ConfigSettingCollection.from_models_and_saved_values(models, options.prefs));
         
         // Clear track and data definitions to avoid storing large objects.
         this.unset('tracks');
