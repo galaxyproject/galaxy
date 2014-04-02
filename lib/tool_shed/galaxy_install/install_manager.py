@@ -57,8 +57,9 @@ class InstallManager( object ):
                 print error_message
             else:
                 root = tree.getroot()
-                self.tool_shed_url = suc.get_url_from_tool_shed( self.app, root.get( 'name' ) )
-                self.tool_shed = suc.clean_tool_shed_url( self.tool_shed_url )
+                defined_tool_shed_url = root.get( 'name' )
+                self.tool_shed_url = suc.get_url_from_tool_shed( self.app, defined_tool_shed_url )
+                self.tool_shed = suc.clean_tool_shed_url( defined_tool_shed_url )
                 self.repository_owner = common_util.REPOSITORY_OWNER
                 index, self.shed_config_dict = suc.get_shed_tool_conf_dict( app, self.migrated_tools_config )
                 # Since tool migration scripts can be executed any number of times, we need to make sure the appropriate tools are defined in
