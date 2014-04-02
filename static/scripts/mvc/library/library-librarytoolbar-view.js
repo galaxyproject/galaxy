@@ -22,23 +22,26 @@ var ToolbarView = Backbone.View.extend({
   },
 
   render: function(){
-    var toolbar_template = this.templateToolBar()
+    var toolbar_template = this.templateToolBar();
     this.$el.html(toolbar_template({admin_user: Galaxy.currUser.isAdmin(), anon_user: Galaxy.currUser.isAnonymous()}))
+    if (Galaxy.currUser.isAdmin() === true){
+      this.$el.find('#include_deleted_chk')[0].checked = Galaxy.libraries.preferences.get('with_deleted');
+    }
   },
 
   delegate_modal: function(event){
     // probably should refactor to have this functionality in this view, not in the library view
-    libraryListView.show_library_modal(event);
+    Galaxy.libraries.libraryListView.show_library_modal(event);
   },
 
   // include or exclude deleted libraries from the view
   check_include_deleted: function(event){
     if (event.target.checked){
-        libraryListView.preferences.set({'with_deleted': true});
-        libraryListView.render();
+        Galaxy.libraries.preferences.set({'with_deleted': true});
+        Galaxy.libraries.libraryListView.render();
     } else{
-        libraryListView.preferences.set({'with_deleted': false});
-        libraryListView.render();
+        Galaxy.libraries.preferences.set({'with_deleted': false});
+        Galaxy.libraries.libraryListView.render();
     }
   },
 
@@ -51,8 +54,8 @@ var ToolbarView = Backbone.View.extend({
     tmpl_array.push('       <h3>Data Libraries Beta Test. This is work in progress. Please report problems & ideas via <a href="mailto:galaxy-bugs@bx.psu.edu?Subject=DataLibrariesBeta_Feedback" target="_blank">email</a> and <a href="https://trello.com/c/nwYQNFPK/56-data-library-ui-progressive-display-of-folders" target="_blank">Trello</a>.</h3>');
     tmpl_array.push('   <% if(admin_user === true) { %>');
     tmpl_array.push('       <div id="library_toolbar">');
-    tmpl_array.push('           <input id="include_deleted_chk" style="margin: 0;" type="checkbox">include deleted</input>');
-    tmpl_array.push('           <button data-toggle="tooltip" data-placement="top" title="Create New Library" id="create_new_library_btn" class="primary-button" type="button"><span class="fa fa-plus"></span> New Library</button>');
+    tmpl_array.push('           <span data-toggle="tooltip" data-placement="top" title="Include deleted libraries"><input id="include_deleted_chk" style="margin: 0;" type="checkbox"> <span class="fa fa-trash-o fa-lg"></span></input></span>');
+    tmpl_array.push('           <span data-toggle="tooltip" data-placement="top" title="Create New Library"><button id="create_new_library_btn" class="primary-button btn-xs" type="button"><span class="fa fa-plus"></span> New Library</button><span>');
     tmpl_array.push('       </div>');
     tmpl_array.push('   <% } %>');
     tmpl_array.push('  </div>');

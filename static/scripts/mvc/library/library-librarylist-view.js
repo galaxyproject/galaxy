@@ -13,14 +13,6 @@ function(mod_masthead,
          mod_library_model,
          mod_library_libraryrow_view) {
 
-// ============================================================================
-/** session storage for library preferences */
-var LibraryPrefs = mod_baseMVC.SessionStorageModel.extend({
-    defaults : {
-        with_deleted : false
-    }
-});
-
 // galaxy library view
 var LibraryListView = Backbone.View.extend({
     el: '#libraries_element',
@@ -38,8 +30,6 @@ var LibraryListView = Backbone.View.extend({
 
     collection: null,
 
-    preferences: null,
-
     // map of library model ids to library views = cache
     rowViews: {},
 
@@ -48,8 +38,6 @@ var LibraryListView = Backbone.View.extend({
         var viewContext = this;
 
         this.rowViews = {};
-
-        this.preferences = new LibraryPrefs({id: 'global-lib-prefs'});
 
         this.collection = new mod_library_model.Libraries();
 
@@ -69,7 +57,8 @@ var LibraryListView = Backbone.View.extend({
     render: function (options) {
         var template = this.templateLibraryList();
         var libraries_to_render = null;
-        var include_deleted = this.preferences.get('with_deleted');
+        var include_deleted = true;
+        var include_deleted = Galaxy.libraries.preferences.get('with_deleted');
         var models = null
         if (typeof options !== 'undefined'){
             include_deleted = typeof options.with_deleted !== 'undefined' ? options.with_deleted : false;
@@ -88,7 +77,7 @@ var LibraryListView = Backbone.View.extend({
             libraries_to_render = [];
             }
 
-        this.$el.html(template({length: libraries_to_render.length, order: this.collection.sort_order}));
+        this.$el.html(template({length: libraries_to_render.length, order: Galaxy.libraries.preferences.get('sort_order') }));
 
         this.renderRows(libraries_to_render);
         // initialize the library tooltips
@@ -125,10 +114,12 @@ var LibraryListView = Backbone.View.extend({
     // },
     
     sort_clicked : function(){
-        if (this.collection.sort_order == 'asc'){
+        if (Galaxy.libraries.preferences.get('sort_order') === 'asc'){
             this.sortLibraries('name','desc');
+            Galaxy.libraries.preferences.set({'sort_order': 'desc'});
         } else {
             this.sortLibraries('name','asc');
+            Galaxy.libraries.preferences.set({'sort_order': 'asc'});
         }
         this.render();
     },
@@ -138,14 +129,14 @@ var LibraryListView = Backbone.View.extend({
     sortLibraries: function(sort_by, order){
         if (sort_by === 'name'){
             if (order === 'asc'){
-                this.collection.sort_order = 'asc';
+                // this.collection.sort_order = 'asc';
                 this.collection.comparator = function(libraryA, libraryB){
                       if (libraryA.get('name').toLowerCase() > libraryB.get('name').toLowerCase()) return 1; // after
                       if (libraryB.get('name').toLowerCase() > libraryA.get('name').toLowerCase()) return -1; // before
                       return 0; // equal
                 }
             } else if (order === 'desc'){
-                this.collection.sort_order = 'desc';
+                // this.collection.sort_order = 'desc';
                 this.collection.comparator = function(libraryA, libraryB){
                       if (libraryA.get('name').toLowerCase() > libraryB.get('name').toLowerCase()) return -1; // before
                       if (libraryB.get('name').toLowerCase() > libraryA.get('name').toLowerCase()) return 1; // after
@@ -234,7 +225,7 @@ var LibraryListView = Backbone.View.extend({
               patch: true,
               success: function(library) {
                 mod_toastr.success('Changes to library saved');
-                galaxyLibraryview.toggle_library_modification($library_row);
+                Galaxy.libraries.libraryListView.toggle_library_modification($library_row);
               },
               error: function(model, response){
                 mod_toastr.error('An error occured during updating the library :(');
@@ -316,7 +307,7 @@ var LibraryListView = Backbone.View.extend({
             // add the newly undeleted library back to the collection
             // backbone does not accept changes through destroy, so update it too
             library.set('deleted', false);
-            galaxyLibraryview.collection.add(library);
+            Galaxy.libraries.libraryListView.collection.add(library);
             $library_row.removeClass('active');
             mod_toastr.success('Library has been undeleted');
           },
@@ -337,7 +328,7 @@ var LibraryListView = Backbone.View.extend({
             // add the new deleted library back to the collection
             $library_row.remove();
             library.set('deleted', true);
-            galaxyLibraryview.collection.add(library);
+            Galaxy.libraries.libraryListView.collection.add(library);
             mod_toastr.success('Library has been marked deleted');
           },
           error: function(){

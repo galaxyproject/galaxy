@@ -1309,7 +1309,7 @@ a.dark{color:white}
 .modal_table td{border:none !important}
 th.button_heading{width:2em}
 #library_folder_toolbar{margin-bottom:1em}
-#library_toolbar{margin-bottom:1em}
+#library_toolbar{margin-bottom:1em}#library_toolbar span{margin-right:0.2em}
 img.expanderIcon{padding-right:4px}
 input.datasetCheckbox,li,ul{padding:0;margin:0}
 .rowTitle{padding:2px}

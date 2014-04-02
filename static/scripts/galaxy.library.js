@@ -10,6 +10,7 @@ define([
     "galaxy.masthead", 
     "utils/utils",
     "libs/toastr",
+    "mvc/base-mvc",
     "mvc/library/library-model",
     "mvc/library/library-folderlist-view",
     "mvc/library/library-librarylist-view",
@@ -17,6 +18,7 @@ define([
 function(mod_masthead, 
          mod_utils, 
          mod_toastr,
+         mod_baseMVC,
          mod_library_model,
          mod_folderlist_view,
          mod_librarylist_view,
@@ -32,40 +34,51 @@ var LibraryRouter = Backbone.Router.extend({
     }
 });
 
+// ============================================================================
+/** session storage for library preferences */
+var LibraryPrefs = mod_baseMVC.SessionStorageModel.extend({
+    defaults : {
+        with_deleted : false,
+        sort_order   : 'asc',
+        sort_by      : 'name'
+    }
+});
+
 // galaxy library wrapper View
 var GalaxyLibrary = Backbone.View.extend({
-
+    toolbarView: null,
+    libraryListView: null,
+    library_router: null,
+    folderContentView: null,
     initialize : function(){
-        // toolbarView = new mod_librarytoolbar_view.ToolbarView();
-        toolbarView = null;
-        // libraryListView = new mod_librarylist_view.LibraryListView();
-        libraryListView = null;
-        library_router = new LibraryRouter();
+        Galaxy.libraries = this;
 
-        folderContentView = null;
+        this.preferences = new LibraryPrefs( {id: 'global-lib-prefs'} );
 
-        library_router.on('route:libraries', function() {
+        this.library_router = new LibraryRouter();
+
+        this.library_router.on('route:libraries', function() {
           // initialize and render the toolbar first
-          toolbarView = new mod_librarytoolbar_view.ToolbarView();
+          Galaxy.libraries.toolbarView = new mod_librarytoolbar_view.ToolbarView();
           // initialize and render libraries second
-          libraryListView = new mod_librarylist_view.LibraryListView();
+          Galaxy.libraries.libraryListView = new mod_librarylist_view.LibraryListView();
         });
 
-        library_router.on('route:folder_content', function(id) {
+        this.library_router.on('route:folder_content', function(id) {
           // render folder contents
-          if (!folderContentView) {folderContentView = new mod_folderlist_view.FolderContentView();}
-          folderContentView.render({id: id});
+          if (!Galaxy.libraries.folderContentView) {Galaxy.libraries.folderContentView = new mod_folderlist_view.FolderContentView();}
+          Galaxy.libraries.folderContentView.render({id: id});
         });
 
-       library_router.on('route:download', function(folder_id, format) {
+       this.library_router.on('route:download', function(folder_id, format) {
           if ($('#center').find(':checked').length === 0) { 
             // this happens rarely when there is a server/data error and client gets an actual response instead of an attachment
             // we don't know what was selected so we can't download again, we redirect to the folder provided
-            library_router.navigate('folders/' + folder_id, {trigger: true, replace: true});
+            Galaxy.libraries.library_router.navigate('folders/' + folder_id, {trigger: true, replace: true});
           } else {
             // send download stream
-            folderContentView.download(folder_id, format);
-            library_router.navigate('folders/' + folder_id, {trigger: false, replace: true});
+            Galaxy.libraries.folderContentView.download(folder_id, format);
+            Galaxy.libraries.library_router.navigate('folders/' + folder_id, {trigger: false, replace: true});
           }
         });
 
