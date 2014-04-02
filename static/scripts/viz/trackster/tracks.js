@@ -291,13 +291,11 @@ Drawable.prototype.action_icons_def = [
 
 extend(Drawable.prototype, {
     config_params: [
-            { key: 'name', label: 'Name', type: 'text', default_value: '' },
-            { key: 'content_visible', type: 'bool', default_value: true, hidden: true }
+        { key: 'name', label: 'Name', type: 'text', default_value: '' },
+        { key: 'content_visible', type: 'bool', default_value: true, hidden: true }
     ],
 
-    config_onchange: function() {
-            this.track.set_name(this.track.config.get('values').name);
-    },
+    config_onchange: function() {},
     
     init: function() {},
 
@@ -2926,7 +2924,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
                 num_cols: 12,
                 on_finish: function(new_val) {
                     $(".tooltip").remove();
-                    track.config.set_param_value(pref_name, new_val);
+                    track.config.set_value(pref_name, new_val);
                     on_change();
                 },
                 help_text: "Set " + text + " value"
@@ -3352,6 +3350,10 @@ extend(LabelTrack.prototype, Track.prototype, {
     }
 });
 
+// FIXME: Composite tracks have code for showing composite tracks with line tracks and
+// composite tracks with line + feature tracks. It's probably best if different classes
+// are created for each type of composite track.
+
 /**
  * A tiled track composed of multiple other tracks. Composite tracks only work with 
  * bigwig data for now.
@@ -3393,6 +3395,13 @@ var CompositeTrack = function(view, container, obj_dict) {
 extend(CompositeTrack.prototype, TiledTrack.prototype, {
     display_modes: CONTINUOUS_DATA_MODES,
 
+    config_params: _.union( Drawable.prototype.config_params, [
+        { key: 'min_value', label: 'Min Value', type: 'float', default_value: undefined },
+        { key: 'max_value', label: 'Max Value', type: 'float', default_value: undefined },
+        { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
+        { key: 'height', type: 'int', default_value: 30, hidden: true }
+    ] ),
+
     action_icons_def:
     [
         // Create composite track from group's tracks.
@@ -3417,6 +3426,11 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
     add_drawable: DrawableCollection.prototype.add_drawable,
 
     unpack_drawables: DrawableCollection.prototype.unpack_drawables,
+
+    config_onchange: function() {
+        this.set_name(this.config.get_value('name'));
+        this.request_draw({ clear_tile_cache: true });
+    },
 
     /**
      * Change mode for all tracks.
@@ -3524,8 +3538,6 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
      * drawn/fetched and shown.
      */
     postdraw_actions: function(tiles, width, w_scale, clear_after) {
-        TiledTrack.prototype.postdraw_actions.call(this, tiles, width, w_scale, clear_after);
-        
         // All tiles must be the same height in order to draw LineTracks, so redraw tiles as needed.
         var max_height = -1, i;
         for (i = 0; i < tiles.length; i++) {
