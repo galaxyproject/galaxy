@@ -976,10 +976,22 @@ class AdminToolshed( AdminGalaxy ):
                 # update_to_changeset_revision() method.  We need to get the id of the same repository from the
                 # Tool Shed side.
                 repository = suc.get_tool_shed_repository_by_id( trans, updating_repository_id )
-                url = suc.url_join( tool_shed_url,
-                                    'repository/get_repository_id?name=%s&owner=%s' % \
-                                    ( str( repository.name ), str( repository.owner ) ) )
-                repository_ids = common_util.tool_shed_get( trans.app, tool_shed_url, url )
+                # For backward compatibility to the 12/20/12 Galaxy release.
+                try:
+                    url = suc.url_join( tool_shed_url,
+                                        'repository/get_repository_id?name=%s&owner=%s' % \
+                                        ( str( repository.name ), str( repository.owner ) ) )
+                    repository_ids = common_util.tool_shed_get( trans.app, tool_shed_url, url )
+                except Exception, e:
+                    # The Tool Shed cannot handle the get_repository_id request, so the code must be older than the
+                    # 04/2014 Galaxy release when it was introduced.  It will be safest to error out and let the
+                    # Tool Shed admin update the Tool Shed to a later release.
+                    err_msg = 'The Tool Shed %s is running a code revision that does not ' % str( tool_shed_url)
+                    err_msg += 'allow updating an installed repository where the updates include newly defined repository '
+                    err_msg += 'or tool dependency definitions, so the repository %s cannot ' % str( repository.name )
+                    err_msg += 'be updated at this time.  Contact the Tool Shed administrator if possible and'
+                    err_msg += 'ask if they can update the Tool Shed code to the latest release.'
+                    return trans.show_error_message( err_msg )
                 changeset_revisions = updating_to_changeset_revision
             else:
                 changeset_revisions = kwd.get( 'changeset_revisions', None )
