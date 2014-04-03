@@ -6,8 +6,8 @@ import pkg_resources
 import shutil
 import struct
 import tempfile
-from galaxy import util
 from galaxy.datatypes import checkers
+from galaxy.util import asbool
 from galaxy.util import json
 from galaxy.util.odict import odict
 from galaxy.web import url_for
@@ -315,7 +315,9 @@ def handle_repository_dependency_elem( trans, elem, unpopulate=False ):
             attributes = odict()
             attributes[ 'name' ] = name
             attributes[ 'owner' ] = owner
-            attributes[ 'prior_installation_required' ] = elem.get( 'prior_installation_required', 'False' )
+            prior_installation_required = elem.get( 'prior_installation_required' )
+            if asbool( prior_installation_required ):
+                attributes[ 'prior_installation_required' ] = 'True'
             elem = xml_util.create_element( 'repository', attributes=attributes, sub_elements=sub_elements )
             revised = True
         return revised, elem, error_message
