@@ -821,8 +821,8 @@ def build_repository_containers_for_tool_shed( trans, repository, changeset_revi
                     tool_dependencies = metadata[ 'tool_dependencies' ]
                     if trans.webapp.name == 'tool_shed':
                         if 'orphan_tool_dependencies' in metadata:
-                            # The use of the orphan_tool_dependencies category in metadata has been deprecated, but we still need to check in case
-                            # the metadata is out of date.
+                            # The use of the orphan_tool_dependencies category in metadata has been deprecated,
+                            # but we still need to check in case the metadata is out of date.
                             orphan_tool_dependencies = metadata[ 'orphan_tool_dependencies' ]
                             tool_dependencies.update( orphan_tool_dependencies )
                         # Tool dependencies can be categorized as orphans only if the repository contains tools.

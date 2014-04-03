@@ -73,19 +73,19 @@ function scatterplot( renderTo, config, data ){
 
     // .................................................................... axes
     var axis = { x : {}, y : {} };
-    //console.log( 'x.ticks:', config.x.ticks );
-    //console.log( 'y.ticks:', config.y.ticks );
+    //console.log( 'xTicks:', config.xTicks );
+    //console.log( 'yTicks:', config.yTicks );
     axis.x.fn = d3.svg.axis()
         .orient( 'bottom' )
         .scale( interpolaterFns.x )
-        .ticks( config.x.ticks )
+        .ticks( config.xTicks )
         // this will convert thousands -> k, millions -> M, etc.
         .tickFormat( d3.format( 's' ) );
 
     axis.y.fn = d3.svg.axis()
         .orient( 'left' )
         .scale( interpolaterFns.y )
-        .ticks( config.y.ticks )
+        .ticks( config.yTicks )
         .tickFormat( d3.format( 's' ) );
 
     axis.x.g = content.append( 'g' )
@@ -103,8 +103,9 @@ function scatterplot( renderTo, config, data ){
     var padding = 6;
     // x-axis label
     axis.x.label = svg.append( 'text' )
+        .attr( 'id', 'x-axis-label' )
         .attr( 'class', 'axis-label' )
-        .text( config.x.label )
+        .text( config.xLabel )
         // align to the top-middle
         .attr( 'text-anchor', 'middle' )
         .attr( 'dominant-baseline', 'text-after-edge' )
@@ -117,8 +118,9 @@ function scatterplot( renderTo, config, data ){
     // y-axis label
     // place 4 pixels left of the axis.y.g left edge
     axis.y.label = svg.append( 'text' )
+        .attr( 'id', 'y-axis-label' )
         .attr( 'class', 'axis-label' )
-        .text( config.y.label )
+        .text( config.yLabel )
         // align to bottom-middle
         .attr( 'text-anchor', 'middle' )
         .attr( 'dominant-baseline', 'text-before-edge' )

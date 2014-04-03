@@ -123,16 +123,40 @@ class UploadController( BaseUIController ):
                     istar = False
                 if istar:
                     ok, message, files_to_remove, content_alert_str, undesirable_dirs_removed, undesirable_files_removed = \
-                        self.upload_tar( trans, repository, tar, uploaded_file, upload_point, remove_repo_files_not_in_tar, commit_message, new_repo_alert )
+                        self.upload_tar( trans,
+                                         repository,
+                                         tar,
+                                         uploaded_file,
+                                         upload_point,
+                                         remove_repo_files_not_in_tar,
+                                         commit_message,
+                                         new_repo_alert )
                 elif uploaded_directory:
                     ok, message, files_to_remove, content_alert_str, undesirable_dirs_removed, undesirable_files_removed = \
-                        self.upload_directory( trans, repository, uploaded_directory, upload_point, remove_repo_files_not_in_tar, commit_message, new_repo_alert )
+                        self.upload_directory( trans,
+                                               repository,
+                                               uploaded_directory,
+                                               upload_point,
+                                               remove_repo_files_not_in_tar,
+                                               commit_message,
+                                               new_repo_alert )
                 else:
                     if ( isgzip or isbz2 ) and uncompress_file:
-                        uploaded_file_filename = commit_util.uncompress( repository, uploaded_file_name, uploaded_file_filename, isgzip=isgzip, isbz2=isbz2 )
-                    if repository.type == rt_util.TOOL_DEPENDENCY_DEFINITION and uploaded_file_filename != suc.TOOL_DEPENDENCY_DEFINITION_FILENAME:
+                        uploaded_file_filename = commit_util.uncompress( repository,
+                                                                         uploaded_file_name,
+                                                                         uploaded_file_filename,
+                                                                         isgzip=isgzip,
+                                                                         isbz2=isbz2 )
+                    if repository.type == rt_util.REPOSITORY_SUITE_DEFINITION and \
+                        uploaded_file_filename != suc.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME:
                         ok = False
-                        message = 'Repositories of type <b>Tool dependency definition</b> can only contain a single file named <b>tool_dependencies.xml</b>.'
+                        message = 'Repositories of type <b>Repository suite definition</b> can only contain a single file named '
+                        message += '<b>repository_dependencies.xml</b>.'
+                    elif repository.type == rt_util.TOOL_DEPENDENCY_DEFINITION and \
+                        uploaded_file_filename != suc.TOOL_DEPENDENCY_DEFINITION_FILENAME:
+                        ok = False
+                        message = 'Repositories of type <b>Tool dependency definition</b> can only contain a single file named '
+                        message += '<b>tool_dependencies.xml</b>.'
                     if ok:
                         if upload_point is not None:
                             full_path = os.path.abspath( os.path.join( repo_dir, upload_point, uploaded_file_filename ) )
@@ -140,10 +164,12 @@ class UploadController( BaseUIController ):
                             full_path = os.path.abspath( os.path.join( repo_dir, uploaded_file_filename ) )
                         # Move some version of the uploaded file to the load_point within the repository hierarchy.
                         if uploaded_file_filename in [ suc.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME ]:
-                            # Inspect the contents of the file to see if changeset_revision values are missing and if so, set them appropriately.
-                            altered, root_elem, error_message = commit_util.handle_repository_dependencies_definition( trans,
-                                                                                                                       uploaded_file_name,
-                                                                                                                       unpopulate=False )
+                            # Inspect the contents of the file to see if changeset_revision values are missing and if so,
+                            # set them appropriately.
+                            altered, root_elem, error_message = \
+                                commit_util.handle_repository_dependencies_definition( trans,
+                                                                                       uploaded_file_name,
+                                                                                       unpopulate=False )
                             if error_message:
                                 ok = False
                                 message = error_message
@@ -153,10 +179,12 @@ class UploadController( BaseUIController ):
                                 shutil.move( tmp_filename, full_path )
                             else:
                                 shutil.move( uploaded_file_name, full_path )
-                        elif uploaded_file_filename in [ suc.TOOL_DEPENDENCY_DEFINITION_FILENAME ]:
-                            # Inspect the contents of the file to see if it defines a complex repository dependency definition whose changeset_revision values
-                            # are missing and if so, set them appropriately.
-                            altered, root_elem, error_message = commit_util.handle_tool_dependencies_definition( trans, uploaded_file_name )
+                        elif uploaded_file_filename in [ suc.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME,
+                                                         suc.TOOL_DEPENDENCY_DEFINITION_FILENAME ]:
+                            # Inspect the contents of the file to see if changeset_revision values are
+                            # missing and if so, set them appropriately.
+                            altered, root_elem, error_message = \
+                                commit_util.handle_tool_dependencies_definition( trans, uploaded_file_name )
                             if error_message:
                                 ok = False
                                 message = error_message
@@ -170,8 +198,8 @@ class UploadController( BaseUIController ):
                         else:
                             shutil.move( uploaded_file_name, full_path )
                         if ok:
-                            # See if any admin users have chosen to receive email alerts when a repository is updated.  If so, check every uploaded file to ensure
-                            # content is appropriate.
+                            # See if any admin users have chosen to receive email alerts when a repository is updated.
+                            # If so, check every uploaded file to ensure content is appropriate.
                             check_contents = commit_util.check_file_contents_for_email_alerts( trans )
                             if check_contents and os.path.isfile( full_path ):
                                 content_alert_str = commit_util.check_file_content_for_html_and_images( full_path )
@@ -182,8 +210,9 @@ class UploadController( BaseUIController ):
                             full_path = full_path.encode( 'ascii', 'replace' )
                             commands.commit( repo.ui, repo, full_path, user=trans.user.username, message=commit_message )
                             if full_path.endswith( 'tool_data_table_conf.xml.sample' ):
-                                # Handle the special case where a tool_data_table_conf.xml.sample file is being uploaded by parsing the file and adding new entries
-                                # to the in-memory trans.app.tool_data_tables dictionary.
+                                # Handle the special case where a tool_data_table_conf.xml.sample file is being uploaded
+                                # by parsing the file and adding new entries to the in-memory trans.app.tool_data_tables
+                                # dictionary.
                                 error, error_message = tool_util.handle_sample_tool_data_table_conf_file( trans.app, full_path )
                                 if error:
                                     message = '%s<br/>%s' % ( message, error_message )
@@ -212,43 +241,54 @@ class UploadController( BaseUIController ):
                         else:
                             source_type = "file"
                             source = uploaded_file_filename
-                        message = "The %s <b>%s</b> has been successfully%suploaded to the repository.  " % ( source_type, source, uncompress_str )
+                        message = "The %s <b>%s</b> has been successfully%suploaded to the repository.  " % \
+                            ( source_type, source, uncompress_str )
                         if istar and ( undesirable_dirs_removed or undesirable_files_removed ):
                             items_removed = undesirable_dirs_removed + undesirable_files_removed
-                            message += "  %d undesirable items (.hg .svn .git directories, .DS_Store, hgrc files, etc) were removed from the archive.  " % items_removed
+                            message += "  %d undesirable items (.hg .svn .git directories, .DS_Store, hgrc files, etc) " % items_removed
+                            message += "were removed from the archive.  "
                         if istar and remove_repo_files_not_in_tar and files_to_remove:
                             if upload_point is not None:
-                                message += "  %d files were removed from the repository relative to the selected upload point '%s'.  " % ( len( files_to_remove ), upload_point )
+                                message += "  %d files were removed from the repository relative to the selected upload point '%s'.  " % \
+                                    ( len( files_to_remove ), upload_point )
                             else:
                                 message += "  %d files were removed from the repository root.  " % len( files_to_remove )
                         kwd[ 'message' ] = message
                         metadata_util.set_repository_metadata_due_to_new_tip( trans, repository, content_alert_str=content_alert_str, **kwd )
                     if repository.metadata_revisions:
-                        # A repository's metadata revisions are order descending by update_time, so the zeroth revision will be the tip just after an upload.
-                        metadata_dict = repository.metadata_revisions[0].metadata
+                        # A repository's metadata revisions are order descending by update_time, so the zeroth revision
+                        # will be the tip just after an upload.
+                        metadata_dict = repository.metadata_revisions[ 0 ].metadata
                     else:
                         metadata_dict = {}
-                    if str( repository.type ) != rt_util.TOOL_DEPENDENCY_DEFINITION:
-                        change_repository_type_message = tool_dependency_util.generate_message_for_repository_type_change( trans, repository )
+                    if str( repository.type ) not in [ rt_util.REPOSITORY_SUITE_DEFINITION,
+                                                       rt_util.TOOL_DEPENDENCY_DEFINITION ]:
+                        change_repository_type_message = suc.generate_message_for_repository_type_change( trans, repository )
                         if change_repository_type_message:
                             message += change_repository_type_message
                             status = 'warning'
                         else:
-                            # Provide a warning message if a tool_dependencies.xml file is provided, but tool dependencies weren't loaded due to a requirement tag mismatch
-                            # or some other problem.  Tool dependency definitions can define orphan tool dependencies (no relationship to any tools contained in the repository),
-                            # so warning messages are important because orphans are always valid.  The repository owner must be warned in case they did not intend to define an
-                            # orphan dependency, but simply provided incorrect information (tool shed, name owner, changeset_revision) for the definition.
-                            orphan_message = tool_dependency_util.generate_message_for_orphan_tool_dependencies( trans, repository, metadata_dict )
+                            # Provide a warning message if a tool_dependencies.xml file is provided, but tool dependencies
+                            # weren't loaded due to a requirement tag mismatch or some other problem.  Tool dependency
+                            # definitions can define orphan tool dependencies (no relationship to any tools contained in the
+                            # repository), so warning messages are important because orphans are always valid.  The repository
+                            # owner must be warned in case they did not intend to define an orphan dependency, but simply
+                            # provided incorrect information (tool shed, name owner, changeset_revision) for the definition.
+                            orphan_message = tool_dependency_util.generate_message_for_orphan_tool_dependencies( trans,
+                                                                                                                 repository,
+                                                                                                                 metadata_dict )
                             if orphan_message:
                                 message += orphan_message
                                 status = 'warning'
                     # Handle messaging for invalid tool dependencies.
-                    invalid_tool_dependencies_message = tool_dependency_util.generate_message_for_invalid_tool_dependencies( metadata_dict )
+                    invalid_tool_dependencies_message = \
+                        tool_dependency_util.generate_message_for_invalid_tool_dependencies( metadata_dict )
                     if invalid_tool_dependencies_message:
                         message += invalid_tool_dependencies_message
                         status = 'error'
                     # Handle messaging for invalid repository dependencies.
-                    invalid_repository_dependencies_message = repository_dependency_util.generate_message_for_invalid_repository_dependencies( metadata_dict )
+                    invalid_repository_dependencies_message = \
+                        repository_dependency_util.generate_message_for_invalid_repository_dependencies( metadata_dict )
                     if invalid_repository_dependencies_message:
                         message += invalid_repository_dependencies_message
                         status = 'error'
@@ -279,7 +319,8 @@ class UploadController( BaseUIController ):
                                     message=message,
                                     status=status )
 
-    def upload_directory( self, trans, repository, uploaded_directory, upload_point, remove_repo_files_not_in_tar, commit_message, new_repo_alert ):
+    def upload_directory( self, trans, repository, uploaded_directory, upload_point, remove_repo_files_not_in_tar,
+                          commit_message, new_repo_alert ):
         repo_dir = repository.repo_path( trans.app )
         repo = hg.repository( suc.get_configured_ui(), repo_dir )
         undesirable_dirs_removed = 0
@@ -292,7 +333,9 @@ class UploadController( BaseUIController ):
         for root, dirs, files in os.walk( uploaded_directory ):
             for uploaded_file in files:
                 relative_path = os.path.normpath( os.path.join( os.path.relpath( root, uploaded_directory ), uploaded_file ) )
-                if repository.type == rt_util.TOOL_DEPENDENCY_DEFINITION:
+                if repository.type == rt_util.REPOSITORY_SUITE_DEFINITION:
+                    ok = os.path.basename( uploaded_file ) == suc.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME
+                elif repository.type == rt_util.TOOL_DEPENDENCY_DEFINITION:
                     ok = os.path.basename( uploaded_file ) == suc.TOOL_DEPENDENCY_DEFINITION_FILENAME
                 else:
                     ok = os.path.basename( uploaded_file ) not in commit_util.UNDESIRABLE_FILES
@@ -307,10 +350,12 @@ class UploadController( BaseUIController ):
                 if ok:
                     uploaded_file_name = os.path.abspath( os.path.join( root, uploaded_file ) )
                     if os.path.split( uploaded_file_name )[ -1 ] == suc.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME:
-                        # Inspect the contents of the file to see if changeset_revision values are missing and if so, set them appropriately.
-                        altered, root_elem, error_message = commit_util.handle_repository_dependencies_definition( trans,
-                                                                                                                   uploaded_file_name,
-                                                                                                                   unpopulate=False )
+                        # Inspect the contents of the file to see if changeset_revision values are missing and
+                        # if so, set them appropriately.
+                        altered, root_elem, error_message = \
+                            commit_util.handle_repository_dependencies_definition( trans,
+                                                                                   uploaded_file_name,
+                                                                                   unpopulate=False )
                         if error_message:
                             return False, error_message, [], '', [], []
                         elif altered:

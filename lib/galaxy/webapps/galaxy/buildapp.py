@@ -66,6 +66,7 @@ def app_factory( global_conf, **kwargs ):
     webapp.add_route( '/u/:username/p/:slug', controller='page', action='display_by_username_and_slug' )
     webapp.add_route( '/u/:username/h/:slug', controller='history', action='display_by_username_and_slug' )
     webapp.add_route( '/u/:username/w/:slug', controller='workflow', action='display_by_username_and_slug' )
+    webapp.add_route( '/u/:username/w/:slug/:format', controller='workflow', action='display_by_username_and_slug' )
     webapp.add_route( '/u/:username/v/:slug', controller='visualization', action='display_by_username_and_slug' )
     webapp.add_route( '/search', controller='search', action='index' )
 
@@ -75,6 +76,19 @@ def app_factory( global_conf, **kwargs ):
 
     webapp.add_api_controllers( 'galaxy.webapps.galaxy.api', app )
 
+    valid_history_contents_types = [
+        'dataset',
+    ]
+    # This must come before history contents below.
+    # Accesss HDA details via histories/:history_id/contents/datasets/:hda_id
+    webapp.mapper.resource( "typed_content",
+                            "{type:%s}s" % "|".join( valid_history_contents_types ),
+                            name_prefix="history_content_",
+                            controller='history_contents',
+                            path_prefix='/api/histories/:history_id/contents',
+                            parent_resources=dict( member_name='history', collection_name='histories' ),
+                          )
+    # Legacy access to HDA details via histories/:history_id/contents/:hda_id
     webapp.mapper.resource( 'content',
                                 'contents',
                                 controller='history_contents',
@@ -121,7 +135,6 @@ def app_factory( global_conf, **kwargs ):
                                path_prefix='/api/histories/:history_id/contents/:history_content_id' )
 
     webapp.mapper.resource( 'dataset', 'datasets', path_prefix='/api' )
-    webapp.mapper.resource_with_deleted( 'library', 'libraries', path_prefix='/api' )
     webapp.mapper.resource( 'sample', 'samples', path_prefix='/api' )
     webapp.mapper.resource( 'request', 'requests', path_prefix='/api' )
     webapp.mapper.resource( 'form', 'forms', path_prefix='/api' )
@@ -152,8 +165,9 @@ def app_factory( global_conf, **kwargs ):
                                 parent_resources=dict( member_name='page', collection_name='pages' ) )
 
     # add as a non-ATOM API call to support the notion of a 'current/working' history unique to the history resource
+    #webapp.mapper.connect( "set_as_current", "/api/histories/set_as_current/{id}",
     webapp.mapper.connect( "set_as_current", "/api/histories/{id}/set_as_current",
-        controller="histories", action="set_as_current", conditions=dict( method=["POST"] ) )
+        controller="histories", action="set_as_current", conditions=dict( method=["PUT"] ) )
 
     webapp.mapper.connect( "history_archive_export", "/api/histories/{id}/exports",
         controller="histories", action="archive_export", conditions=dict( method=[ "PUT" ] ) )
@@ -191,6 +205,12 @@ def app_factory( global_conf, **kwargs ):
     # =======================
     # ===== LIBRARY API =====
     # =======================
+
+    webapp.mapper.connect( 'update_library',
+                           '/api/libraries/:id',
+                           controller='libraries',
+                           action='update',
+                           conditions=dict( method=[ "PATCH", 'PUT' ] ) )
 
     webapp.mapper.connect( 'show_lda_item',
                            '/api/libraries/datasets/:id',
@@ -242,6 +262,14 @@ def app_factory( global_conf, **kwargs ):
                             path_prefix='/api' )
     webapp.mapper.connect( 'job_search', '/api/jobs/search', controller='jobs', action='search', conditions=dict( method=['POST'] ) )
 
+    # Job files controllers. Only for consumption by remote job runners.
+    webapp.mapper.resource( 'file',
+                            'files',
+                            controller="job_files",
+                            name_prefix="job_",
+                            path_prefix='/api/jobs/:job_id',
+                            parent_resources=dict( member_name="job", collection_name="jobs")
+    )
 
     _add_item_extended_metadata_controller( webapp,
                                name_prefix="library_dataset_",

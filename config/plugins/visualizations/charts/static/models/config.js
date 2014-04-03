@@ -1,15 +1,13 @@
 // dependencies
 define([], function() {
 
-
 // model
 return Backbone.Model.extend(
 {
     // options
     defaults : {
-        query_limit     : 20,
-        query_pace      : 1000,
-        query_max       : 5
+        query_limit     : 1000,
+        query_timeout   : 500
     }
 });
 

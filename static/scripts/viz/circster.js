@@ -96,7 +96,7 @@ var UsesTicks = {
        
         // Calculate return value
         var rval = null;
-        if (num < 1) {
+        if (Math.abs(num) < 1) {
             rval = num.toPrecision(sigDigits);
         }
         else {
@@ -104,6 +104,7 @@ var UsesTicks = {
             var roundedNum = Math.round(num.toPrecision(sigDigits));
 
             // Use abbreviations.
+            num = Math.abs(num);
             if (num < 1000) {
                 rval = roundedNum;
             }
@@ -425,10 +426,6 @@ var CircsterTrackView = Backbone.View.extend({
     render: function() {
         // -- Create track group element. --
         var track_parent_elt = this.parent_elt;
-
-        if (!track_parent_elt) {
-            console.log('no parent elt');
-        }
 
         // -- Render background arcs. --
         var genome_arcs = this.chroms_layout,
@@ -909,7 +906,7 @@ var CircsterBigWigTrackView = CircsterQuantitativeTrackView.extend({
                 return 0;
             }
         }) );
-
+        
         // For max, use 98% quantile in attempt to avoid very large values. However, this max may be 0 
         // for sparsely populated data, so use max in that case.
         return [ _.min(values), this._quantile(values, 0.5) || _.max(values) ];

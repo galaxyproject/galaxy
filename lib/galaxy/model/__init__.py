@@ -17,8 +17,10 @@ import pexpect
 import json
 import socket
 import time
+from uuid import UUID, uuid4
 from string import Template
 from itertools import ifilter
+from itertools import chain
 
 import galaxy.datatypes
 import galaxy.datatypes.registry
@@ -265,6 +267,16 @@ class Job( object, Dictifiable ):
         self.imported = False
         self.handler = None
         self.exit_code = None
+
+    @property
+    def finished( self ):
+        states = self.states
+        return self.state in [
+            states.OK,
+            states.ERROR,
+            states.DELETED,
+            states.DELETED_NEW,
+        ]
 
     # TODO: Add accessors for members defined in SQL Alchemy for the Job table and
     # for the mapper defined to the Job table.
@@ -761,7 +773,7 @@ class UserGroupAssociation( object ):
 class History( object, Dictifiable, UsesAnnotations, HasName ):
 
     dict_collection_visible_keys = ( 'id', 'name', 'published', 'deleted' )
-    dict_element_visible_keys = ( 'id', 'name', 'published', 'deleted', 'genome_build', 'purged' )
+    dict_element_visible_keys = ( 'id', 'name', 'published', 'deleted', 'genome_build', 'purged', 'importable', 'slug' )
     default_name = 'Unnamed history'
 
     def __init__( self, id=None, name=None, user=None ):
@@ -964,24 +976,37 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
         """
         Fetch filtered list of contents of history.
         """
-        python_filter = None
+        default_contents_types = [
+            'dataset',
+        ]
+        types = kwds.get('types', default_contents_types)
+        iters = []
+        if 'dataset' in types:
+            iters.append( self.__dataset_contents_iter( **kwds ) )
+        return galaxy.util.merge_sorted_iterables( operator.attrgetter( "hid" ), *iters )
+
+    def __dataset_contents_iter(self, **kwds):
+        return self.__filter_contents( HistoryDatasetAssociation, **kwds )
+
+    def __filter_contents( self, content_class, **kwds ):
         db_session = object_session( self )
         assert db_session != None
-        query = db_session.query( HistoryDatasetAssociation ).filter( HistoryDatasetAssociation.table.c.history_id == self.id )
-        query = query.order_by( HistoryDatasetAssociation.table.c.hid.asc() )
+        query = db_session.query( content_class ).filter( content_class.table.c.history_id == self.id )
+        query = query.order_by( content_class.table.c.hid.asc() )
+        python_filter = None
         deleted = galaxy.util.string_as_bool_or_none( kwds.get( 'deleted', None ) )
         if deleted is not None:
-            query = query.filter( HistoryDatasetAssociation.deleted == deleted )
+            query = query.filter( content_class.deleted == deleted )
         visible = galaxy.util.string_as_bool_or_none( kwds.get( 'visible', None ) )
         if visible is not None:
-            query = query.filter( HistoryDatasetAssociation.visible == visible )
+            query = query.filter( content_class.visible == visible )
         if 'ids' in kwds:
             ids = kwds['ids']
             max_in_filter_length = kwds.get('max_in_filter_length', MAX_IN_FILTER_LENGTH)
             if len(ids) < max_in_filter_length:
-                query = query.filter( HistoryDatasetAssociation.id.in_(ids) )
+                query = query.filter( content_class.id.in_(ids) )
             else:
-                python_filter = lambda hda: hda.id in ids
+                python_filter = lambda content: content.id in ids
         if python_filter:
             return ifilter(python_filter, query)
         else:
@@ -1158,7 +1183,7 @@ class Dataset( object ):
     file_path = "/tmp/"
     object_store = None # This get initialized in mapping.py (method init) by app.py
     engine = None
-    def __init__( self, id=None, state=None, external_filename=None, extra_files_path=None, file_size=None, purgable=True ):
+    def __init__( self, id=None, state=None, external_filename=None, extra_files_path=None, file_size=None, purgable=True, uuid=None ):
         self.id = id
         self.state = state
         self.deleted = False
@@ -1167,7 +1192,10 @@ class Dataset( object ):
         self.external_filename = external_filename
         self._extra_files_path = extra_files_path
         self.file_size = file_size
-        self.uuid = None
+        if uuid is None:
+            self.uuid = uuid4()
+        else:
+            self.uuid = UUID(str(uuid))
 
     def get_file_name( self ):
         if not self.external_filename:
@@ -1923,6 +1951,14 @@ class Library( object, Dictifiable, HasName ):
         self.description = description
         self.synopsis = synopsis
         self.root_folder = root_folder
+    def to_dict( self, view='collection', value_mapper=None ):
+        """
+        We prepend an F to folders.
+        """
+        rval = super( Library, self ).to_dict( view=view, value_mapper=value_mapper )
+        if 'root_folder_id' in rval:
+            rval[ 'root_folder_id' ] = 'F' + rval[ 'root_folder_id' ]
+        return rval
     def get_active_folders( self, folder, folders=None ):
         # TODO: should we make sure the library is not deleted?
         def sort_by_attr( seq, attr ):
@@ -2042,8 +2078,8 @@ class LibraryFolder( object, Dictifiable, HasName ):
          # This needs to be a list
         return [ ld for ld in self.datasets if ld.library_dataset_dataset_association and not ld.library_dataset_dataset_association.dataset.deleted ]
 
-    def to_dict( self, view='collection' ):
-        rval = super( LibraryFolder, self ).to_dict( view=view )
+    def to_dict( self, view='collection', value_mapper=None ):
+        rval = super( LibraryFolder, self ).to_dict( view=view, value_mapper=value_mapper  )
         info_association, inherited = self.get_info_association()
         if info_association:
             if inherited:
@@ -2127,6 +2163,7 @@ class LibraryDataset( object ):
                      parent_library_id = self.folder.parent_library.id,
                      folder_id = self.folder_id,
                      model_class = self.__class__.__name__,
+                     state = ldda.state,
                      name = ldda.name,
                      file_name = ldda.file_name,
                      uploaded_by = ldda.user.email,

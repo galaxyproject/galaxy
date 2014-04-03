@@ -6,6 +6,9 @@
 
     # optionally bootstrap data from dprov
     ##data = list( hda.datatype.dataset_column_dataprovider( hda, limit=10000 ) )
+
+    # Use root for resource loading.
+    root = h.url_for( '/' )
 %>
 ## ----------------------------------------------------------------------------
 
@@ -16,25 +19,23 @@
 <title>${title or default_title} | ${visualization_display_name}</title>
 
 ## ----------------------------------------------------------------------------
-<link type="text/css" rel="Stylesheet" media="screen" href="/static/style/base.css">
-<link type="text/css" rel="Stylesheet" media="screen" href="/static/style/jquery-ui/smoothness/jquery-ui.css">
-<link type="text/css" rel="Stylesheet" media="screen" href="/plugins/visualizations/scatterplot/static/scatterplot.css">
+${h.css( 'base', 'jquery-ui/smoothness/jquery-ui')}
+${h.stylesheet_link( root + 'plugins/visualizations/scatterplot/static/scatterplot.css' )}
 
 ## ----------------------------------------------------------------------------
-<script type="text/javascript" src="/static/scripts/libs/jquery/jquery.js"></script>
-<script type="text/javascript" src="/static/scripts/libs/jquery/jquery.migrate.js"></script>
-<script type="text/javascript" src="/static/scripts/libs/jquery/jquery-ui.js"></script>
-<script type="text/javascript" src="/static/scripts/libs/bootstrap.js"></script>
-<script type="text/javascript" src="/static/scripts/libs/underscore.js"></script>
-<script type="text/javascript" src="/static/scripts/libs/backbone/backbone.js"></script>
-<script type="text/javascript" src="/static/scripts/libs/handlebars.runtime.js"></script>
-<script type="text/javascript" src="/static/scripts/libs/d3.js"></script>
+${h.js( 'libs/jquery/jquery',
+        'libs/jquery/jquery.migrate',
+        'libs/jquery/jquery-ui',
+        'libs/bootstrap',
+        'libs/require',
+        'libs/underscore',
+        'libs/backbone/backbone',
+        'libs/d3',
+        'libs/handlebars.runtime',
+        'mvc/ui',
+        'mvc/visualization/visualization-model' )}
 
-<script type="text/javascript" src="/static/scripts/mvc/base-mvc.js"></script>
-<script type="text/javascript" src="/static/scripts/mvc/ui.js"></script>
-<script type="text/javascript" src="/static/scripts/mvc/visualization/visualization-model.js"></script>
-
-<script type="text/javascript" src="/plugins/visualizations/scatterplot/static/scatterplot-edit.js"></script>
+${h.javascript_link( root + 'plugins/visualizations/scatterplot/static/scatterplot-edit.js' )}
 </head>
 
 ## ----------------------------------------------------------------------------

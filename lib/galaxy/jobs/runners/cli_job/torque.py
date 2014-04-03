@@ -131,4 +131,5 @@ class Torque(BaseJobExec):
     def __get_job_state(self, state):
         return { 'E' : job_states.RUNNING,
                  'R' : job_states.RUNNING,
-                 'Q' : job_states.QUEUED }.get(state, state)
+                 'Q' : job_states.QUEUED,
+                 'C' : job_states.OK }.get(state, state)

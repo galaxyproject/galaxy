@@ -1,3 +1,45 @@
+.no-highlight {
+    -webkit-user-select: none; /* webkit (safari, chrome) browsers */
+    -moz-user-select: none; /* mozilla browsers */
+    -khtml-user-select: none; /* webkit (konqueror) browsers */
+    -ms-user-select: none; /* IE10+ */
+}
+
+.portlet-view {
+    min-width: 300px;
+
+    .portlet-title-icon {
+        float: left;
+        font-size: 1.2em;
+        padding-top: 4px;
+    }
+    
+    .portlet-title {
+        overflow: hidden;
+        padding: 2px 5px 2px 10px;
+    }
+
+    .portlet-title-text {
+        float: left;
+        padding-top: 2px;
+    }
+    
+    .portlet-operations {
+        float: right;
+        cursor: pointer;
+    }
+    
+    .portlet-buttons {
+        height: 50px;
+        padding: 10px;
+    }
+    
+    .portlet-content {
+        height: inherit;
+        padding: 10px;
+    }
+}
+
 .popover-view {
     max-width: 700px;
     display: none;
@@ -12,5 +54,38 @@
     
     .popover-title {
         padding: 4px 10px;
+    }
+}
+
+.styled-select {
+    position: relative;
+    height: 27px;
+    overflow: hidden;
+    border: 1px solid @border-default-color;
+    -moz-border-radius: @border-radius-base;
+    border-radius: @border-radius-base;
+
+    .button {
+        position: relative;
+        width: 25px;
+        height: 100%;
+        float: right;
+        border-left: 1px solid @border-default-color;
+        padding-left: 9px;
+        padding-top: 4px;
+        background: @btn-default-bg;
+    }
+
+    select {
+        position: absolute;
+        top: 0px;
+        height: 100%;
+        width: 100%;
+        padding-left:5px;
+        cursor: pointer;
+        background: transparent;
+        border: 0;
+        border-radius: 0;
+        -webkit-appearance: none;
     }
 }

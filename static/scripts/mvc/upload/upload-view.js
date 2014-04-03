@@ -1,21 +1,21 @@
 // dependencies
-define(["galaxy.modal",
-        "utils/utils",
+define(["utils/utils",
         "mvc/upload/upload-button",
         "mvc/upload/upload-model",
         "mvc/upload/upload-row",
         "mvc/upload/upload-ftp",
         "mvc/ui/ui-popover",
+        "mvc/ui/ui-modal",
         "mvc/ui",
         "utils/uploadbox"],
        
-        function(   Modal,
-                    Utils,
+        function(   Utils,
                     UploadButton,
                     UploadModel,
                     UploadItem,
                     UploadFtp,
-                    Popover
+                    Popover,
+                    Modal
                 ) {
 
 // galaxy upload
@@ -177,7 +177,7 @@ return Backbone.View.extend(
         if (!this.modal) {
             // make modal
             var self = this;
-            this.modal = new Modal.GalaxyModal({
+            this.modal = new Modal.View({
                 title   : 'Download data directly from web or upload files from your disk',
                 body    : this._template('upload-box', 'upload-info'),
                 buttons : {

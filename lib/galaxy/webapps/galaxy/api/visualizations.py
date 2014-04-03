@@ -178,9 +178,9 @@ class VisualizationsController( BaseAPIController, UsesVisualizationMixin, Shara
                 revision = self.add_visualization_revision( trans, visualization, config, title, dbkey )
                 rval = { 'id' : id, 'revision' : revision.id }
 
-            #TODO: allow updating vis title & slug
-            #visualization.title = title
-            #trans.sa_session.flush()
+            # allow updating vis title
+            visualization.title = title
+            trans.sa_session.flush()
 
         except ( ItemAccessibilityException, ItemDeletionException ), exception:
             trans.response.status = 403

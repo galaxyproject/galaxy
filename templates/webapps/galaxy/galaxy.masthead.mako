@@ -9,6 +9,7 @@
         user_dict[ 'quota_percent' ] = trans.app.quota_agent.get_percent( trans=trans )
         users_api_controller = trans.webapp.api_controllers[ 'users' ]
         user_dict[ 'tags_used' ] = users_api_controller.get_user_tags_used( trans, user=trans.user )
+        user_dict[ 'is_admin' ] = trans.user_is_admin()
     else:
         usage = 0
         percent = None
@@ -40,7 +41,7 @@
             'enable_cloud_launch'       : app.config.get_bool('enable_cloud_launch', False),
             'lims_doc_url'              : app.config.get("lims_doc_url", "http://main.g2.bx.psu.edu/u/rkchak/p/sts"),
             'biostar_url'               : app.config.biostar_url,
-            'biostar_url_redirect'      : h.url_for(controller='biostar', action='biostar_redirect', biostar_action='show/tag/galaxy'),
+            'biostar_url_redirect'      : h.url_for( controller='biostar', action='biostar_redirect', biostar_action='show_tags', qualified=True ),
             'support_url'               : app.config.get("support_url", "http://wiki.galaxyproject.org/Support"),
             'search_url'                : app.config.get("search_url", "http://galaxyproject.org/search/usegalaxy/"),
             'mailing_lists'             : app.config.get("mailing_lists", "http://wiki.galaxyproject.org/MailingLists"),
@@ -50,7 +51,7 @@
             'terms_url'                 : app.config.get("terms_url", ""),
             'allow_user_creation'       : app.config.allow_user_creation,
             'logo_url'                  : h.url_for(app.config.get( 'logo_url', '/')),
-            'is_admin_user'             : trans.user and app.config.is_admin_user(trans.user),
+            'is_admin_user'             : trans.user_is_admin(),
             'active_view'               : active_view,
             'ftp_upload_dir'            : app.config.get("ftp_upload_dir",  None),
             'ftp_upload_site'           : app.config.get("ftp_upload_site",  None),
@@ -66,26 +67,28 @@
         }
     %>
 
-    ${h.templates( "helpers-common-templates" )}
-    ${h.js( "mvc/base-mvc", "utils/localization", "mvc/user/user-model", "mvc/user/user-quotameter" )}
+    ##${h.js( "mvc/base-mvc", "utils/localization", "mvc/user/user-model", "mvc/user/user-quotameter" )}
+    ${h.js( "utils/localization" )}
 
     ## load the frame manager
     <script type="text/javascript">
         if( !window.Galaxy ){
-            window.Galaxy = {};
+            Galaxy = {};
         }
-        ## fetch the current user data from trans
-        Galaxy.currUser = new User(${ h.to_json_string( get_user_json(), indent=2 ) });
 
         ## load additional style sheet
-        if (window != window.top)
-            $('<link href="' + galaxy_config.root + 'static/style/galaxy.frame.masthead.css" rel="stylesheet">').appendTo('head');
+        if (window != window.top){
+            $('<link href="' + galaxy_config.root + 'static/style/galaxy.frame.masthead.css" rel="stylesheet">')
+                .appendTo('head');
+        }
 
         ## load galaxy js-modules
-        $(function() {
-            require(['galaxy.masthead', 'galaxy.menu', 'galaxy.modal', 'galaxy.frame', 'mvc/upload/upload-view'],
-            function(mod_masthead, mod_menu, mod_modal, mod_frame, GalaxyUpload)
-            {
+        require([
+            'galaxy.masthead', 'galaxy.menu', 'mvc/ui/ui-modal', 'galaxy.frame', 'mvc/upload/upload-view',
+            'mvc/user/user-model',
+            'mvc/user/user-quotameter'
+        ], function( mod_masthead, mod_menu, mod_modal, mod_frame, GalaxyUpload, user, quotameter ){
+            $(function() {
                 ## check if masthead is available
                 if (Galaxy.masthead)
                     return;
@@ -95,7 +98,7 @@
 
                 ## load global galaxy objects
                 Galaxy.masthead = new mod_masthead.GalaxyMasthead(masthead_config);
-                Galaxy.modal = new mod_modal.GalaxyModal();
+                Galaxy.modal = new mod_modal.View();
                 Galaxy.frame = new mod_frame.GalaxyFrame();
 
                 ## construct default menu options
@@ -107,11 +110,14 @@
                 ## add upload plugin
                 Galaxy.upload = new GalaxyUpload(masthead_config);
 
+                if( !Galaxy.currUser ){
+                    Galaxy.currUser = new user.User(${ h.to_json_string( get_user_json(), indent=2 ) });
+                }
                 ## set up the quota meter (And fetch the current user data from trans)
                 ## add quota meter to masthead
-                Galaxy.quotaMeter = new UserQuotaMeter({
+                Galaxy.quotaMeter = new quotameter.UserQuotaMeter({
                     model   : Galaxy.currUser,
-                    el      : $(Galaxy.masthead.el).find('.quota-meter-container')
+                    el      : Galaxy.masthead.$('.quota-meter-container')
                 }).render();
             });
         });

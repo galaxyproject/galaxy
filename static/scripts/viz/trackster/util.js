@@ -1,6 +1,13 @@
 define(function(){
 
 /**
+ * Helper to determine if object is jQuery deferred.
+ */
+var is_deferred = function ( d ) {
+    return ('promise' in d);
+};
+
+/**
  * Implementation of a server-state based deferred. Server is repeatedly polled, and when
  * condition is met, deferred is resolved.
  */
@@ -109,6 +116,7 @@ var get_random_color = function(colors) {
 };
 
 return {
+    is_deferred: is_deferred,
     ServerStateDeferred : ServerStateDeferred,
     get_random_color    : get_random_color
 };

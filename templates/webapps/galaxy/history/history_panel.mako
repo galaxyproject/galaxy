@@ -15,13 +15,10 @@ require([ "mvc/history/current-history-panel" ], function( historyPanel ){
             el              : $( "${selector_to_attach_to}" ),
             linkTarget      : 'galaxy_main',
             onready         : function loadAsCurrentHistoryPanel(){
-                var panel = this;
-                this.connectToQuotaMeter( Galaxy.quotaMeter ).connectToOptionsMenu( Galaxy.historyOptionsMenu );
-                this.loadCurrentHistory()
-                    .fail( function(){
-                        panel.render();
-                    });
-                }
+                this.connectToQuotaMeter( Galaxy.quotaMeter )
+                    .connectToOptionsMenu( Galaxy.historyOptionsMenu );
+                this.loadCurrentHistory();
+            }
         });
         Galaxy.currHistoryPanel = currPanel;
     });
@@ -92,15 +89,6 @@ onhistoryready.done( function( historyPanel ){
 <%def name="history_panel_javascripts()">
 ${h.js(
     "utils/localization",
-    "mvc/base-mvc",
-    "mvc/tags",
-    "mvc/annotations"
-)}
-
-##TODO: concat these
-${h.templates(
-    "history-templates",
-    "helpers-common-templates"
 )}
 
 ${localize_js_strings([
@@ -135,7 +123,7 @@ ${localize_js_strings([
 ])}
 
 <script type="text/javascript">
-var debugging = JSON.parse( sessionStorage.getItem( 'debugging' ) ) || false,
+var //debugging = JSON.parse( sessionStorage.getItem( 'debugging' ) ) || false,
     // use deferred to allow multiple callbacks (.done())
     onhistoryready = jQuery.Deferred();
 

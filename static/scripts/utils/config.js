@@ -16,9 +16,15 @@ var ConfigSetting = Backbone.Model.extend({
             this.set(_.extend({}, defaults, options));
         }
 
-        // If type color and no value, get random color.
-        if (this.get('type') === 'color' && !this.get('value')) {
-            this.set('value', util_mod.get_random_color());
+        if (this.get('value') === undefined) {
+            // Use default to set value.
+            this.set_value(this.get('default_value'));
+
+            // If no default value for color config, set random color.
+            if (!this.get('value') && this.get('type') === 'color') {
+                // For color setting, set random color.
+                this.set('value', util_mod.get_random_color());
+            }
         }
     },
 
@@ -90,23 +96,46 @@ var ConfigSettingCollection = Backbone.Collection.extend({
         }
 
         return undefined;
-    }
+    },
+
+    /**
+     * Set value for a setting.
+     */
+    set_value: function(key, value) {
+        var s = this.get(key);
+        if (s) {
+            return s.set_value(value);
+        }
+
+        return undefined;
+     },
+
+     /**
+      * Set default value for a setting.
+      */
+     set_default_value: function(key, default_value) {
+        var s = this.get(key);
+        if (s) {
+            return s.set('default_value', default_value);
+        }
+
+        return undefined;
+     }
 },
 {
     /**
-     * Utility function that creates a ConfigSettingsCollection from a standard dictionary
-     * with configuration key-value pairs.
+     * Utility function that creates a ConfigSettingsCollection from a set of models
+     * and a saved_values dictionary.
      */
-    from_config_dict: function(config_dict) {
-        // Create a list of key-value dicts suitable for sending to a collection.
-        var settings_list = _.map(_.keys(config_dict), function(key) {
-            return {
-                key: key,
-                value: config_dict[key]
-            };
-        });
-
-        return new ConfigSettingCollection(settings_list);
+    from_models_and_saved_values: function(models, saved_values) {
+        // If there are saved values, copy models and update with saved values.
+        if (saved_values) {
+            models = _.map(models, function(m) {
+                return _.extend({}, m, { value: saved_values[m.key] });
+            });
+        }
+        
+        return new ConfigSettingCollection(models);
     }
 });
 
@@ -143,9 +172,9 @@ var ConfigSettingCollectionView = Backbone.View.extend({
             // Draw parameter as select area
             else if ( type === 'select' ) {
                 var select = $('<select />').attr("id", id);
-                for ( var i = 0; i < param.options.length; i++ ) {
-                    $("<option/>").text( param.options[i].label ).attr( "value", param.options[i].value ).appendTo( select );
-                }
+                _.each(param.get('options'), function(option) {
+                    $("<option/>").text( option.label ).attr( "value", option.value ).appendTo( select );
+                });
                 select.val( value );
                 row.append( select );
             
@@ -265,7 +294,7 @@ var ConfigSettingCollectionView = Backbone.View.extend({
                 var id = 'param_' + index;
                 var value = self.$el.find( '#' + id ).val();
                 if ( setting.get('type') === 'bool' ) {
-                    value = container.find( '#' + id ).is( ':checked' );
+                    value = self.$el.find( '#' + id ).is( ':checked' );
                 }
                 setting.set_value(value);
             }

@@ -67,6 +67,39 @@ class WorkflowsApiTestCase( api.ApiTestCase, TestsDatasets ):
         self._assert_status_code_is( run_workflow_response, 200 )
         self._wait_for_history( history_id, assert_ok=True )
 
+    def test_extract_from_history( self ):
+        workflow = self.workflow_populator.load_workflow( name="test_for_extract" )
+        workflow_request, history_id = self._setup_workflow_run( workflow )
+        contents_response = self._get( "histories/%s/contents" % history_id )
+        self._assert_status_code_is( contents_response, 200 )
+        hda_ids = map( lambda c: c[ "id" ], contents_response.json() )
+
+        run_workflow_response = self._post( "workflows", data=workflow_request )
+        self._assert_status_code_is( run_workflow_response, 200 )
+
+        self._wait_for_history( history_id, assert_ok=True )
+        data = dict( history_id=history_id, tool_id="cat1" )
+        jobs_response = self._get( "jobs", data=data )
+        self._assert_status_code_is( jobs_response, 200 )
+        cat1_job_id = jobs_response.json()[ 0 ][ "id" ]
+
+        contents_response = self._get( "history/%s/contents", data=data )
+        create_from_data = dict(
+            from_history_id=history_id,
+            dataset_ids=dumps( hda_ids ),
+            job_ids=dumps( [ cat1_job_id ] ),
+            workflow_name="test import from history",
+        )
+        run_workflow_response = self._post( "workflows", data=create_from_data )
+        self._assert_status_code_is( run_workflow_response, 200 )
+
+        new_workflow_id = run_workflow_response.json()[ "id" ]
+        download_response = self._get( "workflows/%s/download" % new_workflow_id )
+        self._assert_status_code_is( download_response, 200 )
+        downloaded_workflow = download_response.json()
+        self.assertEquals( downloaded_workflow[ "name" ], "test import from history" )
+        assert len( downloaded_workflow[ "steps" ] ) == 3
+
     def test_run_replace_params_by_tool( self ):
         workflow_request, history_id = self._setup_random_x2_workflow( "test_for_replace_tool_params" )
         workflow_request[ "parameters" ] = dumps( dict( random_lines1=dict( num_lines=5 ) ) )

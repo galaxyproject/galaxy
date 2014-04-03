@@ -32,16 +32,21 @@ function request (method, url, data, success, error) {
     xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
     xhr.setRequestHeader('Content-Type', 'application/json');
     xhr.onloadend = function() {
+        // get status
         var status = xhr.status;
+       
+        // read response
+        try {
+            response = jQuery.parseJSON(xhr.responseText);
+        } catch (e) {
+            response = xhr.responseText;
+        }
+   
+        // parse response
         if (status == 200) {
-            try {
-                response = jQuery.parseJSON(xhr.responseText);
-            } catch (e) {
-                response = xhr.responseText;
-            }
             success && success(response);
         } else {
-            error && error(status);
+            error && error(response);
         }
     };
     

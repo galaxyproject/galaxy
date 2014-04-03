@@ -218,7 +218,7 @@ return {
                             tmpl += '</div>';
                         }
                     } else {
-                        tmpl += '<div id="' + id + '" class="' + cls + '"><label id="' + column.label_id_prefix + encoded_id + '" for="' + encoded_id + '">' + value + '</label></div>';
+                        tmpl += '<div id="' + id + '" class="' + cls + '"><label id="' + column.label_id_prefix + encoded_id + '" for="' + encoded_id + '">' + (value || '') + '</label></div>';
                     }
                     tmpl += '</td>';
                 }

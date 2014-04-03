@@ -1,5 +1,6 @@
 /* =============================================================================
 todo:
+    localize
     import button(display), func(model) - when user doesn't match
     Move margins into wid/hi calcs (so final svg dims are w/h)
     Better separation of AJAX in scatterplot.js (maybe pass in function?)
@@ -15,7 +16,7 @@ todo:
     Embedding
     Small multiples
     Drag & Drop other splots onto current (redraw with new axis and differentiate the datasets)
-    Remove 'chart' names
+    Remove 'chart' namessave
     Somehow link out from info box?
     
     Subclass on specific datatypes? (vcf, cuffdiff, etc.)
@@ -28,7 +29,7 @@ todo:
  *          configuring which data will be used
  *          configuring the plot display
  */
-var ScatterplotConfigEditor = Backbone.View.extend( LoggableMixin ).extend({
+var ScatterplotConfigEditor = Backbone.View.extend({
     //TODO: !should be a view on a visualization model
     //logger      : console,
     className   : 'scatterplot-control-form',
@@ -38,13 +39,13 @@ var ScatterplotConfigEditor = Backbone.View.extend( LoggableMixin ).extend({
         if( !this.model ){
             this.model = new Visualization({ type: 'scatterplot' });
         }
-        this.log( this + '.initialize, attributes:', attributes );
+        //this.log( this + '.initialize, attributes:', attributes );
 
         if( !attributes || !attributes.dataset ){
             throw new Error( "ScatterplotConfigEditor requires a dataset" );
         }
         this.dataset = attributes.dataset;
-        this.log( 'dataset:', this.dataset );
+        //this.log( 'dataset:', this.dataset );
 
         this.display = new ScatterplotDisplay({
             dataset : attributes.dataset,
@@ -141,18 +142,18 @@ var ScatterplotConfigEditor = Backbone.View.extend( LoggableMixin ).extend({
     
     /** tab content to control how the chart is rendered (data glyph size, chart size, etc.) */
     _render_chartControls : function( $where ){
+//TODO: as controls on actual chart
         $where = $where || this.$el;
         var editor = this,
             config = this.model.get( 'config' ),
             $chartControls = $where.find( '#chart-control' );
-
+            
         // ---- skeleton/form for controls
         $chartControls.html( ScatterplotConfigEditor.templates.chartControl( config ) );
         //console.debug( '$chartControl:', $chartControls );
 
         // ---- slider controls
         // limits for controls (by control/chartConfig id)
-        //TODO: as class attribute
         var controlRanges = {
                 'datapointSize' : { min: 2, max: 10, step: 1 },
                 'width'         : { min: 200, max: 800, step: 20 },

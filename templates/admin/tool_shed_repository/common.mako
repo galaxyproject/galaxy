@@ -90,6 +90,7 @@
                 return str( self.count )
 
         repository_dependencies_root_folder = containers_dict.get( 'repository_dependencies', None )
+        missing_repository_dependencies_root_folder = containers_dict.get( 'missing_repository_dependencies', None )
         tool_dependencies_root_folder = containers_dict.get( 'tool_dependencies', None )
         missing_tool_dependencies_root_folder = containers_dict.get( 'missing_tool_dependencies', None )
         env_settings_heaader_row_displayed = False
@@ -112,7 +113,7 @@
             </p>
         </div>
     </div>
-    %if repository_dependencies_root_folder:
+    %if repository_dependencies_root_folder or missing_repository_dependencies_root_folder:
         %if repository_dependencies_check_box is not None:
             <div class="form-row">
                 %if export:
@@ -131,14 +132,26 @@
             </div>
             <div style="clear: both"></div>
         %endif
-        <div class="form-row">
-            <p/>
-            <% row_counter = RowCounter() %>
-            <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table">
-                ${render_folder( repository_dependencies_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
-            </table>
-            <div style="clear: both"></div>
-        </div>
+        %if repository_dependencies_root_folder:
+            <div class="form-row">
+                <p/>
+                <% row_counter = RowCounter() %>
+                <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table">
+                    ${render_folder( repository_dependencies_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
+                </table>
+                <div style="clear: both"></div>
+            </div>
+        %endif
+        %if missing_repository_dependencies_root_folder:
+            <div class="form-row">
+                <p/>
+                <% row_counter = RowCounter() %>
+                <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table">
+                    ${render_folder( missing_repository_dependencies_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
+                </table>
+                <div style="clear: both"></div>
+            </div>
+        %endif
     %endif
     %if tool_dependencies_root_folder or missing_tool_dependencies_root_folder:
         %if install_tool_dependencies_check_box is not None:

@@ -313,9 +313,10 @@ if wf_parms:
 %>
 
 <%def name="do_inputs( inputs, values, errors, prefix, step, other_values = None, already_used = None )">
-  %if other_values is None:
-      <% other_values = values %>
-  %endif
+  <%
+  from galaxy.util.expressions import ExpressionContext
+  other_values = ExpressionContext( values, other_values )
+  %>
   %for input_index, input in enumerate( inputs.itervalues() ):
     %if input.type == "repeat":
       <div class="repeat-group">

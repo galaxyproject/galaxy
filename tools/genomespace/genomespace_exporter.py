@@ -121,7 +121,7 @@ def galaxy_code_get_genomespace_folders( genomespace_site='prod', trans=None, va
     if value:
         value = value[0]#single select, only 1 value
     def recurse_directory_dict( url_opener, cur_options, url ):
-        cur_directory = urllib2.Request( url )#, headers = { 'Content-Type': 'application/json', 'Accept': 'application/text' } ) #apparently http://www.genomespace.org/team/specs/updated-dm-rest-api:"Every HTTP request to the Data Manager should include the Accept header with a preference for the media types application/json and application/text." is not correct 
+        cur_directory = urllib2.Request( url, headers = { 'Content-Type': 'application/json', 'Accept': 'application/json, text/plain' } ) 
         cur_directory.get_method = lambda: 'GET'
         #get url to upload to
         try:

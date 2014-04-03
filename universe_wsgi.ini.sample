@@ -158,7 +158,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # Enable use of an in-memory registry with bi-directional relationships
 # between repositories (i.e., in addition to lists of dependencies for a
 # repository, keep an in-memory registry of dependent items for each repository.
-#manage_dependency_relationships = True
+#manage_dependency_relationships = False
 
 # XML config file that contains data table entries for the ToolDataTableManager. This file is manually
 # maintained by the Galaxy administrator.
@@ -507,6 +507,12 @@ static_robots_txt = %(here)s/static/robots.txt
 # unaltered output.
 #sanitize_all_html = True
 
+# By default Galaxy will serve non-HTML tool output that may potentially
+# contain browser executable JavaScript content as plain text. This will for
+# instance cause SVG datasets to not render properly and so may be disabled
+# by setting the following option to True.
+#serve_xss_vulnerable_mimetypes = False
+
 # Debug enables access to various config options useful for development and
 # debugging: use_lint, use_profile, use_printdebug and use_interactive.  It
 # also causes the files used by PBS/SGE (submission script, output, and error)
@@ -610,7 +616,7 @@ use_interactive = True
 # by WSGI).  This option allows you to change the header.  Note, you still need
 # to prepend 'HTTP_' to the header in this option, but your proxy server should
 # *not* include 'HTTP_' at the beginning of the header name.
-#remote_user_header = 'HTTP_REMOTE_USER'
+#remote_user_header = HTTP_REMOTE_USER
 
 # If use_remote_user is enabled, you can set this to a URL that will log your
 # users out.

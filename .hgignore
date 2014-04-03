@@ -77,6 +77,7 @@ tool-data/shared/ncbi/builds.txt
 tool-data/shared/ucsc/builds.txt
 tool-data/shared/ensembl/builds.txt
 tool-data/shared/ucsc/publicbuilds.txt
+tool-data/shared/ucsc/ucsc_build_sites.txt
 tool-data/*.loc
 tool-data/genome/*
 

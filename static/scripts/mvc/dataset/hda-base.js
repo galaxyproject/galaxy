@@ -1,7 +1,8 @@
 define([
-    "mvc/dataset/hda-model"
-], function( hdaModel ){
-/* global Backbone, LoggableMixin, HistoryDatasetAssociation, HDABaseView */
+    "mvc/dataset/hda-model",
+    "mvc/base-mvc"
+], function( hdaModel, baseMVC ){
+/* global Backbone */
 //==============================================================================
 /** @class Read only view for HistoryDatasetAssociation.
  *  @name HDABaseView
@@ -11,7 +12,7 @@ define([
  *  @borrows LoggableMixin#log as #log
  *  @constructs
  */
-var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
+var HDABaseView = Backbone.View.extend( baseMVC.LoggableMixin ).extend(
 /** @lends HDABaseView.prototype */{
 
     ///** logger used to record this.log messages, commonly set to console */
@@ -192,14 +193,17 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
             
             // add frame manager option onclick event
             var self = this;
-            displayBtnData.onclick = function(){
+            displayBtnData.onclick = function( ev ){
+                console.debug( 'displayBtn onclick', ev );
                 if( Galaxy.frame && Galaxy.frame.active ){
                     Galaxy.frame.add({
                         title       : "Data Viewer: " + self.model.get('name'),
                         type        : "url",
                         content     : self.urls.display
                     });
+                    ev.preventDefault();
                 }
+
             };
         }
         displayBtnData.faIcon = 'fa-eye';
@@ -471,6 +475,8 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
         // fetch first if no details in the model
         if( this.model.inReadyState() && !this.model.hasDetails() ){
             this.model.fetch({ silent: true }).always( function( model ){
+                // re-render urls based on new hda data
+                hdaView.urls = hdaView.model.urls();
                 _renderBodyAndExpand();
             });
         } else {
@@ -493,70 +499,34 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
     /** display a (fa-icon) checkbox on the left of the hda that fires events when checked
      *      Note: this also hides the primary actions
      */
-    showSelector : function( speed ){
-        speed = ( speed !== undefined )?( speed ):( this.fxSpeed );
-
+    showSelector : function(){
         // make sure selected state is represented properly
         if( this.selected ){
             this.select( null, true );
         }
 
-        // create a jq fx queue to do this sequentially: fadeout the buttons, embiggen the selector
-        var hdaView = this,
-            SELECTOR_WIDTH = 32;
+        this.selectable = true;
+        this.trigger( 'selectable', true, this );
 
-        if( speed ){
-            this.$el.queue( 'fx', function( next ){
-                $( this ).find( '.dataset-primary-actions' ).fadeOut( speed, next );
-            });
-            this.$el.queue( 'fx', function( next ){
-                $( this ).find( '.dataset-selector' ).show().animate({ width: SELECTOR_WIDTH }, speed, next );
-                $( this ).find( '.dataset-title-bar' ).animate({ 'margin-left': SELECTOR_WIDTH }, speed, next );
-                hdaView.selectable = true;
-                hdaView.trigger( 'selectable', true, hdaView );
-            });
-        // no animation
-        } else {
-            this.$el.find( '.dataset-primary-actions' ).hide();
-            this.$el.find( '.dataset-selector' ).show().css({ width : SELECTOR_WIDTH });
-            this.$el.find( '.dataset-title-bar' ).show().css({ 'margin-left' : SELECTOR_WIDTH });
-            hdaView.selectable = true;
-            hdaView.trigger( 'selectable', true, hdaView );
-        }
+        this.$( '.dataset-primary-actions' ).hide();
+        this.$( '.dataset-selector' ).show();
     },
 
     /** remove the selection checkbox */
-    hideSelector : function( speed ){
-        speed = ( speed !== undefined )?( speed ):( this.fxSpeed );
-
+    hideSelector : function(){
         // reverse the process from showSelect
         this.selectable = false;
         this.trigger( 'selectable', false, this );
 
-        if( speed ){
-            this.$el.queue( 'fx', function( next ){
-                $( this ).find( '.dataset-title-bar' ).show().css({ 'margin-left' : '0' });
-                $( this ).find( '.dataset-selector' ).animate({ width: '0px' }, speed, function(){
-                    $( this ).hide();
-                    next();
-                });
-            });
-            this.$el.queue( 'fx', function( next ){
-                $( this ).find( '.dataset-primary-actions' ).fadeIn( speed, next );
-            });
-
-        // no animation
-        } else {
-            $( this ).find( '.dataset-selector' ).css({ width : '0px' }).hide();
-            $( this ).find( '.dataset-primary-actions' ).show();
-        }
+        this.$( '.dataset-selector' ).hide();
+        this.$( '.dataset-primary-actions' ).show();
     },
 
-    toggleSelector : function( speed ){
+    toggleSelector : function(){
         if( !this.$el.find( '.dataset-selector' ).is( ':visible' ) ){
-            this.showSelector( speed );
+            this.showSelector();
         } else {
-            this.hideSelector( speed );
+            this.hideSelector();
         }
     },
 
@@ -658,9 +628,162 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
 });
 
 //------------------------------------------------------------------------------ TEMPLATES
+var skeletonTemplate = [
+'<div class="dataset hda">',
+    '<div class="dataset-warnings">',
+        // error during index fetch - show error on dataset
+        '<% if( hda.error ){ %>',
+            '<div class="errormessagesmall">',
+                _l( 'There was an error getting the data for this dataset' ), ':<%- hda.error %>',
+            '</div>',
+        '<% } %>',
+
+        '<% if( hda.deleted ){ %>',
+            // purged and deleted
+            '<% if( hda.purged ){ %>',
+                '<div class="dataset-purged-msg warningmessagesmall"><strong>',
+                    _l( 'This dataset has been deleted and removed from disk.' ),
+                '</strong></div>',
+
+            // deleted not purged
+            '<% } else { %>',
+                '<div class="dataset-deleted-msg warningmessagesmall"><strong>',
+                    _l( 'This dataset has been deleted.' ),
+                '</strong></div>',
+            '<% } %>',
+        '<% } %>',
+
+        // hidden
+        '<% if( !hda.visible ){ %>',
+            '<div class="dataset-hidden-msg warningmessagesmall"><strong>',
+                _l( 'This dataset has been hidden.' ),
+            '</strong></div>',
+        '<% } %>',
+    '</div>',
+
+    // multi-select checkbox
+    '<div class="dataset-selector">',
+        '<span class="fa fa-2x fa-square-o"></span>',
+    '</div>',
+    // space for title bar buttons
+    '<div class="dataset-primary-actions"></div>',
+
+    // adding a tabindex here allows focusing the title bar and the use of keydown to expand the dataset display
+    '<div class="dataset-title-bar clear" tabindex="0">',
+        '<span class="dataset-state-icon state-icon"></span>',
+        '<div class="dataset-title">',
+            //TODO: remove whitespace and use margin-right
+            '<span class="hda-hid"><%- hda.hid %></span> ',
+            '<span class="dataset-name"><%- hda.name %></span>',
+        '</div>',
+    '</div>',
+
+    '<div class="dataset-body"></div>',
+'</div>'
+].join( '' );
+
+var bodyTemplate = [
+'<div class="dataset-body">',
+    '<% if( hda.body ){ %>',
+        '<div class="dataset-summary">',
+            '<%= hda.body %>',
+        '</div>',
+        '<div class="dataset-actions clear">',
+            '<div class="left"></div>',
+            '<div class="right"></div>',
+        '</div>',
+
+    '<% } else { %>',
+        '<div class="dataset-summary">',
+            '<% if( hda.misc_blurb ){ %>',
+                '<div class="dataset-blurb">',
+                    '<span class="value"><%- hda.misc_blurb %></span>',
+                '</div>',
+            '<% } %>',
+
+            '<% if( hda.data_type ){ %>',
+                '<div class="dataset-datatype">',
+                    '<label class="prompt">', _l( 'format' ), '</label>',
+                    '<span class="value"><%- hda.data_type %></span>',
+                '</div>',
+            '<% } %>',
+
+            '<% if( hda.metadata_dbkey ){ %>',
+                '<div class="dataset-dbkey">',
+                    '<label class="prompt">', _l( 'database' ), '</label>',
+                    '<span class="value">',
+                        '<%- hda.metadata_dbkey %>',
+                    '</span>',
+                '</div>',
+            '<% } %>',
+
+            '<% if( hda.misc_info ){ %>',
+                '<div class="dataset-info">',
+                    '<span class="value"><%- hda.misc_info %></span>',
+                '</div>',
+            '<% } %>',
+        '</div>',
+        // end dataset-summary
+
+        '<div class="dataset-actions clear">',
+            '<div class="left"></div>',
+            '<div class="right"></div>',
+        '</div>',
+
+        '<% if( !hda.deleted ){ %>',
+            '<div class="tags-display"></div>',
+            '<div class="annotation-display"></div>',
+
+            '<div class="dataset-display-applications">',
+                //TODO: the following two should be compacted
+                '<% _.each( hda.display_apps, function( app ){ %>',
+                    '<div class="display-application">',
+                        '<span class="display-application-location"><%- app.label %></span> ',
+                        '<span class="display-application-links">',
+                            '<% _.each( app.links, function( link ){ %>',
+                                '<a target="<%= link.target %>" href="<%= link.href %>">',
+                                    '<% print( _l( link.text ) ); %>',
+                                '</a> ',
+                            '<% }); %>',
+                        '</span>',
+                    '</div>',
+                '<% }); %>',
+
+                '<% _.each( hda.display_types, function( app ){ %>',
+                    '<div class="display-application">',
+                        '<span class="display-application-location"><%- app.label %></span> ',
+                        '<span class="display-application-links">',
+                            '<% _.each( app.links, function( link ){ %>',
+                                '<a target="<%= link.target %>" href="<%= link.href %>">',
+                                    '<% print( _l( link.text ) ); %>',
+                                '</a> ',
+                            '<% }); %>',
+                        '</span>',
+                    '</div>',
+                '<% }); %>',
+            '</div>',
+
+            '<div class="dataset-peek">',
+                '<% if( hda.peek ){ %>',
+                    '<pre class="peek"><%= hda.peek %></pre>',
+                '<% } %>',
+            '</div>',
+
+        '<% } %>',
+        // end if !deleted
+
+    '<% } %>',
+    // end if body
+'</div>'
+].join( '' );
+
 HDABaseView.templates = {
-    skeleton            : Handlebars.templates[ 'template-hda-skeleton' ],
-    body                : Handlebars.templates[ 'template-hda-body' ]
+    skeleton            : function( hdaJSON ){
+        return _.template( skeletonTemplate, hdaJSON, { variable: 'hda' });
+    },
+    body                : function( hdaJSON ){
+        return _.template( bodyTemplate, hdaJSON, { variable: 'hda' });
+    }
 };
 
 //==============================================================================

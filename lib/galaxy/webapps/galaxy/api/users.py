@@ -81,6 +81,7 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
         #TODO: move into api_values (needs trans, tho - can we do that with api_keys/@property??)
         #TODO: works with other users (from admin)??
         item['quota_percent'] = trans.app.quota_agent.get_percent( trans=trans )
+        item['is_admin'] = trans.user_is_admin()
         return item
 
     @web.expose_api

@@ -316,5 +316,7 @@ class TestEnvironmentInheritance( ShedTwillTestCase ):
                                                                     tool_dependency_version='1.53.0', 
                                                                     repository=package_boost_repository )
         rdkit_env_file_contents = file( rdkit_env_sh, 'r' ).read()
-        assert numpy_tool_dependency_path in rdkit_env_file_contents, 'Environment file for package_rdkit_2012_12_1420 does not contain numpy path.'
-        assert boost_tool_dependency_path in rdkit_env_file_contents, 'Environment file for package_rdkit_2012_12_1420 does not contain boost path.'
+        if numpy_tool_dependency_path not in rdkit_env_file_contents or boost_tool_dependency_path not in rdkit_env_file_contents:
+            message = 'Environment file for package_rdkit_2012_12_1420 does not contain expected path.'
+            message += '\nExpected:\n%s\n%s\nContents:\n%s' % ( numpy_tool_dependency_path, boost_tool_dependency_path, rdkit_env_file_contents )
+            raise AssertionError( message )

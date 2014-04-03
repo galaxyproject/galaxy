@@ -14,7 +14,7 @@ log = getLogger(__name__)
 # this pattern picks up attiditional files to copy back - such as those
 # associated with multiple outputs and metadata configuration. Set to .* to just
 # copy everything
-COPY_FROM_WORKING_DIRECTORY_PATTERN = compile(r"primary_.*|galaxy.json|metadata_.*|dataset_\d+\.dat|dataset_\d+_files.+")
+COPY_FROM_WORKING_DIRECTORY_PATTERN = compile(r"primary_.*|galaxy.json|metadata_.*|dataset_\d+\.dat|__instrument_.*|dataset_\d+_files.+")
 
 
 def finish_job(client, cleanup_job, job_completed_normally, client_outputs, lwr_outputs):

@@ -1,7 +1,52 @@
-import os, logging
+import logging
+import os
 import tool_shed.util.shed_util_common as suc
 import tool_shed.util.metadata_util as metadata_util
 from galaxy.web.form_builder import SelectField
+from galaxy.util.bunch import Bunch
+
+log = logging.getLogger( __name__ )
+
+
+class RepositoryGridFilterManager( object ):
+    """Provides filtered views of the many Tool SHed repository grids."""
+
+    filters = Bunch( CERTIFIED_LEVEL_ONE = 'certified_level_one',
+                     CERTIFIED_LEVEL_TWO = 'certified_level_two',
+                     CERTIFIED_LEVEL_ONE_SUITES = 'certified_level_one_suites',
+                     CERTIFIED_LEVEL_TWO_SUITES = 'certified_level_two_suites' )
+
+    def get_grid_title( self, trans, trailing_string='', default='' ):
+        filter = self.get_filter( trans )
+        if filter == self.filters.CERTIFIED_LEVEL_ONE:
+            return "Certified 1 Repositories %s" % trailing_string
+        if filter == self.filters.CERTIFIED_LEVEL_TWO:
+            return "Certified 2 Repositories %s" % trailing_string
+        if filter == self.filters.CERTIFIED_LEVEL_ONE_SUITES:
+            return "Certified 1 Repository Suites %s" % trailing_string
+        if filter == self.filters.CERTIFIED_LEVEL_TWO_SUITES:
+            return "Certified 2 Repository Suites %s" % trailing_string
+        return "%s" % default
+
+    def get_filter( self, trans ):
+        filter = trans.get_cookie( name='toolshedrepogridfilter' )
+        return filter or None
+
+    def is_valid_filter( self, filter ):
+        if filter is None:
+            return True
+        for valid_key, valid_filter in self.filters.items():
+            if filter == valid_filter:
+                return True
+        return False
+
+    def set_filter( self, trans, **kwd ):
+        # Set a session cookie value with the selected filter.
+        filter = kwd.get( 'filter', None )
+        if filter is not None and self.is_valid_filter( filter ):
+            trans.set_cookie( value=filter, name='toolshedrepogridfilter' )
+        # if the filter is not valid, expire the cookie.
+        trans.set_cookie( value=filter,name='toolshedrepogridfilter', age=-1 )
 
 def build_approved_select_field( trans, name, selected_value=None, for_component=True ):
     options = [ ( 'No', trans.model.ComponentReview.approved_states.NO ),
@@ -18,7 +63,10 @@ def build_approved_select_field( trans, name, selected_value=None, for_component
 
 def build_changeset_revision_select_field( trans, repository, selected_value=None, add_id_to_name=True,
                                            downloadable=False, reviewed=False, not_reviewed=False ):
-    """Build a SelectField whose options are the changeset_rev strings of certain revisions of the received repository."""
+    """
+    Build a SelectField whose options are the changeset_rev strings of certain revisions of the
+    received repository.
+    """
     options = []
     changeset_tups = []
     refresh_on_change_values = []

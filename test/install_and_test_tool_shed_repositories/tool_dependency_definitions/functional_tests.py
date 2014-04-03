@@ -112,6 +112,7 @@ def install_and_test_repositories( app, galaxy_shed_tools_dict_file, galaxy_shed
         changeset_revision = str( repository_dict.get( 'changeset_revision', '' ) )
         print "Processing revision %s of repository %s owned by %s..." % ( changeset_revision, name, owner )
         repository_identifier_tup = ( name, owner, changeset_revision )
+        install_and_test_statistics_dict[ 'total_repositories_processed' ] += 1
         # Retrieve the stored list of tool_test_results_dicts.
         tool_test_results_dicts, error_message = \
             install_and_test_base_util.get_tool_test_results_dicts( install_and_test_base_util.galaxy_tool_shed_url,
@@ -143,9 +144,9 @@ def install_and_test_repositories( app, galaxy_shed_tools_dict_file, galaxy_shed
                 repository = install_and_test_base_util.get_repository( name, owner, changeset_revision )
                 if repository is None:
                     # The repository was not previously installed, so install it now.
+                    start_time = time.time()
                     tool_test_results_dict = install_and_test_base_util.initialize_tool_tests_results_dict( app, tool_test_results_dict )
                     repository, error_message = install_and_test_base_util.install_repository( app, repository_dict )
-                    install_and_test_statistics_dict[ 'total_repositories_processed' ] += 1
                     if error_message:
                         # The repository installation failed.
                         print 'Installation failed for revision %s of repository %s owned by %s.' % ( changeset_revision, name, owner )
@@ -192,6 +193,8 @@ def install_and_test_repositories( app, galaxy_shed_tools_dict_file, galaxy_shed
                                                                                                             encoded_repository_metadata_id,
                                                                                                             install_and_test_statistics_dict,
                                                                                                             can_update_tool_shed )
+                    print '\nAttempting to install revision %s of repository %s owned by %s took %s seconds.\n' % \
+                        ( changeset_revision, name, owner, str( time.time() - start_time ) )
                 else:
                     print 'Skipped attempt to install revision %s of repository %s owned by %s because ' % \
                         ( changeset_revision, name, owner )

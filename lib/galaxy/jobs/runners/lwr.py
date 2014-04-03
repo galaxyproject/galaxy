@@ -28,6 +28,10 @@ __all__ = [ 'LwrJobRunner' ]
 NO_REMOTE_GALAXY_FOR_METADATA_MESSAGE = "LWR misconfiguration - LWR client configured to set metadata remotely, but remote LWR isn't properly configured with a galaxy_home directory."
 NO_REMOTE_DATATYPES_CONFIG = "LWR client is configured to use remote datatypes configuration when setting metadata externally, but LWR is not configured with this information. Defaulting to datatypes_conf.xml."
 
+# Is there a good way to infer some default for this? Can only use
+# url_for from web threads. https://gist.github.com/jmchilton/9098762
+DEFAULT_GALAXY_URL = "http://localhost:8080"
+
 
 class LwrJobRunner( AsynchronousJobRunner ):
     """
@@ -35,13 +39,14 @@ class LwrJobRunner( AsynchronousJobRunner ):
     """
     runner_name = "LWRRunner"
 
-    def __init__( self, app, nworkers, transport=None, cache=None, url=None ):
+    def __init__( self, app, nworkers, transport=None, cache=None, url=None, galaxy_url=DEFAULT_GALAXY_URL ):
         """Start the job runner """
         super( LwrJobRunner, self ).__init__( app, nworkers )
         self.async_status_updates = dict()
         self._init_monitor_thread()
         self._init_worker_threads()
         client_manager_kwargs = {'transport_type': transport, 'cache': string_as_bool_or_none(cache), "url": url}
+        self.galaxy_url = galaxy_url
         self.client_manager = build_client_manager(**client_manager_kwargs)
 
     def url_to_destination( self, url ):
@@ -215,7 +220,8 @@ class LwrJobRunner( AsynchronousJobRunner ):
             job_id = "%s_%s" % (job_id, job_wrapper.task_id)
         params = job_wrapper.job_destination.params.copy()
         for key, value in params.iteritems():
-            params[key] = model.User.expand_user_properties( job_wrapper.get_job().user, value )
+            if value:
+                params[key] = model.User.expand_user_properties( job_wrapper.get_job().user, value )
         return self.get_client( params, job_id )
 
     def get_client_from_state(self, job_state):
@@ -224,7 +230,21 @@ class LwrJobRunner( AsynchronousJobRunner ):
         return self.get_client( job_destination_params, job_id )
 
     def get_client( self, job_destination_params, job_id ):
-        return self.client_manager.get_client( job_destination_params, str( job_id ) )
+        # Cannot use url_for outside of web thread.
+        #files_endpoint = url_for( controller="job_files", job_id=encoded_job_id )
+
+        encoded_job_id = self.app.security.encode_id(job_id)
+        job_key = self.app.security.encode_id( job_id, kind="jobs_files" )
+        files_endpoint = "%s/api/jobs/%s/files?job_key=%s" % (
+            self.galaxy_url,
+            encoded_job_id,
+            job_key
+        )
+        get_client_kwds = dict(
+            job_id=str( job_id ),
+            files_endpoint=files_endpoint,
+        )
+        return self.client_manager.get_client( job_destination_params, **get_client_kwds )
 
     def finish_job( self, job_state ):
         stderr = stdout = ''

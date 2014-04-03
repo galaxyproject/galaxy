@@ -1,11 +1,12 @@
 define([
     "mvc/dataset/hda-edit",
-    "mvc/history/history-panel"
-], function( hdaEdit, hpanel ){
+    "mvc/history/history-panel",
+    "mvc/base-mvc"
+], function( hdaEdit, hpanel, baseMVC ){
 // ============================================================================
 /** session storage for history panel preferences (and to maintain state)
  */
-var HistoryPanelPrefs = SessionStorageModel.extend({
+var HistoryPanelPrefs = baseMVC.SessionStorageModel.extend({
     defaults : {
         /** is the panel currently showing the search/filter controls? */
         searching       : false,
@@ -47,16 +48,12 @@ var CurrentHistoryPanel = hpanel.HistoryPanel.extend(
     /** class to use for constructing the HDA views */
     HDAViewClass        : hdaEdit.HDAEditView,
 
-    emptyMsg            : _l( "This history is empty. Click 'Get Data' on the left pane to start" ),
+    emptyMsg            : _l( "This history is empty. Click 'Get Data' on the left tool menu to start" ),
     noneFoundMsg        : _l( "No matching datasets found" ),
 
     // ......................................................................... SET UP
     /** Set up the view, set up storage, bind listeners to HDACollection events
      *  @param {Object} attributes
-     *  @config {Object} urlTemplates.hda       nested object containing url templates for HDAViews
-     *  @throws 'needs urlTemplates' if urlTemplates.history or urlTemplates.hda aren't present
-     *  @see PersistentStorage
-     *  @see Backbone.View#initialize
      */
     initialize : function( attributes ){
         attributes = attributes || {};
@@ -68,10 +65,6 @@ var CurrentHistoryPanel = hpanel.HistoryPanel.extend(
         }, _.pick( attributes, _.keys( HistoryPanelPrefs.prototype.defaults ) )));
 
         hpanel.HistoryPanel.prototype.initialize.call( this, attributes );
-        if( this.model ){
-            console.debug( this.model );
-            this.model.checkForUpdates();
-        }
     },
 
     // ------------------------------------------------------------------------ loading history/hda models
@@ -91,7 +84,10 @@ var CurrentHistoryPanel = hpanel.HistoryPanel.extend(
         var panel = this,
             historyFn = function(){
                 // make this current and get history data with one call
-                return jQuery.post( galaxy_config.root + 'api/histories/' + historyId + '/set_as_current' );
+                return jQuery.ajax({
+                    url     : galaxy_config.root + 'api/histories/' + historyId + '/set_as_current',
+                    method  : 'PUT'
+                });
             };
         return this.loadHistoryWithHDADetails( historyId, attributes, historyFn )
             .then(function( historyData, hdaData ){
@@ -119,10 +115,12 @@ var CurrentHistoryPanel = hpanel.HistoryPanel.extend(
     },
 
     /** release/free/shutdown old models and set up panel for new models */
-    setModel : function( newHistoryJSON, newHdaJSON, attributes ){
-        attributes = attributes || {};
-        hpanel.HistoryPanel.prototype.setModel.call( this, newHistoryJSON, newHdaJSON, attributes );
-        this.model.checkForUpdates();
+    setModel : function( model, attributes, render ){
+        hpanel.HistoryPanel.prototype.setModel.call( this, model, attributes, render );
+        if( this.model ){
+            this.log( 'checking for updates' );
+            this.model.checkForUpdates();
+        }
         return this;
     },
 
@@ -148,7 +146,6 @@ var CurrentHistoryPanel = hpanel.HistoryPanel.extend(
                 this.removeHdaView( this.hdaViews[ hda.id ] );
             }
         }, this );
-
     },
 
     // ------------------------------------------------------------------------ panel rendering
@@ -157,6 +154,7 @@ var CurrentHistoryPanel = hpanel.HistoryPanel.extend(
      *  @see Backbone.View#render
      */
     render : function( speed, callback ){
+        this.log( 'render:', speed, callback );
         // send a speed of 0 to have no fade in/out performed
         speed = ( speed === undefined )?( this.fxSpeed ):( speed );
         var panel = this,
@@ -172,7 +170,6 @@ var CurrentHistoryPanel = hpanel.HistoryPanel.extend(
         // fade out existing, swap with the new, fade in, set up behaviours
         $( panel ).queue( 'fx', [
             function( next ){
-                //panel.$el.fadeTo( panel.fxSpeed, 0.0001, next );
                 if( speed && panel.$el.is( ':visible' ) ){
                     panel.$el.fadeOut( speed, next );
                 } else {
@@ -208,10 +205,60 @@ var CurrentHistoryPanel = hpanel.HistoryPanel.extend(
     /** perform additional rendering based on preferences */
     renderBasedOnPrefs : function(){
         if( this.preferences.get( 'searching' ) ){
-            this.showSearchControls( 0 );
+            this.toggleSearchControls( 0, true );
         }
     },
 
+    /** In this override, add links to open data uploader or get data in the tools section */
+    _renderEmptyMsg : function( $whereTo ){
+        var panel = this,
+            $emptyMsg = panel.$emptyMessage( $whereTo ),
+            $toolMenu = $( '.toolMenuContainer' );
+
+        if( ( _.isEmpty( panel.hdaViews ) && !panel.searchFor )
+        &&  ( Galaxy && Galaxy.upload && $toolMenu.size() ) ){
+            $emptyMsg.empty();
+
+            $emptyMsg.html([
+                _l( 'This history is empty. ' ), _l( 'You can ' ),
+                '<a class="uploader-link" href="javascript:void(0)">',
+                    _l( 'load your own data' ),
+                '</a>',
+                _l( ' or ' ), '<a class="get-data-link" href="javascript:void(0)">',
+                    _l( 'get data from an external source' ),
+                '</a>'
+            ].join('') );
+            $emptyMsg.find( '.uploader-link' ).click( function( ev ){
+                Galaxy.upload._eventShow( ev );
+            });
+            $emptyMsg.find( '.get-data-link' ).click( function( ev ){
+                $toolMenu.parent().scrollTop( 0 );
+                $toolMenu.find( 'span:contains("Get Data")' )
+                    .click();
+                    //.fadeTo( 200, 0.1, function(){
+                    //    console.debug( this )
+                    //    $( this ).fadeTo( 200, 1.0 );
+                    //});
+            });
+
+            $emptyMsg.show();
+
+
+        } else {
+            hpanel.HistoryPanel.prototype._renderEmptyMsg.call( this, $whereTo );
+        }
+        return this;
+    },
+
+    /** In this override, save the search control visibility state to preferences */
+    toggleSearchControls : function( eventOrSpeed, show ){
+        var visible = hpanel.HistoryPanel.prototype.toggleSearchControls.call( this, eventOrSpeed, show );
+        this.preferences.set( 'searching', visible );
+    },
+
+    /** render the tag sub-view controller
+     *  In this override, get and set current panel preferences when editor is used
+     */
     _renderTags : function( $where ){
         var panel = this;
         // render tags and show/hide based on preferences
@@ -225,6 +272,9 @@ var CurrentHistoryPanel = hpanel.HistoryPanel.extend(
                 panel.preferences.set( 'tagsEditorShown', tagsEditor.hidden );
             });
     },
+    /** render the annotation sub-view controller
+     *  In this override, get and set current panel preferences when editor is used
+     */
     _renderAnnotation : function( $where ){
         var panel = this;
         // render annotation and show/hide based on preferences
@@ -299,6 +349,7 @@ var CurrentHistoryPanel = hpanel.HistoryPanel.extend(
         return 'CurrentHistoryPanel(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
     }
 });
+
 
 //==============================================================================
     return {

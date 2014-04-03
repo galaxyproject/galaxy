@@ -886,6 +886,30 @@ SpaceGhost.prototype.assertDoesntHaveClass = function assertDoesntHaveClass( sel
     this.test.assert( classes.indexOf( className ) === -1, msg );
 };
 
+/** Return true if object has all keys in keysArray (useful in API testing of return values).
+ *  @param {Object} object       the object to test
+ *  @param {String[]} keysArray  an array of expected keys
+ */
+SpaceGhost.prototype.hasKeys = function hasKeys( object, keysArray ){
+    if( !utils.isObject( object ) ){ return false; }
+    for( var i=0; i<keysArray.length; i += 1 ){
+        if( !object.hasOwnProperty( keysArray[i] ) ){
+            return false;
+        }
+    }
+    return true;
+};
+
+/** Returns count of keys in object. */
+SpaceGhost.prototype.countKeys = function countKeys( object ){
+    if( !utils.isObject( object ) ){ return 0; }
+    var count = 0;
+    for( var key in object ){
+        if( object.hasOwnProperty( key ) ){ count += 1; }
+    }
+    return count;
+};
+
 
 // =================================================================== CONVENIENCE
 /** Wraps casper.getElementInfo in try, returning null if element not found instead of erroring.

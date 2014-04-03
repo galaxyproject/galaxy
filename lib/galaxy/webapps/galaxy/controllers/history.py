@@ -860,17 +860,17 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         hda_dictionaries   = []
         user_is_owner = False
         try:
-            history_to_view = self.get_history( trans, id, False )
+            history_to_view = self.get_history( trans, id, check_ownership=False, check_accessible=False )
             if not history_to_view:
                 return trans.show_error_message( "The specified history does not exist." )
             if history_to_view.user == trans.user:
                 user_is_owner = True
 
-            # Admin users can view any history
             if( ( history_to_view.user != trans.user )
-            and ( not trans.user_is_admin()  )
-            and ( not history_to_view.importable ) ):
-                #TODO: no check for shared with
+            # Admin users can view any history
+            and ( not trans.user_is_admin() )
+            and ( not history_to_view.importable )
+            and ( trans.user not in history_to_view.users_shared_with_dot_users ) ):
                 return trans.show_error_message( "Either you are not allowed to view this history"
                                                + " or the owner of this history has not made it accessible." )
 

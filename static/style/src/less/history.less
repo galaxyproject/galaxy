@@ -57,8 +57,32 @@
 }
 .icon-btn.disabled {
     background-color: transparent;
-    color: @icon-btn-border;
+    color: #BBB;
+    border-color: #BBB;
+    //color: @icon-btn-border;
 }
+.icon-btn-group {
+display: inline-block;
+.icon-btn:not(:last-child) {
+    margin: 0px;
+    border-radius: 0px;
+    border-right: none;
+}
+.icon-btn:first-child {
+    margin-right: 0px;
+    border-top-left-radius: 3px;
+    border-bottom-left-radius: 3px;
+}
+.icon-btn:last-child {
+    margin-left: 0px;
+    border-radius: 0px 3px 3px 0px;
+}
+.icon-btn:only-child {
+    margin: 0px;
+    border-radius: 3px;
+}
+}
+
 
 // ---------------------------------------------------------------------------- search bar
 .search-input {
@@ -141,13 +165,18 @@
             float: left;
             // always initially hidden and zero width
             display: none;
-            width: 0px;
+            width: 32px;
+            height: 32px;
             //HACK: neg. on the bottom due to padding-bottom in title-bar - very tweakish
-            margin: 0px 0px -@spacing-bottom 0px;
-            padding: ( @spacing-top - 1 ) 0px 2px @spacing-left;
+            margin: 0px 0px -( @spacing-bottom ) 0px;
+            padding: ( @spacing-top + 2 ) 0px 2px ( @spacing-left - 1 );
+            font-size: 80%;
+            color: @btn-default-color;
             cursor: pointer;
-            //text-align: center;
             vertical-align: middle;
+        }
+        .dataset-selector:hover {
+            color: maroon;
         }
 
         .dataset-title-bar {
@@ -196,6 +225,7 @@
             }
             .prompt:after {
                 content: ':';
+                margin-right: 4px;
             }
 
             .dataset-summary {
@@ -211,6 +241,7 @@
                 .dataset-datatype .value:after {
                     content: ',';
                     .help-text;
+                    margin-right: 4px;
                 }
                 .dataset-dbkey:after {
                     content: ' ';
@@ -255,6 +286,7 @@
                     }
                 }
                 .right {
+                    .icon-btn-group();
                     float: right;
                     .icon-btn {
                         margin-left: @icon-btn-margin;
@@ -328,29 +360,12 @@
             }
         }
 
-        .icon-btn-group {
-            display: inline-block;
-            .icon-btn:not(:last-child) {
-                margin: 0px;
-                border-radius: 0px;
-                border-right: none;
-            }
-            .icon-btn:first-child {
-                margin-right: 0px;
-                border-top-left-radius: 3px;
-                border-bottom-left-radius: 3px;
-            }
-            .icon-btn:last-child {
-                margin-left: 0px;
-                border-radius: 0px 3px 3px 0px;
-            }
-        }
-
     }
 
     .dataset .state-icon {
         .fa-icon;
         display: inline-block;
+        margin-right: 4px;
         vertical-align: middle;
         width: 16px;
         height: 16px;
@@ -431,6 +446,7 @@
             float: left;
         }
         .history-secondary-actions {
+            .icon-btn-group();
             float: right;
             .icon-btn {
                 margin-left: @icon-btn-margin;

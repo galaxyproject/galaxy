@@ -4,6 +4,7 @@ from galaxy.web.form_builder import SelectField
 log = logging.getLogger( __name__ )
 
 UNRESTRICTED = 'unrestricted'
+REPOSITORY_SUITE_DEFINITION = 'repository_suite_definition'
 TOOL_DEPENDENCY_DEFINITION = 'tool_dependency_definition'
 
 types = [ UNRESTRICTED, TOOL_DEPENDENCY_DEFINITION ]

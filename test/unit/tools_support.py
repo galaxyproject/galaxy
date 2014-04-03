@@ -121,6 +121,7 @@ class MockApp( object ):
         from galaxy.security import GalaxyRBACAgent
         self.job_queue = NoopQueue()
         self.security_agent = GalaxyRBACAgent( self.model )
+        self.tool_data_tables = {}
 
 
 class MockContext(object):

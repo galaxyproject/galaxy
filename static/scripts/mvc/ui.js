@@ -885,8 +885,7 @@ function LoadingIndicator( $where, options ){
 		var modeFn = this.getMode( modeKey ).onclick;
 		if( modeFn && jQuery.type( modeFn === 'function' ) ){
             // call with the element as context (std jquery pattern)
-			modeFn.call( this.$element.get(0) );
-            return this;
+			return modeFn.call( this.$element.get(0) );
 		}
 		return undefined;
 	};
@@ -907,7 +906,6 @@ function LoadingIndicator( $where, options ){
 
             var $first = $( this[0] ),
                 button = $first.data( 'mode-button' );
-            console.debug( 'first, button', $first, button );
 
             if( !button ){
                 throw new Error( 'modeButton needs an options object or string name of a function' );

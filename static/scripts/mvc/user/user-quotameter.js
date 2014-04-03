@@ -1,3 +1,7 @@
+define([
+    "mvc/base-mvc"
+], function( baseMVC ){
+//==============================================================================
 /** @class View to display a user's disk/storage usage
  *      either as a progress bar representing the percentage of a quota used
  *      or a simple text element displaying the human readable size used.
@@ -8,7 +12,7 @@
  *  @borrows LoggableMixin#log as #log
  *  @constructs
  */
-var UserQuotaMeter = Backbone.View.extend( LoggableMixin ).extend(
+var UserQuotaMeter = Backbone.View.extend( baseMVC.LoggableMixin ).extend(
 /** @lends UserQuotaMeter.prototype */{
     
     ///** logger used to record this.log messages, commonly set to console */
@@ -149,3 +153,9 @@ var UserQuotaMeter = Backbone.View.extend( LoggableMixin ).extend(
         return 'UserQuotaMeter(' + this.model + ')';
     }
 });
+
+
+//==============================================================================
+return {
+    UserQuotaMeter : UserQuotaMeter
+};});
