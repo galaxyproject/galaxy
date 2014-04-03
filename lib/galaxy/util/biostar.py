@@ -142,6 +142,6 @@ class BiostarErrorReporter( ErrorReporter ):
             payload[ 'content' ] = "%s<br />%s" % ( payload['content'], payload2['content'] )
         if 'tag_val' in payload2:
             payload[ 'tag_val' ] = ','.join( [ payload2[ 'tag_val' ], payload[ 'tag_val' ] ] )
-        if 'submit' not in payload:
-            payload[ 'submit' ] = 1 #Automatically post bug reports to biostar
+        if 'action' not in payload:
+            payload[ 'action' ] = 1 #Automatically post bug reports to biostar
         return payload

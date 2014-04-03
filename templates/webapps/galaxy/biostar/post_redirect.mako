@@ -4,9 +4,8 @@
     ${parent.javascripts()}
     <script>
         $( document ).ready( function(){
-            $("#postRedirect").hide();
-            ##need to use 'click()' on submit button instead of submit() on form, since Biostar uses a parameter named 'submit'
-            $("#GalaxySubmitPostRedirectForm").click();
+            $("div#postRedirect").hide();
+            $("form#postRedirectForm").submit();
         });
     </script>
 </%def>
