@@ -1341,9 +1341,7 @@ def get_tool_shed_repository_by_shed_name_owner_changeset_revision( app, tool_sh
     """
     # This method is used only in Galaxy, not the tool shed.
     repository_query = __repository_query( app )
-    if tool_shed.find( '//' ) > 0:
-        tool_shed = tool_shed.split( '//' )[1]
-    tool_shed = tool_shed.rstrip( '/' )
+    tool_shed = remove_protocol_from_tool_shed_url( tool_shed )
     return repository_query \
                      .filter( and_( app.install_model.ToolShedRepository.table.c.tool_shed == tool_shed,
                                     app.install_model.ToolShedRepository.table.c.name == name,
@@ -1597,6 +1595,12 @@ def handle_galaxy_url( trans, **kwd ):
         galaxy_url = trans.get_cookie( name='toolshedgalaxyurl' )
     return galaxy_url
 
+def handle_tool_shed_url_protocol( app, tool_shed_url ):
+    """Handle secure and insecure HTTP protocol since they may change over time."""
+    tool_shed_url = remove_protocol_from_tool_shed_url( tool_shed_url )
+    tool_shed_url = get_url_from_tool_shed( app, tool_shed_url )
+    return tool_shed_url
+
 def have_shed_tool_conf_for_install( trans ):
     if not trans.app.toolbox.shed_tool_confs:
         return False
@@ -1652,6 +1656,12 @@ def remove_file( file_name ):
                 os.remove( file_name )
             except:
                 pass
+
+def remove_protocol_from_tool_shed_url( tool_shed_url ):
+    if tool_shed_url.find( '//' ) > 0:
+        tool_shed_url = tool_shed_url.split( '//' )[1]
+    tool_shed_url = tool_shed_url.rstrip( '/' )
+    return tool_shed_url
 
 def __repository_query( app ):
     if app.name == "galaxy":

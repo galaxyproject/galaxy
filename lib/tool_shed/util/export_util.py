@@ -228,11 +228,12 @@ def get_repo_info_dicts( trans, tool_shed_url, repository_id, changeset_revision
     repository = suc.get_repository_in_tool_shed( trans, repository_id )
     repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
     # Get a dictionary of all repositories upon which the contents of the current repository_metadata record depend.
+    toolshed_base_url = str( web.url_for( '/', qualified=True ) ).rstrip( '/' )
     repository_dependencies = \
         repository_dependency_util.get_repository_dependencies_for_changeset_revision( trans=trans,
                                                                                        repository=repository,
                                                                                        repository_metadata=repository_metadata,
-                                                                                       toolshed_base_url=str( web.url_for( '/', qualified=True ) ).rstrip( '/' ),
+                                                                                       toolshed_base_url=toolshed_base_url,
                                                                                        key_rd_dicts_to_be_processed=None,
                                                                                        all_repository_dependencies=None,
                                                                                        handled_key_rd_dicts=None )
