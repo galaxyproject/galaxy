@@ -6,7 +6,7 @@
     <repository owner="devteam" name="basecoverage" changeset_revision="1e6a9e97fa41" description="Base Coverage of all intervals">
         <tool id="gops_basecoverage_1" version="0.0.1" file="new_operations/basecoverage.xml" />
     </repository>
-    <repository owner="devteam" name="best_regression_subsets" changeset_revision="54c7a01a2cc7" description="Perform Best-subsets Regression">
+    <repository owner="devteam" name="best_regression_subsets" changeset_revision="e769cde223a5" description="Perform Best-subsets Regression">
         <tool id="BestSubsetsRegression1" version="0.0.1" file="regVariation/best_regression_subsets.xml" />
     </repository>
     <repository owner="devteam" name="cluster" changeset_revision="d5677eecbad4" description="Cluster">
@@ -132,7 +132,7 @@
     <repository owner="devteam" name="variants_validate" changeset_revision="7e1ecaa64370" description="Validate Variants">
         <tool id="gatk_validate_variants" version="0.0.4" file="gatk/variants_validate.xml" />
     </repository>
-    <repository owner="devteam" name="weightedaverage" changeset_revision="9b7b4009f2c0" description="Assign weighted-average of the values of features overlapping an interval">
+    <repository owner="devteam" name="weightedaverage" changeset_revision="90611e86a998" description="Assign weighted-average of the values of features overlapping an interval">
         <tool id="wtavg" version="1.0.0" file="regVariation/WeightedAverage.xml" />
     </repository>
     <repository owner="devteam" name="windowsplitter" changeset_revision="e5490ea33640" description="Make windows">
