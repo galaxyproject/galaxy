@@ -137,8 +137,8 @@ class AdminToolshed( AdminGalaxy ):
                                                                               action='reselect_tool_panel_section',
                                                                               **kwd ) )
                     else:
-                        message = "Unable to get latest revision for repository <b>%s</b> from the tool shed, so repository " % str( repository.name )
-                        message += "reinstallation is not possible at this time."
+                        message = "Unable to get latest revision for repository <b>%s</b> from " % str( repository.name )
+                        message += "the Tool Shed, so repository reinstallation is not possible at this time."
                         status = "error"
                         return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
                                                                           action='browse_repositories',
@@ -986,12 +986,15 @@ class AdminToolshed( AdminGalaxy ):
                     # The Tool Shed cannot handle the get_repository_id request, so the code must be older than the
                     # 04/2014 Galaxy release when it was introduced.  It will be safest to error out and let the
                     # Tool Shed admin update the Tool Shed to a later release.
-                    err_msg = 'The Tool Shed %s is running a code revision that does not ' % str( tool_shed_url)
-                    err_msg += 'allow updating an installed repository where the updates include newly defined repository '
-                    err_msg += 'or tool dependency definitions, so the repository %s cannot ' % str( repository.name )
-                    err_msg += 'be updated at this time.  Contact the Tool Shed administrator if possible and'
-                    err_msg += 'ask if they can update the Tool Shed code to the latest release.'
-                    return trans.show_error_message( err_msg )
+                    message = 'The updates available for the repository <b>%s</b> ' % str( repository.name )
+                    message += 'include newly defined repository or tool dependency definitions, and attempting '
+                    message += 'to update the repository resulted in the following error.  Contact the Tool Shed '
+                    message += 'administrator if necessary.<br/>%s' % str( e )
+                    status = 'error'
+                    return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
+                                                                      action='browse_repositories',
+                                                                      message=message,
+                                                                      status=status ) )
                 changeset_revisions = updating_to_changeset_revision
             else:
                 changeset_revisions = kwd.get( 'changeset_revisions', None )
@@ -1811,7 +1814,7 @@ class AdminToolshed( AdminGalaxy ):
         """Update a cloned repository to the latest revision possible."""
         message = kwd.get( 'message', ''  )
         status = kwd.get( 'status', 'done' )
-        tool_shed_url = kwd[ 'tool_shed_url' ]
+        tool_shed_url = kwd.get( 'tool_shed_url', None )
         name = kwd.get( 'name', None )
         owner = kwd.get( 'owner', None )
         changeset_revision = kwd.get( 'changeset_revision', None )
