@@ -40,27 +40,30 @@ class Hg( object ):
 
     def __call__( self, environ, start_response ):
         cmd = self.__get_hg_command( **environ )
-        if cmd == 'changegroup':
-            # This is an hg clone from the command line.  When doing this, the following 5 commands, in order,
-            # will be retrieved from environ:
-            # between -> heads -> changegroup -> capabilities -> listkeys
-            #
-            # Increment the value of the times_downloaded column in the repository table for the cloned repository.
-            if 'PATH_INFO' in environ:
-                # Instantiate a database connection
-                engine = sqlalchemy.create_engine( self.db_url )
-                connection = engine.connect()
-                path_info = environ[ 'PATH_INFO' ].lstrip( '/' )
-                user_id, repository_name = self.__get_user_id_repository_name_from_path_info( connection, path_info )
-                sql_cmd = "SELECT times_downloaded FROM repository WHERE user_id = %d AND name = '%s'" % ( user_id, repository_name.lower() )
-                result_set = connection.execute( sql_cmd )
-                for row in result_set:
-                    # Should only be 1 row...
-                    times_downloaded = row[ 'times_downloaded' ]
-                times_downloaded += 1
-                sql_cmd = "UPDATE repository SET times_downloaded = %d WHERE user_id = %d AND name = '%s'" % ( times_downloaded, user_id, repository_name.lower() )
-                connection.execute( sql_cmd )
-                connection.close()
+        # The 'getbundle' command indicates that a mercurial client is getting a bundle of one or more changesets, indicating
+        # a clone or a pull.
+        if cmd == 'getbundle':
+            common, _ = environ[ 'HTTP_X_HGARG_1' ].split( '&' )
+            # The 'common' parameter indicates the full sha-1 hash of the changeset the client currently has checked out. If
+            # this is 0000000000000000000000000000000000000000, then the client is performing a fresh checkout. If it has any
+            # other value, the client is getting updates to an existing checkout.
+            if common == 'common=0000000000000000000000000000000000000000':
+                # Increment the value of the times_downloaded column in the repository table for the cloned repository.
+                if 'PATH_INFO' in environ:
+                    # Instantiate a database connection
+                    engine = sqlalchemy.create_engine( self.db_url )
+                    connection = engine.connect()
+                    path_info = environ[ 'PATH_INFO' ].lstrip( '/' )
+                    user_id, repository_name = self.__get_user_id_repository_name_from_path_info( connection, path_info )
+                    sql_cmd = "SELECT times_downloaded FROM repository WHERE user_id = %d AND name = '%s'" % ( user_id, repository_name.lower() )
+                    result_set = connection.execute( sql_cmd )
+                    for row in result_set:
+                        # Should only be 1 row...
+                        times_downloaded = row[ 'times_downloaded' ]
+                    times_downloaded += 1
+                    sql_cmd = "UPDATE repository SET times_downloaded = %d WHERE user_id = %d AND name = '%s'" % ( times_downloaded, user_id, repository_name.lower() )
+                    connection.execute( sql_cmd )
+                    connection.close()
         elif cmd in [ 'unbundle', 'pushkey' ]:
             # This is an hg push from the command line.  When doing this, the following commands, in order,
             # will be retrieved from environ (see the docs at http://mercurial.selenic.com/wiki/WireProtocol):
@@ -120,8 +123,28 @@ class Hg( object ):
                         for row in result_set:
                             # Should only be 1 row...
                             repository_type = str( row[ 'type' ] )
-                        if repository_type == rt_util.TOOL_DEPENDENCY_DEFINITION:
-                            # Handle repositories of type tool_dependency_definition, which can only contain a single file named tool_dependencies.xml.
+                        if repository_type == rt_util.REPOSITORY_SUITE_DEFINITION:
+                            # Handle repositories of type repository_suite_definition, which can only contain a single
+                            # file named repository_dependencies.xml.
+                            for entry in changeset_groups:
+                                if len( entry ) == 2:
+                                    # We possibly found an altered file entry.
+                                    filename, change_list = entry
+                                    if filename and isinstance( filename, str ):
+                                        if filename == suc.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME:
+                                            # Make sure the any complex repository dependency definitions contain valid <repository> tags.
+                                            is_valid, error_msg = commit_util.repository_tags_are_valid( filename, change_list )
+                                            if not is_valid:
+                                                log.debug( error_msg )
+                                                return self.__display_exception_remotely( start_response, error_msg )
+                                        else:
+                                            msg = "Only a single file named repository_dependencies.xml can be pushed to a repository "
+                                            msg += "of type 'Repository suite definition'."
+                                            log.debug( msg )
+                                            return self.__display_exception_remotely( start_response, msg )
+                        elif repository_type == rt_util.TOOL_DEPENDENCY_DEFINITION:
+                            # Handle repositories of type tool_dependency_definition, which can only contain a single
+                            # file named tool_dependencies.xml.
                             for entry in changeset_groups:
                                 if len( entry ) == 2:
                                     # We possibly found an altered file entry.
@@ -134,20 +157,24 @@ class Hg( object ):
                                                 log.debug( error_msg )
                                                 return self.__display_exception_remotely( start_response, error_msg )
                                         else:
-                                            msg = "Only a single file named tool_dependencies.xml can be pushed to a repository of type 'Tool dependency definition'."
+                                            msg = "Only a single file named tool_dependencies.xml can be pushed to a repository "
+                                            msg += "of type 'Tool dependency definition'."
                                             log.debug( msg )
                                             return self.__display_exception_remotely( start_response, msg )
                         else:
-                            # If the changeset includes changes to dependency definition files, make sure tag sets are not missing "toolshed" or
-                            # "changeset_revision" attributes since automatically populating them is not supported when pushing from the command line.
-                            # These attributes are automatically populated only when using the tool shed upload utility.
+                            # If the changeset includes changes to dependency definition files, make sure tag sets
+                            # are not missing "toolshed" or "changeset_revision" attributes since automatically populating
+                            # them is not supported when pushing from the command line.  These attributes are automatically
+                            # populated only when using the tool shed upload utility.
                             for entry in changeset_groups:
                                 if len( entry ) == 2:
                                     # We possibly found an altered file entry.
                                     filename, change_list = entry
                                     if filename and isinstance( filename, str ):
-                                        if filename in [ suc.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME, suc.TOOL_DEPENDENCY_DEFINITION_FILENAME ]:
-                                            # We check both files since tool dependency definitions files can contain complex repository dependency definitions.
+                                        if filename in [ suc.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME,
+                                                        suc.TOOL_DEPENDENCY_DEFINITION_FILENAME ]:
+                                            # We check both files since tool dependency definitions files can contain complex
+                                            # repository dependency definitions.
                                             is_valid, error_msg = commit_util.repository_tags_are_valid( filename, change_list )
                                             if not is_valid:
                                                 log.debug( error_msg )

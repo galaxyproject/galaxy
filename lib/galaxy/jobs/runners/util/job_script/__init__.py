@@ -2,11 +2,11 @@ from string import Template
 from pkg_resources import resource_string
 
 DEFAULT_JOB_FILE_TEMPLATE = Template(
-    resource_string(__name__, 'DEFAULT_JOB_FILE_TEMPLATE.sh')
+    resource_string(__name__, 'DEFAULT_JOB_FILE_TEMPLATE.sh').decode('UTF-8')
 )
 
 SLOTS_STATEMENT_CLUSTER_DEFAULT = \
-    resource_string(__name__, 'CLUSTER_SLOTS_STATEMENT.sh')
+    resource_string(__name__, 'CLUSTER_SLOTS_STATEMENT.sh').decode('UTF-8')
 
 SLOTS_STATEMENT_SINGLE = """
 GALAXY_SLOTS="1"

@@ -5,7 +5,6 @@ Galaxy web application framework
 import hashlib
 import inspect
 import os
-import pkg_resources
 import random
 import socket
 import string
@@ -14,39 +13,39 @@ from traceback import format_exc
 from Cookie import CookieError
 from functools import wraps
 
-pkg_resources.require( "Cheetah" )
+from galaxy import eggs
+
+eggs.require( "Cheetah" )
 from Cheetah.Template import Template
 
-#TODO: Relative imports to be removed
-import base
-import helpers
-
 from galaxy import util
-from galaxy.exceptions import MessageException
 from galaxy.exceptions import error_codes
+from galaxy.exceptions import MessageException
 from galaxy.util import asbool
 from galaxy.util import safe_str_cmp
 from galaxy.util.backports.importlib import import_module
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.util.sanitize_html import sanitize_html
+from galaxy.web.framework import base, helpers
 
 import paste.httpexceptions
 
-pkg_resources.require( "Mako" )
+eggs.require( "Mako" )
 import mako.template
 import mako.lookup
 import mako.runtime
 
-pkg_resources.require( "Babel" )
+eggs.require( "pytz" ) # Used by Babel.
+eggs.require( "Babel" )
 from babel.support import Translations
 from babel import Locale, UnknownLocaleError
 
-pkg_resources.require( "SQLAlchemy >= 0.4" )
+eggs.require( "SQLAlchemy >= 0.4" )
 from sqlalchemy import and_
 from sqlalchemy.orm.exc import NoResultFound
 
-pkg_resources.require( "pexpect" )
-pkg_resources.require( "amqplib" )
+eggs.require( "pexpect" )
+eggs.require( "amqp" )
 
 import logging
 log = logging.getLogger( __name__ )
@@ -275,6 +274,14 @@ def _future_expose_api_anonymous( func, to_json=True ):
     return _future_expose_api( func, to_json=to_json, user_required=False )
 
 
+def _future_expose_api_raw( func ):
+    return _future_expose_api( func, to_json=False, user_required=True )
+
+
+def _future_expose_api_raw_anonymous( func ):
+    return _future_expose_api( func, to_json=False, user_required=False )
+
+
 # TODO: rename as expose_api and make default.
 def _future_expose_api( func, to_json=True, user_required=True ):
     """
@@ -289,7 +296,8 @@ def _future_expose_api( func, to_json=True, user_required=True ):
         if user_required and trans.anonymous:
             error_code = error_codes.USER_NO_API_KEY
             # Use error codes default error message.
-            return __api_error_response( trans, err_code=error_code, status_code=403 )
+            err_msg = "API authentication required for this request"
+            return __api_error_response( trans, err_code=error_code, err_msg=err_msg, status_code=403 )
         if trans.request.body:
             try:
                 kwargs['payload'] = __extract_payload_from_request(trans, func, kwargs)

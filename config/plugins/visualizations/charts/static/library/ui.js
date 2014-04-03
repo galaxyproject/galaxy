@@ -1,12 +1,12 @@
 // dependencies
-define(['library/utils', 'library/ui.select'], function(Utils, Select) {
+define(['utils/utils', 'plugin/library/ui-select'], function(Utils, Select) {
 
 // plugin
 var Label = Backbone.View.extend(
 {
     // options
     optionsDefault: {
-        label : ''
+        title  : ''
     },
     
     // initialize
@@ -15,17 +15,22 @@ var Label = Backbone.View.extend(
         this.options = Utils.merge(options, this.optionsDefault);
             
         // create new element
-        this.setElement(this.template(this.options));
+        this.setElement(this._template(this.options));
+    },
+    
+    // title
+    title: function(new_title) {
+        this.$el.find('b').html(new_title);
     },
     
     // template
-    template: function(options) {
-        return '<label><b>' + options.label + '</b></label>';
+    _template: function(options) {
+        return '<label><b>' + options.title + '</b></label>';
     },
     
     // value
     value: function() {
-        return options.label;
+        return options.title;
     }
 });
 
@@ -35,10 +40,9 @@ var Button = Backbone.View.extend(
     // options
     optionsDefault: {
         id    : null,
-        label : '',
+        title : '',
         float : 'right',
         cls   : 'btn-default',
-        type  : 'submit',
         icon  : ''
     },
     
@@ -52,16 +56,105 @@ var Button = Backbone.View.extend(
         
         // add event
         $(this.el).on('click', options.onclick);
+        
+        // add tooltip
+        $(this.el).tooltip({title: options.tooltip, placement: 'bottom'});
     },
     
     // element
     _template: function(options) {
-        var str =   '<button id="' + options.id + '" type="' + options.type + '" style="margin-right: 5px; float: ' + options.float + ';" type="button" class="btn ' + options.cls + '">';
+        var str =   '<button id="' + options.id + '" type="submit" style="margin-right: 5px; float: ' + options.float + ';" type="button" class="btn ' + options.cls + '">';
         if (options.icon) {
             str +=      '<i class="icon fa ' + options.icon + '"></i>&nbsp;' ;
         }
-        str +=          options.label +
+        str +=          options.title +
                     '</button>';
+        return str;
+    }
+});
+
+// plugin
+var Icon = Backbone.View.extend(
+{
+    // options
+    optionsDefault: {
+        float       : 'right',
+        icon        : '',
+        tooltip     : '',
+        placement   : 'bottom',
+        title       : ''
+    },
+    
+    // initialize
+    initialize : function(options) {
+        // get options
+        this.options = Utils.merge(options, this.optionsDefault);
+            
+        // create new element
+        this.setElement(this._template(this.options));
+        
+        // add tooltip
+        $(this.el).tooltip({title: options.tooltip, placement: 'bottom'});
+    },
+    
+    // element
+    _template: function(options) {
+        return  '<div>' +
+                    '<span class="fa ' + options.icon + '" style="font-size: 1.2em;"/>&nbsp;' +
+                    options.title +
+                '</div>';
+    }
+});
+
+// plugin
+var ButtonIcon = Backbone.View.extend(
+{
+    // options
+    optionsDefault: {
+        title   : '',
+        id      : null,
+        float   : 'right',
+        cls     : 'icon-btn',
+        icon    : '',
+        tooltip : ''
+    },
+    
+    // initialize
+    initialize : function(options) {
+        // get options
+        this.options = Utils.merge(options, this.optionsDefault);
+            
+        // create new element
+        this.setElement(this._template(this.options));
+        
+        // add event
+        $(this.el).on('click', options.onclick);
+        
+        // add tooltip
+        $(this.el).tooltip({title: options.tooltip, placement: 'bottom'});
+    },
+    
+    // element
+    _template: function(options) {
+        // width
+        var width = '';
+        if (options.title) {
+            width = 'width: auto;';
+        }
+        
+        // string
+        var str =   '<div id="' + options.id + '" style="margin-right: 5px; float: ' + options.float + '; ' + width + '" class="' + options.cls + '">';
+    
+        // title
+        if (options.title) {
+            str +=      '<div style="margin-right: 5px; margin-left: 5px;">' +
+                            '<i class="icon fa ' + options.icon + '"/>&nbsp;' +
+                            '<span style="position: relative; font-size: 0.8em; font-weight: normal; top: -1px;">' + options.title + '</span>' +
+                        '</div>';
+        } else {
+            str +=      '<i class="icon fa ' + options.icon + '"/>';
+        }
+        str +=      '</div>';
         return str;
     }
 });
@@ -71,7 +164,7 @@ var Anchor = Backbone.View.extend(
 {
     // options
     optionsDefault: {
-        label : ''
+        title  : ''
     },
     
     // initialize
@@ -88,7 +181,7 @@ var Anchor = Backbone.View.extend(
     
     // element
     _template: function(options) {
-        return '<div><a href="javascript:void(0)">' + options.label + '</a></div>';
+        return '<div><a href="javascript:void(0)">' + options.title + '</a></div>';
     }
 });
 
@@ -118,7 +211,7 @@ var Message = Backbone.View.extend(
         
         // show message
         if (options.message != '') {
-            this.$el.html(this.template(this.options));
+            this.$el.html(this._template(this.options));
             this.$el.fadeIn();
             
             // check if message is persistent
@@ -139,7 +232,7 @@ var Message = Backbone.View.extend(
     },
     
     // element
-    template: function(options) {
+    _template: function(options) {
         return '<div class="alert alert-' + options.status + '" style="padding: 2px 2px 2px 10px;">' + options.message + '</div>';
     }
 });
@@ -159,7 +252,7 @@ var Searchbox = Backbone.View.extend(
         this.options = Utils.merge(options, this.optionsDefault);
         
         // create new element
-        this.setElement(this.template(this.options));
+        this.setElement(this._template(this.options));
         
         // add click event
         var self = this;
@@ -172,7 +265,7 @@ var Searchbox = Backbone.View.extend(
     },
     
     // element
-    template: function(options) {
+    _template: function(options) {
         return  '<div class="search">' +
                     '<form onsubmit="return false;">' +
                         '<input id="search" class="form-control input-sm" type="text" name="search" placeholder="Search..." value="' + options.searchword + '">' +
@@ -189,7 +282,7 @@ var Title = Backbone.View.extend(
 {
     // options
     optionsDefault: {
-        label   : 'Unlabeled',
+        title   : 'Unlabeled',
         body    : null
     },
     
@@ -199,7 +292,7 @@ var Title = Backbone.View.extend(
         this.options = Utils.merge(options, this.optionsDefault);
         
         // create new element
-        this.setElement(this.template(this.options));
+        this.setElement(this._template(this.options));
         
         if (this.options.body) {
             this.$el.find('.body').append(this.options.body);
@@ -207,9 +300,9 @@ var Title = Backbone.View.extend(
     },
     
     // element
-    template: function(options) {
+    _template: function(options) {
         return  '<div id="title" class="title">' +
-                    options.label + ':' +
+                    options.title + ':' +
                 '</div>';
     }
 });
@@ -370,48 +463,6 @@ var ButtonMenu = Backbone.View.extend(
 });
 
 // plugin
-var ButtonIcon = Backbone.View.extend(
-{
-    // options
-    optionsDefault: {
-        id      : null,
-        label   : '',
-        float   : 'right',
-        cls     : 'icon-btn',
-        type    : 'submit',
-        icon    : '',
-        tooltip : ''
-    },
-    
-    // initialize
-    initialize : function(options) {
-        // get options
-        this.options = Utils.merge(options, this.optionsDefault);
-            
-        // create new element
-        this.setElement(this.template(this.options));
-        
-        // add event
-        $(this.el).on('click', options.onclick);
-        
-        // add tooltip
-        $(this.el).tooltip({title: options.tooltip, placement: 'bottom'});
-    },
-    
-    // element
-    template: function(options) {
-        var str =   '<a id="' + options.id + '" style="margin-right: 5px; float: ' + options.float + ';" class="' + options.cls + '">';
-        if (options.icon) {
-            str +=      '<i class="icon fa ' + options.icon + '"></i>';
-        }
-        str +=          options.label +
-                    '</a>';
-        return str;
-    }
-});
-
-
-// plugin
 var Input = Backbone.View.extend(
 {
     // options
@@ -429,7 +480,7 @@ var Input = Backbone.View.extend(
         this.options = Utils.merge(options, this.optionsDefault);
             
         // create new element
-        this.setElement(this.template(this.options));
+        this.setElement(this._template(this.options));
         
         // disable input field
         if (this.options.disabled) {
@@ -439,6 +490,14 @@ var Input = Backbone.View.extend(
         // hide input field
         if (!this.options.visible) {
             this.$el.hide();
+        }
+        
+        // onchange event handler
+        var self = this;
+        if (this.options.onchange) {
+            this.$el.on('input', function() {
+                self.options.onchange();
+            });
         }
     },
     
@@ -451,7 +510,7 @@ var Input = Backbone.View.extend(
     },
     
     // element
-    template: function(options) {
+    _template: function(options) {
         return '<input id="' + options.id + '" type="' + options.type + '" value="' + options.value + '" placeholder="' + options.placeholder + '" class="form-control">';
     }
 });
@@ -460,6 +519,7 @@ var Input = Backbone.View.extend(
 return {
     Label   : Label,
     Button  : Button,
+    Icon  : Icon,
     ButtonIcon : ButtonIcon,
     Input : Input,
     Anchor  : Anchor,

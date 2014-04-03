@@ -26,6 +26,6 @@ in the universe_wsgi.ini file.  Tools are configured in tool_conf.xml.  Details
 on adding tools can be found on the Galaxy website (linked above).
 
 Not all dependencies are included for the tools provided in the sample
-tool_conf.xml.  A full list of external dependencies is available at:
+tool_conf.xml. A full list of external dependencies is available at:
 
-http://wiki.g2.bx.psu.edu/Admin/Tools/Tool%20Dependencies
+https://wiki.galaxyproject.org/Admin/Tools/ToolDependencies

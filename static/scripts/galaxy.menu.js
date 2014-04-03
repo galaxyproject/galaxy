@@ -235,7 +235,7 @@ var GalaxyMenu = Backbone.Model.extend(
             content : this.options.citation_url,
             target  : "_blank"
         });
-        if (!this.options.terms_url)
+        if (this.options.terms_url)
         {
             tab_help.add({
                 title   : "Terms and Conditions",

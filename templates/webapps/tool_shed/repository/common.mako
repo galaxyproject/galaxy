@@ -191,6 +191,9 @@
                         %if util.UNRESTRICTED in repository_types:
                             <li><b>Unrestricted</b> - contents can be any set of valid Galaxy utilities or files
                         %endif
+                        %if util.REPOSITORY_SUITE_DEFINITION in repository_types:
+                            <li><b>Repository suite definition</b> - contents will always be restricted to one file named repository_dependencies.xml
+                        %endif
                         %if util.TOOL_DEPENDENCY_DEFINITION in repository_types:
                             <li><b>Tool dependency definition</b> - contents will always be restricted to one file named tool_dependencies.xml
                         %endif

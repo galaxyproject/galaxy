@@ -46,8 +46,8 @@
 
 <div class="warningmessage">
     <p>
-        The core Galaxy development team does not maintain the contents of many Galaxy tool shed repositories.  Some repository tools
-        may include code that produces malicious behavior, so be aware of what you are installing.  
+        The Galaxy development team does not maintain the contents of many Galaxy Tool Shed repositories.  Some
+        repository tools may include code that produces malicious behavior, so be aware of what you are installing.
     </p>
     <p>
         If you discover a repository that causes problems after installation, contact <a href="http://wiki.g2.bx.psu.edu/Support" target="_blank">Galaxy support</a>,
@@ -67,6 +67,11 @@
                 <input type="hidden" name="includes_tools_for_display_in_tool_panel" value="${includes_tools_for_display_in_tool_panel}" />
                 <input type="hidden" name="tool_shed_url" value="${tool_shed_url}" />
                 <input type="hidden" name="encoded_repo_info_dicts" value="${encoded_repo_info_dicts}" />
+                <input type="hidden" name="updating" value="${updating}" />
+                <input type="hidden" name="updating_repository_id" value="${updating_repository_id}" />
+                <input type="hidden" name="updating_to_ctx_rev" value="${updating_to_ctx_rev}" />
+                <input type="hidden" name="updating_to_changeset_revision" value="${updating_to_changeset_revision}" />
+                <input type="hidden" name="encoded_updated_metadata" value="${encoded_updated_metadata}" />
             </div>
             <div style="clear: both"></div>
             <% readme_files_dict = containers_dict.get( 'readme_files', None ) %>

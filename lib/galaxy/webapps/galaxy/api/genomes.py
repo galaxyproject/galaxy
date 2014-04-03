@@ -14,7 +14,7 @@ class GenomesController( BaseAPIController ):
     RESTful controller for interactions with genome data.
     """
 
-    @web.expose_api
+    @web.expose_api_anonymous
     def index( self, trans, **kwd ):
         """
         GET /api/genomes: returns a list of installed genomes

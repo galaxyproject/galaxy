@@ -184,11 +184,11 @@
     <div class="unified-panel-header" unselectable="on">
         <div class="unified-panel-header-inner">
             <div style="float: right">
-                <a id="history-refresh-button" class='panel-header-button' href="javascript:void(0)">
+                <a id="history-refresh-button" class='panel-header-button' href="javascript:void(0)" title="Refresh history">
                     <span class="fa fa-refresh"></span>
                 </a>
                 <a id="history-options-button" class='panel-header-button'
-                   href="${h.url_for( controller='root', action='history_options' )}" target="galaxy_main">
+                   href="${h.url_for( controller='root', action='history_options' )}" target="galaxy_main" title="History options">
                     <span class="fa fa-cog"></span>
                 </a>
             </div>

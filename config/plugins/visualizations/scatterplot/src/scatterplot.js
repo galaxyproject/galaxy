@@ -46,8 +46,9 @@ function scatterplot( renderTo, config, data ){
     var zoom = d3.behavior.zoom()
         .x( interpolaterFns.x )
         .y( interpolaterFns.y )
-        .scaleExtent([ 1, 10 ]);
-//TODO: you can prog. set the zoom and pan with zoom.scale( val ) and zoom.translate([ x, y ])...
+        .scaleExtent([ 1, 30 ])
+        .scale( config.scale || 1 )
+        .translate( config.translate || [ 0, 0 ] );
 
     //console.debug( renderTo );
     var svg = d3.select( renderTo )
@@ -72,19 +73,19 @@ function scatterplot( renderTo, config, data ){
 
     // .................................................................... axes
     var axis = { x : {}, y : {} };
-    //console.log( 'x.ticks:', config.x.ticks );
-    //console.log( 'y.ticks:', config.y.ticks );
+    //console.log( 'xTicks:', config.xTicks );
+    //console.log( 'yTicks:', config.yTicks );
     axis.x.fn = d3.svg.axis()
         .orient( 'bottom' )
         .scale( interpolaterFns.x )
-        .ticks( config.x.ticks )
+        .ticks( config.xTicks )
         // this will convert thousands -> k, millions -> M, etc.
         .tickFormat( d3.format( 's' ) );
 
     axis.y.fn = d3.svg.axis()
         .orient( 'left' )
         .scale( interpolaterFns.y )
-        .ticks( config.y.ticks )
+        .ticks( config.yTicks )
         .tickFormat( d3.format( 's' ) );
 
     axis.x.g = content.append( 'g' )
@@ -99,11 +100,12 @@ function scatterplot( renderTo, config, data ){
     //console.log( 'axis.y.g:', axis.y.g );
 
     // ................................ axis labels
-    var padding = 4;
+    var padding = 6;
     // x-axis label
     axis.x.label = svg.append( 'text' )
+        .attr( 'id', 'x-axis-label' )
         .attr( 'class', 'axis-label' )
-        .text( config.x.label )
+        .text( config.xLabel )
         // align to the top-middle
         .attr( 'text-anchor', 'middle' )
         .attr( 'dominant-baseline', 'text-after-edge' )
@@ -116,8 +118,9 @@ function scatterplot( renderTo, config, data ){
     // y-axis label
     // place 4 pixels left of the axis.y.g left edge
     axis.y.label = svg.append( 'text' )
+        .attr( 'id', 'y-axis-label' )
         .attr( 'class', 'axis-label' )
-        .text( config.y.label )
+        .text( config.yLabel )
         // align to bottom-middle
         .attr( 'text-anchor', 'middle' )
         .attr( 'dominant-baseline', 'text-before-edge' )
@@ -176,18 +179,17 @@ function scatterplot( renderTo, config, data ){
         .enter().append( 'svg:circle' )
             .classed( "glyph", true )
             .attr( "cx", function( d, i ){ return interpolaterFns.x( getX( d, i ) ); })
-            // give them a 'entry' position and style
-            .attr( "cy", config.height )
+            .attr( "cy", function( d, i ){ return interpolaterFns.y( getY( d, i ) ); })
             .attr( "r",  0 );
 
     // for all EXISTING glyphs and those that need to be added: transition anim to final state
     datapoints.transition().duration( config.animDuration )
-        .attr( "cy", function( d, i ){ return interpolaterFns.y( getY( d, i ) ); })
         .attr( "r", config.datapointSize );
     //console.log( 'datapoints:', datapoints );
 
     function _redrawDatapointsClipped(){
         return datapoints
+            //TODO: interpolates twice
             .attr( "cx", function( d, i ){ return interpolaterFns.x( getX( d, i ) ); })
             .attr( "cy", function( d, i ){ return interpolaterFns.y( getY( d, i ) ); })
             .style( 'display', 'block' )
@@ -200,21 +202,26 @@ function scatterplot( renderTo, config, data ){
                 return false;
             }).style( 'display', 'none' );
     }
+    _redrawDatapointsClipped();
 
     // .................................................................... behaviors
     function zoomed( scale, translateX, translateY ){
-        //console.debug( 'zoom', this, scale, translateX, translateY, arguments );
+        //console.debug( 'zoom', this, zoom.scale(), zoom.translate() );
+
         // re-render axis, grid, and datapoints
+        $( '.chart-info-box' ).remove();
         axis.redraw();
         _redrawDatapointsClipped();
         grid = renderGrid();
-        $( '.chart-info-box' ).remove();
-        $( svg.node() ).trigger( 'zoom.scatterplot', [] );
+
+        $( svg.node() ).trigger( 'zoom.scatterplot', {
+            scale       : zoom.scale(),
+            translate   : zoom.translate()
+        });
     }
     //TODO: programmatically set zoom/pan and save in config
     //TODO: set pan/zoom limits
     zoom.on( "zoom", zoomed );
-
 
     function infoBox( top, left, d ){
         // create an abs pos. element containing datapoint data (d) near the point (top, left)
@@ -222,7 +229,7 @@ function scatterplot( renderTo, config, data ){
         left += 8;
         return $([
             '<div class="chart-info-box" style="position: absolute">',
-                (( config.idColumn )?( '<div>' + d[ config.idColumn ] + '</div>' ):( '' )),
+                (( config.idColumn !== undefined )?( '<div>' + d[ config.idColumn ] + '</div>' ):( '' )),
                 '<div>', getX( d ), '</div>',
                 '<div>', getY( d ), '</div>',
             '</div>'
@@ -232,6 +239,7 @@ function scatterplot( renderTo, config, data ){
     datapoints.on( 'mouseover', function( d, i ){
         var datapoint = d3.select( this );
         datapoint
+            .classed( 'highlight', true )
             .style( 'fill', 'red' )
             .style( 'fill-opacity', 1 );
 
@@ -268,6 +276,7 @@ function scatterplot( renderTo, config, data ){
     datapoints.on( 'mouseout', function(){
         // return the point to normal, remove hoverlines and info box
         d3.select( this )
+            .classed( 'highlight', false )
             .style( 'fill', 'black' )
             .style( 'fill-opacity', 0.2 );
         content.selectAll( '.hoverline' ).remove();

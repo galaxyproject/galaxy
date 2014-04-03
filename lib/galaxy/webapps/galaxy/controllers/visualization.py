@@ -1,9 +1,10 @@
 from __future__ import absolute_import
 
 import os
+import copy
 
 from sqlalchemy import desc, or_, and_
-from paste.httpexceptions import HTTPNotFound
+from paste.httpexceptions import HTTPNotFound, HTTPBadRequest
 
 from galaxy import model, web
 from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
@@ -13,6 +14,9 @@ from galaxy import util
 from galaxy.datatypes.interval import Bed
 from galaxy.util.json import from_json_string
 from galaxy.util.sanitize_html import sanitize_html
+from galaxy.util import bunch
+from galaxy import util
+from galaxy.visualization import registry
 from galaxy.visualization.genomes import decode_dbkey
 from galaxy.visualization.data_providers.phyloviz import PhylovizDataProvider
 from galaxy.visualization.genomes import GenomeRegion
@@ -21,6 +25,27 @@ from .library import LibraryListGrid
 
 import logging
 log = logging.getLogger( __name__ )
+
+# -- Misc.
+class OpenObject( dict ):
+    #TODO: move to util.data_structures
+    """
+    A dict that allows assignment and attribute retrieval using the dot
+    operator.
+
+    If an attribute isn't contained in the dict `None` is returned (no
+    KeyError).
+    JSON-serializable.
+    """
+    def __getitem__( self, key ):
+        if key not in self:
+            return None
+        return super( OpenObject, self ).__getitem__( key )
+
+    def __getattr__( self, key ):
+        return self.__getitem__( key )
+
+
 
 #
 # -- Grids --
@@ -168,9 +193,20 @@ class VisualizationListGrid( grids.Grid ):
         """
         Returns dictionary used to create item link.
         """
-        controller = "visualization"
-        action = item.type
-        return dict( controller=controller, action=action, id=item.id )
+        url_kwargs = dict( controller='visualization', id=item.id )
+        #TODO: hack to build link to saved visualization - need trans in this function instead in order to do
+        #link_data = trans.app.visualizations_registry.get_visualizations( trans, item )
+        if item.type in registry.VisualizationsRegistry.BUILT_IN_VISUALIZATIONS:
+            url_kwargs[ 'action' ] = item.type
+        else:
+            url_kwargs[ 'action' ] = 'saved'
+        return url_kwargs
+
+    def get_display_name( self, trans, item ):
+        if trans.app.visualizations_registry and item.type in trans.app.visualizations_registry.plugins:
+            plugin = trans.app.visualizations_registry.plugins[ item.type ]
+            return plugin.config.get( 'name', item.type )
+        return item.type
 
     # Grid definition
     title = "Saved Visualizations"
@@ -179,7 +215,7 @@ class VisualizationListGrid( grids.Grid ):
     default_filter = dict( title="All", deleted="False", tags="All", sharing="All" )
     columns = [
         grids.TextColumn( "Title", key="title", attach_popup=True, link=get_url_args ),
-        grids.TextColumn( "Type", key="type" ),
+        grids.TextColumn( "Type", method='get_display_name' ),
         grids.TextColumn( "Dbkey", key="dbkey" ),
         grids.IndividualTagsColumn( "Tags", key="tags", model_tag_association_class=model.VisualizationTagAssociation, filterable="advanced", grid_name="VisualizationListGrid" ),
         grids.SharingStatusColumn( "Sharing", key="sharing", filterable="advanced", sortable=False ),
@@ -548,6 +584,17 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
         ave_item_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, visualization )
 
         # Display.
+        if( ( trans.app.visualizations_registry and visualization.type in trans.app.visualizations_registry.plugins )
+        and ( visualization.type not in trans.app.visualizations_registry.BUILT_IN_VISUALIZATIONS ) ):
+            # if a registry visualization, load a version of display.mako that will load the vis into an iframe :(
+            #TODO: simplest path from A to B but not optimal - will be difficult to do reg visualizations any other way
+            #TODO: this will load the visualization twice (once above, once when the iframe src calls 'saved')
+            encoded_visualization_id = trans.security.encode_id( visualization.id )
+            return trans.stream_template_mako( 'visualization/display_in_frame.mako',
+                item=visualization, encoded_visualization_id=encoded_visualization_id,
+                user_item_rating=user_item_rating, ave_item_rating=ave_item_rating, num_ratings=num_ratings,
+                content_only=True )
+
         visualization_config = self.get_visualization_config( trans, visualization )
         return trans.stream_template_mako( "visualization/display.mako", item = visualization, item_data = visualization_config,
                                             user_item_rating = user_item_rating, ave_item_rating=ave_item_rating, num_ratings=num_ratings,
@@ -623,7 +670,6 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
         Save a visualization; if visualization does not have an ID, a new
         visualization is created. Returns JSON of visualization.
         """
-
         # Get visualization attributes from kwargs or from config.
         vis_config = from_json_string( vis_json )
         vis_type = type or vis_config[ 'type' ]
@@ -686,10 +732,45 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
     #
     # Visualizations.
     #
+    @web.expose
+    @web.require_login( "use Galaxy visualizations", use_panels=True )
+    def saved( self, trans, id=None, revision=None, type=None, config=None, title=None, **kwargs ):
+        """
+        """
+        DEFAULT_VISUALIZATION_NAME = 'Unnamed Visualization'
+
+        # post to saved in order to save a visualization
+        #TODO: re-route this one to clear up signature
+        if trans.request.method == 'POST':
+            if type is None or config is None:
+                return HTTPBadRequest( 'A visualization type and config are required to save a visualization' )
+            if isinstance( config, basestring ):
+                config = from_json_string( config )
+            title = title or DEFAULT_VISUALIZATION_NAME
+            #TODO: allow saving to (updating) a specific revision - should be part of UsesVisualization
+            #TODO: would be easier if this returned the visualization directly
+            returned = self.save_visualization( trans, config, type, id, title )
+
+            # redirect to GET to prevent annoying 'Do you want to post again?' dialog on page reload
+            render_url = web.url_for( controller='visualization', action='saved', id=returned.get( 'vis_id' ) )
+            return trans.response.send_redirect( render_url )
+
+        if id is None:
+            return HTTPBadRequest( 'A valid visualization id is required to load a visualization' )
+
+        # render the saved visualization by passing to render, sending latest revision config
+        #TODO: allow loading a specific revision - should be part of UsesVisualization
+        visualization = self.get_visualization( trans, id, check_ownership=True, check_accessible=False )
+        config = copy.copy( visualization.latest_revision.config )
+
+        # re-add title to kwargs for passing to render
+        if title:
+            kwargs[ 'title' ] = title
+        return self.render( trans, visualization.type, visualization, config=config, **kwargs )
 
     @web.expose
     @web.require_login( "use Galaxy visualizations", use_panels=True )
-    def render( self, trans, visualization_name, embedded=None, **kwargs ):
+    def render( self, trans, visualization_name, visualization=None, config=None, embedded=None, **kwargs ):
         """
         Render the appropriate visualization template, parsing the `kwargs`
         into appropriate variables and resources (such as ORM models)
@@ -697,6 +778,8 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
 
         URL: /visualization/show/{visualization_name}
         """
+        config = config or {}
+
         # validate name vs. registry
         registry = trans.app.visualizations_registry
         if not registry:
@@ -708,20 +791,32 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
 
         returned = None
         try:
-            # convert query string to resources for template based on registry config
-            #NOTE: passing in controller to keep resource lookup within the controller's responsibilities
-            #   (and not the ResourceParser)
-            resources = registry.query_dict_to_resources( trans, self, visualization_name, kwargs )
+            # get the config for passing to the template from the kwargs dict, parsed using the plugin's params setting
+            config_from_kwargs = registry.query_dict_to_config( trans, self, visualization_name, kwargs )
+            config.update( config_from_kwargs )
+            config = OpenObject( **config )
+            # further parse config to resources (models, etc.) used in template based on registry config
+            resources = registry.query_dict_to_resources( trans, self, visualization_name, config )
+
+            # if a saved visualization, pass in the encoded visualization id or None if a new render
+            encoded_visualization_id = None
+            if visualization:
+                encoded_visualization_id = trans.security.encode_id( visualization.id )
+
+            visualization_display_name = plugin.config[ 'name' ]
+            title = visualization.latest_revision.title if visualization else kwargs.get( 'title', None )
 
             # look up template and render
             template_path = plugin.config[ 'template' ]
             returned = registry.fill_template( trans, plugin, template_path,
-                visualization_name=visualization_name, query_args=kwargs,
-                embedded=embedded, shared_vars={}, **resources )
-            #NOTE: passing *unparsed* kwargs as query_args
-            #NOTE: shared_vars is a dictionary for shared data in the template
+                visualization_name=visualization_name, visualization_display_name=visualization_display_name,
+                title=title, saved_visualization=visualization, visualization_id=encoded_visualization_id,
+                embedded=embedded, query=kwargs, vars={}, config=config, **resources )
+            #NOTE: passing *unparsed* kwargs as query
+            #NOTE: vars is a dictionary for shared data in the template
             #   this feels hacky to me but it's what mako recommends:
             #   http://docs.makotemplates.org/en/latest/runtime.html
+            #TODO: should vars contain all the passed in arguments? is that even necessary?
             #TODO: embedded
 
         except Exception, exception:
@@ -883,16 +978,6 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
 
     def get_item( self, trans, id ):
         return self.get_visualization( trans, id )
-
-    @web.expose
-    def scatterplot( self, trans, dataset_id, **kwargs ):
-        """
-        Returns a page that controls and renders a scatteplot graph.
-        """
-        hda = self.get_dataset( trans, dataset_id, check_ownership=False, check_accessible=True )
-        return trans.fill_template_mako( "visualization/scatterplot.mako",
-                                         hda=hda,
-                                         query_args=kwargs )
 
     @web.expose
     def phyloviz( self, trans, id=None, dataset_id=None, tree_index=0, **kwargs ):

@@ -1,4 +1,8 @@
-import os, shutil, logging, tempfile, json
+import os
+import shutil
+import logging
+import tempfile
+import json
 from galaxy import model
 from galaxy.tools.parameters.basic import UnvalidatedValue
 from galaxy.web.framework.helpers import to_unicode
@@ -7,6 +11,7 @@ from galaxy.util.json import from_json_string, to_json_string
 from galaxy.web.base.controller import UsesHistoryMixin
 
 log = logging.getLogger(__name__)
+
 
 def load_history_imp_exp_tools( toolbox ):
     """ Adds tools for importing/exporting histories to archives. """
@@ -41,6 +46,7 @@ def load_history_imp_exp_tools( toolbox ):
     history_imp_tool = toolbox.load_tool( tool_xml )
     toolbox.tools_by_id[ history_imp_tool.id ] = history_imp_tool
     log.debug( "Loaded history import tool: %s", history_imp_tool.id )
+
 
 class JobImportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations ):
     """
@@ -144,23 +150,23 @@ class JobImportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
                     metadata = dataset_attrs['metadata']
 
                     # Create dataset and HDA.
-                    hda = model.HistoryDatasetAssociation( name = dataset_attrs['name'].encode( 'utf-8' ),
-                                                           extension = dataset_attrs['extension'],
-                                                           info = dataset_attrs['info'].encode( 'utf-8' ),
-                                                           blurb = dataset_attrs['blurb'],
-                                                           peek = dataset_attrs['peek'],
-                                                           designation = dataset_attrs['designation'],
-                                                           visible = dataset_attrs['visible'],
-                                                           dbkey = metadata['dbkey'],
-                                                           metadata = metadata,
-                                                           history = new_history,
-                                                           create_dataset = True,
-                                                           sa_session = self.sa_session )
+                    hda = model.HistoryDatasetAssociation( name=dataset_attrs['name'].encode( 'utf-8' ),
+                                                           extension=dataset_attrs['extension'],
+                                                           info=dataset_attrs['info'].encode( 'utf-8' ),
+                                                           blurb=dataset_attrs['blurb'],
+                                                           peek=dataset_attrs['peek'],
+                                                           designation=dataset_attrs['designation'],
+                                                           visible=dataset_attrs['visible'],
+                                                           dbkey=metadata['dbkey'],
+                                                           metadata=metadata,
+                                                           history=new_history,
+                                                           create_dataset=True,
+                                                           sa_session=self.sa_session )
                     hda.state = hda.states.OK
                     self.sa_session.add( hda )
                     self.sa_session.flush()
-                    new_history.add_dataset( hda, genome_build = None )
-                    hda.hid = dataset_attrs['hid'] # Overwrite default hid set when HDA added to history.
+                    new_history.add_dataset( hda, genome_build=None )
+                    hda.hid = dataset_attrs['hid']  # Overwrite default hid set when HDA added to history.
                     # TODO: Is there a way to recover permissions? Is this needed?
                     #permissions = trans.app.security_agent.history_get_default_permissions( new_history )
                     #trans.app.security_agent.set_all_dataset_permissions( hda.dataset, permissions )
@@ -273,6 +279,7 @@ class JobImportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
                 jiha.job.stderr += "Error cleaning up history import job: %s" % e
                 self.sa_session.flush()
 
+
 class JobExportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations ):
     """
         Class provides support for performing jobs that export a history to an
@@ -317,23 +324,23 @@ class JobExportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
                 """ Encode an HDA, default encoding for everything else. """
                 if isinstance( obj, trans.app.model.HistoryDatasetAssociation ):
                     return {
-                        "__HistoryDatasetAssociation__" : True,
-                        "create_time" : obj.create_time.__str__(),
-                        "update_time" : obj.update_time.__str__(),
-                        "hid" : obj.hid,
-                        "name" : to_unicode( obj.name ),
-                        "info" : to_unicode( obj.info ),
-                        "blurb" : obj.blurb,
-                        "peek" : obj.peek,
-                        "extension" : obj.extension,
-                        "metadata" : prepare_metadata( dict( obj.metadata.items() ) ),
-                        "parent_id" : obj.parent_id,
-                        "designation" : obj.designation,
-                        "deleted" : obj.deleted,
-                        "visible" : obj.visible,
-                        "file_name" : obj.file_name,
-                        "annotation" : to_unicode( getattr( obj, 'annotation', '' ) ),
-                        "tags" : get_item_tag_dict( obj ),
+                        "__HistoryDatasetAssociation__": True,
+                        "create_time": obj.create_time.__str__(),
+                        "update_time": obj.update_time.__str__(),
+                        "hid": obj.hid,
+                        "name": to_unicode( obj.name ),
+                        "info": to_unicode( obj.info ),
+                        "blurb": obj.blurb,
+                        "peek": obj.peek,
+                        "extension": obj.extension,
+                        "metadata": prepare_metadata( dict( obj.metadata.items() ) ),
+                        "parent_id": obj.parent_id,
+                        "designation": obj.designation,
+                        "deleted": obj.deleted,
+                        "visible": obj.visible,
+                        "file_name": obj.file_name,
+                        "annotation": to_unicode( getattr( obj, 'annotation', '' ) ),
+                        "tags": get_item_tag_dict( obj ),
                     }
                 if isinstance( obj, UnvalidatedValue ):
                     return obj.__str__()
@@ -347,15 +354,15 @@ class JobExportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
         # Write history attributes to file.
         history = jeha.history
         history_attrs = {
-            "create_time" : history.create_time.__str__(),
-            "update_time" : history.update_time.__str__(),
-            "name" : to_unicode( history.name ),
-            "hid_counter" : history.hid_counter,
-            "genome_build" : history.genome_build,
-            "annotation" : to_unicode( self.get_item_annotation_str( trans.sa_session, history.user, history ) ),
-            "tags" : get_item_tag_dict( history ),
-            "includes_hidden_datasets" : include_hidden,
-            "includes_deleted_datasets" : include_deleted
+            "create_time": history.create_time.__str__(),
+            "update_time": history.update_time.__str__(),
+            "name": to_unicode( history.name ),
+            "hid_counter": history.hid_counter,
+            "genome_build": history.genome_build,
+            "annotation": to_unicode( self.get_item_annotation_str( trans.sa_session, history.user, history ) ),
+            "tags": get_item_tag_dict( history ),
+            "includes_hidden_datasets": include_hidden,
+            "includes_deleted_datasets": include_deleted
         }
         history_attrs_filename = tempfile.NamedTemporaryFile( dir=temp_output_dir ).name
         history_attrs_out = open( history_attrs_filename, 'w' )
@@ -391,7 +398,7 @@ class JobExportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
             # Get the associated job, if any. If this hda was copied from another,
             # we need to find the job that created the origial hda
             job_hda = hda
-            while job_hda.copied_from_history_dataset_association: #should this check library datasets as well?
+            while job_hda.copied_from_history_dataset_association:  # should this check library datasets as well?
                 job_hda = job_hda.copied_from_history_dataset_association
             if not job_hda.creating_job_associations:
                 # No viable HDA found.
@@ -472,4 +479,3 @@ class JobExportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
                 shutil.rmtree( temp_dir )
             except Exception, e:
                 log.debug( 'Error deleting directory containing attribute files (%s): %s' % ( temp_dir, e ) )
-

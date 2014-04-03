@@ -223,7 +223,7 @@ class Registry( object ):
                                 if extension in self.datatypes_by_extension:
                                     # Because of the way that the value of can_process_datatype was set above, we know that the value of
                                     # override is True.
-                                    self.log.warning( "Overriding conflicting datatype with extension '%s', using datatype from %s." % \
+                                    self.log.debug( "Overriding conflicting datatype with extension '%s', using datatype from %s." % \
                                                       ( str( extension ), str( config ) ) )
                                 if make_subclass:
                                     datatype_class = type( datatype_class_name, ( datatype_class, ), {} )
@@ -277,7 +277,7 @@ class Registry( object ):
                                     if not override:
                                         # Do not load the datatype since it conflicts with an existing datatype which we are not supposed
                                         # to override.
-                                        self.log.warning( "Ignoring conflicting datatype with extension '%s' from %s." % ( extension, config ) )
+                                        self.log.debug( "Ignoring conflicting datatype with extension '%s' from %s." % ( extension, config ) )
             # Load datatype sniffers from the config - we'll do this even if one or more datatypes were not properly processed in the config
             # since sniffers are not tightly coupled with datatypes.
             self.load_datatype_sniffers( root,
@@ -350,7 +350,7 @@ class Registry( object ):
                             except Exception, e:
                                 self.log.exception( 'Error calling method %s from class %s: %s', str( datatype_class_name ), str( module ), str( e ) )
                                 ok = False
-                            if ok: 
+                            if ok:
                                 if deactivate:
                                     # We are deactivating or uninstalling an installed Tool Shed repository, so eliminate the appropriate sniffers.
                                     sniffer_class = elem.get( 'type', None )

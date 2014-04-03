@@ -33,25 +33,6 @@ if( spaceghost.fixtureData.testUser ){
 }
 spaceghost.user.loginOrRegisterUser( email, password );
 
-function hasKeys( object, keysArray ){
-    if( !utils.isObject( object ) ){ return false; }
-    for( var i=0; i<keysArray.length; i += 1 ){
-        if( !object.hasOwnProperty( keysArray[i] ) ){
-            spaceghost.debug( 'object missing key: ' + keysArray[i] );
-            return false;
-        }
-    }
-    return true;
-}
-
-function countKeys( object ){
-    if( !utils.isObject( object ) ){ return 0; }
-    var count = 0;
-    for( var key in object ){
-        if( object.hasOwnProperty( key ) ){ count += 1; }
-    }
-    return count;
-}
 
 // =================================================================== TESTS
 spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
@@ -64,7 +45,7 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
     this.test.assert( historyIndex.length >= 1, 'Has at least one history' );
 
     var firstHistory = historyIndex[0];
-    this.test.assert( hasKeys( firstHistory, [ 'id', 'name', 'url' ] ), 'Has the proper keys' );
+    this.test.assert( this.hasKeys( firstHistory, [ 'id', 'name', 'url' ] ), 'Has the proper keys' );
     this.test.assert( this.api.isEncodedId( firstHistory.id ), 'Id appears well-formed' );
 
 
@@ -72,7 +53,7 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
     this.test.comment( 'show should get a history details object' );
     var historyShow = this.api.histories.show( firstHistory.id );
     //this.debug( this.jsonStr( historyShow ) );
-    this.test.assert( hasKeys( historyShow, [
+    this.test.assert( this.hasKeys( historyShow, [
             'id', 'name', 'annotation', 'nice_size', 'contents_url',
             'state', 'state_details', 'state_ids' ]),
         'Has the proper keys' );
@@ -83,8 +64,8 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
             'ok', 'paused', 'queued', 'running', 'setting_metadata', 'upload' ],
         state_details = historyShow.state_details,
         state_ids = historyShow.state_ids;
-    this.test.assert( hasKeys( state_details, states ), 'state_details has the proper keys' );
-    this.test.assert( hasKeys( state_ids, states ),     'state_ids has the proper keys' );
+    this.test.assert( this.hasKeys( state_details, states ), 'state_details has the proper keys' );
+    this.test.assert( this.hasKeys( state_ids, states ),     'state_ids has the proper keys' );
     var state_detailsAreNumbers = true;
         state_idsAreArrays = true;
     states.forEach( function( state ){
@@ -103,20 +84,19 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
     this.test.assert( this.api.histories.show( this.api.histories.index()[0].id ).id === firstHistory.id,
         'combining function calls works' );
 
-    // test server bad id protection
-    this.test.comment( 'A bad id to show should throw an error' );
-    this.assertRaises( function(){
-        this.api.histories.show( '1234123412341234' );
-    }, '400 Bad Request', 'Raises an exception' );
+    this.test.comment( 'Calling show with "current" should return the current history' );
+    this.test.assert( this.api.histories.show( 'current' ).id === historyShow.id, 'current returned same id' );
 
 
     // ------------------------------------------------------------------------------------------- CREATE
-    this.test.comment( 'Calling create should create a new history and allow setting the name' );
+    this.test.comment( 'Calling create should create a new history and allow setting the name and making it current' );
     var newHistoryName = 'Created History',
-        createdHistory = this.api.histories.create({ name: newHistoryName });
+        createdHistory = this.api.histories.create({ name: newHistoryName, current: true });
     //this.debug( 'returned from create:\n' + this.jsonStr( createdHistory ) );
     this.test.assert( createdHistory.name === newHistoryName,
         "Name of created history (from create) is correct: " + createdHistory.name );
+    this.test.assert( this.api.histories.show( 'current' ).id === createdHistory.id,
+        "was made current" );
 
     // check the index
     var newFirstHistory = this.api.histories.index()[0];
@@ -156,50 +136,25 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
         "Undeletion returned 'OK' - even though that's not a great, informative response: " + undeletedHistory );
 
     newFirstHistory = this.api.histories.index()[0];
-    this.debug( 'newFirstHistory:\n' + this.jsonStr( newFirstHistory ) );
+    //this.debug( 'newFirstHistory:\n' + this.jsonStr( newFirstHistory ) );
     this.test.assert( newFirstHistory.id === createdHistory.id,
         "Id of last history (from index) DOES appear after undeletion: " + newFirstHistory.id );
 
 
     //TODO: show, deleted flag
     //TODO: delete, purge flag
+
+
+    // ------------------------------------------------------------------------------------------- set_as_current
+    this.test.comment( 'calling set_as_current on a non-current history will make it current' );
+    this.test.assert( this.api.histories.show( 'current' ).id !== historyShow.id, historyShow.id + ' is not current' );
+    var returned = this.api.histories.set_as_current( historyShow.id );
+    this.debug( this.jsonStr( returned ) );
+    this.test.assert( this.api.histories.show( 'current' ).id === historyShow.id, 'made current' );
+    this.api.histories.set_as_current( newFirstHistory.id );
+
+
     // ------------------------------------------------------------------------------------------- UPDATE
-    // ........................................................................................... idiot proofing
-    this.test.comment( 'updating to the current value should return no value (no change)' );
-    historyShow = this.api.histories.show( newFirstHistory.id );
-    var returned = this.api.histories.update( newFirstHistory.id, {
-        name : historyShow.name
-    });
-    this.test.assert( countKeys( returned ) === 0, "No changed returned: " + this.jsonStr( returned ) );
-
-    this.test.comment( 'updating using a nonsense key should fail silently' );
-    var err = null;
-    try {
-        returned = this.api.histories.update( newFirstHistory.id, {
-            konamiCode : 'uuddlrlrba'
-        });
-    } catch( error ){
-        err = error;
-        //this.debug( this.jsonStr( err ) );
-    }
-    this.test.assert( err === null, "No error occurred: " + this.jsonStr( err ) );
-
-    this.test.comment( 'updating by attempting to change type should cause an error' );
-    err = {};
-    try {
-        returned = this.api.histories.update( newFirstHistory.id, {
-            //name : false
-            deleted : 'sure why not'
-        });
-    } catch( error ){
-        err = error;
-        //this.debug( this.jsonStr( err ) );
-    }
-    this.test.assert( !!err.message, "Error occurred: " + err.message );
-    this.test.assert( err.status === 400, "Error status is 400: " + err.status );
-    //TODO??: other type checks?
-
-
     // ........................................................................................... name
     this.test.comment( 'update should allow changing the name' );
     returned = this.api.histories.update( newFirstHistory.id, {
@@ -339,8 +294,67 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
 
 
     // ------------------------------------------------------------------------------------------- ERRORS
-    //TODO: make sure expected errors are being passed back (but no permissions checks here - different suite)
-    // bad ids: index, show, update, delete, undelete
+    // ........................................................................................... idiot proofing
+    this.test.comment( 'updating to the current value should return no value (no change)' );
+    historyShow = this.api.histories.show( newFirstHistory.id );
+    returned = this.api.histories.update( newFirstHistory.id, {
+        name : historyShow.name
+    });
+    this.test.assert( this.countKeys( returned ) === 0, "No changed returned: " + this.jsonStr( returned ) );
+
+    this.test.comment( 'updating using a nonsense key should fail silently' );
+    returned = this.api.histories.update( newFirstHistory.id, {
+        konamiCode : 'uuddlrlrba'
+    });
+    this.test.assert( returned.konamiCode === undefined, 'key was not set: ' + returned.konamiCode );
+
+    // test server bad id protection
+    spaceghost.test.comment( 'A bad id should throw an error' );
+    this.api.assertRaises( function(){
+        this.api.histories.show( '1234123412341234' );
+    }, 400, 'unable to decode', 'Bad Request with invalid id: show' );
+    spaceghost.test.comment( 'A bad id should throw an error when using update' );
+    this.api.assertRaises( function(){
+        this.api.histories.update( '1234123412341234', {} );
+    }, 400, 'unable to decode', 'Bad Request with invalid id: update' );
+    spaceghost.test.comment( 'A bad id should throw an error when using set_as_current' );
+    this.api.assertRaises( function(){
+        this.api.histories.set_as_current( '1234123412341234' );
+    }, 400, 'unable to decode', 'Bad Request with invalid id: set_as_current' );
+    spaceghost.test.comment( 'A bad id should throw an error when using delete' );
+    this.api.assertRaises( function(){
+        this.api.histories.delete_( '1234123412341234' );
+    }, 400, 'unable to decode', 'Bad Request with invalid id: delete' );
+    spaceghost.test.comment( 'A bad id should throw an error when using undelete' );
+    this.api.assertRaises( function(){
+        this.api.histories.undelete( '1234123412341234' );
+    }, 400, 'unable to decode', 'Bad Request with invalid id: undelete' );
+
+    this.test.comment( 'updating by attempting to change type should cause an error' );
+    [ 'name', 'annotation' ].forEach( function( key ){
+        var updatedAttrs = {};
+        updatedAttrs[ key ] = false;
+        spaceghost.api.assertRaises( function(){
+            returned = spaceghost.api.histories.update( newFirstHistory.id, updatedAttrs );
+        }, 400, key + ' must be a string or unicode', 'type validation error' );
+    });
+    [ 'deleted', 'importable', 'published' ].forEach( function( key ){
+        var updatedAttrs = {};
+        updatedAttrs[ key ] = 'straaang';
+        spaceghost.api.assertRaises( function(){
+            returned = spaceghost.api.histories.update( newFirstHistory.id, updatedAttrs );
+        }, 400, key + ' must be a boolean', 'type validation error' );
+    });
+    [ 'you\'re it', [ true ] ].forEach( function( badVal ){
+        spaceghost.api.assertRaises( function(){
+            returned = spaceghost.api.histories.update( newFirstHistory.id, { tags: badVal });
+        }, 400, 'tags must be a list', 'type validation error' );
+    });
+
+    this.test.comment( 'calling show with /deleted should raise a bad request' );
+    this.api.assertRaises( function(){
+        this.api.histories.show( newFirstHistory.id, true );
+    }, 400, 'is not deleted', 'Bad Request returned for non-deleted' );
 /*
 */
     //this.debug( this.jsonStr( historyShow ) );

@@ -1,18 +1,23 @@
 '''
-This script gets barcode data from a barcode scanner using serial communication 
+This script gets barcode data from a barcode scanner using serial communication
 and sends the state representated by the barcode scanner & the barcode string
-to the Galaxy LIMS RabbitMQ server. The message is sent in XML which has 2 tags, 
+to the Galaxy LIMS RabbitMQ server. The message is sent in XML which has 2 tags,
 barcode & state. The state of the scanner should be set in the galaxy_amq.ini
-file as a configuration variable. 
+file as a configuration variable.
 '''
 
-from amqplib import client_0_8 as amqp
-import ConfigParser
-import sys, os
-import serial
 import array
-import time
+import ConfigParser
 import optparse
+import os
+import serial
+import sys
+import time
+
+from galaxy import eggs
+eggs.require("amqp")
+
+import amqp
 
 
 xml = \
@@ -31,14 +36,14 @@ def handle_scan(states, amqp_config, barcode):
         print values
         data = xml % values
         print data
-        conn = amqp.Connection(host=amqp_config['host']+":"+amqp_config['port'], 
-                               userid=amqp_config['userid'], 
-                               password=amqp_config['password'], 
-                               virtual_host=amqp_config['virtual_host'], 
-                               insist=False)    
+        conn = amqp.Connection(host=amqp_config['host']+":"+amqp_config['port'],
+                               userid=amqp_config['userid'],
+                               password=amqp_config['password'],
+                               virtual_host=amqp_config['virtual_host'],)
+
         chan = conn.channel()
-        msg = amqp.Message(data, 
-                           content_type='text/plain', 
+        msg = amqp.Message(data,
+                           content_type='text/plain',
                            application_headers={'msg_type': 'sample_state_update'})
         msg.properties["delivery_mode"] = 2
         chan.basic_publish(msg,
@@ -55,13 +60,13 @@ def recv_data(states, amqp_config, s):
             msg = s.read(bytes)
             print msg
             handle_scan(states, amqp_config, msg.strip())
-            
-        
+
+
 def main():
     parser = optparse.OptionParser()
-    parser.add_option('-c', '--config-file', help='config file with all the AMQP config parameters', 
+    parser.add_option('-c', '--config-file', help='config file with all the AMQP config parameters',
                       dest='config_file', action='store')
-    parser.add_option('-p', '--port', help='Name of the port where the scanner is connected', 
+    parser.add_option('-p', '--port', help='Name of the port where the scanner is connected',
                       dest='port', action='store')
     (opts, args) = parser.parse_args()
     config = ConfigParser.ConfigParser()
@@ -81,7 +86,7 @@ def main():
             states[config.get(section, 'prefix')] = config.get(section, 'state')
             count = count + 1
         else:
-            break    
+            break
     print amqp_config
     print states
     s = serial.Serial(int(opts.port))
@@ -90,6 +95,6 @@ def main():
     s.close()
     print 'Port %s is open: %s' %( opts.port, s.isOpen())
 
-    
+
 if __name__ == '__main__':
     main()

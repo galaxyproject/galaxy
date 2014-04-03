@@ -16,6 +16,7 @@ from galaxy.util import string_as_bool, sanitize_param, unicodify
 from sanitize import ToolParameterSanitizer
 import validation
 import dynamic_options
+from .dataset_matcher import DatasetMatcher
 # For BaseURLToolParameter
 from galaxy.web import url_for
 from galaxy.model.item_attrs import Dictifiable
@@ -631,6 +632,9 @@ class BaseURLToolParameter( ToolParameter ):
         return None
 
 
+DEFAULT_VALUE_MAP = lambda x: x
+
+
 class SelectToolParameter( ToolParameter ):
     """
     Parameter that takes on one (or many) or a specific set of values.
@@ -827,7 +831,7 @@ class SelectToolParameter( ToolParameter ):
         else:
             return str( value )
 
-    def to_param_dict_string( self, value, other_values={} ):
+    def to_param_dict_string( self, value, other_values={}, value_map=DEFAULT_VALUE_MAP ):
         if value is None:
             return "None"
         if isinstance( value, list ):
@@ -842,7 +846,9 @@ class SelectToolParameter( ToolParameter ):
             else:
                 value = sanitize_param( value )
         if isinstance( value, list ):
-            value = self.separator.join( value )
+            value = self.separator.join( map( value_map, value ) )
+        else:
+            value = value_map( value )
         return value
 
     def value_to_basic( self, value, app ):
@@ -1425,7 +1431,7 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
             rval.append( val )
         return rval
 
-    def to_param_dict_string( self, value, other_values={} ):
+    def to_param_dict_string( self, value, other_values={}, value_map=DEFAULT_VALUE_MAP ):
         def get_options_list( value ):
             def get_base_option( value, options ):
                 for option in options:
@@ -1456,7 +1462,7 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
         if len( rval ) > 1:
             if not( self.repeat ):
                 assert self.multiple, "Multiple values provided but parameter is not expecting multiple values"
-        rval = self.separator.join( rval )
+        rval = self.separator.join( map( value_map, rval ) )
         if self.tool is None or self.tool.options.sanitize:
             if self.sanitizer:
                 rval = self.sanitizer.sanitize_param( rval )
@@ -1605,69 +1611,40 @@ class DataToolParameter( ToolParameter ):
             self.conversions.append( ( name, conv_extensions, conv_types ) )
 
     def get_html_field( self, trans=None, value=None, other_values={} ):
-        filter_value = None
-        if self.options:
-            try:
-                filter_value = self.options.get_options( trans, other_values )[0][0]
-            except IndexError:
-                pass  # no valid options
         history = self._get_history( trans )
         if value is not None:
             if type( value ) != list:
                 value = [ value ]
+        dataset_matcher = DatasetMatcher( trans, self, value, other_values )
         field = form_builder.SelectField( self.name, self.multiple, None, self.refresh_on_change, refresh_on_change_values=self.refresh_on_change_values )
 
         # CRUCIAL: the dataset_collector function needs to be local to DataToolParameter.get_html_field()
         def dataset_collector( hdas, parent_hid ):
-            current_user_roles = trans.get_current_user_roles()
             for i, hda in enumerate( hdas ):
                 hda_name = hda.name
                 if parent_hid is not None:
                     hid = "%s.%d" % ( parent_hid, i + 1 )
                 else:
                     hid = str( hda.hid )
-                if not hda.dataset.state in [galaxy.model.Dataset.states.ERROR, galaxy.model.Dataset.states.DISCARDED] and \
-                    ( hda.visible or ( value and hda in value and not hda.implicitly_converted_parent_datasets ) ) and \
-                    trans.app.security_agent.can_access_dataset( current_user_roles, hda.dataset ):
-                    # If we are sending data to an external application, then we need to make sure there are no roles
-                    # associated with the dataset that restrict it's access from "public".
-                    if self.tool and self.tool.tool_type == 'data_destination' and not trans.app.security_agent.dataset_is_public( hda.dataset ):
-                        continue
-                    if self.options and self._options_filter_attribute( hda ) != filter_value:
-                        continue
-                    if hda.datatype.matches_any( self.formats ):
-                        selected = ( value and ( hda in value ) )
-                        if hda.visible:
-                            hidden_text = ""
-                        else:
-                            hidden_text = " (hidden)"
-                        field.add_option( "%s:%s %s" % ( hid, hidden_text, hda_name ), hda.id, selected )
+                hda_match = dataset_matcher.hda_match( hda )
+                if not hda_match:
+                    continue
+                if not hda_match.implicit_conversion:
+                    selected = dataset_matcher.selected( hda )
+                    if hda.visible:
+                        hidden_text = ""
                     else:
-                        target_ext, converted_dataset = hda.find_conversion_destination( self.formats )
-                        if target_ext:
-                            if converted_dataset:
-                                hda = converted_dataset
-                            if not trans.app.security_agent.can_access_dataset( current_user_roles, hda.dataset ):
-                                continue
-                            selected = ( value and ( hda in value ) )
-                            field.add_option( "%s: (as %s) %s" % ( hid, target_ext, hda_name ), hda.id, selected )
+                        hidden_text = " (hidden)"
+                    field.add_option( "%s:%s %s" % ( hid, hidden_text, hda_name ), hda.id, selected )
+                else:
+                    hda = hda_match.hda  # Get converted dataset
+                    target_ext = hda_match.target_ext
+                    selected = dataset_matcher.selected( hda )
+                    field.add_option( "%s: (as %s) %s" % ( hid, target_ext, hda_name ), hda.id, selected )
                 # Also collect children via association object
                 dataset_collector( hda.children, hid )
         dataset_collector( history.active_datasets_children_and_roles, None )
-        some_data = bool( field.options )
-        if some_data:
-            if value is None or len( field.options ) == 1:
-                # Ensure that the last item is always selected
-                a, b, c = field.options[-1]
-                if self.optional:
-                    field.options[-1] = a, b, False
-                else:
-                    field.options[-1] = a, b, True
-        if self.optional:
-            if not value:
-                field.add_option( "Selection is Optional", 'None', True )
-            else:
-                field.add_option( "Selection is Optional", 'None', False )
+        self._ensure_selection( field )
         return field
 
     def get_initial_value( self, trans, context, history=None ):
@@ -1682,30 +1659,18 @@ class DataToolParameter( ToolParameter ):
         if trans is None or trans.workflow_building_mode or trans.webapp.name == 'tool_shed':
             return DummyDataset()
         history = self._get_history( trans, history )
+        dataset_matcher = DatasetMatcher( trans, self, None, context )
         if self.optional:
             return None
         most_recent_dataset = []
-        filter_value = None
-        if self.options:
-            try:
-                filter_value = self.options.get_options( trans, context )[0][0]
-            except IndexError:
-                pass  # no valid options
 
         def dataset_collector( datasets ):
             for i, data in enumerate( datasets ):
-                if data.visible and not data.deleted and data.state not in [data.states.ERROR, data.states.DISCARDED]:
-                    is_valid = False
-                    if data.datatype.matches_any( self.formats ):
-                        is_valid = True
-                    else:
-                        target_ext, converted_dataset = data.find_conversion_destination( self.formats )
-                        if target_ext:
-                            is_valid = True
-                        if converted_dataset:
-                            data = converted_dataset
-                    if not is_valid or ( self.options and self._options_filter_attribute( data ) != filter_value ):
+                if data.visible and dataset_matcher.hda_accessible( data, check_security=False ):
+                    match = dataset_matcher.valid_hda_match( data, check_security=False )
+                    if not match or dataset_matcher.filter( match.hda ):
                         continue
+                    data = match.hda
                     most_recent_dataset.append(data)
                 # Also collect children via association object
                 dataset_collector( data.children )
@@ -1777,12 +1742,13 @@ class DataToolParameter( ToolParameter ):
     def to_python( self, value, app ):
         # Both of these values indicate that no dataset is selected.  However, 'None'
         # indicates that the dataset is optional, while '' indicates that it is not.
-        if value is None or value == '' or value == 'None':
+        none_values = [ None, '', 'None' ]
+        if value in none_values:
             return value
         if isinstance(value, str) and value.find(",") > -1:
             values = value.split(",")
             # TODO: Optimize. -John
-            return [app.model.context.query( app.model.HistoryDatasetAssociation ).get( int( val ) ) for val in values]
+            return [ app.model.context.query( app.model.HistoryDatasetAssociation ).get( int( val ) ) for val in values if val not in none_values ]
         return app.model.context.query( app.model.HistoryDatasetAssociation ).get( int( value ) )
 
     def to_param_dict_string( self, value, other_values={} ):
@@ -1857,6 +1823,19 @@ class DataToolParameter( ToolParameter ):
             history = trans.get_history()
         assert history is not None, "%s requires a history" % class_name
         return history
+
+    def _ensure_selection( self, field ):
+        set_selected = field.get_selected( return_label=True, return_value=True, multi=False ) is not None
+        # Ensure than an item is always selected
+        if self.optional:
+            if set_selected:
+                field.add_option( "Selection is Optional", 'None', False )
+            else:
+                field.add_option( "Selection is Optional", 'None', True )
+        elif not set_selected and bool( field.options ):
+            # Select the last item
+            a, b, c = field.options[-1]
+            field.options[-1] = a, b, True
 
 
 class HiddenDataToolParameter( HiddenToolParameter, DataToolParameter ):

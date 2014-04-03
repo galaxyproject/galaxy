@@ -207,7 +207,7 @@ class TestRepositoryCitableURLs( ShedTwillTestCase ):
         strings_displayed = [ '/repository', 'browse_repositories', 'user1' ]
         strings_displayed.extend( [ 'list+of+repositories+owned', 'does+not+include+one+named', '%21%21invalid%21%21', 'status=error' ] )
         strings_displayed_in_iframe = [ 'user1', 'filtering_0420' ]
-        strings_displayed_in_iframe.append( 'Repositories owned by user1' )
+        strings_displayed_in_iframe.append( 'Repositories Owned by user1' )
         strings_displayed_in_iframe.append( tip_revision )
         self.load_citable_url( username='user1', 
                                repository_name='!!invalid!!', 

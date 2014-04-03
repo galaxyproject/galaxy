@@ -14,15 +14,20 @@ class ClientJobDescription(object):
     **Parameters**
 
     command_line : str
-        The local command line to execute, this will be rewritten for the remote server.
+        The local command line to execute, this will be rewritten for
+        the remote server.
     config_files : list
-        List of Galaxy 'configfile's produced for this job. These will be rewritten and sent to remote server.
+        List of Galaxy 'configfile's produced for this job. These will
+        be rewritten and sent to remote server.
     input_files :  list
-        List of input files used by job. These will be transferred and references rewritten.
-    output_files : list
-        List of output_files produced by job.
+        List of input files used by job. These will be transferred and
+        references rewritten.
+    client_outputs : ClientOutputs
+        Description of outputs produced by job (at least output files along
+        with optional version string and working directory outputs.
     tool_dir : str
-        Directory containing tool to execute (if a wrapper is used, it will be transferred to remote server).
+        Directory containing tool to execute (if a wrapper is used, it will
+        be transferred to remote server).
     working_directory : str
         Local path created by Galaxy for running this job.
     requirements : list
@@ -46,10 +51,9 @@ class ClientJobDescription(object):
         command_line,
         config_files,
         input_files,
-        output_files,
+        client_outputs,
         working_directory,
         requirements,
-        version_file=None,
         arbitrary_files=None,
         rewrite_paths=True,
     ):
@@ -57,38 +61,74 @@ class ClientJobDescription(object):
         self.command_line = command_line
         self.config_files = config_files
         self.input_files = input_files
-        self.output_files = output_files
+        self.client_outputs = client_outputs
         self.working_directory = working_directory
         self.requirements = requirements
-        self.version_file = version_file
         self.rewrite_paths = rewrite_paths
         self.arbitrary_files = arbitrary_files or {}
 
+    @property
+    def output_files(self):
+        return self.client_outputs.output_files
 
-class GalaxyOutputs(object):
+    @property
+    def version_file(self):
+        return self.client_outputs.version_file
+
+
+class ClientOutputs(object):
     """ Abstraction describing the output datasets EXPECTED by the Galaxy job
-    runner client. """
+    runner client.
+    """
 
-    def __init__(self, working_directory, work_dir_outputs, output_files, version_file):
+    def __init__(self, working_directory, output_files, work_dir_outputs=None, version_file=None):
         self.working_directory = working_directory
         self.work_dir_outputs = work_dir_outputs
         self.output_files = output_files
         self.version_file = version_file
+
+    def to_dict(self):
+        return dict(
+            working_directory=self.working_directory,
+            work_dir_outputs=self.work_dir_outputs,
+            output_files=self.output_files,
+            version_file=self.version_file
+        )
+
+    @staticmethod
+    def from_dict(config_dict):
+        return ClientOutputs(
+            working_directory=config_dict.get('working_directory'),
+            work_dir_outputs=config_dict.get('work_dir_outputs'),
+            output_files=config_dict.get('output_files'),
+            version_file=config_dict.get('version_file'),
+        )
 
 
 class LwrOutputs(object):
     """ Abstraction describing the output files PRODUCED by the remote LWR
     server. """
 
-    def __init__(self, complete_response):
+    def __init__(self, working_directory_contents, output_directory_contents, remote_separator=sep):
+        self.working_directory_contents = working_directory_contents
+        self.output_directory_contents = output_directory_contents
+        self.path_helper = PathHelper(remote_separator)
+
+    @staticmethod
+    def from_status_response(complete_response):
         # Default to None instead of [] to distinguish between empty contents and it not set
         # by the LWR - older LWR instances will not set these in complete response.
-        self.working_directory_contents = complete_response.get("working_directory_contents", None)
-        self.output_directory_contents = complete_response.get("outputs_directory_contents", None)
+        working_directory_contents = complete_response.get("working_directory_contents", None)
+        output_directory_contents = complete_response.get("outputs_directory_contents", None)
         # Older (pre-2014) LWR servers will not include separator in response,
-        #so this should only be used when reasoning about outputs in
-        # subdirectories which was not previously supported.
-        self.path_helper = PathHelper(complete_response.get("system_properties", {}).get("separator", sep))
+        # so this should only be used when reasoning about outputs in
+        # subdirectories (which was not previously supported prior to that).
+        remote_separator = complete_response.get("system_properties", {}).get("separator", sep)
+        return LwrOutputs(
+            working_directory_contents,
+            output_directory_contents,
+            remote_separator
+        )
 
     def has_output_file(self, output_file):
         if self.output_directory_contents is None:

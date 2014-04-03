@@ -23,6 +23,11 @@
           <!-- More information on LWR can be found at https://lwr.readthedocs.org -->
           <!-- Uncomment following line to use libcurl to perform HTTP calls (defaults to urllib) -->
           <!-- <param id="transport">curl</param> -->
+          <!-- Uncomment following parameters (second optional) to target a message
+               queue, ensure jobs_directory is specified on destinations and all
+               file actions are remote executable. -->
+          <!-- <param id="url">amqp://guest:guest@localhost:5672//</param> -->
+          <!-- <param id="manager">_default_</param> -->
         </plugin>
         <plugin id="cli" type="runner" load="galaxy.jobs.runners.cli:ShellJobRunner" />
         <plugin id="condor" type="runner" load="galaxy.jobs.runners.condor:CondorJobRunner" />
@@ -52,6 +57,12 @@
              should be executed on those remote resources.
          -->
         <destination id="local" runner="local"/>
+        <destination id="multicore_local" runner="local">
+          <param id="local_slots">4</param> <!-- Specify GALAXY_SLOTS for local jobs. -->
+          <!-- Warning: Local slot count doesn't tie up additional worker threads, to prevent over 
+               allocating machine define a second local runner with different name and fewer workers
+               to run this destination. -->
+        </destination>
         <destination id="pbs" runner="pbs" tags="mycluster"/>
         <destination id="pbs_longjobs" runner="pbs" tags="mycluster,longjobs">
             <!-- Define parameters that are native to the job runner plugin. -->
@@ -96,6 +107,16 @@
                  ones (both alternatives are a little brittle). -->
             <!-- <param id="remote_metadata">true</param> -->
             <!-- <param id="use_remote_datatypes">false</param> -->
+            <!-- Traditionally, the LWR client sends request to LWR
+                 server to populate various system properties. This
+                 extra step can be disabled and these calculated here
+                 on client by uncommenting job_directory and
+                 specifying any additional remote_property_ of
+                 interest. When using message queues this is nessecary
+                 not optional.
+            -->
+            <!-- <param id="jobs_directory">/path/to/remote/lwr/lwr_staging/</param> -->
+            <!-- <param id="remote_property_galaxy_home">/path/to/remote/galaxy-central</param> -->
             <!-- If remote LWR server is configured to run jobs as the real user,
                  uncomment the following line to pass the current Galaxy user
                  along. -->

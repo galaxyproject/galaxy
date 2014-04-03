@@ -176,8 +176,11 @@ class VisualizationsController( BaseAPIController, UsesVisualizationMixin, Shara
             or  ( dbkey != visualization.latest_revision.dbkey )
             or  ( util.json.to_json_string( config ) != util.json.to_json_string( latest_config ) ) ):
                 revision = self.add_visualization_revision( trans, visualization, config, title, dbkey )
-                #TODO: need to somehow get what changed here?
-                rval = { 'id' : revision.id }
+                rval = { 'id' : id, 'revision' : revision.id }
+
+            # allow updating vis title
+            visualization.title = title
+            trans.sa_session.flush()
 
         except ( ItemAccessibilityException, ItemDeletionException ), exception:
             trans.response.status = 403

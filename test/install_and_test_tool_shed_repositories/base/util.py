@@ -18,6 +18,7 @@ import install_and_test_tool_shed_repositories.base.test_db_util as test_db_util
 import install_and_test_tool_shed_repositories.functional.test_install_repositories as test_install_repositories
 import nose
 import platform
+import string
 import time
 import tool_shed.repository_types.util as rt_util
 import tool_shed.util.shed_util_common as suc
@@ -35,7 +36,7 @@ from common import update
 from galaxy.util import asbool
 from galaxy.util import listify
 from galaxy.util import unicodify
-from galaxy.util.json import from_json_string
+from galaxy.util.json import to_json_string
 import galaxy.webapps.tool_shed.model.mapping
 
 from nose.plugins import Plugin
@@ -137,7 +138,7 @@ default_galaxy_test_port_max = 10999
 default_galaxy_test_host = '127.0.0.1'
 # The following should be an actual value (not None).  If developers manually specify their
 # tests to use the API it will not work unless a master API key is specified.
-default_galaxy_master_api_key = 123456
+default_galaxy_master_api_key = '123456'
 
 testing_single_repository_dict = {}
 if 'repository_name' in os.environ and 'repository_owner' in os.environ:
@@ -614,7 +615,7 @@ def install_repository( app, repository_dict ):
     repository = get_repository( name, owner, changeset_revision )
     if repository is None:
         error_message = 'Error getting revision %s of repository %s owned by %s: %s' % ( changeset_revision, name, owner, str( e ) )
-        log.exception( error_message )
+        log.exception( error_message )            
     return repository, error_message
 
 def is_excluded( exclude_list_dicts, name, owner, changeset_revision, encoded_repository_metadata_id ):
@@ -889,7 +890,7 @@ def populate_install_containers_for_repository_dependencies( app, repository, re
                     ( changeset_revision, name, owner )
                 print 'due to the following error getting tool_test_results:\n%s' % str( error_message )
             else:
-                # The assumption is that the Tool SHed's install and test framework is executed no more than once per 24 hour
+                # The assumption is that the Tool Shed's install and test framework is executed no more than once per 24 hour
                 # period, so check the required repository's time_last_tested value to see if its tool_test_results column
                 # has been updated within the past 20 hours to allow for differing test run times (some may be slower than
                 # others).  The RepositoryMetadata class's to_dict() method returns the value of time_last_tested in
@@ -964,7 +965,12 @@ def populate_install_containers_for_repository_dependencies( app, repository, re
                                                                   can_update_tool_shed )
                     else:
                         # The required repository's installation failed.
-                        tool_test_results_dict[ 'installation_errors' ][ 'current_repository' ] = str( required_repository.error_message )
+                        required_repository_installation_error_dict = dict( tool_shed=galaxy_tool_shed_url,
+                                                                            name=name,
+                                                                            owner=owner,
+                                                                            changeset_revision=changeset_revision,
+                                                                            error_message=required_repository.error_message )
+                        tool_test_results_dict[ 'installation_errors' ][ 'repository_dependencies' ].append( required_repository_installation_error_dict )
                         params = dict( test_install_error=True,
                                        do_not_test=False )
                         save_test_results_for_changeset_revision( galaxy_tool_shed_url,
@@ -980,6 +986,22 @@ def populate_install_containers_for_repository_dependencies( app, repository, re
                     print 'The attributes used to retrieve the record are:'
                     print 'tool_shed: %s name: %s owner: %s changeset_revision: %s' % \
                         ( cleaned_tool_shed_url, name, owner, changeset_revision )
+
+def populate_shed_conf_file( shed_conf_file, tool_path, xml_elems=None ):
+    """Populate the file defined by shed_conf_file with xml_elems or initialize it with a template string."""
+    if xml_elems is None:
+        tool_conf_template_parser = string.Template( shed_tool_conf_xml_template )
+        xml_elems = tool_conf_template_parser.safe_substitute( shed_tool_path=tool_path )
+    file( shed_conf_file, 'w' ).write( xml_elems )
+
+def populate_galaxy_shed_tools_dict_file( galaxy_shed_tools_dict_file, shed_tools_dict=None ):
+    """
+    Populate the file defined by galaxy_shed_tools_dict_file with the contents of the shed_tools_dict
+    dictionary.
+    """
+    if shed_tools_dict is None:
+        shed_tools_dict = {}
+    file( galaxy_shed_tools_dict_file, 'w' ).write( to_json_string( shed_tools_dict ) )
 
 def print_install_and_test_results( install_stage_type, install_and_test_statistics_dict, error_message ):
     "Print statistics for the current test run."

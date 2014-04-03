@@ -156,3 +156,22 @@ class InstallTestRepository( TwillTestCase ):
                             ( timeout_counter, repository.status ) )
                         break
                     time.sleep( 1 )
+            # Set all metadata on each installed repository.
+            for repository_id in repository_ids:
+                galaxy_repository = test_db_util.get_repository( self.security.decode_id( repository_id ) )
+                if not galaxy_repository.metadata:
+                    log.debug( 'Setting metadata on repository %s' % str( galaxy_repository.name ) )
+                    timeout_counter = 0
+                    url = '/admin_toolshed/reset_repository_metadata?id=%s' % repository_id
+                    self.visit_url( url )
+                    while not galaxy_repository.metadata:
+                        test_db_util.refresh( galaxy_repository )
+                        timeout_counter = timeout_counter + 1
+                        if timeout_counter % 10 == 0:
+                            log.debug( 'Waited %d seconds for repository %s.' % ( timeout_counter, str( galaxy_repository.name ) ) )
+                        # This timeout currently defaults to 10 minutes.
+                        if timeout_counter > repository_installation_timeout:
+                            raise AssertionError( 'Repository installation timed out after %d seconds, repository state is %s.' % \
+                                ( timeout_counter, galaxy_repository.status ) )
+                            break
+                        time.sleep( 1 )

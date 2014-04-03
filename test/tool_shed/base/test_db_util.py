@@ -63,17 +63,32 @@ def get_installed_repository_by_id( repository_id ):
                      .filter( galaxy.model.tool_shed_install.ToolShedRepository.table.c.id == repository_id ) \
                      .first()
                      
-def get_installed_repository_by_name_owner( repository_name, owner ):
-    return install_session.query( galaxy.model.tool_shed_install.ToolShedRepository ) \
-                     .filter( and_( galaxy.model.tool_shed_install.ToolShedRepository.table.c.name == repository_name,
-                                    galaxy.model.tool_shed_install.ToolShedRepository.table.c.owner == owner ) ) \
-                     .first()
+def get_installed_repository_by_name_owner( repository_name, owner, return_multiple=False ):
+    query = install_session.query( galaxy.model.tool_shed_install.ToolShedRepository ) \
+                           .filter( and_( galaxy.model.tool_shed_install.ToolShedRepository.table.c.name == repository_name,
+                                          galaxy.model.tool_shed_install.ToolShedRepository.table.c.owner == owner ) )
+    if return_multiple:
+        return query.all()
+    return query.first()
                      
 def get_private_role( user ):
     for role in user.all_roles():
         if role.name == user.email and role.description == 'Private Role for %s' % user.email:
             return role
     raise AssertionError( "Private role not found for user '%s'" % user.email )
+
+def get_role( user, role_name ):
+    for role in user.all_roles():
+        if role.name == role_name:
+            return role
+    return None
+
+def get_repository_role_association( repository_id, role_id ):
+    rra = sa_session.query( model.RepositoryRoleAssociation ) \
+                    .filter( and_( model.RepositoryRoleAssociation.table.c.role_id == role_id,
+                                   model.RepositoryRoleAssociation.table.c.repository_id == repository_id ) ) \
+                    .first()
+    return rra
 
 def get_repository_reviews( repository_id, reviewer_user_id=None, changeset_revision=None ):
     if reviewer_user_id and changeset_revision:
@@ -168,7 +183,7 @@ def get_galaxy_user( email ):
                      .filter( galaxy.model.User.table.c.email==email ) \
                      .first()
                      
-def get_repository_by_name_and_owner( name, owner_username ):
+def get_repository_by_name_and_owner( name, owner_username, return_multiple=False ):
     owner = get_user_by_name( owner_username )
     repository = sa_session.query( model.Repository ) \
                            .filter( and_( model.Repository.table.c.name == name,

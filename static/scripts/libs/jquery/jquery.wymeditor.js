@@ -3432,9 +3432,17 @@ WYMeditor.XhtmlSaxListener.prototype.joinRepeatedEntities = function(xhtml)
   replace(new RegExp('(\s*<('+tags+')>\s*){2}(.*)(\s*<\/\\2>\s*){2}' ,''),'<\$2>\$3<\$2>');
 };
 
+// keep empty paragraphs
+// from: http://forum.wymeditor.org/forum/viewtopic.php?f=2&t=711#p2430
+//WYMeditor.XhtmlSaxListener.prototype.removeEmptyTags = function(xhtml)
+//{
+//  return xhtml.replace(new RegExp('<('+this.block_tags.join("|").replace(/\|td/,'')
+//	.replace(/\|th/, '')+')>(<br \/>|&#160;|&nbsp;|\\s)*<\/\\1>' ,'g'),'');
+//};
 WYMeditor.XhtmlSaxListener.prototype.removeEmptyTags = function(xhtml)
 {
-  return xhtml.replace(new RegExp('<('+this.block_tags.join("|").replace(/\|td/,'').replace(/\|th/, '')+')>(<br \/>|&#160;|&nbsp;|\\s)*<\/\\1>' ,'g'),'');
+  return xhtml.replace(new RegExp('<('+this.block_tags.join("|").replace(/\|td/,'').replace(/\|p/,'')
+	.replace(/\|th/, '')+')>(<br \/>|&#160;|&nbsp;|\\s)*<\/\\1>' ,'g'),'');
 };
 
 WYMeditor.XhtmlSaxListener.prototype.removeBrInPre = function(xhtml)
@@ -4197,6 +4205,28 @@ WYMeditor.WymClassMozilla.prototype.keydown = function(evt) {
   var wym = WYMeditor.INSTANCES[this.title];
   var container = null;  
 
+  if( evt.keyCode === WYMeditor.KEY.ENTER ){
+	container = wym.selected();
+	if( container ){
+		var $container = $( container ),
+			$parent = $container.parent(),
+			$embedded = $container.parents( '.embedded-item' );
+		if( $embedded.size() ){
+			// if the cursor is in the title, add a para before
+			var $newNode = $( '<p/>' );
+			if( $container.hasClass( 'title' ) ){
+				$embedded.before( $newNode );
+			// if the cursor is in the content, add after
+			} else if( $container.hasClass( 'content' ) ){
+				$embedded.after( $newNode );
+			}
+			wym.setFocusToNode( $newNode.get(0) );
+			// prevent the default - wym's chop the text and split it up into paras
+			return false;
+		}
+	}
+  }
+
   if(evt.ctrlKey){
     if(evt.keyCode == 66){
       //CTRL+b => STRONG
@@ -4227,27 +4257,27 @@ WYMeditor.WymClassMozilla.prototype.keyup = function(evt) {
 
   //'this' is the doc
   var wym = WYMeditor.INSTANCES[this.title];
-  
+
   wym._selected_image = null;
   var container = null;
 
   if(evt.keyCode == 13 && !evt.shiftKey) {
-  
+
     //RETURN key
     //cleanup <br><br> between paragraphs
     jQuery(wym._doc.body).children(WYMeditor.BR).remove();
   }
-  
+
   else if(evt.keyCode != 8
        && evt.keyCode != 17
        && evt.keyCode != 46
        && evt.keyCode != 224
        && !evt.metaKey
        && !evt.ctrlKey) {
-      
+
     //NOT BACKSPACE, NOT DELETE, NOT CTRL, NOT COMMAND
     //text nodes replaced by P
-    
+
     container = wym.selected();
     var name = container.tagName.toLowerCase();
 
@@ -4301,7 +4331,7 @@ WYMeditor.WymClassMozilla.prototype.openBlockTag = function(tag, attributes)
       return;
     }
   }
-  
+
   this.output += this.helper.tag(tag, attributes, true);
 };
 
@@ -4343,9 +4373,9 @@ WYMeditor.WymClassOpera.prototype.initIframe = function(iframe) {
 
     this._iframe = iframe;
     this._doc = iframe.contentWindow.document;
-    
+
     //add css rules from options
-    var styles = this._doc.styleSheets[0];    
+    var styles = this._doc.styleSheets[0];
     var aCss = eval(this._options.editorStyles);
 
     this.addCssRules(this._doc, aCss);
@@ -4354,28 +4384,28 @@ WYMeditor.WymClassOpera.prototype.initIframe = function(iframe) {
 
     //set the text direction
     jQuery('html', this._doc).attr('dir', this._options.direction);
-    
+
     //init designMode
     this._doc.designMode = "on";
 
     //init html value
     this.html(this._wym._html);
-    
+
     //pre-bind functions
     if(jQuery.isFunction(this._options.preBind)) this._options.preBind(this);
-    
+
     //bind external events
     this._wym.bindEvents();
-    
+
     //bind editor keydown events
     jQuery(this._doc).bind("keydown", this.keydown);
-    
+
     //bind editor events
     jQuery(this._doc).bind("keyup", this.keyup);
-    
+
     //post-init functions
     if(jQuery.isFunction(this._options.postInit)) this._options.postInit(this);
-    
+
     //add event listeners to doc elements, e.g. images
     this.listen();
 };
@@ -4384,7 +4414,7 @@ WYMeditor.WymClassOpera.prototype._exec = function(cmd,param) {
 
     if(param) this._doc.execCommand(cmd,false,param);
     else this._doc.execCommand(cmd);
-    
+
     this.listen();
 };
 
@@ -4406,7 +4436,7 @@ WYMeditor.WymClassOpera.prototype.addCssRule = function(styles, oCss) {
 
 //keydown handler
 WYMeditor.WymClassOpera.prototype.keydown = function(evt) {
-  
+
   //'this' is the doc
   var wym = WYMeditor.INSTANCES[this.title];
   var sel = wym._iframe.contentWindow.getSelection();
@@ -4470,12 +4500,12 @@ WYMeditor.WymClassSafari.prototype.initIframe = function(iframe) {
 
     this._iframe = iframe;
     this._doc = iframe.contentDocument;
-    
+
     //add css rules from options
-    
-    var styles = this._doc.styleSheets[0];    
+
+    var styles = this._doc.styleSheets[0];
     var aCss = eval(this._options.editorStyles);
-    
+
     this.addCssRules(this._doc, aCss);
 
     this._doc.title = this._wym._index;
@@ -4485,25 +4515,25 @@ WYMeditor.WymClassSafari.prototype.initIframe = function(iframe) {
 
     //init designMode
     this._doc.designMode = "on";
-    
+
     //init html value
     this.html(this._wym._html);
-    
+
     //pre-bind functions
     if(jQuery.isFunction(this._options.preBind)) this._options.preBind(this);
-    
+
     //bind external events
     this._wym.bindEvents();
-    
+
     //bind editor keydown events
     jQuery(this._doc).bind("keydown", this.keydown);
-    
+
     //bind editor keyup events
     jQuery(this._doc).bind("keyup", this.keyup);
-    
+
     //post-init functions
     if(jQuery.isFunction(this._options.postInit)) this._options.postInit(this);
-    
+
     //add event listeners to doc elements, e.g. images
     this.listen();
 };
@@ -4513,17 +4543,17 @@ WYMeditor.WymClassSafari.prototype._exec = function(cmd,param) {
     if(!this.selected()) return(false);
 
     switch(cmd) {
-    
+
     case WYMeditor.INDENT: case WYMeditor.OUTDENT:
-    
-        var focusNode = this.selected();    
+
+        var focusNode = this.selected();
         var sel = this._iframe.contentWindow.getSelection();
         var anchorNode = sel.anchorNode;
         if(anchorNode.nodeName == "#text") anchorNode = anchorNode.parentNode;
-        
+
         focusNode = this.findUp(focusNode, WYMeditor.BLOCKS);
         anchorNode = this.findUp(anchorNode, WYMeditor.BLOCKS);
-        
+
         if(focusNode && focusNode == anchorNode
           && focusNode.tagName.toLowerCase() == WYMeditor.LI) {
 
@@ -4548,13 +4578,13 @@ WYMeditor.WymClassSafari.prototype._exec = function(cmd,param) {
         if(container) jQuery(container).replaceWith(jQuery(container).html());
 
     break;
-    
+
     default:
 
         if(param) this._doc.execCommand(cmd,'',param);
         else this._doc.execCommand(cmd,'',null);
     }
-    
+
     //set to P if parent = BODY
     var container = this.selected();
     if(container && container.tagName.toLowerCase() == WYMeditor.BODY)
@@ -4586,9 +4616,31 @@ WYMeditor.WymClassSafari.prototype.addCssRule = function(styles, oCss) {
 
 //keydown handler, mainly used for keyboard shortcuts
 WYMeditor.WymClassSafari.prototype.keydown = function(evt) {
-  
+
   //'this' is the doc
   var wym = WYMeditor.INSTANCES[this.title];
+
+  if( evt.keyCode === WYMeditor.KEY.ENTER ){
+	var container = wym.selected();
+	if( container ){
+		var $container = $( container ),
+			$parent = $container.parent(),
+			$embedded = $container.parents( '.embedded-item' );
+		if( $embedded.size() ){
+			// if the cursor is in the title, add a para before
+			var $newNode = $( '<p/>' );
+			if( $container.hasClass( 'title' ) ){
+				$embedded.before( $newNode );
+			// if the cursor is in the content, add after
+			} else if( $container.hasClass( 'content' ) ){
+				$embedded.after( $newNode );
+			}
+			wym.setFocusToNode( $newNode.get(0) );
+			// prevent the default - wym's chop the text and split it up into paras
+			return false;
+		}
+	}
+  }
   
   if(evt.ctrlKey){
     if(evt.keyCode == 66){

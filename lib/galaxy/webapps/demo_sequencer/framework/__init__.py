@@ -31,7 +31,7 @@ import mako.lookup
 import mako.runtime
 
 pkg_resources.require( "pexpect" )
-pkg_resources.require( "amqplib" )
+pkg_resources.require( "amqp" )
 
 import logging
 log = logging.getLogger( __name__ )

@@ -61,7 +61,7 @@
             <div class="toolFormTitle">Error Report</div>
             <div class="toolFormBody">
                 <form name="report_error" action="${h.url_for(controller='dataset', action='report_error')}" method="post" >
-                    <input type="hidden" name="id" value="${hda.id}" />
+                    <input type="hidden" name="id" value="${trans.security.encode_id( hda.id)}" />
                     <div class="form-row">
                         <label>Your email</label>
                         <input type="text" name="email" size="40" value="${user_email}" />
@@ -71,7 +71,10 @@
                         <textarea name="message" rows="10" cols="40"></textarea>
                     </div>
                     <div class="form-row">
-                        <input type="submit" name="submit_error_report" value="Report"/>
+                        <input type="submit" name="submit_error_report" value="Report" onclick="form.setAttribute('target', '_self');"/>
+                        %if trans.app.config.biostar_url:
+                            <input type="submit" name="submit_error_report" value="Post on Biostar" onclick="form.setAttribute('target', '_blank');"/>
+                        %endif
                     </div>
                 </form>
             </div>

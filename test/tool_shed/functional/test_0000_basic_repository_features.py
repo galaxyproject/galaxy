@@ -2,6 +2,8 @@ from tool_shed.base.twilltestcase import ShedTwillTestCase, common, os
 repository_name = 'filtering_0000'
 repository_description = "Galaxy's filtering tool for test 0000"
 repository_long_description = "Long description of Galaxy's filtering tool for test 0000"
+import logging
+log = logging.getLogger( __name__ )
 
 class TestBasicRepositoryFeatures( ShedTwillTestCase ):
     '''Test core repository features.'''
@@ -24,12 +26,18 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
         admin_user_private_role = self.test_db_util.get_private_role( admin_user )
         
-    def test_0005_create_categories( self ):
+    def test_0005_create_repository_without_categories( self ):
+        '''Verify that a repository cannot be created unless at least one category has been defined.'''
+        strings_displayed = [ 'No categories have been configured in this instance of the Galaxy Tool Shed' ]
+        self.visit_url( '/repository/create_repository' )
+        self.check_for_strings( strings_displayed=strings_displayed, strings_not_displayed=[] )
+    
+    def test_0010_create_categories( self ):
         """Create categories for this test suite"""
         self.create_category( name='Test 0000 Basic Repository Features 1', description='Test 0000 Basic Repository Features 1' )
         self.create_category( name='Test 0000 Basic Repository Features 2', description='Test 0000 Basic Repository Features 2' )
         
-    def test_0010_create_repository( self ):
+    def test_0015_create_repository( self ):
         """Create the filtering repository"""
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
@@ -43,7 +51,7 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
                                        category_id=self.security.encode_id( category.id ), 
                                        strings_displayed=strings_displayed )
         
-    def test_0015_edit_repository( self ):
+    def test_0020_edit_repository( self ):
         """Edit the repository name, description, and long description"""
         repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         new_name = "renamed_filtering"
@@ -51,20 +59,20 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
         new_long_description = "Edited long description"
         self.edit_repository_information( repository, repo_name=new_name, description=new_description, long_description=new_long_description )
         
-    def test_0020_change_repository_category( self ):
+    def test_0025_change_repository_category( self ):
         """Change the categories associated with the filtering repository"""
         repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         self.edit_repository_categories( repository, 
                                          categories_to_add=[ "Test 0000 Basic Repository Features 2" ], 
                                          categories_to_remove=[ "Test 0000 Basic Repository Features 1" ] )
         
-    def test_0025_grant_write_access( self ):
+    def test_0030_grant_write_access( self ):
         '''Grant write access to another user'''
         repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         self.grant_write_access( repository, usernames=[ common.test_user_2_name ] )
         self.revoke_write_access( repository, common.test_user_2_name )
         
-    def test_0030_upload_filtering_1_1_0( self ):
+    def test_0035_upload_filtering_1_1_0( self ):
         """Upload filtering_1.1.0.tar to the repository"""
         repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         self.upload_file( repository, 
@@ -77,7 +85,7 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
                           strings_displayed=[], 
                           strings_not_displayed=[] )
         
-    def test_0035_verify_repository( self ):
+    def test_0040_verify_repository( self ):
         '''Display basic repository pages'''
         repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         latest_changeset_revision = self.get_repository_tip( repository )
@@ -101,7 +109,7 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
                                             repository_name, 
                                             strings_displayed=[ 'Uploaded filtering 1.1.0', latest_changeset_revision ] )
         
-    def test_0040_alter_repository_states( self ):
+    def test_0045_alter_repository_states( self ):
         '''Test toggling the malicious and deprecated repository flags.'''
         repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         self.logout()
@@ -127,7 +135,7 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
         strings_displayed = [ 'Mark repository as deprecated', 'Upload files', 'Reset all repository metadata' ]
         self.display_manage_repository_page( repository, strings_displayed=strings_displayed )
         
-    def test_0045_display_repository_tip_file( self ):
+    def test_0050_display_repository_tip_file( self ):
         '''Display the contents of filtering.xml in the repository tip revision'''
         repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         self.display_repository_file_contents( repository=repository,
@@ -136,7 +144,7 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
                                                strings_displayed=[ '1.1.0' ],
                                                strings_not_displayed=[] )
         
-    def test_0050_upload_filtering_txt_file( self ):
+    def test_0055_upload_filtering_txt_file( self ):
         '''Upload filtering.txt file associated with tool version 1.1.0.'''
         repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         self.upload_file( repository, 
@@ -150,7 +158,7 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
                           strings_not_displayed=[] )
         self.display_manage_repository_page( repository, strings_displayed=[ 'Readme&nbsp;file&nbsp;for&nbsp;filtering&nbsp;1.1.0' ] )
         
-    def test_0055_upload_filtering_test_data( self ):
+    def test_0060_upload_filtering_test_data( self ):
         '''Upload filtering test data.'''
         repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         self.upload_file( repository, 
@@ -169,7 +177,7 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
                                                strings_not_displayed=[] )
         self.check_repository_metadata( repository, tip_only=True )
         
-    def test_0060_upload_filtering_2_2_0( self ):
+    def test_0065_upload_filtering_2_2_0( self ):
         '''Upload filtering version 2.2.0'''
         repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         self.upload_file( repository, 
@@ -182,7 +190,7 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
                           strings_displayed=[], 
                           strings_not_displayed=[] )
         
-    def test_0065_verify_filtering_repository( self ):
+    def test_0070_verify_filtering_repository( self ):
         '''Verify the new tool versions and repository metadata.'''
         repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         category = self.test_db_util.get_category_by_name( 'Test 0000 Basic Repository Features 1' )
@@ -204,7 +212,7 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
                                                             tool_page_strings_displayed=tool_page_strings_displayed )
         self.check_repository_metadata( repository, tip_only=False )
         
-    def test_0070_upload_readme_txt_file( self ):
+    def test_0075_upload_readme_txt_file( self ):
         '''Upload readme.txt file associated with tool version 2.2.0.'''
         repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         self.upload_file( repository, 
@@ -223,26 +231,26 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
                                              strings_displayed=[ 'Readme&nbsp;file&nbsp;for&nbsp;filtering&nbsp;1.1.0', 
                                                                  'This&nbsp;is&nbsp;a&nbsp;readme&nbsp;file.' ] )
         
-    def test_0075_delete_readme_txt_file( self ):
+    def test_0080_delete_readme_txt_file( self ):
         '''Delete the readme.txt file.'''
         repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         self.delete_files_from_repository( repository, filenames=[ 'readme.txt' ] )
         self.check_count_of_metadata_revisions_associated_with_repository( repository, metadata_count=2 )
         self.display_manage_repository_page( repository, strings_displayed=[ 'Readme&nbsp;file&nbsp;for&nbsp;filtering&nbsp;1.1.0' ] )
         
-    def test_0080_search_for_valid_filter_tool( self ):
+    def test_0085_search_for_valid_filter_tool( self ):
         '''Search for the filtering tool by tool ID, name, and version.'''
         repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         tip_changeset = self.get_repository_tip( repository )
         search_fields = dict( tool_id='Filter1', tool_name='filter', tool_version='2.2.0' )
         self.search_for_valid_tools( search_fields=search_fields, strings_displayed=[ tip_changeset ], strings_not_displayed=[] )
         
-    def test_0085_verify_repository_metadata( self ):
+    def test_0090_verify_repository_metadata( self ):
         '''Verify that resetting the metadata does not change it.'''
         repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         self.verify_unchanged_repository_metadata( repository )
         
-    def test_0090_verify_reserved_repository_name_handling( self ):
+    def test_0095_verify_reserved_repository_name_handling( self ):
         '''Check that reserved repository names are handled correctly.'''
         category = self.test_db_util.get_category_by_name( 'Test 0000 Basic Repository Features 1' )
         error_message = 'The term <b>repos</b> is a reserved word in the tool shed, so it cannot be used as a repository name.'

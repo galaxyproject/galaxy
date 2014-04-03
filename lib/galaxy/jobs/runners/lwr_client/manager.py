@@ -1,35 +1,35 @@
-from abc import ABCMeta, abstractmethod
+import threading
 try:
     from Queue import Queue
 except ImportError:
     from queue import Queue
-from threading import Thread
 from os import getenv
-try:
-    from urllib import urlencode
-except ImportError:
-    from urllib.parse import urlencode
-try:
-    from StringIO import StringIO as BytesIO
-except ImportError:
-    from io import BytesIO
-try:
-    from six import text_type
-except ImportError:
-    from galaxy.util import unicodify as text_type
 
 from .client import JobClient
 from .client import InputCachingJobClient
-from .client import ObjectStoreClient
+from .client import MessageJobClient
+from .interface import HttpLwrInterface
+from .interface import LocalLwrInterface
+from .object_client import ObjectStoreClient
 from .transport import get_transport
 from .util import TransferEventManager
 from .destination import url_to_destination_params
+from .amqp_exchange import LwrExchange
 
 
 from logging import getLogger
 log = getLogger(__name__)
 
 DEFAULT_TRANSFER_THREADS = 2
+
+
+def build_client_manager(**kwargs):
+    if 'job_manager' in kwargs:
+        return ClientManager(**kwargs)  # TODO: Consider more separation here.
+    elif kwargs.get('url', None):
+        return MessageQueueClientManager(**kwargs)
+    else:
+        return ClientManager(**kwargs)
 
 
 class ClientManager(object):
@@ -59,21 +59,64 @@ class ClientManager(object):
             self.client_class = JobClient
             self.extra_client_kwds = {}
 
-    def get_client(self, destination_params, job_id):
-        destination_params = self.__parse_destination_params(destination_params)
+    def get_client(self, destination_params, job_id, **kwargs):
+        destination_params = _parse_destination_params(destination_params)
+        destination_params.update(**kwargs)
         job_manager_interface_class = self.job_manager_interface_class
         job_manager_interface_args = dict(destination_params=destination_params, **self.job_manager_interface_args)
         job_manager_interface = job_manager_interface_class(**job_manager_interface_args)
         return self.client_class(destination_params, job_id, job_manager_interface, **self.extra_client_kwds)
 
-    def __parse_destination_params(self, destination_params):
-        try:
-            unicode_type = unicode
-        except NameError:
-            unicode_type = str
-        if isinstance(destination_params, str) or isinstance(destination_params, unicode_type):
-            destination_params = url_to_destination_params(destination_params)
-        return destination_params
+    def shutdown(self):
+        pass
+
+
+class MessageQueueClientManager(object):
+
+    def __init__(self, **kwds):
+        self.url = kwds.get('url')
+        self.manager_name = kwds.get("manager", "_default_")
+        self.exchange = LwrExchange(self.url, self.manager_name)
+        self.status_cache = {}
+        self.callback_lock = threading.Lock()
+        self.callback_thread = None
+        self.active = True
+
+    def ensure_has_status_update_callback(self, callback):
+        with self.callback_lock:
+            if self.callback_thread is not None:
+                return
+
+            def callback_wrapper(body, message):
+                try:
+                    if "job_id" in body:
+                        self.status_cache[body["job_id"]] = body
+                    callback(body)
+                except Exception:
+                    log.exception("Failure processing job status update message.")
+                message.ack()
+
+            def run():
+                self.exchange.consume("status_update", callback_wrapper, check=self)
+
+            thread = threading.Thread(
+                name="lwr_client_%s_status_update_callback" % self.manager_name,
+                target=run
+            )
+            thread.daemon = False  # Lets not interrupt processing of this.
+            thread.start()
+            self.callback_thread = thread
+
+    def shutdown(self):
+        self.active = False
+
+    def __nonzero__(self):
+        return self.active
+
+    def get_client(self, destination_params, job_id, **kwargs):
+        destination_params = _parse_destination_params(destination_params)
+        destination_params.update(**kwargs)
+        return MessageJobClient(destination_params, job_id, self)
 
 
 class ObjectStoreClientManager(object):
@@ -94,86 +137,6 @@ class ObjectStoreClientManager(object):
         interface_args = dict(destination_params=client_params, **self.interface_args)
         interface = interface_class(**interface_args)
         return ObjectStoreClient(interface)
-
-
-class JobManagerInteface(object):
-    """
-    Abstract base class describes how client communicates with remote job
-    manager.
-    """
-    __metaclass__ = ABCMeta
-
-    @abstractmethod
-    def execute(self, command, args={}, data=None, input_path=None, output_path=None):
-        """
-        Execute the correspond command against configured LWR job manager. Arguments are
-        method parameters and data or input_path describe essentially POST bodies. If command
-        results in a file, resulting path should be specified as output_path.
-        """
-
-
-class HttpLwrInterface(object):
-
-    def __init__(self, destination_params, transport):
-        self.transport = transport
-        self.remote_host = destination_params.get("url")
-        assert self.remote_host is not None, "Failed to determine url for LWR client."
-        self.private_key = destination_params.get("private_token", None)
-
-    def execute(self, command, args={}, data=None, input_path=None, output_path=None):
-        url = self.__build_url(command, args)
-        response = self.transport.execute(url, data=data, input_path=input_path, output_path=output_path)
-        return response
-
-    def __build_url(self, command, args):
-        if self.private_key:
-            args["private_key"] = self.private_key
-        arg_bytes = dict([(k, text_type(args[k]).encode('utf-8')) for k in args])
-        data = urlencode(arg_bytes)
-        url = self.remote_host + command + "?" + data
-        return url
-
-
-class LocalLwrInterface(object):
-
-    def __init__(self, destination_params, job_manager=None, file_cache=None, object_store=None):
-        self.job_manager = job_manager
-        self.file_cache = file_cache
-        self.object_store = object_store
-
-    def __app_args(self):
-        ## Arguments that would be specified from LwrApp if running
-        ## in web server.
-        return {
-            'manager': self.job_manager,
-            'file_cache': self.file_cache,
-            'object_store': self.object_store,
-            'ip': None
-        }
-
-    def execute(self, command, args={}, data=None, input_path=None, output_path=None):
-        # If data set, should be unicode (on Python 2) or str (on Python 3).
-        from lwr import routes
-        from lwr.framework import build_func_args
-        controller = getattr(routes, command)
-        action = controller.func
-        body_args = dict(body=self.__build_body(data, input_path))
-        args = build_func_args(action, args.copy(), self.__app_args(), body_args)
-        result = action(**args)
-        if controller.response_type != 'file':
-            return controller.body(result)
-        else:
-            from lwr.util import copy_to_path
-            with open(result, 'rb') as result_file:
-                copy_to_path(result_file, output_path)
-
-    def __build_body(self, data, input_path):
-        if data is not None:
-            return BytesIO(data.encode('utf-8'))
-        elif input_path is not None:
-            return open(input_path, 'rb')
-        else:
-            return None
 
 
 class ClientCacher(object):
@@ -216,9 +179,19 @@ class ClientCacher(object):
         self.num_transfer_threads = num_transfer_threads
         self.transfer_queue = Queue()
         for i in range(num_transfer_threads):
-            t = Thread(target=self._transfer_worker)
+            t = threading.Thread(target=self._transfer_worker)
             t.daemon = True
             t.start()
+
+
+def _parse_destination_params(destination_params):
+    try:
+        unicode_type = unicode
+    except NameError:
+        unicode_type = str
+    if isinstance(destination_params, str) or isinstance(destination_params, unicode_type):
+        destination_params = url_to_destination_params(destination_params)
+    return destination_params
 
 
 def _environ_default_int(variable, default="0"):

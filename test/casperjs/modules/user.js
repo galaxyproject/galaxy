@@ -280,6 +280,9 @@ User.prototype.userIsAdmin = function userIsAdmin(){
 User.prototype.getRandomEmail = function getRandomEmail( username, domain ){
     username = username || 'test';
     domain = domain || 'test.test';
-    return username + Date.now() + '@' + domain;
+    var number = Math.ceil( Math.random() * 10000000000000 );
+    // doesn't work so well when creating two users at once
+    //var number = Date.now();
+    return username + number + '@' + domain;
 };
 

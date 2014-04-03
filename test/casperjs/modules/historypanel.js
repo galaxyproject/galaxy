@@ -388,7 +388,7 @@ HistoryPanel.prototype.data = {
             },
             newName  : 'Unnamed history',
             newSize  : '0 bytes',
-            emptyMsg : "Your history is empty. Click 'Get Data' on the left pane to start"
+            emptyMsg : "This history is empty. You can load your own data or get data from an external source"
         },
         hda : {
             datasetFetchErrorMsg : 'There was an error getting the data for this dataset'

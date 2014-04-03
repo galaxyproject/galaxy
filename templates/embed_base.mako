@@ -14,7 +14,6 @@
         ${self.render_summary_content( item, item_data )}
     </div>
     <div class='expanded-content'>
-        <hr/>
         <div class='item-content'></div>
     </div>
 </div>

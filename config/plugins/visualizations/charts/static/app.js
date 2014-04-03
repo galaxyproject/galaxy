@@ -1,10 +1,12 @@
 // dependencies
-define(['library/portlet', 'library/ui', 'library/utils',
-        'views/charts', 'views/viewport', 'views/chart', 'views/group',
-        'models/config', 'models/datasets', 'models/chart', 'models/charts', 'models/group', 'models/types'],
-        function(   Portlet, Ui, Utils,
-                    ChartsView, ViewportView, ChartView, GroupView,
-                    Config, Datasets, Chart, Charts, Group, Types
+define(['mvc/ui/ui-modal', 'mvc/ui/ui-portlet', 'plugin/library/ui', 'utils/utils',
+        'plugin/library/jobs', 'plugin/library/datasets', 'plugin/library/storage',
+        'plugin/views/viewer', 'plugin/views/editor',
+        'plugin/models/config', 'plugin/models/chart',
+        'plugin/charts/types'],
+        function(   Modal, Portlet, Ui, Utils, Jobs, Datasets, Storage,
+                    ViewerView, EditorView,
+                    Config, Chart, Types
                 ) {
 
 // widget
@@ -13,66 +15,75 @@ return Backbone.View.extend(
     // initialize
     initialize: function(options)
     {
+        // deactivate all debugs outputs
+        //window.console.debug = function() {};
+        
         // link options
         this.options = options;
     
-        // link galaxy
-        this.modal = parent.Galaxy.modal;
+        // link galaxy modal or create one
+        if (Galaxy && Galaxy.modal) {
+            this.modal = Galaxy.modal;
+        } else {
+            this.modal = new Modal.View();
+        }
         
-        // create configuration model
+        //
+        // models
+        //
         this.config = new Config();
-        
-        // create chart models
         this.types = new Types();
         this.chart = new Chart();
-        this.charts = new Charts();
-        this.group = new Group();
         
-        // create dataset handler
+        //
+        // libraries
+        //
+        this.jobs = new Jobs(this);
         this.datasets = new Datasets(this);
+        this.storage = new Storage(this);
         
-        // create views
-        this.charts_view = new ChartsView(this);
-        this.group_view = new GroupView(this);
-        this.chart_view = new ChartView(this);
-        this.viewport_view = new ViewportView(this);
-        
-        // append view port to charts viewer
-        this.charts_view.append(this.viewport_view.$el);
-            
-        // create portlet
-        if (!this.options.config.widget) {
-            this.portlet = new Portlet({icon : 'fa-bar-chart-o', label : 'Charts'});
-        } else {
-            this.portlet = $('<div></div>');
-        }
+        //
+        // views
+        //
+        this.viewer_view = new ViewerView(this);
+        this.editor_view = new EditorView(this);
         
         // append views
-        this.portlet.append(this.charts_view.$el);
-        this.portlet.append(this.group_view.$el);
-        this.portlet.append(this.chart_view.$el);
-        
-        // set element
-        if (!this.options.config.widget) {
-            this.setElement(this.portlet.$el);
+        this.$el.append(this.viewer_view.$el);
+        this.$el.append(this.editor_view.$el);
+
+        // pick start screen
+        if (!this.storage.load()) {
+            // show editor
+            this.go('editor');
         } else {
-            this.setElement(this.portlet);
+            // show viewport
+            this.go('viewer');
+            
+            // draw chart
+            var self = this;
+            this.chart.deferred.execute(function() {
+                self.chart.trigger('redraw');
+            });
         }
-        
-        // hide views
-        this.group_view.$el.hide();
-        this.charts_view.$el.hide();
-        
-        // events
-        var self = this;
-        this.config.on('change:current_view', function() {
-            self._showCurrent();
-        });
     },
     
-    // current view
-    _showCurrent: function() {
+    // loads a view and makes sure that all others are hidden
+    go: function(view_id) {
+        // hide all tooltips
+        $('.tooltip').hide();
         
+        // pick view
+        switch (view_id) {
+            case 'editor' :
+                this.editor_view.show();
+                this.viewer_view.hide();
+                break;
+            case 'viewer' :
+                this.editor_view.hide();
+                this.viewer_view.show();
+                break;
+        }
     },
     
     // execute command

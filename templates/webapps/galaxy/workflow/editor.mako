@@ -302,7 +302,7 @@
     <div class="unified-panel-body" style="overflow: auto;">
             <div class="toolMenu">
             <div id="tool-search" style="padding-bottom: 5px; position: relative; display: block; width: 100%">
-                <input type="text" name="query" value="search tools" id="tool-search-query" class="search-query parent-width" />
+                <input type="text" name="query" placeholder="search tools" id="tool-search-query" class="search-query parent-width" />
                 <img src="${h.url_for('/static/images/loading_small_white_bg.gif')}" id="search-spinner" class="search-spinner" />
             </div>
             <div class="toolSectionList">

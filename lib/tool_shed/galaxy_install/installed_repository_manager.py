@@ -62,8 +62,9 @@ class InstalledRepositoryManager( object ):
         # whose values are a list of tuples defining tool_dependency objects (whose status is 'Installed') that require the key
         # at runtime.  The value defines the entire tool dependency tree.
         self.installed_runtime_dependent_tool_dependencies_of_installed_tool_dependencies = {}
-        # Load defined dependency relationships for installed tool shed repositories and their contents.
-        self.load_dependency_relationships()
+        if app.config.manage_dependency_relationships:
+            # Load defined dependency relationships for installed tool shed repositories and their contents.
+            self.load_dependency_relationships()
 
     def add_entry_to_installed_repository_dependencies_of_installed_repositories( self, repository ):
         """

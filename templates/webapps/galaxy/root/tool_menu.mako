@@ -38,7 +38,7 @@
                     Galaxy.toolPanel = tool_panel;
 
                     // If there are tools, render panel and display everything.
-                    if (tool_panel.get('layout').size() > 1) {
+                    if (tool_panel.get('layout').size() > 0) {
                         tool_panel_view.render();
                         $('.toolMenu').show();
                     }

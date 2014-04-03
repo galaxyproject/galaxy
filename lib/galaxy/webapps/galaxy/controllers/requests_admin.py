@@ -6,7 +6,9 @@ from galaxy.model.orm import *
 from galaxy import model, util
 from galaxy.web.form_builder import *
 from .requests_common import RequestsGrid, invalid_id_redirect
-from amqplib import client_0_8 as amqp
+from galaxy import eggs
+eggs.require("amqp")
+import amqp
 import logging, os, pexpect, ConfigParser
 
 log = logging.getLogger( __name__ )
@@ -696,8 +698,7 @@ class RequestsAdmin( BaseUIController, UsesFormDefinitionsMixin ):
                     conn = amqp.Connection( host=trans.app.config.amqp[ 'host' ] + ":" + trans.app.config.amqp[ 'port' ],
                                             userid=trans.app.config.amqp[ 'userid' ],
                                             password=trans.app.config.amqp[ 'password' ],
-                                            virtual_host=trans.app.config.amqp[ 'virtual_host' ],
-                                            insist=False )
+                                            virtual_host=trans.app.config.amqp[ 'virtual_host' ])
                     chan = conn.channel()
                     msg = amqp.Message( rmq_msg,
                                         content_type='text/plain',

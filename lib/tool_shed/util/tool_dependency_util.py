@@ -90,7 +90,6 @@ def create_tool_dependency_objects( app, tool_shed_repository, relative_install_
     if tree is None:
         return tool_dependency_objects
     root = tree.getroot()
-    fabric_version_checked = False
     for elem in root:
         tool_dependency_type = elem.tag
         if tool_dependency_type == 'package':
@@ -197,17 +196,6 @@ def generate_message_for_orphan_tool_dependencies( trans, repository, metadata_d
         message += "does not match the information for the following tool dependency definitions in the <b>tool_dependencies.xml</b> "
         message += "file, so these tool dependencies have no relationship with any tools within this repository.<br/>"
         message += set_environment_orphans_str
-    return message
-
-def generate_message_for_repository_type_change( trans, repository ):
-    message = ''
-    if repository.can_change_type_to( trans.app, rt_util.TOOL_DEPENDENCY_DEFINITION ):
-        tool_dependency_definition_type_class = \
-            trans.app.repository_types_registry.get_class_by_label( rt_util.TOOL_DEPENDENCY_DEFINITION )
-        message += "This repository currently contains a single file named <b>%s</b>.  If additional files will " % \
-            suc.TOOL_DEPENDENCY_DEFINITION_FILENAME
-        message += "not be added to this repository, then it's type should be set to <b>%s</b>.<br/>" % \
-            tool_dependency_definition_type_class.label
     return message
 
 def get_download_url_for_platform( url_templates, platform_info_dict ):
@@ -574,8 +562,8 @@ def set_tool_dependency_attributes( app, tool_dependency, status, error_message=
     sa_session.flush()
     return tool_dependency
 
-def sync_database_with_file_system( app, tool_shed_repository, tool_dependency_name, tool_dependency_version, tool_dependency_install_dir,
-                                    tool_dependency_type='package' ):
+def sync_database_with_file_system( app, tool_shed_repository, tool_dependency_name, tool_dependency_version,
+                                    tool_dependency_install_dir, tool_dependency_type='package' ):
     """
     The installation directory defined by the received tool_dependency_install_dir exists, so check for the presence
     of fabric_util.INSTALLATION_LOG.  If the files exists, we'll assume the tool dependency is installed, but not
@@ -584,7 +572,7 @@ def sync_database_with_file_system( app, tool_shed_repository, tool_dependency_n
     """
     # This method should be reached very rarely.  It implies that either the Galaxy environment became corrupted (i.e.,
     # the database records for installed tool dependencies is not synchronized with tool dependencies on disk) or the Tool
-    # Shed's install and test framework is running.  The Tool Shed's install and test framework which installs repositories
+    # Shed's install and test framework is running.  The Tool Shed's install and test framework installs repositories
     # in 2 stages, those of type tool_dependency_definition followed by those containing valid tools and tool functional
     # test components.
     log.debug( "Synchronizing the database with the file system..." )

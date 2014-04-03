@@ -1,5 +1,5 @@
 // Additional dependencies: jQuery, underscore.
-define([], function() {
+define(['mvc/ui/ui-modal', 'mvc/ui/ui-frames'], function(Modal, Frames) {
 
 /**
  * Dataset metedata.
@@ -108,30 +108,41 @@ var DatasetCollection = Backbone.Collection.extend({
 });
 
 /**
- * Provides table-based, dynamic view of a tabular dataset. 
- * NOTE: view's el must be in DOM already and provided when 
- * createing the view so that scrolling event can be attached
- * to the correct container.
+ * Provides a base for table-based, dynamic view of a tabular dataset. 
+ * Do not instantiate directly; use either TopLevelTabularDatasetChunkedView 
+ * or EmbeddedTabularDatasetChunkedView.
  */
 var TabularDatasetChunkedView = Backbone.View.extend({
 
-    initialize: function(options)
-    {
+    /**
+     * Initialize view and, importantly, set a scroll element.
+     */
+    initialize: function(options) {
+        // Row count for rendering.
+        this.row_count = 0;
+
+        // CSS colors used in table.
+        this.header_color = '#AAA';
+        this.dark_row_color = '#DDD';
+
         // load trackster button
-        new TabularButtonTracksterView(options);
+        new TabularButtonTracksterView({
+            model   : options.model,
+            $el     : this.$el
+        });
     },
 
-    render: function()
-    {
+    render: function() {
         // Add data table and header.
         var data_table = $('<table/>').attr({
             id: 'content_table',
             cellpadding: 0
         });
         this.$el.append(data_table);
-        var column_names = this.model.get_metadata('column_names');
+        var column_names = this.model.get_metadata('column_names'),
+            header_row = $('<tr/>').css('background-color', this.header_color).appendTo(data_table);
         if (column_names) {
-            data_table.append('<tr><th>' + column_names.join('</th><th>') + '</th></tr>');
+            header_row.append('<th>' + column_names.join('</th><th>') + '</th>');
         }
 
         // Add first chunk.
@@ -141,25 +152,15 @@ var TabularDatasetChunkedView = Backbone.View.extend({
         }
 
         // -- Show new chunks during scrolling. --
-        
+
         var self = this,
-            // Element that does the scrolling.
-            scroll_elt = _.find(this.$el.parents(), function(p) {
-                return $(p).css('overflow') === 'auto';
-            }),
             // Flag to ensure that only one chunk is loaded at a time.
             loading_chunk = false;
 
-        // If no scrolling element found, use window.
-        if (!scroll_elt) { scroll_elt = window; }
-
-        // Wrap scrolling element for easy access.
-        scroll_elt = $(scroll_elt);
-
         // Set up chunk loading when scrolling using the scrolling element.
-        scroll_elt.scroll(function() {
+        this.scroll_elt.scroll(function() {
             // If not already loading a chunk and have scrolled to the bottom of this element, get next chunk.
-            if ( !loading_chunk && (self.$el.height() - scroll_elt.scrollTop() - scroll_elt.height() <= 0) ) {
+            if ( !loading_chunk && self.scrolled_to_bottom() ) {
                 loading_chunk = true;
                 $.when(self.model.get_next_chunk()).then(function(result) {
                     if (result) {
@@ -174,6 +175,13 @@ var TabularDatasetChunkedView = Backbone.View.extend({
         }).ajaxStop(function(){
            $(this).hide();
         });
+    },
+
+    /**
+     * Returns true if user has scrolled to the bottom of the view.
+     */
+    scrolled_to_bottom: function() {
+        return false;
     },
 
     // -- Helper functions. --
@@ -199,6 +207,11 @@ var TabularDatasetChunkedView = Backbone.View.extend({
         var cells = line.split('\t'),
             row = $('<tr>'),
             num_columns = this.model.get_metadata('columns');
+
+        if (this.row_count % 2 !== 0) {
+            row.css('background-color', this.dark_row_color);
+        }
+
         if (cells.length === num_columns) {
             _.each(cells, function(cell_contents, index) {
                 row.append(this._renderCell(cell_contents, index));
@@ -222,6 +235,8 @@ var TabularDatasetChunkedView = Backbone.View.extend({
             // Comment line, just return the one cell.
             row.append(this._renderCell(line, 0, num_columns));
         }
+
+        this.row_count++;
         return row;
     },
 
@@ -233,9 +248,64 @@ var TabularDatasetChunkedView = Backbone.View.extend({
     }
 });
 
+/**
+ * Tabular view that is placed at the top level of page. Scrolling occurs
+ * view top-level elements outside of view.
+ */
+var TopLevelTabularDatasetChunkedView = TabularDatasetChunkedView.extend({
+
+    initialize: function(options) {
+        TabularDatasetChunkedView.prototype.initialize.call(this, options);
+
+        // Scrolling happens in top-level elements.
+        scroll_elt = _.find(this.$el.parents(), function(p) {
+            return $(p).css('overflow') === 'auto';
+        });
+
+        // If no scrolling element found, use window.
+        if (!scroll_elt) { scroll_elt = window; }
+
+        // Wrap scrolling element for easy access.
+        this.scroll_elt = $(scroll_elt);
+    },
+
+    /**
+     * Returns true if user has scrolled to the bottom of the view.
+     */
+    scrolled_to_bottom: function() {
+        return (this.$el.height() - this.scroll_elt.scrollTop() - this.scroll_elt.height() <= 0);
+    }
+
+});
+
+/**
+ * Tabular view tnat is embedded in a page. Scrolling occurs in view's el.
+ */
+var EmbeddedTabularDatasetChunkedView = TabularDatasetChunkedView.extend({
+
+    initialize: function(options) {
+        TabularDatasetChunkedView.prototype.initialize.call(this, options);
+
+        // Because view is embedded, set up div to do scrolling.
+        this.scroll_elt = this.$el.css({
+            position: 'relative',
+            overflow: 'scroll',
+            height: this.options.height || '500px'
+        });
+    },
+
+    /**
+     * Returns true if user has scrolled to the bottom of the view.
+     */
+    scrolled_to_bottom: function() {
+        return this.$el.scrollTop() + this.$el.innerHeight() >= this.el.scrollHeight;
+    }
+
+});
+
 // button for trackster visualization
-var TabularButtonTracksterView = Backbone.View.extend(
-{
+var TabularButtonTracksterView = Backbone.View.extend({
+
     // gene region columns
     col: {
         chrom   : null,
@@ -253,110 +323,137 @@ var TabularButtonTracksterView = Backbone.View.extend(
     genome_build: null,
 
     // data type
-    data_type: null,
+    data_type   : null,
 
     // backbone initialize
-    initialize: function (options)
-    {
-        // get options
-        var attributes  = options.model.attributes;
-        var metadata    = options.model.attributes.metadata.attributes;
+    initialize: function (options) {
+        // check if environment is available
+        var Galaxy = parent.Galaxy;
+        
+        // link galaxy modal or create one
+        if (Galaxy && Galaxy.modal) {
+            this.modal = Galaxy.modal;
+        }
+        
+        // link galaxy frames
+        if (Galaxy && Galaxy.frame) {
+            this.frame = Galaxy.frame;
+        }
+        
+        // check
+        if (!this.modal || !this.frame) {
+            return;
+        }
+        
+        // model/metadata
+        var model       = options.model;
+        var metadata    = model.get('metadata');
 
         // check for datatype
-        if (typeof attributes.data_type !== "undefined")
-            this.data_type = attributes.data_type;
-        else
-            console.log("TabularButtonTrackster : Data type missing.");
-
+        if (!model.get('data_type')) {
+            return;
+        }
+        
+        // get data type
+        this.data_type = model.get('data_type');
+        
         // check for bed-file format
-        if (this.data_type == "bed")
+        if (this.data_type == 'bed')
         {
             // verify that metadata exists
-            if (typeof metadata.chromCol !== "undefined" || typeof metadata.startCol !== "undefined" || typeof metadata.endCol !== "undefined")
+            if (metadata.get('chromCol') && metadata.get('startCol') && metadata.get('endCol'))
             {
                 // read in columns
-                this.col.chrom   = metadata.chromCol - 1;
-                this.col.start   = metadata.startCol - 1;
-                this.col.end     = metadata.endCol - 1;
-            } else
-                console.log("TabularButtonTrackster : Bed-file metadata incomplete.");
+                this.col.chrom   = metadata.get('chromCol') - 1;
+                this.col.start   = metadata.get('startCol') - 1;
+                this.col.end     = metadata.get('endCol') - 1;
+            } else {
+                console.log('TabularButtonTrackster : Bed-file metadata incomplete.');
+                return;
+            }
         }
 
         // check for vcf-file format
-        if (this.data_type == "vcf")
+        if (this.data_type == 'vcf')
         {
             // search array
-            function search (str, array)
-            {
+            function search (str, array) {
                 for (var j = 0; j < array.length; j++)
                     if (array[j].match(str)) return j;
                 return -1;
             };
 
             // load
-            this.col.chrom = search("Chrom", metadata.column_names);
-            this.col.start = search("Pos", metadata.column_names);
+            this.col.chrom = search('Chrom', metadata.get('column_names'));
+            this.col.start = search('Pos', metadata.get('column_names'));
             this.col.end   = null;
 
             // verify that metadata exists
-            if (this.col.chrom == -1 || this.col.start == -1)
-                console.log("TabularButtonTrackster : VCF-file metadata incomplete.");
+            if (this.col.chrom == -1 || this.col.start == -1) {
+                console.log('TabularButtonTrackster : VCF-file metadata incomplete.');
+                return;
+            }
         }
-
+        
         // check
-        if(this.col.chrom === null) {
+        if(this.col.chrom === undefined) {
             return;
         }
 
         // get dataset id
-        if (typeof options.model.attributes.id === "undefined") {
-            console.log("TabularButtonTrackster : Dataset identification is missing.");
+        if (model.id) {
+            this.dataset_id = model.id;
         } else {
-            this.dataset_id = options.model.attributes.id;
+            console.log('TabularButtonTrackster : Dataset identification is missing.');
+            return;
         }
         
         // get url
-        if (typeof options.model.attributes.url_viz === "undefined") {
-            console.log("TabularButtonTrackster : Url for visualization controller is missing.");
+        if (model.get('url_viz')) {
+            this.url_viz = model.get('url_viz');
         } else {
-            this.url_viz = options.model.attributes.url_viz;
+            console.log('TabularButtonTrackster : Url for visualization controller is missing.');
+            return;
         }
 
         // get genome_build / database key
-        if (typeof options.model.attributes.genome_build !== "undefined") {
-            this.genome_build = options.model.attributes.genome_build;
+        if (model.get('genome_build')) {
+            this.genome_build = model.get('genome_build');
         }
 
-        // render the icon from template
-        var btn_viz = new IconButtonView({ model : new IconButton({
-            title       : 'Visualize',
-            icon_class  : 'chart_curve',
-            id          : 'btn_viz'
-        })});
+        // create the icon
+        var btn_viz = new IconButtonView({
+            model : new IconButton({
+                title       : 'Visualize',
+                icon_class  : 'chart_curve',
+                id          : 'btn_viz'
+            })
+        });
         
-        // add it to the screen
+        // set element
+        this.setElement(options.$el);
+        
+        // add to element
         this.$el.append(btn_viz.render().$el);
 
         // hide the button
-        $('#btn_viz').hide();
+        this.hide();
     },
 
     // backbone events
     events:
     {
-        'mouseover tr'  : 'btn_viz_show',
-        'mouseleave'    : 'btn_viz_hide'
+        'mouseover tr'  : 'show',
+        'mouseleave'    : 'hide'
     },
     
     // show button
-    btn_viz_show: function (e)
-    {
+    show: function (e) {
         // is numeric
-        function is_numeric(n)
-        {
+        function is_numeric(n) {
             return !isNaN(parseFloat(n)) && isFinite(n);
         };
-
+        
         // check
         if(this.col.chrom === null)
             return;
@@ -372,8 +469,8 @@ var TabularButtonTracksterView = Backbone.View.extend(
         var end = this.col.end ? row.children().eq(this.col.end).html() : start;
 
         // double check location
-        if (!chrom.match("^#") && chrom !== "" && is_numeric(start))
-        {
+        if (!chrom.match("^#") && chrom !== "" && is_numeric(start)) {
+        
             // get target gene region
             var btn_viz_pars = {
                 dataset_id  : this.dataset_id,
@@ -383,7 +480,7 @@ var TabularButtonTracksterView = Backbone.View.extend(
             // get button position
             var offset  = row.offset();
             var left    = offset.left - 10;
-            var top     = offset.top - $(window).scrollTop();
+            var top     = offset.top - $(window).scrollTop() + 3;
 
             // update css
             $('#btn_viz').css({'position': 'fixed', 'top': top + 'px', 'left': left + 'px'});
@@ -399,72 +496,83 @@ var TabularButtonTracksterView = Backbone.View.extend(
     },
     
     // hide button
-    btn_viz_hide: function ()
-    {
-        // hide button from screen
-        $('#btn_viz').hide();
+    hide: function () {
+        this.$el.find('#btn_viz').hide();
     },
     
     // create action
     create_trackster_action : function (vis_url, dataset_params, dbkey) {
+        // link this
+        var self = this;
+        
+        // create function
         return function() {
             var listTracksParams = {};
-            if (dbkey){
-                // list_tracks seems to use 'f-dbkey' (??)
+            if (dbkey) {
                 listTracksParams[ 'f-dbkey' ] = dbkey;
             }
             $.ajax({
                 url: vis_url + '/list_tracks?' + $.param( listTracksParams ),
-                dataType: "html",
-                error: function() { alert( ( "Could not add this dataset to browser" ) + '.' ); },
+                dataType: 'html',
+                error: function() {
+                    // show error message
+                    self.modal.show({
+                        title   : 'Something went wrong!',
+                        body    : 'Unfortunately we could not add this dataset to the track browser. Please try again or contact us.',
+                        buttons : {
+                            'Cancel': function(){
+                                self.modal.hide();
+                            }
+                        }
+                    });
+                },
                 success: function(table_html) {
-                    var parent = window.parent;
-                    parent.Galaxy.modal.show({
-                        title   : "View Data in a New or Saved Visualization",
+                    self.modal.show({
+                        title   : 'View Data in a New or Saved Visualization',
                         buttons :{
-                            "Cancel": function(){
-                                parent.Galaxy.modal.hide();
+                            'Cancel': function(){
+                                self.modal.hide();
                             },
-                            "View in saved visualization": function(){
-                                // Show new modal with saved visualizations.
-                                parent.Galaxy.modal.show(
+                            'View in saved visualization': function(){
+                                // show modal with saved visualizations
+                                self.modal.show(
                                 {
-                                    title: "Add Data to Saved Visualization",
-                                    body: table_html,
-                                    buttons :{
-                                        "Cancel": function(){
-                                            parent.Galaxy.modal.hide();
+                                    title   : 'Add Data to Saved Visualization',
+                                    body    : table_html,
+                                    buttons : {
+                                        'Cancel': function(){
+                                            self.modal.hide();
                                         },
-                                        "Add to visualization": function(){
-                                            $(parent.document).find('input[name=id]:checked').each(function(){
-                                                // hide
-                                                parent.Galaxy.modal.hide();
+                                        'Add to visualization': function(){
+                                            // hide
+                                            self.modal.hide();
                                                 
+                                            // search selected fields
+                                            self.modal.$el.find('input[name=id]:checked').each(function(){
+                                                // get visualization id
                                                 var vis_id = $(this).val();
                                                 dataset_params.id = vis_id;
                                         
                                                 // add widget
-                                                parent.Galaxy.frame.add({
-                                                    title    : "Trackster",
-                                                    type     : "url",
-                                                    content  : vis_url + "/trackster?" + $.param(dataset_params)
+                                                self.frame.add({
+                                                    title    : 'Trackster',
+                                                    type     : 'url',
+                                                    content  : vis_url + '/trackster?' + $.param(dataset_params)
                                                 });
                                             });
                                         }
                                     }
                                 });
                             },
-                            "View in new visualization": function(){
+                            'View in new visualization': function(){
                                 // hide
-                                parent.Galaxy.modal.hide();
+                                self.modal.hide();
                                 
-                                var url = vis_url + "/trackster?" + $.param(dataset_params);
-
                                 // add widget
-                                parent.Galaxy.frame.add({
-                                    title    : "Trackster",
-                                    type     : "url",
-                                    content  : url
+                                self.frame.add({
+                                    title    : 'Trackster',
+                                    type     : 'url',
+                                    content  : vis_url + '/trackster?' + $.param(dataset_params)
                                 });
                             }
                         }
@@ -500,15 +608,28 @@ var createModelAndView = function(model, view, model_config, parent_elt) {
  * Create a tabular dataset chunked view (and requisite tabular dataset model)
  * and appends to parent_elt.
  */
-var createTabularDatasetChunkedView = function(dataset_config, parent_elt) {
-    // Create view element and add to parent.
-    var view_div = $('<div/>').appendTo(parent_elt);
+var createTabularDatasetChunkedView = function(options) {
+    // Create and set model.
+    options.model = new TabularDataset(options.dataset_config);
 
-    // default viewer
-    return new TabularDatasetChunkedView({
-        el: view_div,
-        model: new TabularDataset(dataset_config)
-    }).render();
+    var parent_elt = options.parent_elt;
+    var embedded = options.embedded;
+
+    // Clean up options so that only needed options are passed to view.
+    delete options.embedded;
+    delete options.parent_elt;
+    delete options.dataset_config;
+    
+    // Create and set up view.
+    var view = (embedded ? new EmbeddedTabularDatasetChunkedView(options) :
+                           new TopLevelTabularDatasetChunkedView(options));
+    view.render();
+
+    if (parent_elt) {
+        parent_elt.append(view.$el);
+    }
+
+    return view;
 };
 
 return {

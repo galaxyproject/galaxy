@@ -1,33 +1,13 @@
 //define([
 //], function(){
 
-//function saveVis( title, config ){
-//    var xhr = jQuery.ajax( '/api/visualizations', {
-//        type : 'POST',
-//        data : {
-//            type    : 'scatterplot',
-//            title   : title,
-//            config  : JSON.stringify( config )
-//        }
-//    });
-//    xhr.fail( function( xhr, status, message ){
-//        console.debug( jQuery.makeArray( arguments ) );
-//        console.error( 'Error saving visualization:', xhr.responseJSON.error );
-//    });
-//    return xhr.then( function( saveInfo ){
-//        return saveInfo;
-//    });
-//}
-
 //==============================================================================
 /** @class Model for a saved Galaxy visualization.
  *
  *  @augments Backbone.Model
- *  @borrows LoggableMixin#logger as #logger
- *  @borrows LoggableMixin#log as #log
  *  @constructs
  */
-var Visualization = Backbone.Model.extend( LoggableMixin ).extend(
+var Visualization = Backbone.Model.extend(
 /** @lends Visualization.prototype */{
 
     ///** logger used to record this.log messages, commonly set to console */
@@ -36,49 +16,53 @@ var Visualization = Backbone.Model.extend( LoggableMixin ).extend(
 
     /** default attributes for a model */
     defaults : {
-        //id      : null,
-        //type    : null,
-        //title   : null,
-        //dbkey   : null,
-        //user_id : null,
-        //slug    : null,
-        //revisions       : [],
-        //latest_revision : null
-
-        //(this is unusual in that visualizations don't have configs, revisions do)
-        //config : {}
+        config : {}
     },
 
-    url : function(){
-        return galaxy_config.root + 'api/visualizations';
+    /** override urlRoot to handle presence/absence of galaxy_config */
+    urlRoot : function(){
+        var apiUrl = '/api/visualizations';
+        return (( window.galaxy_config && galaxy_config.root )?( galaxy_config.root + apiUrl ):( apiUrl ));
     },
 
     /** Set up the model, determine if accessible, bind listeners
      *  @see Backbone.Model#initialize
      */
     initialize : function( data ){
-        this.log( this + '.initialize', data, this.attributes );
+        //this.log( this + '.initialize', data, this.attributes );
+
+        // munge config sub-object here since bbone won't handle defaults with this
+        if( _.isObject( data.config ) && _.isObject( this.defaults.config ) ){
+            _.defaults( data.config, this.defaults.config );
+        }
+
         this._setUpListeners();
     },
 
     /** set up any event listeners
      */
     _setUpListeners : function(){
+        //this.on( 'change', function(){
+        //    console.info( 'change:', arguments );
+        //});
     },
 
     // ........................................................................ config
-    setConfig: function( config ){
-        var oldConfig = this.get( 'config' );
-        // extend if already exists (and clone in order to trigger change)
-        if( _.isObject( oldConfig ) ){
-            config = _.extend( _.clone( oldConfig ), config );
+    /** override set to properly allow update and trigger change when setting the sub-obj 'config' */
+    set: function( key, val ){
+        //TODO: validate config is object
+        if( key === 'config' ){
+            var oldConfig = this.get( 'config' );
+            // extend if already exists (is this correct behavior? no way to eliminate keys or reset entirely)
+            // clone in order to trigger change (diff. obj ref)
+            if( _.isObject( oldConfig ) ){
+                val = _.extend( _.clone( oldConfig ), val );
+            }
         }
-        this.set( 'config', config );
+        Backbone.Model.prototype.set.call( this, key, val );
         return this;
     },
 
-    // ........................................................................ common queries
-    // ........................................................................ ajax
     // ........................................................................ misc
     /** String representation */
     toString : function(){
@@ -98,7 +82,7 @@ var Visualization = Backbone.Model.extend( LoggableMixin ).extend(
  *  @borrows LoggableMixin#log as #log
  *  @constructs
  */
-var VisualizationCollection = Backbone.Collection.extend( LoggableMixin ).extend(
+var VisualizationCollection = Backbone.Collection.extend(
 /** @lends VisualizationCollection.prototype */{
     model           : Visualization,
 

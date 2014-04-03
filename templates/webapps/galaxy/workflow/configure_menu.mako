@@ -1,7 +1,19 @@
-<%inherit file="/base.mako"/>
+<%inherit file="/webapps/galaxy/base_panels.mako"/>
+
+<%def name="init()">
+<%
+    self.has_left_panel=False
+    self.has_right_panel=False
+    self.active_view="workflow"
+    self.message_box_visible=False
+%>
+</%def>
 
 <%def name="title()">Configure workflow menu</%def>
 
+<%def name="center_panel()">
+    <div style="overflow: auto; height: 100%;">
+        <div class="page-container" style="padding: 10px;">
 %if message:
 <%
     try:
@@ -69,9 +81,18 @@
 
 %endif
 
+%if not workflows and not shared_by_others:
+        <tr>
+            <td colspan="4">You do not have any accessible workflows.</td>
+        </tr>
+%endif
+
 </table>
 
 <p />
-<input type="Submit" />
+<input type="Submit" value="Save" />
 
 </form>
+        </div>
+    </div>
+</%def>
