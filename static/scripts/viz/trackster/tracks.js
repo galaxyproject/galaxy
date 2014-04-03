@@ -692,14 +692,16 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
             this.action_icons.filters_icon.hide();
         }
         else { // There are 2 or more tracks.
+
             //
             // Determine if a composite track can be created. Current criteria:
-            // (a) all tracks are the same;
+            // (a) all tracks are line tracks;
             //      OR
+            // FIXME: this is not enabled right now because it has not been well tested:
             // (b) there is a single FeatureTrack.
             //
 
-            /// All tracks the same?
+            // All tracks the same?
             var i, j, drawable,
                 same_type = true,
                 a_type = this.drawables[0].get_type(),
@@ -715,14 +717,14 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
                 }
             }
         
-            if (same_type || num_feature_tracks === 1) {
+            if (same_type && this.drawables[0] instanceof LineTrack) {
                 this.action_icons.composite_icon.show();
             }
             else {
                 this.action_icons.composite_icon.hide();
                 $(".tooltip").remove();
             }
-        
+
             //
             // Set up group-level filtering and update filter icon.
             //
@@ -2365,7 +2367,7 @@ extend(Track.prototype, Drawable.prototype, {
             track.tile_cache.clear();
             in_drag = false;
             if (!in_handle) { drag_control.hide(); }
-            track.config.set('height', track.visible_height_px);
+            track.config.set_value('height', track.visible_height_px);
             track.changed();
         }).appendTo(track.container_div);
     },
@@ -3433,6 +3435,18 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
     },
 
     /**
+     * Action to take during resize.
+     */
+    on_resize: function() {
+        // Propogate visible height to other tracks.
+        var visible_height = this.visible_height_px;
+        _.each(this.drawables, function(d) {
+            d.visible_height_px = visible_height;
+        });
+        Track.prototype.on_resize.call(this);
+    },
+
+    /**
      * Change mode for all tracks.
      */
     change_mode: function(new_mode) {
@@ -3499,7 +3513,8 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
      * Actions taken before drawing.
      */
     before_draw: function() {
-        TiledTrack.prototype.before_draw.call(this);
+        // FIXME: this is needed only if there are feature tracks in the composite track.
+        // TiledTrack.prototype.before_draw.call(this);
 
         //
         // Set min, max for tracks to be largest min, max.
@@ -3507,7 +3522,7 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
         
         // Get smallest min, biggest max.
         var min = _.min(_.map(this.drawables, function(d) { return d.config.get_value('min_value'); })),
-            max = _.max(_.map(this.drawables, function(d) { return d.config.get_value('max_value') }));
+            max = _.max(_.map(this.drawables, function(d) { return d.config.get_value('max_value'); }));
             
         this.config.set_value('min_value', min);
         this.config.set_value('max_value', max);
