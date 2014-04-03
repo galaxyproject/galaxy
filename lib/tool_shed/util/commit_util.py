@@ -292,6 +292,12 @@ def handle_repository_dependency_elem( trans, elem, unpopulate=False ):
     revised = False
     toolshed = elem.get( 'toolshed' )
     changeset_revision = elem.get( 'changeset_revision' )
+    # Over a short period of time a bug existed which caused the prior_installation_required attribute
+    # to be set to False and included in the <repository> tag when a repository was exported along with
+    # its dependencies.  The following will eliminate this problematic attribute upon import.
+    prior_installation_required = elem.get( 'prior_installation_required' )
+    if prior_installation_required is not None and not asbool( prior_installation_required ):
+        del elem.attrib[ 'prior_installation_required' ]
     sub_elems = [ child_elem for child_elem in list( elem ) ]
     if len( sub_elems ) > 0:
         # At this point, a <repository> tag will point only to a package.
@@ -310,7 +316,8 @@ def handle_repository_dependency_elem( trans, elem, unpopulate=False ):
         # Set to None.
         sub_elements = None
     if unpopulate:
-        # We're exporting the repository, so eliminate all toolshed and changeset_revision attributes from the <repository> tag.
+        # We're exporting the repository, so eliminate all toolshed and changeset_revision attributes from the
+        # <repository> tag.
         if toolshed or changeset_revision:
             attributes = odict()
             attributes[ 'name' ] = name
