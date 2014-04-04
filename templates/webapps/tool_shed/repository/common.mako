@@ -319,21 +319,21 @@
         ${render_folder( sub_folder, pad, parent=my_row, row_counter=row_counter, is_root_folder=False, render_repository_actions_for=render_repository_actions_for )}
     %endfor
     %for readme in folder.readme_files:
-        ${render_readme( readme, pad, my_row, row_counter )}
+        ${render_readme( readme, pad, my_row, row_counter, render_repository_actions_for=render_repository_actions_for )}
     %endfor
     %for invalid_repository_dependency in folder.invalid_repository_dependencies:
-        ${render_invalid_repository_dependency( invalid_repository_dependency, pad, my_row, row_counter )}
+        ${render_invalid_repository_dependency( invalid_repository_dependency, pad, my_row, row_counter, render_repository_actions_for=render_repository_actions_for )}
     %endfor
     %for index, repository_dependency in enumerate( folder.repository_dependencies ):
         <% row_is_header = index == 0 %>
-        ${render_repository_dependency( repository_dependency, pad, my_row, row_counter, row_is_header )}
+        ${render_repository_dependency( repository_dependency, pad, my_row, row_counter, row_is_header, render_repository_actions_for=render_repository_actions_for )}
     %endfor
     %for invalid_tool_dependency in folder.invalid_tool_dependencies:
-        ${render_invalid_tool_dependency( invalid_tool_dependency, pad, my_row, row_counter )}
+        ${render_invalid_tool_dependency( invalid_tool_dependency, pad, my_row, row_counter, render_repository_actions_for=render_repository_actions_for )}
     %endfor
     %for index, tool_dependency in enumerate( folder.tool_dependencies ):
         <% row_is_header = index == 0 %>
-        ${render_tool_dependency( tool_dependency, pad, my_row, row_counter, row_is_header )}
+        ${render_tool_dependency( tool_dependency, pad, my_row, row_counter, row_is_header, render_repository_actions_for=render_repository_actions_for )}
     %endfor
     %if folder.valid_tools:
         %for index, tool in enumerate( folder.valid_tools ):
@@ -353,74 +353,74 @@
     %if folder.datatypes:
         %for index, datatype in enumerate( folder.datatypes ):
             <% row_is_header = index == 0 %>
-            ${render_datatype( datatype, pad, my_row, row_counter, row_is_header )}
+            ${render_datatype( datatype, pad, my_row, row_counter, row_is_header, render_repository_actions_for=render_repository_actions_for )}
         %endfor
     %endif
     %if folder.valid_data_managers:
         %for index, data_manager in enumerate( folder.valid_data_managers ):
             <% row_is_header = index == 0 %>
-            ${render_valid_data_manager( data_manager, pad, my_row, row_counter, row_is_header )}
+            ${render_valid_data_manager( data_manager, pad, my_row, row_counter, row_is_header, render_repository_actions_for=render_repository_actions_for )}
         %endfor
     %endif
     %if folder.invalid_data_managers:
         %for index, data_manager in enumerate( folder.invalid_data_managers ):
             <% row_is_header = index == 0 %>
-            ${render_invalid_data_manager( data_manager, pad, my_row, row_counter, row_is_header )}
+            ${render_invalid_data_manager( data_manager, pad, my_row, row_counter, row_is_header, render_repository_actions_for=render_repository_actions_for )}
         %endfor
     %endif
     %if folder.test_environments:
         %for test_environment in folder.test_environments:
-            ${render_test_environment( test_environment, pad, my_row, row_counter )}
+            ${render_test_environment( test_environment, pad, my_row, row_counter, render_repository_actions_for=render_repository_actions_for )}
         %endfor
     %endif
     %if folder.failed_tests:
         %for failed_test in folder.failed_tests:
-            ${render_failed_test( failed_test, pad, my_row, row_counter )}
+            ${render_failed_test( failed_test, pad, my_row, row_counter, render_repository_actions_for=render_repository_actions_for )}
         %endfor
     %endif
     %if folder.not_tested:
         %for not_tested in folder.not_tested:
-            ${render_not_tested( not_tested, pad, my_row, row_counter )}
+            ${render_not_tested( not_tested, pad, my_row, row_counter, render_repository_actions_for=render_repository_actions_for )}
         %endfor
     %endif
     %if folder.passed_tests:
         %for passed_test in folder.passed_tests:
-            ${render_passed_test( passed_test, pad, my_row, row_counter )}
+            ${render_passed_test( passed_test, pad, my_row, row_counter, render_repository_actions_for=render_repository_actions_for )}
         %endfor
     %endif
     %if folder.missing_test_components:
         %for missing_test_component in folder.missing_test_components:
-            ${render_missing_test_component( missing_test_component, pad, my_row, row_counter )}
+            ${render_missing_test_component( missing_test_component, pad, my_row, row_counter, render_repository_actions_for=render_repository_actions_for )}
         %endfor
     %endif
     %if folder.tool_dependency_installation_errors:
         %for tool_dependency_installation_error in folder.tool_dependency_installation_errors:
-            ${render_tool_dependency_installation_error( tool_dependency_installation_error, pad, my_row, row_counter )}
+            ${render_tool_dependency_installation_error( tool_dependency_installation_error, pad, my_row, row_counter, render_repository_actions_for=render_repository_actions_for )}
         %endfor
     %endif
     %if folder.tool_dependency_successful_installations:
         %for tool_dependency_successful_installation in folder.tool_dependency_successful_installations:
-            ${render_tool_dependency_successful_installation( tool_dependency_successful_installation, pad, my_row, row_counter )}
+            ${render_tool_dependency_successful_installation( tool_dependency_successful_installation, pad, my_row, row_counter, render_repository_actions_for=render_repository_actions_for )}
         %endfor
     %endif
     %if folder.repository_installation_errors:
         %for repository_installation_error in folder.repository_installation_errors:
-            ${render_repository_installation_error( repository_installation_error, pad, my_row, row_counter, is_current_repository=False )}
+            ${render_repository_installation_error( repository_installation_error, pad, my_row, row_counter, is_current_repository=False, render_repository_actions_for=render_repository_actions_for )}
         %endfor
     %endif
     %if folder.current_repository_installation_errors:
         %for repository_installation_error in folder.current_repository_installation_errors:
-            ${render_repository_installation_error( repository_installation_error, pad, my_row, row_counter, is_current_repository=True )}
+            ${render_repository_installation_error( repository_installation_error, pad, my_row, row_counter, is_current_repository=True, render_repository_actions_for=render_repository_actions_for )}
         %endfor
     %endif
     %if folder.repository_successful_installations:
         %for repository_successful_installation in folder.repository_successful_installations:
-            ${render_repository_successful_installation( repository_successful_installation, pad, my_row, row_counter )}
+            ${render_repository_successful_installation( repository_successful_installation, pad, my_row, row_counter, render_repository_actions_for=render_repository_actions_for )}
         %endfor
     %endif
 </%def>
 
-<%def name="render_datatype( datatype, pad, parent, row_counter, row_is_header=False )">
+<%def name="render_datatype( datatype, pad, parent, row_counter, row_is_header=False, render_repository_actions_for='tool_shed' )">
     <%
         encoded_id = trans.security.encode_id( datatype.id )
         if row_is_header:
@@ -444,7 +444,7 @@
     %>
 </%def>
 
-<%def name="render_failed_test( failed_test, pad, parent, row_counter, row_is_header=False )">
+<%def name="render_failed_test( failed_test, pad, parent, row_counter, row_is_header=False, render_repository_actions_for='tool_shed' )">
     <% 
         from tool_shed.util.shed_util_common import to_html_string
         encoded_id = trans.security.encode_id( failed_test.id )
@@ -470,7 +470,7 @@
     %>
 </%def>
 
-<%def name="render_invalid_data_manager( data_manager, pad, parent, row_counter, row_is_header=False )">
+<%def name="render_invalid_data_manager( data_manager, pad, parent, row_counter, row_is_header=False, render_repository_actions_for='tool_shed' )">
     <%
         encoded_id = trans.security.encode_id( data_manager.id )
         if row_is_header:
@@ -492,7 +492,7 @@
     %>
 </%def>
 
-<%def name="render_invalid_repository_dependency( invalid_repository_dependency, pad, parent, row_counter )">
+<%def name="render_invalid_repository_dependency( invalid_repository_dependency, pad, parent, row_counter, render_repository_actions_for='tool_shed' )">
     <%
         encoded_id = trans.security.encode_id( invalid_repository_dependency.id )
     %>
@@ -534,7 +534,7 @@
     %>
 </%def>
 
-<%def name="render_invalid_tool_dependency( invalid_tool_dependency, pad, parent, row_counter )">
+<%def name="render_invalid_tool_dependency( invalid_tool_dependency, pad, parent, row_counter, render_repository_actions_for='tool_shed' )">
     <%
         encoded_id = trans.security.encode_id( invalid_tool_dependency.id )
     %>
@@ -565,7 +565,7 @@
     %>
 </%def>
 
-<%def name="render_missing_test_component( missing_test_component, pad, parent, row_counter, row_is_header=False )">
+<%def name="render_missing_test_component( missing_test_component, pad, parent, row_counter, row_is_header=False, render_repository_actions_for='tool_shed' )">
     <%
         encoded_id = trans.security.encode_id( missing_test_component.id )
     %>
@@ -589,7 +589,7 @@
     %>
 </%def>
 
-<%def name="render_readme( readme, pad, parent, row_counter )">
+<%def name="render_readme( readme, pad, parent, row_counter, render_repository_actions_for='tool_shed' )">
     <% encoded_id = trans.security.encode_id( readme.id ) %>
     <tr class="datasetRow"
         %if parent is not None:
@@ -608,7 +608,7 @@
     %>
 </%def>
 
-<%def name="render_repository_dependency( repository_dependency, pad, parent, row_counter, row_is_header=False )">
+<%def name="render_repository_dependency( repository_dependency, pad, parent, row_counter, row_is_header=False, render_repository_actions_for='tool_shed' )">
     <%
         from galaxy.util import asbool
         from tool_shed.util.shed_util_common import get_repository_by_name_and_owner
@@ -634,6 +634,7 @@
                 cell_type = 'th'
             else:
                 cell_type = 'td'
+            rd = None
         else:
             # We're in the tool shed.
             cell_type = 'td'
@@ -665,7 +666,7 @@
             </${cell_type}>
         %else:
             <td style="padding-left: ${pad+20}px;">
-                %if rd:
+                %if render_repository_actions_for == 'tool_shed' and rd:
                     <a class="view-info" href="${h.url_for( controller='repository', action='view_or_manage_repository', id=trans.security.encode_id( rd.id ), changeset_revision=changeset_revision )}">Repository <b>${repository_name | h}</b> revision <b>${changeset_revision | h}</b> owned by <b>${repository_owner | h}</b></a>${prior_installation_required_str}
                 %else:
                     Repository <b>${repository_name | h}</b> revision <b>${changeset_revision | h}</b> owned by <b>${repository_owner | h}</b>${prior_installation_required_str}
@@ -694,7 +695,7 @@
     </style>
 </%def>
 
-<%def name="render_tool_dependency_installation_error( installation_error, pad, parent, row_counter, row_is_header=False )">
+<%def name="render_tool_dependency_installation_error( installation_error, pad, parent, row_counter, row_is_header=False, render_repository_actions_for='tool_shed' )">
     <%
         from galaxy.util import unicodify
         encoded_id = trans.security.encode_id( installation_error.id )
@@ -725,7 +726,7 @@
     %>
 </%def>
 
-<%def name="render_tool_dependency_successful_installation( successful_installation, pad, parent, row_counter, row_is_header=False )">
+<%def name="render_tool_dependency_successful_installation( successful_installation, pad, parent, row_counter, row_is_header=False, render_repository_actions_for='tool_shed' )">
     <%
         encoded_id = trans.security.encode_id( successful_installation.id )
     %>
@@ -755,7 +756,7 @@
     %>
 </%def>
 
-<%def name="render_repository_installation_error( installation_error, pad, parent, row_counter, row_is_header=False, is_current_repository=False )">
+<%def name="render_repository_installation_error( installation_error, pad, parent, row_counter, row_is_header=False, is_current_repository=False, render_repository_actions_for='tool_shed' )">
     <%
         from galaxy.util import unicodify
         encoded_id = trans.security.encode_id( installation_error.id )
@@ -789,7 +790,7 @@
     %>
 </%def>
 
-<%def name="render_repository_successful_installation( successful_installation, pad, parent, row_counter, row_is_header=False, is_current_repository=False )">
+<%def name="render_repository_successful_installation( successful_installation, pad, parent, row_counter, row_is_header=False, is_current_repository=False, render_repository_actions_for='tool_shed' )">
     <%
         encoded_id = trans.security.encode_id( successful_installation.id )
     %>
@@ -820,7 +821,7 @@
     %>
 </%def>
 
-<%def name="render_not_tested( not_tested, pad, parent, row_counter, row_is_header=False )">
+<%def name="render_not_tested( not_tested, pad, parent, row_counter, row_is_header=False, render_repository_actions_for='tool_shed' )">
     <%
         encoded_id = trans.security.encode_id( not_tested.id )
     %>
@@ -841,7 +842,7 @@
     %>
 </%def>
 
-<%def name="render_passed_test( passed_test, pad, parent, row_counter, row_is_header=False )">
+<%def name="render_passed_test( passed_test, pad, parent, row_counter, row_is_header=False, render_repository_actions_for='tool_shed' )">
     <%
         encoded_id = trans.security.encode_id( passed_test.id )
     %>
@@ -882,19 +883,20 @@
         %else:
             <td style="padding-left: ${pad+20}px;">
                 %if tool.repository_id:
-                    %if trans.webapp.name == 'tool_shed':
-                        <div style="float:left;" class="menubutton split popup" id="tool-${encoded_id}-popup">
-                            <a class="view-info" href="${h.url_for( controller='repository', action='display_tool', repository_id=trans.security.encode_id( tool.repository_id ), tool_config=tool.tool_config, changeset_revision=tool.changeset_revision, render_repository_actions_for=render_repository_actions_for )}">${tool.name | h}</a>
-                        </div>
-                        <div popupmenu="tool-${encoded_id}-popup">
-                            <a class="action-button" href="${h.url_for( controller='repository', action='view_tool_metadata', repository_id=trans.security.encode_id( tool.repository_id ), changeset_revision=tool.changeset_revision, tool_id=tool.tool_id, render_repository_actions_for=render_repository_actions_for )}">View tool metadata</a>
-                        </div>
-                    %else:
+                    <div style="float:left;" class="menubutton split popup" id="tool-${encoded_id}-popup">
+                        <a class="view-info" href="${h.url_for( controller='repository', action='display_tool', repository_id=trans.security.encode_id( tool.repository_id ), tool_config=tool.tool_config, changeset_revision=tool.changeset_revision, render_repository_actions_for=render_repository_actions_for )}">${tool.name | h}</a>
+                    </div>
+                    <div popupmenu="tool-${encoded_id}-popup">
+                        <a class="action-button" href="${h.url_for( controller='repository', action='view_tool_metadata', repository_id=trans.security.encode_id( tool.repository_id ), changeset_revision=tool.changeset_revision, tool_id=tool.tool_id, render_repository_actions_for=render_repository_actions_for )}">View tool metadata</a>
+                    </div>
+                    %if trans.webapp.name == 'galaxy':
                         %if tool.repository_installation_status == trans.install_model.ToolShedRepository.installation_status.INSTALLED:
                             <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='view_tool_metadata', repository_id=trans.security.encode_id( tool.repository_id ), changeset_revision=tool.changeset_revision, tool_id=tool.tool_id )}">${tool.name | h}</a>
                         %else:
                             ${tool.name | h}
                         %endif
+                    %else:
+                        ${tool.name | h}
                     %endif
                 %else:
                     ${tool.name | h}
@@ -911,7 +913,7 @@
     %>
 </%def>
 
-<%def name="render_tool_dependency( tool_dependency, pad, parent, row_counter, row_is_header )">
+<%def name="render_tool_dependency( tool_dependency, pad, parent, row_counter, row_is_header, render_repository_actions_for='tool_shed' )">
     <%
         from galaxy.util import string_as_bool
         encoded_id = trans.security.encode_id( tool_dependency.id )
@@ -967,7 +969,7 @@
     %>
 </%def>
 
-<%def name="render_test_environment( test_environment, pad, parent, row_counter, row_is_header=False )">
+<%def name="render_test_environment( test_environment, pad, parent, row_counter, row_is_header=False, render_repository_actions_for='tool_shed' )">
     <% encoded_id = trans.security.encode_id( test_environment.id ) %>
     <tr class="datasetRow"
         %if parent is not None:
@@ -994,7 +996,7 @@
     %>
 </%def>
 
-<%def name="render_valid_data_manager( data_manager, pad, parent, row_counter, row_is_header=False )">
+<%def name="render_valid_data_manager( data_manager, pad, parent, row_counter, row_is_header=False, render_repository_actions_for='tool_shed' )">
     <%
         encoded_id = trans.security.encode_id( data_manager.id )
         if row_is_header:
@@ -1109,7 +1111,7 @@
                 <p/>
                 <% row_counter = RowCounter() %>
                 <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="readme_files">
-                    ${render_folder( readme_files_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
+                    ${render_folder( readme_files_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True, render_repository_actions_for=render_repository_actions_for )}
                 </table>
             </div>
         </div>
@@ -1122,42 +1124,42 @@
                     <p/>
                     <% row_counter = RowCounter() %>
                     <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="invalid_repository_dependencies">
-                        ${render_folder( invalid_repository_dependencies_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
+                        ${render_folder( invalid_repository_dependencies_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True, render_repository_actions_for=render_repository_actions_for )}
                     </table>
                 %endif
                 %if missing_repository_dependencies_root_folder:
                     <p/>
                     <% row_counter = RowCounter() %>
                     <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="missing_repository_dependencies">
-                        ${render_folder( missing_repository_dependencies_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
+                        ${render_folder( missing_repository_dependencies_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True, render_repository_actions_for=render_repository_actions_for )}
                     </table>
                 %endif
                 %if repository_dependencies_root_folder:
                     <p/>
                     <% row_counter = RowCounter() %>
                     <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="repository_dependencies">
-                        ${render_folder( repository_dependencies_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
+                        ${render_folder( repository_dependencies_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True, render_repository_actions_for=render_repository_actions_for )}
                     </table>
                 %endif
                 %if invalid_tool_dependencies_root_folder:
                     <p/>
                     <% row_counter = RowCounter() %>
                     <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="invalid_tool_dependencies">
-                        ${render_folder( invalid_tool_dependencies_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
+                        ${render_folder( invalid_tool_dependencies_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True, render_repository_actions_for=render_repository_actions_for )}
                     </table>
                 %endif
                 %if tool_dependencies_root_folder:
                     <p/>
                     <% row_counter = RowCounter() %>
                     <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="tool_dependencies">
-                        ${render_folder( tool_dependencies_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
+                        ${render_folder( tool_dependencies_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True, render_repository_actions_for=render_repository_actions_for )}
                     </table>
                 %endif
                 %if missing_tool_dependencies_root_folder:
                     <p/>
                     <% row_counter = RowCounter() %>
                     <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="missing_tool_dependencies">
-                        ${render_folder( missing_tool_dependencies_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
+                        ${render_folder( missing_tool_dependencies_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True, render_repository_actions_for=render_repository_actions_for )}
                     </table>
                 %endif
             </div>
@@ -1186,14 +1188,14 @@
                     <p/>
                     <% row_counter = RowCounter() %>
                     <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="valid_data_managers">
-                        ${render_folder( valid_data_managers_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
+                        ${render_folder( valid_data_managers_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True, render_repository_actions_for=render_repository_actions_for )}
                     </table>
                 %endif
                 %if invalid_data_managers_root_folder:
                     <p/>
                     <% row_counter = RowCounter() %>
                     <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="invalid_data_managers">
-                        ${render_folder( invalid_data_managers_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
+                        ${render_folder( invalid_data_managers_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True, render_repository_actions_for=render_repository_actions_for )}
                     </table>
                 %endif
                 %if workflows_root_folder:
@@ -1207,7 +1209,7 @@
                     <p/>
                     <% row_counter = RowCounter() %>
                     <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="datatypes">
-                        ${render_folder( datatypes_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
+                        ${render_folder( datatypes_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True, render_repository_actions_for=render_repository_actions_for )}
                     </table>
                 %endif
             </div>
@@ -1222,7 +1224,7 @@
                 <p/>
                 <% row_counter = RowCounter() %>
                 <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="test_environment">
-                    ${render_folder( tool_test_results_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
+                    ${render_folder( tool_test_results_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True, render_repository_actions_for=render_repository_actions_for )}
                 </table>
             </div>
         </div>
