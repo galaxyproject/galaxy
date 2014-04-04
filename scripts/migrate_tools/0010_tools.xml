@@ -84,7 +84,7 @@
     <repository owner="devteam" name="rcve" changeset_revision="7740956d197b" description="Compute RCVE">
         <tool id="rcve1" version="1.0.0" file="regVariation/rcve.xml" />
     </repository>
-    <repository owner="devteam" name="realigner_target_creator" changeset_revision="b83a853a3156" description="Realigner Target Creator for use in local realignment">
+    <repository owner="devteam" name="realigner_target_creator" changeset_revision="5b8eaae854da" description="Realigner Target Creator for use in local realignment">
         <tool id="gatk_realigner_target_creator" version="0.0.4" file="gatk/realigner_target_creator.xml" />
     </repository>
     <repository owner="devteam" name="substitution_rates" changeset_revision="d1b35bcdaacc" description="Estimate substitution rates for non-coding regions">
