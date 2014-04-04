@@ -804,7 +804,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         Prepares the account activation link for the user.
         """
         activation_token = self.get_activation_token( trans, email )
-        activation_link = str( trans.request.host ) + url_for( controller='user', action='activate' ) + "?activation_token=" + str( activation_token ) + "&email=" + urllib.quote( email )
+        activation_link = url_for( controller='user', action='activate', activation_token=activation_token, email=email, qualified=True  )
         return activation_link
 
     def get_activation_token ( self, trans, email ):
