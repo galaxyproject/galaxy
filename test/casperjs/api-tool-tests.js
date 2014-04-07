@@ -1,29 +1,13 @@
-/* Utility to load a specific page and output html, page text, or a screenshot
- *  Optionally wait for some time, text, or dom selector
- */
-try {
-    //...if there's a better way - please let me know, universe
-    var scriptDir = require( 'system' ).args[3]
-            // remove the script filename
-            .replace( /[\w|\.|\-|_]*$/, '' )
-            // if given rel. path, prepend the curr dir
-            .replace( /^(?!\/)/, './' ),
-        spaceghost = require( scriptDir + 'spaceghost' ).create({
-            // script options here (can be overridden by CLI)
-            //verbose: true,
-            //logLevel: debug,
-            scriptDir: scriptDir
-        });
+var require = patchRequire( require ),
+    spaceghost = require( 'spaceghost' ).fromCasper( casper ),
+    xpath = require( 'casper' ).selectXPath,
+    utils = require( 'utils' ),
+    format = utils.format;
 
-} catch( error ){
-    console.debug( error );
-    phantom.exit( 1 );
-}
-spaceghost.start();
+spaceghost.test.begin( 'Test the tools API', 0, function suite( test ){
+    spaceghost.start();
 
 // =================================================================== SET UP
-var utils = require( 'utils' );
-
 var email = spaceghost.user.getRandomEmail(),
     password = '123456';
 if( spaceghost.fixtureData.testUser ){
@@ -31,17 +15,6 @@ if( spaceghost.fixtureData.testUser ){
     password = spaceghost.fixtureData.testUser.password;
 }
 spaceghost.user.loginOrRegisterUser( email, password );
-
-function hasKeys( object, keysArray ){
-    if( !utils.isObject( object ) ){ return false; }
-    for( var i=0; i<keysArray.length; i += 1 ){
-        if( !object.hasOwnProperty( keysArray[i] ) ){
-            spaceghost.debug( 'key not found: ' + keysArray[i] );
-            return false;
-        }
-    }
-    return true;
-}
 
 function compareObjs( obj1, where ){
     for( var key in where ){
@@ -132,7 +105,7 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
     this.test.comment( 'index panel form should be separated into sections (by default)' );
     var firstSection = toolIndex[0]; // get data
     //this.debug( this.jsonStr( firstSection ) );
-    this.test.assert( hasKeys( firstSection, panelSectionKeys ), 'Has the proper keys' );
+    this.test.assert( this.hasKeys( firstSection, panelSectionKeys ), 'Has the proper keys' );
     //TODO: test form of indiv. keys
 
     this.test.comment( 'index sections have a list of tool "elems"' );
@@ -142,7 +115,7 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
 
     var firstTool = firstSection.elems[0]; // get data
     //this.debug( this.jsonStr( firstTool ) );
-    this.test.assert( hasKeys( firstTool, panelToolKeys ), 'Has the proper keys' );
+    this.test.assert( this.hasKeys( firstTool, panelToolKeys ), 'Has the proper keys' );
 
     // ........................................................................................... in_panel=False
     this.test.comment( 'index should get a list of all tools when in_panel=false' );
@@ -154,7 +127,7 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
     this.test.comment( 'index non-panel form should be a simple list of tool summaries' );
     firstSection = toolIndex[0];
     //this.debug( this.jsonStr( firstSection ) );
-    this.test.assert( hasKeys( firstSection, toolSummaryKeys ), 'Has the proper keys' );
+    this.test.assert( this.hasKeys( firstSection, toolSummaryKeys ), 'Has the proper keys' );
     //TODO: test uniqueness of ids
     //TODO: test form of indiv. keys
 
@@ -169,7 +142,7 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
     this.test.comment( 'index with trackster=True should be separated into sections (by default)' );
     firstSection = toolIndex[0]; // get data
     //this.debug( this.jsonStr( firstSection ) );
-    this.test.assert( hasKeys( firstSection, panelSectionKeys ), 'Has the proper keys' );
+    this.test.assert( this.hasKeys( firstSection, panelSectionKeys ), 'Has the proper keys' );
     //TODO: test form of indiv. keys
 
     this.test.comment( 'index sections with trackster=True have a list of tool "elems"' );
@@ -179,7 +152,7 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
 
     firstTool = firstSection.elems[0]; // get data
     //this.debug( this.jsonStr( firstTool ) );
-    this.test.assert( hasKeys( firstTool, panelToolKeys ), 'Has the proper keys' );
+    this.test.assert( this.hasKeys( firstTool, panelToolKeys ), 'Has the proper keys' );
 
     // ............................................................................ trackster=True, in_panel=False
     // this yields the same as in_panel=False...
@@ -195,7 +168,7 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
     var toolShow = this.api.tools.show( selectFirst.id );
     //this.debug( this.jsonStr( toolShow ) );
     this.test.assert( utils.isObject( toolShow ), "show returned an object" );
-    this.test.assert( hasKeys( toolShow, toolDetailKeys ), 'Has the proper keys' );
+    this.test.assert( this.hasKeys( toolShow, toolDetailKeys ), 'Has the proper keys' );
 
     this.test.comment( 'show data should include an array of input objects' );
     this.test.assert( utils.isArray( toolShow.inputs ), "inputs is an array: "
@@ -205,7 +178,7 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
         var input = toolShow.inputs[i];
         this.test.comment( 'checking input #' + i + ': ' + ( input.name || '(no name)' ) );
         this.test.assert( utils.isObject( input ), "input is an object" );
-        this.test.assert( hasKeys( input, toolInputKeys ), 'Has the proper keys' );
+        this.test.assert( this.hasKeys( input, toolInputKeys ), 'Has the proper keys' );
     }
     //TODO: test form of indiv. keys
 
@@ -226,20 +199,21 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
         'upload_type': 'upload_dataset',
     };
     var toolCreate = this.api.tools.create( payload );
-    this.test.assert( hasKeys( toolCreate, ['outputs'] ), 'Has outputs' );
+    this.test.assert( this.hasKeys( toolCreate, ['outputs'] ), 'Has outputs' );
     var outputs = toolCreate['outputs'];
     this.test.assert( utils.isArray( outputs ), 'outputs is an array' );
     this.test.assert( outputs.length == 1, 'one dataset is created' );
 
     var output = outputs[0]
     this.test.assert( utils.isObject( output ), 'output0 is an array' );
-    this.test.assert( hasKeys( output, ['data_type', 'deleted', 'hid', 'history_id', 'id', 'name' ] ), 'Dataset information defined' );
-    this.test.assert( hasKeys( output, ['output_name' ] ), 'Output name labelled' );
+    this.test.assert( this.hasKeys( output, ['data_type', 'deleted', 'hid', 'history_id', 'id', 'name' ] ),
+        'Dataset information defined' );
+    this.test.assert( this.hasKeys( output, ['output_name' ] ), 'Output name labelled' );
 
     // ------------------------------------------------------------------------------------------- MISC
     //attemptShowOnAllTools.call( spaceghost );
 });
 
 // ===================================================================
-spaceghost.run( function(){
+    spaceghost.run( function(){ test.done(); });
 });

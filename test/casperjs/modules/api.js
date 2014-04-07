@@ -52,7 +52,8 @@ exports.APIError = APIError;
 
 */
 // =================================================================== INTERNAL
-var utils = require( 'utils' );
+var require = patchRequire( require ),
+    utils = require( 'utils' );
 
 API.prototype._ajax = function _ajax( url, options ){
     options = options || {};
@@ -167,7 +168,7 @@ API.prototype.hasJQuery = function hasJQuery(){
 
 API.prototype.ensureJQuery = function ensureJQuery(){
     if( !this.hasJQuery() ){
-        var absLoc = this.spaceghost.options.scriptDir + this.jQueryLocation,
+        var absLoc = this.jQueryLocation,
             injected = this.spaceghost.page.injectJs( absLoc );
         if( !injected ){
             throw new APIError( 'Could not inject jQuery' );

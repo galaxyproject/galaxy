@@ -1,29 +1,13 @@
-/* Utility to load a specific page and output html, page text, or a screenshot
- *  Optionally wait for some time, text, or dom selector
- */
-try {
-    //...if there's a better way - please let me know, universe
-    var scriptDir = require( 'system' ).args[3]
-            // remove the script filename
-            .replace( /[\w|\.|\-|_]*$/, '' )
-            // if given rel. path, prepend the curr dir
-            .replace( /^(?!\/)/, './' ),
-        spaceghost = require( scriptDir + 'spaceghost' ).create({
-            // script options here (can be overridden by CLI)
-            //verbose: true,
-            //logLevel: debug,
-            scriptDir: scriptDir
-        });
+var require = patchRequire( require ),
+    spaceghost = require( 'spaceghost' ).fromCasper( casper ),
+    xpath = require( 'casper' ).selectXPath,
+    utils = require( 'utils' ),
+    format = utils.format;
 
-} catch( error ){
-    console.debug( error );
-    phantom.exit( 1 );
-}
-spaceghost.start();
+spaceghost.test.begin( 'Test the workflows API', 0, function suite( test ){
+    spaceghost.start();
 
 // =================================================================== SET UP
-var utils = require( 'utils' );
-
 var email = spaceghost.user.getRandomEmail(),
     password = '123456';
 if( spaceghost.fixtureData.testUser ){
@@ -31,26 +15,6 @@ if( spaceghost.fixtureData.testUser ){
     password = spaceghost.fixtureData.testUser.password;
 }
 spaceghost.user.loginOrRegisterUser( email, password );
-
-function hasKeys( object, keysArray ){
-    if( !utils.isObject( object ) ){ return false; }
-    for( var i=0; i<keysArray.length; i += 1 ){
-        if( !object.hasOwnProperty( keysArray[i] ) ){
-            spaceghost.debug( 'key not found: ' + keysArray[i] );
-            return false;
-        }
-    }
-    return true;
-}
-
-function countKeys( object ){
-    if( !utils.isObject( object ) ){ return 0; }
-    var count = 0;
-    for( var key in object ){
-        if( object.hasOwnProperty( key ) ){ count += 1; }
-    }
-    return count;
-}
 
 // =================================================================== TESTS
 var workflowJSONFilepath = 'test-data/Bed_interval_lengths.ga',
@@ -81,7 +45,7 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
     this.test.comment( 'upload should return a summary object of what we uploaded' );
     //this.debug( this.jsonStr( returned ) );
     this.test.assert( utils.isObject( returned ), "upload returned an object" );
-    this.test.assert( hasKeys( returned, workflowSummaryKeys ), "upload's return has the proper keys" );
+    this.test.assert( this.hasKeys( returned, workflowSummaryKeys ), "upload's return has the proper keys" );
     this.test.assert( this.api.isEncodedId( returned.id ),
         "id is of the proper form: " + returned.id );
     this.test.assert( returned.model_class === workflowModelClass,
@@ -105,7 +69,7 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
 
     this.test.comment( 'index should have returned an object matching the workflow uploaded' );
     var firstWorkflow = workflowIndex[0];
-    this.test.assert( hasKeys( firstWorkflow, workflowSummaryKeys ), "index has the proper keys" );
+    this.test.assert( this.hasKeys( firstWorkflow, workflowSummaryKeys ), "index has the proper keys" );
     this.test.assert( this.api.isEncodedId( firstWorkflow.id ),
         "id is of the proper form: " + firstWorkflow.id );
     this.test.assert( firstWorkflow.model_class === workflowModelClass,
@@ -125,7 +89,7 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
     var workflowShow = this.api.workflows.show( firstWorkflow.id );
     this.debug( this.jsonStr( workflowShow ) );
     this.test.assert( utils.isObject( workflowShow ), "show returned an object" );
-    this.test.assert( hasKeys( workflowShow, workflowDetailKeys ), "show has the proper keys" );
+    this.test.assert( this.hasKeys( workflowShow, workflowDetailKeys ), "show has the proper keys" );
     this.test.assert( this.api.isEncodedId( workflowShow.id ),
         "id is of the proper form: " + workflowShow.id );
     this.test.assert( workflowShow.model_class === workflowModelClass,
@@ -147,7 +111,7 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
     //    if( inputs.hasOwnProperty( inputKey ) ){
     //    }
     //}
-    this.test.assert( countKeys( workflowShow.inputs ) === 0, "inputs is empty" );
+    this.test.assert( this.countKeys( workflowShow.inputs ) === 0, "inputs is empty" );
 
     this.test.comment( 'steps from show should be an object containing each tool defined as a step' );
     var steps = workflowShow.steps;
@@ -161,7 +125,7 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
             this.test.assert( utils.isString( stepKey ), "step key is a string: " + stepKey );
             var step = steps[ stepKey ];
             this.debug( 'step:\n' + this.jsonStr( step ) );
-            this.test.assert( hasKeys( step, stepKeys ), "step has the proper keys" );
+            this.test.assert( this.hasKeys( step, stepKeys ), "step has the proper keys" );
 
             this.test.assert( utils.isNumber( step.id ),
                 "step id is a number: " + step.id );
@@ -173,8 +137,8 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
             }
 
             this.test.assert( utils.isObject( step.input_steps ), "input_steps is an object" );
-            if( countKeys( step.input_steps ) !== 0 ){
-                this.test.assert( hasKeys( step.input_steps, [ 'input' ] ), "input_steps has the proper keys" );
+            if( this.countKeys( step.input_steps ) !== 0 ){
+                this.test.assert( this.hasKeys( step.input_steps, [ 'input' ] ), "input_steps has the proper keys" );
             }
 
             this.test.assert( step.type === 'tool',
@@ -185,7 +149,7 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
                 "step tool_id is a string: " + step.tool_id );
             var tool_used = this.api.tools.show( step.tool_id );
             //this.debug( this.jsonStr( tool_used ) )
-            this.test.assert( countKeys( step.input_steps ) !== 0, "found tool in api.tools for: " + step.tool_id );
+            this.test.assert( this.countKeys( step.input_steps ) !== 0, "found tool in api.tools for: " + step.tool_id );
 
             // trace the path through input_steps, source_steps
         }
@@ -215,7 +179,7 @@ spaceghost.then( function(){
     for( var stepKey in firstWorkflow.steps ){
         if( firstWorkflow.steps.hasOwnProperty( stepKey ) ){
             var step = firstWorkflow.steps[ stepKey ];
-            if( countKeys( step.input_steps ) === 0 ){
+            if( this.countKeys( step.input_steps ) === 0 ){
                 input_step = stepKey;
                 this.debug( 'input step: ' + this.jsonStr( step ) )
                 break;
@@ -238,7 +202,7 @@ spaceghost.then( function(){
     var returned = this.api.workflows.create( executionData );
     this.debug( this.jsonStr( returned ) );
     this.test.assert( utils.isObject( returned ), "create returned an object" );
-    this.test.assert( hasKeys( returned, workflowCreateKeys ), "create returned the proper keys" );
+    this.test.assert( this.hasKeys( returned, workflowCreateKeys ), "create returned the proper keys" );
     this.test.assert( this.api.isEncodedId( returned.history ),
         "history id is proper: " + returned.history );
     this.test.assert( utils.isArray( returned.outputs ),
@@ -285,5 +249,5 @@ spaceghost.then( function(){
 });
 
 // ===================================================================
-spaceghost.run( function(){
+    spaceghost.run( function(){ test.done(); });
 });
