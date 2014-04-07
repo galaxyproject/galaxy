@@ -39,7 +39,7 @@ spaceghost.thenOpen( spaceghost.baseUrl, function(){
 });
 
 // =================================================================== TESTS
-var summaryKeys = [ 'id', 'name', 'type', 'url' ],
+var summaryKeys = [ 'id', 'name', 'history_id', 'state', 'deleted', 'purged', 'visible', 'url', 'type' ],
     detailKeys  = [
         // the following are always present regardless of datatype
         'id', 'name', 'api_type', 'model_class',
@@ -100,6 +100,18 @@ spaceghost.then( function(){
 
     // ------------------------------------------------------------------------------------------- CREATE
     //TODO: create from_ld_id
+    this.test.comment( 'create should allow copying an accessible hda' );
+    hdaShow = this.api.hdas.show( lastHistory.id, firstHda.id );
+    var returned = this.api.hdas.create( lastHistory.id, {
+        source  : 'hda',
+        content : hdaShow.id
+    });
+    //this.debug( 'returned:' + this.jsonStr( returned ) );
+    this.test.assert( this.hasKeys( returned, detailKeys ), 'Has the proper keys' );
+    this.test.assert( typeof returned.id !== 'number' && isNaN( Number( returned.id ) ),
+        'id seems to be encoded: ' + returned.id );
+    this.test.assert( typeof returned.history_id !== 'number' && isNaN( Number( returned.history_id ) ),
+        'history_id seems to be encoded: ' + returned.history_id );
 
 
     // ------------------------------------------------------------------------------------------- UPDATE
