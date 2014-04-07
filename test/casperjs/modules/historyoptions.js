@@ -26,7 +26,8 @@ HistoryOptions.prototype.toString = function toString(){
 
 */
 // =================================================================== internal
-var xpath = require( 'casper' ).selectXPath;
+var require = patchRequire( require ),
+    xpath = require( 'casper' ).selectXPath;
 
 // =================================================================== API (external)
 /** Just open the menu

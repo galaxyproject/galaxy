@@ -254,7 +254,13 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             hda = history.add_dataset( data_copy )
 
         trans.sa_session.flush()
-        return hda.to_dict() if hda else None
+        if not hda:
+            return None
+        #TODO: duplicate code - use a serializer with a view
+        hda_dict = self.get_hda_dict( trans, hda )
+        hda_dict[ 'display_types' ] = self.get_old_display_applications( trans, hda )
+        hda_dict[ 'display_apps' ] = self.get_display_apps( trans, hda )
+        return hda_dict
 
     @expose_api_anonymous
     def update( self, trans, history_id, id, payload, **kwd ):

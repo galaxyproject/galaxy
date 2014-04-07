@@ -21,7 +21,8 @@ User.prototype.toString = function toString(){
 
 
 // =================================================================== INTERNAL
-var xpath = require( 'casper' ).selectXPath;
+var require = patchRequire( require ),
+    xpath = require( 'casper' ).selectXPath;
 
 /** Tests registering a new user on the Galaxy instance by submitting the registration form.
  *      NOTE: this version does NOT throw an error on a bad registration.

@@ -1,30 +1,14 @@
-/* Utility to load a specific page and output html, page text, or a screenshot
- *  Optionally wait for some time, text, or dom selector
- */
-try {
-    //...if there's a better way - please let me know, universe
-    var scriptDir = require( 'system' ).args[3]
-            // remove the script filename
-            .replace( /[\w|\.|\-|_]*$/, '' )
-            // if given rel. path, prepend the curr dir
-            .replace( /^(?!\/)/, './' ),
-        spaceghost = require( scriptDir + 'spaceghost' ).create({
-            // script options here (can be overridden by CLI)
-            //verbose: true,
-            //logLevel: debug,
-            scriptDir: scriptDir
-        });
+var require = patchRequire( require ),
+    spaceghost = require( 'spaceghost' ).fromCasper( casper ),
+    xpath = require( 'casper' ).selectXPath,
+    utils = require( 'utils' ),
+    format = utils.format;
 
-} catch( error ){
-    console.debug( error );
-    phantom.exit( 1 );
-}
-spaceghost.start();
-
+spaceghost.test.begin( 'Test permissions for accessible, published, and inaccessible histories '
+                        + 'over the API', 0, function suite( test ){
+    spaceghost.start();
 
 // =================================================================== SET UP
-var utils = require( 'utils' );
-
 var email = spaceghost.user.getRandomEmail(),
     password = '123456';
 if( spaceghost.fixtureData.testUser ){
@@ -102,9 +86,9 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
 
 //// ------------------------------------------------------------------------------------------- upload some files
 spaceghost.then( function(){
-    this.api.tools.thenUpload( inaccessibleHistory.id, { filepath: this.options.scriptDir + '/../../test-data/1.bed' });
-    this.api.tools.thenUpload(   accessibleHistory.id, { filepath: this.options.scriptDir + '/../../test-data/1.bed' });
-    this.api.tools.thenUpload(    publishedHistory.id, { filepath: this.options.scriptDir + '/../../test-data/1.bed' });
+    this.api.tools.thenUpload( inaccessibleHistory.id, { filepath: '../../test-data/1.bed' });
+    this.api.tools.thenUpload(   accessibleHistory.id, { filepath: '../../test-data/1.bed' });
+    this.api.tools.thenUpload(    publishedHistory.id, { filepath: '../../test-data/1.bed' });
 });
 spaceghost.then( function(){
     // check that they're there
@@ -273,5 +257,5 @@ spaceghost.user.logout();
 
 
 // ===================================================================
-spaceghost.run( function(){
+    spaceghost.run( function(){ test.done(); });
 });

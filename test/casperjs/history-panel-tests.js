@@ -1,28 +1,11 @@
-// have to handle errors here - or phantom/casper won't bail but _HANG_
-try {
-    var utils = require( 'utils' ),
-        xpath = require( 'casper' ).selectXPath,
-        format = utils.format,
+var require = patchRequire( require ),
+    spaceghost = require( 'spaceghost' ).fromCasper( casper ),
+    xpath = require( 'casper' ).selectXPath,
+    utils = require( 'utils' ),
+    format = utils.format;
 
-        //...if there's a better way - please let me know, universe
-        scriptDir = require( 'system' ).args[3]
-            // remove the script filename
-            .replace( /[\w|\.|\-|_]*$/, '' )
-            // if given rel. path, prepend the curr dir
-            .replace( /^(?!\/)/, './' ),
-        spaceghost = require( scriptDir + 'spaceghost' ).create({
-            // script options here (can be overridden by CLI)
-            //verbose: true,
-            //logLevel: debug,
-            scriptDir: scriptDir
-        });
-
+spaceghost.test.begin( 'Testing the form of the main/current history panel', 0, function suite( test ){
     spaceghost.start();
-
-} catch( error ){
-    console.debug( error );
-    phantom.exit( 1 );
-}
 
 // ===================================================================
 /* TODO:
@@ -157,11 +140,11 @@ spaceghost.then( function(){
 spaceghost.tools.uploadFile( filepathToUpload, function uploadCallback( _uploadInfo ){
     this.test.comment( 'uploaded file should appear in history' );
 
-    //this.debug( 'uploaded HDA info: ' + this.jsonStr( _uploadInfo ) );
+    this.debug( 'uploaded HDA info: ' + this.jsonStr( _uploadInfo ) );
     var hasHda = _uploadInfo.hdaElement,
         hasClass = _uploadInfo.hdaElement.attributes[ 'class' ],
         hasOkClass = _uploadInfo.hdaElement.attributes[ 'class' ].indexOf( wrapperOkClassName ) !== -1;
-    this.test.assert( ( hasHda && hasClass && hasOkClass ), "Uploaded file: " + _uploadInfo.name );
+    this.test.assert( ( hasHda && hasClass && hasOkClass ), "Uploaded file: " + _uploadInfo.filename );
     testUploadInfo = _uploadInfo;
 });
 
@@ -173,7 +156,7 @@ spaceghost.then( function checkPanelStructure(){
     this.test.assertVisible( nameSelector, 'History name is visible' );
     this.test.assertSelectorHasText( nameSelector, newHistoryName, 'History name is ' + newHistoryName );
 
-    var onetxtFilesize = require( 'fs' ).size( this.options.scriptDir + filepathToUpload ),
+    var onetxtFilesize = require( 'fs' ).size( filepathToUpload ),
         expectedSubtitle = onetxtFilesize + ' bytes';
     this.test.comment( "history subtitle should display size and size should be " + onetxtFilesize + " bytes" );
     this.test.assertExists( subtitleSelector, 'Found ' + subtitleSelector );
@@ -292,8 +275,8 @@ spaceghost.then( function(){
             "Body for uploaded file is not visible" );
     });
 });
-
+/*
+*/
 // ===================================================================
-spaceghost.run( function(){
-    this.test.done();
+    spaceghost.run( function(){ test.done(); });
 });

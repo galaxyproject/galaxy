@@ -1,29 +1,13 @@
-/* Utility to load a specific page and output html, page text, or a screenshot
- *  Optionally wait for some time, text, or dom selector
- */
-try {
-    //...if there's a better way - please let me know, universe
-    var scriptDir = require( 'system' ).args[3]
-            // remove the script filename
-            .replace( /[\w|\.|\-|_]*$/, '' )
-            // if given rel. path, prepend the curr dir
-            .replace( /^(?!\/)/, './' ),
-        spaceghost = require( scriptDir + 'spaceghost' ).create({
-            // script options here (can be overridden by CLI)
-            //verbose: true,
-            //logLevel: debug,
-            scriptDir: scriptDir
-        });
+var require = patchRequire( require ),
+    spaceghost = require( 'spaceghost' ).fromCasper( casper ),
+    xpath = require( 'casper' ).selectXPath,
+    utils = require( 'utils' ),
+    format = utils.format;
 
-} catch( error ){
-    console.debug( error );
-    phantom.exit( 1 );
-}
-spaceghost.start();
+spaceghost.test.begin( 'Test the Galaxy configuration API', 0, function suite( test ){
+    spaceghost.start();
 
 // =================================================================== SET UP
-var utils = require( 'utils' );
-
 var email = spaceghost.user.getRandomEmail(),
     password = '123456';
 if( spaceghost.fixtureData.testUser ){
@@ -31,35 +15,6 @@ if( spaceghost.fixtureData.testUser ){
     password = spaceghost.fixtureData.testUser.password;
 }
 spaceghost.user.loginOrRegisterUser( email, password );
-
-function hasKeys( object, keysArray ){
-    if( !utils.isObject( object ) ){ return false; }
-    for( var i=0; i<keysArray.length; i += 1 ){
-        if( !object.hasOwnProperty( keysArray[i] ) ){
-            spaceghost.debug( 'key not found: ' + keysArray[i] );
-            return false;
-        }
-    }
-    return true;
-}
-
-function compareObjs( obj1, where ){
-    for( var key in where ){
-        if( where.hasOwnProperty( key ) ){
-            if( !obj1.hasOwnProperty( key )  ){ return false; }
-            if( obj1[ key ] !== where[ key ] ){ return false; }
-        }
-    }
-    return true;
-}
-
-function findObject( objectArray, where, start ){
-    start = start || 0;
-    for( var i=start; i<objectArray.length; i += 1 ){
-        if( compareObjs( objectArray[i], where ) ){ return objectArray[i]; }
-    }
-    return null;
-}
 
 // =================================================================== TESTS
 var normKeys = [
@@ -89,7 +44,7 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
     var configIndex = this.api.configuration.index();
     this.debug( this.jsonStr( configIndex ) );
     this.test.assert( utils.isObject( configIndex ), "index returned an object" );
-    this.test.assert( hasKeys( configIndex, normKeys ), 'Has the proper keys' );
+    this.test.assert( this.hasKeys( configIndex, normKeys ), 'Has the proper keys' );
 
 });
 spaceghost.user.logout();
@@ -97,7 +52,7 @@ spaceghost.user.logout();
 // ------------------------------------------------------------------------------------------- INDEX (admin)
 spaceghost.tryStepsCatch( function tryAdminLogin(){
     spaceghost.user.loginAdmin();
-});
+}, function(){} );
 
 //}, function failedLoginRegister(){
 //    this.info( 'Admin level configuration API tests not run: no admin account available' );
@@ -109,7 +64,7 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
             configIndex = this.api.configuration.index();
             this.debug( this.jsonStr( configIndex ) );
             this.test.assert( utils.isObject( configIndex ), "index returned an object" );
-            this.test.assert( hasKeys( configIndex, adminKeys ), 'Has the proper keys' );
+            this.test.assert( this.hasKeys( configIndex, adminKeys ), 'Has the proper keys' );
 
         } else {
             this.info( 'Admin level configuration API tests not run: no admin account available' );
@@ -118,5 +73,6 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
 });
 
 // ===================================================================
-spaceghost.run( function(){
+    spaceghost.run( function(){ test.done(); });
 });
+

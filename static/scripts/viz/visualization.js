@@ -610,9 +610,8 @@ var GenomeDataManager = Cache.extend({
                 });
             },
             refseq: function(data, subregion) {
-                var seq_start = subregion.get('start') - entry.region.get('start'),
-                    seq_end = entry.data.length - ( entry.region.get('end') - subregion.get('end') );
-                return entry.data.slice(seq_start, seq_end);
+                var seq_start = subregion.get('start') - entry.region.get('start');
+                return entry.data.slice(seq_start, seq_start + subregion.length());
             }
         };
 
