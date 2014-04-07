@@ -49,7 +49,7 @@ return Backbone.Model.extend(
                     'id'    : chart.get('dataset_id'),
                     'src'   : 'hda'
                 },
-                'module'    : chart_type,
+                'module'    : chart_settings.execute,
                 'columns'   : columns_string,
                 'settings'  : settings_string
             }
@@ -82,7 +82,7 @@ return Backbone.Model.extend(
                     
                     // save
                     this.app.storage.save();
-                      
+                    
                     // wait for job completion
                     self._loop(job.id, function(job) {
                         switch (job.state) {

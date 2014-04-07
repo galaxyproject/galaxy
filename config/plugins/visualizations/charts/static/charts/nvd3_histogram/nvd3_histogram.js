@@ -1,5 +1,5 @@
 // dependencies
-define(['plugin/charts/_nvd3/nvd3'], function(NVD3) {
+define(['plugin/charts/nvd3/nvd3'], function(NVD3) {
 
 // widget
 return Backbone.View.extend(

@@ -35,6 +35,40 @@ var Label = Backbone.View.extend(
 });
 
 // plugin
+var Text = Backbone.View.extend(
+{
+    // options
+    optionsDefault: {
+        title  : '',
+        cls    : ''
+    },
+    
+    // initialize
+    initialize : function(options) {
+        // get options
+        this.options = Utils.merge(options, this.optionsDefault);
+            
+        // create new element
+        this.setElement(this._template(this.options));
+    },
+    
+    // title
+    title: function(new_title) {
+        this.$el.html(new_title);
+    },
+    
+    // template
+    _template: function(options) {
+        return '<div class="' + options.cls + '">' + options.title + '</div>';
+    },
+    
+    // value
+    value: function() {
+        return options.title;
+    }
+});
+
+// plugin
 var Button = Backbone.View.extend(
 {
     // options
@@ -517,16 +551,17 @@ var Input = Backbone.View.extend(
 
 // return
 return {
-    Label   : Label,
-    Button  : Button,
-    Icon  : Icon,
-    ButtonIcon : ButtonIcon,
-    Input : Input,
-    Anchor  : Anchor,
-    Message : Message,
-    Searchbox : Searchbox,
-    Title : Title,
-    Select : Select,
-    ButtonMenu : ButtonMenu
+    Label       : Label,
+    Button      : Button,
+    Icon        : Icon,
+    ButtonIcon  : ButtonIcon,
+    Input       : Input,
+    Anchor      : Anchor,
+    Message     : Message,
+    Searchbox   : Searchbox,
+    Title       : Title,
+    Text        : Text,
+    Select      : Select,
+    ButtonMenu  : ButtonMenu
 }
 });

@@ -15,7 +15,7 @@ return Backbone.View.extend(
     {
         // request data
         var self = this;
-        this.app.datasets.request(request_dictionary, function(data) {
+        this.app.datasets.request(request_dictionary, function() {
             nv.addGraph(function() {
                 // x axis
                 self._axis(nvd3_model.xAxis, chart.settings.get('x_axis_type'), chart.settings.get('x_axis_tick'));
@@ -47,9 +47,9 @@ return Backbone.View.extend(
                     callback(nvd3_model);
                 }
                 
-                // parse data to svg
-                self.options.svg.datum(data)
-                                .call(nvd3_model);
+                // parse data to canvas
+                self.options.canvas.datum(request_dictionary.groups)
+                                   .call(nvd3_model);
      
                 // refresh on window resize
                 nv.utils.windowResize(nvd3_model.update);

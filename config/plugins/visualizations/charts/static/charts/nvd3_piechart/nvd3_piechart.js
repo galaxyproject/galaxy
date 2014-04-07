@@ -15,7 +15,7 @@ return Backbone.View.extend(
     {
         // request data
         var self = this;
-        this.app.datasets.request(request_dictionary, function(data) {
+        this.app.datasets.request(request_dictionary, function() {
             
             // loop through data groups
             for (var key in request_dictionary.groups) {
@@ -38,8 +38,8 @@ return Backbone.View.extend(
                         .donut(true)
                         .showLegend(false);
                     
-                    self.options.svg.datum(pie_data)
-                                    .call(self.chart_3d);
+                    self.options.canvas.datum(pie_data)
+                                       .call(self.chart_3d);
 
                     nv.utils.windowResize(self.chart_3d.update);
                     

@@ -87,7 +87,7 @@ return Backbone.Collection.extend(
         index_string = index_string.substring(0, index_string.length - 1);
 
         // initialize result dictionary
-        var result = options.groups.slice(0);
+        var result = options.groups;
         for (var i in result) {
             result[i].values = [];
         }
@@ -141,7 +141,7 @@ return Backbone.Collection.extend(
                 }
                 
                 // callback
-                callback(result);
+                callback(options);
             });
     }
 });

@@ -1,22 +1,22 @@
 // dependencies
-define(['plugin/charts/bardiagram/config',
-        //'plugin/charts/boxplot/config',
-        'plugin/charts/histogram/config',
-        'plugin/charts/horizontal/config',
-        'plugin/charts/line/config',
-        'plugin/charts/linewithfocus/config',
-        'plugin/charts/piechart/config',
-        'plugin/charts/scatterplot/config',
-        'plugin/charts/stackedarea/config',
-        ], function(bardiagram,
-                    //boxplot,
-                    histogram,
-                    horizontal,
-                    line,
-                    linewithfocus,
-                    piechart,
-                    scatterplot,
-                    stackedarea
+define(['plugin/charts/nvd3_bardiagram/config',
+        'plugin/charts/nvd3_histogram/config',
+        'plugin/charts/nvd3_horizontal/config',
+        'plugin/charts/nvd3_line/config',
+        'plugin/charts/nvd3_linewithfocus/config',
+        'plugin/charts/nvd3_piechart/config',
+        'plugin/charts/nvd3_scatterplot/config',
+        'plugin/charts/nvd3_stackedarea/config',
+        'plugin/charts/highcharts_boxplot/config',
+        ], function(nvd3_bardiagram,
+                    nvd3_histogram,
+                    nvd3_horizontal,
+                    nvd3_line,
+                    nvd3_linewithfocus,
+                    nvd3_piechart,
+                    nvd3_scatterplot,
+                    nvd3_stackedarea,
+                    highcharts_boxplot
             ) {
 
 // widget
@@ -24,15 +24,15 @@ return Backbone.Model.extend(
 {
     // types
     defaults: {
-        'bardiagram' : bardiagram,
-        //'boxplot' : boxplot,
-        'horizontal' : horizontal,
-        'histogram' : histogram,
-        'line' : line,
-        'linewithfocus' : linewithfocus,
-        'piechart' : piechart,
-        'scatterplot' : scatterplot,
-        'stackedarea' : stackedarea
+        'nvd3_bardiagram'       : nvd3_bardiagram,
+        'nvd3_horizontal'       : nvd3_horizontal,
+        'nvd3_histogram'        : nvd3_histogram,
+        'nvd3_line'             : nvd3_line,
+        'nvd3_linewithfocus'    : nvd3_linewithfocus,
+        'nvd3_piechart'         : nvd3_piechart,
+        'nvd3_scatterplot'      : nvd3_scatterplot,
+        'nvd3_stackedarea'      : nvd3_stackedarea,
+        'highcharts_boxplot'    : highcharts_boxplot
     }
 });
 

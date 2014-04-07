@@ -2,6 +2,8 @@ define([], function() {
 
 return {
     title   : '',
+    library : 'nvd3.js',
+    element : 'svg',
     columns : {
         y : {
             title   : 'Values for y-axis'
