@@ -7,8 +7,8 @@
 			#set nm=$bam_file_for_name.name
 			${re.sub('\W',"_",nm)}
 		</param>
-		<param type="data" name="bai_file" url="${niceName}_${DATASET_HASH}.bam.bai" metadata="bam_index" strip_https="True" />
-		<param type="data" name="bam_file" url="${niceName}_${DATASET_HASH}.bam" strip_https="True" />
+		<param type="data" name="bai_file" url="${niceName}.bam.bai" metadata="bam_index" strip_https="True" />
+		<param type="data" name="bam_file" url="${niceName}.bam" strip_https="True" />
 	</link>
 
 </display>
