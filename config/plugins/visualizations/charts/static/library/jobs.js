@@ -133,7 +133,7 @@ return Backbone.Model.extend(
     // request job details
     _loop: function(id, callback) {
         var self = this;
-        Utils.request('GET', config.root + 'api/jobs/' + id, {}, function(job) {
+        Utils.request('GET', config.root + 'api/datasets/' + id, {}, function(job) {
             if (!callback(job)) {
                 setTimeout(function() { self._loop(id, callback); }, self.app.config.get('query_timeout'));
             }
