@@ -35,10 +35,10 @@
                         
                     }
                     var hiddenInput = document.createElement('input');
-					hiddenInput.type = 'hidden';
-					hiddenInput.name = button.name;
-					hiddenInput.value = button.value;
-					form.appendChild( hiddenInput );
+                    hiddenInput.type = 'hidden';
+                    hiddenInput.name = button.name;
+                    hiddenInput.value = button.value;
+                    form.appendChild( hiddenInput );
                     return true;
                 }
                 return false;
