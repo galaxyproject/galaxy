@@ -1661,7 +1661,7 @@ var TracksterTool = tools_mod.Tool.extend({
  var ToolParameterView = Backbone.View.extend({
 
     events: {
-        'change input': 'update_value'
+        'change :input': 'update_value'
     },
 
     render: function() {
