@@ -965,18 +965,23 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
         # -- Choose iterator. --
 
         # Calculate threshold for non-sequential iterators based on mean_depth and read length.
-        first_read = next( iterator )
+        try:
+            first_read = next( iterator )
+        except StopIteration:
+            # no reads.
+            return { 'data': [], 'message': None, 'max_low': start, 'max_high': start }
+
         read_len = len( first_read.seq )
         num_reads = ( end - start ) * mean_depth / float ( read_len )
         threshold = float( max_vals )/ num_reads
         iterator = itertools.chain( iter( [ first_read ] ), iterator )
 
         # Use specified iterator type, save for when threshold is >= 1.
-        # A threshold of >= 1 indicates all reads are to be returned, so no 
+        # A threshold of >= 1 indicates all reads are to be returned, so no
         # sampling needed and seqential iterator will be used.
         if iterator_type == 'sequential' or threshold >= 1:
             read_iterator = iterator
-        elif iterator_type == 'random':           
+        elif iterator_type == 'random':
             read_iterator = _random_read_iterator( iterator, threshold )
         elif iterator_type == 'nth':
             read_iterator = _nth_read_iterator( iterator, threshold )
@@ -1058,45 +1063,48 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
         # Clean up. TODO: is this needed? If so, we'll need a cleanup function after processing the data.
         # bamfile.close()
 
-        # If there are results and reference data, transform read sequence and cigar.
-        if len( results ) != 0 and ref_seq:
-            def process_read( read, start_field, cigar_field, seq_field ):
-                '''
-                Process a read using the designated fields.
-                '''
-                read_seq, read_cigar = get_ref_based_read_seq_and_cigar( read[ seq_field ].upper(),
-                                                                         read[ start_field ],
-                                                                         ref_seq,
-                                                                         start,
-                                                                         read[ cigar_field ] )
-                read[ seq_field ] = read_seq
-                read[ cigar_field ] = read_cigar
+        def compress_seq_and_cigar( read, start_field, cigar_field, seq_field ):
+            '''
+            Use reference-based compression to compress read sequence and cigar.
+            '''
+            read_seq, read_cigar = get_ref_based_read_seq_and_cigar( read[ seq_field ].upper(),
+                                                                     read[ start_field ],
+                                                                     ref_seq,
+                                                                     start,
+                                                                     read[ cigar_field ] )
+            read[ seq_field ] = read_seq
+            read[ cigar_field ] = read_cigar
 
-            def process_se_read( read ):
-                '''
-                Process single-end read.
-                '''
-                process_read( read, 1, 4, 6)
+        def convert_cigar( read, start_field, cigar_field, seq_field ):
+            '''
+            Convert read cigar from pysam format to string format.
+            '''
+            cigar_ops = 'MIDNSHP=X'
+            read_cigar = ''
+            for op_tuple in read[ cigar_field ]:
+                read_cigar += '%i%s' % ( op_tuple[1], cigar_ops[ op_tuple[0] ] )
+            read[ cigar_field ] = read_cigar
 
-            def process_pe_read( read ):
-                '''
-                Process paired-end read.
-                '''
+        # Choose method for processing reads. Use reference-based compression 
+        # if possible. Otherwise, convert cigar.
+        if ref_seq:
+            # Uppercase for easy comparison.
+            ref_seq = ref_seq.upper()
+            process_read = compress_seq_and_cigar
+        else:
+            process_read = convert_cigar
+
+        # Process reads.
+        for read in results:
+            if isinstance( read[ 5 ], list ):
+                # Paired-end read.
                 if len( read[4] ) > 2:
                     process_read( read[4], 0, 2, 4 )
                 if len( read[5] ) > 2:
                     process_read( read[5], 0, 2, 4 )
-
-            # Uppercase for easy comparison.
-            ref_seq = ref_seq.upper()
-
-            # Process reads.
-            for read in results:
-                # Use correct function for processing reads.
-                if isinstance( read[ 5 ], list ):
-                    process_pe_read( read )
-                else:
-                    process_se_read( read )
+            else:
+                # Single-end read.
+                process_read( read, 1, 4, 6)
 
         max_low, max_high = get_bounds( results, 1, 2 )
 
