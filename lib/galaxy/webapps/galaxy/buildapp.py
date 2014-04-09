@@ -304,10 +304,22 @@ def app_factory( global_conf, **kwargs ):
                             new={ 'install_repository_revision' : 'POST' },
                             parent_resources=dict( member_name='tool_shed_repository', collection_name='tool_shed_repositories' ) )
 
+
+    # ==== Trace/Metrics Logger
     # Connect logger from app
     if app.trace_logger:
         webapp.trace_logger = app.trace_logger
 
+    # metrics logging API
+    #webapp.mapper.connect( "index", "/api/metrics",
+    #    controller="metrics", action="index", conditions=dict( method=["GET"] ) )
+    #webapp.mapper.connect( "show", "/api/metrics/{id}",
+    #    controller="metrics", action="show", conditions=dict( method=["GET"] ) )
+    webapp.mapper.connect( "create", "/api/metrics",
+        controller="metrics", action="create", conditions=dict( method=["POST"] ) )
+
+
+    # ==== Done
     # Indicate that all configuration settings have been provided
     webapp.finalize_config()
 
