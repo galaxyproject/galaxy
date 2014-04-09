@@ -63,6 +63,7 @@ from galaxy.web import url_for
 from galaxy.web.form_builder import SelectField
 from galaxy.model.item_attrs import Dictifiable
 from galaxy.model import Workflow
+from tool_shed.util import common_util
 from tool_shed.util import shed_util_common as suc
 from .loader import load_tool, template_macro_params
 from .wrappers import (
@@ -467,6 +468,8 @@ class ToolBox( object, Dictifiable ):
                                              .first()
 
     def __get_tool_shed_repository( self, tool_shed, name, owner, installed_changeset_revision ):
+        # We store only the port, if one exists, in the database.
+        tool_shed = common_util.remove_protocol_from_tool_shed_url( tool_shed )
         return self.app.install_model.context.query( self.app.install_model.ToolShedRepository ) \
                               .filter( and_( self.app.install_model.ToolShedRepository.table.c.tool_shed == tool_shed,
                                              self.app.install_model.ToolShedRepository.table.c.name == name,
@@ -532,7 +535,10 @@ class ToolBox( object, Dictifiable ):
                     # Backward compatibility issue - the tag used to be named 'changeset_revision'.
                     installed_changeset_revision_elem = elem.find( "changeset_revision" )
                 installed_changeset_revision = installed_changeset_revision_elem.text
-                tool_shed_repository = self.__get_tool_shed_repository( tool_shed, repository_name, repository_owner, installed_changeset_revision )
+                tool_shed_repository = self.__get_tool_shed_repository( tool_shed,
+                                                                        repository_name,
+                                                                        repository_owner,
+                                                                        installed_changeset_revision )
                 if tool_shed_repository:
                     # Only load tools if the repository is not deactivated or uninstalled.
                     can_load_into_panel_dict = not tool_shed_repository.deleted

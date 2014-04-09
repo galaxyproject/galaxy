@@ -207,9 +207,9 @@ class ToolShedRepositoriesController( BaseAPIController ):
         # Keep track of all repositories that are installed - there may be more than one if repository dependencies are installed.
         installed_tool_shed_repositories = []
         # Get all of the information necessary for installing the repository from the specified tool shed.
-        url = suc.url_join( tool_shed_url,
-                            'api/repositories/get_repository_revision_install_info?name=%s&owner=%s&changeset_revision=%s' % \
-                            ( name, owner, changeset_revision ) )
+        params = '?name=%s&owner=%s&changeset_revision=%s' % ( name, owner, changeset_revision )
+        url = common_util.url_join( tool_shed_url,
+                                    'api/repositories/get_repository_revision_install_info%s' % params )
         try:
             raw_text = common_util.tool_shed_get( trans.app, tool_shed_url, url )
         except Exception, e:

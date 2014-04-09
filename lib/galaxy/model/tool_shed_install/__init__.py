@@ -123,12 +123,8 @@ class ToolShedRepository( object ):
                                 self.shed_config_filename = name
                                 return shed_tool_conf_dict
         if self.includes_datatypes:
-            #we need to search by filepaths here, which is less desirable
-            tool_shed_url = self.tool_shed
-            if tool_shed_url.find( ':' ) > 0:
-                # Eliminate the port, if any, since it will result in an invalid directory name.
-                tool_shed_url = tool_shed_url.split( ':' )[ 0 ]
-            tool_shed = tool_shed_url.rstrip( '/' )
+            # We need to search by file paths here, which is less desirable.
+            tool_shed = common_util.remove_protocol_and_port_from_tool_shed_url( self.tool_shed )
             for shed_tool_conf_dict in app.toolbox.shed_tool_confs:
                 tool_path = shed_tool_conf_dict[ 'tool_path' ]
                 relative_path = os.path.join( tool_path, tool_shed, 'repos', self.owner, self.name, self.installed_changeset_revision )
@@ -271,11 +267,7 @@ class ToolShedRepository( object ):
         return None
 
     def repo_path( self, app ):
-        tool_shed_url = self.tool_shed
-        if tool_shed_url.find( ':' ) > 0:
-            # Eliminate the port, if any, since it will result in an invalid directory name.
-            tool_shed_url = tool_shed_url.split( ':' )[ 0 ]
-        tool_shed = tool_shed_url.rstrip( '/' )
+        tool_shed = common_util.remove_protocol_and_port_from_tool_shed_url( self.tool_shed )
         for index, shed_tool_conf_dict in enumerate( app.toolbox.shed_tool_confs ):
             tool_path = shed_tool_conf_dict[ 'tool_path' ]
             relative_path = os.path.join( tool_path, tool_shed, 'repos', self.owner, self.name, self.installed_changeset_revision )
@@ -339,7 +331,7 @@ class ToolShedRepository( object ):
         be installed in order for this repository to function correctly.  However, those repository dependencies that are defined for this
         repository with prior_installation_required set to True place them in a special category in that the required repositories must be
         installed before this repository is installed.  Among other things, this enables these "special" repository dependencies to include
-        information that enables the successful intallation of this repository.  This method is not used during the initial installation of
+        information that enables the successful installation of this repository.  This method is not used during the initial installation of
         this repository, but only after it has been installed (metadata must be set for this repository in order for this method to be useful).
         """
         required_rd_tups_that_must_be_installed = []
@@ -347,12 +339,14 @@ class ToolShedRepository( object ):
             rd_tups = self.metadata[ 'repository_dependencies' ][ 'repository_dependencies' ]
             for rd_tup in rd_tups:
                 if len( rd_tup ) == 5:
-                    tool_shed, name, owner, changeset_revision, prior_installation_required = rd_tup
+                    tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
+                    common_util.parse_repository_dependency_tuple( rd_tup, contains_error=False )
                     if asbool( prior_installation_required ):
                         required_rd_tups_that_must_be_installed.append( ( tool_shed, name, owner, changeset_revision, 'True', 'False' ) )
                 elif len( rd_tup ) == 6:
-                    tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = rd_tup
-                    # The repository dependency will only be required to be previsously installed if it does not fall into the category of
+                    tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
+                    common_util.parse_repository_dependency_tuple( rd_tup, contains_error=False )
+                    # The repository dependency will only be required to be previously installed if it does not fall into the category of
                     # a repository that must be installed only so that it's contained tool dependency can be used for compiling the tool
                     # dependency of the dependent repository.
                     if not asbool( only_if_compiling_contained_td ):

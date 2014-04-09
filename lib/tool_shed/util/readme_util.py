@@ -95,9 +95,11 @@ def get_readme_files_dict_for_display( trans, tool_shed_url, repo_info_dict ):
     repo_info_tuple = repo_info_dict[ name ]
     description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, installed_td = \
         suc.get_repo_info_tuple_contents( repo_info_tuple )
-    # Handle README files.
-    url = suc.url_join( tool_shed_url,
-                       'repository/get_readme_files?name=%s&owner=%s&changeset_revision=%s' % ( name, repository_owner, changeset_revision ) )
+    # Handle changing HTTP protocols over time.
+    tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( trans.app, tool_shed_url )
+    params = '?name=%s&owner=%s&changeset_revision=%s' % ( name, repository_owner, changeset_revision )
+    url = common_util.url_join( tool_shed_url,
+                                'repository/get_readme_files%s' % params )
     raw_text = common_util.tool_shed_get( trans.app, tool_shed_url, url )
     readme_files_dict = json.from_json_string( raw_text )
     return readme_files_dict

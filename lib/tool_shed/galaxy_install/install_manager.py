@@ -58,8 +58,8 @@ class InstallManager( object ):
             else:
                 root = tree.getroot()
                 defined_tool_shed_url = root.get( 'name' )
-                self.tool_shed_url = suc.get_url_from_tool_shed( self.app, defined_tool_shed_url )
-                self.tool_shed = suc.clean_tool_shed_url( defined_tool_shed_url )
+                self.tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( self.app, defined_tool_shed_url )
+                self.tool_shed = common_util.remove_protocol_and_port_from_tool_shed_url( self.tool_shed_url )
                 self.repository_owner = common_util.REPOSITORY_OWNER
                 index, self.shed_config_dict = suc.get_shed_tool_conf_dict( app, self.migrated_tools_config )
                 # Since tool migration scripts can be executed any number of times, we need to make sure the appropriate tools are defined in
@@ -101,7 +101,11 @@ class InstallManager( object ):
                                 name = repository_elem.get( 'name' )
                                 changeset_revision = repository_elem.get( 'changeset_revision' )
                                 tool_shed_accessible, repository_dependencies_dict = \
-                                    common_util.get_repository_dependencies( app, self.tool_shed_url, name, self.repository_owner, changeset_revision )
+                                    common_util.get_repository_dependencies( app,
+                                                                             self.tool_shed_url,
+                                                                             name,
+                                                                             self.repository_owner,
+                                                                             changeset_revision )
                                 # Make sure all repository dependency records exist (as tool_shed_repository table rows) in the Galaxy database.
                                 created_tool_shed_repositories = self.create_or_update_tool_shed_repository_records( name,
                                                                                                                      changeset_revision,
@@ -155,12 +159,15 @@ class InstallManager( object ):
 
     def create_or_update_tool_shed_repository_records( self, name, changeset_revision, repository_dependencies_dict ):
         """
-        Make sure the repository defined by name and changeset_revision and all of it's repository dependencies have associated tool_shed_repository
-        table rows in the Galaxy database.
+        Make sure the repository defined by name and changeset_revision and all of it's repository dependencies have
+        associated tool_shed_repository table rows in the Galaxy database.
         """
         created_tool_shed_repositories = []
         description = repository_dependencies_dict.get( 'description', None )
-        tool_shed_repository = self.create_or_update_tool_shed_repository_record( name, self.repository_owner, changeset_revision, description=description )
+        tool_shed_repository = self.create_or_update_tool_shed_repository_record( name,
+                                                                                  self.repository_owner,
+                                                                                  changeset_revision,
+                                                                                  description=description )
         if tool_shed_repository:
             created_tool_shed_repositories.append( tool_shed_repository )
         for rd_key, rd_tups in repository_dependencies_dict.items():
@@ -170,7 +177,10 @@ class InstallManager( object ):
                 parsed_rd_tup = common_util.parse_repository_dependency_tuple( rd_tup )
                 rd_tool_shed, rd_name, rd_owner, rd_changeset_revision = parsed_rd_tup[ 0:4 ]
                 # TODO: Make sure the repository description is applied to the new repository record during installation.
-                tool_shed_repository = self.create_or_update_tool_shed_repository_record( rd_name, rd_owner, rd_changeset_revision, description=None )
+                tool_shed_repository = self.create_or_update_tool_shed_repository_record( rd_name,
+                                                                                          rd_owner,
+                                                                                          rd_changeset_revision,
+                                                                                          description=None )
                 if tool_shed_repository:
                     created_tool_shed_repositories.append( tool_shed_repository )
         return created_tool_shed_repositories
@@ -451,7 +461,7 @@ class InstallManager( object ):
             converter_path, display_path = datatype_util.alter_config_and_load_prorietary_datatypes( self.app, datatypes_config, repo_install_dir, override=False ) #repo_install_dir was relative_install_dir
             if converter_path or display_path:
                 # Create a dictionary of tool shed repository related information.
-                repository_dict = datatype_util.create_repository_dict_for_proprietary_datatypes( tool_shed=self.tool_shed,
+                repository_dict = datatype_util.create_repository_dict_for_proprietary_datatypes( tool_shed=self.tool_shed_url,
                                                                                                   name=tool_shed_repository.name,
                                                                                                   owner=self.repository_owner,
                                                                                                   installed_changeset_revision=tool_shed_repository.installed_changeset_revision,

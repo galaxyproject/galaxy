@@ -343,7 +343,6 @@ def upload_capsule( trans, **kwd ):
             return_dict[ 'error_message' ] = error_message
             return_dict[ 'status' ] = 'error'
             uploaded_file.close()
-            tar_archive.close()
             return return_dict
         return_dict[ 'tar_archive' ] = tar_archive
         return_dict[ 'capsule_file_name' ] = uploaded_file_filename

@@ -22,8 +22,10 @@ log = logging.getLogger( __name__ )
 
 def create_temporary_tool_dependencies_config( app, tool_shed_url, name, owner, changeset_revision ):
     """Make a call to the tool shed to get the required repository's tool_dependencies.xml file."""
-    url = url_join( tool_shed_url,
-                    'repository/get_tool_dependencies_config_contents?name=%s&owner=%s&changeset_revision=%s' % ( name, owner, changeset_revision ) )
+    tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( app, tool_shed_url )
+    params = '?name=%s&owner=%s&changeset_revision=%s' % ( name, owner, changeset_revision )
+    url = common_util.url_join( tool_shed_url,
+                    'repository/get_tool_dependencies_config_contents%s' % params )
     text = common_util.tool_shed_get( app, tool_shed_url, url )
     if text:
         # Write the contents to a temporary file on disk so it can be reloaded and parsed.
@@ -132,7 +134,8 @@ def get_absolute_path_to_file_in_repository( repo_files_dir, file_name ):
 
 def get_tool_shed_repository_by_tool_shed_name_owner_changeset_revision( app, tool_shed_url, name, owner, changeset_revision ):
     sa_session = app.install_model.context
-    tool_shed = td_common_util.clean_tool_shed_url( tool_shed_url )
+    # The protocol is not stored, but the port is if it exists.
+    tool_shed = common_util.remove_protocol_from_tool_shed_url( tool_shed_url )
     tool_shed_repository =  sa_session.query( app.install_model.ToolShedRepository ) \
                                       .filter( and_( app.install_model.ToolShedRepository.table.c.tool_shed == tool_shed,
                                                      app.install_model.ToolShedRepository.table.c.name == name,
@@ -165,8 +168,10 @@ def get_updated_changeset_revisions_from_tool_shed( app, tool_shed_url, name, ow
     Get all appropriate newer changeset revisions for the repository defined by
     the received tool_shed_url / name / owner combination.
     """
-    url = suc.url_join( tool_shed_url,
-                        'repository/updated_changeset_revisions?name=%s&owner=%s&changeset_revision=%s' % ( name, owner, changeset_revision ) )
+    tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( app, tool_shed_url )
+    params = '?name=%s&owner=%s&changeset_revision=%s' % ( name, owner, changeset_revision )
+    url = common_util.url_join( tool_shed_url,
+                                'repository/updated_changeset_revisions%s' % params )
     text = common_util.tool_shed_get( app, tool_shed_url, url )
     return text
 
@@ -180,6 +185,8 @@ def handle_complex_repository_dependency_for_package( app, elem, package_name, p
     """
     handled_tool_dependencies = []
     tool_shed = elem.attrib[ 'toolshed' ]
+    # The protocol is not stored, but the port is if it exists.
+    tool_shed = common_util.remove_protocol_from_tool_shed_url( tool_shed )
     required_repository_name = elem.attrib[ 'name' ]
     required_repository_owner = elem.attrib[ 'owner' ]
     default_required_repository_changeset_revision = elem.attrib[ 'changeset_revision' ]
@@ -950,9 +957,3 @@ def strip_path( fpath ):
     except:
         file_name = fpath
     return file_name
-
-def url_join( *args ):
-    parts = []
-    for arg in args:
-        parts.append( arg.strip( '/' ) )
-    return '/'.join( parts )

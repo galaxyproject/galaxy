@@ -9,6 +9,7 @@ import traceback
 import urllib2
 import zipfile
 from string import Template
+from tool_shed.util import common_util
 import tool_shed.util.shed_util_common as suc
 from galaxy.datatypes import checkers
 
@@ -108,19 +109,6 @@ class CompressedFile( object ):
     def open_zip( self, filepath, mode ):
         return zipfile.ZipFile( filepath, mode )
 
-def clean_tool_shed_url( base_url ):
-    if base_url:
-        if base_url.find( '://' ) > -1:
-            try:
-                protocol, base = base_url.split( '://' )
-            except ValueError, e:
-                # The received base_url must be an invalid url.
-                log.debug( "Returning unchanged invalid base_url from td_common_util.clean_tool_shed_url: %s" % str( base_url ) )
-                return base_url
-            return base.rstrip( '/' )
-        return base_url.rstrip( '/' )
-    return base_url
-
 def create_env_var_dict( elem, tool_dependency_install_dir=None, tool_shed_repository_install_dir=None ):
     env_var_name = elem.get( 'name', 'PATH' )
     env_var_action = elem.get( 'action', 'prepend_to' )
@@ -192,7 +180,8 @@ def get_env_shell_file_paths( app, elem ):
     repository_owner = elem.get( 'owner', None )
     changeset_revision = elem.get( 'changeset_revision', None )
     if toolshed and repository_name and repository_owner and changeset_revision:
-        toolshed = clean_tool_shed_url( toolshed )
+         # The protocol is not stored, but the port is if it exists.
+        toolshed = common_util.remove_protocol_from_tool_shed_url( toolshed )
         repository = suc.get_repository_for_dependency_relationship( app, toolshed, repository_name, repository_owner, changeset_revision )
         if repository:
             for sub_elem in elem:
@@ -203,7 +192,9 @@ def get_env_shell_file_paths( app, elem ):
                     # Get the tool_dependency so we can get it's installation directory.
                     tool_dependency = None
                     for tool_dependency in repository.tool_dependencies:
-                        if tool_dependency.type == tool_dependency_type and tool_dependency.name == tool_dependency_name and tool_dependency.version == tool_dependency_version:
+                        if tool_dependency.type == tool_dependency_type and \
+                            tool_dependency.name == tool_dependency_name and \
+                            tool_dependency.version == tool_dependency_version:
                             break
                     if tool_dependency:
                         tool_dependency_key = '%s/%s' % ( tool_dependency_name, tool_dependency_version )

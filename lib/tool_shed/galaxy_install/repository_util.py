@@ -64,13 +64,13 @@ def create_repo_info_dict( trans, repository_clone_url, changeset_revision, ctx_
         if repository_metadata:
             metadata = repository_metadata.metadata
             if metadata:
-                toolshed_url = str( web.url_for( '/', qualified=True ) ).rstrip( '/' )
+                tool_shed_url = str( web.url_for( '/', qualified=True ) ).rstrip( '/' )
                 # Get a dictionary of all repositories upon which the contents of the received repository depends.
                 repository_dependencies = \
                     repository_dependency_util.get_repository_dependencies_for_changeset_revision( trans=trans,
                                                                                                    repository=repository,
                                                                                                    repository_metadata=repository_metadata,
-                                                                                                   toolshed_base_url=toolshed_url,
+                                                                                                   toolshed_base_url=tool_shed_url,
                                                                                                    key_rd_dicts_to_be_processed=None,
                                                                                                    all_repository_dependencies=None,
                                                                                                    handled_key_rd_dicts=None,
@@ -187,7 +187,7 @@ def get_repo_info_dict( trans, repository_id, changeset_revision ):
     repository = suc.get_repository_in_tool_shed( trans, repository_id )
     repo_dir = repository.repo_path( trans.app )
     repo = hg.repository( suc.get_configured_ui(), repo_dir )
-    repository_clone_url = suc.generate_clone_url_for_repository_in_tool_shed( trans, repository )
+    repository_clone_url = common_util.generate_clone_url_for_repository_in_tool_shed( trans, repository )
     repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans,
                                                                              repository_id,
                                                                              changeset_revision )
@@ -241,20 +241,23 @@ def get_repo_info_dict( trans, repository_id, changeset_revision ):
 
 def get_repo_info_dict_for_repair( trans, repository ):
     tool_panel_section_key = None
-    repository_clone_url = suc.generate_clone_url_for_installed_repository( trans.app, repository )
-    repository_dependencies = repository_dependency_util.get_repository_dependencies_for_installed_tool_shed_repository( trans, repository )
+    repository_clone_url = common_util.generate_clone_url_for_installed_repository( trans.app, repository )
+    repository_dependencies = \
+        repository_dependency_util.get_repository_dependencies_for_installed_tool_shed_repository( trans, repository )
     metadata = repository.metadata
     if metadata:
         tool_dependencies = metadata.get( 'tool_dependencies', None )
         tool_panel_section_dict = metadata.get( 'tool_panel_section', None )
         if tool_panel_section_dict:
             # The repository must be in the uninstalled state.  The structure of tool_panel_section_dict is:
-            # {<tool guid> : [{ 'id':<section id>, 'name':<section name>, 'version':<section version>, 'tool_config':<tool config file name> }]}
+            # {<tool guid> : 
+            # [{ 'id':<section id>, 'name':<section name>, 'version':<section version>, 'tool_config':<tool config file name> }]}
             # Here is an example:
             # {"localhost:9009/repos/test/filter/Filter1/1.1.0":
-            #    [{"id": "filter_and_sort", "name": "Filter and Sort", "tool_config": "filtering.xml", "version": ""}]}
-            # Currently all tools contained within an installed tool shed repository must be loaded into the same section in the tool panel, so we can
-            # get the section id of the first guid in the tool_panel_section_dict.  In the future, we'll have to handle different sections per guid.
+            # [{"id": "filter_and_sort", "name": "Filter and Sort", "tool_config": "filtering.xml", "version": ""}]}
+            # Currently all tools contained within an installed tool shed repository must be loaded into the same
+            # section in the tool panel, so we can get the section id of the first guid in the tool_panel_section_dict.
+            # In the future, we'll have to handle different sections per guid.
             guid = tool_panel_section_dict.keys()[ 0 ]
             section_dicts = tool_panel_section_dict[ guid ]
             section_dict = section_dicts[ 0 ]
@@ -315,9 +318,11 @@ def get_tool_shed_repository_ids( as_string=False, **kwd ):
 def get_update_to_changeset_revision_and_ctx_rev( trans, repository ):
     """Return the changeset revision hash to which the repository can be updated."""
     changeset_revision_dict = {}
-    tool_shed_url = suc.get_url_from_tool_shed( trans.app, repository.tool_shed )
-    url = suc.url_join( tool_shed_url, 'repository/get_changeset_revision_and_ctx_rev?name=%s&owner=%s&changeset_revision=%s' % \
-        ( repository.name, repository.owner, repository.installed_changeset_revision ) )
+    tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( trans.app, str( repository.tool_shed ) )
+    params = '?name=%s&owner=%s&changeset_revision=%s' % ( str( repository.name ),
+                                                           str( repository.owner ),
+                                                           str( repository.installed_changeset_revision ) )
+    url = common_util.url_join( tool_shed_url, 'repository/get_changeset_revision_and_ctx_rev%s' % params )
     try:
         encoded_update_dict = common_util.tool_shed_get( trans.app, tool_shed_url, url )
         if encoded_update_dict:
@@ -588,10 +593,12 @@ def install_tool_shed_repository( trans, tool_shed_repository, repo_info_dict, t
             suc.update_tool_shed_repository_status( trans.app,
                                                     tool_shed_repository,
                                                     trans.install_model.ToolShedRepository.installation_status.SETTING_TOOL_VERSIONS )
-            tool_shed_url = suc.get_url_from_tool_shed( trans.app, tool_shed_repository.tool_shed )
-            url = suc.url_join( tool_shed_url,
-                                '/repository/get_tool_versions?name=%s&owner=%s&changeset_revision=%s' %
-                                ( tool_shed_repository.name, tool_shed_repository.owner, tool_shed_repository.changeset_revision ) )
+            tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( trans.app, str( tool_shed_repository.tool_shed ) )
+            params = '?name=%s&owner=%s&changeset_revision=%s' % ( str( tool_shed_repository.name ),
+                                                                   str( tool_shed_repository.owner ),
+                                                                   str( tool_shed_repository.changeset_revision ) )
+            url = common_util.url_join( tool_shed_url,
+                                        '/repository/get_tool_versions%s' % params )
             text = common_util.tool_shed_get( trans.app, tool_shed_url, url )
             if text:
                 tool_version_dicts = json.from_json_string( text )

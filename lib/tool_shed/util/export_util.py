@@ -12,6 +12,7 @@ from galaxy import web
 from galaxy.util.odict import odict
 from tool_shed.util import commit_util
 from tool_shed.util import common_install_util
+from tool_shed.util import common_util
 from tool_shed.util import encoding_util
 from tool_shed.util import repository_dependency_util
 from tool_shed.util import xml_util
@@ -48,12 +49,6 @@ def archive_repository_revision( trans, ui, repository, archive_dir, changeset_r
             ( str( changeset_revision ), str( repository.name ), str( e ), str( return_code ) )
         log.exception( error_message )
     return return_code, error_message
-
-def clean_tool_shed_url( base_url ):
-    protocol, base = base_url.split( '://' )
-    base = base.replace( ':', '_colon_' )
-    base = base.rstrip( '/' )
-    return base
 
 def export_repository( trans, tool_shed_url, repository_id, repository_name, changeset_revision, file_type,
                        export_repository_dependencies, api=False ):
@@ -124,8 +119,9 @@ def export_repository( trans, tool_shed_url, repository_id, repository_name, cha
     repositories_archive.close()
     if api:
         encoded_repositories_archive_name = encoding_util.tool_shed_encode( repositories_archive_filename )
-        download_url = suc.url_join( web.url_for( '/', qualified=True ),
-                                     'repository/export_via_api?encoded_repositories_archive_name=%s' % encoded_repositories_archive_name )
+        params = '?encoded_repositories_archive_name=%s' % encoded_repositories_archive_name
+        download_url = common_util.url_join( web.url_for( '/', qualified=True ),
+                                            'repository/export_via_api%s' % params )
         return dict( download_url=download_url, error_messages=error_messages )
     return repositories_archive, error_messages
 
@@ -171,7 +167,7 @@ def generate_repository_archive( trans, work_dir, tool_shed_url, repository, cha
     return repository_archive, error_message
 
 def generate_repository_archive_filename( tool_shed_url, name, owner, changeset_revision, file_type, export_repository_dependencies=False, use_tmp_archive_dir=False ):
-    tool_shed = clean_tool_shed_url( tool_shed_url )
+    tool_shed = remove_protocol_from_tool_shed_url( tool_shed_url )
     file_type_str = suc.get_file_type_str( changeset_revision, file_type )
     if export_repository_dependencies:
         repositories_archive_filename = '%s_%s_%s_%s_%s' % ( CAPSULE_WITH_DEPENDENCIES_FILENAME, tool_shed, name, owner, file_type_str )
@@ -242,7 +238,7 @@ def get_repo_info_dicts( trans, tool_shed_url, repository_id, changeset_revision
     repo_info_dict = {}
     # Cast unicode to string.
     repo_info_dict[ str( repository.name ) ] = ( str( repository.description ),
-                                                 suc.generate_clone_url_for_repository_in_tool_shed( trans, repository ),
+                                                 common_util.generate_clone_url_for_repository_in_tool_shed( trans, repository ),
                                                  str( changeset_revision ),
                                                  str( ctx.rev() ),
                                                  str( repository.user.username ),
@@ -343,3 +339,9 @@ def order_components_for_import( trans, primary_repository_id, repository_ids, r
         ordered_repositories.append( repository )
         ordered_changeset_revisions.append( changeset_revision )
     return ordered_repository_ids, ordered_repositories, ordered_changeset_revisions
+
+def remove_protocol_from_tool_shed_url( base_url ):
+    protocol, base = base_url.split( '://' )
+    base = base.replace( ':', '_colon_' )
+    base = base.rstrip( '/' )
+    return base

@@ -65,17 +65,6 @@ class Folder( object ):
             if contained_repository_dependency.listify == listified_repository_dependency:
                 self.repository_dependencies.remove( contained_repository_dependency )
 
-    def to_repository_dependency( self, repository_dependency_id ):
-        toolshed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
-            common_util.parse_repository_dependency_tuple( self.key.split( STRSEP ) )
-        return RepositoryDependency( id=repository_dependency_id,
-                                     toolshed=toolshed,
-                                     repository_name=name,
-                                     repository_owner=owner,
-                                     changeset_revision=changeset_revision,
-                                     prior_installation_required=galaxy.util.asbool( prior_installation_required ),
-                                     only_if_compiling_contained_td=galaxy.util.asbool( only_if_compiling_contained_td ) )
-
 
 class DataManager( object ):
     """Data Manager object"""
@@ -1525,22 +1514,6 @@ def can_display_tool_test_results( tool_test_results_dicts, exclude=None ):
                     return True
     return False
 
-def cast_empty_repository_dependency_folders( folder, repository_dependency_id ):
-    """
-    Change any empty folders contained within the repository dependencies container into a repository dependency
-    since it has no repository dependencies of it's own.  This method is not used (and may not be needed), but here
-    it is just in case.
-    """
-    if not folder.folders and not folder.repository_dependencies:
-        repository_dependency_id += 1
-        repository_dependency = folder.to_repository_dependency( repository_dependency_id )
-        if not folder.parent.contains_repository_dependency( repository_dependency ):
-            folder.parent.repository_dependencies.append( repository_dependency )
-            folder.parent.folders.remove( folder )
-    for sub_folder in folder.folders:
-        return cast_empty_repository_dependency_folders( sub_folder, repository_dependency_id )
-    return folder, repository_dependency_id
-
 def generate_repository_dependencies_folder_label_from_key( repository_name, repository_owner, changeset_revision,
                                                             prior_installation_required, only_if_compiling_contained_td, key ):
     """Return a repository dependency label based on the repository dependency key."""
@@ -1562,17 +1535,21 @@ def generate_repository_dependencies_folder_label_from_key( repository_name, rep
 def generate_repository_dependencies_key_for_repository( toolshed_base_url, repository_name, repository_owner, changeset_revision,
                                                          prior_installation_required, only_if_compiling_contained_td ):
     """Assumes tool shed is current tool shed since repository dependencies across tool sheds is not yet supported."""
-    return '%s%s%s%s%s%s%s%s%s%s%s' % ( str( toolshed_base_url ).rstrip( '/' ),
-                                  STRSEP,
-                                  str( repository_name ),
-                                  STRSEP,
-                                  str( repository_owner ),
-                                  STRSEP,
-                                  str( changeset_revision ),
-                                  STRSEP,
-                                  str( prior_installation_required ),
-                                  STRSEP,
-                                  str( only_if_compiling_contained_td ) )
+    # The tool_shed portion of the key must be the value that is stored in the tool_shed_repository.tool_shed column
+    # of the Galaxy database for an installed repository.  This value does not include the protocol, but does include
+    # the port if there is one.
+    tool_shed = common_util.remove_protocol_from_tool_shed_url( toolshed_base_url )
+    return '%s%s%s%s%s%s%s%s%s%s%s' % ( tool_shed,
+                                        STRSEP,
+                                        str( repository_name ),
+                                        STRSEP,
+                                        str( repository_owner ),
+                                        STRSEP,
+                                        str( changeset_revision ),
+                                        STRSEP,
+                                        str( prior_installation_required ),
+                                        STRSEP,
+                                        str( only_if_compiling_contained_td ) )
 
 def generate_tool_dependencies_key( name, version, type ):
     return '%s%s%s%s%s' % ( str( name ), STRSEP, str( version ), STRSEP, str( type ) )

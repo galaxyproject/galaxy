@@ -793,7 +793,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
     def browse_valid_categories( self, trans, **kwd ):
         """Filter repositories per category by those that are valid for installing into Galaxy."""
         # The request came from Galaxy, so restrict category links to display only valid repository changeset revisions.
-        galaxy_url = suc.handle_galaxy_url( trans, **kwd )
+        galaxy_url = common_util.handle_galaxy_url( trans, **kwd )
         if galaxy_url:
             kwd[ 'galaxy_url' ] = galaxy_url
         if 'f-free-text-search' in kwd:
@@ -831,7 +831,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
     @web.expose
     def browse_valid_repositories( self, trans, **kwd ):
         """Filter repositories to those that are installable into Galaxy."""
-        galaxy_url = suc.handle_galaxy_url( trans, **kwd )
+        galaxy_url = common_util.handle_galaxy_url( trans, **kwd )
         if galaxy_url:
             kwd[ 'galaxy_url' ] = galaxy_url
         repository_id = kwd.get( 'id', None )
@@ -885,7 +885,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         message = kwd.get( 'message', ''  )
         status = kwd.get( 'status', 'done' )
         # If the request originated with the UpdateManager, it will not include a galaxy_url.
-        galaxy_url = suc.handle_galaxy_url( trans, **kwd )
+        galaxy_url = common_util.handle_galaxy_url( trans, **kwd )
         name = kwd.get( 'name', None )
         owner = kwd.get( 'owner', None )
         changeset_revision = kwd.get( 'changeset_revision', None )
@@ -902,9 +902,12 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         elif galaxy_url:
             # Start building up the url to redirect back to the calling Galaxy instance.
             params = '?tool_shed_url=%s&name=%s&owner=%s&changeset_revision=%s&latest_changeset_revision=' % \
-                ( web.url_for( '/', qualified=True ), repository.name, repository.user.username, changeset_revision )
-            url = suc.url_join( galaxy_url,
-                                'admin_toolshed/update_to_changeset_revision%s' % params )
+                ( web.url_for( '/', qualified=True ),
+                  str( repository.name ),
+                  str( repository.user.username ),
+                  changeset_revision )
+            url = common_util.url_join( galaxy_url,
+                                        'admin_toolshed/update_to_changeset_revision%s' % params )
         else:
             message = 'Unable to check for updates due to an invalid Galaxy URL: <b>%s</b>.  ' % galaxy_url
             message += 'You may need to enable third-party cookies in your browser.  '
@@ -1145,7 +1148,12 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         repository.times_downloaded += 1
         trans.sa_session.add( repository )
         trans.sa_session.flush()
-        download_url = suc.url_join( '/', 'repos', repository.user.username, repository.name, 'archive', file_type_str )
+        download_url = common_util.url_join( '/',
+                                             'repos',
+                                             str( repository.user.username ),
+                                             str( repository.name ),
+                                             'archive',
+                                             file_type_str )
         return trans.response.send_redirect( download_url )
 
     @web.expose
@@ -1233,7 +1241,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
     def find_tools( self, trans, **kwd ):
         message = kwd.get( 'message', '' )
         status = kwd.get( 'status', 'done' )
-        galaxy_url = suc.handle_galaxy_url( trans, **kwd )
+        galaxy_url = common_util.handle_galaxy_url( trans, **kwd )
         if 'operation' in kwd:
             item_id = kwd.get( 'id', '' )
             if item_id:
@@ -1321,7 +1329,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
     def find_workflows( self, trans, **kwd ):
         message = kwd.get( 'message', '' )
         status = kwd.get( 'status', 'done' )
-        galaxy_url = suc.handle_galaxy_url( trans, **kwd )
+        galaxy_url = common_util.handle_galaxy_url( trans, **kwd )
         if 'operation' in kwd:
             item_id = kwd.get( 'id', '' )
             if item_id:
@@ -1615,7 +1623,11 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                     # section 5.1, e.g. Sat, 07 Sep 2002 00:00:01 UT
                     time_tested = repository_metadata.time_last_tested.strftime( '%a, %d %b %Y %H:%M:%S UT' )
                     # Generate a citable URL for this repository with owner and changeset revision.
-                    repository_citable_url = suc.url_join( tool_shed_url, 'view', user.username, repository.name, repository_metadata.changeset_revision )
+                    repository_citable_url = common_util.url_join( tool_shed_url,
+                                                                   'view',
+                                                                   str( user.username ),
+                                                                   str( repository.name ),
+                                                                   str( repository_metadata.changeset_revision ) )
                     passed_tests = len( tool_test_results.get( 'passed_tests', [] ) )
                     failed_tests = len( tool_test_results.get( 'failed_tests', [] ) )
                     missing_test_components = len( tool_test_results.get( 'missing_test_components', [] ) )
@@ -1866,7 +1878,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         """
         repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
         repository_id = trans.security.encode_id( repository.id )
-        repository_clone_url = suc.generate_clone_url_for_repository_in_tool_shed( trans, repository )
+        repository_clone_url = common_util.generate_clone_url_for_repository_in_tool_shed( trans, repository )
         repo_dir = repository.repo_path( trans.app )
         repo = hg.repository( suc.get_configured_ui(), repo_dir )
         repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
@@ -2051,15 +2063,15 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         if not repository_ids:
             repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
             repository_ids = trans.security.encode_id( repository.id )
-        galaxy_url = suc.handle_galaxy_url( trans, **kwd )
+        galaxy_url = common_util.handle_galaxy_url( trans, **kwd )
         if galaxy_url:
             # Redirect back to local Galaxy to perform install.
             params = '?tool_shed_url=%s&repository_ids=%s&changeset_revisions=%s' % \
                 ( web.url_for( '/', qualified=True ),
                   ','.join( util.listify( repository_ids ) ),
                   ','.join( util.listify( changeset_revisions ) ) )
-            url = suc.url_join( galaxy_url,
-                                'admin_toolshed/prepare_for_install%s' % params )
+            url = common_util.url_join( galaxy_url,
+                                        'admin_toolshed/prepare_for_install%s' % params )
             return trans.response.send_redirect( url )
         else:
             message = 'Repository installation is not possible due to an invalid Galaxy URL: <b>%s</b>.  '  % galaxy_url
@@ -2560,8 +2572,8 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                     if invalid:
                         message += 'The repository dependency definitions for this repository are invalid and will be ignored.  '
                         message += 'The complete dependency hierarchy could not be determined.  The cause of repository dependency '
-                        message += 'definition errors like this can usually be seen when viewing the repository directly from the'
-                        message += 'Tool Shed.  The exact cause cannot be determined when visiting the Tool Shed from Galaxy to'
+                        message += 'definition errors like this can usually be seen when viewing the repository directly from the '
+                        message += 'Tool Shed.  The exact cause cannot be determined when visiting the Tool Shed from Galaxy to '
                         message += 'install the repository.'
                         status = 'error'
         else:
