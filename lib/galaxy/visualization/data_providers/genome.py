@@ -1063,45 +1063,48 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
         # Clean up. TODO: is this needed? If so, we'll need a cleanup function after processing the data.
         # bamfile.close()
 
-        # If there are results and reference data, transform read sequence and cigar.
-        if len( results ) != 0 and ref_seq:
-            def process_read( read, start_field, cigar_field, seq_field ):
-                '''
-                Process a read using the designated fields.
-                '''
-                read_seq, read_cigar = get_ref_based_read_seq_and_cigar( read[ seq_field ].upper(),
-                                                                         read[ start_field ],
-                                                                         ref_seq,
-                                                                         start,
-                                                                         read[ cigar_field ] )
-                read[ seq_field ] = read_seq
-                read[ cigar_field ] = read_cigar
+        def compress_seq_and_cigar( read, start_field, cigar_field, seq_field ):
+            '''
+            Use reference-based compression to compress read sequence and cigar.
+            '''
+            read_seq, read_cigar = get_ref_based_read_seq_and_cigar( read[ seq_field ].upper(),
+                                                                     read[ start_field ],
+                                                                     ref_seq,
+                                                                     start,
+                                                                     read[ cigar_field ] )
+            read[ seq_field ] = read_seq
+            read[ cigar_field ] = read_cigar
 
-            def process_se_read( read ):
-                '''
-                Process single-end read.
-                '''
-                process_read( read, 1, 4, 6)
+        def convert_cigar( read, start_field, cigar_field, seq_field ):
+            '''
+            Convert read cigar from pysam format to string format.
+            '''
+            cigar_ops = 'MIDNSHP=X'
+            read_cigar = ''
+            for op_tuple in read[ cigar_field ]:
+                read_cigar += '%i%s' % ( op_tuple[1], cigar_ops[ op_tuple[0] ] )
+            read[ cigar_field ] = read_cigar
 
-            def process_pe_read( read ):
-                '''
-                Process paired-end read.
-                '''
+        # Choose method for processing reads. Use reference-based compression 
+        # if possible. Otherwise, convert cigar.
+        if ref_seq:
+            # Uppercase for easy comparison.
+            ref_seq = ref_seq.upper()
+            process_read = compress_seq_and_cigar
+        else:
+            process_read = convert_cigar
+
+        # Process reads.
+        for read in results:
+            if isinstance( read[ 5 ], list ):
+                # Paired-end read.
                 if len( read[4] ) > 2:
                     process_read( read[4], 0, 2, 4 )
                 if len( read[5] ) > 2:
                     process_read( read[5], 0, 2, 4 )
-
-            # Uppercase for easy comparison.
-            ref_seq = ref_seq.upper()
-
-            # Process reads.
-            for read in results:
-                # Use correct function for processing reads.
-                if isinstance( read[ 5 ], list ):
-                    process_pe_read( read )
-                else:
-                    process_se_read( read )
+            else:
+                # Single-end read.
+                process_read( read, 1, 4, 6)
 
         max_low, max_high = get_bounds( results, 1, 2 )
 
