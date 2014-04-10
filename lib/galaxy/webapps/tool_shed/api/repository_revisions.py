@@ -26,7 +26,7 @@ class RepositoryRevisionsController( BaseAPIController ):
         Creates and saves a gzip compressed tar archive of a repository and optionally all of it's repository dependencies.
 
         The following parameters are included in the payload.
-        :param tool_shed_url (required): the base URL of the Tool Shed from which the Repository was installed
+        :param tool_shed_url (required): the base URL of the Tool Shed from which the Repository is to be exported
         :param name (required): the name of the Repository
         :param owner (required): the owner of the Repository
         :param changeset_revision (required): the changeset_revision of the RepositoryMetadata object associated with the Repository

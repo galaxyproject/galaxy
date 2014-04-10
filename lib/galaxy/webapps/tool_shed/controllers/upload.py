@@ -288,7 +288,8 @@ class UploadController( BaseUIController ):
                         status = 'error'
                     # Handle messaging for invalid repository dependencies.
                     invalid_repository_dependencies_message = \
-                        repository_dependency_util.generate_message_for_invalid_repository_dependencies( metadata_dict )
+                        repository_dependency_util.generate_message_for_invalid_repository_dependencies( metadata_dict,
+                                                                                                         error_from_tuple=True )
                     if invalid_repository_dependencies_message:
                         message += invalid_repository_dependencies_message
                         status = 'error'

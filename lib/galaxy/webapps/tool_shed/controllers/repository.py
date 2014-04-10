@@ -2570,11 +2570,8 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                             invalid = True
                             break
                     if invalid:
-                        message += 'The repository dependency definitions for this repository are invalid and will be ignored.  '
-                        message += 'The complete dependency hierarchy could not be determined.  The cause of repository dependency '
-                        message += 'definition errors like this can usually be seen when viewing the repository directly from the '
-                        message += 'Tool Shed.  The exact cause cannot be determined when visiting the Tool Shed from Galaxy to '
-                        message += 'install the repository.'
+                        message = repository_dependency_util.generate_message_for_invalid_repository_dependencies( metadata,
+                                                                                                                   error_from_tuple=False )
                         status = 'error'
         else:
             repository_metadata_id = None

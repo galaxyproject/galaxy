@@ -276,7 +276,7 @@ class RepositoriesController( BaseAPIController ):
     @web.expose_api
     def repository_ids_for_setting_metadata( self, trans, my_writable=False, **kwd ):
         """
-        GET /api/get_repository_ids_for_setting_metadata
+        GET /api/repository_ids_for_setting_metadata
 
         Displays a collection (list) of repository ids ordered for setting metadata.
 
