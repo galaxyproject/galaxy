@@ -115,6 +115,33 @@ var NodeView = Backbone.View.extend( {
 
 
 
+var DataInputView = Backbone.View.extend( {
+    className: "form-row dataRow input-data-row",
+
+    initialize: function( options ){
+        this.input = options.input;
+        this.nodeView = options.nodeView;
+        this.terminalElement = options.terminalElement;
+
+        this.$el.attr( "name", this.input.name )
+                .html( this.input.label )
+                .css({  position:'absolute',
+                        left: -1000,
+                        top: -1000,
+                        display:'none'});
+        
+        $('body').append(this.el);
+        this.nodeView.updateMaxWidth( this.$el.outerWidth() );
+        this.$el.css({ position:'',
+                       left:'',
+                       top:'',
+                       display:'' });
+        this.$el.remove();
+    },
+
+} );
+
+
 ////////////
 // END VIEWS
 ////////////
@@ -366,20 +393,12 @@ $.extend( Node.prototype, {
         });
 
         $.each( data.data_inputs, function( i, input ) {
-            var t = node.new_input_terminal( input );
-            var ib = $("<div class='form-row dataRow input-data-row' name='" + input.name + "'>" + input.label + "</div>" );
-            ib.css({  position:'absolute',
-                        left: -1000,
-                        top: -1000,
-                        display:'none'});
-            $('body').append(ib);
-            output_width = Math.max(output_width, ib.outerWidth());
-            ib.css({ position:'',
-                       left:'',
-                       top:'',
-                       display:'' });
-            ib.remove();
-            ibox.append( ib.prepend( t ) );
+            var terminalElement = node.new_input_terminal( input );
+            nodeView.addDataInput( new DataInputView( {
+                "terminalElement": terminalElement,
+                "input": input, 
+                "nodeView": nodeView
+            } ) );
         });
         if ( ( data.data_inputs.length > 0 ) && ( data.data_outputs.length > 0 ) ) {
             nodeView.addRule();
