@@ -1,12 +1,9 @@
 """
 API operations on the contents of a folder.
 """
-import logging, os, string, shutil, urllib, re, socket
-from cgi import escape, FieldStorage
-from galaxy import util, datatypes, jobs, web, util
-from galaxy.web.base.controller import *
-from galaxy.util.sanitize_html import sanitize_html
-from galaxy.model.orm import *
+import logging
+from galaxy import web
+from galaxy.web.base.controller import BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems
 
 log = logging.getLogger( __name__ )
 
@@ -70,8 +67,7 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
             trans.response.status = 400
             return "Invalid folder id ( %s ) specified." % str( folder_id )
         
-        path_to_root = []
-        def build_path ( folder ):
+        def build_path( folder ):
             """
             Search the path upwards recursively and load the whole route of names and ids for breadcrumb purposes.
             """
@@ -148,12 +144,3 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
         PUT /api/folders/{encoded_folder_id}/contents
         """
         pass
-
-    # TODO: Move to library_common.
-    def __decode_library_content_id( self, trans, content_id ):
-        if ( len( content_id ) % 16 == 0 ):
-            return 'LibraryDataset', content_id
-        elif ( content_id.startswith( 'F' ) ):
-            return 'LibraryFolder', content_id[1:]
-        else:
-            raise HTTPBadRequest( 'Malformed library content id ( %s ) specified, unable to decode.' % str( content_id ) )
