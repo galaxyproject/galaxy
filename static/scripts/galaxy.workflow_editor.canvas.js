@@ -35,390 +35,6 @@ var OutputTerminal = Terminal.extend( {
 } );
 
 
-//////////////
-// START VIEWS
-//////////////
-
-
-
-var NodeView = Backbone.View.extend( {
-    initialize: function( options ){
-        this.node = options.node;
-        this.output_width = Math.max(150, this.$el.width());
-        this.tool_body = this.$el.find( ".toolFormBody" );
-        this.tool_body.find( "div" ).remove();
-        this.newInputsDiv().appendTo( this.tool_body );
-    },
-
-    render : function() {
-        this.renderToolErrors();
-        this.$el.css( "width", Math.min(250, Math.max(this.$el.width(), this.output_width )));
-    },
-
-    renderToolErrors: function( ) {
-        if ( this.node.tool_errors ) {
-            this.$el.addClass( "tool-node-error" );
-        } else {
-            this.$el.removeClass( "tool-node-error" );
-        }
-    },
-
-    newInputsDiv: function() {
-        return $("<div class='inputs'></div>");
-    },
-
-    updateMaxWidth: function( newWidth ) {
-        this.output_width = Math.max( this.output_width, newWidth );
-    },
-
-    addRule: function() {
-        this.tool_body.append( $( "<div class='rule'></div>" ) );
-    },
-
-    addDataInput: function( input ) {
-        var terminalView = new InputTerminalView( {
-            node: this.node,
-            input: input
-        } );
-        var terminalElement = terminalView.el;
-        var inputView = new DataInputView( {
-            "terminalElement": terminalElement,
-            "input": input, 
-            "nodeView": this,
-        } );
-        var ib = inputView.$el;
-        var terminalElement = inputView.terminalElement;
-        this.$( ".inputs" ).append( ib.prepend( terminalElement ) );
-    },
-
-    replaceDataInput: function( input, new_body ) {
-        var terminalView = new InputTerminalView( {
-            node: this.node,
-            input: input
-        } );
-        var t = terminalView.el;
-
-        // If already connected save old connection
-        this.$( "div[name='" + input.name + "']" ).each( function() {
-            $(this).find( ".input-terminal" ).each( function() {
-                var c = this.terminal.connectors[0];
-                if ( c ) {
-                    t.terminal.connectors[0] = c;
-                    c.handle2 = t.terminal;
-                }
-            });
-            $(this).remove();
-        });
-        var inputView = new DataInputView( {
-            "terminalElement": t,
-            "input": input, 
-            "nodeView": this,
-            "skipResize": true,
-        } );
-        var ib = inputView.$el;
-
-        // Append to new body
-        new_body.append( ib.prepend( t ) );
-
-    },
-
-    addDataOutput: function( output ) {
-        var terminalView = new OutputTerminalView( {
-            node: this.node,
-            output: output
-        } );
-        var outputView = new DataOutputView( {
-            "output": output,
-            "terminalElement": terminalView.el,
-            "nodeView": this,
-        } );
-        this.tool_body.append( outputView.$el.append( outputView.terminalElement ) );
-    }
-
-} );
-
-
-
-var DataInputView = Backbone.View.extend( {
-    className: "form-row dataRow input-data-row",
-
-    initialize: function( options ){
-        this.input = options.input;
-        this.nodeView = options.nodeView;
-        this.terminalElement = options.terminalElement;
-
-        this.$el.attr( "name", this.input.name )
-                .html( this.input.label );
-
-        if( ! options.skipResize ) {
-            this.$el.css({  position:'absolute',
-                            left: -1000,
-                            top: -1000,
-                            display:'none'});
-        $('body').append(this.el);
-            this.nodeView.updateMaxWidth( this.$el.outerWidth() );
-            this.$el.css({ position:'',
-                           left:'',
-                           top:'',
-                           display:'' });
-            this.$el.remove();
-        }
-    },
-
-} );
-
-
-
-var OutputCalloutView = Backbone.View.extend( {
-    tagName: "div",
-
-    initialize: function( options ) {
-        this.label = options.label;
-        this.node = options.node;
-        this.output = options.output;
-
-        var view = this;
-        this.$el
-            .attr( "class", 'callout '+this.label )
-            .css( { display: 'none' } )
-            .append(
-                $("<div class='buttons'></div>").append(
-                    $("<img/>").attr('src', galaxy_config.root + 'static/images/fugue/asterisk-small-outline.png').click( function() {
-                        if ($.inArray(view.output.name, view.node.workflow_outputs) != -1){
-                            view.node.workflow_outputs.splice($.inArray(view.output.name, view.node.workflow_outputs), 1);
-                            view.$('img').attr('src', galaxy_config.root + 'static/images/fugue/asterisk-small-outline.png');
-                        }else{
-                            view.node.workflow_outputs.push(view.output.name);
-                            view.$('img').attr('src', galaxy_config.root + 'static/images/fugue/asterisk-small.png');
-                        }
-                        workflow.has_changes = true;
-                        canvas_manager.draw_overview();
-                    })))
-            .tooltip({delay:500, title: "Mark dataset as a workflow output. All unmarked datasets will be hidden." });
-        
-        this.$el.css({
-                top: '50%',
-                margin:'-8px 0px 0px 0px',
-                right: 8
-            });
-        this.$el.show();
-        this.resetImage();
-    },
-
-    resetImage: function() {
-        if ($.inArray( this.output.name, this.node.workflow_outputs) === -1){
-            this.$('img').attr('src', galaxy_config.root + 'static/images/fugue/asterisk-small-outline.png');
-        } else{
-            this.$('img').attr('src', galaxy_config.root + 'static/images/fugue/asterisk-small.png');
-        }
-    },
-
-    hoverImage: function() {
-        this.$('img').attr('src', galaxy_config.root + 'static/images/fugue/asterisk-small-yellow.png');
-    }
-
-} );
-
-
-
-
-var DataOutputView = Backbone.View.extend( {
-    className: "form-row dataRow",
-
-    initialize: function( options ) {
-        this.output = options.output;
-        this.terminalElement = options.terminalElement;
-        this.nodeView = options.nodeView;
-
-        var output = this.output;
-        var label = output.name;
-        var node = this.nodeView.node;
-        if ( output.extensions.indexOf( 'input' ) < 0 ) {
-            label = label + " (" + output.extensions.join(", ") + ")";
-        }
-        this.$el.html( label )
-
-        if (node.type == 'tool'){
-            var calloutView = new OutputCalloutView( {
-                "label": label,
-                "output": output,
-                "node": node,
-            });
-            this.$el.append( calloutView.el );
-            this.$el.hover( function() { calloutView.hoverImage() }, function() { calloutView.resetImage() } );
-        }
-        this.$el.css({  position:'absolute',
-                        left: -1000,
-                        top: -1000,
-                        display:'none'});
-        $('body').append( this.el );
-        this.nodeView.updateMaxWidth( this.$el.outerWidth() + 17 );
-        this.$el.css({ position:'',
-                       left:'',
-                       top:'',
-                       display:'' })
-                .detach();
-    }
-
-} );
-
-
-
-var InputTerminalView = Backbone.View.extend( {
-    className: "terminal input-terminal",
-
-    initialize: function( options ) {
-        var node = options.node;
-        var input = options.input;
-        
-        var name = input.name;
-        var types = input.extensions;
-        var multiple = input.multiple;
-
-        var terminal = this.el.terminal = new InputTerminal( { element: this.el, datatypes: types, multiple: multiple } );
-        terminal.node = node;
-        terminal.name = name;
-
-        node.input_terminals[name] = terminal;
-    },
-
-    events: {
-        "dropinit": "onDropInit",
-        "dropstart": "onDropStart",
-        "dropend": "onDropEnd",
-        "drop": "onDrop",
-        "hover": "onHover",
-    },
-
-    onDropInit: function( e, d ) {
-        var terminal = this.el.terminal;
-        // Accept a dragable if it is an output terminal and has a
-        // compatible type
-        return $(d.drag).hasClass( "output-terminal" ) && terminal.can_accept( d.drag.terminal );
-    },
-
-    onDropStart: function( e, d  ) {
-        if (d.proxy.terminal) { 
-            d.proxy.terminal.connectors[0].inner_color = "#BBFFBB";
-        }
-    },
-
-    onDropEnd: function ( e, d ) {
-        if (d.proxy.terminal) { 
-            d.proxy.terminal.connectors[0].inner_color = "#FFFFFF";
-        }
-    },
-
-    onDrop: function( e, d ) {
-        var terminal = this.el.terminal;        
-        new Connector( d.drag.terminal, terminal ).redraw();
-    },
-
-    onHover: function() {
-        var element = this.el;
-        var terminal = element.terminal;
-
-        // If connected, create a popup to allow disconnection
-        if ( terminal.connectors.length > 0 ) {
-            // Create callout
-            var t = $("<div class='callout'></div>")
-                .css( { display: 'none' } )
-                .appendTo( "body" )
-                .append(
-                    $("<div class='button'></div>").append(
-                        $("<div/>").addClass("fa-icon-button fa fa-times").click( function() {
-                            $.each( terminal.connectors, function( _, x ) {
-                                if (x) {
-                                    x.destroy();
-                                }
-                            });
-                            t.remove();
-                        })))
-                .bind( "mouseleave", function() {
-                    $(this).remove();
-                });
-            // Position it and show
-            t.css({
-                    top: $(element).offset().top - 2,
-                    left: $(element).offset().left - t.width(),
-                    'padding-right': $(element).width()
-                }).show();
-        }
-    },
-
-} );
-
-
-
-var OutputTerminalView = Backbone.View.extend( {
-    className: "terminal output-terminal",
-
-    initialize: function( options ) {
-        var node = options.node;
-        var output = options.output;
-        var name = output.name;
-        var type = output.extensions;
-
-        var element = this.el;
-        var terminal_element = element;
-        var terminal = element.terminal = new OutputTerminal( {element: element, datatypes: type } );
-        terminal.node = node;
-        terminal.name = name;
-        node.output_terminals[name] = terminal;
-    },
-
-    events: {
-        "drag": "onDrag",
-        "dragstart": "onDragStart",
-        "dragend": "onDragEnd",
-    },
-
-    onDrag: function ( e, d ) {
-        var onmove = function() {
-            var po = $(d.proxy).offsetParent().offset(),
-                x = d.offsetX - po.left,
-                y = d.offsetY - po.top;
-            $(d.proxy).css( { left: x, top: y } );
-            d.proxy.terminal.redraw();
-            // FIXME: global
-            canvas_manager.update_viewport_overlay();
-        };
-        onmove();
-        $("#canvas-container").get(0).scroll_panel.test( e, onmove );
-    },
-
-    onDragStart: function( e, d ) { 
-        $( d.available ).addClass( "input-terminal-active" );
-        // Save PJAs in the case of change datatype actions.
-        workflow.check_changes_in_active_form(); 
-        // Drag proxy div
-        var h = $( '<div class="drag-terminal" style="position: absolute;"></div>' )
-            .appendTo( "#canvas-container" ).get(0);
-        // Terminal and connection to display noodle while dragging
-        h.terminal = new OutputTerminal( { element: h } );
-        var c = new Connector();
-        c.dragging = true;
-        c.connect( this.el.terminal, h.terminal );
-        return h;
-    },
-
-    onDragEnd: function ( e, d ) {
-        d.proxy.terminal.connectors[0].destroy();
-        $(d.proxy).remove();
-        $( d.available ).removeClass( "input-terminal-active" );
-        $("#canvas-container").get(0).scroll_panel.stop();
-    }
-
-} );
-
-
-
-////////////
-// END VIEWS
-////////////
-
-
-
 var InputTerminal = Terminal.extend( {
     initialize: function( attr ) {
         Terminal.prototype.initialize.call( this, attr );
@@ -1113,6 +729,389 @@ function populate_datatype_info( data ) {
     ext_to_type = data.ext_to_class_name;
     type_to_type = data.class_to_classes;
 }
+
+
+//////////////
+// START VIEWS
+//////////////
+
+
+var NodeView = Backbone.View.extend( {
+    initialize: function( options ){
+        this.node = options.node;
+        this.output_width = Math.max(150, this.$el.width());
+        this.tool_body = this.$el.find( ".toolFormBody" );
+        this.tool_body.find( "div" ).remove();
+        this.newInputsDiv().appendTo( this.tool_body );
+    },
+
+    render : function() {
+        this.renderToolErrors();
+        this.$el.css( "width", Math.min(250, Math.max(this.$el.width(), this.output_width )));
+    },
+
+    renderToolErrors: function( ) {
+        if ( this.node.tool_errors ) {
+            this.$el.addClass( "tool-node-error" );
+        } else {
+            this.$el.removeClass( "tool-node-error" );
+        }
+    },
+
+    newInputsDiv: function() {
+        return $("<div class='inputs'></div>");
+    },
+
+    updateMaxWidth: function( newWidth ) {
+        this.output_width = Math.max( this.output_width, newWidth );
+    },
+
+    addRule: function() {
+        this.tool_body.append( $( "<div class='rule'></div>" ) );
+    },
+
+    addDataInput: function( input ) {
+        var terminalView = new InputTerminalView( {
+            node: this.node,
+            input: input
+        } );
+        var terminalElement = terminalView.el;
+        var inputView = new DataInputView( {
+            "terminalElement": terminalElement,
+            "input": input, 
+            "nodeView": this,
+        } );
+        var ib = inputView.$el;
+        var terminalElement = inputView.terminalElement;
+        this.$( ".inputs" ).append( ib.prepend( terminalElement ) );
+    },
+
+    replaceDataInput: function( input, new_body ) {
+        var terminalView = new InputTerminalView( {
+            node: this.node,
+            input: input
+        } );
+        var t = terminalView.el;
+
+        // If already connected save old connection
+        this.$( "div[name='" + input.name + "']" ).each( function() {
+            $(this).find( ".input-terminal" ).each( function() {
+                var c = this.terminal.connectors[0];
+                if ( c ) {
+                    t.terminal.connectors[0] = c;
+                    c.handle2 = t.terminal;
+                }
+            });
+            $(this).remove();
+        });
+        var inputView = new DataInputView( {
+            "terminalElement": t,
+            "input": input, 
+            "nodeView": this,
+            "skipResize": true,
+        } );
+        var ib = inputView.$el;
+
+        // Append to new body
+        new_body.append( ib.prepend( t ) );
+
+    },
+
+    addDataOutput: function( output ) {
+        var terminalView = new OutputTerminalView( {
+            node: this.node,
+            output: output
+        } );
+        var outputView = new DataOutputView( {
+            "output": output,
+            "terminalElement": terminalView.el,
+            "nodeView": this,
+        } );
+        this.tool_body.append( outputView.$el.append( outputView.terminalElement ) );
+    }
+
+} );
+
+
+
+var DataInputView = Backbone.View.extend( {
+    className: "form-row dataRow input-data-row",
+
+    initialize: function( options ){
+        this.input = options.input;
+        this.nodeView = options.nodeView;
+        this.terminalElement = options.terminalElement;
+
+        this.$el.attr( "name", this.input.name )
+                .html( this.input.label );
+
+        if( ! options.skipResize ) {
+            this.$el.css({  position:'absolute',
+                            left: -1000,
+                            top: -1000,
+                            display:'none'});
+        $('body').append(this.el);
+            this.nodeView.updateMaxWidth( this.$el.outerWidth() );
+            this.$el.css({ position:'',
+                           left:'',
+                           top:'',
+                           display:'' });
+            this.$el.remove();
+        }
+    },
+
+} );
+
+
+
+var OutputCalloutView = Backbone.View.extend( {
+    tagName: "div",
+
+    initialize: function( options ) {
+        this.label = options.label;
+        this.node = options.node;
+        this.output = options.output;
+
+        var view = this;
+        this.$el
+            .attr( "class", 'callout '+this.label )
+            .css( { display: 'none' } )
+            .append(
+                $("<div class='buttons'></div>").append(
+                    $("<img/>").attr('src', galaxy_config.root + 'static/images/fugue/asterisk-small-outline.png').click( function() {
+                        if ($.inArray(view.output.name, view.node.workflow_outputs) != -1){
+                            view.node.workflow_outputs.splice($.inArray(view.output.name, view.node.workflow_outputs), 1);
+                            view.$('img').attr('src', galaxy_config.root + 'static/images/fugue/asterisk-small-outline.png');
+                        }else{
+                            view.node.workflow_outputs.push(view.output.name);
+                            view.$('img').attr('src', galaxy_config.root + 'static/images/fugue/asterisk-small.png');
+                        }
+                        workflow.has_changes = true;
+                        canvas_manager.draw_overview();
+                    })))
+            .tooltip({delay:500, title: "Mark dataset as a workflow output. All unmarked datasets will be hidden." });
+        
+        this.$el.css({
+                top: '50%',
+                margin:'-8px 0px 0px 0px',
+                right: 8
+            });
+        this.$el.show();
+        this.resetImage();
+    },
+
+    resetImage: function() {
+        if ($.inArray( this.output.name, this.node.workflow_outputs) === -1){
+            this.$('img').attr('src', galaxy_config.root + 'static/images/fugue/asterisk-small-outline.png');
+        } else{
+            this.$('img').attr('src', galaxy_config.root + 'static/images/fugue/asterisk-small.png');
+        }
+    },
+
+    hoverImage: function() {
+        this.$('img').attr('src', galaxy_config.root + 'static/images/fugue/asterisk-small-yellow.png');
+    }
+
+} );
+
+
+
+
+var DataOutputView = Backbone.View.extend( {
+    className: "form-row dataRow",
+
+    initialize: function( options ) {
+        this.output = options.output;
+        this.terminalElement = options.terminalElement;
+        this.nodeView = options.nodeView;
+
+        var output = this.output;
+        var label = output.name;
+        var node = this.nodeView.node;
+        if ( output.extensions.indexOf( 'input' ) < 0 ) {
+            label = label + " (" + output.extensions.join(", ") + ")";
+        }
+        this.$el.html( label )
+
+        if (node.type == 'tool'){
+            var calloutView = new OutputCalloutView( {
+                "label": label,
+                "output": output,
+                "node": node,
+            });
+            this.$el.append( calloutView.el );
+            this.$el.hover( function() { calloutView.hoverImage() }, function() { calloutView.resetImage() } );
+        }
+        this.$el.css({  position:'absolute',
+                        left: -1000,
+                        top: -1000,
+                        display:'none'});
+        $('body').append( this.el );
+        this.nodeView.updateMaxWidth( this.$el.outerWidth() + 17 );
+        this.$el.css({ position:'',
+                       left:'',
+                       top:'',
+                       display:'' })
+                .detach();
+    }
+
+} );
+
+
+
+var InputTerminalView = Backbone.View.extend( {
+    className: "terminal input-terminal",
+
+    initialize: function( options ) {
+        var node = options.node;
+        var input = options.input;
+        
+        var name = input.name;
+        var types = input.extensions;
+        var multiple = input.multiple;
+
+        var terminal = this.el.terminal = new InputTerminal( { element: this.el, datatypes: types, multiple: multiple } );
+        terminal.node = node;
+        terminal.name = name;
+
+        node.input_terminals[name] = terminal;
+    },
+
+    events: {
+        "dropinit": "onDropInit",
+        "dropstart": "onDropStart",
+        "dropend": "onDropEnd",
+        "drop": "onDrop",
+        "hover": "onHover",
+    },
+
+    onDropInit: function( e, d ) {
+        var terminal = this.el.terminal;
+        // Accept a dragable if it is an output terminal and has a
+        // compatible type
+        return $(d.drag).hasClass( "output-terminal" ) && terminal.can_accept( d.drag.terminal );
+    },
+
+    onDropStart: function( e, d  ) {
+        if (d.proxy.terminal) { 
+            d.proxy.terminal.connectors[0].inner_color = "#BBFFBB";
+        }
+    },
+
+    onDropEnd: function ( e, d ) {
+        if (d.proxy.terminal) { 
+            d.proxy.terminal.connectors[0].inner_color = "#FFFFFF";
+        }
+    },
+
+    onDrop: function( e, d ) {
+        var terminal = this.el.terminal;        
+        new Connector( d.drag.terminal, terminal ).redraw();
+    },
+
+    onHover: function() {
+        var element = this.el;
+        var terminal = element.terminal;
+
+        // If connected, create a popup to allow disconnection
+        if ( terminal.connectors.length > 0 ) {
+            // Create callout
+            var t = $("<div class='callout'></div>")
+                .css( { display: 'none' } )
+                .appendTo( "body" )
+                .append(
+                    $("<div class='button'></div>").append(
+                        $("<div/>").addClass("fa-icon-button fa fa-times").click( function() {
+                            $.each( terminal.connectors, function( _, x ) {
+                                if (x) {
+                                    x.destroy();
+                                }
+                            });
+                            t.remove();
+                        })))
+                .bind( "mouseleave", function() {
+                    $(this).remove();
+                });
+            // Position it and show
+            t.css({
+                    top: $(element).offset().top - 2,
+                    left: $(element).offset().left - t.width(),
+                    'padding-right': $(element).width()
+                }).show();
+        }
+    },
+
+} );
+
+
+
+var OutputTerminalView = Backbone.View.extend( {
+    className: "terminal output-terminal",
+
+    initialize: function( options ) {
+        var node = options.node;
+        var output = options.output;
+        var name = output.name;
+        var type = output.extensions;
+
+        var element = this.el;
+        var terminal_element = element;
+        var terminal = element.terminal = new OutputTerminal( {element: element, datatypes: type } );
+        terminal.node = node;
+        terminal.name = name;
+        node.output_terminals[name] = terminal;
+    },
+
+    events: {
+        "drag": "onDrag",
+        "dragstart": "onDragStart",
+        "dragend": "onDragEnd",
+    },
+
+    onDrag: function ( e, d ) {
+        var onmove = function() {
+            var po = $(d.proxy).offsetParent().offset(),
+                x = d.offsetX - po.left,
+                y = d.offsetY - po.top;
+            $(d.proxy).css( { left: x, top: y } );
+            d.proxy.terminal.redraw();
+            // FIXME: global
+            canvas_manager.update_viewport_overlay();
+        };
+        onmove();
+        $("#canvas-container").get(0).scroll_panel.test( e, onmove );
+    },
+
+    onDragStart: function( e, d ) { 
+        $( d.available ).addClass( "input-terminal-active" );
+        // Save PJAs in the case of change datatype actions.
+        workflow.check_changes_in_active_form(); 
+        // Drag proxy div
+        var h = $( '<div class="drag-terminal" style="position: absolute;"></div>' )
+            .appendTo( "#canvas-container" ).get(0);
+        // Terminal and connection to display noodle while dragging
+        h.terminal = new OutputTerminal( { element: h } );
+        var c = new Connector();
+        c.dragging = true;
+        c.connect( this.el.terminal, h.terminal );
+        return h;
+    },
+
+    onDragEnd: function ( e, d ) {
+        d.proxy.terminal.connectors[0].destroy();
+        $(d.proxy).remove();
+        $( d.available ).removeClass( "input-terminal-active" );
+        $("#canvas-container").get(0).scroll_panel.stop();
+    }
+
+} );
+
+
+
+////////////
+// END VIEWS
+////////////
+
 
 // FIXME: merge scroll panel into CanvasManager, clean up hardcoded stuff.
 
