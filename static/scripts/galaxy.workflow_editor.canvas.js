@@ -68,6 +68,58 @@ $.extend( InputTerminal.prototype, {
     }
 });
 
+
+//////////////
+// START VIEWS
+//////////////
+
+
+
+var NodeView = Backbone.View.extend( {
+    initialize: function( options ){
+        this.node = options.node;
+        this.output_width = Math.max(150, this.$el.width());
+        this.tool_body = this.$el.find( ".toolFormBody" );
+        this.tool_body.find( "div" ).remove();
+        $("<div class='inputs'></div>").appendTo( this.tool_body );
+    },
+
+    render : function() {
+        this.renderToolErrors();
+        this.$el.css( "width", Math.min(250, Math.max(this.$el.width(), this.output_width )));
+    },
+
+    renderToolErrors: function( ) {
+        if ( this.node.tool_errors ) {
+            this.$el.addClass( "tool-node-error" );
+        } else {
+            this.$el.removeClass( "tool-node-error" );
+        }
+    },
+
+    updateMaxWidth: function( newWidth ) {
+        this.output_width = Math.max( this.output_width, newWidth );
+    },
+
+    addRule: function() {
+        this.tool_body.append( $( "<div class='rule'></div>" ) );
+    },
+
+    addDataInput: function( inputView ) {
+        var ib = inputView.$el;
+        var terminalElement = inputView.terminalElement;
+        this.$( ".inputs" ).append( ib.prepend( terminalElement ) );
+    }
+
+} );
+
+
+
+////////////
+// END VIEWS
+////////////
+
+
 function Connector( handle1, handle2 ) {
     this.canvas = null;
     this.dragging = false;
@@ -295,7 +347,6 @@ $.extend( Node.prototype, {
         $(element).removeClass( "toolForm-active" );
     },
     init_field_data : function ( data ) {
-        var f = this.element;
         if ( data.type ) {
             this.type = data.type;
         }
@@ -308,16 +359,12 @@ $.extend( Node.prototype, {
         this.post_job_actions = data.post_job_actions ? data.post_job_actions : {};
         this.workflow_outputs = data.workflow_outputs ? data.workflow_outputs : [];
 
-        if ( this.tool_errors ) {
-            f.addClass( "tool-node-error" );
-        } else {
-            f.removeClass( "tool-node-error" );
-        }
         var node = this;
-        var output_width = Math.max(150, f.width());
-        var b = f.find( ".toolFormBody" );
-        b.find( "div" ).remove();
-        var ibox = $("<div class='inputs'></div>").appendTo( b );
+        var nodeView = new NodeView({
+            el: this.element[ 0 ],
+            node: node,
+        });
+
         $.each( data.data_inputs, function( i, input ) {
             var t = node.new_input_terminal( input );
             var ib = $("<div class='form-row dataRow input-data-row' name='" + input.name + "'>" + input.label + "</div>" );
@@ -335,7 +382,7 @@ $.extend( Node.prototype, {
             ibox.append( ib.prepend( t ) );
         });
         if ( ( data.data_inputs.length > 0 ) && ( data.data_outputs.length > 0 ) ) {
-            b.append( $( "<div class='rule'></div>" ) );
+            nodeView.addRule();
         }
         $.each( data.data_outputs, function( i, output ) {
             var t = $( "<div class='terminal output-terminal'></div>" );
@@ -391,15 +438,15 @@ $.extend( Node.prototype, {
                         top: -1000,
                         display:'none'});
             $('body').append(r);
-            output_width = Math.max(output_width, r.outerWidth() + 17);
+            nodeView.updateMaxWidth( r.outerWidth() + 17 );
             r.css({ position:'',
                        left:'',
                        top:'',
                        display:'' });
             r.detach();
-            b.append( r.append( t ) );
+            nodeView.tool_body.append( r.append( t ) );
         });
-        f.css( "width", Math.min(250, Math.max(f.width(), output_width )));
+        nodeView.render();
         workflow.node_changed( this );
     },
     update_field_data : function( data ) {

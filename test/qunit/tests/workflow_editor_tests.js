@@ -376,4 +376,41 @@ define([
         } );
     } );
 
+    /* global NodeView */
+    module( "Node view ", {
+       setup: function() {
+            this.set_for_node( {} );
+        },
+        set_for_node: function( node ) {
+            var element = $("<div>");
+            this.view = new NodeView( { node: node, el: element[ 0 ] } );
+        },
+    } );
+
+    test( "tool error styling", function() {
+        this.set_for_node( { tool_errors: false } );
+        this.view.render();
+        ok( ! this.view.$el.hasClass( "tool-node-error" ) );
+        this.set_for_node( { tool_errors: true } );
+        this.view.render();
+        ok( this.view.$el.hasClass( "tool-node-error" ) );
+    } );
+
+    test( "rendering correct width", function() {
+        // Default width is 150
+        this.view.render();
+        equal( this.view.$el.width(), 150 );
+
+        // If any data rows are greater, it will update
+        this.view.updateMaxWidth( 200 );
+        this.view.render();
+        equal( this.view.$el.width(), 200 );
+
+        // However 250 is the maximum width of node
+        this.view.updateMaxWidth( 300 );
+        this.view.render();
+        equal( this.view.$el.width(), 250 );
+
+    } );
+
 });
