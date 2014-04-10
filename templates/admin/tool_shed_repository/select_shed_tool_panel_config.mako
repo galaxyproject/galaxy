@@ -50,11 +50,11 @@
         repository tools may include code that produces malicious behavior, so be aware of what you are installing.
     </p>
     <p>
-        If you discover a repository that causes problems after installation, contact <a href="http://wiki.g2.bx.psu.edu/Support" target="_blank">Galaxy support</a>,
+        If you discover a repository that causes problems after installation, contact <a href="https://wiki.galaxyproject.org/Support" target="_blank">Galaxy support</a>,
         sending all necessary information, and appropriate action will be taken.
     </p>
     <p>
-        <a href="http://wiki.g2.bx.psu.edu/Tool%20Shed#Contacting_the_owner_of_a_repository" target="_blank">Contact the repository owner</a> for 
+        <a href="https://wiki.galaxyproject.org/ToolShedRepositoryFeatures#Contact_repository_owner" target="_blank">Contact the repository owner</a> for 
         general questions or concerns.
     </p>
 </div>

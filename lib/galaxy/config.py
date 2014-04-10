@@ -217,7 +217,7 @@ class Configuration( object ):
         self.message_box_visible = kwargs.get( 'message_box_visible', False )
         self.message_box_content = kwargs.get( 'message_box_content', None )
         self.message_box_class = kwargs.get( 'message_box_class', 'info' )
-        self.support_url = kwargs.get( 'support_url', 'http://wiki.g2.bx.psu.edu/Support' )
+        self.support_url = kwargs.get( 'support_url', 'https://wiki.galaxyproject.org/Support' )
         self.wiki_url = kwargs.get( 'wiki_url', 'http://wiki.galaxyproject.org/' )
         self.blog_url = kwargs.get( 'blog_url', None )
         self.screencasts_url = kwargs.get( 'screencasts_url', None )
