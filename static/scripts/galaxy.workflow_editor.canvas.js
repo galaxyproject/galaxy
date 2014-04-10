@@ -342,38 +342,49 @@ var OutputTerminalView = Backbone.View.extend( {
         var terminal = element.terminal = new OutputTerminal( element, type );
         terminal.node = node;
         terminal.name = name;
-        $(element).bind( "dragstart", function( e, d ) { 
-            $( d.available ).addClass( "input-terminal-active" );
-            // Save PJAs in the case of change datatype actions.
-            workflow.check_changes_in_active_form(); 
-            // Drag proxy div
-            var h = $( '<div class="drag-terminal" style="position: absolute;"></div>' )
-                .appendTo( "#canvas-container" ).get(0);
-            // Terminal and connection to display noodle while dragging
-            h.terminal = new OutputTerminal( h );
-            var c = new Connector();
-            c.dragging = true;
-            c.connect( element.terminal, h.terminal );
-            return h;
-        }).bind( "drag", function ( e, d ) {
-            var onmove = function() {
-                var po = $(d.proxy).offsetParent().offset(),
-                    x = d.offsetX - po.left,
-                    y = d.offsetY - po.top;
-                $(d.proxy).css( { left: x, top: y } );
-                d.proxy.terminal.redraw();
-                // FIXME: global
-                canvas_manager.update_viewport_overlay();
-            };
-            onmove();
-            $("#canvas-container").get(0).scroll_panel.test( e, onmove );
-        }).bind( "dragend", function ( e, d ) {
-            d.proxy.terminal.connectors[0].destroy();
-            $(d.proxy).remove();
-            $( d.available ).removeClass( "input-terminal-active" );
-            $("#canvas-container").get(0).scroll_panel.stop();
-        });
         node.output_terminals[name] = terminal;
+    },
+
+    events: {
+        "drag": "onDrag",
+        "dragstart": "onDragStart",
+        "dragend": "onDragEnd",
+    },
+
+    onDrag: function ( e, d ) {
+        var onmove = function() {
+            var po = $(d.proxy).offsetParent().offset(),
+                x = d.offsetX - po.left,
+                y = d.offsetY - po.top;
+            $(d.proxy).css( { left: x, top: y } );
+            d.proxy.terminal.redraw();
+            // FIXME: global
+            canvas_manager.update_viewport_overlay();
+        };
+        onmove();
+        $("#canvas-container").get(0).scroll_panel.test( e, onmove );
+    },
+
+    onDragStart: function( e, d ) { 
+        $( d.available ).addClass( "input-terminal-active" );
+        // Save PJAs in the case of change datatype actions.
+        workflow.check_changes_in_active_form(); 
+        // Drag proxy div
+        var h = $( '<div class="drag-terminal" style="position: absolute;"></div>' )
+            .appendTo( "#canvas-container" ).get(0);
+        // Terminal and connection to display noodle while dragging
+        h.terminal = new OutputTerminal( h );
+        var c = new Connector();
+        c.dragging = true;
+        c.connect( this.el.terminal, h.terminal );
+        return h;
+    },
+
+    onDragEnd: function ( e, d ) {
+        d.proxy.terminal.connectors[0].destroy();
+        $(d.proxy).remove();
+        $( d.available ).removeClass( "input-terminal-active" );
+        $("#canvas-container").get(0).scroll_panel.stop();
     }
 
 } );
