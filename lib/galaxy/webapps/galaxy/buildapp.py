@@ -284,7 +284,7 @@ def app_factory( global_conf, **kwargs ):
     # ====================
 
     # Handle displaying tool help images and README file images contained in repositories installed from the tool shed.
-    webapp.add_route( '/admin_toolshed/static/images/:repository_id/:image_file',
+    webapp.add_route( '/admin_toolshed/static/images/:repository_id/{image_file:.+?}',
                       controller='admin_toolshed',
                       action='display_image_in_repository',
                       repository_id=None,
