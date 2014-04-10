@@ -15,6 +15,7 @@ from galaxy.util.expressions import ExpressionContext
 from galaxy.web.form_builder import SelectField
 from galaxy.tools.actions.upload import UploadToolAction
 from tool_shed.util import common_util
+from tool_shed.util import hg_util
 from tool_shed.util import xml_util
 import tool_shed.util.shed_util_common as suc
 from xml.etree import ElementTree as XmlET
@@ -538,7 +539,7 @@ def get_version_lineage_for_tool( trans, repository_id, repository_metadata, gui
     """
     repository = suc.get_repository_by_id( trans, repository_id )
     repo_dir = repository.repo_path( trans.app )
-    repo = hg.repository( suc.get_configured_ui(), repo_dir )
+    repo = hg.repository( hg_util.get_configured_ui(), repo_dir )
     # Initialize the tool lineage
     version_lineage = [ guid ]
     # Get all ancestor guids of the received guid.
@@ -637,7 +638,7 @@ def handle_sample_files_and_load_tool_from_disk( trans, repo_files_dir, reposito
 def handle_sample_files_and_load_tool_from_tmp_config( trans, repo, repository_id, changeset_revision, tool_config_filename, work_dir ):
     tool = None
     message = ''
-    ctx = suc.get_changectx_for_changeset( repo, changeset_revision )
+    ctx = hg_util.get_changectx_for_changeset( repo, changeset_revision )
     # We're not currently doing anything with the returned list of deleted_sample_files here.  It is intended to help handle sample files that are in
     # the manifest, but have been deleted from disk.
     sample_files, deleted_sample_files = get_list_of_copied_sample_files( repo, ctx, dir=work_dir )
@@ -866,7 +867,7 @@ def load_tool_from_changeset_revision( trans, repository_id, changeset_revision,
     original_tool_data_path = trans.app.config.tool_data_path
     repository = suc.get_repository_in_tool_shed( trans, repository_id )
     repo_files_dir = repository.repo_path( trans.app )
-    repo = hg.repository( suc.get_configured_ui(), repo_files_dir )
+    repo = hg.repository( hg_util.get_configured_ui(), repo_files_dir )
     message = ''
     tool = None
     can_use_disk_file = False

@@ -6,6 +6,7 @@ from galaxy.model.orm import and_
 from galaxy.model.orm import or_
 from galaxy.util import json
 from galaxy.util import listify
+from tool_shed.util import hg_util
 import tool_shed.util.shed_util_common as suc
 import tool_shed.grids.util as grids_util
 import tool_shed.repository_types.util as rt_util
@@ -116,7 +117,7 @@ class RepositoryGrid( grids.Grid ):
         def get_value( self, trans, grid, repository ):
             """Display the current repository heads."""
             repo_dir = repository.repo_path( trans.app )
-            repo = hg.repository( suc.get_configured_ui(), repo_dir )
+            repo = hg.repository( hg_util.get_configured_ui(), repo_dir )
             heads = suc.get_repository_heads( repo )
             multiple_heads = len( heads ) > 1
             if multiple_heads:
@@ -124,7 +125,7 @@ class RepositoryGrid( grids.Grid ):
             else:
                 heads_str = ''
             for ctx in heads:
-                heads_str += '%s<br/>' % suc.get_revision_label_from_ctx( ctx, include_date=True )
+                heads_str += '%s<br/>' % hg_util.get_revision_label_from_ctx( ctx, include_date=True )
             heads_str.rstrip( '<br/>' )
             if multiple_heads:
                 heads_str += '</font>'
@@ -1338,7 +1339,7 @@ class RepositoryMetadataGrid( grids.Grid ):
         def get_value( self, trans, grid, repository_metadata ):
             repository = repository_metadata.repository
             changeset_revision = repository_metadata.changeset_revision
-            changeset_revision_label = suc.get_revision_label( trans, repository, changeset_revision, include_date=True )
+            changeset_revision_label = hg_util.get_revision_label( trans, repository, changeset_revision, include_date=True )
             return changeset_revision_label
 
 
@@ -1482,7 +1483,7 @@ class RepositoryDependenciesGrid( RepositoryMetadataGrid ):
                                                                                                                                           changeset_revision )
                                 if not required_repository_metadata:
                                     repo_dir = required_repository.repo_path( trans.app )
-                                    repo = hg.repository( suc.get_configured_ui(), repo_dir )
+                                    repo = hg.repository( hg_util.get_configured_ui(), repo_dir )
                                     updated_changeset_revision = suc.get_next_downloadable_changeset_revision( required_repository, repo, changeset_revision )
                                     required_repository_metadata = metadata_util.get_repository_metadata_by_repository_id_changeset_revision( trans,
                                                                                                                                               required_repository_id,
@@ -2029,7 +2030,7 @@ def get_latest_downloadable_repository_metadata( trans, repository ):
      tool_dependency_definition.
     """
     encoded_repository_id = trans.security.encode_id( repository.id )
-    repo = hg.repository( suc.get_configured_ui(), repository.repo_path( trans.app ) )
+    repo = hg.repository( hg_util.get_configured_ui(), repository.repo_path( trans.app ) )
     tip_ctx = str( repo.changectx( repo.changelog.tip() ) )
     repository_metadata = None
     try:
@@ -2077,7 +2078,7 @@ def get_latest_repository_metadata( trans, repository ):
      tool_dependency_definition.
     """
     encoded_repository_id = trans.security.encode_id( repository.id )
-    repo = hg.repository( suc.get_configured_ui(), repository.repo_path( trans.app ) )
+    repo = hg.repository( hg_util.get_configured_ui(), repository.repo_path( trans.app ) )
     tip_ctx = str( repo.changectx( repo.changelog.tip() ) )
     try:
         repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, encoded_repository_id, tip_ctx )

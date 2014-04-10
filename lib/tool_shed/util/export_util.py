@@ -14,6 +14,7 @@ from tool_shed.util import commit_util
 from tool_shed.util import common_install_util
 from tool_shed.util import common_util
 from tool_shed.util import encoding_util
+from tool_shed.util import hg_util
 from tool_shed.util import repository_dependency_util
 from tool_shed.util import xml_util
 
@@ -37,7 +38,7 @@ class ExportedRepositoryRegistry( object ):
 
 def archive_repository_revision( trans, ui, repository, archive_dir, changeset_revision ):
     '''Create an un-versioned archive of a repository.'''
-    repo = hg.repository( suc.get_configured_ui(), repository.repo_path( trans.app ) )
+    repo = hg.repository( hg_util.get_configured_ui(), repository.repo_path( trans.app ) )
     options_dict = suc.get_mercurial_default_options_dict( 'archive' )
     options_dict[ 'rev' ] = changeset_revision
     error_message = ''
@@ -233,8 +234,8 @@ def get_repo_info_dicts( trans, tool_shed_url, repository_id, changeset_revision
                                                                                        key_rd_dicts_to_be_processed=None,
                                                                                        all_repository_dependencies=None,
                                                                                        handled_key_rd_dicts=None )
-    repo = hg.repository( suc.get_configured_ui(), repository.repo_path( trans.app ) )
-    ctx = suc.get_changectx_for_changeset( repo, changeset_revision )
+    repo = hg.repository( hg_util.get_configured_ui(), repository.repo_path( trans.app ) )
+    ctx = hg_util.get_changectx_for_changeset( repo, changeset_revision )
     repo_info_dict = {}
     # Cast unicode to string.
     repo_info_dict[ str( repository.name ) ] = ( str( repository.description ),

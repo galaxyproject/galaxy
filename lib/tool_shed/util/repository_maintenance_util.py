@@ -3,6 +3,7 @@ import logging
 import os
 import re
 import tool_shed.util.shed_util_common as suc
+from tool_shed.util import hg_util
 from tool_shed.util import import_util
 from galaxy import util
 from galaxy.web.form_builder import build_select_field
@@ -47,7 +48,7 @@ def create_hgrc_file( trans, repository ):
     # Since we support both http and https, we set push_ssl to False to override the default (which is True) in the mercurial api.  The hg
     # purge extension purges all files and directories not being tracked by mercurial in the current repository.  It'll remove unknown files
     # and empty directories.  This is not currently used because it is not supported in the mercurial API.
-    repo = hg.repository( suc.get_configured_ui(), path=repository.repo_path( trans.app ) )
+    repo = hg.repository( hg_util.get_configured_ui(), path=repository.repo_path( trans.app ) )
     fp = repo.opener( 'hgrc', 'wb' )
     fp.write( '[paths]\n' )
     fp.write( 'default = .\n' )
@@ -83,7 +84,7 @@ def create_repository( trans, name, type, description, long_description, user_id
     if not os.path.exists( repository_path ):
         os.makedirs( repository_path )
     # Create the local repository.
-    repo = hg.repository( suc.get_configured_ui(), repository_path, create=True )
+    repo = hg.repository( hg_util.get_configured_ui(), repository_path, create=True )
     # Add an entry in the hgweb.config file for the local repository.
     lhs = "repos/%s/%s" % ( repository.user.username, repository.name )
     trans.app.hgweb_config_manager.add_entry( lhs, repository_path )

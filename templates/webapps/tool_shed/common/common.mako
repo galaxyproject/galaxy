@@ -107,7 +107,7 @@
 <%def name="render_multiple_heads_message( heads )">
     <div class="warningmessage">
         <%
-            from tool_shed.util.shed_util_common import get_revision_label_from_ctx
+            from tool_shed.util.hg_util import get_revision_label_from_ctx
             heads_str = ''
             for ctx in heads:
                 heads_str += '%s<br/>' % get_revision_label_from_ctx( ctx, include_date=True )

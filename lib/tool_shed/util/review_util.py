@@ -3,6 +3,7 @@ import os
 from galaxy import eggs
 from galaxy.model.orm import and_
 from galaxy.util.odict import odict
+from tool_shed.util import hg_util
 import tool_shed.util.shed_util_common as suc
 
 eggs.require( 'mercurial' )
@@ -58,13 +59,13 @@ def get_components( trans ):
 
 def get_previous_repository_reviews( trans, repository, changeset_revision ):
     """Return an ordered dictionary of repository reviews up to and including the received changeset revision."""
-    repo = hg.repository( suc.get_configured_ui(), repository.repo_path( trans.app ) )
+    repo = hg.repository( hg_util.get_configured_ui(), repository.repo_path( trans.app ) )
     reviewed_revision_hashes = [ review.changeset_revision for review in repository.reviews ]
     previous_reviews_dict = odict()
     for changeset in suc.reversed_upper_bounded_changelog( repo, changeset_revision ):
         previous_changeset_revision = str( repo.changectx( changeset ) )
         if previous_changeset_revision in reviewed_revision_hashes:
-            previous_rev, previous_changeset_revision_label = suc.get_rev_label_from_changeset_revision( repo, previous_changeset_revision )
+            previous_rev, previous_changeset_revision_label = hg_util.get_rev_label_from_changeset_revision( repo, previous_changeset_revision )
             revision_reviews = get_reviews_by_repository_id_changeset_revision( trans,
                                                                                 trans.security.encode_id( repository.id ),
                                                                                 previous_changeset_revision )
@@ -93,7 +94,7 @@ def get_reviews_by_repository_id_changeset_revision( trans, repository_id, chang
 
 def has_previous_repository_reviews( trans, repository, changeset_revision ):
     """Determine if a repository has a changeset revision review prior to the received changeset revision."""
-    repo = hg.repository( suc.get_configured_ui(), repository.repo_path( trans.app ) )
+    repo = hg.repository( hg_util.get_configured_ui(), repository.repo_path( trans.app ) )
     reviewed_revision_hashes = [ review.changeset_revision for review in repository.reviews ]
     for changeset in suc.reversed_upper_bounded_changelog( repo, changeset_revision ):
         previous_changeset_revision = str( repo.changectx( changeset ) )

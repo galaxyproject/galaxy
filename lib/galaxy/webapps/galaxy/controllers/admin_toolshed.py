@@ -16,6 +16,7 @@ from tool_shed.util import common_install_util
 from tool_shed.util import data_manager_util
 from tool_shed.util import datatype_util
 from tool_shed.util import encoding_util
+from tool_shed.util import hg_util
 from tool_shed.util import metadata_util
 from tool_shed.util import readme_util
 from tool_shed.util import repository_dependency_util
@@ -1851,7 +1852,7 @@ class AdminToolshed( AdminGalaxy ):
                         repo_files_dir = os.path.abspath( os.path.join( tool_path, relative_install_dir, name ) )
                     else:
                         repo_files_dir = os.path.abspath( os.path.join( relative_install_dir, name ) )
-                    repo = hg.repository( suc.get_configured_ui(), path=repo_files_dir )
+                    repo = hg.repository( hg_util.get_configured_ui(), path=repo_files_dir )
                     repository_clone_url = os.path.join( tool_shed_url, 'repos', owner, name )
                     repository_util.pull_repository( repo, repository_clone_url, latest_ctx_rev )
                     suc.update_repository( repo, latest_ctx_rev )
