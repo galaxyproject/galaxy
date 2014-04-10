@@ -1,7 +1,18 @@
-define(['plugin/charts/nvd3/config'], function(nvd3_config) {
+define([], function() {
 
-return $.extend(true, {}, nvd3_config, {
-    title   : 'Pie chart',
-});
+return {
+    title       : 'Pie chart',
+    library     : 'nvd3.js',
+    element     : 'svg',
+    columns : {
+        label : {
+            title       : 'Labels',
+            any_type    : true
+        },
+        y : {
+            title       : 'Values'
+        }
+    }
+};
 
 });
