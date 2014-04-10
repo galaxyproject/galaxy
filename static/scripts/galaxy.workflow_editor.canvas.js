@@ -105,7 +105,17 @@ var NodeView = Backbone.View.extend( {
         this.tool_body.append( $( "<div class='rule'></div>" ) );
     },
 
-    addDataInput: function( inputView ) {
+    addDataInput: function( input ) {
+        var terminalView = new InputTerminalView( {
+            node: this.node,
+            input: input
+        } );
+        var terminalElement = terminalView.el;
+        var inputView = new DataInputView( {
+            "terminalElement": terminalElement,
+            "input": input, 
+            "nodeView": this,
+        } );
         var ib = inputView.$el;
         var terminalElement = inputView.terminalElement;
         this.$( ".inputs" ).append( ib.prepend( terminalElement ) );
@@ -548,16 +558,7 @@ $.extend( Node.prototype, {
         });
 
         $.each( data.data_inputs, function( i, input ) {
-            var terminalView = new InputTerminalView( {
-                node: node,
-                input: input
-            } );
-            var terminalElement = terminalView.el;
-            nodeView.addDataInput( new DataInputView( {
-                "terminalElement": terminalElement,
-                "input": input, 
-                "nodeView": nodeView
-            } ) );
+            nodeView.addDataInput( input );
         });
         if ( ( data.data_inputs.length > 0 ) && ( data.data_outputs.length > 0 ) ) {
             nodeView.addRule();
