@@ -109,6 +109,10 @@ var NodeView = Backbone.View.extend( {
         var ib = inputView.$el;
         var terminalElement = inputView.terminalElement;
         this.$( ".inputs" ).append( ib.prepend( terminalElement ) );
+    },
+
+    addDataOutput: function( outputView ) {
+        this.tool_body.append( outputView.$el.append( outputView.terminalElement ) );
     }
 
 } );
@@ -193,6 +197,48 @@ var OutputCalloutView = Backbone.View.extend( {
 
 } );
 
+
+
+
+var DataOutputView = Backbone.View.extend( {
+    className: "form-row dataRow",
+
+    initialize: function( options ) {
+        this.output = options.output;
+        this.terminalElement = options.terminalElement;
+        this.nodeView = options.nodeView;
+
+        var output = this.output;
+        var label = output.name;
+        var node = this.nodeView.node;
+        if ( output.extensions.indexOf( 'input' ) < 0 ) {
+            label = label + " (" + output.extensions.join(", ") + ")";
+        }
+        this.$el.html( label )
+
+        if (node.type == 'tool'){
+            var calloutView = new OutputCalloutView( {
+                "label": label,
+                "output": output,
+                "node": node,
+            });
+            this.$el.append( calloutView.el );
+            this.$el.hover( function() { calloutView.hoverImage() }, function() { calloutView.resetImage() } );
+        }
+        this.$el.css({  position:'absolute',
+                        left: -1000,
+                        top: -1000,
+                        display:'none'});
+        $('body').append( this.el );
+        this.nodeView.updateMaxWidth( this.$el.outerWidth() + 17 );
+        this.$el.css({ position:'',
+                       left:'',
+                       top:'',
+                       display:'' })
+                .detach();
+    }
+
+} );
 
 
 
@@ -458,34 +504,13 @@ $.extend( Node.prototype, {
             nodeView.addRule();
         }
         $.each( data.data_outputs, function( i, output ) {
-            var t = $( "<div class='terminal output-terminal'></div>" );
-            node.enable_output_terminal( t[ 0 ], output.name, output.extensions );
-            var label = output.name;
-            if ( output.extensions.indexOf( 'input' ) < 0 ) {
-                label = label + " (" + output.extensions.join(", ") + ")";
-            }
-            var r = $("<div class='form-row dataRow'>" + label + "</div>" );
-            if (node.type == 'tool'){
-                var calloutView = new OutputCalloutView( {
-                    "label": label,
-                    "output": output,
-                    "node": node,
-                });
-                r.append( calloutView.el );
-                r.hover( function() { calloutView.hoverImage() }, function() { calloutView.resetImage() } );
-            }
-            r.css({  position:'absolute',
-                        left: -1000,
-                        top: -1000,
-                        display:'none'});
-            $('body').append(r);
-            nodeView.updateMaxWidth( r.outerWidth() + 17 );
-            r.css({ position:'',
-                       left:'',
-                       top:'',
-                       display:'' });
-            r.detach();
-            nodeView.tool_body.append( r.append( t ) );
+            var terminalElement = $( "<div class='terminal output-terminal'></div>" );
+            node.enable_output_terminal( terminalElement[ 0 ], output.name, output.extensions );
+            nodeView.addDataOutput( new DataOutputView( {
+                "output": output,
+                "terminalElement": terminalElement,
+                "nodeView": nodeView,
+            } ) );
         });
         nodeView.render();
         workflow.node_changed( this );
