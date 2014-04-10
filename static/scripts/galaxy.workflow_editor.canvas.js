@@ -6,13 +6,13 @@ $.extend( Terminal.prototype, {
     connect: function ( connector ) {
         this.connectors.push( connector );
         if ( this.node ) {
-            this.node.changed();
+            this.node.markChanged();
         }
     },
     disconnect: function ( connector ) {
         this.connectors.splice( $.inArray( connector, this.connectors ), 1 );
         if ( this.node ) {
-            this.node.changed();
+            this.node.markChanged();
         }
     },
     redraw: function () {
@@ -548,13 +548,14 @@ $.extend( Connector.prototype, {
     }
 } );
 
-function Node( element ) {
-    this.element = element;
-    this.input_terminals = {};
-    this.output_terminals = {};
-    this.tool_errors = {};
-}
-$.extend( Node.prototype, {
+var Node = Backbone.Model.extend({
+
+    initialize: function( attr ) {
+        this.element = attr.element;
+        this.input_terminals = {};
+        this.output_terminals = {};
+        this.tool_errors = {};
+    },
     redraw : function () {
         $.each( this.input_terminals, function( _, t ) {
             t.redraw();
@@ -638,7 +639,7 @@ $.extend( Node.prototype, {
             this.terminal.destroy();
         });
         // If active, reactivate with new form_html
-        this.changed();
+        this.markChanged();
         this.redraw();
     },
     error : function ( text ) {
@@ -649,7 +650,7 @@ $.extend( Node.prototype, {
         b.html( tmp );
         workflow.node_changed( this );
     },
-    changed: function() {
+    markChanged: function() {
         workflow.node_changed( this );
     }
 } );
@@ -1034,7 +1035,7 @@ function round_up( x, n ) {
      
 function prebuild_node( type, title_text, tool_id ) {
     var f = $("<div class='toolForm toolFormInCanvas'></div>");
-    var node = new Node( f );
+    var node = new Node( { element: f } );
     node.type = type;
     if ( type == 'tool' ) {
         node.tool_id = tool_id;

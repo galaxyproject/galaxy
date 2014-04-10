@@ -81,25 +81,25 @@ define([
     } );
 
     test( "test connect", function() {
-        this.node.changed = sinon.spy();
+        this.node.markChanged = sinon.spy();
 
         var connector = {};
         this.input_terminal.connect( connector );
 
-        // Assert node changed called
-        ok( this.node.changed.called );
+        // Assert node markChanged called
+        ok( this.node.markChanged.called );
         // Assert connectors updated
         ok( this.input_terminal.connectors[ 0 ] === connector );
     } );
 
     test( "test disconnect", function() {
-        this.node.changed = sinon.spy();
+        this.node.markChanged = sinon.spy();
 
         var connector = this.test_connector( {} );
         this.input_terminal.disconnect( connector );
 
-        // Assert node changed called
-        ok( this.node.changed.called );
+        // Assert node markChanged called
+        ok( this.node.markChanged.called );
         // Assert connectors updated
         equal( this.input_terminal.connectors.length, 0 );
     } );
@@ -204,7 +204,7 @@ define([
             this.input_terminal = { destroy: sinon.spy(), redraw: sinon.spy() };
             this.output_terminal = { destroy: sinon.spy(), redraw: sinon.spy() };
             this.element = $("<div><div class='toolFormBody'></div></div>");
-            this.node = new Node( this.element );
+            this.node = new Node( { element: this.element } );
             this.node.input_terminals.i1 = this.input_terminal;
             this.node.output_terminals.o1 = this.output_terminal;
         },
