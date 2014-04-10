@@ -892,6 +892,18 @@ function prebuild_node( type, title_text, tool_id ) {
     return node;
 }
 
+function add_node( type, title_text, tool_id ) {
+    // Abstraction for use by galaxy.workflow.js to hide
+    // some editor details from workflow code and reduce duplication
+    // between add_node_for_tool and add_node_for_module.
+    var node = prebuild_node( type, title_text, tool_id );
+    workflow.add_node( node );
+    workflow.fit_canvas_to_nodes();
+    canvas_manager.draw_overview();
+    workflow.activate_node( node );    
+    return node;
+}
+
 
 var ext_to_type = null;
 var type_to_type = null;
