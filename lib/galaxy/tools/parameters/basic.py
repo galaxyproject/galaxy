@@ -979,7 +979,7 @@ class SelectToolParameter( ToolParameter ):
                 if option[2]:
                     # Found selected option.
                     value = option[1]
-            d[ 'value' ] = options
+            d[ 'value' ] = value
 
         return d
 
