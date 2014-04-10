@@ -58,7 +58,7 @@ define([
         setup: function() {
             this.node = {  };
             this.element = $( "<div>" );
-            this.input_terminal = new InputTerminal( this.element, [ "txt" ] );
+            this.input_terminal = new InputTerminal( { element: this.element, datatypes: [ "txt" ] } );
             this.input_terminal.node = this.node;
         },
         test_connector: function( attr ) {

@@ -1,8 +1,8 @@
-function Terminal( element ) {
-    this.element = element;
-    this.connectors = [];
-}
-$.extend( Terminal.prototype, {
+var Terminal = Backbone.Model.extend( {
+    initialize: function( attr ) {
+        this.element = attr.element;
+        this.connectors = [];
+    },
     connect: function ( connector ) {
         this.connectors.push( connector );
         if ( this.node ) {
@@ -25,48 +25,14 @@ $.extend( Terminal.prototype, {
             c.destroy();
         });
     }
-});
+} );
 
-function OutputTerminal( element, datatypes ) {
-    Terminal.call( this, element );
-    this.datatypes = datatypes;
-}
-
-OutputTerminal.prototype = new Terminal();
-
-function InputTerminal( element, datatypes, multiple ) {
-    Terminal.call( this, element );
-    this.datatypes = datatypes;
-    this.multiple = multiple
-}
-
-InputTerminal.prototype = new Terminal();
-
-$.extend( InputTerminal.prototype, {
-    can_accept: function ( other ) {
-        if ( this.connectors.length < 1 || this.multiple) {
-            for ( var t in this.datatypes ) {
-                var cat_outputs = new Array();
-                cat_outputs = cat_outputs.concat(other.datatypes);
-                if (other.node.post_job_actions){
-                    for (var pja_i in other.node.post_job_actions){
-                        var pja = other.node.post_job_actions[pja_i];
-                        if (pja.action_type == "ChangeDatatypeAction" && (pja.output_name == '' || pja.output_name == other.name) && pja.action_arguments){
-                            cat_outputs.push(pja.action_arguments['newtype']);
-                        }
-                    }
-                }
-                // FIXME: No idea what to do about case when datatype is 'input'
-                for ( var other_datatype_i in cat_outputs ) {
-                    if ( cat_outputs[other_datatype_i] == "input" || issubtype( cat_outputs[other_datatype_i], this.datatypes[t] ) ) {
-                        return true;
-                    }
-                }
-            }
-        }
-        return false;
+var OutputTerminal = Terminal.extend( {
+    initialize: function( attr ) {
+        Terminal.prototype.initialize.call( this, attr );
+        this.datatypes = attr.datatypes;
     }
-});
+} );
 
 
 //////////////
@@ -309,7 +275,7 @@ var InputTerminalView = Backbone.View.extend( {
         var types = input.extensions;
         var multiple = input.multiple;
 
-        var terminal = this.el.terminal = new InputTerminal( this.el, types, multiple );
+        var terminal = this.el.terminal = new InputTerminal( { element: this.el, datatypes: types, multiple: multiple } );
         terminal.node = node;
         terminal.name = name;
 
@@ -395,7 +361,7 @@ var OutputTerminalView = Backbone.View.extend( {
 
         var element = this.el;
         var terminal_element = element;
-        var terminal = element.terminal = new OutputTerminal( element, type );
+        var terminal = element.terminal = new OutputTerminal( {element: element, datatypes: type } );
         terminal.node = node;
         terminal.name = name;
         node.output_terminals[name] = terminal;
@@ -429,7 +395,7 @@ var OutputTerminalView = Backbone.View.extend( {
         var h = $( '<div class="drag-terminal" style="position: absolute;"></div>' )
             .appendTo( "#canvas-container" ).get(0);
         // Terminal and connection to display noodle while dragging
-        h.terminal = new OutputTerminal( h );
+        h.terminal = new OutputTerminal( { element: h } );
         var c = new Connector();
         c.dragging = true;
         c.connect( this.el.terminal, h.terminal );
@@ -450,6 +416,40 @@ var OutputTerminalView = Backbone.View.extend( {
 ////////////
 // END VIEWS
 ////////////
+
+
+
+var InputTerminal = Terminal.extend( {
+    initialize: function( attr ) {
+        Terminal.prototype.initialize.call( this, attr );
+        this.datatypes = attr.datatypes;
+        this.multiple = attr.multiple;
+    },
+    can_accept: function ( other ) {
+        if ( this.connectors.length < 1 || this.multiple) {
+            for ( var t in this.datatypes ) {
+                var cat_outputs = new Array();
+                cat_outputs = cat_outputs.concat(other.datatypes);
+                if (other.node.post_job_actions){
+                    for (var pja_i in other.node.post_job_actions){
+                        var pja = other.node.post_job_actions[pja_i];
+                        if (pja.action_type == "ChangeDatatypeAction" && (pja.output_name == '' || pja.output_name == other.name) && pja.action_arguments){
+                            cat_outputs.push(pja.action_arguments['newtype']);
+                        }
+                    }
+                }
+                // FIXME: No idea what to do about case when datatype is 'input'
+                for ( var other_datatype_i in cat_outputs ) {
+                    if ( cat_outputs[other_datatype_i] == "input" || issubtype( cat_outputs[other_datatype_i], this.datatypes[t] ) ) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+});
+
 
 
 function Connector( handle1, handle2 ) {
