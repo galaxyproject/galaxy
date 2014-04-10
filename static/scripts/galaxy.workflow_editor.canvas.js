@@ -422,7 +422,6 @@ $.extend( Node.prototype, {
         // Update input rows
         var old_body = el.find( "div.inputs" );
         var new_body = $("<div class='inputs'></div>");
-        var old = old_body.find( "div.input-data-row");
         $.each( data.data_inputs, function( i, input ) {
             var t = node.new_input_terminal( input );
             // If already connected save old connection
