@@ -86,40 +86,40 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
             
         # Return the reversed path so it starts with the library node.
         full_path = build_path( folder )[::-1]
-        
 
         folder_contents = []
         time_updated = ''
         time_created = ''
-        # Go through every item in the folder and include its meta-data.
+        # Go through every accessible item in the folder and include its meta-data.
         for content_item in self._load_folder_contents( trans, folder ):
-            return_item = {}
-            encoded_id = trans.security.encode_id( content_item.id )
-            time_updated = content_item.update_time.strftime( "%Y-%m-%d %I:%M %p" )
-            time_created = content_item.create_time.strftime( "%Y-%m-%d %I:%M %p" )
-            
-            # For folder return also hierarchy values
-            if content_item.api_type == 'folder':
-                encoded_id = 'F' + encoded_id
-                return_item.update ( dict ( item_count = content_item.item_count ) )
+            if trans.app.security_agent.can_access_library_item( current_user_roles, content_item, trans.user ):
+                return_item = {}
+                encoded_id = trans.security.encode_id( content_item.id )
+                time_updated = content_item.update_time.strftime( "%Y-%m-%d %I:%M %p" )
+                time_created = content_item.create_time.strftime( "%Y-%m-%d %I:%M %p" )
 
-            if content_item.api_type == 'file':
-                library_dataset_dict = content_item.to_dict()
-                library_dataset_dict['data_type']
-                library_dataset_dict['file_size']
-                library_dataset_dict['date_uploaded']
-                return_item.update ( dict ( data_type = library_dataset_dict['data_type'],
-                                            file_size = library_dataset_dict['file_size'],
-                                            date_uploaded = library_dataset_dict['date_uploaded'] ) )
+                # For folder return also hierarchy values
+                if content_item.api_type == 'folder':
+                    encoded_id = 'F' + encoded_id
+                    return_item.update ( dict ( item_count = content_item.item_count ) )
 
-            # For every item return also the default meta-data
-            return_item.update( dict( id = encoded_id,
-                               type = content_item.api_type,
-                               name = content_item.name,
-                               time_updated = time_updated,
-                               time_created = time_created
-                                ) )
-            folder_contents.append( return_item )
+                if content_item.api_type == 'file':
+                    library_dataset_dict = content_item.to_dict()
+                    library_dataset_dict['data_type']
+                    library_dataset_dict['file_size']
+                    library_dataset_dict['date_uploaded']
+                    return_item.update ( dict ( data_type = library_dataset_dict['data_type'],
+                                                file_size = library_dataset_dict['file_size'],
+                                                date_uploaded = library_dataset_dict['date_uploaded'] ) )
+
+                # For every item return also the default meta-data
+                return_item.update( dict( id = encoded_id,
+                                   type = content_item.api_type,
+                                   name = content_item.name,
+                                   time_updated = time_updated,
+                                   time_created = time_created
+                                    ) )
+                folder_contents.append( return_item )
 
         return { 'metadata' : { 'full_path' : full_path, 'can_add_library_item': can_add_library_item }, 'folder_contents' : folder_contents }
 

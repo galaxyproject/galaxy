@@ -60,6 +60,10 @@ class MalformedId( MessageException ):
     status_code = 400
     err_code = error_codes.MALFORMED_ID
 
+class UnknownContentsType( MessageException ):
+    status_code = 400
+    err_code = error_codes.UNKNOWN_CONTENTS_TYPE
+
 class RequestParameterMissingException( MessageException ):
     status_code = 400
     err_code = error_codes.USER_REQUEST_MISSING_PARAMETER

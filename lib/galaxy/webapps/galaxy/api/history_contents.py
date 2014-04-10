@@ -190,8 +190,7 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         hda_dict[ 'display_apps' ] = self.get_display_apps( trans, hda )
         return hda_dict
 
-    #TODO: allow anon users to copy hdas, ldas
-    @expose_api
+    @expose_api_anonymous
     def create( self, trans, history_id, payload, **kwd ):
         """
         create( self, trans, history_id, payload, **kwd )
@@ -436,10 +435,7 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         return validated_payload
 
     def __handle_unknown_contents_type( self, trans, contents_type ):
-        # TODO: raise a message exception instead of setting status and returning dict.
-        trans.response.status = 400
-        return { 'error': 'Unknown contents type %s' % type }
-
+        raise exceptions.UnknownContentsType('Unknown contents type: %s' % type)
 
 class HDAManager( object ):
 
