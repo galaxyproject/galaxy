@@ -120,6 +120,7 @@ return Backbone.Model.extend(
                 if (response && response.message && response.message.data && response.message.data.input) {
                     message = response.message.data.input + '.';
                 }
+                
                 // update state
                 chart.state('failed', 'This visualization requires the Charts-Kit. Please make sure it is installed. ' + message);
                 

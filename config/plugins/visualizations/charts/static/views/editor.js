@@ -65,38 +65,15 @@ return Backbone.View.extend(
         //
         this.table = new Table.View({
             header : false,
-            onconfirm : function(type) {
-                if (self.chart.groups.length > 0) {
-                    // show modal
-                    self.app.modal.show({
-                        title   : 'Switching to another chart type?',
-                        body    : 'If you continue your settings and selections will be cleared.',
-                        buttons : {
-                            'Cancel'    : function() {
-                                // hide modal
-                                self.app.modal.hide();
-                            },
-                            'Continue'  : function() {
-                                // hide modal
-                                self.app.modal.hide();
-                                
-                                // confirm
-                                self.table.value(type);
-                            }
-                        }
-                    });
-                } else {
-                    // confirm
-                    self.table.value(type);
-                }
-            },
             onchange : function(type) {
                 // reset type relevant chart content
-                self.chart.groups.reset();
                 self.chart.settings.clear();
                 
                 // update chart type
                 self.chart.set({type: type});
+                
+                // set modified flag
+                self.chart.set('modified', true);
             },
             ondblclick  : function(chart_id) {
                 self.tabs.show('settings');

@@ -118,6 +118,7 @@ return Backbone.Collection.extend(
                         };
                         
                         // fill value
+                        var skip = false;
                         for (var key in group.columns) {
                             // get column
                             var column = group.columns[key];
@@ -127,8 +128,8 @@ return Backbone.Collection.extend(
                           
                             // read value from row
                             var v = row[index];
-                            if(isNaN(v) || !v) {
-                                v = 0;
+                            if(isNaN(v)) {
+                                skip = true;
                             }
                       
                             // add value to dictionary
@@ -136,7 +137,9 @@ return Backbone.Collection.extend(
                         }
 
                         // add to result
-                        result[j].values.push(value);
+                        if (!skip) {
+                            result[j].values.push(value);
+                        }
                     }
                 }
                 

@@ -51,7 +51,8 @@ return Backbone.View.extend(
         // append views
         this.$el.append(this.viewer_view.$el);
         this.$el.append(this.editor_view.$el);
-
+        this.$el.css('height', 'inherit');
+        
         // pick start screen
         if (!this.storage.load()) {
             // show editor

@@ -3,11 +3,9 @@ define(['mvc/ui/ui-portlet', 'plugin/library/ui', 'utils/utils'],
         function(Portlet, Ui, Utils) {
 
 // widget
-return Backbone.View.extend(
-{
+return Backbone.View.extend({
     // initialize
-    initialize: function(app, options)
-    {
+    initialize: function(app, options) {
         // link app
         this.app = app;
         
@@ -19,6 +17,9 @@ return Backbone.View.extend(
         
         // create element
         this.setElement($(this._template()));
+        
+        // use full screen for viewer
+        this._fullscreen(this.$el, 80);
         
         // create canvas element
         this._create_canvas('div');
@@ -69,6 +70,17 @@ return Backbone.View.extend(
         this.$el.hide();
     },
 
+    // resize to fullscreen
+    _fullscreen: function($el, margin) {
+        // fix size
+        $el.css('height', $(window).height() - margin);
+        
+        // catch window resize event
+        $(window).resize(function () {
+            $el.css('height', $(window).height()  - margin);
+        });
+    },
+    
     // create
     _create_canvas: function(element) {
         // clear canvas
@@ -219,7 +231,7 @@ return Backbone.View.extend(
     
     // template
     _template: function() {
-        return  '<div style="height: 100%; min-height: 50px;">' +
+        return  '<div style="height: inherit; min-height: 50px;">' +
                     '<div id="info" style="position: absolute; margin-left: 10px; margin-top: 10px; margin-bottom: 50px;">' +
                         '<span id="icon" style="font-size: 1.2em; display: inline-block;"/>' +
                         '<span id="text" style="position: relative; margin-left: 5px; top: -1px; font-size: 1.0em;"/>' +
@@ -229,7 +241,7 @@ return Backbone.View.extend(
     
     // template svg/div element
     _template_canvas: function(element) {
-        return '<' + element + ' class="canvas" style="height: calc(100% - 80px)"/>';
+        return '<' + element + ' class="canvas" style="height: 100%;"/>';
     }
     
 });

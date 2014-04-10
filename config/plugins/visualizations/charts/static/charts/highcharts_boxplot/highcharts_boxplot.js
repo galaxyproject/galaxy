@@ -104,7 +104,7 @@ return Backbone.View.extend(
                 
             // update data
             self.hc_config.series[0].data = data;
-            
+        
             // draw plot
             self.options.canvas.highcharts(self.hc_config);
             
