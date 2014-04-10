@@ -4,7 +4,6 @@ from galaxy.model.item_attrs import Dictifiable
 from galaxy.util.bunch import Bunch
 from galaxy.util import asbool
 from tool_shed.util import common_util
-from tool_shed.util.shed_util_common import get_url_from_tool_shed
 from urlparse import urljoin
 
 log = logging.getLogger( __name__ )
@@ -76,7 +75,7 @@ class ToolShedRepository( object ):
         return self.deleted
 
     def get_sharable_url( self, app ):
-        tool_shed_url = get_url_from_tool_shed( app, self.tool_shed )
+        tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( app, self.tool_shed )
         if tool_shed_url:
             return urljoin( tool_shed_url, 'view/%s/%s' % ( self.owner, self.name ) )
         return tool_shed_url
