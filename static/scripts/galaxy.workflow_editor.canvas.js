@@ -142,6 +142,60 @@ var DataInputView = Backbone.View.extend( {
 } );
 
 
+
+var OutputCalloutView = Backbone.View.extend( {
+    tagName: "div",
+
+    initialize: function( options ) {
+        this.label = options.label;
+        this.node = options.node;
+        this.output = options.output;
+
+        var view = this;
+        this.$el
+            .attr( "class", 'callout '+this.label )
+            .css( { display: 'none' } )
+            .append(
+                $("<div class='buttons'></div>").append(
+                    $("<img/>").attr('src', galaxy_config.root + 'static/images/fugue/asterisk-small-outline.png').click( function() {
+                        if ($.inArray(view.output.name, view.node.workflow_outputs) != -1){
+                            view.node.workflow_outputs.splice($.inArray(view.output.name, view.node.workflow_outputs), 1);
+                            view.$('img').attr('src', galaxy_config.root + 'static/images/fugue/asterisk-small-outline.png');
+                        }else{
+                            view.node.workflow_outputs.push(view.output.name);
+                            view.$('img').attr('src', galaxy_config.root + 'static/images/fugue/asterisk-small.png');
+                        }
+                        workflow.has_changes = true;
+                        canvas_manager.draw_overview();
+                    })))
+            .tooltip({delay:500, title: "Mark dataset as a workflow output. All unmarked datasets will be hidden." });
+        
+        this.$el.css({
+                top: '50%',
+                margin:'-8px 0px 0px 0px',
+                right: 8
+            });
+        this.$el.show();
+        this.resetImage();
+    },
+
+    resetImage: function() {
+        if ($.inArray( this.output.name, this.node.workflow_outputs) === -1){
+            this.$('img').attr('src', galaxy_config.root + 'static/images/fugue/asterisk-small-outline.png');
+        } else{
+            this.$('img').attr('src', galaxy_config.root + 'static/images/fugue/asterisk-small.png');
+        }
+    },
+
+    hoverImage: function() {
+        this.$('img').attr('src', galaxy_config.root + 'static/images/fugue/asterisk-small-yellow.png');
+    }
+
+} );
+
+
+
+
 ////////////
 // END VIEWS
 ////////////
@@ -412,45 +466,13 @@ $.extend( Node.prototype, {
             }
             var r = $("<div class='form-row dataRow'>" + label + "</div>" );
             if (node.type == 'tool'){
-                var callout = $("<div class='callout "+label+"'></div>")
-                    .css( { display: 'none' } )
-                    .append(
-                        $("<div class='buttons'></div>").append(
-                            $("<img/>").attr('src', galaxy_config.root + 'static/images/fugue/asterisk-small-outline.png').click( function() {
-                                if ($.inArray(output.name, node.workflow_outputs) != -1){
-                                    node.workflow_outputs.splice($.inArray(output.name, node.workflow_outputs), 1);
-                                    callout.find('img').attr('src', galaxy_config.root + 'static/images/fugue/asterisk-small-outline.png');
-                                }else{
-                                    node.workflow_outputs.push(output.name);
-                                    callout.find('img').attr('src', galaxy_config.root + 'static/images/fugue/asterisk-small.png');
-                                }
-                                workflow.has_changes = true;
-                                canvas_manager.draw_overview();
-                            })))
-                    .tooltip({delay:500, title: "Mark dataset as a workflow output. All unmarked datasets will be hidden." });
-                callout.css({
-                        top: '50%',
-                        margin:'-8px 0px 0px 0px',
-                        right: 8
-                    });
-                callout.show();
-                r.append(callout);
-                if ($.inArray(output.name, node.workflow_outputs) === -1){
-                    callout.find('img').attr('src', galaxy_config.root + 'static/images/fugue/asterisk-small-outline.png');
-                }else{
-                    callout.find('img').attr('src', galaxy_config.root + 'static/images/fugue/asterisk-small.png');
-                }
-                r.hover(
-                    function(){
-                        callout.find('img').attr('src', galaxy_config.root + 'static/images/fugue/asterisk-small-yellow.png');
-                    },
-                    function(){
-                        if ($.inArray(output.name, node.workflow_outputs) === -1){
-                            callout.find('img').attr('src', galaxy_config.root + 'static/images/fugue/asterisk-small-outline.png');
-                        }else{
-                            callout.find('img').attr('src', galaxy_config.root + 'static/images/fugue/asterisk-small.png');
-                        }
-                    });
+                var calloutView = new OutputCalloutView( {
+                    "label": label,
+                    "output": output,
+                    "node": node,
+                });
+                r.append( calloutView.el );
+                r.hover( function() { calloutView.hoverImage() }, function() { calloutView.resetImage() } );
             }
             r.css({  position:'absolute',
                         left: -1000,
