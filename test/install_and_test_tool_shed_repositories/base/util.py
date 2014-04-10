@@ -40,6 +40,7 @@ from galaxy.util.json import to_json_string
 import galaxy.webapps.tool_shed.model.mapping
 
 from nose.plugins import Plugin
+from tool_shed.util import common_util
 from tool_shed.util import tool_dependency_util
 
 from tool_shed.util.xml_util import parse_xml
@@ -1093,7 +1094,7 @@ def save_test_results_for_changeset_revision( url, tool_test_results_dicts, tool
                 params[ 'tool_test_results' ] = tool_test_results_dicts
                 # Set the time_last_tested entry so that the repository_metadata.time_last_tested will be set in the tool shed.
                 params[ 'time_last_tested' ] = 'This entry will result in this value being set via the Tool Shed API.'
-                url = '%s' % ( suc.url_join( galaxy_tool_shed_url,'api', 'repository_revisions', str( metadata_revision_id ) ) )
+                url = '%s' % ( common_util.url_join( galaxy_tool_shed_url,'api', 'repository_revisions', str( metadata_revision_id ) ) )
                 print 'url: ', url
                 print 'params: ', params
                 try:
