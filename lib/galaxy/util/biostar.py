@@ -86,7 +86,14 @@ def populate_tag_payload( payload=None, tool=None ):
 def populate_tool_payload( payload=None, tool=None ):
     payload = populate_tag_payload( payload=payload, tool=tool )
     payload[ 'title' ] = 'Need help with "%s" tool' % ( tool.name )
-    payload[ 'content' ] = '<br /><hr /><p>Tool name: %s</br>Tool version: %s</br>Tool ID: %s</p>' % ( tool.name, tool.version, tool.id )
+    tool_url = None
+    if tool.tool_shed_repository:
+        tool_url = tool.tool_shed_repository.get_sharable_url( tool.app )
+        if tool_url:
+            tool_url = '</br>ToolShed URL: <a href="%s">%s</a>' % ( tool_url, tool_url )
+    if not tool_url:
+        tool_url = ''
+    payload[ 'content' ] = '<br /><hr /><p>Tool name: %s</br>Tool version: %s</br>Tool ID: %s%s</p></br>' % ( tool.name, tool.version, tool.id, tool_url )
     return payload
 
 def determine_cookie_domain( galaxy_hostname, biostar_hostname ):

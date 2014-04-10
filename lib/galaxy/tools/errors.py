@@ -28,7 +28,9 @@ ${message}
 -----------------------------------------------------------------------------
 job id: ${job_id}
 tool id: ${job_tool_id}
+tool version: ${tool_version}
 job pid or drm id: ${job_runner_external_id}
+job tool version: ${job_tool_version}
 -----------------------------------------------------------------------------
 job command line:
 ${job_command_line}
@@ -86,7 +88,9 @@ class ErrorReporter( object ):
                               history_item_name=hda.get_display_name(),
                               history_view_link=history_view_link,
                               job_id=job.id,
+                              tool_version=job.tool_version,
                               job_tool_id=job.tool_id,
+                              job_tool_version=hda.tool_version,
                               job_runner_external_id=job.job_runner_external_id,
                               job_command_line=job.command_line,
                               job_stderr=util.unicodify( job.stderr ),
