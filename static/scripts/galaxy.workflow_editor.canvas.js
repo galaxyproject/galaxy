@@ -172,101 +172,98 @@ function Node( element ) {
 }
 $.extend( Node.prototype, {
     new_input_terminal : function( input ) {
-        var t = $("<div class='terminal input-terminal'></div>");
+        var t = $("<div class='terminal input-terminal'></div>")[ 0 ];
         this.enable_input_terminal( t, input.name, input.extensions, input.multiple );
         return t;
     },
-    enable_input_terminal : function( elements, name, types, multiple ) {
+    enable_input_terminal : function( element, name, types, multiple ) {
         var node = this;
-        $(elements).each( function() {
-            var terminal = this.terminal = new InputTerminal( this, types, multiple );
-            terminal.node = node;
-            terminal.name = name;
-            $(this).bind( "dropinit", function( e, d ) {
-                // Accept a dragable if it is an output terminal and has a
-                // compatible type
-                return $(d.drag).hasClass( "output-terminal" ) && terminal.can_accept( d.drag.terminal );
-            }).bind( "dropstart", function( e, d  ) {
-                if (d.proxy.terminal) { 
-                    d.proxy.terminal.connectors[0].inner_color = "#BBFFBB";
-                }
-            }).bind( "dropend", function ( e, d ) {
-                if (d.proxy.terminal) { 
-                    d.proxy.terminal.connectors[0].inner_color = "#FFFFFF";
-                }
-            }).bind( "drop", function( e, d ) {
-                ( new Connector( d.drag.terminal, terminal ) ).redraw();
-            }).bind( "hover", function() {
-                // If connected, create a popup to allow disconnection
-                if ( terminal.connectors.length > 0 ) {
-                    // Create callout
-                    var t = $("<div class='callout'></div>")
-                        .css( { display: 'none' } )
-                        .appendTo( "body" )
-                        .append(
-                            $("<div class='button'></div>").append(
-                                $("<div/>").addClass("fa-icon-button fa fa-times").click( function() {
-                                    $.each( terminal.connectors, function( _, x ) {
-                                        if (x) {
-                                            x.destroy();
-                                        }
-                                    });
-                                    t.remove();
-                                })))
-                        .bind( "mouseleave", function() {
-                            $(this).remove();
-                        });
-                    // Position it and show
-                    t.css({
-                            top: $(this).offset().top - 2,
-                            left: $(this).offset().left - t.width(),
-                            'padding-right': $(this).width()
-                        }).show();
-                }
-            });
-            node.input_terminals[name] = terminal;
+
+        var terminal = element.terminal = new InputTerminal( element, types, multiple );
+        terminal.node = node;
+        terminal.name = name;
+        $(element).bind( "dropinit", function( e, d ) {
+            // Accept a dragable if it is an output terminal and has a
+            // compatible type
+            return $(d.drag).hasClass( "output-terminal" ) && terminal.can_accept( d.drag.terminal );
+        }).bind( "dropstart", function( e, d  ) {
+            if (d.proxy.terminal) { 
+                d.proxy.terminal.connectors[0].inner_color = "#BBFFBB";
+            }
+        }).bind( "dropend", function ( e, d ) {
+            if (d.proxy.terminal) { 
+                d.proxy.terminal.connectors[0].inner_color = "#FFFFFF";
+            }
+        }).bind( "drop", function( e, d ) {
+            ( new Connector( d.drag.terminal, terminal ) ).redraw();
+        }).bind( "hover", function() {
+            // If connected, create a popup to allow disconnection
+            if ( terminal.connectors.length > 0 ) {
+                // Create callout
+                var t = $("<div class='callout'></div>")
+                    .css( { display: 'none' } )
+                    .appendTo( "body" )
+                    .append(
+                        $("<div class='button'></div>").append(
+                            $("<div/>").addClass("fa-icon-button fa fa-times").click( function() {
+                                $.each( terminal.connectors, function( _, x ) {
+                                    if (x) {
+                                        x.destroy();
+                                    }
+                                });
+                                t.remove();
+                            })))
+                    .bind( "mouseleave", function() {
+                        $(this).remove();
+                    });
+                // Position it and show
+                t.css({
+                        top: $(element).offset().top - 2,
+                        left: $(element).offset().left - t.width(),
+                        'padding-right': $(element).width()
+                    }).show();
+            }
         });
+        node.input_terminals[name] = terminal;
     },
-    enable_output_terminal : function( elements, name, type ) {
+    enable_output_terminal : function( element, name, type ) {
         var node = this;
-        $(elements).each( function() {
-            var terminal_element = this;
-            var terminal = this.terminal = new OutputTerminal( this, type );
-            terminal.node = node;
-            terminal.name = name;
-            $(this).bind( "dragstart", function( e, d ) { 
-                $( d.available ).addClass( "input-terminal-active" );
-                // Save PJAs in the case of change datatype actions.
-                workflow.check_changes_in_active_form(); 
-                // Drag proxy div
-                var h = $( '<div class="drag-terminal" style="position: absolute;"></div>' )
-                    .appendTo( "#canvas-container" ).get(0);
-                // Terminal and connection to display noodle while dragging
-                h.terminal = new OutputTerminal( h );
-                var c = new Connector();
-                c.dragging = true;
-                c.connect( this.terminal, h.terminal );
-                return h;
-            }).bind( "drag", function ( e, d ) {
-                var onmove = function() {
-                    var po = $(d.proxy).offsetParent().offset(),
-                        x = d.offsetX - po.left,
-                        y = d.offsetY - po.top;
-                    $(d.proxy).css( { left: x, top: y } );
-                    d.proxy.terminal.redraw();
-                    // FIXME: global
-                    canvas_manager.update_viewport_overlay();
-                };
-                onmove();
-                $("#canvas-container").get(0).scroll_panel.test( e, onmove );
-            }).bind( "dragend", function ( e, d ) {
-                d.proxy.terminal.connectors[0].destroy();
-                $(d.proxy).remove();
-                $( d.available ).removeClass( "input-terminal-active" );
-                $("#canvas-container").get(0).scroll_panel.stop();
-            });
-            node.output_terminals[name] = terminal;
+        var terminal_element = element;
+        var terminal = element.terminal = new OutputTerminal( element, type );
+        terminal.node = node;
+        terminal.name = name;
+        $(element).bind( "dragstart", function( e, d ) { 
+            $( d.available ).addClass( "input-terminal-active" );
+            // Save PJAs in the case of change datatype actions.
+            workflow.check_changes_in_active_form(); 
+            // Drag proxy div
+            var h = $( '<div class="drag-terminal" style="position: absolute;"></div>' )
+                .appendTo( "#canvas-container" ).get(0);
+            // Terminal and connection to display noodle while dragging
+            h.terminal = new OutputTerminal( h );
+            var c = new Connector();
+            c.dragging = true;
+            c.connect( element.terminal, h.terminal );
+            return h;
+        }).bind( "drag", function ( e, d ) {
+            var onmove = function() {
+                var po = $(d.proxy).offsetParent().offset(),
+                    x = d.offsetX - po.left,
+                    y = d.offsetY - po.top;
+                $(d.proxy).css( { left: x, top: y } );
+                d.proxy.terminal.redraw();
+                // FIXME: global
+                canvas_manager.update_viewport_overlay();
+            };
+            onmove();
+            $("#canvas-container").get(0).scroll_panel.test( e, onmove );
+        }).bind( "dragend", function ( e, d ) {
+            d.proxy.terminal.connectors[0].destroy();
+            $(d.proxy).remove();
+            $( d.available ).removeClass( "input-terminal-active" );
+            $("#canvas-container").get(0).scroll_panel.stop();
         });
+        node.output_terminals[name] = terminal;
     },
     redraw : function () {
         $.each( this.input_terminals, function( _, t ) {
@@ -342,7 +339,7 @@ $.extend( Node.prototype, {
         }
         $.each( data.data_outputs, function( i, output ) {
             var t = $( "<div class='terminal output-terminal'></div>" );
-            node.enable_output_terminal( t, output.name, output.extensions );
+            node.enable_output_terminal( t[ 0 ], output.name, output.extensions );
             var label = output.name;
             if ( output.extensions.indexOf( 'input' ) < 0 ) {
                 label = label + " (" + output.extensions.join(", ") + ")";
@@ -429,8 +426,8 @@ $.extend( Node.prototype, {
                 $(this).find( ".input-terminal" ).each( function() {
                     var c = this.terminal.connectors[0];
                     if ( c ) {
-                        t[0].terminal.connectors[0] = c;
-                        c.handle2 = t[0].terminal;
+                        t.terminal.connectors[0] = c;
+                        c.handle2 = t.terminal;
                     }
                 });
                 $(this).remove();
