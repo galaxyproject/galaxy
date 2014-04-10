@@ -66,16 +66,14 @@ define([], function() {
     var FolderContainer = Backbone.Model.extend({
         defaults : {
             folder : new Folder(),
-            full_path : "unknown",
             urlRoot : "/api/folders/",
             id : "unknown"
         },
     parse : function(obj) {
-      this.full_path = obj[0].full_path;
-          // response is not a simple array, it contains metadata
-          // this will update the inner collection
-          this.get("folder").reset(obj[1].folder_contents);
-          return obj;
+      // response is not a simple array, it contains metadata
+      // this will update the inner collection
+      this.get("folder").reset(obj.folder_contents);
+      return obj;
       }
     });
 

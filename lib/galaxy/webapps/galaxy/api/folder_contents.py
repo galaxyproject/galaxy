@@ -1,13 +1,16 @@
 """
-API operations on the contents of a folder.
+API operations on the contents of a library folder.
 """
-import logging, os, string, shutil, urllib, re, socket
-from cgi import escape, FieldStorage
-from galaxy import util, datatypes, jobs, web, util
-from galaxy.web.base.controller import *
-from galaxy.util.sanitize_html import sanitize_html
-from galaxy.model.orm import *
+from galaxy import util
+from galaxy import web
+from galaxy import exceptions
+from galaxy.web import _future_expose_api as expose_api
+from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
+from sqlalchemy.orm.exc import MultipleResultsFound
+from sqlalchemy.orm.exc import NoResultFound
+from galaxy.web.base.controller import BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems
 
+import logging
 log = logging.getLogger( __name__ )
 
 class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems ):
@@ -15,65 +18,60 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
     Class controls retrieval, creation and updating of folder contents.
     """
 
-    def load_folder_contents( self, trans, folder ):
-        """
-        Loads all contents of the folder (folders and data sets) but only in the first level.
-        """
-        current_user_roles = trans.get_current_user_roles()
-        is_admin = trans.user_is_admin()
-        content_items = []
-        for subfolder in folder.active_folders:
-            if not is_admin:
-                can_access, folder_ids = trans.app.security_agent.check_folder_contents( trans.user, current_user_roles, subfolder )
-            if (is_admin or can_access) and not subfolder.deleted:
-                subfolder.api_type = 'folder'
-                content_items.append( subfolder )
-        for dataset in folder.datasets:
-            if not is_admin:
-                can_access = trans.app.security_agent.can_access_dataset( current_user_roles, dataset.library_dataset_dataset_association.dataset )
-            if (is_admin or can_access) and not dataset.deleted:
-                dataset.api_type = 'file'
-                content_items.append( dataset )
-        return content_items
-
-    @web.expose_api
+    @expose_api_anonymous
     def index( self, trans, folder_id, **kwd ):
         """
         GET /api/folders/{encoded_folder_id}/contents
         Displays a collection (list) of a folder's contents (files and folders).
         Encoded folder ID is prepended with 'F' if it is a folder as opposed to a data set which does not have it.
-        Full path is provided as a separate object in response providing data for breadcrumb path building.
+        Full path is provided in response as a separate object providing data for breadcrumb path building.
         """
-        folder_container = []
-        current_user_roles = trans.get_current_user_roles()
 
-        if ( folder_id.startswith( 'F' ) ):
+        if ( len( folder_id ) == 17 and folder_id.startswith( 'F' ) ):
             try:
-                decoded_folder_id = trans.security.decode_id( folder_id[1:] )
+                decoded_folder_id = trans.security.decode_id( folder_id[ 1: ] )
             except TypeError:
-                trans.response.status = 400
-                return "Malformed folder id ( %s ) specified, unable to decode." % str( folder_id )
+                raise exceptions.MalformedId( 'Malformed folder id ( %s ) specified, unable to decode.' % str( folder_id ) )
+        else:
+            raise exceptions.MalformedId( 'Malformed folder id ( %s ) specified, unable to decode.' % str( folder_id ) )
 
         try:
-            folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( decoded_folder_id )
-        except:
-            folder = None
-            log.error( "FolderContentsController.index: Unable to retrieve folder with ID: %s" % folder_id )
+            folder = trans.sa_session.query( trans.app.model.LibraryFolder ).filter( trans.app.model.LibraryFolder.table.c.id == decoded_folder_id ).one()
+        except MultipleResultsFound:
+            raise exceptions.InconsistentDatabase( 'Multiple folders with same id found.' )
+        except NoResultFound:
+            raise exceptions.ObjectNotFound( 'Folder with the id provided ( %s ) was not found' % str( folder_id ) )
+        except Exception:
+            raise exceptions.InternalServerError( 'Error loading from the database.' )
 
-        # We didn't find the folder or user does not have an access to it.
-        if not folder:
-            trans.response.status = 400
-            return "Invalid folder id ( %s ) specified." % str( folder_id )
-        
+        current_user_roles = trans.get_current_user_roles()
+        can_add_library_item = trans.user_is_admin() or trans.app.security_agent.can_add_library_item( current_user_roles, folder )
+
         if not ( trans.user_is_admin() or trans.app.security_agent.can_access_library_item( current_user_roles, folder, trans.user ) ):
-            log.warning( "SECURITY: User (id: %s) without proper access rights is trying to load folder with ID of %s" % ( trans.user.id, folder.id ) )
-            trans.response.status = 400
-            return "Invalid folder id ( %s ) specified." % str( folder_id )
+            if folder.parent_id == None:
+                try:
+                    library = trans.sa_session.query( trans.app.model.Library ).filter( trans.app.model.Library.table.c.root_folder_id == decoded_folder_id ).one()
+                except Exception:
+                    raise exceptions.InternalServerError( 'Error loading from the database.' )
+                if trans.app.security_agent.library_is_public( library, contents=False ):
+                    pass
+                else:
+                    if trans.user:
+                        log.warning( "SECURITY: User (id: %s) without proper access rights is trying to load folder with ID of %s" % ( trans.user.id, decoded_folder_id ) )
+                    else:
+                        log.warning( "SECURITY: Anonymous user without proper access rights is trying to load folder with ID of %s" % ( decoded_folder_id ) )
+                    raise exceptions.ObjectNotFound( 'Folder with the id provided ( %s ) was not found' % str( folder_id ) ) 
+            else:
+                if trans.user:
+                    log.warning( "SECURITY: User (id: %s) without proper access rights is trying to load folder with ID of %s" % ( trans.user.id, decoded_folder_id ) )
+                else:
+                    log.warning( "SECURITY: Anonymous user without proper access rights is trying to load folder with ID of %s" % ( decoded_folder_id ) )
+                raise exceptions.ObjectNotFound( 'Folder with the id provided ( %s ) was not found' % str( folder_id ) )
         
         path_to_root = []
         def build_path ( folder ):
             """
-            Search the path upwards recursively and load the whole route of names and ids for breadcrumb purposes.
+            Search the path upwards recursively and load the whole route of names and ids for breadcrumb building purposes.
             """
             path_to_root = []
             # We are almost in root
@@ -88,13 +86,13 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
             
         # Return the reversed path so it starts with the library node.
         full_path = build_path( folder )[::-1]
-        folder_container.append( dict( full_path = full_path ) )
         
+
         folder_contents = []
         time_updated = ''
         time_created = ''
         # Go through every item in the folder and include its meta-data.
-        for content_item in self.load_folder_contents( trans, folder ):
+        for content_item in self._load_folder_contents( trans, folder ):
             return_item = {}
             encoded_id = trans.security.encode_id( content_item.id )
             time_updated = content_item.update_time.strftime( "%Y-%m-%d %I:%M %p" )
@@ -122,16 +120,36 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
                                time_created = time_created
                                 ) )
             folder_contents.append( return_item )
-        # Put the data in the container
-        folder_container.append( dict( folder_contents = folder_contents ) )
-        return folder_container
+
+        return { 'metadata' : { 'full_path' : full_path, 'can_add_library_item': can_add_library_item }, 'folder_contents' : folder_contents }
+
+    def _load_folder_contents( self, trans, folder ):
+        """
+        Loads all contents of the folder (folders and data sets) but only in the first level.
+        """
+        current_user_roles = trans.get_current_user_roles()
+        is_admin = trans.user_is_admin()
+        content_items = []
+        for subfolder in folder.active_folders:
+            if not is_admin:
+                can_access, folder_ids = trans.app.security_agent.check_folder_contents( trans.user, current_user_roles, subfolder )
+            if (is_admin or can_access) and not subfolder.deleted:
+                subfolder.api_type = 'folder'
+                content_items.append( subfolder )
+        for dataset in folder.datasets:
+            if not is_admin:
+                can_access = trans.app.security_agent.can_access_dataset( current_user_roles, dataset.library_dataset_dataset_association.dataset )
+            if (is_admin or can_access) and not dataset.deleted:
+                dataset.api_type = 'file'
+                content_items.append( dataset )
+        return content_items
 
     @web.expose_api
     def show( self, trans, id, library_id, **kwd ):
         """
         GET /api/folders/{encoded_folder_id}/
         """
-        pass
+        raise exceptions.NotImplemented( 'Showing the library folder content is not implemented.' )
 
     @web.expose_api
     def create( self, trans, library_id, payload, **kwd ):
@@ -140,20 +158,21 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
         Creates a new folder. This should be superseded by the
         LibraryController.
         """
-        pass
+        raise exceptions.NotImplemented( 'Creating the library folder content is not implemented.' )
 
     @web.expose_api
     def update( self, trans, id,  library_id, payload, **kwd ):
         """
         PUT /api/folders/{encoded_folder_id}/contents
         """
-        pass
+        raise exceptions.NotImplemented( 'Updating the library folder content is not implemented.' )
 
     # TODO: Move to library_common.
-    def __decode_library_content_id( self, trans, content_id ):
-        if ( len( content_id ) % 16 == 0 ):
-            return 'LibraryDataset', content_id
-        elif ( content_id.startswith( 'F' ) ):
-            return 'LibraryFolder', content_id[1:]
-        else:
-            raise HTTPBadRequest( 'Malformed library content id ( %s ) specified, unable to decode.' % str( content_id ) )
+    # def __decode_library_content_id( self, trans, content_id ):
+    #     if ( len( content_id ) % 16 == 0 ):
+    #         return 'LibraryDataset', content_id
+    #     elif ( content_id.startswith( 'F' ) ):
+    #         return 'LibraryFolder', content_id[1:]
+    #     else:
+    #         raise HTTPBadRequest( 'Malformed library content id ( %s ) specified, unable to decode.' % str( content_id ) )
+
