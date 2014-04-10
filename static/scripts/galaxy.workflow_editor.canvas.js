@@ -81,7 +81,7 @@ var NodeView = Backbone.View.extend( {
         this.output_width = Math.max(150, this.$el.width());
         this.tool_body = this.$el.find( ".toolFormBody" );
         this.tool_body.find( "div" ).remove();
-        $("<div class='inputs'></div>").appendTo( this.tool_body );
+        this.newInputsDiv().appendTo( this.tool_body );
     },
 
     render : function() {
@@ -95,6 +95,10 @@ var NodeView = Backbone.View.extend( {
         } else {
             this.$el.removeClass( "tool-node-error" );
         }
+    },
+
+    newInputsDiv: function() {
+        return $("<div class='inputs'></div>");
     },
 
     updateMaxWidth: function( newWidth ) {
@@ -119,6 +123,37 @@ var NodeView = Backbone.View.extend( {
         var ib = inputView.$el;
         var terminalElement = inputView.terminalElement;
         this.$( ".inputs" ).append( ib.prepend( terminalElement ) );
+    },
+
+    replaceDataInput: function( input, new_body ) {
+        var terminalView = new InputTerminalView( {
+            node: this.node,
+            input: input
+        } );
+        var t = terminalView.el;
+
+        // If already connected save old connection
+        this.$( "div[name='" + input.name + "']" ).each( function() {
+            $(this).find( ".input-terminal" ).each( function() {
+                var c = this.terminal.connectors[0];
+                if ( c ) {
+                    t.terminal.connectors[0] = c;
+                    c.handle2 = t.terminal;
+                }
+            });
+            $(this).remove();
+        });
+        var inputView = new DataInputView( {
+            "terminalElement": t,
+            "input": input, 
+            "nodeView": this,
+            "skipResize": true,
+        } );
+        var ib = inputView.$el;
+
+        // Append to new body
+        new_body.append( ib.prepend( t ) );
+
     },
 
     addDataOutput: function( output ) {
@@ -147,19 +182,21 @@ var DataInputView = Backbone.View.extend( {
         this.terminalElement = options.terminalElement;
 
         this.$el.attr( "name", this.input.name )
-                .html( this.input.label )
-                .css({  position:'absolute',
-                        left: -1000,
-                        top: -1000,
-                        display:'none'});
-        
+                .html( this.input.label );
+
+        if( ! options.skipResize ) {
+            this.$el.css({  position:'absolute',
+                            left: -1000,
+                            top: -1000,
+                            display:'none'});
         $('body').append(this.el);
-        this.nodeView.updateMaxWidth( this.$el.outerWidth() );
-        this.$el.css({ position:'',
-                       left:'',
-                       top:'',
-                       display:'' });
-        this.$el.remove();
+            this.nodeView.updateMaxWidth( this.$el.outerWidth() );
+            this.$el.css({ position:'',
+                           left:'',
+                           top:'',
+                           display:'' });
+            this.$el.remove();
+        }
     },
 
 } );
@@ -565,6 +602,7 @@ $.extend( Node.prototype, {
             el: this.element[ 0 ],
             node: node,
         });
+        node.nodeView = nodeView;
 
         $.each( data.data_inputs, function( i, input ) {
             nodeView.addDataInput( input );
@@ -579,42 +617,20 @@ $.extend( Node.prototype, {
         workflow.node_changed( this );
     },
     update_field_data : function( data ) {
-        var el = $(this.element),
-            node = this;
+        var node = this;
+            nodeView = node.nodeView;
         this.tool_state = data.tool_state;
         this.form_html = data.form_html;
         this.tool_errors = data.tool_errors;
         this.annotation = data['annotation'];
         var pja_in = $.parseJSON(data.post_job_actions);
         this.post_job_actions = pja_in ? pja_in : {};
-        if ( this.tool_errors ) {
-                el.addClass( "tool-node-error" );
-        } else {
-                el.removeClass( "tool-node-error" );
-        }
+        node.nodeView.renderToolErrors();
         // Update input rows
-        var old_body = el.find( "div.inputs" );
-        var new_body = $("<div class='inputs'></div>");
+        var old_body = nodeView.$( "div.inputs" );
+        var new_body = nodeView.newInputsDiv();
         $.each( data.data_inputs, function( i, input ) {
-            var terminalView = new InputTerminalView( {
-                node: node,
-                input: input
-            } );
-            var t = terminalView.el;
-
-            // If already connected save old connection
-            old_body.find( "div[name='" + input.name + "']" ).each( function() {
-                $(this).find( ".input-terminal" ).each( function() {
-                    var c = this.terminal.connectors[0];
-                    if ( c ) {
-                        t.terminal.connectors[0] = c;
-                        c.handle2 = t.terminal;
-                    }
-                });
-                $(this).remove();
-            });
-            // Append to new body
-            new_body.append( $("<div class='form-row dataRow input-data-row' name='" + input.name + "'>" + input.label + "</div>" ).prepend( t ) );
+            node.nodeView.replaceDataInput( input, new_body );
         });
         old_body.replaceWith( new_body );
         // Cleanup any leftover terminals
