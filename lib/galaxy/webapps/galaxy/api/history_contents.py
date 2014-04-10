@@ -4,7 +4,6 @@ API operations on the contents of a history.
 
 from galaxy import exceptions
 from galaxy import util
-from galaxy import web
 
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
@@ -18,7 +17,6 @@ from galaxy.web.base.controller import UsesLibraryMixinItems
 from galaxy.web.base.controller import UsesTagsMixin
 
 from galaxy.web.base.controller import url_for
-from galaxy.util.sanitize_html import sanitize_html
 
 from galaxy.webapps.galaxy.api import histories
 

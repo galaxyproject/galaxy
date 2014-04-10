@@ -7,7 +7,6 @@ API operations for for querying and recording user metrics from some client
 import datetime
 
 from galaxy import exceptions
-from galaxy import web
 from galaxy.web import require_admin
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
