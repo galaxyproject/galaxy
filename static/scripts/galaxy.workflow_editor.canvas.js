@@ -253,56 +253,77 @@ var InputTerminalView = Backbone.View.extend( {
         var types = input.extensions;
         var multiple = input.multiple;
 
-        var element = this.el;
-
-        var terminal = element.terminal = new InputTerminal( element, types, multiple );
+        var terminal = this.el.terminal = new InputTerminal( this.el, types, multiple );
         terminal.node = node;
         terminal.name = name;
-        $(element).bind( "dropinit", function( e, d ) {
-            // Accept a dragable if it is an output terminal and has a
-            // compatible type
-            return $(d.drag).hasClass( "output-terminal" ) && terminal.can_accept( d.drag.terminal );
-        }).bind( "dropstart", function( e, d  ) {
-            if (d.proxy.terminal) { 
-                d.proxy.terminal.connectors[0].inner_color = "#BBFFBB";
-            }
-        }).bind( "dropend", function ( e, d ) {
-            if (d.proxy.terminal) { 
-                d.proxy.terminal.connectors[0].inner_color = "#FFFFFF";
-            }
-        }).bind( "drop", function( e, d ) {
-            ( new Connector( d.drag.terminal, terminal ) ).redraw();
-        }).bind( "hover", function() {
-            // If connected, create a popup to allow disconnection
-            if ( terminal.connectors.length > 0 ) {
-                // Create callout
-                var t = $("<div class='callout'></div>")
-                    .css( { display: 'none' } )
-                    .appendTo( "body" )
-                    .append(
-                        $("<div class='button'></div>").append(
-                            $("<div/>").addClass("fa-icon-button fa fa-times").click( function() {
-                                $.each( terminal.connectors, function( _, x ) {
-                                    if (x) {
-                                        x.destroy();
-                                    }
-                                });
-                                t.remove();
-                            })))
-                    .bind( "mouseleave", function() {
-                        $(this).remove();
-                    });
-                // Position it and show
-                t.css({
-                        top: $(element).offset().top - 2,
-                        left: $(element).offset().left - t.width(),
-                        'padding-right': $(element).width()
-                    }).show();
-            }
-        });
 
         node.input_terminals[name] = terminal;
     },
+
+    events: {
+        "dropinit": "onDropInit",
+        "dropstart": "onDropStart",
+        "dropend": "onDropEnd",
+        "drop": "onDrop",
+        "hover": "onHover",
+    },
+
+    onDropInit: function( e, d ) {
+        var terminal = this.el.terminal;
+        // Accept a dragable if it is an output terminal and has a
+        // compatible type
+        return $(d.drag).hasClass( "output-terminal" ) && terminal.can_accept( d.drag.terminal );
+    },
+
+    onDropStart: function( e, d  ) {
+        if (d.proxy.terminal) { 
+            d.proxy.terminal.connectors[0].inner_color = "#BBFFBB";
+        }
+    },
+
+    onDropEnd: function ( e, d ) {
+        if (d.proxy.terminal) { 
+            d.proxy.terminal.connectors[0].inner_color = "#FFFFFF";
+        }
+    },
+
+    onDrop: function( e, d ) {
+        var terminal = this.el.terminal;        
+        new Connector( d.drag.terminal, terminal ).redraw();
+    },
+
+    onHover: function() {
+        var element = this.el;
+        var terminal = element.terminal;
+
+        // If connected, create a popup to allow disconnection
+        if ( terminal.connectors.length > 0 ) {
+            // Create callout
+            var t = $("<div class='callout'></div>")
+                .css( { display: 'none' } )
+                .appendTo( "body" )
+                .append(
+                    $("<div class='button'></div>").append(
+                        $("<div/>").addClass("fa-icon-button fa fa-times").click( function() {
+                            $.each( terminal.connectors, function( _, x ) {
+                                if (x) {
+                                    x.destroy();
+                                }
+                            });
+                            t.remove();
+                        })))
+                .bind( "mouseleave", function() {
+                    $(this).remove();
+                });
+            // Position it and show
+            t.css({
+                    top: $(element).offset().top - 2,
+                    left: $(element).offset().left - t.width(),
+                    'padding-right': $(element).width()
+                }).show();
+        }
+    },
+
 } );
 
 
