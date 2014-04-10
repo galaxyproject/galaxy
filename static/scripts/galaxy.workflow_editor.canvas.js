@@ -307,6 +307,57 @@ var InputTerminalView = Backbone.View.extend( {
 
 
 
+var OutputTerminalView = Backbone.View.extend( {
+    className: "terminal output-terminal",
+
+    initialize: function( options ) {
+        var node = options.node;
+        var output = options.output;
+        var name = output.name;
+        var type = output.extensions;
+
+        var element = this.el;
+        var terminal_element = element;
+        var terminal = element.terminal = new OutputTerminal( element, type );
+        terminal.node = node;
+        terminal.name = name;
+        $(element).bind( "dragstart", function( e, d ) { 
+            $( d.available ).addClass( "input-terminal-active" );
+            // Save PJAs in the case of change datatype actions.
+            workflow.check_changes_in_active_form(); 
+            // Drag proxy div
+            var h = $( '<div class="drag-terminal" style="position: absolute;"></div>' )
+                .appendTo( "#canvas-container" ).get(0);
+            // Terminal and connection to display noodle while dragging
+            h.terminal = new OutputTerminal( h );
+            var c = new Connector();
+            c.dragging = true;
+            c.connect( element.terminal, h.terminal );
+            return h;
+        }).bind( "drag", function ( e, d ) {
+            var onmove = function() {
+                var po = $(d.proxy).offsetParent().offset(),
+                    x = d.offsetX - po.left,
+                    y = d.offsetY - po.top;
+                $(d.proxy).css( { left: x, top: y } );
+                d.proxy.terminal.redraw();
+                // FIXME: global
+                canvas_manager.update_viewport_overlay();
+            };
+            onmove();
+            $("#canvas-container").get(0).scroll_panel.test( e, onmove );
+        }).bind( "dragend", function ( e, d ) {
+            d.proxy.terminal.connectors[0].destroy();
+            $(d.proxy).remove();
+            $( d.available ).removeClass( "input-terminal-active" );
+            $("#canvas-container").get(0).scroll_panel.stop();
+        });
+        node.output_terminals[name] = terminal;
+    }
+
+} );
+
+
 
 ////////////
 // END VIEWS
@@ -416,45 +467,6 @@ function Node( element ) {
     this.tool_errors = {};
 }
 $.extend( Node.prototype, {
-    enable_output_terminal : function( element, name, type ) {
-        var node = this;
-        var terminal_element = element;
-        var terminal = element.terminal = new OutputTerminal( element, type );
-        terminal.node = node;
-        terminal.name = name;
-        $(element).bind( "dragstart", function( e, d ) { 
-            $( d.available ).addClass( "input-terminal-active" );
-            // Save PJAs in the case of change datatype actions.
-            workflow.check_changes_in_active_form(); 
-            // Drag proxy div
-            var h = $( '<div class="drag-terminal" style="position: absolute;"></div>' )
-                .appendTo( "#canvas-container" ).get(0);
-            // Terminal and connection to display noodle while dragging
-            h.terminal = new OutputTerminal( h );
-            var c = new Connector();
-            c.dragging = true;
-            c.connect( element.terminal, h.terminal );
-            return h;
-        }).bind( "drag", function ( e, d ) {
-            var onmove = function() {
-                var po = $(d.proxy).offsetParent().offset(),
-                    x = d.offsetX - po.left,
-                    y = d.offsetY - po.top;
-                $(d.proxy).css( { left: x, top: y } );
-                d.proxy.terminal.redraw();
-                // FIXME: global
-                canvas_manager.update_viewport_overlay();
-            };
-            onmove();
-            $("#canvas-container").get(0).scroll_panel.test( e, onmove );
-        }).bind( "dragend", function ( e, d ) {
-            d.proxy.terminal.connectors[0].destroy();
-            $(d.proxy).remove();
-            $( d.available ).removeClass( "input-terminal-active" );
-            $("#canvas-container").get(0).scroll_panel.stop();
-        });
-        node.output_terminals[name] = terminal;
-    },
     redraw : function () {
         $.each( this.input_terminals, function( _, t ) {
             t.redraw();
@@ -519,11 +531,13 @@ $.extend( Node.prototype, {
             nodeView.addRule();
         }
         $.each( data.data_outputs, function( i, output ) {
-            var terminalElement = $( "<div class='terminal output-terminal'></div>" );
-            node.enable_output_terminal( terminalElement[ 0 ], output.name, output.extensions );
+            var terminalView = new OutputTerminalView( {
+                node: node,
+                output: output
+            } );
             nodeView.addDataOutput( new DataOutputView( {
                 "output": output,
-                "terminalElement": terminalElement,
+                "terminalElement": terminalView.el,
                 "nodeView": nodeView,
             } ) );
         });

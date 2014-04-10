@@ -439,4 +439,29 @@ define([
 
     // TODO: Test binding... not sure how to do that exactly..
 
+    /* global OutputTerminalView */
+    module( "Output terminal view", {
+        setup: function() {
+            this.node = { output_terminals: [] };
+            this.output = { name: "o1", extensions: "txt" };
+            this.view = new OutputTerminalView( {
+                node: this.node,
+                output: this.output,
+            });
+        }
+    } );
+
+    test( "terminal added to node", function() {
+        ok( this.node.output_terminals.o1 );
+        equal( this.node.output_terminals.o1.datatypes, [ "txt" ] );
+    } );
+
+    test( "terminal element", function() {
+        var el = this.view.el;
+        equal( el.tagName, "DIV" );
+        equal( el.className, "terminal output-terminal");
+    } );
+
+    // TODO: Test bindings
+
 });
