@@ -413,4 +413,30 @@ define([
 
     } );
 
+    /* global InputTerminalView */
+    module( "Input terminal view", {
+        setup: function() {
+            this.node = { input_terminals: [] };
+            this.input = { name: "i1", extensions: "txt", multiple: false };
+            this.view = new InputTerminalView( {
+                node: this.node,
+                input: this.input,
+            });
+        }
+    } );
+
+    test( "terminal added to node", function() {
+        ok( this.node.input_terminals.i1 );
+        equal( this.node.input_terminals.i1.datatypes, [ "txt" ] );
+        equal( this.node.input_terminals.i1.multiple, false );
+    } );
+
+    test( "terminal element", function() {
+        var el = this.view.el;
+        equal( el.tagName, "DIV" );
+        equal( el.className, "terminal input-terminal");
+    } );
+
+    // TODO: Test binding... not sure how to do that exactly..
+
 });

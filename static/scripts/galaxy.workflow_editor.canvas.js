@@ -242,6 +242,72 @@ var DataOutputView = Backbone.View.extend( {
 
 
 
+var InputTerminalView = Backbone.View.extend( {
+    className: "terminal input-terminal",
+
+    initialize: function( options ) {
+        var node = options.node;
+        var input = options.input;
+        
+        var name = input.name;
+        var types = input.extensions;
+        var multiple = input.multiple;
+
+        var element = this.el;
+
+        var terminal = element.terminal = new InputTerminal( element, types, multiple );
+        terminal.node = node;
+        terminal.name = name;
+        $(element).bind( "dropinit", function( e, d ) {
+            // Accept a dragable if it is an output terminal and has a
+            // compatible type
+            return $(d.drag).hasClass( "output-terminal" ) && terminal.can_accept( d.drag.terminal );
+        }).bind( "dropstart", function( e, d  ) {
+            if (d.proxy.terminal) { 
+                d.proxy.terminal.connectors[0].inner_color = "#BBFFBB";
+            }
+        }).bind( "dropend", function ( e, d ) {
+            if (d.proxy.terminal) { 
+                d.proxy.terminal.connectors[0].inner_color = "#FFFFFF";
+            }
+        }).bind( "drop", function( e, d ) {
+            ( new Connector( d.drag.terminal, terminal ) ).redraw();
+        }).bind( "hover", function() {
+            // If connected, create a popup to allow disconnection
+            if ( terminal.connectors.length > 0 ) {
+                // Create callout
+                var t = $("<div class='callout'></div>")
+                    .css( { display: 'none' } )
+                    .appendTo( "body" )
+                    .append(
+                        $("<div class='button'></div>").append(
+                            $("<div/>").addClass("fa-icon-button fa fa-times").click( function() {
+                                $.each( terminal.connectors, function( _, x ) {
+                                    if (x) {
+                                        x.destroy();
+                                    }
+                                });
+                                t.remove();
+                            })))
+                    .bind( "mouseleave", function() {
+                        $(this).remove();
+                    });
+                // Position it and show
+                t.css({
+                        top: $(element).offset().top - 2,
+                        left: $(element).offset().left - t.width(),
+                        'padding-right': $(element).width()
+                    }).show();
+            }
+        });
+
+        node.input_terminals[name] = terminal;
+    },
+} );
+
+
+
+
 ////////////
 // END VIEWS
 ////////////
@@ -350,61 +416,6 @@ function Node( element ) {
     this.tool_errors = {};
 }
 $.extend( Node.prototype, {
-    new_input_terminal : function( input ) {
-        var t = $("<div class='terminal input-terminal'></div>")[ 0 ];
-        this.enable_input_terminal( t, input.name, input.extensions, input.multiple );
-        return t;
-    },
-    enable_input_terminal : function( element, name, types, multiple ) {
-        var node = this;
-
-        var terminal = element.terminal = new InputTerminal( element, types, multiple );
-        terminal.node = node;
-        terminal.name = name;
-        $(element).bind( "dropinit", function( e, d ) {
-            // Accept a dragable if it is an output terminal and has a
-            // compatible type
-            return $(d.drag).hasClass( "output-terminal" ) && terminal.can_accept( d.drag.terminal );
-        }).bind( "dropstart", function( e, d  ) {
-            if (d.proxy.terminal) { 
-                d.proxy.terminal.connectors[0].inner_color = "#BBFFBB";
-            }
-        }).bind( "dropend", function ( e, d ) {
-            if (d.proxy.terminal) { 
-                d.proxy.terminal.connectors[0].inner_color = "#FFFFFF";
-            }
-        }).bind( "drop", function( e, d ) {
-            ( new Connector( d.drag.terminal, terminal ) ).redraw();
-        }).bind( "hover", function() {
-            // If connected, create a popup to allow disconnection
-            if ( terminal.connectors.length > 0 ) {
-                // Create callout
-                var t = $("<div class='callout'></div>")
-                    .css( { display: 'none' } )
-                    .appendTo( "body" )
-                    .append(
-                        $("<div class='button'></div>").append(
-                            $("<div/>").addClass("fa-icon-button fa fa-times").click( function() {
-                                $.each( terminal.connectors, function( _, x ) {
-                                    if (x) {
-                                        x.destroy();
-                                    }
-                                });
-                                t.remove();
-                            })))
-                    .bind( "mouseleave", function() {
-                        $(this).remove();
-                    });
-                // Position it and show
-                t.css({
-                        top: $(element).offset().top - 2,
-                        left: $(element).offset().left - t.width(),
-                        'padding-right': $(element).width()
-                    }).show();
-            }
-        });
-        node.input_terminals[name] = terminal;
-    },
     enable_output_terminal : function( element, name, type ) {
         var node = this;
         var terminal_element = element;
@@ -493,7 +504,11 @@ $.extend( Node.prototype, {
         });
 
         $.each( data.data_inputs, function( i, input ) {
-            var terminalElement = node.new_input_terminal( input );
+            var terminalView = new InputTerminalView( {
+                node: node,
+                input: input
+            } );
+            var terminalElement = terminalView.el;
             nodeView.addDataInput( new DataInputView( {
                 "terminalElement": terminalElement,
                 "input": input, 
@@ -533,7 +548,12 @@ $.extend( Node.prototype, {
         var old_body = el.find( "div.inputs" );
         var new_body = $("<div class='inputs'></div>");
         $.each( data.data_inputs, function( i, input ) {
-            var t = node.new_input_terminal( input );
+            var terminalView = new InputTerminalView( {
+                node: node,
+                input: input
+            } );
+            var t = terminalView.el;
+
             // If already connected save old connection
             old_body.find( "div[name='" + input.name + "']" ).each( function() {
                 $(this).find( ".input-terminal" ).each( function() {
