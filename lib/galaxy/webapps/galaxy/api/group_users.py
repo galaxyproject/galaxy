@@ -58,7 +58,7 @@ class GroupUsersAPIController( BaseAPIController ):
                                    email = user.email,
                                    url = url_for( 'group_user', group_id=group_id, id=user_id) ) # TODO Fix This
             if not item:
-                item = "user %s not in group %s" % (user.email,group.name)
+                item = "user %s not in group %s" % (user.email, group.name)
         except Exception, e:
             item = "Error in group_user API group %s user %s" % (group.name, user.email)
             log.error(item + ": %s" % str(e))
@@ -92,7 +92,7 @@ class GroupUsersAPIController( BaseAPIController ):
                              email = user.email,
                              url = url_for( 'group_user', group_id=group_id, id=user_id) )
         except Exception, e:
-            item = "Error in group_user API Adding user %s to group %s" % (user.email,group.name)
+            item = "Error in group_user API Adding user %s to group %s" % (user.email, group.name)
             log.error(item + ": %s" % str(e))
         return item
 
@@ -117,8 +117,8 @@ class GroupUsersAPIController( BaseAPIController ):
                                  email = user.email,
                                  url = url_for( 'group_user', group_id=group_id, id=user_id) )
             if not item:
-                item = "user %s not in group %s" % (user.email,group.name)
+                item = "user %s not in group %s" % (user.email, group.name)
         except Exception, e:
-            item = "Error in group_user API Removing user %s from group %s" % (user.email,group.name)
+            item = "Error in group_user API Removing user %s from group %s" % (user.email, group.name)
             log.error(item + ": %s" % str(e))
         return item
