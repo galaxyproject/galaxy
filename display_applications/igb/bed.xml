@@ -1,4 +1,4 @@
-<display id="igb_bed" version="1.0.0" name="display in IGB">
+<display id="igb_bed" version="1.0.0" name="Display in IGB">
     
 	<link id="View" name="View">
 		<url>$bioviz</url>

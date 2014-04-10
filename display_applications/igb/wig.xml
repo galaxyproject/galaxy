@@ -1,4 +1,4 @@
-<display id="igb_wig" version="1.0.0" name="display in IGB">
+<display id="igb_wig" version="1.0.0" name="Display in IGB">
     
     <link id="View" name="View">
         <url>http://bioviz.org/igb/galaxy.html?version=${wig_file.dbkey}&amp;${position}&amp;loadresidues=false&amp;feature_url_0=${wig_file.url}&amp;sym_name_0=${niceName}&amp;sym_method_0=${wig_file.url}&amp;query_url=${wig_file.url}&amp;server_url=galaxy</url>
