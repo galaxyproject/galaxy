@@ -13,7 +13,7 @@ require.config({
         // Custom paths for qunit testing dependencies...
         "QUnit": qunit_absolute_directory + "test-libs/qunit-1.14.0", // .. because baseUrl is scripts to match Galaxy.
         "sinon": qunit_absolute_directory + "test-libs/sinon-1.9.1",
-        "sinon-qunit": qunit_absolute_directory + "test-libs/sinon-qunit-1.0.0",
+        "sinon-qunit": qunit_absolute_directory + "test-libs/sinon-qunit-1.0.0"
     },
     shim: {
         // Ensure correct Qunit order in light of requirejs loading...
@@ -32,12 +32,12 @@ require.config({
             deps: [ 'sinon', "QUnit" ],
             exports: "sinon"  // Odd but seems to work
         },
-        "underscore": { 
-            exports: "_" 
+        "underscore": {
+            exports: "_"
         },
         "backbone": {
             deps: [ 'underscore', 'jquery' ],
-            exports: "Backbone" 
+            exports: "Backbone"
         }
     }
 } );
@@ -48,10 +48,10 @@ var galaxy_config =
     root: '/'
 };
 
-
 require( [ "jquery", "QUnit" ], function( $, QUnit ) {
     // Bootstrap HTML for displaying Qunit results.
-    $('head').append( $('<link rel="stylesheet" type="text/css"  />').attr( "href", qunit_absolute_directory + "test-libs/qunit-1.14.0.css") );
+    $('head').append( $('<link rel="stylesheet" type="text/css"  />')
+        .attr( "href", qunit_absolute_directory + "test-libs/qunit-1.14.0.css") );
     $('body').append( $('<div id="qunit">') );
     $('body').append( $('<div id="qunit-fixture">') );
 
@@ -60,7 +60,6 @@ require( [ "jquery", "QUnit" ], function( $, QUnit ) {
     // underscore + backbone loaded here because they are assumed globals by
     // much of the Galaxy client code.
     require( [ "underscore", "backbone" ], function( _, Backbone ) {
-
         require( [ test_module_path ], function( ) {
             QUnit.load();
             QUnit.start();

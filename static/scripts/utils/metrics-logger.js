@@ -125,9 +125,11 @@ MetricsLogger.prototype._initCache = function _initCache(){
 MetricsLogger.prototype._parseLevel = function _parseLevel( level ){
     var type = typeof level;
     if( type === 'number' ){ return level; }
-    var upper = level.toUpperCase();
-    if( type === 'string' && MetricsLogger.hasOwnProperty( upper ) ){
-        return MetricsLogger[ upper ];
+    if( type === 'string' ){
+        var upper = level.toUpperCase();
+        if( MetricsLogger.hasOwnProperty( upper ) ){
+            return MetricsLogger[ upper ];
+        }
     }
     throw new Error( 'Unknown log level: ' + level );
 };
@@ -381,6 +383,7 @@ LoggingCache.prototype.print = function print(){
 
 //=============================================================================
     return {
-        MetricsLogger  : MetricsLogger
+        MetricsLogger  : MetricsLogger,
+        LoggingCache   : LoggingCache
     };
 });
