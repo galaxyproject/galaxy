@@ -8,6 +8,7 @@ from galaxy import util
 from galaxy.datatypes import checkers
 from tool_shed.util import commit_util
 from tool_shed.util import encoding_util
+from tool_shed.util import hg_util
 from tool_shed.util import metadata_util
 from tool_shed.util import xml_util
 import tool_shed.util.shed_util_common as suc
@@ -212,7 +213,7 @@ def import_repository_archive( trans, repository, repository_archive_dict ):
     archive_file_path = os.path.join( file_path, archive_file_name )
     archive = tarfile.open( archive_file_path, 'r:*' )
     repo_dir = repository.repo_path( trans.app )
-    repo = hg.repository( suc.get_configured_ui(), repo_dir )
+    repo = hg.repository( hg_util.get_configured_ui(), repo_dir )
     undesirable_dirs_removed = 0
     undesirable_files_removed = 0
     ok, error_message = commit_util.check_archive( repository, archive )

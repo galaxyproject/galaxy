@@ -4,7 +4,6 @@ API operations on the contents of a history.
 
 from galaxy import exceptions
 from galaxy import util
-from galaxy import web
 
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
@@ -18,7 +17,6 @@ from galaxy.web.base.controller import UsesLibraryMixinItems
 from galaxy.web.base.controller import UsesTagsMixin
 
 from galaxy.web.base.controller import url_for
-from galaxy.util.sanitize_html import sanitize_html
 
 from galaxy.webapps.galaxy.api import histories
 
@@ -190,8 +188,7 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         hda_dict[ 'display_apps' ] = self.get_display_apps( trans, hda )
         return hda_dict
 
-    #TODO: allow anon users to copy hdas, ldas
-    @expose_api
+    @expose_api_anonymous
     def create( self, trans, history_id, payload, **kwd ):
         """
         create( self, trans, history_id, payload, **kwd )
@@ -436,10 +433,7 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         return validated_payload
 
     def __handle_unknown_contents_type( self, trans, contents_type ):
-        # TODO: raise a message exception instead of setting status and returning dict.
-        trans.response.status = 400
-        return { 'error': 'Unknown contents type %s' % type }
-
+        raise exceptions.UnknownContentsType('Unknown contents type: %s' % type)
 
 class HDAManager( object ):
 

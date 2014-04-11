@@ -72,9 +72,9 @@ PBS_ARGMAP = {
     'Variable_List'         : '-v',
 }
 
-# From pbs' job.h
+# From pbs' pbs_job.h
 JOB_EXIT_STATUS = {
-    0:  "job exec successful",
+    0: "job exec successful",
     -1: "job exec failed, before files, no retry",
     -2: "job exec failed, after files, no retry",
     -3: "job execution failed, do retry",
@@ -83,7 +83,10 @@ JOB_EXIT_STATUS = {
     -6: "job aborted on MOM init, chkpt, ok migrate",
     -7: "job restart failed",
     -8: "exec() of user command failed",
-    -11: "job maximum walltime exceeded",  # Added by John, not from job.h.
+    -9: "could not create/open stdout stderr files",
+    -10: "job exceeded a memory limit",
+    -11: "job exceeded a walltime limit",
+    -12: "job exceeded a cpu time limit",
 }
 
 

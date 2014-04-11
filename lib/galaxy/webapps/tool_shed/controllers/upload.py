@@ -11,6 +11,7 @@ from galaxy.datatypes import checkers
 import tool_shed.repository_types.util as rt_util
 import tool_shed.util.shed_util_common as suc
 from tool_shed.util import commit_util
+from tool_shed.util import hg_util
 from tool_shed.util import metadata_util
 from tool_shed.util import repository_dependency_util
 from tool_shed.util import tool_dependency_util
@@ -39,7 +40,7 @@ class UploadController( BaseUIController ):
         repository_id = kwd.get( 'repository_id', '' )
         repository = suc.get_repository_in_tool_shed( trans, repository_id )
         repo_dir = repository.repo_path( trans.app )
-        repo = hg.repository( suc.get_configured_ui(), repo_dir )
+        repo = hg.repository( hg_util.get_configured_ui(), repo_dir )
         uncompress_file = util.string_as_bool( kwd.get( 'uncompress_file', 'true' ) )
         remove_repo_files_not_in_tar = util.string_as_bool( kwd.get( 'remove_repo_files_not_in_tar', 'true' ) )
         uploaded_file = None
@@ -63,7 +64,7 @@ class UploadController( BaseUIController ):
                 repo_url = 'http%s' % url[ len( 'hg' ): ]
                 repo_url = repo_url.encode( 'ascii', 'replace' )
                 try:
-                    commands.clone( suc.get_configured_ui(), repo_url, uploaded_directory )
+                    commands.clone( hg_util.get_configured_ui(), repo_url, uploaded_directory )
                 except Exception, e:
                     message = 'Error uploading via mercurial clone: %s' % suc.to_html_string( str( e ) )
                     status = 'error'
@@ -288,7 +289,8 @@ class UploadController( BaseUIController ):
                         status = 'error'
                     # Handle messaging for invalid repository dependencies.
                     invalid_repository_dependencies_message = \
-                        repository_dependency_util.generate_message_for_invalid_repository_dependencies( metadata_dict )
+                        repository_dependency_util.generate_message_for_invalid_repository_dependencies( metadata_dict,
+                                                                                                         error_from_tuple=True )
                     if invalid_repository_dependencies_message:
                         message += invalid_repository_dependencies_message
                         status = 'error'
@@ -322,7 +324,7 @@ class UploadController( BaseUIController ):
     def upload_directory( self, trans, repository, uploaded_directory, upload_point, remove_repo_files_not_in_tar,
                           commit_message, new_repo_alert ):
         repo_dir = repository.repo_path( trans.app )
-        repo = hg.repository( suc.get_configured_ui(), repo_dir )
+        repo = hg.repository( hg_util.get_configured_ui(), repo_dir )
         undesirable_dirs_removed = 0
         undesirable_files_removed = 0
         if upload_point is not None:
@@ -386,7 +388,7 @@ class UploadController( BaseUIController ):
     def upload_tar( self, trans, repository, tar, uploaded_file, upload_point, remove_repo_files_not_in_tar, commit_message, new_repo_alert ):
         # Upload a tar archive of files.
         repo_dir = repository.repo_path( trans.app )
-        repo = hg.repository( suc.get_configured_ui(), repo_dir )
+        repo = hg.repository( hg_util.get_configured_ui(), repo_dir )
         undesirable_dirs_removed = 0
         undesirable_files_removed = 0
         ok, message = commit_util.check_archive( repository, tar )

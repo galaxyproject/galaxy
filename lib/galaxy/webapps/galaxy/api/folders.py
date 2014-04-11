@@ -1,14 +1,17 @@
 """
-API operations on folders
+API operations on library folders
 """
-import logging, os, string, shutil, urllib, re, socket, traceback
+import os, string, shutil, urllib, re, socket, traceback
 from galaxy import datatypes, jobs, web, security
+from galaxy.web import _future_expose_api as expose_api
+from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
 from galaxy.web.base.controller import BaseAPIController,UsesLibraryMixin,UsesLibraryMixinItems
 from galaxy.util.sanitize_html import sanitize_html
 
 from cgi import escape, FieldStorage
 from paste.httpexceptions import HTTPBadRequest
 
+import logging
 log = logging.getLogger( __name__ )
 
 class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems ):
@@ -18,9 +21,9 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
         """
         GET /api/folders/
         This would normally display a list of folders. However, that would
-        be across multiple libraries, so it's not implemented yet.
+        be across multiple libraries, so it's not implemented.
         """
-        pass
+        raise exceptions.NotImplemented( 'Listing all accessible library folders is not implemented.' )
 
     @web.expose_api
     def show( self, trans, id, **kwd ):

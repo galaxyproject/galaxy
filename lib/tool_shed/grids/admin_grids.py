@@ -5,6 +5,7 @@ from galaxy.web.framework.helpers import time_ago
 from galaxy.webapps.tool_shed import model
 from galaxy.model.orm import and_
 import tool_shed.util.shed_util_common as suc
+from tool_shed.util import hg_util
 from tool_shed.grids.repository_grids import CategoryGrid
 from tool_shed.grids.repository_grids import RepositoryGrid
 
@@ -425,9 +426,11 @@ class RepositoryMetadataGrid( grids.Grid ):
 
         def get_value( self, trans, grid, repository_metadata ):
             repository = repository_metadata.repository
-            repo = hg.repository( suc.get_configured_ui(), repository.repo_path( trans.app ) )
-            ctx = suc.get_changectx_for_changeset( repo, repository_metadata.changeset_revision )
-            return suc.get_revision_label( trans, repository, repository_metadata.changeset_revision, include_date=True )
+            return hg_util.get_revision_label( trans,
+                                               repository,
+                                               repository_metadata.changeset_revision,
+                                               include_date=True,
+                                               include_hash=True )
 
 
     class ToolsColumn( grids.TextColumn ):

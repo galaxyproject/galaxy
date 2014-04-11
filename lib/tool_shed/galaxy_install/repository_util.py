@@ -15,6 +15,7 @@ from tool_shed.util import container_util
 from tool_shed.util import data_manager_util
 from tool_shed.util import datatype_util
 from tool_shed.util import encoding_util
+from tool_shed.util import hg_util
 from tool_shed.util import repository_dependency_util
 from tool_shed.util import metadata_util
 from tool_shed.util import tool_dependency_util
@@ -186,7 +187,7 @@ def get_repair_dict( trans, repository ):
 def get_repo_info_dict( trans, repository_id, changeset_revision ):
     repository = suc.get_repository_in_tool_shed( trans, repository_id )
     repo_dir = repository.repo_path( trans.app )
-    repo = hg.repository( suc.get_configured_ui(), repo_dir )
+    repo = hg.repository( hg_util.get_configured_ui(), repo_dir )
     repository_clone_url = common_util.generate_clone_url_for_repository_in_tool_shed( trans, repository )
     repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans,
                                                                              repository_id,
@@ -225,7 +226,7 @@ def get_repo_info_dict( trans, repository_id, changeset_revision ):
         has_repository_dependencies_only_if_compiling_contained_td = False
         includes_tool_dependencies = False
         includes_tools_for_display_in_tool_panel = False
-    ctx = suc.get_changectx_for_changeset( repo, changeset_revision )
+    ctx = hg_util.get_changectx_for_changeset( repo, changeset_revision )
     repo_info_dict = create_repo_info_dict( trans=trans,
                                             repository_clone_url=repository_clone_url,
                                             changeset_revision=changeset_revision,
@@ -574,7 +575,7 @@ def install_tool_shed_repository( trans, tool_shed_repository, repo_info_dict, t
             current_changeset_revision = changeset_revision_dict.get( 'changeset_revision', None )
             current_ctx_rev = changeset_revision_dict.get( 'ctx_rev', None )
             if current_ctx_rev != ctx_rev:
-                repo = hg.repository( suc.get_configured_ui(), path=os.path.abspath( install_dir ) )
+                repo = hg.repository( hg_util.get_configured_ui(), path=os.path.abspath( install_dir ) )
                 pull_repository( repo, repository_clone_url, current_changeset_revision )
                 suc.update_repository( repo, ctx_rev=current_ctx_rev )
         handle_repository_contents( trans,
@@ -804,7 +805,7 @@ def populate_containers_dict_for_new_install( trans, tool_shed_url, tool_path, r
 
 def pull_repository( repo, repository_clone_url, ctx_rev ):
     """Pull changes from a remote repository to a local one."""
-    commands.pull( suc.get_configured_ui(), repo, source=repository_clone_url, rev=[ ctx_rev ] )
+    commands.pull( hg_util.get_configured_ui(), repo, source=repository_clone_url, rev=[ ctx_rev ] )
 
 def repair_tool_shed_repository( trans, repository, repo_info_dict ):
 

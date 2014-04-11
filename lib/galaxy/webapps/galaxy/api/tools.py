@@ -152,48 +152,6 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMix
     # -- Helper methods --
     #
 
-    def _run_tool( self, trans, tool_id, target_dataset_id, **kwargs ):
-        """
-        Run a tool. This method serves as a general purpose way to run tools asynchronously.
-        """
-
-        #
-        # Set target history (the history that tool will use for outputs) using
-        # target dataset. If user owns dataset, put new data in original
-        # dataset's history; if user does not own dataset (and hence is accessing
-        # dataset via sharing), put new data in user's current history.
-        #
-        target_dataset = self.get_dataset( trans, target_dataset_id, check_ownership=False, check_accessible=True )
-        if target_dataset.history.user == trans.user:
-            target_history = target_dataset.history
-        else:
-            target_history = trans.get_history( create=True )
-
-        # HACK: tools require unencoded parameters but kwargs are typically
-        # encoded, so try decoding all parameter values.
-        for key, value in kwargs.items():
-            try:
-                value = trans.security.decode_id( value )
-                kwargs[ key ] = value
-            except:
-                pass
-
-        #
-        # Execute tool.
-        #
-        tool = trans.app.toolbox.get_tool( tool_id )
-        if not tool:
-            return trans.app.model.Dataset.conversion_messages.NO_TOOL
-
-        # HACK: add run button so that tool.handle_input will run tool.
-        kwargs['runtool_btn'] = 'Execute'
-        params = util.Params( kwargs, sanitize=False )
-        template, vars = tool.handle_input( trans, params.__dict__, history=target_history )
-
-        # TODO: check for errors and ensure that output dataset is available.
-        output_datasets = vars[ 'out_data' ].values()
-        return self.add_track_async( trans, output_datasets[0].id )
-
     def _rerun_tool( self, trans, payload, **kwargs ):
         """
         Rerun a tool to produce a new output dataset that corresponds to a
@@ -318,7 +276,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMix
                 else:
                     # Recursive search.
                     return_val = False
-                    for name, value in param_dict.items():
+                    for value in param_dict.values():
                         if isinstance( value, dict ):
                             return_val = set_value( value, group_name, group_index, param_name, param_value)
                             if return_val:

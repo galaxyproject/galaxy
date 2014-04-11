@@ -27,29 +27,29 @@ return Backbone.View.extend(
                 for (var key in group.values) {
                     var value = group.values[key];
                     pie_data.push ({
-                        key : value.x,
-                        y   : value.y
+                        y : value.y,
+                        x : value.label
                     });
                 }
-                
-                // add graph to screen
-                nv.addGraph(function() {
-                    self.chart_3d = nv.models.pieChart()
-                        .donut(true)
-                        .showLegend(false);
-                    
-                    self.options.canvas.datum(pie_data)
-                                       .call(self.chart_3d);
-
-                    nv.utils.windowResize(self.chart_3d.update);
-                    
-                    // set chart state
-                    chart.state('ok', 'Pie chart drawn.');
-                    
-                    // unregister process
-                    chart.deferred.done(process_id);
-                });
             }
+            
+            // add graph to screen
+            nv.addGraph(function() {
+                self.chart_3d = nv.models.pieChart()
+                    .donut(true)
+                    .showLegend(false);
+                
+                self.options.canvas.datum(pie_data)
+                                   .call(self.chart_3d);
+
+                nv.utils.windowResize(self.chart_3d.update);
+                
+                // set chart state
+                chart.state('ok', 'Chart has been drawn.');
+            
+                // unregister process
+                chart.deferred.done(process_id);
+            });
         });
     }
 });

@@ -8,7 +8,6 @@ import pkg_resources
 pkg_resources.require( "Paste" )
 
 from galaxy import exceptions
-from galaxy import web
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
 from galaxy.web import _future_expose_api_raw as expose_api_raw

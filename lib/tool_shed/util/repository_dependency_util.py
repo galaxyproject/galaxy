@@ -9,6 +9,7 @@ from tool_shed.util import common_util
 from tool_shed.util import common_install_util
 from tool_shed.util import container_util
 from tool_shed.util import encoding_util
+from tool_shed.util import hg_util
 from tool_shed.util import metadata_util
 from tool_shed.util import tool_util
 
@@ -225,18 +226,46 @@ def create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_
     build_repository_dependency_relationships( trans, all_repo_info_dicts, all_created_or_updated_tool_shed_repositories )
     return created_or_updated_tool_shed_repositories, tool_panel_section_keys, all_repo_info_dicts, filtered_repo_info_dicts
 
-def generate_message_for_invalid_repository_dependencies( metadata_dict ):
-    """Return the error message associated with an invalid repository dependency for display in the caller."""
+def generate_message_for_invalid_repository_dependencies( metadata_dict, error_from_tuple=False ):
+    """Get or generate and return an error message associated with an invalid repository dependency."""
     message = ''
     if metadata_dict:
-        invalid_repository_dependencies_dict = metadata_dict.get( 'invalid_repository_dependencies', None )
-        if invalid_repository_dependencies_dict:
-            invalid_repository_dependencies = invalid_repository_dependencies_dict.get( 'invalid_repository_dependencies', [] )
-            for repository_dependency_tup in invalid_repository_dependencies:
-                toolshed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td, error = \
-                    common_util.parse_repository_dependency_tuple( repository_dependency_tup, contains_error=True )
-                if error:
-                    message = '%s  ' % str( error )
+        if error_from_tuple:
+            # Return the error messages associated with a set of one or more invalid repository dependency tuples.
+            invalid_repository_dependencies_dict = metadata_dict.get( 'invalid_repository_dependencies', None )
+            if invalid_repository_dependencies_dict is not None:
+                invalid_repository_dependencies = invalid_repository_dependencies_dict.get( 'invalid_repository_dependencies', [] )
+                for repository_dependency_tup in invalid_repository_dependencies:
+                    toolshed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td, error = \
+                        common_util.parse_repository_dependency_tuple( repository_dependency_tup, contains_error=True )
+                    if error:
+                        message += '%s  ' % str( error )
+        else:
+            # The complete dependency hierarchy could not be determined for a repository being installed into
+            # Galaxy.  This is likely due to invalid repository dependency definitions, so we'll get them from
+            # the metadata and parse them for display in an error message.  This will hopefully communicate the
+            # problem to the user in such a way that a resolution can be determined.
+            message += 'The complete dependency hierarchy could not be determined for this repository, so no required '
+            message += 'repositories will not be installed.  This is likely due to invalid repository dependency definitions.  '
+            repository_dependencies_dict = metadata_dict.get( 'repository_dependencies', None )
+            if repository_dependencies_dict is not None:
+                rd_tups = repository_dependencies_dict.get( 'repository_dependencies', None )
+                if rd_tups is not None:
+                    message += 'Here are the attributes of the dependencies defined for this repository to help determine the '
+                    message += 'cause of this problem.<br/>'
+                    message += '<table cellpadding="2" cellspacing="2">'
+                    message += '<tr><th>Tool shed</th><th>Repository name</th><th>Owner</th><th>Changeset revision</th>'
+                    message += '<th>Prior install required</th></tr>'
+                    for rd_tup in rd_tups:
+                        tool_shed, name, owner, changeset_revision, pir, oicct = \
+                            common_util.parse_repository_dependency_tuple( rd_tup )
+                        if asbool( pir ):
+                            pir_str = 'True'
+                        else:
+                            pir_str = ''
+                        message += '<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>' % \
+                            ( tool_shed, name, owner, changeset_revision, pir_str )
+                    message += '</table>'
     return message
 
 def get_key_for_repository_changeset_revision( trans, toolshed_base_url, repository, repository_metadata, all_repository_dependencies ):
@@ -504,7 +533,7 @@ def get_updated_changeset_revisions_for_repository_dependencies( trans, key_rd_d
                 else:
                     # The repository changeset_revision is no longer installable, so see if there's been an update.
                     repo_dir = repository.repo_path( trans.app )
-                    repo = hg.repository( suc.get_configured_ui(), repo_dir )
+                    repo = hg.repository( hg_util.get_configured_ui(), repo_dir )
                     changeset_revision = suc.get_next_downloadable_changeset_revision( repository, repo, rd_changeset_revision )
                     repository_metadata = metadata_util.get_repository_metadata_by_repository_id_changeset_revision( trans,
                                                                                                                      trans.security.encode_id( repository.id ),

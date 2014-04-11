@@ -1,15 +1,15 @@
 define([], function() {
 
 return {
-    title   : '',
-    library : 'nvd3.js',
-    element : 'svg',
+    title       : '',
+    library     : 'nvd3.js',
+    element     : 'svg',
     columns : {
         y : {
             title   : 'Values for y-axis'
         }
     },
-    settings  : {
+    settings : {
         separator_label  : {
             title       : 'X axis',
             type        : 'separator'

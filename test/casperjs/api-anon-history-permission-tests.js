@@ -82,13 +82,11 @@ function testAnonReadFunctionsOnAccessible( history, hdas ){
         'hda show worked' );
 
     this.test.comment( 'Attempting to copy an accessible hda (default is accessible)'
-                     + ' fails from accessible history (currently login is required): ' + history.name );
-    this.api.assertRaises( function(){
-        this.api.hdas.create( this.api.histories.show( 'current' ).id, {
-            source  : 'hda',
-            content : hdas[0].id
-        });
-    }, 403, 'API authentication required for this request', 'update authentication required' );
+                     + ' should work from accessible history: ' + history.name );
+    this.api.hdas.create( this.api.histories.show( 'current' ).id, {
+        source  : 'hda',
+        content : hdas[0].id
+    });
 }
 
 function testAnonReadFunctionsOnInaccessible( history, hdas ){
@@ -121,7 +119,7 @@ function testAnonReadFunctionsOnInaccessible( history, hdas ){
             content : hdas[0].id
         });
         this.debug( this.jsonStr( returned ) );
-    }, 403, 'API authentication required for this request', 'hda copy from failed with error' );
+    }, 403, 'History is not accessible to the current user', 'hda copy from failed with error' );
 
 }
 
@@ -158,7 +156,7 @@ function testAnonWriteFunctions( history, hdas ){
             // should error before it checks the id
             content : 'bler'
         });
-    }, 403, 'API authentication required for this request', 'hda copy to failed' );
+    }, 403, 'Must be logged in to manage Galaxy histories', 'hda copy to failed' );
 }
 
 function testAnonInaccessible( history, hdas ){
