@@ -21,7 +21,7 @@ var Dataset = Backbone.Model.extend({
 
     initialize: function() {
         this._set_metadata();
-        
+
         // Update metadata on change.
         this.on('change', this._set_metadata, this);
     },
@@ -30,7 +30,7 @@ var Dataset = Backbone.Model.extend({
         var metadata = new DatasetMetadata();
 
         // Move metadata from dataset attributes to metadata object.
-        _.each(_.keys(this.attributes), function(k) { 
+        _.each(_.keys(this.attributes), function(k) {
             if (k.indexOf('metadata_') === 0) {
                 // Found metadata.
                 var new_key = k.split('metadata_')[1];
@@ -108,8 +108,8 @@ var DatasetCollection = Backbone.Collection.extend({
 });
 
 /**
- * Provides a base for table-based, dynamic view of a tabular dataset. 
- * Do not instantiate directly; use either TopLevelTabularDatasetChunkedView 
+ * Provides a base for table-based, dynamic view of a tabular dataset.
+ * Do not instantiate directly; use either TopLevelTabularDatasetChunkedView
  * or EmbeddedTabularDatasetChunkedView.
  */
 var TabularDatasetChunkedView = Backbone.View.extend({
@@ -193,7 +193,7 @@ var TabularDatasetChunkedView = Backbone.View.extend({
             $cell.attr('colspan', colspan).addClass('stringalign');
         } else if (column_types) {
             if (index < column_types.length) {
-                if (column_types[index] === 'str' || column_types === 'list') {
+                if (column_types[index] === 'str' || column_types[index] === 'list') {
                     /* Left align all str columns, right align the rest */
                     $cell.addClass('stringalign');
                 }
@@ -329,22 +329,22 @@ var TabularButtonTracksterView = Backbone.View.extend({
     initialize: function (options) {
         // check if environment is available
         var Galaxy = parent.Galaxy;
-        
+
         // link galaxy modal or create one
         if (Galaxy && Galaxy.modal) {
             this.modal = Galaxy.modal;
         }
-        
+
         // link galaxy frames
         if (Galaxy && Galaxy.frame) {
             this.frame = Galaxy.frame;
         }
-        
+
         // check
         if (!this.modal || !this.frame) {
             return;
         }
-        
+
         // model/metadata
         var model       = options.model;
         var metadata    = model.get('metadata');
@@ -353,10 +353,10 @@ var TabularButtonTracksterView = Backbone.View.extend({
         if (!model.get('data_type')) {
             return;
         }
-        
+
         // get data type
         this.data_type = model.get('data_type');
-        
+
         // check for bed-file format
         if (this.data_type == 'bed')
         {
@@ -394,7 +394,7 @@ var TabularButtonTracksterView = Backbone.View.extend({
                 return;
             }
         }
-        
+
         // check
         if(this.col.chrom === undefined) {
             return;
@@ -407,7 +407,7 @@ var TabularButtonTracksterView = Backbone.View.extend({
             console.log('TabularButtonTrackster : Dataset identification is missing.');
             return;
         }
-        
+
         // get url
         if (model.get('url_viz')) {
             this.url_viz = model.get('url_viz');
@@ -429,10 +429,10 @@ var TabularButtonTracksterView = Backbone.View.extend({
                 id          : 'btn_viz'
             })
         });
-        
+
         // set element
         this.setElement(options.$el);
-        
+
         // add to element
         this.$el.append(btn_viz.render().$el);
 
@@ -446,14 +446,14 @@ var TabularButtonTracksterView = Backbone.View.extend({
         'mouseover tr'  : 'show',
         'mouseleave'    : 'hide'
     },
-    
+
     // show button
     show: function (e) {
         // is numeric
         function is_numeric(n) {
             return !isNaN(parseFloat(n)) && isFinite(n);
         };
-        
+
         // check
         if(this.col.chrom === null)
             return;
@@ -470,7 +470,7 @@ var TabularButtonTracksterView = Backbone.View.extend({
 
         // double check location
         if (!chrom.match("^#") && chrom !== "" && is_numeric(start)) {
-        
+
             // get target gene region
             var btn_viz_pars = {
                 dataset_id  : this.dataset_id,
@@ -494,17 +494,17 @@ var TabularButtonTracksterView = Backbone.View.extend({
             $('#btn_viz').hide();
         }
     },
-    
+
     // hide button
     hide: function () {
         this.$el.find('#btn_viz').hide();
     },
-    
+
     // create action
     create_trackster_action : function (vis_url, dataset_params, dbkey) {
         // link this
         var self = this;
-        
+
         // create function
         return function() {
             var listTracksParams = {};
@@ -546,13 +546,13 @@ var TabularButtonTracksterView = Backbone.View.extend({
                                         'Add to visualization': function(){
                                             // hide
                                             self.modal.hide();
-                                                
+
                                             // search selected fields
                                             self.modal.$el.find('input[name=id]:checked').each(function(){
                                                 // get visualization id
                                                 var vis_id = $(this).val();
                                                 dataset_params.id = vis_id;
-                                        
+
                                                 // add widget
                                                 self.frame.add({
                                                     title    : 'Trackster',
@@ -567,7 +567,7 @@ var TabularButtonTracksterView = Backbone.View.extend({
                             'View in new visualization': function(){
                                 // hide
                                 self.modal.hide();
-                                
+
                                 // add widget
                                 self.frame.add({
                                     title    : 'Trackster',
@@ -619,7 +619,7 @@ var createTabularDatasetChunkedView = function(options) {
     delete options.embedded;
     delete options.parent_elt;
     delete options.dataset_config;
-    
+
     // Create and set up view.
     var view = (embedded ? new EmbeddedTabularDatasetChunkedView(options) :
                            new TopLevelTabularDatasetChunkedView(options));
