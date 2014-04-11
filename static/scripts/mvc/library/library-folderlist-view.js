@@ -71,15 +71,20 @@ var FolderListView = Backbone.View.extend({
       } else {
         upper_folder_id = path[path.length-2][0];
       }
+      // TODO add template when folder is empty
 
-      this.$el.html(template({ path: this.folderContainer.attributes.metadata.full_path, items: this.folderContainer.attributes.folder.models, id: this.options.id, upper_folder_id: upper_folder_id }));
+      this.$el.html(template({ path: this.folderContainer.attributes.metadata.full_path, id: this.options.id, upper_folder_id: upper_folder_id }));
+      // this.$el.html(template({ path: this.folderContainer.attributes.metadata.full_path, items: this.folderContainer.attributes.folder.models, id: this.options.id, upper_folder_id: upper_folder_id }));
 
       if (this.folderContainer.attributes.folder.models.length > 0){
         this.renderRows();
       }
-      if (this.folderContainer.attributes.metadata.can_add_library_item === true){
-        Galaxy.libraries.folderToolbarView.configureElements({ can_add_library_item: this.folderContainer.attributes.metadata.can_add_library_item, contains_file: contains_file });
-      }
+      // if (this.folderContainer.attributes.metadata.can_add_library_item === true){
+      var metadata = this.folderContainer.attributes.metadata;
+      metadata.contains_file = contains_file;
+      Galaxy.libraries.folderToolbarView.configureElements(metadata);
+      // Galaxy.libraries.folderToolbarView.configureElements({ can_add_library_item: this.folderContainer.attributes.metadata.can_add_library_item, contains_file: contains_file });
+      // }
 
       // initialize the library tooltips
       $("#center [data-toggle]").tooltip();
@@ -203,7 +208,7 @@ var FolderListView = Backbone.View.extend({
         tmpl_array.push('       <th>name</th>');
         tmpl_array.push('       <th>data type</th>');
         tmpl_array.push('       <th>size</th>');
-        tmpl_array.push('       <th>date (UTC)</th>');
+        tmpl_array.push('       <th>time updated (UTC)</th>');
         tmpl_array.push('   </thead>');
         tmpl_array.push('   <tbody id="folder_list_body">');
         tmpl_array.push('       <tr>');

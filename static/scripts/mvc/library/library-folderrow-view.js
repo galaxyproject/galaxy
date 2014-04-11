@@ -203,7 +203,9 @@ var FolderRowView = Backbone.View.extend({
     tmpl_array.push('    <% } %>');
     tmpl_array.push('  </td>');
     tmpl_array.push('  <td>folder</td>');
-    tmpl_array.push('  <td><%= _.escape(content_item.get("item_count")) %> item(s)</td>'); // size
+    tmpl_array.push('  <td></td>');
+    //  print item count only if it is given
+    // tmpl_array.push('  <td><% if (typeof content_item.get("item_count") !== "undefined") { _.escape(content_item.get("item_count")); print("item(s)") } %> </td>');
     tmpl_array.push('  <td><%= _.escape(content_item.get("time_updated")) %></td>'); // time updated
     tmpl_array.push('</tr>');
 

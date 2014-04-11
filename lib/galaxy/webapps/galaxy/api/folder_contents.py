@@ -52,7 +52,7 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
                     library = trans.sa_session.query( trans.app.model.Library ).filter( trans.app.model.Library.table.c.root_folder_id == decoded_folder_id ).one()
                 except Exception:
                     raise exceptions.InternalServerError( 'Error loading from the database.' )
-                if trans.app.security_agent.library_is_public( library, contents=False ):
+                if trans.app.security_agent.library_is_unrestricted( library ):
                     pass
                 else:
                     if trans.user:
@@ -90,7 +90,8 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
         time_created = ''
         # Go through every accessible item in the folder and include its meta-data.
         for content_item in self._load_folder_contents( trans, folder ):
-            if trans.app.security_agent.can_access_library_item( current_user_roles, content_item, trans.user ):
+            can_access = trans.app.security_agent.can_access_library_item( current_user_roles, content_item, trans.user )
+            if ( can_access or ( content_item.api_type == 'folder' and trans.app.security_agent.folder_is_unrestricted( content_item ) ) ):
                 return_item = {}
                 encoded_id = trans.security.encode_id( content_item.id )
                 time_updated = content_item.update_time.strftime( "%Y-%m-%d %I:%M %p" )
@@ -99,7 +100,10 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
                 # For folder return also hierarchy values
                 if content_item.api_type == 'folder':
                     encoded_id = 'F' + encoded_id
-                    return_item.update ( dict ( item_count = content_item.item_count ) )
+
+                    # this is commented for now as it includes the items that might not be accessible
+                    # item_count = content_item.item_count if can_access else 0
+                    # return_item.update ( dict ( item_count = item_count ) )
 
                 if content_item.api_type == 'file':
                     library_dataset_dict = content_item.to_dict()
@@ -119,7 +123,7 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
                                     ) )
                 folder_contents.append( return_item )
 
-        return { 'metadata' : { 'full_path' : full_path, 'can_add_library_item': can_add_library_item }, 'folder_contents' : folder_contents }
+        return { 'metadata' : { 'full_path' : full_path, 'can_add_library_item': can_add_library_item, 'folder_name': folder.name }, 'folder_contents' : folder_contents }
 
     def _load_folder_contents( self, trans, folder ):
         """

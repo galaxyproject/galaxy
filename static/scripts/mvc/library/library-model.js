@@ -79,18 +79,22 @@ define([], function() {
 
     // HISTORY ITEM
     var HistoryItem = Backbone.Model.extend({
-        urlRoot : '/api/histories/'
+      urlRoot : '/api/histories/'
     });
 
     // HISTORY
     var GalaxyHistory = Backbone.Model.extend({
-        url : '/api/histories/'
+      urlRoot : '/api/histories/',
+      url : function(){
+        return this.urlRoot + this.id + '/contents';
+      },
+      model: HistoryItem
     });
 
     // HISTORIES
     var GalaxyHistories = Backbone.Collection.extend({
-        url : '/api/histories',
-        model : GalaxyHistory
+      url : '/api/histories',
+      model : GalaxyHistory
     });
 
 // return

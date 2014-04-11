@@ -16,7 +16,6 @@ from sqlalchemy.orm.exc import NoResultFound
 import logging
 log = logging.getLogger( __name__ )
 
-
 class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems, UsesHistoryDatasetAssociationMixin ):
 
     @expose_api

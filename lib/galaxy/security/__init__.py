@@ -924,6 +924,10 @@ class GalaxyRBACAgent( RBACAgent ):
         # A library is considered public if there are no "access" actions associated with it.
         return self.permitted_actions.LIBRARY_ACCESS.action not in [ a.action for a in library.actions ]
 
+    def library_is_unrestricted( self, library ):
+        # A library is considered unrestricted if there are no "access" actions associated with it.
+        return self.permitted_actions.LIBRARY_ACCESS.action not in [ a.action for a in library.actions ]
+
     def make_library_public( self, library, contents=False ):
         flush_needed = False
         if contents:
@@ -945,6 +949,11 @@ class GalaxyRBACAgent( RBACAgent ):
             ldda = library_dataset.library_dataset_dataset_association
             if ldda and ldda.dataset and not self.dataset_is_public( ldda.dataset ):
                 return False
+        return True
+
+    def folder_is_unrestricted( self, folder ):
+        # TODO implement folder restrictions
+        # for now all folders are _visible_ but the restricted datasets within are not visible
         return True
 
     def make_folder_public( self, folder ):

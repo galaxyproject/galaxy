@@ -3,13 +3,14 @@ API operations on library folders
 """
 import os, string, shutil, urllib, re, socket, traceback
 from galaxy import datatypes, jobs, web, security
+from galaxy import exceptions
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
 from galaxy.web.base.controller import BaseAPIController,UsesLibraryMixin,UsesLibraryMixinItems
-from galaxy.util.sanitize_html import sanitize_html
+# from galaxy.util.sanitize_html import sanitize_html
 
-from cgi import escape, FieldStorage
-from paste.httpexceptions import HTTPBadRequest
+# from cgi import escape, FieldStorage
+# from paste.httpexceptions import HTTPBadRequest
 
 import logging
 log = logging.getLogger( __name__ )
@@ -49,9 +50,6 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
     @web.expose_api
     def create( self, trans, encoded_parent_folder_id, **kwd ):
 
-        # is_admin = trans.user_is_admin()
-        # current_user_roles = trans.get_current_user_roles()
-
         """
         create( self, trans, encoded_parent_folder_id, **kwd )
         *POST /api/folders/{encoded_parent_folder_id}
@@ -59,55 +57,56 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
         Create a new folder object underneath the one specified in the parameters.
         
         :param  encoded_parent_folder_id:      the parent folder's id (required)
-        :type   encoded_parent_folder_id:      an encoded id string (should be prefixed by 'F')        
+        :type   encoded_parent_folder_id:      an encoded id string (should be prefixed by 'F')      
+
         :param  name:                          the name of the new folder (required)
         :type   name:                          str      
+        
         :param  description:                   the description of the new folder
         :type   description:                   str
 
-        :rtype:     dictionary
         :returns:   information about newly created folder, notably including ID
+        :rtype:     dictionary
 
-        :raises: HTTPBadRequest, MessageException
+        :raises: RequestParameterMissingException, MalformedId, InternalServerError
         """
 
-        payload = kwd.get('payload', None)
+        payload = kwd.get( 'payload', None )
         if payload == None:
-            raise HTTPBadRequest( detail="Missing required parameters 'encoded_parent_folder_id' and 'name'." )
-
-        name = payload.get('name', None)
-        description = payload.get('description', '')
+            raise exceptions.RequestParameterMissingException( "Missing required parameters 'encoded_parent_folder_id' and 'name'." )
+        name = payload.get( 'name', None )
+        description = payload.get( 'description', '' )
         if encoded_parent_folder_id == None:
-            raise HTTPBadRequest( detail="Missing required parameter 'encoded_parent_folder_id'." )
+            raise exceptions.RequestParameterMissingException( "Missing required parameter 'encoded_parent_folder_id'." )
         elif name == None:
-            raise HTTPBadRequest( detail="Missing required parameter 'name'." )
+            raise exceptions.RequestParameterMissingException( "Missing required parameter 'name'." )
 
         # encoded_parent_folder_id may be prefixed by 'F'
         encoded_parent_folder_id = self.__cut_the_prefix( encoded_parent_folder_id )
         
-        # if ( len( encoded_parent_folder_id ) == 17 and encoded_parent_folder_id.startswith( 'F' ) ):
-            # encoded_parent_folder_id = encoded_parent_folder_id[-16:]
- 
         try:
             decoded_parent_folder_id = trans.security.decode_id( encoded_parent_folder_id )
-        except:
-            raise MessageException( "Malformed folder id ( %s ) specified, unable to decode" % ( str( id ) ), type='error' )
+        except ValueError:
+            raise exceptions.MalformedId( "Malformed folder id ( %s ) specified, unable to decode" % ( str( id ) ) )
 
         # TODO: refactor the functionality for use here instead of calling another controller
         params = dict( [ ( "name", name ), ( "description", description ) ] )
         status, output = trans.webapp.controllers['library_common'].create_folder( trans, 'api', encoded_parent_folder_id, '', **params )
-        rval = []
-        if 200 == status:
+
+        if 200 == status and len( output.items() ) == 1:
             for k, v in output.items():
-                if type( v ) == trans.app.model.LibraryDatasetDatasetAssociation:
-                    v = v.library_dataset
-                encoded_id = 'F' + trans.security.encode_id( v.id )
-                rval.append( dict( id = encoded_id,
-                                   name = v.name ) )
+                try:
+                    folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( v.id )
+                except Exception, e:
+                    raise exceptions.InternalServerError( 'Error loading from the database.'  + str( e ))
+                if folder:
+                    return_dict = folder.to_dict( view='element' )
+                    return_dict[ 'parent_library_id' ] = trans.security.encode_id( return_dict[ 'parent_library_id' ] )
+                    return_dict[ 'parent_id' ] = 'F' + trans.security.encode_id( return_dict[ 'parent_id' ] )
+                    return_dict[ 'id' ] = 'F' + trans.security.encode_id( return_dict[ 'id' ] )
+                    return return_dict
         else:
-            trans.response.status = status
-            rval = output
-        return rval
+            raise exceptions.InternalServerError( 'Error while creating a folder.'  + str(e))
 
     @web.expose_api
     def update( self, trans, id,  library_id, payload, **kwd ):
