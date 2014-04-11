@@ -6,6 +6,7 @@ from galaxy import util
 from galaxy.model.orm import and_, not_, select
 from galaxy.web.base.controller import BaseAPIController, HTTPBadRequest
 from tool_shed.util import export_util
+from tool_shed.util import hg_util
 import tool_shed.util.shed_util_common as suc
 
 from galaxy import eggs
@@ -168,7 +169,7 @@ class RepositoryRevisionsController( BaseAPIController ):
                     # The changeset_revision column in the repository_metadata table has been updated with a new
                     # value value, so find the changeset_revision to which we need to update.
                     repo_dir = repository_dependency.repo_path( trans.app )
-                    repo = hg.repository( suc.get_configured_ui(), repo_dir )
+                    repo = hg.repository( hg_util.get_configured_ui(), repo_dir )
                     new_changeset_revision = suc.get_next_downloadable_changeset_revision( repository_dependency,
                                                                                            repo,
                                                                                            changeset_revision )

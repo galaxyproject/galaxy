@@ -2243,7 +2243,7 @@ extend(Track.prototype, Drawable.prototype, {
             on_click_fn: function(track) {
                 var template =
                     '<strong>Tool</strong>: <%= track.tool.get("name") %><br/>' +
-                    '<strong>Dataset</strong>: <%= track.config.get("name") %><br/>' +
+                    '<strong>Dataset</strong>: <%= track.config.get_value("name") %><br/>' +
                     '<strong>Region(s)</strong>: <select name="regions">' +
                     '<option value="cur">current viewing area</option>' +
                     '<option value="bookmarks">bookmarks</option>' +

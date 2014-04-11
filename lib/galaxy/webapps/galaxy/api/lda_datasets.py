@@ -12,9 +12,13 @@ import tempfile
 import urllib
 import urllib2
 import zipfile
-from paste.httpexceptions import HTTPBadRequest
-from galaxy import util, web
-from galaxy.exceptions import ItemAccessibilityException, MessageException, ItemDeletionException, ObjectNotFound
+from galaxy import exceptions
+from galaxy.web import _future_expose_api as expose_api
+from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
+# from paste.httpexceptions import HTTPBadRequest
+from galaxy import util
+from galaxy import web
+# from galaxy.exceptions import ItemAccessibilityException, MessageException, ItemDeletionException, ObjectNotFound
 from galaxy.security import Action
 from galaxy.util.streamball import StreamBall
 from galaxy.web.base.controller import BaseAPIController, UsesVisualizationMixin
@@ -24,7 +28,7 @@ log = logging.getLogger( __name__ )
 
 class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
 
-    @web.expose_api
+    @expose_api_anonymous
     def show( self, trans, id, **kwd ):
         """
         show( self, trans, id, **kwd )
@@ -41,19 +45,20 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         try:
             dataset = self.get_library_dataset( trans, id = id, check_ownership=False, check_accessible=True )
         except Exception, e:
-            trans.response.status = 500
-            return str( e )
-        try:
-            rval = dataset.to_dict()
-        except Exception, e:
-            rval = "Error in dataset API at listing contents: " + str( e )
-            log.error( rval + ": %s" % str(e), exc_info=True )
-            trans.response.status = 500
-            return "Error in dataset API at listing contents: " + str( e )
+            raise exceptions.ObjectNotFound( 'Requested dataset was not found.' )
+            # trans.response.status = 500
+            # return str( e )
+        # try:
+        rval = dataset.to_dict()
+        # except Exception, e:
+        #     rval = "Error in dataset API at listing contents: " + str( e )
+        #     log.error( rval + ": %s" % str(e), exc_info=True )
+        #     trans.response.status = 500
+        #     return "Error in dataset API at listing contents: " + str( e )
 
         rval['id'] = trans.security.encode_id(rval['id']);
         rval['ldda_id'] = trans.security.encode_id(rval['ldda_id']);
-        rval['folder_id'] = 'f' + trans.security.encode_id(rval['folder_id'])
+        rval['folder_id'] = 'F' + trans.security.encode_id(rval['folder_id'])
         return rval
 
     @web.expose

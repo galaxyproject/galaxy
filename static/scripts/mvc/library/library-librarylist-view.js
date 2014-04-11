@@ -1,14 +1,14 @@
 // dependencies
 define([
     "galaxy.masthead",
-    "mvc/base-mvc", 
+    "mvc/base-mvc",
     "utils/utils",
     "libs/toastr",
     "mvc/library/library-model",
-    "mvc/library/library-libraryrow-view"], 
+    "mvc/library/library-libraryrow-view"],
 function(mod_masthead,
-         mod_baseMVC, 
-         mod_utils, 
+         mod_baseMVC,
+         mod_utils,
          mod_toastr,
          mod_library_model,
          mod_library_libraryrow_view) {
@@ -29,7 +29,8 @@ var LibraryListView = Backbone.View.extend({
     rowViews: {},
 
     // initialize
-    initialize : function(){
+    initialize : function(options){
+        this.options = _.defaults(this.options || {}, options);
         var viewContext = this;
 
         this.rowViews = {};
@@ -43,7 +44,7 @@ var LibraryListView = Backbone.View.extend({
           error: function(model, response){
             mod_toastr.error('An error occured. Please try again.');
           }
-        })
+        });
     },
 
     /** Renders the libraries table either from the object's own collection, 
@@ -52,9 +53,8 @@ var LibraryListView = Backbone.View.extend({
     render: function (options) {
         var template = this.templateLibraryList();
         var libraries_to_render = null;
-        var include_deleted = true;
         var include_deleted = Galaxy.libraries.preferences.get('with_deleted');
-        var models = null
+        var models = null;
         if (typeof options !== 'undefined'){
             include_deleted = typeof options.with_deleted !== 'undefined' ? options.with_deleted : false;
             models = typeof options.models !== 'undefined' ? options.models : null;
@@ -64,7 +64,7 @@ var LibraryListView = Backbone.View.extend({
             if (include_deleted){ // show all the libraries
               libraries_to_render = this.collection.models;
             } else{ // show only undeleted libraries
-              libraries_to_render = this.collection.where({deleted: false});;
+              libraries_to_render = this.collection.where({deleted: false});
             }
         } else if (models !== null){
             libraries_to_render = models;
@@ -74,7 +74,9 @@ var LibraryListView = Backbone.View.extend({
 
         this.$el.html(template({length: libraries_to_render.length, order: Galaxy.libraries.preferences.get('sort_order') }));
 
-        this.renderRows(libraries_to_render);
+        if (libraries_to_render.length > 0){
+            this.renderRows(libraries_to_render);
+        }
         // initialize the library tooltips
         $("#center [data-toggle]").tooltip();
         // modification of upper DOM element to show scrollbars due to the #center element inheritance
@@ -92,9 +94,9 @@ var LibraryListView = Backbone.View.extend({
             var rowView = new mod_library_libraryrow_view.LibraryRowView(library);
             this.$el.find('#library_list_body').append(rowView.el);
             // save new rowView to cache
-            this.rowViews[library.get('id')] = rowView; 
+            this.rowViews[library.get('id')] = rowView;
           }
-        };
+        }
     },
 
     sort_clicked : function(){
@@ -115,17 +117,17 @@ var LibraryListView = Backbone.View.extend({
             if (order === 'asc'){
                 // this.collection.sort_order = 'asc';
                 this.collection.comparator = function(libraryA, libraryB){
-                      if (libraryA.get('name').toLowerCase() > libraryB.get('name').toLowerCase()) return 1; // after
-                      if (libraryB.get('name').toLowerCase() > libraryA.get('name').toLowerCase()) return -1; // before
+                      if (libraryA.get('name').toLowerCase() > libraryB.get('name').toLowerCase()) {return 1;} // after
+                      if (libraryB.get('name').toLowerCase() > libraryA.get('name').toLowerCase()) {return -1;} // before
                       return 0; // equal
-                }
+                };
             } else if (order === 'desc'){
                 // this.collection.sort_order = 'desc';
                 this.collection.comparator = function(libraryA, libraryB){
-                      if (libraryA.get('name').toLowerCase() > libraryB.get('name').toLowerCase()) return -1; // before
-                      if (libraryB.get('name').toLowerCase() > libraryA.get('name').toLowerCase()) return 1; // after
+                      if (libraryA.get('name').toLowerCase() > libraryB.get('name').toLowerCase()) {return -1;} // before
+                      if (libraryB.get('name').toLowerCase() > libraryA.get('name').toLowerCase()) {return 1;} // after
                       return 0; // equal
-                }
+                };
             }
             this.collection.sort();
         }
@@ -140,7 +142,7 @@ var LibraryListView = Backbone.View.extend({
 
         tmpl_array.push('<div class="library_container table-responsive">');
         tmpl_array.push('<% if(length === 0) { %>');
-        tmpl_array.push("<div>I see no libraries. Why don't you create one?</div>");
+        tmpl_array.push('<div>There are no libraries visible to you. If you expected some to show up please consult the <a href="https://wiki.galaxyproject.org/Admin/DataLibraries/LibrarySecurity">library security wikipage</a>.</div>');
         tmpl_array.push('<% } else{ %>');
         tmpl_array.push('<table class="grid table table-condensed">');
         tmpl_array.push('   <thead>');
@@ -175,7 +177,7 @@ var LibraryListView = Backbone.View.extend({
 
     redirectToHome: function(){
         window.location = '../';
-    },    
+    },
     redirectToLogin: function(){
         window.location = '/user/login';
     },
@@ -193,7 +195,7 @@ var LibraryListView = Backbone.View.extend({
             title           : 'Create New Library',
             body            : this.templateNewLibraryInModal(),
             buttons         : {
-                'Create'    : function() {self.create_new_library_event()},
+                'Create'    : function() {self.create_new_library_event();},
                 'Close'     : function() {self.modal.hide();}
             }
         });
@@ -245,7 +247,6 @@ var LibraryListView = Backbone.View.extend({
     }
 });
 
-// return
 return {
     LibraryListView: LibraryListView
 };

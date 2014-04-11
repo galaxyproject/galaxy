@@ -4,9 +4,6 @@ import re
 import shutil
 import string
 import tempfile
-from datetime import datetime
-from time import gmtime
-from time import strftime
 from galaxy import util
 from galaxy.util import asbool
 from galaxy.util import json
@@ -19,6 +16,7 @@ from galaxy.model.orm import or_
 import sqlalchemy.orm.exc
 from tool_shed.util import common_util
 from tool_shed.util import encoding_util
+from tool_shed.util import hg_util
 from tool_shed.util import xml_util
 import tool_shed.repository_types.util as rt_util
 from xml.etree import ElementTree as XmlET
@@ -143,7 +141,7 @@ def changeset_is_malicious( trans, id, changeset_revision, **kwd ):
 
 def changeset_is_valid( app, repository, changeset_revision ):
     """Make sure a changeset hash is valid for a specified repository."""
-    repo = hg.repository( get_configured_ui(), repository.repo_path( app ) )
+    repo = hg.repository( hg_util.get_configured_ui(), repository.repo_path( app ) )
     for changeset in repo.changelog:
         changeset_hash = str( repo.changectx( changeset ) )
         if changeset_revision == changeset_hash:
@@ -167,7 +165,7 @@ def check_or_update_tool_shed_status_for_installed_repository( trans, repository
 def clone_repository( repository_clone_url, repository_file_dir, ctx_rev ):
     """Clone the repository up to the specified changeset_revision.  No subsequent revisions will be present in the cloned repository."""
     try:
-        commands.clone( get_configured_ui(),
+        commands.clone( hg_util.get_configured_ui(),
                         str( repository_clone_url ),
                         dest=str( repository_file_dir ),
                         pull=True,
@@ -469,14 +467,6 @@ def get_category_by_name( trans, name ):
     except sqlalchemy.orm.exc.NoResultFound:
         return None
 
-def get_changectx_for_changeset( repo, changeset_revision, **kwd ):
-    """Retrieve a specified changectx from a repository."""
-    for changeset in repo.changelog:
-        ctx = repo.changectx( changeset )
-        if str( ctx ) == changeset_revision:
-            return ctx
-    return None
-
 def get_config( config_file, repo, ctx, dir ):
     """Return the latest version of config_filename from the repository manifest."""
     config_file = strip_path( config_file )
@@ -495,16 +485,6 @@ def get_config_from_disk( config_file, relative_install_dir ):
                 if name == config_file:
                     return os.path.abspath( os.path.join( root, name ) )
     return None
-
-def get_configured_ui():
-    """Configure any desired ui settings."""
-    _ui = ui.ui()
-    # The following will suppress all messages.  This is
-    # the same as adding the following setting to the repo
-    # hgrc file' [ui] section:
-    # quiet = True
-    _ui.setconfig( 'ui', 'quiet', True )
-    return _ui
 
 def get_ctx_rev( app, tool_shed_url, name, owner, changeset_revision ):
     """
@@ -539,7 +519,7 @@ def get_current_repository_metadata_for_changeset_revision( trans, repository, c
     if repository_metadata:
         return repository_metadata
     # The installable changeset_revision may have been changed because it was "moved ahead" in the repository changelog.
-    repo = hg.repository( get_configured_ui(), repository.repo_path( trans.app ) )
+    repo = hg.repository( hg_util.get_configured_ui(), repository.repo_path( trans.app ) )
     updated_changeset_revision = get_next_downloadable_changeset_revision( repository, repo, after_changeset_revision=changeset_revision )
     if updated_changeset_revision:
         repository_metadata = get_repository_metadata_by_changeset_revision( trans, encoded_repository_id, updated_changeset_revision )
@@ -590,7 +570,7 @@ def get_dependent_downloadable_revisions( trans, repository_metadata ):
                                         # record, so updates must be necessary.
                                         defined_repository = get_repository_by_name_and_owner( trans.app, name, owner )
                                         defined_repo_dir = defined_repository.repo_path( trans.app )
-                                        defined_repo = hg.repository( get_configured_ui(), defined_repo_dir )
+                                        defined_repo = hg.repository( hg_util.get_configured_ui(), defined_repo_dir )
                                         updated_changeset_revision = \
                                             get_next_downloadable_changeset_revision( defined_repository,
                                                                                       defined_repo,
@@ -799,7 +779,7 @@ def get_ordered_metadata_changeset_revisions( repository, repo, downloadable=Tru
     changeset_tups = []
     for repository_metadata in metadata_revisions:
         changeset_revision = repository_metadata.changeset_revision
-        ctx = get_changectx_for_changeset( repo, changeset_revision )
+        ctx = hg_util.get_changectx_for_changeset( repo, changeset_revision )
         if ctx:
             rev = '%04d' % ctx.rev()
         else:
@@ -912,13 +892,6 @@ def get_query_for_setting_metadata_on_repositories( trans, my_writable=False, or
         else:
             return trans.install_model.context.query( trans.install_model.ToolShedRepository ) \
                                    .filter( trans.install_model.ToolShedRepository.table.c.uninstalled == False )
-
-def get_readable_ctx_date( ctx ):
-    """Convert the date of the changeset (the received ctx) to a human-readable date."""
-    t, tz = ctx.date()
-    date = datetime( *gmtime( float( t ) - tz )[ :6 ] )
-    ctx_date = date.strftime( "%Y-%m-%d" )
-    return ctx_date
 
 def get_repo_info_tuple_contents( repo_info_tuple ):
     """Take care in handling the repo_info_tuple as it evolves over time as new tool shed features are introduced."""
@@ -1211,38 +1184,6 @@ def get_reversed_changelog_changesets( repo ):
         reversed_changelog.insert( 0, changeset )
     return reversed_changelog
 
-def get_revision_label( trans, repository, changeset_revision, include_date=True ):
-    """
-    Return a string consisting of the human read-able changeset rev and the changeset revision string
-    which includes the revision date if the receive include_date is True.
-    """
-    repo = hg.repository( get_configured_ui(), repository.repo_path( trans.app ) )
-    ctx = get_changectx_for_changeset( repo, changeset_revision )
-    if ctx:
-        return get_revision_label_from_ctx( ctx, include_date=include_date )
-    else:
-        return "-1:%s" % changeset_revision
-
-def get_revision_label_from_ctx( ctx, include_date=True ):
-    if include_date:
-        return '%s:%s <i><font color="#666666">(%s)</font></i>' % \
-            ( str( ctx.rev() ), str( ctx ), str( get_readable_ctx_date( ctx ) ) )
-    return '%s:%s' % ( str( ctx.rev() ), str( ctx ) )
-
-def get_rev_label_from_changeset_revision( repo, changeset_revision, include_date=True ):
-    """
-    Given a changeset revision hash, return two strings, the changeset rev and the changeset revision hash
-    which includes the revision date if the receive include_date is True.
-    """
-    ctx = get_changectx_for_changeset( repo, changeset_revision )
-    if ctx:
-        rev = '%04d' % ctx.rev()
-        label = get_revision_label_from_ctx( ctx, include_date=include_date )
-    else:
-        rev = '-1'
-        label = "-1:%s" % changeset_revision
-    return rev, label
-
 def get_shed_tool_conf_dict( app, shed_tool_conf ):
     """Return the in-memory version of the shed_tool_conf file, which is stored in the config_elems entry in the shed_tool_conf_dict associated with the file."""
     for index, shed_tool_conf_dict in enumerate( app.toolbox.shed_tool_confs ):
@@ -1434,7 +1375,7 @@ def get_updated_changeset_revisions( trans, name, owner, changeset_revision ):
     """
     repository = get_repository_by_name_and_owner( trans.app, name, owner )
     repo_dir = repository.repo_path( trans.app )
-    repo = hg.repository( get_configured_ui(), repo_dir )
+    repo = hg.repository( hg_util.get_configured_ui(), repo_dir )
     # Get the upper bound changeset revision.
     upper_bound_changeset_revision = get_next_downloadable_changeset_revision( repository, repo, changeset_revision )
     # Build the list of changeset revision hashes defining each available update up to, but excluding, upper_bound_changeset_revision.
@@ -1487,7 +1428,7 @@ def handle_email_alerts( trans, repository, content_alert_str='', new_repo_alert
        that was included in the change set.
     """
     repo_dir = repository.repo_path( trans.app )
-    repo = hg.repository( get_configured_ui(), repo_dir )
+    repo = hg.repository( hg_util.get_configured_ui(), repo_dir )
     sharable_link = generate_sharable_link_for_repository_in_tool_shed( trans, repository, changeset_revision=None )
     smtp_server = trans.app.config.smtp_server
     if smtp_server and ( new_repo_alert or repository.email_alerts ):
@@ -1510,7 +1451,7 @@ def handle_email_alerts( trans, repository, content_alert_str='', new_repo_alert
             template = new_repo_email_alert_template
         else:
             template = email_alert_template
-        display_date = get_readable_ctx_date( ctx )
+        display_date = hg_util.get_readable_ctx_date( ctx )
         admin_body = string.Template( template ).safe_substitute( host=trans.request.host,
                                                                   sharable_link=sharable_link,
                                                                   repository_name=repository.name,
@@ -1859,7 +1800,7 @@ def update_repository( repo, ctx_rev=None ):
     # I = ignored
     # It would be nice if we could use mercurial's purge extension to remove untracked files.  The problem is that
     # purging is not supported by the mercurial API.
-    commands.update( get_configured_ui(), repo, rev=ctx_rev )
+    commands.update( hg_util.get_configured_ui(), repo, rev=ctx_rev )
 
 def update_tool_shed_repository_status( app, tool_shed_repository, status, error_message=None ):
     """Update the status of a tool shed repository in the process of being installed into Galaxy."""

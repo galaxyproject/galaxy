@@ -1418,10 +1418,10 @@ class ShedTwillTestCase( TwillTestCase ):
     def verify_repository_reviews( self, repository, reviewer=None, strings_displayed=[], strings_not_displayed=[] ):
         changeset_revision = self.get_repository_tip( repository )
         # Verify that the currently logged in user has a repository review for the specified repository, reviewer, and changeset revision.
-        strings_displayed=[ repository.name, reviewer.username, changeset_revision ]
+        strings_displayed=[ repository.name, reviewer.username ]
         self.display_reviewed_repositories_owned_by_user( strings_displayed=strings_displayed )
         # Verify that the reviewer has reviewed the specified repository's changeset revision.
-        strings_displayed=[ repository.name, repository.description, changeset_revision ]
+        strings_displayed=[ repository.name, repository.description ]
         self.display_repository_reviews_by_user( reviewer, strings_displayed=strings_displayed )
         # Load the review and check for the components passed in strings_displayed.
         review = test_db_util.get_repository_review_by_user_id_changeset_revision( reviewer.id, repository.id, changeset_revision )

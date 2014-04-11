@@ -9,6 +9,7 @@ from tool_shed.util import common_util
 from tool_shed.util import common_install_util
 from tool_shed.util import container_util
 from tool_shed.util import encoding_util
+from tool_shed.util import hg_util
 from tool_shed.util import metadata_util
 from tool_shed.util import tool_util
 
@@ -532,7 +533,7 @@ def get_updated_changeset_revisions_for_repository_dependencies( trans, key_rd_d
                 else:
                     # The repository changeset_revision is no longer installable, so see if there's been an update.
                     repo_dir = repository.repo_path( trans.app )
-                    repo = hg.repository( suc.get_configured_ui(), repo_dir )
+                    repo = hg.repository( hg_util.get_configured_ui(), repo_dir )
                     changeset_revision = suc.get_next_downloadable_changeset_revision( repository, repo, rd_changeset_revision )
                     repository_metadata = metadata_util.get_repository_metadata_by_repository_id_changeset_revision( trans,
                                                                                                                      trans.security.encode_id( repository.id ),
