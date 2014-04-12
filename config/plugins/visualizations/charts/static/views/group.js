@@ -122,14 +122,14 @@ return Backbone.View.extend(
             for (var id in list) {
                 
                 // is a numeric number required
-                var any_type = chart_settings.columns[id].any_type;
+                var is_label = chart_settings.columns[id].is_label;
             
                 // configure columns
                 var columns = [];
                 var meta = dataset.metadata_column_types;
                 for (var key in meta) {
                     // check type
-                    if (meta[key] == 'int' || meta[key] == 'float' || any_type) {
+                    if ((!is_label && (meta[key] == 'int' || meta[key] == 'float')) || is_label) {
                         // add to selection
                         columns.push({
                             'label' : 'Column: ' + (parseInt(key) + 1) + ' [' + meta[key] + ']',

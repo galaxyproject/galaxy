@@ -215,7 +215,14 @@ return Backbone.View.extend({
             // add columns
             var columns = {};
             for (var key in self.chart_settings.columns) {
-                columns[key] = group.get(key);
+                // get settings for column
+                var column_settings = self.chart_settings.columns[key];
+                
+                // add to columns
+                columns[key] = {
+                    index       : group.get(key),
+                    is_label    : column_settings.is_label
+                }
             }
             
             // add group data

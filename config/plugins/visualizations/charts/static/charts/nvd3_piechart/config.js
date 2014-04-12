@@ -7,7 +7,7 @@ return {
     columns : {
         label : {
             title       : 'Labels',
-            any_type    : true
+            is_label    : true
         },
         y : {
             title       : 'Values'
