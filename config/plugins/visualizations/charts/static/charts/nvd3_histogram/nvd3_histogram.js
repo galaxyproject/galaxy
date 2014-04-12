@@ -18,8 +18,12 @@ return Backbone.View.extend(
         for (var i in request_dictionary.groups) {
             var group = request_dictionary.groups[i];
             group.columns = {
-                x: index++,
-                y: index++
+                x: {
+                    index: index++
+                },
+                y: {
+                    index: index++
+                },
             }
         }
 

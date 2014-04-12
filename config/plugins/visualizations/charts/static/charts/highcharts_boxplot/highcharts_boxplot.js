@@ -65,7 +65,9 @@ return Backbone.View.extend(
             var group = request_dictionary.groups[i];
             group.columns = null;
             group.columns = {
-                x: index++
+                x: {
+                    index: index++
+                }
             }
         }
         

@@ -66,7 +66,6 @@ return Backbone.Collection.extend(
         if (!request_dictionary.end) {
             request_dictionary.end = this.app.config.get('query_limit');
         }
-        
         // get column indices
         var column_list = [];
         var column_map  = {};
@@ -84,7 +83,7 @@ return Backbone.Collection.extend(
                 }
                 
                 // add to dictionary
-                if (!column_map[column]) {
+                if (!column_map[column] && column !== undefined) {
                     column_map[column] = column_count;
                     column_list.push(column);
                     column_count++;
@@ -222,7 +221,7 @@ return Backbone.Collection.extend(
                 for (var i = 0; i < n_columns; i++) {
                     result[i] = [];
                 }
-            
+                
                 // loop through rows
                 for (var i in response.data) {
                     // get row
