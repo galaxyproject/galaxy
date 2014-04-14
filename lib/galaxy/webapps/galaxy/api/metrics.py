@@ -100,7 +100,7 @@ class MetricsController( BaseAPIController ):
             time = self._deserialize_isoformat_date( metric[ 'time' ] )
             kwargs = {
                 'level'   : metric[ 'level' ],
-                'args'    : json.from_json_string( metric[ 'args' ] ),
+                'args'    : metric[ 'args' ],
                 'user'    : user_id,
                 'session' : session_id
             }

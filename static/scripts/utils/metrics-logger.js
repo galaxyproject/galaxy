@@ -58,7 +58,7 @@ MetricsLogger.NONE = 100;
 /** default options - override these through the constructor */
 MetricsLogger.defaultOptions = {
     /** if an incoming message has a level >= this, it will be cached - can also be a string (e.g. 'debug') */
-    logLevel            : MetricsLogger.INFO,
+    logLevel            : MetricsLogger.NONE,
     /** if an incoming message has a level >= this, it will be output to the console */
     consoleLevel        : MetricsLogger.NONE,
     /** the default 'namespace' or label associated with an incoming message (if none is passed) */
@@ -75,9 +75,6 @@ MetricsLogger.defaultOptions = {
 
     /** the relative url to post messages to */
     postUrl             : '/api/metrics',
-
-    /** post when the page is unloaded? */// needs to be true if using the LoggingCache (for now)
-    postOnUnload        : true,
 
     /** an (optional) function that should return an object; used to send additional data with the metrics */
     getPingData         : undefined,
@@ -102,15 +99,6 @@ MetricsLogger.prototype._init = function _init( options ){
     self._sending = false;
     self._postSize = self.options.postSize;
     self._initCache();
-
-    // post the entire cache on unload (since LoggingCache isn't persistent ATM)
-    if( self.options.postOnUnload ){
-        self.onpageunload = function onpageunload( ev ){
-            ev.preventDefault();
-            self._postCache({ count: self.cache.length() });
-        };
-        window.addEventListener( 'unload', self.onpageunload );
-    }
 
     return self;
 };
