@@ -350,7 +350,7 @@ class Registry( object ):
                             except Exception, e:
                                 self.log.exception( 'Error calling method %s from class %s: %s', str( datatype_class_name ), str( module ), str( e ) )
                                 ok = False
-                            if ok: 
+                            if ok:
                                 if deactivate:
                                     # We are deactivating or uninstalling an installed Tool Shed repository, so eliminate the appropriate sniffers.
                                     sniffer_class = elem.get( 'type', None )

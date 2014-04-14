@@ -42,6 +42,7 @@ import install_and_test_tool_shed_repositories.base.util as install_and_test_bas
 from base.tool_shed_util import parse_tool_panel_config
 
 from galaxy.app import UniverseApplication
+from galaxy.util import asbool
 from galaxy.util import unicodify
 from galaxy.web import buildapp
 from functional_tests import generate_config_file
@@ -63,6 +64,11 @@ exclude_list_file = os.path.abspath( os.path.join( test_home_directory, 'exclude
 default_galaxy_locales = 'en'
 default_galaxy_test_file_dir = "test-data"
 os.environ[ 'GALAXY_INSTALL_TEST_TMP_DIR' ] = galaxy_test_tmp_dir
+
+# Use separate databases for Galaxy and tool shed install info by default,
+# set GALAXY_TEST_INSTALL_DB_MERGED to True to revert to merged databases
+# behavior.
+default_install_db_merged = False
 
 # This script can be run in such a way that no Tool Shed database records should be changed.
 if '-info_only' in sys.argv or 'GALAXY_INSTALL_TEST_INFO_ONLY' in os.environ:
@@ -106,6 +112,7 @@ def install_and_test_repositories( app, galaxy_shed_tools_dict_file, galaxy_shed
         changeset_revision = str( repository_dict.get( 'changeset_revision', '' ) )
         print "Processing revision %s of repository %s owned by %s..." % ( changeset_revision, name, owner )
         repository_identifier_tup = ( name, owner, changeset_revision )
+        install_and_test_statistics_dict[ 'total_repositories_processed' ] += 1
         # Retrieve the stored list of tool_test_results_dicts.
         tool_test_results_dicts, error_message = \
             install_and_test_base_util.get_tool_test_results_dicts( install_and_test_base_util.galaxy_tool_shed_url,
@@ -137,9 +144,9 @@ def install_and_test_repositories( app, galaxy_shed_tools_dict_file, galaxy_shed
                 repository = install_and_test_base_util.get_repository( name, owner, changeset_revision )
                 if repository is None:
                     # The repository was not previously installed, so install it now.
+                    start_time = time.time()
                     tool_test_results_dict = install_and_test_base_util.initialize_tool_tests_results_dict( app, tool_test_results_dict )
                     repository, error_message = install_and_test_base_util.install_repository( app, repository_dict )
-                    install_and_test_statistics_dict[ 'total_repositories_processed' ] += 1
                     if error_message:
                         # The repository installation failed.
                         print 'Installation failed for revision %s of repository %s owned by %s.' % ( changeset_revision, name, owner )
@@ -186,6 +193,8 @@ def install_and_test_repositories( app, galaxy_shed_tools_dict_file, galaxy_shed
                                                                                                             encoded_repository_metadata_id,
                                                                                                             install_and_test_statistics_dict,
                                                                                                             can_update_tool_shed )
+                    print '\nAttempting to install revision %s of repository %s owned by %s took %s seconds.\n' % \
+                        ( changeset_revision, name, owner, str( time.time() - start_time ) )
                 else:
                     print 'Skipped attempt to install revision %s of repository %s owned by %s because ' % \
                         ( changeset_revision, name, owner )
@@ -269,6 +278,13 @@ def main():
         database_connection = os.environ[ 'GALAXY_INSTALL_TEST_DBURI' ]
     else:
         database_connection = 'sqlite:///' + os.path.join( galaxy_db_path, 'install_and_test_repositories.sqlite' )
+    if 'GALAXY_INSTALL_TEST_INSTALL_DBURI' in os.environ:
+        install_database_connection = os.environ[ 'GALAXY_INSTALL_TEST_INSTALL_DBURI' ]
+    elif asbool( os.environ.get( 'GALAXY_TEST_INSTALL_DB_MERGED', default_install_db_merged ) ):
+        install_database_connection = database_connection
+    else:
+        install_galaxy_db_path = os.path.join( galaxy_db_path, 'install.sqlite' )
+        install_database_connection = 'sqlite:///%s' % install_galaxy_db_path
     kwargs = {}
     for dir in [ galaxy_test_tmp_dir ]:
         try:
@@ -276,6 +292,7 @@ def main():
         except OSError:
             pass
     print "Database connection: ", database_connection
+    print "Install database connection: ", install_database_connection
     # Generate the shed_tool_data_table_conf.xml file.
     file( shed_tool_data_table_conf_file, 'w' ).write( install_and_test_base_util.tool_data_table_conf_xml_template )
     os.environ[ 'GALAXY_INSTALL_TEST_SHED_TOOL_DATA_TABLE_CONF' ] = shed_tool_data_table_conf_file
@@ -303,6 +320,7 @@ def main():
                    datatype_converters_config_file = "datatype_converters_conf.xml.sample",
                    file_path = galaxy_file_path,
                    id_secret = install_and_test_base_util.galaxy_encode_secret,
+                   install_database_connection = install_database_connection,
                    job_config_file = galaxy_job_conf_file,
                    job_queue_workers = 5,
                    log_destination = "stdout",

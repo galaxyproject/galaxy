@@ -4,7 +4,7 @@ except ImportError:
     from io import StringIO
 try:
     from pycurl import Curl
-except:
+except ImportError:
     pass
 from os.path import getsize
 
@@ -16,9 +16,9 @@ PYCURL_UNAVAILABLE_MESSAGE = \
 class PycurlTransport(object):
 
     def execute(self, url, data=None, input_path=None, output_path=None):
-        buf = self._open_output(output_path)
+        buf = _open_output(output_path)
         try:
-            c = self._new_curl_object()
+            c = _new_curl_object()
             c.setopt(c.URL, url.encode('ascii'))
             c.setopt(c.WRITEFUNCTION, buf.write)
             if input_path:
@@ -37,11 +37,33 @@ class PycurlTransport(object):
         finally:
             buf.close()
 
-    def _new_curl_object(self):
-        try:
-            return Curl()
-        except NameError:
-            raise ImportError(PYCURL_UNAVAILABLE_MESSAGE)
 
-    def _open_output(self, output_path):
-        return open(output_path, 'wb') if output_path else StringIO()
+def post_file(url, path):
+    c = _new_curl_object()
+    c.setopt(c.URL, url.encode('ascii'))
+    c.setopt(c.HTTPPOST, [("file", (c.FORM_FILE, path.encode('ascii')))])
+    c.perform()
+
+
+def get_file(url, path):
+    buf = _open_output(path)
+    try:
+        c = _new_curl_object()
+        c.setopt(c.URL, url.encode('ascii'))
+        c.setopt(c.WRITEFUNCTION, buf.write)
+        c.perform()
+    finally:
+        buf.close()
+
+
+def _open_output(output_path):
+    return open(output_path, 'wb') if output_path else StringIO()
+
+
+def _new_curl_object():
+    try:
+        return Curl()
+    except NameError:
+        raise ImportError(PYCURL_UNAVAILABLE_MESSAGE)
+
+___all__ = [PycurlTransport, post_file, get_file]

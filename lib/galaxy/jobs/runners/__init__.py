@@ -25,7 +25,7 @@ STOP_SIGNAL = object()
 
 class RunnerParams( object ):
 
-    def __init__( self, specs = None, params = None ):
+    def __init__( self, specs=None, params=None ):
         self.specs = specs or dict()
         self.params = params or dict()
         for name, value in self.params.items():
@@ -51,12 +51,12 @@ class BaseJobRunner( object ):
         self.app = app
         self.sa_session = app.model.context
         self.nworkers = nworkers
-        runner_param_specs = dict( recheck_missing_job_retries = dict( map = int, valid = lambda x: x >= 0, default = 0 ) )
+        runner_param_specs = dict( recheck_missing_job_retries=dict( map=int, valid=lambda x: x >= 0, default=0 ) )
         if 'runner_param_specs' in kwargs:
             runner_param_specs.update( kwargs.pop( 'runner_param_specs' ) )
         if kwargs:
             log.debug( 'Loading %s with params: %s', self.runner_name, kwargs )
-        self.runner_params = RunnerParams( specs = runner_param_specs, params = kwargs )
+        self.runner_params = RunnerParams( specs=runner_param_specs, params=kwargs )
 
     def _init_worker_threads(self):
         """Start ``nworkers`` worker threads.
@@ -138,12 +138,12 @@ class BaseJobRunner( object ):
 
         # Make sure the job hasn't been deleted
         if job_state == model.Job.states.DELETED:
-            log.debug( "(%s) Job deleted by user before it entered the %s queue"  % ( job_id, self.runner_name ) )
+            log.debug( "(%s) Job deleted by user before it entered the %s queue" % ( job_id, self.runner_name ) )
             if self.app.config.cleanup_job in ( "always", "onsuccess" ):
                 job_wrapper.cleanup()
             return False
         elif job_state != model.Job.states.QUEUED:
-            log.info( "(%s) Job is in state %s, skipping execution"  % ( job_id, job_state ) )
+            log.info( "(%s) Job is in state %s, skipping execution" % ( job_id, job_state ) )
             # cleanup may not be safe in all states
             return False
 
@@ -318,6 +318,7 @@ class AsynchronousJobState( object ):
         if attribute not in self.cleanup_file_attributes:
             self.cleanup_file_attributes.append( attribute )
 
+
 class AsynchronousJobRunner( BaseJobRunner ):
     """Parent class for any job runner that runs jobs asynchronously (e.g. via
     a distributed resource manager).  Provides general methods for having a
@@ -364,7 +365,7 @@ class AsynchronousJobRunner( BaseJobRunner ):
             # Iterate over the list of watched jobs and check state
             try:
                 self.check_watched_items()
-            except Exception, e:
+            except Exception:
                 log.exception('Unhandled exception checking active jobs')
             # Sleep a bit before the next state check
             time.sleep( 1 )

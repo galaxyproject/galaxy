@@ -72,7 +72,6 @@
   <section id="group" name="Join, Subtract and Group">
     <tool file="filters/joiner.xml" />
     <tool file="filters/compare.xml" />
-    <tool file="new_operations/subtract_query.xml" />
     <tool file="stats/grouping.xml" />
   </section>
   <section id="features" name="Extract Features">
@@ -95,21 +94,10 @@
     <tool file="maf/maf_reverse_complement.xml" />
   </section>
   <section id="scores" name="Get Genomic Scores">
-    <tool file="stats/wiggle_to_simple.xml" />
+    <tool file="filters/wiggle_to_simple.xml" />
     <tool file="stats/aggregate_binned_scores_in_intervals.xml" />
   </section>
   <section id="bxops" name="Operate on Genomic Intervals">
-    <tool file="new_operations/intersect.xml" />
-    <tool file="new_operations/subtract.xml" />
-    <tool file="new_operations/merge.xml" />
-    <tool file="new_operations/concat.xml" />
-    <tool file="new_operations/basecoverage.xml" />
-    <tool file="new_operations/coverage.xml" />
-    <tool file="new_operations/complement.xml" />
-    <tool file="new_operations/cluster.xml" id="cluster" />
-    <tool file="new_operations/join.xml" />
-    <tool file="new_operations/get_flanks.xml" />
-    <tool file="new_operations/flanking_features.xml" />
     <tool file="annotation_profiler/annotation_profiler.xml" />
   </section>
   <section id="stats" name="Statistics">
@@ -127,26 +115,6 @@
     <tool file="visualization/build_ucsc_custom_track.xml" />
     <tool file="maf/vcf_to_maf_customtrack.xml" />
     <tool file="mutation/visualize.xml" />
-  </section>
-  <section id="regVar" name="Regional Variation">
-    <tool file="regVariation/windowSplitter.xml" />
-    <tool file="regVariation/featureCounter.xml" />
-    <tool file="regVariation/WeightedAverage.xml" />
-    <tool file="regVariation/quality_filter.xml" />
-    <tool file="regVariation/maf_cpg_filter.xml" />
-    <tool file="regVariation/getIndels_2way.xml" />
-    <tool file="regVariation/getIndelRates_3way.xml" />
-    <tool file="regVariation/substitutions.xml" />
-    <tool file="regVariation/substitution_rates.xml" />
-    <tool file="regVariation/microsats_alignment_level.xml" />
-    <tool file="regVariation/microsats_mutability.xml" />
-  </section>
-  <section id="multReg" name="Multiple regression">
-    <tool file="regVariation/linear_regression.xml" />
-    <tool file="regVariation/logistic_regression_vif.xml" />
-    <tool file="regVariation/best_regression_subsets.xml" />
-    <tool file="regVariation/rcve.xml" />
-    <tool file="regVariation/partialR_square.xml" />
   </section>
   <section id="multVar" name="Multivariate Analysis">
     <tool file="multivariate_stats/pca.xml" />
@@ -190,38 +158,5 @@
     <label id="ab_solid" text="AB-SOLiD" />
   </section>
   <section id="samtools" name="NGS: SAM Tools">
-  </section>
-  <section id="gatk" name="NGS: GATK Tools (beta)">
-    <label id="gatk_bam_utilities" text="Alignment Utilities" />
-    <tool file="gatk/depth_of_coverage.xml" />
-    <tool file="gatk/print_reads.xml" />
-    
-    <label id="gatk_realignment" text="Realignment" />
-    <tool file="gatk/realigner_target_creator.xml" />
-    <tool file="gatk/indel_realigner.xml" />
-    
-    <label id="gatk_recalibration" text="Base Recalibration" />
-    <tool file="gatk/count_covariates.xml" />
-    <tool file="gatk/table_recalibration.xml" />
-    <tool file="gatk/analyze_covariates.xml" />
-    
-    <label id="gatk_genotyping" text="Genotyping" />
-    <tool file="gatk/unified_genotyper.xml" />
-    
-    <label id="gatk_annotation" text="Annotation" />
-    <tool file="gatk/variant_annotator.xml" />
-    
-    <label id="gatk_filtration" text="Filtration" />
-    <tool file="gatk/variant_filtration.xml" />
-    <tool file="gatk/variant_select.xml" />
-    
-    <label id="gatk_variant_quality_score_recalibration" text="Variant Quality Score Recalibration" />
-    <tool file="gatk/variant_recalibrator.xml" />
-    <tool file="gatk/variant_apply_recalibration.xml" />
-    
-    <label id="gatk_variant_utilities" text="Variant Utilities" />
-    <tool file="gatk/variants_validate.xml" />
-    <tool file="gatk/variant_eval.xml" />
-    <tool file="gatk/variant_combine.xml" />
   </section>
 </toolbox>

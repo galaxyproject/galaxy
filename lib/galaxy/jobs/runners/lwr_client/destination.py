@@ -1,5 +1,6 @@
 
 from re import match
+from .util import filter_destination_params
 
 SUBMIT_PREFIX = "submit_"
 
@@ -54,7 +55,4 @@ def submit_params(destination_params):
     >>> result
     {'native_specification': '-q batch'}
     """
-    destination_params = destination_params or {}
-    return dict([(key[len(SUBMIT_PREFIX):], destination_params[key])
-                 for key in destination_params
-                 if key.startswith(SUBMIT_PREFIX)])
+    return filter_destination_params(destination_params, SUBMIT_PREFIX)

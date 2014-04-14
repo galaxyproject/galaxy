@@ -42,7 +42,7 @@ var ToolParameter = Backbone.Model.extend({
         num_samples: 5
     },
 
-    initialize: function() {
+    initialize: function(options) {
         this.attributes.html = unescape(this.attributes.html);
     },
 
@@ -124,6 +124,8 @@ var Tool = Backbone.Model.extend({
         outputs: []
     },
 
+    urlRoot: galaxy_config.root + 'api/tools',
+
     initialize: function(options) {
 
         // Set parameters.
@@ -133,7 +135,16 @@ var Tool = Backbone.Model.extend({
         })));
     },
 
-    urlRoot: galaxy_config.root + 'api/tools',
+    /**
+     *
+     */
+    toJSON: function() {
+        var rval = Backbone.Model.prototype.toJSON.call(this);
+
+        // Convert inputs to JSON manually.
+        rval.inputs = this.get('inputs').map(function(i) { return i.toJSON(); });
+        return rval;
+    },
 
     /**
      * Removes inputs of a particular type; this is useful because not all inputs can be handled by

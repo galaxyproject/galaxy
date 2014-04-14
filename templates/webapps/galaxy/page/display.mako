@@ -5,12 +5,12 @@
     <script type="text/javascript">
     
         $(function() {
-
             // Setup embedded content:
             //  (a) toggles for showing/hiding embedded content;
             //  (b) ...
             $('.embedded-item').each( function() {
                 var container = $(this);
+                if( container.hasClass( 'history' ) ){ return; }
             
                 // Show embedded item.
                 var show_embedded_item = function() {
@@ -88,9 +88,12 @@
 
 <%def name="stylesheets()">
     ${parent.stylesheets()}
-    ${h.css( "base", "history", "autocomplete_tagging" )}
+    ${h.css( "base", "autocomplete_tagging" )}
     <style type="text/css">
         .toggle { display: none; }
+        .embedded-item .title {
+            padding-top: 1px;
+        }
         .embedded-item h4 {
             margin: 0px;
         }
@@ -118,6 +121,30 @@
         }
         .embedded-item .trackster-nav {
             position: inherit;
+        }
+
+        /* ---------------------------- histories */
+        .embedded-item.history .toggle {
+            display: inline;
+        }
+        .embedded-item.history .expanded-content {
+            /* generates a fake wide border */
+            padding: 4px;
+        }
+        /** wraps around the history */
+        .embedded-item.history .item-content {
+            background-color: white;
+            padding: 8px;
+            border-radius: 0px 0px 4px 4px;
+        }
+        .embedded-item.history .history-panel .datasets-list {
+            margin-bottom: 8px;
+        }
+        .embedded-item.history .history-panel .errormessage {
+            margin-top: 8px;
+        }
+        .annotated-history-panel .history-controls {
+            margin: 0px 0px 16px 0px;
         }
     </style>
 </%def>

@@ -67,6 +67,14 @@ class ShedTwillTestCase( TwillTestCase ):
         url = '/repository_review/create_component?operation=create'
         self.visit_url( url )
         self.submit_form( 1, 'create_component_button', **kwd )
+        
+    def assign_admin_role( self, repository, user ):
+        # As elsewhere, twill limits the possibility of submitting the form, this time due to not executing the javascript
+        # attached to the role selection form. Visit the action url directly with the necessary parameters.
+        url = '/repository/manage_repository_admins?id=%s&in_users=%d&manage_role_associations_button=Save' % \
+            ( self.security.encode_id( repository.id ), user.id )
+        self.visit_url( url )
+        self.check_for_strings( strings_displayed=[ 'Role', 'has been associated' ] )
 
     def browse_category( self, category, strings_displayed=[], strings_not_displayed=[] ):
         url = '/repository/browse_valid_categories?sort=name&operation=valid_repositories_by_category&id=%s' % \
@@ -518,7 +526,7 @@ class ShedTwillTestCase( TwillTestCase ):
             tc.submit( "manage_categories_button" )
             self.check_for_strings( strings_displayed, strings_not_displayed )
         
-    def edit_repository_information( self, repository, **kwd ):
+    def edit_repository_information( self, repository, revert=True, **kwd ):
         url = '/repository/manage_repository?id=%s' % self.security.encode_id( repository.id )
         self.visit_url( url )
         original_information = dict( repo_name=repository.name, description=repository.description, long_description=repository.long_description )
@@ -530,12 +538,13 @@ class ShedTwillTestCase( TwillTestCase ):
                 strings_displayed.append( self.escape_html( kwd[ input_elem_name ] ) )
         tc.submit( "edit_repository_button" )
         self.check_for_strings( strings_displayed )
-        strings_displayed = []
-        for input_elem_name in [ 'repo_name', 'description', 'long_description' ]:
-            tc.fv( "edit_repository", input_elem_name, original_information[ input_elem_name ] )
-            strings_displayed.append( self.escape_html( original_information[ input_elem_name ] ) )
-        tc.submit( "edit_repository_button" )
-        self.check_for_strings( strings_displayed )
+        if revert:
+            strings_displayed = []
+            for input_elem_name in [ 'repo_name', 'description', 'long_description' ]:
+                tc.fv( "edit_repository", input_elem_name, original_information[ input_elem_name ] )
+                strings_displayed.append( self.escape_html( original_information[ input_elem_name ] ) )
+            tc.submit( "edit_repository_button" )
+            self.check_for_strings( strings_displayed )
         
     def enable_email_alerts( self, repository, strings_displayed=[], strings_not_displayed=[] ):
         repository_id = self.security.encode_id( repository.id )

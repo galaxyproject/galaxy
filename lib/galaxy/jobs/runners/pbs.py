@@ -5,6 +5,7 @@ import traceback
 from datetime import timedelta
 
 from galaxy import model
+from galaxy import util
 from galaxy.util.bunch import Bunch
 from galaxy.util import DATABASE_MAX_STRING_SIZE, shrink_stream_by_size
 from galaxy.jobs import JobDestination
@@ -233,7 +234,7 @@ class PBSJobRunner( AsynchronousJobRunner ):
         # Explicitly set the determined PBS destination in the persisted job destination for recovery
         job_destination.params['destination'] = '%s@%s' % (pbs_queue_name or '', pbs_server_name)
 
-        c = pbs.pbs_connect( pbs_server_name )
+        c = pbs.pbs_connect( util.smart_str( pbs_server_name ) )
         if c <= 0:
             errno, text = pbs.error()
             job_wrapper.fail( "Unable to queue job for execution.  Resubmitting the job may succeed." )
@@ -449,7 +450,7 @@ class PBSJobRunner( AsynchronousJobRunner ):
                 servers.append( pbs_server_name )
             pbs_job_state.check_count += 1
         for pbs_server_name in servers:
-            c = pbs.pbs_connect( pbs_server_name )
+            c = pbs.pbs_connect( util.smart_str( pbs_server_name ) )
             if c <= 0:
                 log.debug("connection to PBS server %s for state check failed" % pbs_server_name )
                 failures.append( pbs_server_name )
@@ -482,7 +483,7 @@ class PBSJobRunner( AsynchronousJobRunner ):
         Returns the state of a single job, used to make sure a job is
         really dead.
         """
-        c = pbs.pbs_connect( pbs_server_name )
+        c = pbs.pbs_connect( util.smart_str( pbs_server_name ) )
         if c <= 0:
             log.debug("connection to PBS server %s for state check failed" % pbs_server_name )
             return None
@@ -584,7 +585,7 @@ class PBSJobRunner( AsynchronousJobRunner ):
                 log.debug("(%s) Job queued but no destination stored in job params, cannot delete"
                          % job_tag )
                 return
-            c = pbs.pbs_connect( pbs_server_name )
+            c = pbs.pbs_connect( util.smart_str( pbs_server_name ) )
             if c <= 0:
                 log.debug("(%s) Connection to PBS server for job delete failed"
                          % job_tag )

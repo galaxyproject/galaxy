@@ -53,16 +53,18 @@ def check_param( trans, param, incoming_value, param_values, source='html' ):
     value = incoming_value
     error = None
     try:
-        if value is not None or isinstance(param, DataToolParameter):
+        if value is not None or isinstance( param, DataToolParameter ):
             # Convert value from HTML representation
             if source == 'html':
                 value = param.from_html( value, trans, param_values )
             else:
                 value = param.from_json( value, trans, param_values )
-            # Allow the value to be converted if neccesary
-            filtered_value = param.filter_value( value, trans, param_values )
-            # Then do any further validation on the value
-            param.validate( filtered_value, trans.history )
+            # Only validate if late validation is not needed
+            if not param.need_late_validation( trans, param_values ):
+                # Allow the value to be converted if necessary
+                filtered_value = param.filter_value( value, trans, param_values )
+                # Then do any further validation on the value
+                param.validate( filtered_value, trans.history )
         elif value is None and isinstance( param, SelectToolParameter ):
             # An empty select list or column list
             param.validate( value, trans.history )

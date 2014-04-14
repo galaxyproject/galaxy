@@ -3,7 +3,7 @@
 # environment.  To tune the application for a multi-user production
 # environment, see the documentation at:
 #
-# http://wiki.g2.bx.psu.edu/Admin/Config/Performance/Production%20Server
+#  http://usegalaxy.org/production
 #
 
 # Throughout this sample configuration file, except where stated otherwise,
@@ -11,7 +11,7 @@
 # values are set to the default value.
 # Examples of many of these options are explained in more detail in the wiki:
 #
-# http://wiki.g2.bx.psu.edu/Admin/Config
+#   https://wiki.galaxyproject.org/Admin/Config
 #
 # Config hackers are encouraged to check there before asking for help.
 
@@ -140,9 +140,12 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # Other tool config files must include the tool_path as an attribute in the <toolbox> tag.
 #tool_path = tools
 
-# Path to the directory in which managed tool dependencies are placed.  To use
-# the dependency system, see the documentation at:
-# http://wiki.g2.bx.psu.edu/Admin/Config/Tool%20Dependencies
+# Path to the directory in which tool dependencies are placed.  This is used by
+# the tool shed to install dependencies and can also be used by administrators
+# to manually install or link to dependencies.  For details, see:
+#   https://wiki.galaxyproject.org/Admin/Config/ToolDependencies
+# If this option is not set to a valid path, installing tools with dependencies
+# from the Tool Shed will fail.
 #tool_dependency_dir = None
 
 # Enable automatic polling of relative tool sheds to see if any updates
@@ -155,7 +158,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # Enable use of an in-memory registry with bi-directional relationships
 # between repositories (i.e., in addition to lists of dependencies for a
 # repository, keep an in-memory registry of dependent items for each repository.
-#manage_dependency_relationships = True
+#manage_dependency_relationships = False
 
 # XML config file that contains data table entries for the ToolDataTableManager. This file is manually
 # maintained by the Galaxy administrator.
@@ -169,7 +172,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 
 # Directory where data used by tools is located, see the samples in that
 # directory and the wiki for help:
-# http://wiki.g2.bx.psu.edu/Admin/Data%20Integration
+#   https://wiki.galaxyproject.org/Admin/DataIntegration
 #tool_data_path = tool-data
 
 # Directory where chrom len files are kept, currently mainly used by trackster
@@ -178,6 +181,9 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # Datatypes config file, defines what data (file) types are available in
 # Galaxy.
 #datatypes_config_file = datatypes_conf.xml
+
+# Disable the 'Auto-detect' option for file uploads
+#datatypes_disable_auto = False
 
 # Visualizations config directory: where to look for individual visualization plugins.
 # The path is relative to the Galaxy root dir. To use an absolute path begin the path
@@ -192,6 +198,10 @@ visualization_plugins_directory = config/plugins/visualizations
 # If using a cluster, Galaxy will write job scripts and stdout/stderr to this
 # directory.
 #cluster_files_directory = database/pbs
+
+# Mako templates are compiled as needed and cached for reuse, this directory is
+# used for the cache
+#template_cache_path = database/compiled_templates
 
 # External service types config file, defines what types of external_services configurations 
 # are available in Galaxy.
@@ -535,7 +545,7 @@ use_interactive = True
 # -- Data Libraries
 
 # These library upload options are described in much more detail in the wiki:
-# http://wiki.g2.bx.psu.edu/Admin/Data%20Libraries/Uploading%20Library%20Files
+#   https://wiki.galaxyproject.org/Admin/DataLibraries/UploadingLibraryFiles
 
 # Add an option to the library upload form which allows administrators to
 # upload a directory of files.
@@ -593,7 +603,7 @@ use_interactive = True
 # User authentication can be delegated to an upstream proxy server (usually
 # Apache).  The upstream proxy should set a REMOTE_USER header in the request.
 # Enabling remote user disables regular logins.  For more information, see:
-# http://wiki.g2.bx.psu.edu/Admin/Config/Apache%20Proxy
+#   https://wiki.galaxyproject.org/Admin/Config/ApacheProxy
 #use_remote_user = False
 
 # If use_remote_user is enabled and your external authentication
@@ -621,7 +631,7 @@ use_interactive = True
 # users (email addresses).  These users will have access to the Admin section
 # of the server, and will have access to create users, groups, roles,
 # libraries, and more.  For more information, see:
-# http://wiki.g2.bx.psu.edu/Admin/Interface
+#   https://wiki.galaxyproject.org/Admin/Interface
 #admin_users = None
 
 # Force everyone to log in (disable anonymous access).
@@ -698,14 +708,6 @@ use_interactive = True
 # Enable enforcement of quotas.  Quotas can be set from the Admin interface.
 #enable_quotas = False
 
-# Enable a feature when running workflows. When enabled, default datasets
-# are selected for "Set at Runtime" inputs from the history such that the
-# same input will not be selected twice, unless there are more inputs than
-# compatible datasets in the history.
-# When False, the most recently added compatible item in the history will
-# be used for each "Set at Runtime" input, independent of others in the Workflow
-#enable_unique_workflow_defaults = False
-
 # This option allows users to see the full path of datasets via the "View
 # Details" option in the history.  Administrators can always see this.
 #expose_dataset_path = False
@@ -726,8 +728,8 @@ use_interactive = True
 # separate Galaxy into multiple processes.  There are more than one way to do
 # this, and they are explained in detail in the documentation:
 #
-#   http://wiki.g2.bx.psu.edu/Admin/Config/Performance/Web%20Application%20Scaling
-#
+#   https://wiki.galaxyproject.org/Admin/Config/Performance/Scaling
+
 # By default, Galaxy manages and executes jobs from within a single process and
 # notifies itself of new jobs via in-memory queues.  Jobs are run locally on
 # the system on which Galaxy is started.  Advanced job running capabilities can

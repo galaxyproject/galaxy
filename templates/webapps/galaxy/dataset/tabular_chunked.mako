@@ -6,7 +6,6 @@
 <%def name="javascripts()">
     ${parent.javascripts()}
     ${h.js( "libs/require" )}
-    ${h.templates("helpers-common-templates")}
 
     <script type="text/javascript">
         require.config({ 
@@ -17,8 +16,8 @@
         });
 
         require(['mvc/data'], function(data) {
-            data.createTabularDatasetChunkedView(
-                _.extend( ${h.to_json_string( trans.security.encode_dict_ids( dataset.to_dict() ) )}, 
+            data.createTabularDatasetChunkedView({
+                dataset_config: _.extend( ${h.to_json_string( trans.security.encode_dict_ids( dataset.to_dict() ) )}, 
                         {
                             url_viz: "${h.url_for( controller='/visualization')}",
                             chunk_url: "${h.url_for( controller='/dataset', action='display',
@@ -26,9 +25,8 @@
                             first_data_chunk: ${chunk}
                         } 
                 ),
-                // Append view to body.
-                $('body')
-            );
+                parent_elt: $('body')
+            });
         });
     </script>
 </%def>

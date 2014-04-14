@@ -1,1 +1,0 @@
-Handlebars.registerHelper("local",function(a){return _l(a.fn(this))});Handlebars.registerHelper("n2br",function(a){return a.fn(this).replace(/\n/g,"<br/>")});

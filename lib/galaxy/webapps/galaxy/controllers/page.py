@@ -721,27 +721,52 @@ class PageController( BaseUIController, SharableMixin, UsesHistoryMixin,
     def get_item( self, trans, id ):
         return self.get_page( trans, id )
 
+    def _get_embedded_history_html( self, trans, id ):
+        """
+        Returns html suitable for embedding in another page.
+        """
+        history = self.get_history( trans, id, False, True )
+        if not history:
+            return None
+
+        # create ownership flag for template, dictify models
+        # note: adding original annotation since this is published - get_dict returns user-based annos
+        user_is_owner = trans.user == history.user
+        history.annotation = self.get_item_annotation_str( trans.sa_session, history.user, history )
+
+        hda_dicts = []
+        datasets = self.get_history_datasets( trans, history )
+        for hda in datasets:
+            hda_dict = self.get_hda_dict( trans, hda )
+            hda_dict[ 'annotation' ] = self.get_item_annotation_str( trans.sa_session, history.user, hda )
+            hda_dicts.append( hda_dict )
+        history_dict = self.get_history_dict( trans, history, hda_dictionaries=hda_dicts )
+        history_dict[ 'annotation' ] = history.annotation
+
+        filled = trans.fill_template( "history/embed.mako", item=history, item_data=datasets,
+            user_is_owner=user_is_owner, history_dict=history_dict, hda_dicts=hda_dicts )
+        return filled
+
     def _get_embed_html( self, trans, item_class, item_id ):
         """ Returns HTML for embedding an item in a page. """
         item_class = self.get_class( item_class )
         if item_class == model.History:
-            history = self.get_history( trans, item_id, False, True )
-            history.annotation = self.get_item_annotation_str( trans.sa_session, history.user, history )
-            if history:
-                datasets = self.get_history_datasets( trans, history )
-                return trans.fill_template( "history/embed.mako", item=history, item_data=datasets )
+            return self._get_embedded_history_html( trans, item_id )
+
         elif item_class == model.HistoryDatasetAssociation:
             dataset = self.get_dataset( trans, item_id, False, True )
             dataset.annotation = self.get_item_annotation_str( trans.sa_session, dataset.history.user, dataset )
             if dataset:
                 data = self.get_data( dataset )
                 return trans.fill_template( "dataset/embed.mako", item=dataset, item_data=data )
+
         elif item_class == model.StoredWorkflow:
             workflow = self.get_stored_workflow( trans, item_id, False, True )
             workflow.annotation = self.get_item_annotation_str( trans.sa_session, workflow.user, workflow )
             if workflow:
                 self.get_stored_workflow_steps( trans, workflow )
                 return trans.fill_template( "workflow/embed.mako", item=workflow, item_data=workflow.latest_workflow.steps )
+
         elif item_class == model.Visualization:
             visualization = self.get_visualization( trans, item_id, False, True )
             visualization.annotation = self.get_item_annotation_str( trans.sa_session, visualization.user, visualization )

@@ -3,8 +3,8 @@
  * genomic visualization.
  */
 
-define(["libs/underscore", "libs/d3", "viz/trackster/util", "viz/visualization", "viz/trackster/tracks", "mvc/tools", "mvc/data"], 
-       function(_, d3, util, visualization, tracks, tools, data) {
+define(["libs/underscore", "libs/d3", "viz/trackster/util", "viz/visualization", "viz/trackster/tracks", "mvc/tools", "mvc/data", "utils/config"], 
+       function(_, d3, util, visualization, tracks, tools, data, config) {
 
 /**
  * A collection of tool input settings. Object is useful for keeping a list of settings 
@@ -257,7 +257,7 @@ var SweepsterTrack = Backbone.Model.extend({
     },
     
     initialize: function(options) {
-        this.set('regions', new visualization.GenomeRegionCollection(options.regions));
+        this.set('regions', options.regions);
         if (options.track) {
             // FIXME: find a better way to deal with needed URLs:
             var track_config = _.extend({
@@ -310,12 +310,12 @@ var SweepsterVisualization = visualization.Visualization.extend({
         this.set('dataset', new data.Dataset(options.dataset));
         this.set('tool', new tools.Tool(options.tool));
         this.set('regions', new visualization.GenomeRegionCollection(options.regions));
-        this.set('tracks', new SweepsterTrackCollection(options.tracks));
+        this.set('tracks', new TrackCollection(options.tracks));
 
         var tool_with_samplable_inputs = this.get('tool');
         this.set('tool_with_samplable_inputs', tool_with_samplable_inputs);
         // Remove complex parameters for now.
-        tool_with_samplable_inputs.remove_inputs( [ 'data', 'hidden_data', 'conditional' ] );
+        tool_with_samplable_inputs.remove_inputs( [ 'data', 'hidden_data', 'conditional', 'text' ] );
         
         this.set('parameter_tree', new ToolParameterTree({ 
             tool: tool_with_samplable_inputs,
@@ -430,7 +430,7 @@ var SweepsterTrackView = Backbone.View.extend({
                     var canvas = self.canvas_manager.new_canvas();
                     canvas.width = self.TILE_LEN;
                     canvas.height = track.get_canvas_height(tile_data, mode, w_scale, canvas.width);
-                    track.draw_tile(tile_data, canvas.getContext('2d'), mode, resolution, region, w_scale);
+                    track.draw_tile(tile_data, canvas.getContext('2d'), mode, region, w_scale);
                     $(tile_containers[index]).empty().append(canvas);
                 });
             });
@@ -680,8 +680,18 @@ var SweepsterVisualizationView = Backbone.View.extend({
         });
 
         // Set block, reverse strand block colors; these colors will be used for all tracks.
-        this.block_color = util.get_random_color();
-        this.reverse_strand_color = util.get_random_color( [ this.block_color, "#ffffff" ] );
+        this.config = config.ConfigSettingCollection.from_models_and_saved_values( 
+            [
+                { key: 'name', label: 'Name', type: 'text', default_value: '' },
+                { key: 'a_color', label: 'A Color', type: 'color', default_value: "#FF0000" },
+                { key: 'c_color', label: 'C Color', type: 'color', default_value: "#00FF00" },
+                { key: 'g_color', label: 'G Color', type: 'color', default_value: "#0000FF" },
+                { key: 't_color', label: 'T Color', type: 'color', default_value: "#FF00FF" },
+                { key: 'n_color', label: 'N Color', type: 'color', default_value: "#AAAAAA" },
+                { key: 'block_color', label: 'Block color', type: 'color' },
+                { key: 'reverse_strand_color', label: 'Antisense strand color', type: 'color' },
+            ], {}
+        );
     },
     
     render: function() {
@@ -790,6 +800,11 @@ var SweepsterVisualizationView = Backbone.View.extend({
         
         menu.$el.attr("style", "float: right");
         $("#right .unified-panel-header-inner").append(menu.$el);
+    },
+
+    get_base_color: function(base) {
+        return this.config.get_value(base.toLowerCase() + '_color') || 
+               this.config.get_value('n_color');
     },
 
     run_tool_on_dataset: function(settings) {
@@ -904,14 +919,12 @@ var SweepsterVisualizationView = Backbone.View.extend({
                             // the tool parameters and parameter tree.
                             track_config.tool = null;
 
+                            track_config.prefs = self.config.to_key_value_dict();
+
                             // Create and add track for output dataset.
                             var track_obj = tracks.object_from_template(track_config, self, null);
                             track_obj.init_for_tool_data();
                             
-                            // Set track block colors.
-                            track_obj.prefs.block_color = self.block_color;
-                            track_obj.prefs.reverse_strand_color = self.reverse_strand_color;
-
                             pm_track.set('track', track_obj);
                         });
                     }, index * 10000);

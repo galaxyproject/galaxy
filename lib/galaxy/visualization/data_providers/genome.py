@@ -4,20 +4,23 @@ Data providers for genome visualizations.
 
 import os, sys, re
 import pkg_resources
+import itertools
+import random
+
 pkg_resources.require( "bx-python" )
 pkg_resources.require( "pysam" )
 pkg_resources.require( "numpy" )
 import numpy
-from galaxy.datatypes.util.gff_util import convert_gff_coords_to_bed, GFFFeature, GFFInterval, GFFReaderWrapper, parse_gff_attributes
-from galaxy.util.json import from_json_string
 from bx.interval_index_file import Indexes
 from bx.bbi.bigwig_file import BigWigFile
 from bx.bbi.bigbed_file import BigBedFile
+from pysam import csamtools, ctabix
+
+from galaxy.datatypes.util.gff_util import convert_gff_coords_to_bed, GFFFeature, GFFInterval, GFFReaderWrapper, parse_gff_attributes
+from galaxy.util.json import from_json_string
 from galaxy.visualization.data_providers.basic import BaseDataProvider
 from galaxy.visualization.data_providers.cigar import get_ref_based_read_seq_and_cigar
 from galaxy.datatypes.interval import Bed, Gff, Gtf
-
-from pysam import csamtools, ctabix
 
 #
 # Utility functions.
@@ -887,8 +890,10 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
             except ValueError:
                 return None
         return data
+        
 
-    def process_data( self, iterator, start_val=0, max_vals=None, ref_seq=None, start=0, **kwargs ):
+    def process_data( self, iterator, start_val=0, max_vals=None, ref_seq=None, 
+                      iterator_type='nth', mean_depth=None, start=0, end=0, **kwargs ):
         """
         Returns a dict with the following attributes::
 
@@ -911,7 +916,6 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
             max_low - lowest coordinate for the returned reads
             max_high - highest coordinate for the returned reads
             message - error/informative message
-
         """
         # No iterator indicates no reads.
         if iterator is None:
@@ -921,13 +925,66 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
         # Helper functions.
         #
 
-        # Decode strand from read flag.
         def decode_strand( read_flag, mask ):
+            """ Decode strand from read flag. """
+        
             strand_flag = ( read_flag & mask == 0 )
             if strand_flag:
                 return "+"
             else:
                 return "-"
+
+        def _random_read_iterator( read_iterator, threshold ):
+            """
+            An iterator that returns a random stream of reads from the read_iterator
+            as well as corresponding pairs for returned reads.
+            threshold is a value in [0,1] that denotes the percentage of reads
+            to return.
+            """
+            for e in read_iterator:
+                if e.qname in paired_pending or random.uniform( 0, 1 ) <= threshold:
+                    yield e
+
+        def _nth_read_iterator( read_iterator, threshold ):
+            """
+            An iterator that returns every nth read.
+            """
+
+            # Convert threshold to N for stepping through iterator.
+            n = int( 1/threshold )
+            for e in itertools.islice( read_iterator, None, None, n ):
+                yield e
+
+            # Alternatate and much slower implementation that looks for pending pairs.
+            '''
+            for i, e in enumerate( read_iterator ):
+                if e.qname in paired_pending or ( i % n ) == 0:
+                    yield e
+            '''
+
+        # -- Choose iterator. --
+
+        # Calculate threshold for non-sequential iterators based on mean_depth and read length.
+        try:
+            first_read = next( iterator )
+        except StopIteration:
+            # no reads.
+            return { 'data': [], 'message': None, 'max_low': start, 'max_high': start }
+
+        read_len = len( first_read.seq )
+        num_reads = ( end - start ) * mean_depth / float ( read_len )
+        threshold = float( max_vals )/ num_reads
+        iterator = itertools.chain( iter( [ first_read ] ), iterator )
+
+        # Use specified iterator type, save for when threshold is >= 1.
+        # A threshold of >= 1 indicates all reads are to be returned, so no
+        # sampling needed and seqential iterator will be used.
+        if iterator_type == 'sequential' or threshold >= 1:
+            read_iterator = iterator
+        elif iterator_type == 'random':
+            read_iterator = _random_read_iterator( iterator, threshold )
+        elif iterator_type == 'nth':
+            read_iterator = _nth_read_iterator( iterator, threshold )
 
         #
         # Encode reads as list of lists.
@@ -936,7 +993,8 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
         paired_pending = {}
         unmapped = 0
         message = None
-        for count, read in enumerate( iterator ):
+        count = 0
+        for read in read_iterator:
             if count < start_val:
                 continue
             if ( count - start_val - unmapped ) >= max_vals:
@@ -958,7 +1016,8 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
                 read_len = len(seq) # If no cigar, just use sequence length
 
             if read.is_proper_pair:
-                if qname in paired_pending: # one in dict is always first
+                if qname in paired_pending:
+                    # Found pair.
                     pair = paired_pending[qname]
                     results.append( [ "%i_%s" % ( pair['start'], qname ),
                                       pair['start'],
@@ -970,15 +1029,17 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
                                      ] )
                     del paired_pending[qname]
                 else:
+                    # Insert first of pair.
                     paired_pending[qname] = { 'start': read.pos, 'end': read.pos + read_len, 'seq': seq, 'mate_start': read.mpos,
                                               'rlen': read_len, 'strand': strand, 'cigar': read.cigar, 'mapq': read.mapq }
+                    count += 1
             else:
                 results.append( [ "%i_%s" % ( read.pos, qname ),
                                 read.pos, read.pos + read_len, qname,
                                 read.cigar, strand, read.seq, read.mapq ] )
-
+                count += 1
+        
         # Take care of reads whose mates are out of range.
-        # TODO: count paired reads when adhering to max_vals?
         for qname, read in paired_pending.iteritems():
             if read['mate_start'] < read['start']:
                 # Mate is before read.
@@ -1002,45 +1063,48 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
         # Clean up. TODO: is this needed? If so, we'll need a cleanup function after processing the data.
         # bamfile.close()
 
-        # If there are results and reference data, transform read sequence and cigar.
-        if len( results ) != 0 and ref_seq:
-            def process_read( read, start_field, cigar_field, seq_field ):
-                '''
-                Process a read using the designated fields.
-                '''
-                read_seq, read_cigar = get_ref_based_read_seq_and_cigar( read[ seq_field ].upper(),
-                                                                         read[ start_field ],
-                                                                         ref_seq,
-                                                                         start,
-                                                                         read[ cigar_field ] )
-                read[ seq_field ] = read_seq
-                read[ cigar_field ] = read_cigar
+        def compress_seq_and_cigar( read, start_field, cigar_field, seq_field ):
+            '''
+            Use reference-based compression to compress read sequence and cigar.
+            '''
+            read_seq, read_cigar = get_ref_based_read_seq_and_cigar( read[ seq_field ].upper(),
+                                                                     read[ start_field ],
+                                                                     ref_seq,
+                                                                     start,
+                                                                     read[ cigar_field ] )
+            read[ seq_field ] = read_seq
+            read[ cigar_field ] = read_cigar
 
-            def process_se_read( read ):
-                '''
-                Process single-end read.
-                '''
-                process_read( read, 1, 4, 6)
+        def convert_cigar( read, start_field, cigar_field, seq_field ):
+            '''
+            Convert read cigar from pysam format to string format.
+            '''
+            cigar_ops = 'MIDNSHP=X'
+            read_cigar = ''
+            for op_tuple in read[ cigar_field ]:
+                read_cigar += '%i%s' % ( op_tuple[1], cigar_ops[ op_tuple[0] ] )
+            read[ cigar_field ] = read_cigar
 
-            def process_pe_read( read ):
-                '''
-                Process paired-end read.
-                '''
+        # Choose method for processing reads. Use reference-based compression 
+        # if possible. Otherwise, convert cigar.
+        if ref_seq:
+            # Uppercase for easy comparison.
+            ref_seq = ref_seq.upper()
+            process_read = compress_seq_and_cigar
+        else:
+            process_read = convert_cigar
+
+        # Process reads.
+        for read in results:
+            if isinstance( read[ 5 ], list ):
+                # Paired-end read.
                 if len( read[4] ) > 2:
                     process_read( read[4], 0, 2, 4 )
                 if len( read[5] ) > 2:
                     process_read( read[5], 0, 2, 4 )
-
-            # Uppercase for easy comparison.
-            ref_seq = ref_seq.upper()
-
-            # Process reads.
-            for read in results:
-                # Use correct function for processing reads.
-                if isinstance( read[ 5 ], list ):
-                    process_pe_read( read )
-                else:
-                    process_se_read( read )
+            else:
+                # Single-end read.
+                process_read( read, 1, 4, 6)
 
         max_low, max_high = get_bounds( results, 1, 2 )
 

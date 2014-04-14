@@ -63,8 +63,17 @@ from galaxy.web import url_for
 from galaxy.web.form_builder import SelectField
 from galaxy.model.item_attrs import Dictifiable
 from galaxy.model import Workflow
-from tool_shed.util import shed_util_common
+from tool_shed.util import shed_util_common as suc
 from .loader import load_tool, template_macro_params
+from .wrappers import (
+    ToolParameterValueWrapper,
+    RawObjectWrapper,
+    LibraryDatasetValueWrapper,
+    InputValueWrapper,
+    SelectToolParameterWrapper,
+    DatasetFilenameWrapper,
+    DatasetListWrapper,
+)
 
 
 log = logging.getLogger( __name__ )
@@ -218,9 +227,10 @@ class ToolBox( object, Dictifiable ):
                 return shed_config_dict
         return default
 
-    def __add_tool_to_tool_panel( self, tool_id, panel_component, section=False ):
+    def __add_tool_to_tool_panel( self, tool, panel_component, section=False ):
         # See if a version of this tool is already loaded into the tool panel.  The value of panel_component
         # will be a ToolSection (if the value of section=True) or self.tool_panel (if section=False).
+        tool_id = str( tool.id )
         tool = self.tools_by_id[ tool_id ]
         if section:
             panel_dict = panel_component.elems
@@ -235,31 +245,62 @@ class ToolBox( object, Dictifiable ):
                 if loaded_version_key in panel_dict:
                     already_loaded = True
                     break
-        if not already_loaded:
+        if already_loaded:
+            if tool.lineage_ids.index( tool_id ) > tool.lineage_ids.index( lineage_id ):
+                key = 'tool_%s' % tool.id
+                index = panel_dict.keys().index( loaded_version_key )
+                del panel_dict[ loaded_version_key ]
+                panel_dict.insert( index, key, tool )
+                log.debug( "Loaded tool id: %s, version: %s into tool panel." % ( tool.id, tool.version ) )
+        else:
             inserted = False
             key = 'tool_%s' % tool.id
             # The value of panel_component is the in-memory tool panel dictionary.
             for index, integrated_panel_key in enumerate( self.integrated_tool_panel.keys() ):
                 if key == integrated_panel_key:
                     panel_dict.insert( index, key, tool )
-                    inserted = True
+                    if not inserted:
+                        inserted = True
             if not inserted:
-                # If the tool is not defined in integrated_tool_panel.xml, append it to the tool panel.
-                panel_dict[ key ] = tool
-            log.debug( "Loaded tool id: %s, version: %s into tool panel." % ( tool.id, tool.version ) )
-        elif tool.lineage_ids.index( tool_id ) > tool.lineage_ids.index( lineage_id ):
-            key = 'tool_%s' % tool.id
-            index = panel_dict.keys().index( loaded_version_key )
-            del panel_dict[ loaded_version_key ]
-            panel_dict.insert( index, key, tool )
-            log.debug( "Loaded tool id: %s, version: %s into tool panel." % ( tool.id, tool.version ) )
+                # Check the tool's installed versions.
+                for lineage_id in tool.lineage_ids:
+                    lineage_id_key = 'tool_%s' % lineage_id
+                    for index, integrated_panel_key in enumerate( self.integrated_tool_panel.keys() ):
+                        if lineage_id_key == integrated_panel_key:
+                            panel_dict.insert( index, key, tool )
+                            if not inserted:
+                                inserted = True
+                if not inserted:
+                    if tool.guid is None or \
+                        tool.tool_shed is None or \
+                        tool.repository_name is None or \
+                        tool.repository_owner is None or \
+                        tool.installed_changeset_revision is None:
+                        # We have a tool that was not installed from the Tool Shed, but is also not yet defined in
+                        # integrated_tool_panel.xml, so append it to the tool panel.
+                        panel_dict[ key ] = tool
+                        log.debug( "Loaded tool id: %s, version: %s into tool panel.." % ( tool.id, tool.version ) )
+                    else:
+                        # We are in the process of installing the tool.
+                        tool_version = self.__get_tool_version( tool_id )
+                        tool_lineage_ids = tool_version.get_version_ids( self.app, reverse=True )
+                        for lineage_id in tool_lineage_ids:
+                            if lineage_id in self.tools_by_id:
+                                loaded_version_key = 'tool_%s' % lineage_id
+                                if loaded_version_key in panel_dict:
+                                    if not already_loaded:
+                                        already_loaded = True
+                        if not already_loaded:
+                            # If the tool is not defined in integrated_tool_panel.xml, append it to the tool panel.
+                            panel_dict[ key ] = tool
+                            log.debug( "Loaded tool id: %s, version: %s into tool panel...." % ( tool.id, tool.version ) )
 
     def load_tool_panel( self ):
         for key, val in self.integrated_tool_panel.items():
             if isinstance( val, Tool ):
                 tool_id = key.replace( 'tool_', '', 1 )
                 if tool_id in self.tools_by_id:
-                    self.__add_tool_to_tool_panel( tool_id, self.tool_panel, section=False )
+                    self.__add_tool_to_tool_panel( val, self.tool_panel, section=False )
             elif isinstance( val, Workflow ):
                 workflow_id = key.replace( 'workflow_', '', 1 )
                 if workflow_id in self.workflows_by_id:
@@ -279,7 +320,7 @@ class ToolBox( object, Dictifiable ):
                     if isinstance( section_val, Tool ):
                         tool_id = section_key.replace( 'tool_', '', 1 )
                         if tool_id in self.tools_by_id:
-                            self.__add_tool_to_tool_panel( tool_id, section, section=True )
+                            self.__add_tool_to_tool_panel( section_val, section, section=True )
                     elif isinstance( section_val, Workflow ):
                         workflow_id = section_key.replace( 'workflow_', '', 1 )
                         if workflow_id in self.workflows_by_id:
@@ -422,8 +463,8 @@ class ToolBox( object, Dictifiable ):
     def __get_tool_version( self, tool_id ):
         """Return a ToolVersion if one exists for the tool_id"""
         return self.app.install_model.context.query( self.app.install_model.ToolVersion ) \
-                              .filter( self.app.install_model.ToolVersion.table.c.tool_id == tool_id ) \
-                              .first()
+                                             .filter( self.app.install_model.ToolVersion.table.c.tool_id == tool_id ) \
+                                             .first()
 
     def __get_tool_shed_repository( self, tool_shed, name, owner, installed_changeset_revision ):
         return self.app.install_model.context.query( self.app.install_model.ToolShedRepository ) \
@@ -435,14 +476,15 @@ class ToolBox( object, Dictifiable ):
 
     def get_tool_components( self, tool_id, tool_version=None, get_loaded_tools_by_lineage=False, set_selected=False ):
         """
-        Retrieve all loaded versions of a tool from the toolbox and return a select list enabling selection of a different version, the list of the tool's
-        loaded versions, and the specified tool.
+        Retrieve all loaded versions of a tool from the toolbox and return a select list enabling
+        selection of a different version, the list of the tool's loaded versions, and the specified tool.
         """
         toolbox = self
         tool_version_select_field = None
         tools = []
         tool = None
-        # Backwards compatibility for datasource tools that have default tool_id configured, but which are now using only GALAXY_URL.
+        # Backwards compatibility for datasource tools that have default tool_id configured, but which
+        # are now using only GALAXY_URL.
         tool_ids = listify( tool_id )
         for tool_id in tool_ids:
             if get_loaded_tools_by_lineage:
@@ -465,11 +507,11 @@ class ToolBox( object, Dictifiable ):
             refresh_on_change_values.append( tool.id )
         select_field = SelectField( name='tool_id', refresh_on_change=True, refresh_on_change_values=refresh_on_change_values )
         for option_tup in options:
-            selected = set_selected and option_tup[1] == tool_id
+            selected = set_selected and option_tup[ 1 ] == tool_id
             if selected:
-                select_field.add_option( 'version %s' % option_tup[0], option_tup[1], selected=True )
+                select_field.add_option( 'version %s' % option_tup[ 0 ], option_tup[ 1 ], selected=True )
             else:
-                select_field.add_option( 'version %s' % option_tup[0], option_tup[1] )
+                select_field.add_option( 'version %s' % option_tup[ 0 ], option_tup[ 1 ] )
         return select_field
 
     def load_tool_tag_set( self, elem, panel_dict, integrated_panel_dict, tool_path, load_panel_dict, guid=None, index=None ):
@@ -537,14 +579,15 @@ class ToolBox( object, Dictifiable ):
                                 tta = self.app.model.ToolTagAssociation( tool_id=tool.id, tag_id=tag.id )
                                 self.sa_session.add( tta )
                                 self.sa_session.flush()
-                #if tool.id not in self.tools_by_id:
-                # Allow for the same tool to be loaded into multiple places in the tool panel.  We have to handle the case where the tool is contained
-                # in a repository installed from the tool shed, and the Galaxy administrator has retrieved updates to the installed repository.  In this
-                # case, the tool may have been updated, but the version was not changed, so the tool should always be reloaded here.  We used to only load
-                # the tool if it's it was not found in self.tools_by_id, but performing that check did not enable this scenario.
+                # Allow for the same tool to be loaded into multiple places in the tool panel.  We have to handle
+                # the case where the tool is contained in a repository installed from the tool shed, and the Galaxy
+                # administrator has retrieved updates to the installed repository.  In this case, the tool may have
+                # been updated, but the version was not changed, so the tool should always be reloaded here.  We used
+                # to only load the tool if it's it was not found in self.tools_by_id, but performing that check did
+                # not enable this scenario.
                 self.tools_by_id[ tool.id ] = tool
                 if load_panel_dict:
-                    self.__add_tool_to_tool_panel( tool.id, panel_dict, section=isinstance( panel_dict, ToolSection ) )
+                    self.__add_tool_to_tool_panel( tool, panel_dict, section=isinstance( panel_dict, ToolSection ) )
             # Always load the tool into the integrated_panel_dict, or it will not be included in the integrated_tool_panel.xml file.
             if key in integrated_panel_dict or index is None:
                 integrated_panel_dict[ key ] = tool
@@ -1011,8 +1054,8 @@ class Tool( object, Dictifiable ):
     def tool_version( self ):
         """Return a ToolVersion if one exists for our id"""
         return self.app.install_model.context.query( self.app.install_model.ToolVersion ) \
-                              .filter( self.app.install_model.ToolVersion.table.c.tool_id == self.id ) \
-                              .first()
+                                             .filter( self.app.install_model.ToolVersion.table.c.tool_id == self.id ) \
+                                             .first()
 
     @property
     def tool_versions( self ):
@@ -1034,11 +1077,11 @@ class Tool( object, Dictifiable ):
     def tool_shed_repository( self ):
         # If this tool is included in an installed tool shed repository, return it.
         if self.tool_shed:
-            return shed_util_common.get_tool_shed_repository_by_shed_name_owner_installed_changeset_revision( self.app,
-                                                                                                                          self.tool_shed,
-                                                                                                                          self.repository_name,
-                                                                                                                          self.repository_owner,
-                                                                                                                          self.installed_changeset_revision )
+            return suc.get_tool_shed_repository_by_shed_name_owner_installed_changeset_revision( self.app,
+                                                                                                 self.tool_shed,
+                                                                                                 self.repository_name,
+                                                                                                 self.repository_owner,
+                                                                                                 self.installed_changeset_revision )
         return None
 
     def __get_job_tool_configuration(self, job_params=None):
@@ -1350,7 +1393,7 @@ class Tool( object, Dictifiable ):
                 lock = threading.Lock()
                 lock.acquire( True )
                 try:
-                    self.help.text = shed_util_common.set_image_paths( self.app, self.repository_id, self.help.text )
+                    self.help.text = suc.set_image_paths( self.app, self.repository_id, self.help.text )
                 except Exception, e:
                     log.exception( "Exception in parse_help, so images may not be properly displayed:\n%s" % str( e ) )
                 finally:
@@ -2551,240 +2594,6 @@ class Tool( object, Dictifiable ):
             message = e.message
         return message
 
-    def build_param_dict( self, incoming, input_datasets, output_datasets, output_paths, job_working_directory ):
-        """
-        Build the dictionary of parameters for substituting into the command
-        line. Each value is wrapped in a `InputValueWrapper`, which allows
-        all the attributes of the value to be used in the template, *but*
-        when the __str__ method is called it actually calls the
-        `to_param_dict_string` method of the associated input.
-        """
-        param_dict = dict()
-        param_dict.update(self.template_macro_params)
-        # All parameters go into the param_dict
-        param_dict.update( incoming )
-
-        def wrap_values( inputs, input_values ):
-            """
-            Wraps parameters as neccesary.
-            """
-            for input in inputs.itervalues():
-                if isinstance( input, Repeat ):
-                    for d in input_values[ input.name ]:
-                        wrap_values( input.inputs, d )
-                elif isinstance( input, Conditional ):
-                    values = input_values[ input.name ]
-                    current = values["__current_case__"]
-                    wrap_values( input.cases[current].inputs, values )
-                elif isinstance( input, DataToolParameter ) and input.multiple:
-                    input_values[ input.name ] = \
-                        DatasetListWrapper( input_values[ input.name ],
-                                            datatypes_registry = self.app.datatypes_registry,
-                                            tool = self,
-                                            name = input.name )
-                elif isinstance( input, DataToolParameter ):
-                    ## FIXME: We're populating param_dict with conversions when
-                    ##        wrapping values, this should happen as a separate
-                    ##        step before wrapping (or call this wrapping step
-                    ##        something more generic) (but iterating this same
-                    ##        list twice would be wasteful)
-                    # Add explicit conversions by name to current parent
-                    for conversion_name, conversion_extensions, conversion_datatypes in input.conversions:
-                        # If we are at building cmdline step, then converters
-                        # have already executed
-                        conv_ext, converted_dataset = input_values[ input.name ].find_conversion_destination( conversion_datatypes )
-                        # When dealing with optional inputs, we'll provide a
-                        # valid extension to be used for None converted dataset
-                        if not conv_ext:
-                            conv_ext = conversion_extensions[0]
-                        # input_values[ input.name ] is None when optional
-                        # dataset, 'conversion' of optional dataset should
-                        # create wrapper around NoneDataset for converter output
-                        if input_values[ input.name ] and not converted_dataset:
-                            # Input that converter is based from has a value,
-                            # but converted dataset does not exist
-                            raise Exception( 'A path for explicit datatype conversion has not been found: %s --/--> %s'
-                                % ( input_values[ input.name ].extension, conversion_extensions ) )
-                        else:
-                            # Trick wrapper into using target conv ext (when
-                            # None) without actually being a tool parameter
-                            input_values[ conversion_name ] = \
-                                DatasetFilenameWrapper( converted_dataset,
-                                                        datatypes_registry = self.app.datatypes_registry,
-                                                        tool = Bunch( conversion_name = Bunch( extensions = conv_ext ) ),
-                                                        name = conversion_name )
-                    # Wrap actual input dataset
-                    input_values[ input.name ] = \
-                        DatasetFilenameWrapper( input_values[ input.name ],
-                                                datatypes_registry = self.app.datatypes_registry,
-                                                tool = self,
-                                                name = input.name )
-                elif isinstance( input, SelectToolParameter ):
-                    input_values[ input.name ] = SelectToolParameterWrapper(
-                        input, input_values[ input.name ], self.app, other_values = param_dict )
-
-                elif isinstance( input, LibraryDatasetToolParameter ):
-                    input_values[ input.name ] = LibraryDatasetValueWrapper(
-                        input, input_values[ input.name ], param_dict )
-
-                else:
-                    input_values[ input.name ] = InputValueWrapper(
-                        input, input_values[ input.name ], param_dict )
-
-        # HACK: only wrap if check_values is not false, this deals with external
-        #       tools where the inputs don't even get passed through. These
-        #       tools (e.g. UCSC) should really be handled in a special way.
-        if self.check_values:
-            wrap_values( self.inputs, param_dict )
-
-        ## FIXME: when self.check_values==True, input datasets are being wrapped
-        ##        twice (above and below, creating 2 separate
-        ##        DatasetFilenameWrapper objects - first is overwritten by
-        ##        second), is this necessary? - if we get rid of this way to
-        ##        access children, can we stop this redundancy, or is there
-        ##        another reason for this?
-        ## - Only necessary when self.check_values is False (==external dataset
-        ##   tool?: can this be abstracted out as part of being a datasouce tool?)
-        ## - But we still want (ALWAYS) to wrap input datasets (this should be
-        ##   checked to prevent overhead of creating a new object?)
-        # Additionally, datasets go in the param dict. We wrap them such that
-        # if the bare variable name is used it returns the filename (for
-        # backwards compatibility). We also add any child datasets to the
-        # the param dict encoded as:
-        #   "_CHILD___{dataset_name}___{child_designation}",
-        # but this should be considered DEPRECATED, instead use:
-        #   $dataset.get_child( 'name' ).filename
-        for name, data in input_datasets.items():
-            param_dict_value = param_dict.get(name, None)
-            if not isinstance(param_dict_value, (DatasetFilenameWrapper, DatasetListWrapper)):
-                param_dict[name] = DatasetFilenameWrapper( data,
-                                                           datatypes_registry = self.app.datatypes_registry,
-                                                           tool = self,
-                                                           name = name )
-            if data:
-                for child in data.children:
-                    param_dict[ "_CHILD___%s___%s" % ( name, child.designation ) ] = DatasetFilenameWrapper( child )
-        for name, hda in output_datasets.items():
-            # Write outputs to the working directory (for security purposes)
-            # if desired.
-            if self.app.config.outputs_to_working_directory:
-                try:
-                    false_path = [ dp.false_path for dp in output_paths if dp.real_path == hda.file_name ][0]
-                    param_dict[name] = DatasetFilenameWrapper( hda, false_path = false_path )
-                    open( false_path, 'w' ).close()
-                except IndexError:
-                    log.warning( "Unable to determine alternate path for writing job outputs, outputs will be written to their real paths" )
-                    param_dict[name] = DatasetFilenameWrapper( hda )
-            else:
-                param_dict[name] = DatasetFilenameWrapper( hda )
-            # Provide access to a path to store additional files
-            # TODO: path munging for cluster/dataset server relocatability
-            param_dict[name].files_path = os.path.abspath(os.path.join( job_working_directory, "dataset_%s_files" % (hda.dataset.id) ))
-            for child in hda.children:
-                param_dict[ "_CHILD___%s___%s" % ( name, child.designation ) ] = DatasetFilenameWrapper( child )
-        for out_name, output in self.outputs.iteritems():
-            if out_name not in param_dict and output.filters:
-                # Assume the reason we lack this output is because a filter
-                # failed to pass; for tool writing convienence, provide a
-                # NoneDataset
-                param_dict[ out_name ] = NoneDataset( datatypes_registry = self.app.datatypes_registry, ext = output.format )
-
-        # -- Add useful attributes/functions for use in creating command line.
-
-        # Function for querying a data table.
-        def get_data_table_entry(table_name, query_attr, query_val, return_attr):
-            """
-            Queries and returns an entry in a data table.
-            """
-
-            if table_name in self.app.tool_data_tables:
-                return self.app.tool_data_tables[ table_name ].get_entry( query_attr, query_val, return_attr )
-
-        param_dict['__get_data_table_entry__'] = get_data_table_entry
-
-        # We add access to app here, this allows access to app.config, etc
-        param_dict['__app__'] = RawObjectWrapper( self.app )
-        # More convienent access to app.config.new_file_path; we don't need to
-        # wrap a string, but this method of generating additional datasets
-        # should be considered DEPRECATED
-        # TODO: path munging for cluster/dataset server relocatability
-        param_dict['__new_file_path__'] = os.path.abspath(self.app.config.new_file_path)
-        # The following points to location (xxx.loc) files which are pointers
-        # to locally cached data
-        param_dict['__tool_data_path__'] = param_dict['GALAXY_DATA_INDEX_DIR'] = self.app.config.tool_data_path
-        # For the upload tool, we need to know the root directory and the
-        # datatypes conf path, so we can load the datatypes registry
-        param_dict['__root_dir__'] = param_dict['GALAXY_ROOT_DIR'] = os.path.abspath( self.app.config.root )
-        param_dict['__datatypes_config__'] = param_dict['GALAXY_DATATYPES_CONF_FILE'] = self.app.datatypes_registry.integrated_datatypes_configs
-        param_dict['__admin_users__'] = self.app.config.admin_users
-        param_dict['__user__'] = RawObjectWrapper( param_dict.get( '__user__', None ) )
-        # Return the dictionary of parameters
-        return param_dict
-    def build_param_file( self, param_dict, directory=None ):
-        """
-        Build temporary file for file based parameter transfer if needed
-        """
-        if self.command and "$param_file" in self.command:
-            fd, param_filename = tempfile.mkstemp( dir=directory )
-            os.close( fd )
-            f = open( param_filename, "wt" )
-            for key, value in param_dict.items():
-                # parameters can be strings or lists of strings, coerce to list
-                if type(value) != type([]):
-                    value = [ value ]
-                for elem in value:
-                    f.write( '%s=%s\n' % (key, elem) )
-            f.close()
-            param_dict['param_file'] = param_filename
-            return param_filename
-        else:
-            return None
-    def build_config_files( self, param_dict, directory=None ):
-        """
-        Build temporary file for file based parameter transfer if needed
-        """
-        config_filenames = []
-        for name, filename, template_text in self.config_files:
-            # If a particular filename was forced by the config use it
-            if filename is not None:
-                if directory is None:
-                    raise Exception( "Config files with fixed filenames require a working directory" )
-                config_filename = os.path.join( directory, filename )
-            else:
-                fd, config_filename = tempfile.mkstemp( dir=directory )
-                os.close( fd )
-            f = open( config_filename, "wt" )
-            f.write( fill_template( template_text, context=param_dict ) )
-            f.close()
-            # For running jobs as the actual user, ensure the config file is globally readable
-            os.chmod( config_filename, 0644 )
-            param_dict[name] = config_filename
-            config_filenames.append( config_filename )
-        return config_filenames
-    def build_command_line( self, param_dict ):
-        """
-        Build command line to invoke this tool given a populated param_dict
-        """
-        command_line = None
-        if not self.command:
-            return
-        try:
-            # Substituting parameters into the command
-            command_line = fill_template( self.command, context=param_dict )
-            # Remove newlines from command line, and any leading/trailing white space
-            command_line = command_line.replace( "\n", " " ).replace( "\r", " " ).strip()
-        except Exception:
-            # Modify exception message to be more clear
-            #e.args = ( 'Error substituting into command line. Params: %r, Command: %s' % ( param_dict, self.command ), )
-            raise
-        if self.interpreter:
-            # TODO: path munging for cluster/dataset server relocatability
-            executable = command_line.split()[0]
-            abs_executable = os.path.abspath(os.path.join(self.tool_dir, executable))
-            command_line = command_line.replace(executable, abs_executable, 1)
-            command_line = self.interpreter + " " + command_line
-        return command_line
-
     def build_dependency_shell_commands( self ):
         """Return a list of commands to be run to populate the current environment to include this tools requirements."""
         if self.tool_shed_repository:
@@ -3066,7 +2875,7 @@ class Tool( object, Dictifiable ):
                     if outdata == dataset:
                         continue
                     new_data = primary_data.copy()
-                    dataset.history.add( new_data )
+                    dataset.history.add_dataset( new_data )
                     self.sa_session.add( new_data )
                     self.sa_session.flush()
         return primary_datasets
@@ -3407,175 +3216,6 @@ class ToolStdioExitCode( object ):
         # TODO: Define a common class or constant for error level:
         self.error_level = "fatal"
         self.desc = ""
-
-class ToolParameterValueWrapper( object ):
-    """
-    Base class for object that Wraps a Tool Parameter and Value.
-    """
-    def __nonzero__( self ):
-        return bool( self.value )
-    def get_display_text( self, quote=True ):
-        """
-        Returns a string containing the value that would be displayed to the user in the tool interface.
-        When quote is True (default), the string is escaped for e.g. command-line usage.
-        """
-        rval = self.input.value_to_display_text( self.value, self.input.tool.app ) or ''
-        if quote:
-            return pipes.quote( rval ) or "''" #pipes.quote in Python < 2.7 returns an empty string instead of the expected quoted empty string
-        return rval
-
-class RawObjectWrapper( ToolParameterValueWrapper ):
-    """
-    Wraps an object so that __str__ returns module_name:class_name.
-    """
-    def __init__( self, obj ):
-        self.obj = obj
-    def __nonzero__( self ):
-        return bool( self.obj ) #FIXME: would it be safe/backwards compatible to rename .obj to .value, so that we can just inherit this method?
-    def __str__( self ):
-        try:
-            return "%s:%s" % (self.obj.__module__, self.obj.__class__.__name__)
-        except:
-            #Most likely None, which lacks __module__.
-            return str( self.obj )
-    def __getattr__( self, key ):
-        return getattr( self.obj, key )
-
-class LibraryDatasetValueWrapper( ToolParameterValueWrapper ):
-    """
-    Wraps an input so that __str__ gives the "param_dict" representation.
-    """
-    def __init__( self, input, value, other_values={} ):
-        self.input = input
-        self.value = value
-        self._other_values = other_values
-        self.counter = 0
-    def __str__( self ):
-        return self.value
-    def __iter__( self ):
-        return self
-    def next( self ):
-        if self.counter >= len(self.value):
-            raise StopIteration
-        self.counter += 1
-        return self.value[self.counter-1]
-    def __getattr__( self, key ):
-        return getattr( self.value, key )
-
-class InputValueWrapper( ToolParameterValueWrapper ):
-    """
-    Wraps an input so that __str__ gives the "param_dict" representation.
-    """
-    def __init__( self, input, value, other_values={} ):
-        self.input = input
-        self.value = value
-        self._other_values = other_values
-    def __str__( self ):
-        return self.input.to_param_dict_string( self.value, self._other_values )
-    def __getattr__( self, key ):
-        return getattr( self.value, key )
-
-class SelectToolParameterWrapper( ToolParameterValueWrapper ):
-    """
-    Wraps a SelectTooParameter so that __str__ returns the selected value, but all other
-    attributes are accessible.
-    """
-
-    class SelectToolParameterFieldWrapper:
-        """
-        Provide access to any field by name or index for this particular value.
-        Only applicable for dynamic_options selects, which have more than simple 'options' defined (name, value, selected).
-        """
-        def __init__( self, input, value, other_values ):
-            self._input = input
-            self._value = value
-            self._other_values = other_values
-            self._fields = {}
-        def __getattr__( self, name ):
-            if name not in self._fields:
-                self._fields[ name ] = self._input.options.get_field_by_name_for_value( name, self._value, None, self._other_values )
-            return self._input.separator.join( map( str, self._fields[ name ] ) )
-
-    def __init__( self, input, value, app, other_values={} ):
-        self.input = input
-        self.value = value
-        self.input.value_label = input.value_to_display_text( value, app )
-        self._other_values = other_values
-        self.fields = self.SelectToolParameterFieldWrapper( input, value, other_values )
-    def __str__( self ):
-        return self.input.to_param_dict_string( self.value, other_values = self._other_values )
-    def __getattr__( self, key ):
-        return getattr( self.input, key )
-
-class DatasetFilenameWrapper( ToolParameterValueWrapper ):
-    """
-    Wraps a dataset so that __str__ returns the filename, but all other
-    attributes are accessible.
-    """
-
-    class MetadataWrapper:
-        """
-        Wraps a Metadata Collection to return MetadataParameters wrapped
-        according to the metadata spec. Methods implemented to match behavior
-        of a Metadata Collection.
-        """
-        def __init__( self, metadata ):
-            self.metadata = metadata
-        def __getattr__( self, name ):
-            rval = self.metadata.get( name, None )
-            if name in self.metadata.spec:
-                if rval is None:
-                    rval = self.metadata.spec[name].no_value
-                rval = self.metadata.spec[name].param.to_string( rval )
-                # Store this value, so we don't need to recalculate if needed
-                # again
-                setattr( self, name, rval )
-            return rval
-        def __nonzero__( self ):
-            return self.metadata.__nonzero__()
-        def __iter__( self ):
-            return self.metadata.__iter__()
-        def get( self, key, default=None ):
-            try:
-                return getattr( self, key )
-            except:
-                return default
-        def items( self ):
-            return iter( [ ( k, self.get( k ) ) for k, v in self.metadata.items() ] )
-
-    def __init__( self, dataset, datatypes_registry = None, tool = None, name = None, false_path = None ):
-        if not dataset:
-            try:
-                # TODO: allow this to work when working with grouping
-                ext = tool.inputs[name].extensions[0]
-            except:
-                ext = 'data'
-            self.dataset = NoneDataset( datatypes_registry = datatypes_registry, ext = ext )
-        else:
-            self.dataset = dataset
-            self.metadata = self.MetadataWrapper( dataset.metadata )
-        self.false_path = false_path
-
-    def __str__( self ):
-        if self.false_path is not None:
-            return self.false_path
-        else:
-            return self.dataset.file_name
-    def __getattr__( self, key ):
-        if self.false_path is not None and key == 'file_name':
-            return self.false_path
-        else:
-            return getattr( self.dataset, key )
-    def __nonzero__( self ):
-        return bool( self.dataset )
-
-class DatasetListWrapper( list ):
-    """
-    """
-    def __init__( self, datasets, **kwargs ):
-        if not isinstance(datasets, list):
-            datasets = [datasets]
-        list.__init__( self, [DatasetFilenameWrapper(dataset, **kwargs) for dataset in datasets] )
 
 
 def json_fix( val ):

@@ -3,11 +3,21 @@ from __future__ import with_statement
 
 import logging
 import os
+import Queue
 import shutil
+import stat
+import subprocess
+import sys
 import tempfile
-import shutil
 import td_common_util
+import threading
+import time
+import shlex
+
 from contextlib import contextmanager
+from galaxy.util import DATABASE_MAX_STRING_SIZE
+from galaxy.util import DATABASE_MAX_STRING_SIZE_PRETTY
+from galaxy.util import shrink_string_by_size
 from galaxy.util import unicodify
 from galaxy.util.template import fill_template
 from galaxy import eggs
@@ -16,17 +26,45 @@ eggs.require( 'ssh' )
 eggs.require( 'paramiko' )
 eggs.require( 'Fabric' )
 
+from fabric import state
 from fabric.api import env
 from fabric.api import hide
 from fabric.api import lcd
-from fabric.api import local
 from fabric.api import settings
 from fabric.api import prefix
+from fabric.operations import _AttributeString
 
 log = logging.getLogger( __name__ )
 
 INSTALLATION_LOG = 'INSTALLATION.log'
 VIRTUALENV_URL = 'https://pypi.python.org/packages/source/v/virtualenv/virtualenv-1.9.1.tar.gz'
+
+
+class AsynchronousReader( threading.Thread ):
+    """
+    A helper class to implement asynchronous reading of a stream in a separate thread.  Read lines are pushed
+    onto a queue to be consumed in another thread.
+    """
+ 
+    def __init__( self, fd, queue ):
+        threading.Thread.__init__( self )
+        self._fd = fd
+        self._queue = queue
+        self.lines = []
+ 
+    def run( self ):
+        """Read lines and put them on the queue."""
+        thread_lock = threading.Lock()
+        thread_lock.acquire()
+        for line in iter( self._fd.readline, '' ):
+            stripped_line = line.rstrip()
+            self.lines.append( stripped_line )
+            self._queue.put( stripped_line )
+        thread_lock.release()
+ 
+    def installation_complete( self ):
+        """Make sure there is more installation and compilation logging content expected."""
+        return not self.is_alive() and self._queue.empty()
 
 
 class EnvFileBuilder( object ):
@@ -35,10 +73,10 @@ class EnvFileBuilder( object ):
         self.install_dir = install_dir
         self.return_code = 0
 
-    def append_line( self, skip_if_contained=True, make_executable=True, **kwd ):
+    def append_line( self, make_executable=True, **kwd ):
         env_var_dict = dict( **kwd )
         env_entry, env_file = self.create_or_update_env_shell_file( self.install_dir, env_var_dict )
-        return_code = file_append( env_entry, env_file, skip_if_contained=skip_if_contained, make_executable=make_executable )
+        return_code = file_append( env_entry, env_file, make_executable=make_executable )
         self.return_code = self.return_code or return_code
         return self.return_code
     
@@ -120,37 +158,93 @@ def check_fabric_version():
     if int( version.split( "." )[ 0 ] ) < 1:
         raise NotImplementedError( "Install Fabric version 1.0 or later." )
 
-def file_append( text, file_path, skip_if_contained=True, make_executable=True ):
-    '''
-    Append a line to a file unless skip_if_contained is True and the line already exists in the file. This method creates the file
-    if it doesn't exist.  If make_executable is True, the permissions on the file are set to executable by the owner.  This method
-    is similar to a local version of fabric.contrib.files.append.
-    '''
-    if not os.path.exists( file_path ):
-        local( 'touch %s' % file_path )
+def close_file_descriptor( fd ):
+    """Attempt to close a file descriptor."""
+    start_timer = time.time()
+    error = ''
+    while True:
+        try:
+            fd.close()
+            break
+        except IOError, e:
+            # Undoubtedly close() was called during a concurrent operation on the same file object.
+            log.debug( 'Error closing file descriptor: %s' % str( e ) )
+            time.sleep( .5 )
+        current_wait_time = time.time() - start_timer
+        if current_wait_time >= 600:
+            error = 'Error closing file descriptor: %s' % str( e )
+            break
+    return error
+
+def enqueue_output( stdout, stdout_queue, stderr, stderr_queue ):
+    """
+    This method places streamed stdout and stderr into a threaded IPC queue target.  Received data
+    is printed and saved to that thread's queue. The calling thread can then retrieve the data using
+    thread.stdout and thread.stderr.
+    """
+    stdout_logger = logging.getLogger( 'fabric_util.STDOUT' )
+    stderr_logger = logging.getLogger( 'fabric_util.STDERR' )
+    for line in iter( stdout.readline, '' ):
+        output = line.rstrip()
+        stdout_logger.debug( output )
+        stdout_queue.put( output )
+    stdout_queue.put( None )
+    for line in iter( stderr.readline, '' ):
+        output = line.rstrip()
+        stderr_logger.debug( output )
+        stderr_queue.put( output )
+    stderr_queue.put( None )
+
+def file_append( text, file_path, make_executable=True ):
+    """
+    Append a line to a file unless the line already exists in the file.  This method creates the file if
+    it doesn't exist.  If make_executable is True, the permissions on the file are set to executable by
+    the owner.
+    """
+    file_dir = os.path.dirname( file_path )
+    if not os.path.exists( file_dir ):
+        try:
+            os.makedirs( file_dir )
+        except Exception, e:
+            log.exception( str( e ) )
+            return 1
+    if os.path.exists( file_path ):
+        try:
+            new_env_file_contents = []
+            env_file_contents = file( file_path, 'r' ).readlines()
+            # Clean out blank lines from the env.sh file.
+            for line in env_file_contents:
+                line = line.rstrip()
+                if line:
+                    new_env_file_contents.append( line )
+            env_file_contents = new_env_file_contents
+        except Exception, e:
+            log.exception( str( e ) )
+            return 1
+    else:
+        env_file_handle = open( file_path, 'w' )
+        env_file_handle.close()
+        env_file_contents = []
     if make_executable:
-        # Explicitly set the file to the received mode if valid.
-        with settings( hide( 'everything' ), warn_only=True ):
-            local( 'chmod +x %s' % file_path )
+        # Explicitly set the file's executable bits.
+        try:
+            os.chmod( file_path, int( '111', base=8 ) | os.stat( file_path )[ stat.ST_MODE ] )
+        except Exception, e:
+            log.exception( str( e ) )
+            return 1
     # Convert the received text to a list, in order to support adding one or more lines to the file.
     if isinstance( text, basestring ):
         text = [ text ]
     for line in text:
-        # Build a regex to search for the relevant line in env.sh.
-        regex = td_common_util.egrep_escape( line )
-        if skip_if_contained:
-            # If the line exists in the file, egrep will return a success.
-            with settings( hide( 'everything' ), warn_only=True ):
-                egrep_cmd = 'egrep "^%s$" %s' % ( regex, file_path )
-                contains_line = local( egrep_cmd ).succeeded
-            if contains_line:
-                continue
-        # Append the current line to the file, escaping any single quotes in the line.
-        line = line.replace( "'", r"'\\''" )
-        return_code = local( "echo '%s' >> %s" % ( line, file_path ) ).return_code
-        if return_code:
-            # Return upon the first error encountered.
-            return return_code
+        line = line.rstrip()
+        if line and line not in env_file_contents:
+            env_file_contents.append( line )
+    try:
+        file( file_path, 'w' ).write( '\n'.join( env_file_contents ) )
+    except Exception, e:
+        log.exception( str( e ) )
+        return 1
+    return 0
 
 def filter_actions_after_binary_installation( actions ):
     '''Filter out actions that should not be processed if a binary download succeeded.'''
@@ -167,23 +261,127 @@ def handle_action_shell_file_paths( env_file_builder, action_dict ):
         env_file_builder.append_line( action="source", value=shell_file_path )
 
 def handle_command( app, tool_dependency, install_dir, cmd, return_output=False ):
+    """
+    Handle a command by determining if it is "simple" or "complex" and redirecting appropriately and then
+    logging the results.
+    """
     context = app.install_model.context
-    with settings( warn_only=True ):
-        output = local( cmd, capture=True )
+    command = str( cmd )
+    output = handle_complex_command( command )
     log_results( cmd, output, os.path.join( install_dir, INSTALLATION_LOG ) )
-    if output.return_code:
+    stdout = output.stdout
+    stderr = output.stderr
+    if len( stdout ) > DATABASE_MAX_STRING_SIZE:
+        print "Length of stdout > %s, so only a portion will be saved in the database." % str( DATABASE_MAX_STRING_SIZE_PRETTY )
+        stdout = shrink_string_by_size( stdout, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
+    if len( stderr ) > DATABASE_MAX_STRING_SIZE:
+        print "Length of stderr > %s, so only a portion will be saved in the database." % str( DATABASE_MAX_STRING_SIZE_PRETTY )
+        stderr = shrink_string_by_size( stderr, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
+    if output.return_code not in [ 0 ]:
         tool_dependency.status = app.install_model.ToolDependency.installation_status.ERROR
-        if output.stderr:
-            tool_dependency.error_message = unicodify( str( output.stderr )[ :32768 ] )
-        elif output.stdout:
-            tool_dependency.error_message = unicodify( str( output.stdout )[ :32768 ] )
+        if stderr:
+            tool_dependency.error_message = unicodify( stderr )
+        elif stdout:
+            tool_dependency.error_message = unicodify( stdout )
         else:
-            tool_dependency.error_message = "Unknown error occurred executing shell command %s, return_code: %s"  % ( str( cmd ), str( output.return_code ) )
+            # We have a problem if there was no stdout and no stderr.
+            tool_dependency.error_message = "Unknown error occurred executing shell command %s, return_code: %s"  % \
+                ( str( cmd ), str( output.return_code ) )
         context.add( tool_dependency )
         context.flush()
     if return_output:
         return output
     return output.return_code
+
+def handle_complex_command( command ):
+    """
+    Wrap subprocess.Popen in such a way that the stderr and stdout from running a shell command will
+    be captured and logged in nearly real time.  This is similar to fabric.local, but allows us to
+    retain control over the process.  This method is named "complex" because it uses queues and
+    threads to execute a command while capturing and displaying the output.
+    """
+    # Launch the command as subprocess.  A bufsize of 1 means line buffered.
+    process_handle = subprocess.Popen( str( command ),
+                                       stdout=subprocess.PIPE,
+                                       stderr=subprocess.PIPE,
+                                       bufsize=1,
+                                       close_fds=False,
+                                       shell=True,
+                                       cwd=state.env[ 'lcwd' ] )
+    pid = process_handle.pid
+    # Launch the asynchronous readers of the process' stdout and stderr.
+    stdout_queue = Queue.Queue()
+    stdout_reader = AsynchronousReader( process_handle.stdout, stdout_queue )
+    stdout_reader.start()
+    stderr_queue = Queue.Queue()
+    stderr_reader = AsynchronousReader( process_handle.stderr, stderr_queue )
+    stderr_reader.start()
+    # Place streamed stdout and stderr into a threaded IPC queue target so it can
+    # be printed and stored for later retrieval when generating the INSTALLATION.log.
+    stdio_thread = threading.Thread( target=enqueue_output,
+                                     args=( process_handle.stdout,
+                                            stdout_queue,
+                                            process_handle.stderr,
+                                            stderr_queue ) )
+    thread_lock = threading.Lock()
+    thread_lock.acquire()
+    stdio_thread.start()
+    # Check the queues for output until there is nothing more to get.
+    start_timer = time.time()
+    while not stdout_reader.installation_complete() or not stderr_reader.installation_complete():
+        # Show what we received from standard output.
+        while not stdout_queue.empty():
+            try:
+                line = stdout_queue.get()
+            except Queue.Empty:
+                line = None
+                break
+            if line:
+                print line
+                start_timer = time.time()
+            else:
+                break
+        # Show what we received from standard error.
+        while not stderr_queue.empty():
+            try:
+                line = stderr_queue.get()
+            except Queue.Empty:
+                line = None
+                break
+            if line:
+                print line
+                start_timer = time.time()
+            else:
+                stderr_queue.task_done()
+                break
+        # Sleep a bit before asking the readers again.
+        time.sleep( .1 )
+        current_wait_time = time.time() - start_timer
+        if stdout_queue.empty() and stderr_queue.empty() and current_wait_time > td_common_util.NO_OUTPUT_TIMEOUT:
+            err_msg = "\nShutting down process id %s because it generated no output for the defined timeout period of %.1f seconds.\n" % \
+                    ( pid, td_common_util.NO_OUTPUT_TIMEOUT )
+            stderr_reader.lines.append( err_msg )
+            process_handle.kill()
+            break
+    thread_lock.release()
+    # Wait until each of the threads we've started terminate.  The following calls will block each thread
+    # until it terminates either normally, through an unhandled exception, or until the timeout occurs.
+    stdio_thread.join( td_common_util.NO_OUTPUT_TIMEOUT )
+    stdout_reader.join( td_common_util.NO_OUTPUT_TIMEOUT )
+    stderr_reader.join( td_common_util.NO_OUTPUT_TIMEOUT )
+    # Close subprocess' file descriptors.
+    error = close_file_descriptor( process_handle.stdout )
+    error = close_file_descriptor( process_handle.stderr )
+    stdout = '\n'.join( stdout_reader.lines )
+    stderr = '\n'.join( stderr_reader.lines )
+    # Handle error condition (deal with stdout being None, too)
+    output = _AttributeString( stdout.strip() if stdout else "" )
+    errors = _AttributeString( stderr.strip() if stderr else "" )
+    # Make sure the process has finished.
+    process_handle.poll()
+    output.return_code = process_handle.returncode
+    output.stderr = errors
+    return output
 
 def handle_environment_variables( app, tool_dependency, install_dir, env_var_dict, set_prior_environment_commands ):
     """
@@ -264,7 +462,7 @@ def handle_environment_variables( app, tool_dependency, install_dir, env_var_dic
         inherited_env_var_name = env_var_value.split( '[' )[1].split( ']' )[0]
         to_replace = '$ENV[%s]' % inherited_env_var_name
         # Build a command line that outputs VARIABLE_NAME: <the value of the variable>.
-        set_prior_environment_commands.append( 'echo "%s: $%s"' % ( inherited_env_var_name, inherited_env_var_name ) )
+        set_prior_environment_commands.append( 'echo %s: $%s' % ( inherited_env_var_name, inherited_env_var_name ) )
         command = ' ; '.join( set_prior_environment_commands )
         # Run the command and capture the output.
         command_return = handle_command( app, tool_dependency, install_dir, command, return_output=True )
@@ -374,7 +572,7 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                     filtered_actions = actions[ 1: ]
                     return_code = handle_command( app, tool_dependency, install_dir, action_dict[ 'command' ] )
                     if return_code:
-                         return tool_dependency
+                        return tool_dependency
                     dir = package_name
                 elif action_type == 'download_file':
                     # <action type="download_file">http://effectors.org/download/version/TTSS_GUI-1.0.1.jar</action>
@@ -406,7 +604,7 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                         return tool_dependency
                     else:
                         install_environment.add_env_shell_file_paths( env_shell_file_paths )
-                    log.debug( 'Handling setup_r_environment for tool dependency %s with install_environment.env_shell_file_paths:\n%s"' % \
+                    log.debug( 'Handling setup_r_environment for tool dependency %s with install_environment.env_shell_file_paths:\n%s' % \
                                ( str( tool_dependency.name ), str( install_environment.env_shell_file_paths ) ) )
                     tarball_names = []
                     for url in action_dict[ 'r_packages' ]:
@@ -418,8 +616,11 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                     with lcd( current_dir ):
                         with settings( warn_only=True ):
                             for tarball_name in tarball_names:
-                                cmd = '''PATH=$PATH:$R_HOME/bin; export PATH; R_LIBS=$INSTALL_DIR; export R_LIBS;
-                                    Rscript -e "install.packages(c('%s'),lib='$INSTALL_DIR', repos=NULL, dependencies=FALSE)"''' % ( str( tarball_name ) )
+                                # Use raw strings so that python won't automatically unescape the quotes before passing the command
+                                # to subprocess.Popen.
+                                cmd = r'''PATH=$PATH:$R_HOME/bin; export PATH; R_LIBS=$INSTALL_DIR; export R_LIBS;
+                                    Rscript -e "install.packages(c('%s'),lib='$INSTALL_DIR', repos=NULL, dependencies=FALSE)"''' % \
+                                    ( str( tarball_name ) )
                                 cmd = install_environment.build_command( td_common_util.evaluate_template( cmd, install_dir ) )
                                 return_code = handle_command( app, tool_dependency, install_dir, cmd )
                                 if return_code:
@@ -450,7 +651,7 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                         return tool_dependency
                     else:
                         install_environment.add_env_shell_file_paths( env_shell_file_paths )
-                    log.debug( 'Handling setup_ruby_environment for tool dependency %s with install_environment.env_shell_file_paths:\n%s"' % \
+                    log.debug( 'Handling setup_ruby_environment for tool dependency %s with install_environment.env_shell_file_paths:\n%s' % \
                                ( str( tool_dependency.name ), str( install_environment.env_shell_file_paths ) ) )
                     dir = os.path.curdir
                     current_dir = os.path.abspath( os.path.join( work_dir, dir ) )
@@ -473,8 +674,10 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                                 else:
                                     # gem file from rubygems.org with or without version number
                                     if gem_version:
-                                        # version number was specified
-                                        cmd = '''PATH=$PATH:$RUBY_HOME/bin; export PATH; GEM_HOME=$INSTALL_DIR; export GEM_HOME;
+                                        # Specific ruby gem version was requested.
+                                        # Use raw strings so that python won't automatically unescape the quotes before passing the command
+                                        # to subprocess.Popen.
+                                        cmd = r'''PATH=$PATH:$RUBY_HOME/bin; export PATH; GEM_HOME=$INSTALL_DIR; export GEM_HOME;
                                             gem install %s --version "=%s"''' % ( gem, gem_version)
                                     else:
                                         # no version number given
@@ -509,7 +712,7 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                         return tool_dependency
                     else:
                         install_environment.add_env_shell_file_paths( env_shell_file_paths )
-                    log.debug( 'Handling setup_perl_environment for tool dependency %s with install_environment.env_shell_file_paths:\n%s"' % \
+                    log.debug( 'Handling setup_perl_environment for tool dependency %s with install_environment.env_shell_file_paths:\n%s' % \
                                ( str( tool_dependency.name ), str( install_environment.env_shell_file_paths ) ) )
                     dir = os.path.curdir
                     current_dir = os.path.abspath( os.path.join( work_dir, dir ) )
@@ -564,8 +767,6 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                     # </action>
                     filtered_actions = [ a for a in actions ]
                     dir = install_dir
-                # We need to be careful in determining if the value of dir is a valid directory because we're dealing with 2 environments, the fabric local
-                # environment and the python environment.  Checking the path as follows should work.
                 full_path_to_dir = os.path.abspath( os.path.join( work_dir, dir ) )
                 if not os.path.exists( full_path_to_dir ):
                     os.makedirs( full_path_to_dir )
@@ -634,7 +835,9 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                             return_code = handle_command( app, tool_dependency, install_dir, full_setup_command )
                             if return_code:
                                 return tool_dependency
-                            site_packages_command = "%s -c 'import os, sys; print os.path.join(sys.prefix, \"lib\", \"python\" + sys.version[:3], \"site-packages\")'" % os.path.join( venv_directory, "bin", "python" )
+                            # Use raw strings so that python won't automatically unescape the quotes before passing the command
+                            # to subprocess.Popen.
+                            site_packages_command = r"""%s -c 'import os, sys; print os.path.join(sys.prefix, "lib", "python" + sys.version[:3], "site-packages")'""" % os.path.join( venv_directory, "bin", "python" )
                             output = handle_command( app, tool_dependency, install_dir, site_packages_command, return_output=True )
                             if output.return_code:
                                 return tool_dependency
@@ -735,10 +938,7 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
     return tool_dependency
 
 def log_results( command, fabric_AttributeString, file_path ):
-    """
-    Write attributes of fabric.operations._AttributeString (which is the output of executing command using fabric's local() method)
-    to a specified log file.
-    """
+    """Write attributes of fabric.operations._AttributeString to a specified log file."""
     if os.path.exists( file_path ):
         logfile = open( file_path, 'ab' )
     else:
@@ -758,7 +958,10 @@ def make_tmp_dir():
     work_dir = tempfile.mkdtemp( prefix="tmp-toolshed-mtd" )
     yield work_dir
     if os.path.exists( work_dir ):
-        local( 'rm -rf %s' % work_dir )
+        try:
+            shutil.rmtree( work_dir )
+        except Exception, e:
+            log.exception( str( e ) )
 
 def set_galaxy_environment( galaxy_user, tool_dependency_dir, host='localhost', shell='/bin/bash -l -c' ):
     """General Galaxy environment configuration.  This method is not currently used."""
@@ -767,5 +970,4 @@ def set_galaxy_environment( galaxy_user, tool_dependency_dir, host='localhost', 
     env.host_string = host
     env.shell = shell
     env.use_sudo = False
-    env.safe_cmd = local
     return env

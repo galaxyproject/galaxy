@@ -1,231 +1,235 @@
 // dependencies
-define(['library/portlet', 'library/ui', 'library/utils'],
+define(['mvc/ui/ui-portlet', 'plugin/library/ui', 'utils/utils'],
         function(Portlet, Ui, Utils) {
 
 // widget
 return Backbone.View.extend(
 {
-    // list
-    list: {},
-    
-    // options
-    optionsDefault :
-    {
-        height : 300
-    },
-    
     // initialize
     initialize: function(app, options)
     {
         // link app
         this.app = app;
         
+        // link chart
+        this.chart = this.app.chart;
+        
         // link options
         this.options = Utils.merge(options, this.optionsDefault);
         
-        // add table to portlet
-        this.portlet = new Portlet({
-            label       : '',
-            icon        : 'fa-signal',
-            height      : this.options.height,
-            overflow    : 'hidden',
-            operations  : {
-                'edit'  : new Ui.ButtonIcon({
-                    icon    : 'fa-gear',
-                    tooltip : 'Configure'
-                })
-            }
-        });
+        // create element
+        this.setElement($(this._template()));
         
-        // set this element
-        this.setElement(this.portlet.$el);
+        // create svg element
+        this._create_svg();
         
         // events
         var self = this;
-        
-        // add
-        this.app.charts.on('add', function(chart) {
-            self._addChart(chart);
+        this.chart.on('redraw', function() {
+            self._draw(self.chart);
         });
         
-        // remove
-        this.app.charts.on('remove', function(chart) {
-            self._removeChart(chart.id);
-        });
+        // link status handler
+        this.chart.on('set:state', function() {
+            // get info element
+            var $info = self.$el.find('#info');
+            
+            // get icon
+            var $icon = $info.find('#icon');
+            
+            // remove icon
+            $icon.removeClass();
         
-        // replace
-        this.app.charts.on('change', function(chart) {
-            self._removeChart(chart.id);
-            self._addChart(chart);
+            // show info
+            $info.show();
+            $info.find('#text').html(self.chart.get('state_info'));
+
+            // check status
+            var state = self.chart.get('state');
+            switch (state) {
+                case 'ok':
+                    $info.hide();
+                    break;
+                case 'failed':
+                    $icon.addClass('fa fa-warning');
+                    break;
+                default:
+                    $icon.addClass('fa fa-spinner fa-spin');
+            }
         });
     },
     
     // show
-    show: function(chart_id) {
-        // hide all
-        this.$el.find('svg').hide();
-        
-        // identify selected item from list
-        var item = this.list[chart_id];
-        if (item) {
-            // show selected chart
-            this.$el.find(item.svg_id).show();
-        
-            // get chart
-            var chart = self.app.charts.get(chart_id);
-                
-            // update portlet
-            this.portlet.label(chart.get('title'));
-            this.portlet.setOperation('edit', function() {
-                // get chart
-                self.app.chart.copy(chart);
-                
-                // show edit
-                self.app.charts_view.$el.hide();
-                self.app.chart_view.$el.show();
-            });
-        
-            // this trigger d3 update events
-            $(window).trigger('resize');
-        }
+    show: function() {
+        this.$el.show();
     },
     
+    // hide
+    hide: function() {
+        this.$el.hide();
+    },
+
+    // create
+    _create_svg: function() {
+        // clear svg
+        if (this.svg) {
+            this.svg.remove();
+        }
+        
+        // create
+        this.$el.append($(this._template_svg()));
+        
+        // find svg element
+        this.svg_el = this.$el.find('svg');
+        this.svg = d3.select(this.svg_el[0]);
+    },
+
     // add
-    _addChart: function(chart) {
+    _draw: function(chart) {
         // link this
         var self = this;
         
-        // backup chart details
-        var chart_id = chart.id;
-    
-        // make sure that svg does not exist already
-        this._removeChart(chart_id);
+        // create svg element
+        this._create_svg();
             
-        // create id
-        var svg_id = '#svg_' + chart_id;
+        // set chart state
+        chart.state('wait', 'Please wait...');
         
-        // create element
-        var chart_el = $(this._template({id: svg_id, height : this.options.height}));
-        
-        // add to portlet
-        this.portlet.append(chart_el);
-        
-        // backup id
-        this.list[chart_id] = {
-            svg_id : svg_id
-        }
-        
+        // register process
+        var process_id = chart.deferred.register();
+
         // identify chart type
         var chart_type = chart.get('type');
         var chart_settings = this.app.types.get(chart_type);
+        
+        // clean up data if there is any from previous jobs
+        if (!chart_settings.execute ||
+            (chart_settings.execute && chart.get('modified'))) {
+            // reset jobs
+            this.app.jobs.cleanup(chart);
             
+            // reset modified flag
+            chart.set('modified', false);
+        }
+        
         // create chart view
         var self = this;
-        require(['charts/' + chart_type], function(ChartView) {
+        require(['plugin/charts/' + chart_type + '/' + chart_type], function(ChartView) {
             // create chart
-            var view = new ChartView(self.app, {svg_id : svg_id, chart : chart});
-            
-            // reset chart data
-            var chart_data = [];
+            var view = new ChartView(self.app, {svg : self.svg});
             
             // request data
-            var chart_index = 0;
-            chart.groups.each(function(group) {
-
-                // add group data
-                chart_data.push({
-                    key     : (chart_index + 1) + ':' + group.get('label'),
-                    values  : []
-                });
-                    
-                // get data
-                for (var key in chart_settings.data) {
-                    // configure request
-                    var data_options = {
-                        view        : view,
-                        data        : chart_data,
-                        index       : chart_index,
-                        dataset_id  : group.get('dataset_id'),
-                        column      : group.get(key),
-                        column_key  : key
-                    }
-                    
-                    // make request
-                    self._data(data_options);
-                }
-        
-                // count
-                chart_index++;
-            });
-            
-            // show
-            self.show(chart_id);
-        });
-    },
-    
-    // data
-    _data: function(options) {
-        // gather objects
-        var view        = options.view;
-        var data        = options.data;
-        
-        // gather parameters
-        var index       = options.index;
-        var column      = options.column;
-        var dataset_id  = options.dataset_id;
-        var column_key  = options.column_key;
-        var group_data  = data[options.index];
-        
-        // send request
-        self.app.datasets.get({id : dataset_id, column: column}, function(dataset) {
-            // select column
-            var values = dataset.values[column];
-            var n_values = values.length;
-            
-            // read column values
-            var column_values = [];
-            for (var i = 0; i < n_values; i++) {
-                var value = values[i];
-                if(!isNaN(value)) {
-                    column_values.push(value);
+            if (chart_settings.execute) {
+                if (chart.get('dataset_id_job') == '') {
+                    // submit job
+                    self.app.jobs.submit(chart, self._defaultSettingsString(chart), self._defaultRequestString(chart),
+                        function() {
+                            view.draw(process_id, chart, self._defaultRequestDictionary(chart));
+                        },
+                        function() {
+                            chart.deferred.done(process_id);
+                        });
                 } else {
-                    column_values.push(0)
+                    // load data into view
+                    view.draw(process_id, chart, self._defaultRequestDictionary(chart));
                 }
+            } else {
+                // load data into view
+                view.draw(process_id, chart, self._defaultRequestDictionary(chart));
             }
-             
-            // write column values
-            for (var i = 0; i < n_values; i++) {
-                // make sure dictionary exists
-                if (group_data.values[i] === undefined) {
-                    group_data.values[i] = {
-                        x : i,
-                        y : 0
-                    }
-                }
-                    
-                // write data
-                group_data.values[i][column_key] = column_values[i];
-            }
-            
-            // refresh view
-            view.refresh(data);
         });
-
     },
     
-    // remove
-    _removeChart: function(id) {
-        var item = this.list[id];
-        if (item) {
-            d3.select(item.svg_id).remove();
-            $(item.svg_id).remove();
+    // create default chart request
+    _defaultRequestString: function(chart) {
+    
+        // get chart settings
+        var chart_settings  = this.app.types.get(chart.get('type'));
+       
+        // configure request
+        var request_string = '';
+        
+        // add groups to data request
+        var group_index = 0;
+        chart.groups.each(function(group) {
+            for (var key in chart_settings.columns) {
+                request_string += key + '_' + (++group_index) + ':' + (parseInt(group.get(key)) + 1) + ', ';
+            }
+        });
+        
+        // return
+        return request_string.substring(0, request_string.length - 2);
+    },
+    
+    // create default chart request
+    _defaultSettingsString: function(chart) {
+    
+        // configure settings
+        var settings_string = '';
+        
+        // add settings to settings string
+        for (key in chart.settings.attributes) {
+            settings_string += key + ':' + chart.settings.get(key) + ', ';
+        };
+        
+        // return
+        return settings_string.substring(0, settings_string.length - 2);
+    },
+
+    // create default chart request
+    _defaultRequestDictionary: function(chart) {
+    
+        // get chart settings
+        var chart_settings  = this.app.types.get(chart.get('type'));
+       
+        // configure request
+        var request_dictionary = {
+            groups : []
+        };
+        
+        // update request dataset id
+        if (chart_settings.execute) {
+            request_dictionary.id = chart.get('dataset_id_job');
+        } else {
+            request_dictionary.id = chart.get('dataset_id');
         }
+        
+        // add groups to data request
+        var group_index = 0;
+        chart.groups.each(function(group) {
+
+            // add columns
+            var columns = {};
+            for (var key in chart_settings.columns) {
+                columns[key] = group.get(key);
+            }
+            
+            // add group data
+            request_dictionary.groups.push({
+                key     : (++group_index) + ':' + group.get('key'),
+                columns : columns
+            });
+        });
+        
+        // return
+        return request_dictionary;
     },
     
     // template
-    _template: function(options) {
-        return '<svg id="' + options.id.substr(1) + '"style="height: ' + options.height + 'px;"></svg>';
-    }
+    _template: function() {
+        return  '<div style="height: 100%; min-height: 50px;">' +
+                    '<div id="info" style="position: absolute; margin-left: 10px; margin-top: 10px; margin-bottom: 50px;">' +
+                        '<span id="icon" style="font-size: 1.2em; display: inline-block;"/>' +
+                        '<span id="text" style="position: relative; margin-left: 5px; top: -1px; font-size: 1.0em;"/>' +
+                    '</div>' +
+                '</div>';
+    },
+    
+    // template svg element
+    _template_svg: function() {
+        return '<svg style="height: calc(100% - 80px)"/>';
+    },
+    
 });
 
 });

@@ -30,7 +30,7 @@ from galaxy.web.form_builder import CheckboxField
 from galaxy.web.form_builder import  build_select_field
 from galaxy.web.framework.helpers import time_ago, grids
 from datetime import datetime, timedelta
-from galaxy.util import hash_util
+from galaxy.util import hash_util, biostar
 
 log = logging.getLogger( __name__ )
 
@@ -600,6 +600,11 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         trans.handle_user_logout( logout_all=logout_all )
         message = 'You have been logged out.<br>You can log in again, <a target="_top" href="%s">go back to the page you were visiting</a> or <a target="_top" href="%s">go to the home page</a>.' % \
             ( trans.request.referer, url_for( '/' ) )
+        if biostar.biostar_logged_in( trans ):
+            biostar_url = biostar.biostar_logout( trans )
+            if biostar_url:
+                #TODO: It would be better if we automatically logged this user out of biostar
+                message += '<br>To logout of Biostar, please click <a href="%s" target="_blank">here</a>.' % ( biostar_url )
         return trans.fill_template( '/user/logout.mako',
                                     refresh_frames=refresh_frames,
                                     message=message,
@@ -799,7 +804,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         Prepares the account activation link for the user.
         """
         activation_token = self.get_activation_token( trans, email )
-        activation_link = str( trans.request.host ) + url_for( controller='user', action='activate' ) + "?activation_token=" + str( activation_token ) + "&email=" + urllib.quote( email )
+        activation_link = url_for( controller='user', action='activate', activation_token=activation_token, email=email, qualified=True  )
         return activation_link
 
     def get_activation_token ( self, trans, email ):

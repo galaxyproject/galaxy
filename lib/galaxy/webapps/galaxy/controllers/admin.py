@@ -56,6 +56,15 @@ class UserListGrid( grids.Grid ):
             if user.galaxy_sessions:
                 return self.format( user.galaxy_sessions[ 0 ].update_time )
             return 'never'
+    class TimeCreatedColumn( grids.GridColumn ):
+        def get_value( self, trans, grid, user ):
+            return user.create_time.strftime('%x')
+    class ActivatedColumn( grids.GridColumn ):
+        def get_value( self, trans, grid, user ):
+            if user.active:
+                return 'Y'
+            else:
+                return 'N'
 
     # Grid definition
     title = "Users"
@@ -79,6 +88,8 @@ class UserListGrid( grids.Grid ):
         ExternalColumn( "External", attach_popup=False ),
         LastLoginColumn( "Last Login", format=time_ago ),
         StatusColumn( "Status", attach_popup=False ),
+        TimeCreatedColumn( "Created", attach_popup=False ),
+        ActivatedColumn( "Activated", attach_popup=False ),
         # Columns that are valid for filtering but are not visible.
         grids.DeletedColumn( "Deleted", key="deleted", visible=False, filterable="advanced" )
     ]

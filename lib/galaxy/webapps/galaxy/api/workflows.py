@@ -9,17 +9,51 @@ from sqlalchemy import desc, or_
 from galaxy import exceptions
 from galaxy import util
 from galaxy import web
-from galaxy.tools.parameters import visit_input_values, DataToolParameter
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web.base.controller import BaseAPIController, url_for, UsesStoredWorkflowMixin
+from galaxy.web.base.controller import UsesHistoryMixin
 from galaxy.workflow.modules import module_factory
-from galaxy.jobs.actions.post import ActionBox
+from galaxy.workflow.run import invoke
+from galaxy.workflow.extract import extract_workflow
 
 
 log = logging.getLogger(__name__)
 
 
-class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin):
+def _update_step_parameters(step, param_map):
+    """
+    Update ``step`` parameters based on the user-provided ``param_map`` dict.
+
+    ``param_map`` should be structured as follows::
+
+      PARAM_MAP = {STEP_ID: PARAM_DICT, ...}
+      PARAM_DICT = {NAME: VALUE, ...}
+
+    For backwards compatibility, the following (deprecated) format is
+    also supported for ``param_map``::
+
+      PARAM_MAP = {TOOL_ID: PARAM_DICT, ...}
+
+    in which case PARAM_DICT affects all steps with the given tool id.
+    If both by-tool-id and by-step-id specifications are used, the
+    latter takes precedence.
+
+    Finally (again, for backwards compatibility), PARAM_DICT can also
+    be specified as::
+
+      PARAM_DICT = {'param': NAME, 'value': VALUE}
+
+    Note that this format allows only one parameter to be set per step.
+    """
+    param_dict = param_map.get(step.tool_id, {}).copy()
+    param_dict.update(param_map.get(str(step.id), {}))
+    if param_dict:
+        if 'param' in param_dict and 'value' in param_dict:
+            param_dict[param_dict['param']] = param_dict['value']
+        step.state.inputs.update(param_dict)
+
+
+class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHistoryMixin):
 
     @web.expose_api
     def index(self, trans, **kwd):
@@ -42,14 +76,16 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin):
             item = wf.to_dict( value_mapper={ 'id': trans.security.encode_id } )
             encoded_id = trans.security.encode_id(wf.id)
             item['url'] = url_for('workflow', id=encoded_id)
+            item['owner'] = wf.user.username
             rval.append(item)
         for wf_sa in trans.sa_session.query( trans.app.model.StoredWorkflowUserShareAssociation ).filter_by(
                 user=trans.user ).join( 'stored_workflow' ).filter(
                 trans.app.model.StoredWorkflow.deleted == False ).order_by(
                 desc( trans.app.model.StoredWorkflow.update_time ) ).all():
-            item = wf_sa.stored_workflow.to_dict( value_mapper={ 'id': trans.security.encode_id  })
+            item = wf_sa.stored_workflow.to_dict( value_mapper={ 'id': trans.security.encode_id } )
             encoded_id = trans.security.encode_id(wf_sa.stored_workflow.id)
             item['url'] = url_for( 'workflow', id=encoded_id )
+            item['owner'] = wf_sa.stored_workflow.user.username
             rval.append(item)
         return rval
 
@@ -77,6 +113,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin):
             return "That workflow does not exist."
         item = stored_workflow.to_dict( view='element', value_mapper={ 'id': trans.security.encode_id } )
         item['url'] = url_for('workflow', id=workflow_id)
+        item['owner'] = stored_workflow.user.username
         latest_workflow = stored_workflow.latest_workflow
         inputs = {}
         for step in latest_workflow.steps:
@@ -95,6 +132,8 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin):
             steps[step.id] = {'id': step.id,
                               'type': step.type,
                               'tool_id': step.tool_id,
+                              'tool_version': step.tool_version,
+                              'tool_inputs': step.tool_inputs,
                               'input_steps': {}}
             for conn in step.input_connections:
                 steps[step.id]['input_steps'][conn.input_name] = {'source_step': conn.output_step_id,
@@ -107,17 +146,49 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin):
         """
         POST /api/workflows
 
-        We're not creating workflows from the api.  Just execute for now.
+        Run or create workflows from the api.
 
-        However, we will import them if installed_repository_file is specified
+        If installed_repository_file or from_history_id is specified a new
+        workflow will be created for this user. Otherwise, workflow_id must be
+        specified and this API method will cause a workflow to execute.
+
+        :param  installed_repository_file    The path of a workflow to import. Either workflow_id or installed_repository_file must be specified
+        :type   installed_repository_file    str
+
+        :param  workflow_id:                 an existing workflow id. Either workflow_id or installed_repository_file must be specified
+        :type   workflow_id:                 str
+
+        :param  parameters:                  See _update_step_parameters()
+        :type   parameters:                  dict
+
+        :param  ds_map:                      A dictionary mapping each input step id to a dictionary with 2 keys: 'src' (which can be 'ldda', 'ld' or 'hda') and 'id' (which should be the id of a LibraryDatasetDatasetAssociation, LibraryDataset or HistoryDatasetAssociation respectively)
+        :type   ds_map:                      dict
+
+        :param  no_add_to_history:           if present in the payload with any value, the input datasets will not be added to the selected history
+        :type   no_add_to_history:           str
+
+        :param  history:                     Either the name of a new history or "hist_id=HIST_ID" where HIST_ID is the id of an existing history
+        :type   history:                     str
+
+        :param  replacement_params:          A dictionary used when renaming datasets
+        :type   replacement_params:          dict
+
+        :param  from_history_id:             Id of history to extract a workflow from. Should not be used with worfklow_id or installed_repository_file.
+        :type   from_history_id:             str
+
+        :param  job_ids:                     If from_history_id is set - this should be a list of jobs to include when extracting workflow from history.
+        :type   job_ids:                     str
+
+        :param  dataset_ids:                 If from_history_id is set - this should be a list of HDA ids corresponding to workflow inputs when extracting workflow from history.
+        :type   dataset_ids:                 str
         """
 
         # Pull parameters out of payload.
-        workflow_id = payload['workflow_id']
+        workflow_id = payload.get('workflow_id', None)
         param_map = payload.get('parameters', {})
-        ds_map = payload['ds_map']
+        ds_map = payload.get('ds_map', {})
         add_to_history = 'no_add_to_history' not in payload
-        history_param = payload['history']
+        history_param = payload.get('history', '')
 
         # Get/create workflow.
         if not workflow_id:
@@ -128,6 +199,24 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin):
                                                               cntrller='api',
                                                               **payload)
                 return result
+            if 'from_history_id' in payload:
+                from_history_id = payload.get( 'from_history_id' )
+                history = self.get_history( trans, from_history_id, check_ownership=False, check_accessible=True )
+                job_ids = map( trans.security.decode_id, payload.get( "job_ids", [] ) )
+                dataset_ids = map( trans.security.decode_id, payload.get( "dataset_ids", [] ) )
+                workflow_name = payload[ "workflow_name" ]
+                stored_workflow = extract_workflow(
+                    trans=trans,
+                    user=trans.get_user(),
+                    history=history,
+                    job_ids=job_ids,
+                    dataset_ids=dataset_ids,
+                    workflow_name=workflow_name,
+                )
+                item = stored_workflow.to_dict( value_mapper={ "id": trans.security.encode_id } )
+                item[ 'url' ] = url_for( 'workflow', id=item[ "id" ] )
+                return item
+
             trans.response.status = 403
             return "Either workflow_id or installed_repository_file must be specified"
         if 'installed_repository_file' in payload:
@@ -142,6 +231,20 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin):
                 trans.response.status = 400
                 return("Workflow is not owned by or shared with current user")
         workflow = stored_workflow.latest_workflow
+
+        # Sanity checks.
+        if not workflow:
+            trans.response.status = 400
+            return "Workflow not found."
+        if len( workflow.steps ) == 0:
+            trans.response.status = 400
+            return "Workflow cannot be run because it does not have any steps"
+        if workflow.has_cycles:
+            trans.response.status = 400
+            return "Workflow cannot be run because it contains cycles"
+        if workflow.has_errors:
+            trans.response.status = 400
+            return "Workflow cannot be run because of validation errors in some steps"
 
         # Get target history.
         if history_param.startswith('hist_id='):
@@ -178,7 +281,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin):
                 else:
                     trans.response.status = 400
                     return "Unknown dataset source '%s' specified." % ds_map[k]['src']
-                if add_to_history and  hda.history != history:
+                if add_to_history and hda.history != history:
                     hda = hda.copy()
                     history.add_dataset(hda)
                 ds_map[k]['hda'] = hda
@@ -186,24 +289,17 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin):
                 trans.response.status = 400
                 return "Invalid Dataset '%s' Specified" % ds_map[k]['id']
 
-        # Sanity checks.
-        if not workflow:
-            trans.response.status = 400
-            return "Workflow not found."
-        if len( workflow.steps ) == 0:
-            trans.response.status = 400
-            return "Workflow cannot be run because it does not have any steps"
-        if workflow.has_cycles:
-            trans.response.status = 400
-            return "Workflow cannot be run because it contains cycles"
-        if workflow.has_errors:
-            trans.response.status = 400
-            return "Workflow cannot be run because of validation errors in some steps"
-
         # Build the state for each step
-        rval = {}
         for step in workflow.steps:
             step_errors = None
+            input_connections_by_name = {}
+            for conn in step.input_connections:
+                input_name = conn.input_name
+                if not input_name in input_connections_by_name:
+                    input_connections_by_name[input_name] = []
+                input_connections_by_name[input_name].append(conn)
+            step.input_connections_by_name = input_connections_by_name
+
             if step.type == 'tool' or step.type is None:
                 step.module = module_factory.from_workflow_step( trans, step )
                 # Check for missing parameters
@@ -212,22 +308,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin):
                 # are not persisted so we need to do it every time)
                 step.module.add_dummy_datasets( connections=step.input_connections )
                 step.state = step.module.state
-
-                # Update step parameters as directed by payload's parameter mapping.
-                if step.tool_id in param_map:
-                    param_dict = param_map[ step.tool_id ]
-                    step_id = param_dict.get( 'step_id', '' )
-
-                    # Backward compatibility: convert param/value dict to new 'name': 'value' format.
-                    if 'param' in param_dict and 'value' in param_dict:
-                        param_dict[ param_dict['param'] ] = param_dict['value']
-
-                    # Update step if there's no step id (i.e. all steps with tool are
-                    # updated) or update if step ids match.
-                    if not step_id or ( step_id and int( step_id ) == step.id ):
-                        for name, value in param_dict.items():
-                            step.state.inputs[ name ] = value
-
+                _update_step_parameters(step, param_map)
                 if step.tool_errors:
                     trans.response.status = 400
                     return "Workflow cannot be run because of validation errors in some steps: %s" % step_errors
@@ -235,55 +316,34 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin):
                     trans.response.status = 400
                     return "Workflow cannot be run because of step upgrade messages: %s" % step.upgrade_messages
             else:
-                # This is an input step.  Make sure we have an available input.
+                # This is an input step. Make sure we have an available input.
                 if step.type == 'data_input' and str(step.id) not in ds_map:
                     trans.response.status = 400
                     return "Workflow cannot be run because an expected input step '%s' has no input dataset." % step.id
                 step.module = module_factory.from_workflow_step( trans, step )
                 step.state = step.module.get_runtime_state()
-            step.input_connections_by_name = dict( ( conn.input_name, conn ) for conn in step.input_connections )
 
         # Run each step, connecting outputs to inputs
-        workflow_invocation = self.app.model.WorkflowInvocation()
-        workflow_invocation.workflow = workflow
-        outputs = util.odict.odict()
+        replacement_dict = payload.get('replacement_params', {})
+        outputs = invoke(
+            trans=trans,
+            workflow=workflow,
+            target_history=history,
+            replacement_dict=replacement_dict,
+            ds_map=ds_map,
+        )
+        trans.sa_session.flush()
+
+        # Build legacy output - should probably include more information from
+        # outputs.
+        rval = {}
         rval['history'] = trans.security.encode_id(history.id)
         rval['outputs'] = []
         for step in workflow.steps:
-            job = None
             if step.type == 'tool' or step.type is None:
-                tool = self.app.toolbox.get_tool( step.tool_id )
+                for v in outputs[ step.id ].itervalues():
+                    rval[ 'outputs' ].append( trans.security.encode_id( v.id ) )
 
-                def callback( input, value, prefixed_name, prefixed_label ):
-                    if isinstance( input, DataToolParameter ):
-                        if prefixed_name in step.input_connections_by_name:
-                            conn = step.input_connections_by_name[ prefixed_name ]
-                            return outputs[ conn.output_step.id ][ conn.output_name ]
-                visit_input_values( tool.inputs, step.state.inputs, callback )
-                job, out_data = tool.execute( trans, step.state.inputs, history=history)
-                outputs[ step.id ] = out_data
-
-                # Do post-job actions.
-                replacement_params = payload.get('replacement_params', {})
-                for pja in step.post_job_actions:
-                    if pja.action_type in ActionBox.immediate_actions:
-                        ActionBox.execute(trans.app, trans.sa_session, pja, job, replacement_dict=replacement_params)
-                    else:
-                        job.add_post_job_action(pja)
-
-                for v in out_data.itervalues():
-                    rval['outputs'].append(trans.security.encode_id(v.id))
-            else:
-                #This is an input step.  Use the dataset inputs from ds_map.
-                job, out_data = step.module.execute( trans, step.state)
-                outputs[step.id] = out_data
-                outputs[step.id]['output'] = ds_map[str(step.id)]['hda']
-            workflow_invocation_step = self.app.model.WorkflowInvocationStep()
-            workflow_invocation_step.workflow_invocation = workflow_invocation
-            workflow_invocation_step.workflow_step = step
-            workflow_invocation_step.job = job
-        trans.sa_session.add( workflow_invocation )
-        trans.sa_session.flush()
         return rval
 
     @web.expose_api
@@ -381,7 +441,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin):
         """
         # Pull parameters out of payload.
         workflow_id = payload.get('workflow_id', None)
-        if workflow_id == None:
+        if workflow_id is None:
             raise exceptions.ObjectAttributeMissingException( "Missing required parameter 'workflow_id'." )
         try:
             stored_workflow = self.get_stored_workflow( trans, workflow_id, check_ownership=False )
@@ -396,3 +456,58 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin):
         encoded_id = trans.security.encode_id(imported_workflow.id)
         item['url'] = url_for('workflow', id=encoded_id)
         return item
+
+    @expose_api
+    def workflow_usage(self, trans, workflow_id, **kwd):
+        """
+        GET /api/workflows/{workflow_id}/usage
+        Get the list of the workflow usage
+
+        :param  workflow_id:      the workflow id (required)
+        :type   workflow_id:      str
+
+        :raises: exceptions.MessageException, exceptions.ObjectNotFound
+        """
+        try:
+            stored_workflow = trans.sa_session.query(self.app.model.StoredWorkflow).get(trans.security.decode_id(workflow_id))
+        except Exception, e:
+            raise exceptions.ObjectNotFound()
+        # check to see if user has permissions to selected workflow
+        if stored_workflow.user != trans.user and not trans.user_is_admin():
+            if trans.sa_session.query(trans.app.model.StoredWorkflowUserShareAssociation).filter_by(user=trans.user, stored_workflow=stored_workflow).count() == 0:
+                raise exceptions.ItemOwnershipException()
+        results = trans.sa_session.query(self.app.model.WorkflowInvocation).filter(self.app.model.WorkflowInvocation.workflow_id==stored_workflow.latest_workflow_id)
+        out = []
+        for r in results:
+            out.append( self.encode_all_ids( trans, r.to_dict(), True) )
+        return out
+
+    @expose_api
+    def workflow_usage_contents(self, trans, workflow_id, usage_id, **kwd):
+        """
+        GET /api/workflows/{workflow_id}/usage/{usage_id}
+        Get detailed description of workflow usage
+
+        :param  workflow_id:      the workflow id (required)
+        :type   workflow_id:      str
+
+        :param  usage_id:      the usage id (required)
+        :type   usage_id:      str
+
+        :raises: exceptions.MessageException, exceptions.ObjectNotFound
+        """
+
+        try:
+            stored_workflow = trans.sa_session.query(self.app.model.StoredWorkflow).get(trans.security.decode_id(workflow_id))
+        except Exception, e:
+            raise exceptions.ObjectNotFound()
+        # check to see if user has permissions to selected workflow
+        if stored_workflow.user != trans.user and not trans.user_is_admin():
+            if trans.sa_session.query(trans.app.model.StoredWorkflowUserShareAssociation).filter_by(user=trans.user, stored_workflow=stored_workflow).count() == 0:
+                raise exceptions.ItemOwnershipException()
+        results = trans.sa_session.query(self.app.model.WorkflowInvocation).filter(self.app.model.WorkflowInvocation.workflow_id==stored_workflow.latest_workflow_id)
+        results = results.filter(self.app.model.WorkflowInvocation.id == trans.security.decode_id(usage_id))
+        out = results.first()
+        if out is not None:
+            return self.encode_all_ids( trans, out.to_dict('element'), True)
+        return None

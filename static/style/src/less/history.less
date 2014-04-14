@@ -57,9 +57,34 @@
 }
 .icon-btn.disabled {
     background-color: transparent;
-    color: @icon-btn-bg;
+    color: #BBB;
+    border-color: #BBB;
+    //color: @icon-btn-border;
+}
+.icon-btn-group {
+display: inline-block;
+.icon-btn:not(:last-child) {
+    margin: 0px;
+    border-radius: 0px;
+    border-right: none;
+}
+.icon-btn:first-child {
+    margin-right: 0px;
+    border-top-left-radius: 3px;
+    border-bottom-left-radius: 3px;
+}
+.icon-btn:last-child {
+    margin-left: 0px;
+    border-radius: 0px 3px 3px 0px;
+}
+.icon-btn:only-child {
+    margin: 0px;
+    border-radius: 3px;
+}
 }
 
+
+// ---------------------------------------------------------------------------- search bar
 .search-input {
     .search-query {
         width           : 100%;
@@ -84,6 +109,7 @@
         color       : @link-color;
     }
 }
+
 // ---------------------------------------------------------------------------- panel header buttons
 #history-refresh-button,
 #history-options-button {
@@ -139,13 +165,18 @@
             float: left;
             // always initially hidden and zero width
             display: none;
-            width: 0px;
+            width: 32px;
+            height: 32px;
             //HACK: neg. on the bottom due to padding-bottom in title-bar - very tweakish
-            margin: 0px 0px -@spacing-bottom 0px;
-            padding: ( @spacing-top - 1 ) 0px 2px @spacing-left;
+            margin: 0px 0px -( @spacing-bottom ) 0px;
+            padding: ( @spacing-top + 2 ) 0px 2px ( @spacing-left - 1 );
+            font-size: 80%;
+            color: @btn-default-color;
             cursor: pointer;
-            //text-align: center;
             vertical-align: middle;
+        }
+        .dataset-selector:hover {
+            color: maroon;
         }
 
         .dataset-title-bar {
@@ -177,7 +208,8 @@
         .dataset-body {
             display: none;
             // background-color: fadeout( white, 70% );
-            .dataset-padding;
+            //.dataset-padding;
+            padding: 0px @spacing-right @spacing-bottom @spacing-left;
 
             [class$=messagesmall] {
                 margin: 0px 0px 8px 0px;
@@ -193,6 +225,7 @@
             }
             .prompt:after {
                 content: ':';
+                margin-right: 4px;
             }
 
             .dataset-summary {
@@ -208,6 +241,7 @@
                 .dataset-datatype .value:after {
                     content: ',';
                     .help-text;
+                    margin-right: 4px;
                 }
                 .dataset-dbkey:after {
                     content: ' ';
@@ -252,6 +286,7 @@
                     }
                 }
                 .right {
+                    .icon-btn-group();
                     float: right;
                     .icon-btn {
                         margin-left: @icon-btn-margin;
@@ -325,29 +360,12 @@
             }
         }
 
-        .icon-btn-group {
-            display: inline-block;
-            .icon-btn:not(:last-child) {
-                margin: 0px;
-                border-radius: 0px;
-                border-right: none;
-            }
-            .icon-btn:first-child {
-                margin-right: 0px;
-                border-top-left-radius: 3px;
-                border-bottom-left-radius: 3px;
-            }
-            .icon-btn:last-child {
-                margin-left: 0px;
-                border-radius: 0px 3px 3px 0px;
-            }
-        }
-
     }
 
     .dataset .state-icon {
         .fa-icon;
         display: inline-block;
+        margin-right: 4px;
         vertical-align: middle;
         width: 16px;
         height: 16px;
@@ -408,7 +426,7 @@
         }
 
         .history-title {
-            margin-bottom: 4px;
+            margin-bottom: 8px;
         }
         .history-name {
             word-wrap: break-word;
@@ -428,6 +446,7 @@
             float: left;
         }
         .history-secondary-actions {
+            .icon-btn-group();
             float: right;
             .icon-btn {
                 margin-left: @icon-btn-margin;
@@ -684,6 +703,78 @@
     }
 }
 
+
+// ---------------------------------------------------------------------------- annotated-history-panel
+.annotated-history-panel {
+    //TODO: most of these styles are specific to history/display.mako and not to this type of panel in general
+    //TODO: some of these styles are also overrides of history-panel - remove those from hpanel and revisit this
+
+    [class$=messagesmall] {
+        margin: 8px 0px 8px 0px;
+    }
+
+    .history-controls {
+        margin: 0px 0px 16px 4px;
+        padding: 0px;
+
+        .history-name {
+            font-size: 150%;
+            margin-bottom: 4px;
+        }
+        .history-subtitle {
+            margin: 0px;
+            padding: 0px 0px 0px 4px;
+            padding-left: 4px;
+        }
+
+        .history-annotation {
+            border: 1px solid lightgrey;
+            border-width: 1px 0px 0px 0px;
+            padding: 4px 0px 4px 0px;
+            margin: 4px;
+            white-space: pre-wrap;
+        }
+        .history-annotation:empty {
+            display: none;
+        }
+
+        .history-search-controls {
+            padding: 16px 0px 0px 0px;
+        }
+    }
+
+    table.datasets-list {
+        width: 100%;
+        table-layout: fixed;
+
+        .headers {
+            border-bottom: 2px solid grey;
+        }
+        .headers th {
+            padding: 8px;
+        }
+        .dataset-row {
+            cursor: pointer;
+            border-bottom: 1px solid grey;
+        }
+        .dataset-row > td {
+            margin: 0px;
+            padding: 0px;
+            vertical-align: top;
+        }
+        .dataset-row > td:nth-child(1) {
+            width: 50%;
+        }
+        .dataset-row > td:nth-child(2) {
+            /* top and bottom should be <= title-bar padding */
+            padding: 8px 16px 8px 16px;
+            white-space: pre-wrap;
+        }
+        .dataset-row .dataset {
+            border: 0px;
+        }
+    }
+}
 
 // ---------------------------------------------------------------------------- hdas
 .hda .hda-hid:after {

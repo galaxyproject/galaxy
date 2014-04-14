@@ -333,6 +333,25 @@ def generate_clone_url_from_repo_info_tup( repo_info_tup ):
     # Don't include the changeset_revision in clone urls.
     return url_join( toolshed, 'repos', owner, name )
 
+def generate_message_for_repository_type_change( trans, repository ):
+    message = ''
+    if repository.can_change_type_to( trans.app, rt_util.REPOSITORY_SUITE_DEFINITION ):
+        repository_suite_definition_type_class = \
+            trans.app.repository_types_registry.get_class_by_label( rt_util.REPOSITORY_SUITE_DEFINITION )
+        message += "This repository currently contains a single file named <b>%s</b>.  If the intent of this repository is " % \
+            REPOSITORY_DEPENDENCY_DEFINITION_FILENAME
+        message += "to define relationships to a collection of repositories that contain related Galaxy utilities with "
+        message += "no plans to add additional files, then consider setting its type to <b>%s</b>.<br/>" % \
+            repository_suite_definition_type_class.label
+    elif repository.can_change_type_to( trans.app, rt_util.TOOL_DEPENDENCY_DEFINITION ):
+        tool_dependency_definition_type_class = \
+            trans.app.repository_types_registry.get_class_by_label( rt_util.TOOL_DEPENDENCY_DEFINITION )
+        message += "This repository currently contains a single file named <b>%s</b>.  If additional files will " % \
+            TOOL_DEPENDENCY_DEFINITION_FILENAME
+        message += "not be added to this repository, consider setting its type to <b>%s</b>.<br/>" % \
+            tool_dependency_definition_type_class.label
+    return message
+
 def generate_repository_info_elem( tool_shed, repository_name, changeset_revision, owner, parent_elem=None, **kwd ):
     """Create and return an ElementTree repository info Element."""
     if parent_elem is None:
@@ -880,15 +899,17 @@ def get_query_for_setting_metadata_on_repositories( trans, my_writable=False, or
     a page.  When called from either the Tool Shed or Galaxy API, order is False.
     """
     if trans.webapp.name == 'tool_shed':
-        # When called from the Tool Shed API, the metadata is reset on all repositories of type tool_dependency_definition in addition
-        # to other selected repositories.
+        # When called from the Tool Shed API, the metadata is reset on all repositories of types
+        # repository_suite_definition and tool_dependency_definition in addition to other selected
+        # repositories.
         if my_writable:
             username = trans.user.username
             clause_list = []
             for repository in trans.sa_session.query( trans.model.Repository ) \
                                               .filter( trans.model.Repository.table.c.deleted == False ):
-                # Always reset metadata on all repositories of type tool_dependency_definition.
-                if repository.type == rt_util.TOOL_DEPENDENCY_DEFINITION:
+                # Always reset metadata on all repositories of types repository_suite_definition and
+                # tool_dependency_definition.
+                if repository.type in [ rt_util.REPOSITORY_SUITE_DEFINITION, rt_util.TOOL_DEPENDENCY_DEFINITION ]:
                     clause_list.append( trans.model.Repository.table.c.id == repository.id )
                 else:
                     allow_push = repository.allow_push( trans.app )
@@ -1159,9 +1180,9 @@ def get_repository_in_tool_shed( trans, id ):
 
 def get_repository_metadata_by_changeset_revision( trans, id, changeset_revision ):
     """Get metadata for a specified repository change set from the database."""
-    # Make sure there are no duplicate records, and return the single unique record for the changeset_revision.  Duplicate records were somehow
-    # created in the past.  The cause of this issue has been resolved, but we'll leave this method as is for a while longer to ensure all duplicate
-    # records are removed.
+    # Make sure there are no duplicate records, and return the single unique record for the changeset_revision.
+    # Duplicate records were somehow created in the past.  The cause of this issue has been resolved, but we'll
+    # leave this method as is for a while longer to ensure all duplicate records are removed.
     all_metadata_records = trans.sa_session.query( trans.model.RepositoryMetadata ) \
                                            .filter( and_( trans.model.RepositoryMetadata.table.c.repository_id == trans.security.decode_id( id ),
                                                           trans.model.RepositoryMetadata.table.c.changeset_revision == changeset_revision ) ) \
@@ -1320,9 +1341,7 @@ def get_tool_shed_repository_by_shed_name_owner_changeset_revision( app, tool_sh
     """
     # This method is used only in Galaxy, not the tool shed.
     repository_query = __repository_query( app )
-    if tool_shed.find( '//' ) > 0:
-        tool_shed = tool_shed.split( '//' )[1]
-    tool_shed = tool_shed.rstrip( '/' )
+    tool_shed = remove_protocol_from_tool_shed_url( tool_shed )
     return repository_query \
                      .filter( and_( app.install_model.ToolShedRepository.table.c.tool_shed == tool_shed,
                                     app.install_model.ToolShedRepository.table.c.name == name,
@@ -1576,6 +1595,12 @@ def handle_galaxy_url( trans, **kwd ):
         galaxy_url = trans.get_cookie( name='toolshedgalaxyurl' )
     return galaxy_url
 
+def handle_tool_shed_url_protocol( app, tool_shed_url ):
+    """Handle secure and insecure HTTP protocol since they may change over time."""
+    tool_shed_url = remove_protocol_from_tool_shed_url( tool_shed_url )
+    tool_shed_url = get_url_from_tool_shed( app, tool_shed_url )
+    return tool_shed_url
+
 def have_shed_tool_conf_for_install( trans ):
     if not trans.app.toolbox.shed_tool_confs:
         return False
@@ -1631,6 +1656,12 @@ def remove_file( file_name ):
                 os.remove( file_name )
             except:
                 pass
+
+def remove_protocol_from_tool_shed_url( tool_shed_url ):
+    if tool_shed_url.find( '//' ) > 0:
+        tool_shed_url = tool_shed_url.split( '//' )[1]
+    tool_shed_url = tool_shed_url.rstrip( '/' )
+    return tool_shed_url
 
 def __repository_query( app ):
     if app.name == "galaxy":

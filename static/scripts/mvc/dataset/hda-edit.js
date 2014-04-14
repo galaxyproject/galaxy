@@ -1,7 +1,9 @@
 define([
     "mvc/dataset/hda-model",
-    "mvc/dataset/hda-base"
-], function( hdaModel, hdaBase ){
+    "mvc/dataset/hda-base",
+    "mvc/tags",
+    "mvc/annotations"
+], function( hdaModel, hdaBase, tagsMod, annotationsMod ){
 //==============================================================================
 /** @class Editing view for HistoryDatasetAssociation.
  *  @name HDAEditView
@@ -11,7 +13,7 @@ define([
  *  @borrows LoggableMixin#log as #log
  *  @constructs
  */
-var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
+var HDAEditView = hdaBase.HDABaseView.extend(
 /** @lends HDAEditView.prototype */{
 
     // ......................................................................... set up
@@ -197,23 +199,18 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
 
         // map a function to each visualization in the icon's attributes
         //  create a popupmenu from that map
-        var hdaView = this;
         /** @inner */
         function create_viz_action( visualization ) {
-            switch( visualization ){
-                case 'trackster':
-                    return create_trackster_action_fn( visualization_url, params, dbkey );
-                case 'scatterplot':
-                    return create_scatterplot_action_fn( visualization_url, params, hdaView.linkTarget );
-                default:
-                    return function(){
-                        Galaxy.frame.add({
-                            title       : "Visualization",
-                            type        : "url",
-                            content     : visualization_url + '/' + visualization + '?' + $.param( params )
-                        });
-                    };
+            if( visualization === 'trackster' ){
+                return create_trackster_action_fn( visualization_url, params, dbkey );
             }
+            return function(){
+                Galaxy.frame.add({
+                    title       : "Visualization",
+                    type        : "url",
+                    content     : visualization_url + '/' + visualization + '?' + $.param( params )
+                });
+            };
         }
 
         function titleCase( string ){
@@ -259,13 +256,14 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
         } else {
             var popup_menu_options = [];
             _.each( visualizations, function( linkData ) {
-                linkData.func = function(){
-                    if( Galaxy.frame.active ){
+                linkData.func = function( ev ){
+                    if( Galaxy.frame && Galaxy.frame.active ){
                         Galaxy.frame.add({
                             title       : "Visualization",
                             type        : "url",
                             content     : linkData.href
                         });
+                        ev.preventDefault();
                         return false;
                     }
                     return true;
@@ -284,11 +282,11 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
 
         //TODO: this won't localize easily
         $newRender.find( '.dataset-deleted-msg' ).append(
-            _l( 'Click <a href="javascript:void(0);" class="dataset-undelete">here</a> to undelete it' +
+            _l( ' Click <a href="javascript:void(0);" class="dataset-undelete">here</a> to undelete it' +
             ' or <a href="javascript:void(0);" class="dataset-purge">here</a> to immediately remove it from disk' ));
 
         $newRender.find( '.dataset-hidden-msg' ).append(
-            _l( 'Click <a href="javascript:void(0);" class="dataset-unhide">here</a> to unhide it' ));
+            _l( ' Click <a href="javascript:void(0);" class="dataset-unhide">here</a> to unhide it' ));
 
         return $newRender;
     },
@@ -343,7 +341,7 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
 
     _renderTags : function( $where ){
         var view = this;
-        this.tagsEditor = new TagsEditor({
+        this.tagsEditor = new tagsMod.TagsEditor({
             model           : this.model,
             el              : $where.find( '.tags-display' ),
             onshowFirstTime : function(){ this.render(); },
@@ -360,7 +358,7 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
     },
     _renderAnnotation : function( $where ){
         var view = this;
-        this.annotationEditor = new AnnotationEditor({
+        this.annotationEditor = new annotationsMod.AnnotationEditor({
             model           : this.model,
             el              : $where.find( '.annotation-display' ),
             onshowFirstTime : function(){ this.render(); },
@@ -412,29 +410,6 @@ var HDAEditView = hdaBase.HDABaseView.extend( LoggableMixin ).extend(
 
 //==============================================================================
 //TODO: these belong somewhere else
-
-/** Create scatterplot loading/set up function for use with the visualizations popupmenu.
- *  @param {String} url url (gen. 'visualizations') to which to append 'scatterplot' and params
- *  @param {Object} params parameters to convert to query string for splot page
- *  @returns function that loads the scatterplot
- */
-//TODO: should be imported from scatterplot.js OR abstracted to 'load this in the galaxy_main frame'
-function create_scatterplot_action_fn( url, params, target ){
-    action = function() {
-        Galaxy.frame.add({
-            title       : "Scatterplot",
-            type        : "url",
-            content     : url + '/scatterplot?' + $.param(params),
-            target      : target
-        });
-
-        //TODO: this needs to go away
-        $( 'div.popmenu-wrapper' ).remove();
-        return false;
-    };
-    return action;
-}
-
 // -----------------------------------------------------------------------------
 /** Create trackster loading/set up function for use with the visualizations popupmenu.
  *      Shows modal dialog for load old/create new.

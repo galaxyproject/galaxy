@@ -172,6 +172,6 @@ class InstallTestRepository( TwillTestCase ):
                         # This timeout currently defaults to 10 minutes.
                         if timeout_counter > repository_installation_timeout:
                             raise AssertionError( 'Repository installation timed out after %d seconds, repository state is %s.' % \
-                                ( timeout_counter, repository.status ) )
+                                ( timeout_counter, galaxy_repository.status ) )
                             break
                         time.sleep( 1 )

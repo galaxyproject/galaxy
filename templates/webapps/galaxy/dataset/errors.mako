@@ -14,6 +14,36 @@
                 padding: 10px;
             }
         </style>
+
+        <script type="text/javascript">
+            function sendReport( button, form, target, doConfirm )
+            {
+                var doIt = true;
+                if ( doConfirm==true )
+                {
+                    doIt = confirm( 'You are about to submit to a public forum, do you want to continue?' );
+                }
+                if ( doIt==true )
+                {
+                    form.setAttribute( 'target', target );
+                    for( i=0; i<form.elements.length; i++ )
+                    {
+                        if ( form.elements[i].type == 'submit' )
+                        {
+                            form.elements[i].disabled = true;
+                        }
+                        
+                    }
+                    var hiddenInput = document.createElement('input');
+                    hiddenInput.type = 'hidden';
+                    hiddenInput.name = button.name;
+                    hiddenInput.value = button.value;
+                    form.appendChild( hiddenInput );
+                    return true;
+                }
+                return false;
+            }
+        </script>
     </head>
 
     <body>
@@ -61,7 +91,7 @@
             <div class="toolFormTitle">Error Report</div>
             <div class="toolFormBody">
                 <form name="report_error" action="${h.url_for(controller='dataset', action='report_error')}" method="post" >
-                    <input type="hidden" name="id" value="${hda.id}" />
+                    <input type="hidden" name="id" value="${trans.security.encode_id( hda.id)}" />
                     <div class="form-row">
                         <label>Your email</label>
                         <input type="text" name="email" size="40" value="${user_email}" />
@@ -71,7 +101,10 @@
                         <textarea name="message" rows="10" cols="40"></textarea>
                     </div>
                     <div class="form-row">
-                        <input type="submit" name="submit_error_report" value="Report"/>
+                        <input type="submit" name="submit_error_report" value="Report" onclick="return sendReport( this, this.form, '_self' );"/>
+                        %if trans.app.config.biostar_url:
+                            <input type="submit" name="submit_error_report" value="Post on Biostar" onclick="return sendReport( this, this.form, '_blank', true );"/>
+                        %endif
                     </div>
                 </form>
             </div>

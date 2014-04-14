@@ -78,7 +78,8 @@
     %if item.importable:
         Use this URL to import the ${get_class_display_name( item.__class__ ).lower()} directly into another Galaxy server: 
         <div class="display-url">
-            ${h.url_for(controller=self.controller, action='for_direct_import', id=trans.security.encode_id( item.id ), qualified=True )}
+            ${h.url_for(controller=self.controller, action='display_by_username_and_slug', username=item.user.username,
+                        slug=item.slug, format='json', qualified=True )}
         </div>
         (Copy this URL into the box titled 'Workflow URL' in the Import Workflow page.)
     %else:
@@ -89,7 +90,8 @@
 <%def name="render_download_to_file(item)">
     <h3>Download to File</h3>
     
-    <a href="${h.url_for(controller=self.controller, action='export_to_file', id=trans.security.encode_id( item.id ) )}">
+    <a href="${h.url_for( controller=self.controller, action='display_by_username_and_slug', username=item.user.username,
+                          slug=item.slug, format='json-download' )}">
         Download ${get_class_display_name( item.__class__ ).lower()} to file so that it can be saved or imported into another Galaxy server.</a>
 </%def>
 

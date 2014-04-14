@@ -1,0 +1,18 @@
+{
+  "name": "galaxy-charts",
+  "version": "0.0.0",
+  "description": "Charts visualization plugin for the Galaxy informatics framework",
+  "main": " ",
+  "keywords": [
+    "galaxy",
+    "visualization",
+    "d3"
+  ],
+  "author": "Aysam Guerler",
+  "license": "BSD",
+  "devDependencies": {
+    "grunt": "~0.4.1",
+    "grunt-cli": "~0.1.9",
+    "grunt-contrib-requirejs": "~0.4.3"
+  }
+}

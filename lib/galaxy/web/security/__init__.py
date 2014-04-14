@@ -1,4 +1,7 @@
-import os, os.path, logging
+import collections
+import os
+import os.path
+import logging
 
 import pkg_resources
 pkg_resources.require( "pycrypto" )
@@ -12,6 +15,7 @@ log = logging.getLogger( __name__ )
 if os.path.exists( "/dev/urandom" ):
     # We have urandom, use it as the source of random data
     random_fd = os.open( "/dev/urandom", os.O_RDONLY )
+
     def get_random_bytes( nbytes ):
         value = os.read( random_fd, nbytes )
         # Normally we should get as much as we need
@@ -37,27 +41,32 @@ class SecurityHelper( object ):
         self.id_secret = config['id_secret']
         self.id_cipher = Blowfish.new( self.id_secret )
 
-    def encode_id( self, obj_id ):
+        per_kind_id_secret_base = config.get( 'per_kind_id_secret_base', self.id_secret )
+        self.id_ciphers_for_kind = _cipher_cache( per_kind_id_secret_base )
+
+    def encode_id( self, obj_id, kind=None ):
+        id_cipher = self.__id_cipher( kind )
         # Convert to string
         s = str( obj_id )
         # Pad to a multiple of 8 with leading "!"
         s = ( "!" * ( 8 - len(s) % 8 ) ) + s
         # Encrypt
-        return self.id_cipher.encrypt( s ).encode( 'hex' )
+        return id_cipher.encrypt( s ).encode( 'hex' )
 
-    def encode_dict_ids( self, a_dict ):
+    def encode_dict_ids( self, a_dict, kind=None ):
         """
         Encode all ids in dictionary. Ids are identified by (a) an 'id' key or
         (b) a key that ends with '_id'
         """
         for key, val in a_dict.items():
             if key == 'id' or key.endswith('_id'):
-                a_dict[ key ] = self.encode_id( val )
+                a_dict[ key ] = self.encode_id( val, kind=kind )
 
         return a_dict
 
-    def decode_id( self, obj_id ):
-        return int( self.id_cipher.decrypt( obj_id.decode( 'hex' ) ).lstrip( "!" ) )
+    def decode_id( self, obj_id, kind=None ):
+        id_cipher = self.__id_cipher( kind )
+        return int( id_cipher.decrypt( obj_id.decode( 'hex' ) ).lstrip( "!" ) )
 
     def encode_guid( self, session_key ):
         # Session keys are strings
@@ -73,3 +82,19 @@ class SecurityHelper( object ):
     def get_new_guid( self ):
         # Generate a unique, high entropy 128 bit random number
         return get_random_bytes( 16 )
+
+    def __id_cipher( self, kind ):
+        if not kind:
+            id_cipher = self.id_cipher
+        else:
+            id_cipher = self.id_ciphers_for_kind[ kind ]
+        return id_cipher
+
+
+class _cipher_cache( collections.defaultdict ):
+
+    def __init__( self, secret_base ):
+        self.secret_base = secret_base
+
+    def __missing__( self, key ):
+        return Blowfish.new( self.secret_base + "__" + key )

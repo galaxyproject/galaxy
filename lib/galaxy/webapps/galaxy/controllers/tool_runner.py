@@ -50,14 +50,19 @@ class ToolRunner( BaseUIController ):
         return self.get_toolbox().get_tool_components( tool_id, tool_version, get_loaded_tools_by_lineage, set_selected )
 
     @web.expose
-    def index(self, trans, tool_id=None, from_noframe=None, **kwd):
+    def index( self, trans, tool_id=None, from_noframe=None, **kwd ):
         # No tool id passed, redirect to main page
         if tool_id is None:
             return trans.response.send_redirect( url_for( controller="root", action="welcome" ) )
+        # When the tool form is initially loaded, the received kwd will not include a 'refresh'
+        # entry (which only is included when another option is selected in the tool_version_select_field),
+        # so the default selected option should be the most recent version of the tool.  The following 
+        # check will mae sure this occurs.
+        refreshed_on_change = kwd.get( 'refresh', False )
         tool_version_select_field, tools, tool = self.__get_tool_components( tool_id,
                                                                              tool_version=None,
                                                                              get_loaded_tools_by_lineage=False,
-                                                                             set_selected=True )
+                                                                             set_selected=refreshed_on_change )
         # No tool matching the tool id, display an error (shouldn't happen)
         if not tool:
             log.error( "index called with tool id '%s' but no such tool exists", tool_id )
@@ -187,7 +192,12 @@ class ToolRunner( BaseUIController ):
         #This needs to be done recursively through grouping parameters
         def rerun_callback( input, value, prefixed_name, prefixed_label ):
             if isinstance( value, UnvalidatedValue ):
-                return str( value )
+                try:
+                    return input.to_html_value( value.value, trans.app )
+                except Exception, e:
+                    # Need to determine when (if ever) the to_html_value call could fail.
+                    log.debug( "Failed to use input.to_html_value to determine value of unvalidated parameter, defaulting to string: %s" % ( e ) )
+                    return str( value )
             if isinstance( input, DataToolParameter ):
                 if isinstance(value,list):
                     values = []
@@ -239,7 +249,7 @@ class ToolRunner( BaseUIController ):
         Redirects a user accessing a Data Source tool to its target action link.
         This method will subvert mix-mode content blocking in several browsers when
         accessing non-https data_source tools from an https galaxy server.
-        
+
         Tested as working on Safari 7.0 and FireFox 26
         Subverting did not work on Chrome 31
         """
@@ -255,13 +265,13 @@ class ToolRunner( BaseUIController ):
             trans.log_event( "Tool id '%s' does not exist" % tool_id )
             trans.response.status = 404
             return "Tool '%s' does not exist, kwd=%s " % ( tool_id, kwd )
-        
+
         if isinstance( tool, DataSourceTool ):
             link = url_for( tool.action, **tool.get_static_param_values( trans ) )
         else:
             link = url_for( controller='tool_runner', tool_id=tool.id )
         return trans.response.send_redirect( link )
-    
+
     @web.expose
     def redirect( self, trans, redirect_url=None, **kwd ):
         if not redirect_url:

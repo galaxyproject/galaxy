@@ -32,35 +32,14 @@ if( spaceghost.fixtureData.testUser ){
 }
 spaceghost.user.loginOrRegisterUser( email, password );
 
-var uploadFilename = '1.sam',
-    uploadFilepath = '../../test-data/' + uploadFilename,
-    upload = {};
-spaceghost.thenOpen( spaceghost.baseUrl ).tools.uploadFile( uploadFilepath, function( uploadInfo ){
-    upload = uploadInfo;
+spaceghost.thenOpen( spaceghost.baseUrl, function(){
+    this.api.tools.thenUpload( spaceghost.api.histories.show( 'current' ).id, {
+        filepath: this.options.scriptDir + '/../../test-data/1.sam'
+    });
 });
 
-function hasKeys( object, keysArray ){
-    if( !utils.isObject( object ) ){ return false; }
-    for( var i=0; i<keysArray.length; i += 1 ){
-        if( !object.hasOwnProperty( keysArray[i] ) ){
-            spaceghost.debug( 'object missing key: ' + keysArray[i] );
-            return false;
-        }
-    }
-    return true;
-}
-
-function countKeys( object ){
-    if( !utils.isObject( object ) ){ return 0; }
-    var count = 0;
-    for( var key in object ){
-        if( object.hasOwnProperty( key ) ){ count += 1; }
-    }
-    return count;
-}
-
 // =================================================================== TESTS
-var summaryKeys = [ 'id', 'name', 'type', 'url' ],
+var summaryKeys = [ 'id', 'name', 'history_id', 'state', 'deleted', 'purged', 'visible', 'url', 'type' ],
     detailKeys  = [
         // the following are always present regardless of datatype
         'id', 'name', 'api_type', 'model_class',
@@ -76,11 +55,9 @@ var summaryKeys = [ 'id', 'name', 'type', 'url' ],
         'metadata_comment_lines', 'metadata_data_lines'
     ];
 
-spaceghost.historypanel.waitForHdas().then( function(){
+// ------------------------------------------------------------------------------------------- logged in user
+spaceghost.then( function(){
     
-    var uploaded = this.historypanel.hdaElementInfoByTitle( uploadFilename );
-    this.info( 'found uploaded hda: ' + uploaded.attributes.id );
-    this.debug( 'uploaded hda: ' + this.jsonStr( uploaded ) );
     // ------------------------------------------------------------------------------------------- INDEX
     this.test.comment( 'index should return a list of summary data for each hda' );
     var histories = this.api.histories.index(),
@@ -92,18 +69,17 @@ spaceghost.historypanel.waitForHdas().then( function(){
     this.test.assert( hdaIndex.length >= 1, 'Has at least one hda' );
 
     var firstHda = hdaIndex[0];
-    this.test.assert( hasKeys( firstHda, summaryKeys ), 'Has the proper keys' );
+    this.test.assert( this.hasKeys( firstHda, summaryKeys ), 'Has the proper keys' );
 
     this.test.assert( this.api.isEncodedId( firstHda.id ), 'Id appears well-formed: ' + firstHda.id );
-    this.test.assert( uploaded.text.indexOf( firstHda.name ) !== -1, 'Title matches: ' + firstHda.name );
-    // not caring about type or url here
+    this.test.assert( firstHda.name === '1.sam', 'Title matches: ' + firstHda.name );
 
 
     // ------------------------------------------------------------------------------------------- SHOW
     this.test.comment( 'show should get an HDA details object' );
     var hdaShow = this.api.hdas.show( lastHistory.id, firstHda.id );
     //this.debug( this.jsonStr( hdaShow ) );
-    this.test.assert( hasKeys( hdaShow, detailKeys ), 'Has the proper keys' );
+    this.test.assert( this.hasKeys( hdaShow, detailKeys ), 'Has the proper keys' );
 
     //TODO: validate data in each hdaShow attribute...
 
@@ -117,13 +93,25 @@ spaceghost.historypanel.waitForHdas().then( function(){
     this.test.assert( hdaIndex.length >= 1, 'Has at least one hda' );
 
     firstHda = hdaIndex[0];
-    this.test.assert( hasKeys( firstHda, detailKeys ), 'Has the proper keys' );
+    this.test.assert( this.hasKeys( firstHda, detailKeys ), 'Has the proper keys' );
 
     //TODO??: validate data in firstHda attribute? we ASSUME it's from a common method as show...
 
 
     // ------------------------------------------------------------------------------------------- CREATE
     //TODO: create from_ld_id
+    this.test.comment( 'create should allow copying an accessible hda' );
+    hdaShow = this.api.hdas.show( lastHistory.id, firstHda.id );
+    var returned = this.api.hdas.create( lastHistory.id, {
+        source  : 'hda',
+        content : hdaShow.id
+    });
+    //this.debug( 'returned:' + this.jsonStr( returned ) );
+    this.test.assert( this.hasKeys( returned, detailKeys ), 'Has the proper keys' );
+    this.test.assert( typeof returned.id !== 'number' && isNaN( Number( returned.id ) ),
+        'id seems to be encoded: ' + returned.id );
+    this.test.assert( typeof returned.history_id !== 'number' && isNaN( Number( returned.history_id ) ),
+        'history_id seems to be encoded: ' + returned.history_id );
 
 
     // ------------------------------------------------------------------------------------------- UPDATE
@@ -133,29 +121,21 @@ spaceghost.historypanel.waitForHdas().then( function(){
     var returned = this.api.hdas.update( lastHistory.id, firstHda.id, {
         name : hdaShow.name
     });
-    this.test.assert( countKeys( returned ) === 0, "No changed returned: " + this.jsonStr( returned ) );
+    this.test.assert( this.countKeys( returned ) === 0, "No changed returned: " + this.jsonStr( returned ) );
 
     this.test.comment( 'updating using a nonsense key should NOT fail with an error' );
     returned = this.api.hdas.update( lastHistory.id, firstHda.id, {
         konamiCode : 'uuddlrlrba'
     });
-    this.test.assert( countKeys( returned ) === 0, "No changed returned: " + this.jsonStr( returned ) );
+    this.test.assert( this.countKeys( returned ) === 0, "No changed returned: " + this.jsonStr( returned ) );
 
     this.test.comment( 'updating by attempting to change type should cause an error' );
-    err = {};
-    try {
+    this.api.assertRaises( function(){
         returned = this.api.hdas.update( lastHistory.id, firstHda.id, {
             //name : false
             deleted : 'sure why not'
         });
-    } catch( error ){
-        err = error;
-        //this.debug( this.jsonStr( err ) );
-    }
-    this.test.assert( !!err.message, "Error occurred: " + err.message );
-    this.test.assert( err.status === 400, "Error status is 400: " + err.status );
-    //TODO??: other type checks?
-
+    }, 400, 'deleted must be a boolean', 'changing deleted type failed' );
 
     // ........................................................................................... name
     this.test.comment( 'update should allow changing the name' );
@@ -330,28 +310,73 @@ spaceghost.historypanel.waitForHdas().then( function(){
 
     // ------------------------------------------------------------------------------------------- ERRORS
     this.test.comment( 'create should error with "Please define the source" when the param "from_ld_id" is not used' );
-    var errored = false;
-    try {
-        // sending an empty object won't work
-        var created = this.api.hdas.create( lastHistory.id, { bler: 'bler' } );
+    this.api.assertRaises( function(){
+        this.api.hdas.create( lastHistory.id, { bler: 'bler' } );
+    }, 400, "must be either 'library' or 'hda'", 'create with no source failed' );
 
-    } catch( err ){
-        errored = true;
-        this.test.assert( err.message.indexOf( 'Please define the source' ) !== -1,
-            'Error has the proper message: ' + err.message );
-        this.test.assert( err.status === 400, 'Error has the proper status code: ' + err.status );
-    }
-    if( !errored ){
-        this.test.fail( 'create without "from_ld_id" did not cause error' );
-    }
+    this.test.comment( 'updating using a nonsense key should fail silently' );
+    returned = this.api.hdas.update( lastHistory.id, hdaShow.id, {
+        konamiCode : 'uuddlrlrba'
+    });
+    this.test.assert( returned.konamiCode === undefined, 'key was not set: ' + returned.konamiCode );
 
-    //var returned = this.api.hdas.update( lastHistory.id, hdaIndex[0].id, { deleted: true, blerp: 'blerp' });
-    //var returned = this.api.hdas.update( lastHistory.id, { deleted: true, blerp: 'blerp' });
-    //this.debug( 'returned:' + this.jsonStr( returned ) );
-    //this.debug( 'page:' + this.jsonStr( this.page ) );
+    spaceghost.test.comment( 'A bad id should throw an error when using show' );
+    this.api.assertRaises( function(){
+        this.api.hdas.show( lastHistory.id, '1234123412341234' );
+    }, 400, 'unable to decode', 'Bad Request with invalid id: show' );
+    spaceghost.test.comment( 'A bad id should throw an error when using update' );
+    this.api.assertRaises( function(){
+        this.api.hdas.update( lastHistory.id, '1234123412341234', {} );
+    }, 400, 'unable to decode', 'Bad Request with invalid id: update' );
+    spaceghost.test.comment( 'A bad id should throw an error when using delete' );
+    this.api.assertRaises( function(){
+        this.api.hdas.delete_( lastHistory.id, '1234123412341234' );
+    }, 400, 'unable to decode', 'Bad Request with invalid id: delete' );
+    spaceghost.test.comment( 'A bad id should throw an error when using undelete' );
+
+    this.test.comment( 'updating by attempting to change type should cause an error' );
+    [ 'name', 'annotation', 'genome_build', 'misc_info' ].forEach( function( key ){
+        var updatedAttrs = {};
+        updatedAttrs[ key ] = false;
+        spaceghost.api.assertRaises( function(){
+            returned = spaceghost.api.hdas.update( hdaShow.history_id, hdaShow.id, updatedAttrs );
+        }, 400, key + ' must be a string or unicode', 'type validation error' );
+    });
+    [ 'deleted', 'visible' ].forEach( function( key ){
+        var updatedAttrs = {};
+        updatedAttrs[ key ] = 'straaang';
+        spaceghost.api.assertRaises( function(){
+            returned = spaceghost.api.hdas.update( hdaShow.history_id, hdaShow.id, updatedAttrs );
+        }, 400, key + ' must be a boolean', 'type validation error' );
+    });
+    [ 'you\'re it', [ true ] ].forEach( function( badVal ){
+        spaceghost.api.assertRaises( function(){
+            returned = spaceghost.api.hdas.update( hdaShow.history_id, hdaShow.id, { tags: badVal });
+        }, 400, 'tags must be a list', 'type validation error' );
+    });
+
+    // ------------------------------------------------------------------------------------------- DELETE
+    this.test.comment( 'calling delete on an hda should mark it as deleted but not change the history size' );
+    lastHistory = this.api.histories.show( lastHistory.id );
+    var sizeBeforeDelete = lastHistory.nice_size;
+
+    returned = this.api.hdas.delete_( lastHistory.id, firstHda.id );
+    //this.debug( this.jsonStr( returned ) );
+
+    hdaShow = this.api.hdas.show( lastHistory.id, firstHda.id );
+    this.test.assert( hdaShow.deleted, 'hda is marked deleted' );
+    lastHistory = this.api.histories.show( lastHistory.id );
+    this.test.assert( lastHistory.nice_size === sizeBeforeDelete, 'history size has not changed' );
+
+    // by default, purging fails bc uni.ini:allow_user_dataset_purge=False
+    this.api.assertRaises( function(){
+        returned = this.api.hdas.delete_( lastHistory.id, firstHda.id, { purge : true });
+    }, 403, 'This instance does not allow user dataset purging', 'Purge failed' );
 /*
 */
 });
+//spaceghost.user.logout();
+
 
 // ===================================================================
 spaceghost.run( function(){

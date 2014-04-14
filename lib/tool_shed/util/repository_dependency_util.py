@@ -106,6 +106,8 @@ def create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_
     only those items contained in the received repo_info_dicts list will be processed.
     """
     log.debug( "Creating repository dependency objects..." )
+    # Handle secure and insecure protocol since it may change over time.
+    tool_shed_url = suc.handle_tool_shed_url_protocol( trans.app, tool_shed_url )
     # The following list will be maintained within this method to contain all created or updated tool shed repositories,
     # including repository dependencies that may not be installed.
     all_created_or_updated_tool_shed_repositories = []
@@ -293,8 +295,8 @@ def get_prior_installation_required_and_only_if_compiling_contained_td( trans, t
 
 def get_repository_dependencies_for_installed_tool_shed_repository( trans, repository ):
     """
-    Send a request to the appropriate tool shed to retrieve the dictionary of repository dependencies defined for the received repository which is
-    installed into Galaxy.  This method is called only from Galaxy.
+    Send a request to the appropriate tool shed to retrieve the dictionary of repository dependencies defined
+    for the received repository which is installed into Galaxy.  This method is called only from Galaxy.
     """
     tool_shed_url = suc.get_url_from_tool_shed( trans.app, repository.tool_shed )
     url = suc.url_join( tool_shed_url,
@@ -565,12 +567,13 @@ def handle_key_rd_dicts_for_repository( trans, current_repository_key, repositor
             key_rd_dicts_to_be_processed = remove_from_key_rd_dicts( key_rd_dict, key_rd_dicts_to_be_processed )
     else:
         # The repository is in a different tool shed, so build an url and send a request.
-        error_message = "Repository dependencies are currently supported only within the same tool shed.  Ignoring repository dependency definition "
+        error_message = "Repository dependencies are currently supported only within the same Tool Shed.  Ignoring repository dependency definition "
         error_message += "for tool shed %s, name %s, owner %s, changeset revision %s" % ( toolshed, name, owner, changeset_revision )
         log.debug( error_message )
     return toolshed, required_repository, required_repository_metadata, repository_key_rd_dicts, key_rd_dicts_to_be_processed, handled_key_rd_dicts
 
-def handle_next_repository_dependency( trans, key_rd_dicts_to_be_processed, all_repository_dependencies, handled_key_rd_dicts, circular_repository_dependencies ):
+def handle_next_repository_dependency( trans, key_rd_dicts_to_be_processed, all_repository_dependencies, handled_key_rd_dicts,
+                                       circular_repository_dependencies ):
     next_repository_key_rd_dict = key_rd_dicts_to_be_processed.pop( 0 )
     next_repository_key_rd_dicts = [ next_repository_key_rd_dict ]
     next_repository_key = next_repository_key_rd_dict.keys()[ 0 ]

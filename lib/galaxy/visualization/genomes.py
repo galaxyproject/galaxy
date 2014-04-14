@@ -210,7 +210,7 @@ class Genomes( object ):
             rval = self.genomes[ dbkey ]
         return rval
 
-    def get_dbkeys( self, trans, chrom_info=False ):
+    def get_dbkeys( self, trans, chrom_info=False, **kwd ):
         """ Returns all known dbkeys. If chrom_info is True, only dbkeys with
             chromosome lengths are returned. """
         dbkeys = []
@@ -218,9 +218,10 @@ class Genomes( object ):
         # Add user's custom keys to dbkeys.
         user_keys_dict = {}
         user = trans.get_user()
-        if 'dbkeys' in user.preferences:
-            user_keys_dict = from_json_string( user.preferences[ 'dbkeys' ] )
-        dbkeys.extend( [ (attributes[ 'name' ], key ) for key, attributes in user_keys_dict.items() ] )
+        if user:
+            if 'dbkeys' in user.preferences:
+                user_keys_dict = from_json_string( user.preferences[ 'dbkeys' ] )
+            dbkeys.extend( [ (attributes[ 'name' ], key ) for key, attributes in user_keys_dict.items() ] )
 
         # Add app keys to dbkeys.
 

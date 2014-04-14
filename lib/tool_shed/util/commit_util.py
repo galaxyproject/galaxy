@@ -6,8 +6,8 @@ import pkg_resources
 import shutil
 import struct
 import tempfile
-from galaxy import util
 from galaxy.datatypes import checkers
+from galaxy.util import asbool
 from galaxy.util import json
 from galaxy.util.odict import odict
 from galaxy.web import url_for
@@ -49,6 +49,9 @@ def check_archive( repository, archive ):
                 return False, message
         if member.name in [ 'hgrc' ]:
             message = "Uploaded archives cannot contain hgrc files."
+            return False, message
+        if repository.type == rt_util.REPOSITORY_SUITE_DEFINITION and member.name != suc.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME:
+            message = 'Repositories of type <b>Repsoitory suite definition</b> can contain only a single file named <b>repository_dependencies.xml</b>.'
             return False, message
         if repository.type == rt_util.TOOL_DEPENDENCY_DEFINITION and member.name != suc.TOOL_DEPENDENCY_DEFINITION_FILENAME:
             message = 'Repositories of type <b>Tool dependency definition</b> can contain only a single file named <b>tool_dependencies.xml</b>.'
@@ -135,8 +138,8 @@ def handle_bz2( repository, uploaded_file_name ):
 
 def handle_complex_repository_dependency_elem( trans, elem, sub_elem_index, sub_elem, sub_elem_altered, altered, unpopulate=False ):
     """
-    Populate or unpopulate the toolshed and changeset_revision attributes of a <repository> tag that defines a complex repository
-    dependency.
+    Populate or unpopulate the toolshed and changeset_revision attributes of a <repository> tag that defines
+    a complex repository dependency.
     """
     # The received sub_elem looks something like the following:
     # <repository name="package_eigen_2_0" owner="test" prior_installation_required="True" />
@@ -150,15 +153,16 @@ def handle_complex_repository_dependency_elem( trans, elem, sub_elem_index, sub_
             altered = True
     return altered, sub_elem_altered, elem, error_message
 
-def handle_directory_changes( trans, repository, full_path, filenames_in_archive, remove_repo_files_not_in_tar, new_repo_alert, commit_message,
-                              undesirable_dirs_removed, undesirable_files_removed ):
+def handle_directory_changes( trans, repository, full_path, filenames_in_archive, remove_repo_files_not_in_tar, new_repo_alert,
+                              commit_message, undesirable_dirs_removed, undesirable_files_removed ):
     repo_dir = repository.repo_path( trans.app )
     repo = hg.repository( suc.get_configured_ui(), repo_dir )
     content_alert_str = ''
     files_to_remove = []
     filenames_in_archive = [ os.path.join( full_path, name ) for name in filenames_in_archive ]
     if remove_repo_files_not_in_tar and not repository.is_new( trans.app ):
-        # We have a repository that is not new (it contains files), so discover those files that are in the repository, but not in the uploaded archive.
+        # We have a repository that is not new (it contains files), so discover those files that are in the
+        # repository, but not in the uploaded archive.
         for root, dirs, files in os.walk( full_path ):
             if root.find( '.hg' ) < 0 and root.find( 'hgrc' ) < 0:
                 for undesirable_dir in UNDESIRABLE_DIRS:
@@ -289,8 +293,14 @@ def handle_repository_dependency_elem( trans, elem, unpopulate=False ):
     revised = False
     toolshed = elem.get( 'toolshed' )
     changeset_revision = elem.get( 'changeset_revision' )
-    sub_elems = elem.findall( './/' )
-    if sub_elems:
+    # Over a short period of time a bug existed which caused the prior_installation_required attribute
+    # to be set to False and included in the <repository> tag when a repository was exported along with
+    # its dependencies.  The following will eliminate this problematic attribute upon import.
+    prior_installation_required = elem.get( 'prior_installation_required' )
+    if prior_installation_required is not None and not asbool( prior_installation_required ):
+        del elem.attrib[ 'prior_installation_required' ]
+    sub_elems = [ child_elem for child_elem in list( elem ) ]
+    if len( sub_elems ) > 0:
         # At this point, a <repository> tag will point only to a package.
         # <package name="xorg_macros" version="1.17.1" />
         # Coerce the list to an odict().
@@ -307,12 +317,15 @@ def handle_repository_dependency_elem( trans, elem, unpopulate=False ):
         # Set to None.
         sub_elements = None
     if unpopulate:
-        # We're exporting the repository, so eliminate all toolshed and changeset_revision attributes from the <repository> tag.
+        # We're exporting the repository, so eliminate all toolshed and changeset_revision attributes from the
+        # <repository> tag.
         if toolshed or changeset_revision:
             attributes = odict()
             attributes[ 'name' ] = name
             attributes[ 'owner' ] = owner
-            attributes[ 'prior_installation_required' ] = elem.get( 'prior_installation_required', 'False' )
+            prior_installation_required = elem.get( 'prior_installation_required' )
+            if asbool( prior_installation_required ):
+                attributes[ 'prior_installation_required' ] = 'True'
             elem = xml_util.create_element( 'repository', attributes=attributes, sub_elements=sub_elements )
             revised = True
         return revised, elem, error_message
@@ -401,9 +414,10 @@ def handle_tool_dependencies_definition( trans, tool_dependencies_config, unpopu
                         # <install version="1.0">
                         for actions_index, actions_elem in enumerate( package_elem ):
                             if actions_elem.tag == 'actions_group':
-                                # Inspect all entries in the <actions_group> tag set, skipping <actions> tag sets that define os and architecture
-                                # attributes.  We want to inspect only the last <actions> tag set contained within the <actions_group> tag set to
-                                # see if a complex repository dependency is defined.
+                                # Inspect all entries in the <actions_group> tag set, skipping <actions>
+                                # tag sets that define os and architecture attributes.  We want to inspect
+                                # only the last <actions> tag set contained within the <actions_group> tag
+                                # set to see if a complex repository dependency is defined.
                                 for actions_group_index, actions_group_elem in enumerate( actions_elem ):
                                     if actions_group_elem.tag == 'actions':
                                         # Skip all actions tags that include os or architecture attributes.
@@ -478,8 +492,8 @@ def handle_tool_dependencies_definition( trans, tool_dependencies_config, unpopu
 
 def repository_tag_is_valid( filename, line ):
     """
-    Checks changes made to <repository> tags in a dependency definition file being pushed to the tool shed from the command line to ensure that
-    all required attributes exist.
+    Checks changes made to <repository> tags in a dependency definition file being pushed to the
+    Tool Shed from the command line to ensure that all required attributes exist.
     """
     required_attributes = [ 'toolshed', 'name', 'owner', 'changeset_revision' ]
     defined_attributes = line.split()
@@ -490,15 +504,17 @@ def repository_tag_is_valid( filename, line ):
                 defined = True
                 break
         if not defined:
-            error_msg = 'The %s file contains a <repository> tag that is missing the required attribute %s.  ' % ( filename, required_attribute )
-            error_msg += 'Automatically populating dependency definition attributes occurs only when using the tool shed upload utility.  '
+            error_msg = 'The %s file contains a <repository> tag that is missing the required attribute %s.  ' % \
+                ( filename, required_attribute )
+            error_msg += 'Automatically populating dependency definition attributes occurs only when using '
+            error_msg += 'the Tool Shed upload utility.  '
             return False, error_msg
     return True, ''
 
 def repository_tags_are_valid( filename, change_list ):
     """
-    Make sure the any complex repository dependency definitions contain valid <repository> tags when pushing changes to the tool shed on the command
-    line.
+    Make sure the any complex repository dependency definitions contain valid <repository> tags when pushing
+    changes to the tool shed on the command line.
     """
     tag = '<repository'
     for change_dict in change_list:
@@ -519,8 +535,9 @@ def uncompress( repository, uploaded_file_name, uploaded_file_filename, isgzip=F
 
 def unpack_chunks( hg_unbundle10_obj ):
     """
-    This method provides a generator of parsed chunks of a "group" in a mercurial unbundle10 object which is created when a changeset that is pushed
-    to a tool shed repository using hg push from the command line is read using readbundle.
+    This method provides a generator of parsed chunks of a "group" in a mercurial unbundle10 object which
+    is created when a changeset that is pushed to a Tool Shed repository using hg push from the command line
+    is read using readbundle.
     """
     while True:
         length, = struct.unpack( '>l', readexactly( hg_unbundle10_obj, 4 ) )
@@ -538,8 +555,9 @@ def unpack_chunks( hg_unbundle10_obj ):
 
 def unpack_groups( hg_unbundle10_obj ):
     """
-    This method provides a generator of parsed groups from a mercurial unbundle10 object which is created when a changeset that is pushed
-    to a tool shed repository using hg push from the command line is read using readbundle.
+    This method provides a generator of parsed groups from a mercurial unbundle10 object which is
+    created when a changeset that is pushed to a Tool Shed repository using hg push from the command
+    line is read using readbundle.
     """
     # Process the changelog group.
     yield [ chunk for chunk in unpack_chunks( hg_unbundle10_obj ) ]
@@ -556,8 +574,8 @@ def unpack_groups( hg_unbundle10_obj ):
 
 def unpack_patches( hg_unbundle10_obj, remaining ):
     """
-    This method provides a generator of patches from the data field in a chunk. As there is no delimiter for this data field, a length argument is
-    required.
+    This method provides a generator of patches from the data field in a chunk. As there is no delimiter
+    for this data field, a length argument is required.
     """
     while remaining >= 12:
         start, end, blocklen = struct.unpack( '>lll', readexactly( hg_unbundle10_obj, 12 ) )

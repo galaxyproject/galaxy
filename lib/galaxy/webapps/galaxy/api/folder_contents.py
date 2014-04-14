@@ -95,7 +95,6 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
         time_created = ''
         # Go through every item in the folder and include its meta-data.
         for content_item in self.load_folder_contents( trans, folder ):
-#             rval = content_item.to_dict()
             return_item = {}
             encoded_id = trans.security.encode_id( content_item.id )
             time_updated = content_item.update_time.strftime( "%Y-%m-%d %I:%M %p" )
@@ -104,7 +103,6 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
             # For folder return also hierarchy values
             if content_item.api_type == 'folder':
                 encoded_id = 'F' + encoded_id
-#                 time_updated = content_item.update_time.strftime( "%Y-%m-%d %I:%M %p" )
                 return_item.update ( dict ( item_count = content_item.item_count ) )
 
             if content_item.api_type == 'file':

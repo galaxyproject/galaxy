@@ -37,9 +37,9 @@ def build_command( runner, job_wrapper, include_metadata=False, include_work_dir
 
 def __handle_version_command(commands_builder, job_wrapper):
     # Prepend version string
-    if job_wrapper.version_string_cmd:
-        version_command = "%s > %s 2>&1" % ( job_wrapper.version_string_cmd, job_wrapper.get_version_string_path() )
-        commands_builder.prepend_command(version_command)
+    write_version_cmd = job_wrapper.write_version_cmd
+    if write_version_cmd:
+        commands_builder.prepend_command(write_version_cmd)
 
 
 def __handle_task_splitting(commands_builder, job_wrapper):
@@ -79,6 +79,7 @@ def __handle_metadata(commands_builder, job_wrapper, runner, remote_command_para
     config_root = metadata_kwds.get( 'config_root', None )
     config_file = metadata_kwds.get( 'config_file', None )
     datatypes_config = metadata_kwds.get( 'datatypes_config', None )
+    compute_tmp_dir = metadata_kwds.get( 'compute_tmp_dir', None )
     metadata_command = job_wrapper.setup_external_metadata(
         exec_dir=exec_dir,
         tmp_dir=tmp_dir,
@@ -88,6 +89,7 @@ def __handle_metadata(commands_builder, job_wrapper, runner, remote_command_para
         config_root=config_root,
         config_file=config_file,
         datatypes_config=datatypes_config,
+        compute_tmp_dir=compute_tmp_dir,
         kwds={ 'overwrite' : False }
     ) or ''
     metadata_command = metadata_command.strip()

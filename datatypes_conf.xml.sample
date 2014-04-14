@@ -1,13 +1,13 @@
 <?xml version="1.0"?>
 <datatypes>
   <registration converters_path="lib/galaxy/datatypes/converters" display_path="display_applications">
-    <datatype extension="ab1" type="galaxy.datatypes.binary:Ab1" mimetype="application/octet-stream" display_in_upload="true"/>
-    <datatype extension="afg" type="galaxy.datatypes.assembly:Amos" display_in_upload="false"/>
+    <datatype extension="ab1" type="galaxy.datatypes.binary:Ab1" mimetype="application/octet-stream" display_in_upload="true" description="A binary sequence file in 'ab1' format with a '.ab1' file extension.  You must manually select this 'File Format' when uploading the file." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Ab1"/>
+    <datatype extension="afg" type="galaxy.datatypes.assembly:Amos" display_in_upload="false" />
     <datatype extension="asn1" type="galaxy.datatypes.data:GenericAsn1" mimetype="text/plain" display_in_upload="true" />
     <datatype extension="asn1-binary" type="galaxy.datatypes.binary:GenericAsn1Binary" mimetype="application/octet-stream" display_in_upload="true" />
-    <datatype extension="axt" type="galaxy.datatypes.sequence:Axt" display_in_upload="true"/>
+    <datatype extension="axt" type="galaxy.datatypes.sequence:Axt" display_in_upload="true" description="blastz pairwise alignment format.  Each alignment block in an axt file contains three lines: a summary line and 2 sequence lines.  Blocks are separated from one another by blank lines.  The summary line contains chromosomal position and size information about the alignment. It consists of 9 required fields." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Axt"/>
     <datatype extension="fli" type="galaxy.datatypes.tabular:FeatureLocationIndex" display_in_upload="false"/>
-    <datatype extension="bam" type="galaxy.datatypes.binary:Bam" mimetype="application/octet-stream" display_in_upload="true">
+    <datatype extension="bam" type="galaxy.datatypes.binary:Bam" mimetype="application/octet-stream" display_in_upload="true" description="A binary file compressed in the BGZF format with a '.bam' file extension." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#BAM">
       <converter file="bam_to_bai.xml" target_datatype="bai"/>
       <converter file="bam_to_bigwig_converter.xml" target_datatype="bigwig"/>
       <display file="ucsc/bam.xml" />
@@ -15,7 +15,7 @@
       <display file="igv/bam.xml" />
       <display file="igb/bam.xml" />
     </datatype>
-    <datatype extension="bed" type="galaxy.datatypes.interval:Bed" display_in_upload="true">
+    <datatype extension="bed" type="galaxy.datatypes.interval:Bed" display_in_upload="true" description="BED format provides a flexible way to define the data lines that are displayed in an annotation track. BED lines have three required columns and nine additional optional columns. The three required columns are chrom, chromStart and chromEnd." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Bed">
       <converter file="bed_to_gff_converter.xml" target_datatype="gff"/>
       <converter file="bed_to_bgzip_converter.xml" target_datatype="bgzip"/>
       <converter file="bed_to_tabix_converter.xml" target_datatype="tabix" depends_on="bgzip"/>
@@ -56,20 +56,20 @@
     <datatype extension="csfasta" type="galaxy.datatypes.sequence:csFasta" display_in_upload="true"/>
     <datatype extension="data" type="galaxy.datatypes.data:Data" mimetype="application/octet-stream" max_optional_metadata_filesize="1048576" />
     <datatype extension="data_manager_json" type="galaxy.datatypes.data:Text" mimetype="application/json" subclass="True" display_in_upload="False"/>
-    <datatype extension="fasta" type="galaxy.datatypes.sequence:Fasta" display_in_upload="true">
+    <datatype extension="fasta" type="galaxy.datatypes.sequence:Fasta" display_in_upload="true" description="A sequence in FASTA format consists of a single-line description, followed by lines of sequence data. The first character of the description line is a greater-than ('>') symbol in the first column. All lines should be shorter than 80 characters." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Fasta">
       <converter file="fasta_to_tabular_converter.xml" target_datatype="tabular"/>
       <converter file="fasta_to_bowtie_base_index_converter.xml" target_datatype="bowtie_base_index"/>
       <converter file="fasta_to_bowtie_color_index_converter.xml" target_datatype="bowtie_color_index"/>
       <converter file="fasta_to_2bit.xml" target_datatype="twobit"/>
       <converter file="fasta_to_len.xml" target_datatype="len"/>
     </datatype>
-    <datatype extension="fastq" type="galaxy.datatypes.sequence:Fastq" display_in_upload="true">
+    <datatype extension="fastq" type="galaxy.datatypes.sequence:Fastq" display_in_upload="true" description="FASTQ format is a text-based format for storing both a biological sequence (usually nucleotide sequence) and its corresponding quality scores." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Fastq">
         <converter file="fastq_to_fqtoc.xml" target_datatype="fqtoc"/>
     </datatype>
     <datatype extension="fastqsanger" type="galaxy.datatypes.sequence:FastqSanger" display_in_upload="true">
         <converter file="fastq_to_fqtoc.xml" target_datatype="fqtoc"/>
     </datatype>
-    <datatype extension="fastqsolexa" type="galaxy.datatypes.sequence:FastqSolexa" display_in_upload="true">
+    <datatype extension="fastqsolexa" type="galaxy.datatypes.sequence:FastqSolexa" display_in_upload="true" description="FastqSolexa is the Illumina (Solexa) variant of the Fastq format, which stores sequences and quality scores in a single file." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#FastqSolexa">
         <converter file="fastq_to_fqtoc.xml" target_datatype="fqtoc"/>
     </datatype>
     <datatype extension="fastqcssanger" type="galaxy.datatypes.sequence:FastqCSSanger" display_in_upload="true">
@@ -84,7 +84,7 @@
     <datatype extension="genetrack" type="galaxy.datatypes.tracks:GeneTrack">
       <!-- <display file="genetrack.xml" /> -->
     </datatype>
-    <datatype extension="gff" type="galaxy.datatypes.interval:Gff" display_in_upload="true">
+    <datatype extension="gff" type="galaxy.datatypes.interval:Gff" display_in_upload="true" description="GFF lines have nine required fields that must be tab-separated." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#GFF">
       <converter file="gff_to_bed_converter.xml" target_datatype="bed"/>
       <converter file="gff_to_interval_index_converter.xml" target_datatype="interval_index"/>
       <converter file="bed_gff_or_vcf_to_bigwig_converter.xml" target_datatype="bigwig"/>
@@ -92,7 +92,7 @@
       <display file="ensembl/ensembl_gff.xml" inherit="True"/>
       <!-- <display file="gbrowse/gbrowse_gff.xml" inherit="True" /> -->
     </datatype>
-    <datatype extension="gff3" type="galaxy.datatypes.interval:Gff3" display_in_upload="true"/>
+    <datatype extension="gff3" type="galaxy.datatypes.interval:Gff3" display_in_upload="true" description="The GFF3 format addresses the most common extensions to GFF, while preserving backward compatibility with previous formats." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#GFF3"/>
     <datatype extension="gif" type="galaxy.datatypes.images:Gif" mimetype="image/gif"/>
     <datatype extension="gmaj.zip" type="galaxy.datatypes.images:Gmaj" mimetype="application/zip"/>
     <datatype extension="gtf" type="galaxy.datatypes.interval:Gtf" display_in_upload="true">
@@ -102,7 +102,7 @@
     <datatype extension="toolshed.gz" type="galaxy.datatypes.binary:Binary" mimetype="multipart/x-gzip" subclass="True" />
     <datatype extension="h5" type="galaxy.datatypes.binary:Binary" mimetype="application/octet-stream" subclass="True" />
     <datatype extension="html" type="galaxy.datatypes.images:Html" mimetype="text/html"/>
-    <datatype extension="interval" type="galaxy.datatypes.interval:Interval" display_in_upload="true">
+    <datatype extension="interval" type="galaxy.datatypes.interval:Interval" display_in_upload="true" description="File must start with definition line in the following format (columns may be in any order)." >
       <converter file="interval_to_bed_converter.xml" target_datatype="bed"/>
       <converter file="interval_to_bedstrict_converter.xml" target_datatype="bedstrict"/>
       <converter file="interval_to_bed6_converter.xml" target_datatype="bed6"/>
@@ -139,8 +139,8 @@
     <datatype extension="eps" type="galaxy.datatypes.images:Eps" mimetype="image/eps"/>
     <datatype extension="rast" type="galaxy.datatypes.images:Rast" mimetype="image/rast"/>
     <datatype extension="laj" type="galaxy.datatypes.images:Laj"/>
-    <datatype extension="lav" type="galaxy.datatypes.sequence:Lav" display_in_upload="true"/>
-    <datatype extension="maf" type="galaxy.datatypes.sequence:Maf" display_in_upload="true">
+    <datatype extension="lav" type="galaxy.datatypes.sequence:Lav" display_in_upload="true" description="Lav is the primary output format for BLASTZ.  The first line of a .lav file begins with #:lav.." />
+    <datatype extension="maf" type="galaxy.datatypes.sequence:Maf" display_in_upload="true" description="TBA and multiz multiple alignment format.  The first line of a .maf file begins with ##maf. This word is followed by white-space-separated 'variable=value' pairs. There should be no white space surrounding the '='." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#MAF">
       <converter file="maf_to_fasta_converter.xml" target_datatype="fasta"/>
       <converter file="maf_to_interval_converter.xml" target_datatype="interval"/>
     </datatype>
@@ -168,14 +168,14 @@
     	<converter file="sam_to_bam.xml" target_datatype="bam"/>
     	<converter file="sam_to_bigwig_converter.xml" target_datatype="bigwig"/>
 	</datatype>
-    <datatype extension="scf" type="galaxy.datatypes.binary:Scf" mimetype="application/octet-stream" display_in_upload="true"/>
+    <datatype extension="scf" type="galaxy.datatypes.binary:Scf" mimetype="application/octet-stream" display_in_upload="true" description="A binary sequence file in 'scf' format with a '.scf' file extension.  You must manually select this 'File Format' when uploading the file." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Scf"/>
     <datatype extension="Sequences" type="galaxy.datatypes.assembly:Sequences" display_in_upload="false"/>
-    <datatype extension="sff" type="galaxy.datatypes.binary:Sff" mimetype="application/octet-stream" display_in_upload="true"/>
+    <datatype extension="sff" type="galaxy.datatypes.binary:Sff" mimetype="application/octet-stream" display_in_upload="true" description="A binary file in 'Standard Flowgram Format' with a '.sff' file extension." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Sff"/>
     <datatype extension="svg" type="galaxy.datatypes.images:Image" mimetype="image/svg+xml"/>
     <datatype extension="taxonomy" type="galaxy.datatypes.tabular:Taxonomy" display_in_upload="true"/>
-    <datatype extension="tabular" type="galaxy.datatypes.tabular:Tabular" display_in_upload="true"/>
+    <datatype extension="tabular" type="galaxy.datatypes.tabular:Tabular" display_in_upload="true" description="Any data in tab delimited format (tabular)." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Tabular_.28tab_delimited.29"/>
     <datatype extension="twobit" type="galaxy.datatypes.binary:TwoBit" mimetype="application/octet-stream" display_in_upload="true"/>
-    <datatype extension="txt" type="galaxy.datatypes.data:Text" display_in_upload="true"/>
+    <datatype extension="txt" type="galaxy.datatypes.data:Text" display_in_upload="true" description="Any text file." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Plain_text"/>
     <datatype extension="linecount" type="galaxy.datatypes.data:LineCount" display_in_upload="false"/>
     <datatype extension="memexml" type="galaxy.datatypes.xml:MEMEXml" mimetype="application/xml" display_in_upload="true"/>
     <datatype extension="cisml" type="galaxy.datatypes.xml:CisML" mimetype="application/xml" display_in_upload="true"/>
@@ -189,9 +189,9 @@
       <display file="igv/vcf.xml" />
       <display file="rviewer/vcf.xml" inherit="True"/>
     </datatype>
-    <datatype extension="bcf" type="galaxy.datatypes.binary:Binary" subclass="True" display_in_upload="True"/>
+    <datatype extension="bcf" type="galaxy.datatypes.binary:Bcf" mimetype="application/octet-stream" display_in_upload="True"/>
     <datatype extension="velvet" type="galaxy.datatypes.assembly:Velvet" display_in_upload="false"/>
-    <datatype extension="wig" type="galaxy.datatypes.interval:Wiggle" display_in_upload="true">
+    <datatype extension="wig" type="galaxy.datatypes.interval:Wiggle" display_in_upload="true" description="The wiggle format is line-oriented.  Wiggle data is preceded by a track definition line, which adds a number of options for controlling the default display of this track." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Wig">
       <converter file="wig_to_bigwig_converter.xml" target_datatype="bigwig"/>
       <converter file="wiggle_to_simple_converter.xml" target_datatype="interval"/>
       <!-- <display file="gbrowse/gbrowse_wig.xml" /> -->

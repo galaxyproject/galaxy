@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Utility functions used systemwide.
 
@@ -391,6 +392,28 @@ def sanitize_for_filename( text, default=None ):
     return out
 
 
+def ready_name_for_url( raw_name ):
+    """ General method to convert a string (i.e. object name) to a URL-ready
+    slug.
+
+    >>> ready_name_for_url( "My Cool Object" )
+    'My-Cool-Object'
+    >>> ready_name_for_url( "!My Cool Object!" )
+    'My-Cool-Object'
+    >>> ready_name_for_url( "Hello₩◎ґʟⅾ" )
+    'Hello'
+    """
+
+    # Replace whitespace with '-'
+    slug_base = re.sub( "\s+", "-", raw_name )
+    # Remove all non-alphanumeric characters.
+    slug_base = re.sub( "[^a-zA-Z0-9\-]", "", slug_base )
+    # Remove trailing '-'.
+    if slug_base.endswith('-'):
+        slug_base = slug_base[:-1]
+    return slug_base
+
+
 def in_directory( file, directory ):
     """
     Return true, if the common prefix of both is equal to directory
@@ -402,6 +425,59 @@ def in_directory( file, directory ):
     file = os.path.abspath( file )
 
     return os.path.commonprefix( [ file, directory ] ) == directory
+
+
+def merge_sorted_iterables( operator, *iterables ):
+    """
+
+    >>> operator = lambda x: x
+    >>> list( merge_sorted_iterables( operator, [1,2,3], [4,5] ) )
+    [1, 2, 3, 4, 5]
+    >>> list( merge_sorted_iterables( operator, [4, 5], [1,2,3] ) )
+    [1, 2, 3, 4, 5]
+    >>> list( merge_sorted_iterables( operator, [1, 4, 5], [2], [3] ) )
+    [1, 2, 3, 4, 5]
+    """
+    first_iterable = iterables[ 0 ]
+    if len( iterables ) == 1:
+        for el in first_iterable:
+            yield el
+    else:
+        for el in __merge_two_sorted_iterables(
+            operator,
+            iter( first_iterable ),
+            merge_sorted_iterables( operator, *iterables[ 1: ] )
+        ):
+            yield el
+
+
+def __merge_two_sorted_iterables( operator, iterable1, iterable2 ):
+    unset = object()
+    continue_merge = True
+    next_1 = unset
+    next_2 = unset
+    while continue_merge:
+        try:
+            if next_1 is unset:
+                next_1 = next( iterable1 )
+            if next_2 is unset:
+                next_2 = next( iterable2 )
+            if operator( next_2 ) < operator( next_1 ):
+                yield next_2
+                next_2 = unset
+            else:
+                yield next_1
+                next_1 = unset
+        except StopIteration:
+            continue_merge = False
+    if next_1 is not unset:
+        yield next_1
+    if next_2 is not unset:
+        yield next_2
+    for el in iterable1:
+        yield el
+    for el in iterable2:
+        yield el
 
 
 class Params( object ):

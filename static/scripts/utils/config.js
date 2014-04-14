@@ -1,9 +1,10 @@
-define(['libs/underscore', 'viz/trackster/util'], function(_, util_mod) {
+define(['libs/underscore', 'viz/trackster/util', 'utils/config'], function(_, util_mod, config_mod) {
 
 /**
  * A configuration setting. Currently key is used as id.
  */
 var ConfigSetting = Backbone.Model.extend({
+    
     initialize: function(options) {
         // Use key as id for now.
         var key = this.get('key');
@@ -15,30 +16,34 @@ var ConfigSetting = Backbone.Model.extend({
             this.set(_.extend({}, defaults, options));
         }
 
-        // If type color and no value, get random color.
-        if (this.get('type') === 'color' && !this.get('value')) {
-            this.set('value', util_mod.get_random_color());
-        }
+        if (this.get('value') === undefined) {
+            // Use default to set value.
+            this.set_value(this.get('default_value'));
 
-        // When value updated, cast is appropriately.
-        this.on('change:value', this.cast_value, this);
+            // If no default value for color config, set random color.
+            if (!this.get('value') && this.get('type') === 'color') {
+                // For color setting, set random color.
+                this.set('value', util_mod.get_random_color());
+            }
+        }
     },
 
     /**
-     * Cast value from string to appropriate type.
+     * Cast and set value. This should be instead of
+     *  setting.set('value', new_value)
      */
-    cast_value: function() {
-        var type = this.get('type'),
-            value = this.get('value');
+    set_value: function(value) {
+        var type = this.get('type');
 
         if (type === 'float') {
-            value = parseFloat( value );
-        } else if (type === 'int') {
-            value = parseInt( value, 10 );
+            value = parseFloat(value);
+        }
+        else if (type === 'int') {
+            value = parseInt(value, 10);
         }
         // TODO: handle casting from string to bool?
 
-        this.set('value');
+        this.set('value', value);
     }
 }, {
     // This is a master list of default settings for known settings.
@@ -91,22 +96,46 @@ var ConfigSettingCollection = Backbone.Collection.extend({
         }
 
         return undefined;
-    }
-}, {
-    /**
-     * Utility function that creates a ConfigSettingsCollection from a standard dictionary
-     * with configuration key-value pairs.
-     */
-    from_config_dict: function(config_dict) {
-        // Create a list of key-value dicts suitable for sending to a collection.
-        var settings_list = _.map(_.keys(config_dict), function(key) {
-            return {
-                key: key,
-                value: config_dict[key]
-            };
-        });
+    },
 
-        return new ConfigSettingCollection(settings_list);
+    /**
+     * Set value for a setting.
+     */
+    set_value: function(key, value) {
+        var s = this.get(key);
+        if (s) {
+            return s.set_value(value);
+        }
+
+        return undefined;
+     },
+
+     /**
+      * Set default value for a setting.
+      */
+     set_default_value: function(key, default_value) {
+        var s = this.get(key);
+        if (s) {
+            return s.set('default_value', default_value);
+        }
+
+        return undefined;
+     }
+},
+{
+    /**
+     * Utility function that creates a ConfigSettingsCollection from a set of models
+     * and a saved_values dictionary.
+     */
+    from_models_and_saved_values: function(models, saved_values) {
+        // If there are saved values, copy models and update with saved values.
+        if (saved_values) {
+            models = _.map(models, function(m) {
+                return _.extend({}, m, { value: saved_values[m.key] });
+            });
+        }
+        
+        return new ConfigSettingCollection(models);
     }
 });
 
@@ -120,101 +149,99 @@ var ConfigSettingCollectionView = Backbone.View.extend({
      * Renders form for editing configuration settings.
      */
     render: function() {
-        var track_config = this.model;
         var container = this.$el;
-        var param;
+        
+        this.collection.each(function(param, index) {
+            // Hidden params have no representation in the form
+            if (param.get('hidden')) { return; }
 
-        // Function to process parameters recursively
-        function handle_params( params, container ) {
-            for ( var index = 0; index < params.length; index++ ) {
-                param = params[index];
-                // Hidden params have no representation in the form
-                if ( param.hidden ) { continue; }
-                // Build row for param
-                var id = 'param_' + index;
-                var value = track_config.values[ param.key ];
-                var row = $("<div class='form-row' />").appendTo( container );
-                row.append( $('<label />').attr("for", id ).text( param.label + ":" ) );
-                // Draw parameter as checkbox
-                if ( type === 'bool' ) {
-                    row.append( $('<input type="checkbox" />').attr("id", id ).attr("name", id ).attr( 'checked', value ) );
-                // Draw parameter as textbox
-                } else if ( type === 'text' ) {
-                    row.append( $('<input type="text"/>').attr("id", id ).val(value).click( function() { $(this).select(); }));
-                // Draw paramter as select area
-                } else if ( type === 'select' ) {
-                    var select = $('<select />').attr("id", id);
-                    for ( var i = 0; i < param.options.length; i++ ) {
-                        $("<option/>").text( param.options[i].label ).attr( "value", param.options[i].value ).appendTo( select );
-                    }
-                    select.val( value );
-                    row.append( select );
-                // Draw parameter as color picker
-                } else if ( type === 'color' ) {
-                    var 
-                        container_div = $("<div/>").appendTo(row),
-                        input = $('<input />').attr("id", id ).attr("name", id ).val( value ).css("float", "left")                  
-                            .appendTo(container_div).click(function(e) {
-                            // Hide other pickers.
-                            $(".tooltip").removeClass( "in" );
-                            
-                            // Show input's color picker.
-                            var tip = $(this).siblings(".tooltip").addClass( "in" );
-                            tip.css( { 
-                                // left: $(this).position().left + ( $(input).width() / 2 ) - 60,
-                                // top: $(this).position().top + $(this.height) 
-                                left: $(this).position().left + $(this).width() + 5,
-                                top: $(this).position().top - ( $(tip).height() / 2 ) + ( $(this).height() / 2 )
-                                } ).show();
-                                
-                            // Click management: 
-                            
-                            // Keep showing tip if clicking in tip.
-                            tip.click(function(e) {
-                                e.stopPropagation();
-                            });
-                            
-                            // Hide tip if clicking outside of tip.
-                            $(document).bind( "click.color-picker", function() {
-                                tip.hide();
-                                $(document).unbind( "click.color-picker" );
-                            });
-                            
-                            // No propagation to avoid triggering document click (and tip hiding) above.
-                            e.stopPropagation();
-                        }),
-                        // Icon for setting a new random color; behavior set below.
-                        new_color_icon = $("<a href='javascript:void(0)'/>").addClass("icon-button arrow-circle").appendTo(container_div)
-                                         .attr("title", "Set new random color").tooltip(),
-                        // Color picker in tool tip style.
-                        tip = $( "<div class='tooltip right' style='position: absolute;' />" ).appendTo(container_div).hide(),
-                        // Inner div for padding purposes
-                        tip_inner = $("<div class='tooltip-inner' style='text-align: inherit'></div>").appendTo(tip),
-                        tip_arrow = $("<div class='tooltip-arrow'></div>").appendTo(tip),
-                        farb_obj = $.farbtastic(tip_inner, { width: 100, height: 100, callback: input, color: value });
-                    
-                    // Clear floating.
-                    container_div.append( $("<div/>").css("clear", "both"));
-                    
-                    // Use function to fix farb_obj value.
-                    (function(fixed_farb_obj) {
-                        new_color_icon.click(function() {
-                            fixed_farb_obj.setColor(util_mod.get_random_color());
-                        });  
-                    })(farb_obj);
-                      
-                } 
-                else {
-                    row.append( $('<input />').attr("id", id ).attr("name", id ).val( value ) ); 
-                }
-                // Help text
-                if ( param.help ) {
-                    row.append( $("<div class='help'/>").text( param.help ) );
-                }
+            // Build row for param.
+            var id = 'param_' + index,
+                type = param.get('type'),
+                value = param.get('value');
+            var row = $("<div class='form-row' />").appendTo(container);
+            row.append($('<label />').attr("for", id ).text(param.get('label') + ":" ));
+            // Draw parameter as checkbox
+            if ( type === 'bool' ) {
+                row.append( $('<input type="checkbox" />').attr("id", id ).attr("name", id ).attr( 'checked', value ) );
             }
-        }
-        // Handle top level parameters in order
-        handle_params( this.params, container );
+            // Draw parameter as textbox 
+            else if ( type === 'text' ) {
+                row.append( $('<input type="text"/>').attr("id", id ).val(value).click( function() { $(this).select(); }));
+            }
+            // Draw parameter as select area
+            else if ( type === 'select' ) {
+                var select = $('<select />').attr("id", id);
+                _.each(param.get('options'), function(option) {
+                    $("<option/>").text( option.label ).attr( "value", option.value ).appendTo( select );
+                });
+                select.val( value );
+                row.append( select );
+            
+            }
+            // Draw parameter as color picker 
+            else if ( type === 'color' ) {
+                var 
+                    container_div = $("<div/>").appendTo(row),
+                    input = $('<input />').attr("id", id ).attr("name", id ).val( value ).css("float", "left")                  
+                        .appendTo(container_div).click(function(e) {
+                        // Hide other pickers.
+                        $(".tooltip").removeClass( "in" );
+                        
+                        // Show input's color picker.
+                        var tip = $(this).siblings(".tooltip").addClass( "in" );
+                        tip.css( { 
+                            // left: $(this).position().left + ( $(input).width() / 2 ) - 60,
+                            // top: $(this).position().top + $(this.height) 
+                            left: $(this).position().left + $(this).width() + 5,
+                            top: $(this).position().top - ( $(tip).height() / 2 ) + ( $(this).height() / 2 )
+                            } ).show();
+                            
+                        // Click management: 
+                        
+                        // Keep showing tip if clicking in tip.
+                        tip.click(function(e) {
+                            e.stopPropagation();
+                        });
+                        
+                        // Hide tip if clicking outside of tip.
+                        $(document).bind( "click.color-picker", function() {
+                            tip.hide();
+                            $(document).unbind( "click.color-picker" );
+                        });
+                        
+                        // No propagation to avoid triggering document click (and tip hiding) above.
+                        e.stopPropagation();
+                    }),
+                    // Icon for setting a new random color; behavior set below.
+                    new_color_icon = $("<a href='javascript:void(0)'/>").addClass("icon-button arrow-circle").appendTo(container_div)
+                                     .attr("title", "Set new random color").tooltip(),
+                    // Color picker in tool tip style.
+                    tip = $( "<div class='tooltip right' style='position: absolute;' />" ).appendTo(container_div).hide(),
+                    // Inner div for padding purposes
+                    tip_inner = $("<div class='tooltip-inner' style='text-align: inherit'></div>").appendTo(tip),
+                    tip_arrow = $("<div class='tooltip-arrow'></div>").appendTo(tip),
+                    farb_obj = $.farbtastic(tip_inner, { width: 100, height: 100, callback: input, color: value });
+                
+                // Clear floating.
+                container_div.append( $("<div/>").css("clear", "both"));
+                
+                // Use function to fix farb_obj value.
+                (function(fixed_farb_obj) {
+                    new_color_icon.click(function() {
+                        fixed_farb_obj.setColor(util_mod.get_random_color());
+                    });  
+                })(farb_obj);
+                  
+            } 
+            else {
+                row.append( $('<input />').attr("id", id ).attr("name", id ).val( value ) ); 
+            }
+            // Help text
+            if ( param.help ) {
+                row.append( $("<div class='help'/>").text( param.help ) );
+            }
+        });
 
         return this;
     },
@@ -222,13 +249,14 @@ var ConfigSettingCollectionView = Backbone.View.extend({
     /**
      * Render view in modal.
      */
-    render_in_modal: function() {
+    render_in_modal: function(title) {
         // Set up handlers for cancel, ok button and for handling esc key.
-        var cancel_fn = function() { hide_modal(); $(window).unbind("keypress.check_enter_esc"); },
+        var self = this,
+            cancel_fn = function() { Galaxy.modal.hide(); $(window).unbind("keypress.check_enter_esc"); },
             ok_fn = function() {
-                this.update_from_form();
-                hide_modal(); 
-                $(window).unbind("keypress.check_enter_esc"); 
+                Galaxy.modal.hide();
+                $(window).unbind("keypress.check_enter_esc");
+                self.update_from_form();
             },
             check_enter_esc = function(e) {
                 if ((e.keyCode || e.which) === 27) { // Escape key
@@ -246,8 +274,8 @@ var ConfigSettingCollectionView = Backbone.View.extend({
             this.render();
         }
         Galaxy.modal.show({
-            title: "Configure",
-            body: drawable.config.build_form(),
+            title: title || "Configure",
+            body: this.$el,
             buttons: {
                 "Cancel": cancel_fn,
                 "OK": ok_fn
@@ -265,10 +293,10 @@ var ConfigSettingCollectionView = Backbone.View.extend({
                 // Set value from view.
                 var id = 'param_' + index;
                 var value = self.$el.find( '#' + id ).val();
-                if ( type === 'bool' ) {
-                    value = container.find( '#' + id ).is( ':checked' );
+                if ( setting.get('type') === 'bool' ) {
+                    value = self.$el.find( '#' + id ).is( ':checked' );
                 }
-                setting.set('value', value);
+                setting.set_value(value);
             }
         });
     }
@@ -276,6 +304,7 @@ var ConfigSettingCollectionView = Backbone.View.extend({
 });
 
 return {
+    ConfigSetting: ConfigSetting,
     ConfigSettingCollection: ConfigSettingCollection,
     ConfigSettingCollectionView: ConfigSettingCollectionView
 };

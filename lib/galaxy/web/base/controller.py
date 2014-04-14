@@ -13,6 +13,7 @@ from sqlalchemy import func, and_, select
 
 from paste.httpexceptions import HTTPBadRequest, HTTPInternalServerError
 from paste.httpexceptions import HTTPNotImplemented, HTTPRequestRangeNotSatisfiable
+from galaxy import exceptions
 from galaxy.exceptions import ItemAccessibilityException, ItemDeletionException, ItemOwnershipException
 from galaxy.exceptions import MessageException
 
@@ -41,6 +42,7 @@ from galaxy.tools.parameters import RuntimeValue, visit_input_values
 from galaxy.tools.parameters.basic import DataToolParameter
 from galaxy.util.json import to_json_string
 from galaxy.workflow.modules import ToolModule
+from galaxy.workflow.steps import attach_ordered_steps
 
 
 log = logging.getLogger( __name__ )
@@ -160,7 +162,7 @@ class BaseController( object ):
         if type( rval ) != dict:
             return rval
         for k, v in rval.items():
-            if (k == 'id' or k.endswith( '_id' )) and v is not None:
+            if (k == 'id' or k.endswith( '_id' )) and v is not None and k not in ['tool_id']:
                 try:
                     rval[k] = trans.security.encode_id( v )
                 except:
@@ -182,17 +184,22 @@ class BaseController( object ):
     # should probably be in sep. serializer class/object _used_ by controller
     def validate_and_sanitize_basestring( self, key, val ):
         if not isinstance( val, basestring ):
-            raise ValueError( '%s must be a string or unicode: %s' %( key, str( type( val ) ) ) )
+            raise exceptions.RequestParameterInvalidException( '%s must be a string or unicode: %s'
+                                                               %( key, str( type( val ) ) ) )
         return unicode( sanitize_html( val, 'utf-8', 'text/html' ), 'utf-8' )
 
     def validate_and_sanitize_basestring_list( self, key, val ):
-        if not isinstance( val, list ):
-            raise ValueError( '%s must be a list: %s' %( key, str( type( val ) ) ) )
-        return [ unicode( sanitize_html( t, 'utf-8', 'text/html' ), 'utf-8' ) for t in val ]
+        try:
+            assert isinstance( val, list )
+            return [ unicode( sanitize_html( t, 'utf-8', 'text/html' ), 'utf-8' ) for t in val ]
+        except ( AssertionError, TypeError ), err:
+            raise exceptions.RequestParameterInvalidException( '%s must be a list of strings: %s'
+                                                               %( key, str( type( val ) ) ) )
 
     def validate_boolean( self, key, val ):
         if not isinstance( val, bool ):
-            raise ValueError( '%s must be a boolean: %s' %( key, str( type( val ) ) ) )
+            raise exceptions.RequestParameterInvalidException( '%s must be a boolean: %s'
+                                                               %( key, str( type( val ) ) ) )
         return val
 
     #TODO:
@@ -357,7 +364,9 @@ class UsesHistoryMixin( SharableItemSecurityMixin ):
     """ Mixin for controllers that use History objects. """
 
     def get_history( self, trans, id, check_ownership=True, check_accessible=False, deleted=None ):
-        """Get a History from the database by id, verifying ownership."""
+        """
+        Get a History from the database by id, verifying ownership.
+        """
         history = self.get_object( trans, id, 'History',
             check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted )
         history = self.security_check( trans, history, check_ownership, check_accessible )
@@ -527,6 +536,10 @@ class UsesHistoryMixin( SharableItemSecurityMixin ):
         if not history_dict[ 'annotation' ]:
             history_dict[ 'annotation' ] = ''
         #TODO: item_slug url
+        if history_dict[ 'importable' ] and history_dict[ 'slug' ]:
+            #TODO: this should be in History (or a superclass of)
+            username_and_slug = ( '/' ).join(( 'u', history.user.username, 'h', history_dict[ 'slug' ] ))
+            history_dict[ 'username_and_slug' ] = username_and_slug
 
         hda_summaries = hda_dictionaries if hda_dictionaries else self.get_hda_summary_dicts( trans, history )
         #TODO remove the following in v2
@@ -541,25 +554,111 @@ class UsesHistoryMixin( SharableItemSecurityMixin ):
         """
         Changes history data using the given dictionary new_data.
         """
-        # precondition: access of the history has already been checked
+        #precondition: ownership of the history has already been checked
+        #precondition: user is not None (many of these attributes require a user to set properly)
+        user = trans.get_user()
 
+        # published histories should always be importable
+        if 'published' in new_data and new_data[ 'published' ] and not history.importable:
+            new_data[ 'importable' ] = True
         # send what we can down into the model
         changed = history.set_from_dict( new_data )
+
         # the rest (often involving the trans) - do here
-        if 'annotation' in new_data.keys() and trans.get_user():
-            history.add_item_annotation( trans.sa_session, trans.get_user(), history, new_data[ 'annotation' ] )
+        #TODO: the next two could be an aspect/mixin
+        #TODO: also need a way to check whether they've changed - assume they have for now
+        if 'annotation' in new_data:
+            history.add_item_annotation( trans.sa_session, user, history, new_data[ 'annotation' ] )
             changed[ 'annotation' ] = new_data[ 'annotation' ]
-        if 'tags' in new_data.keys() and trans.get_user():
-            self.set_tags_from_list( trans, history, new_data[ 'tags' ], user=trans.user )
-        # importable (ctrl.history.set_accessible_async)
-        # sharing/permissions?
-        # slugs?
-        # purged - duh duh duhhhhhhnnnnnnnnnn
+
+        if 'tags' in new_data:
+            self.set_tags_from_list( trans, history, new_data[ 'tags' ], user=user )
+            changed[ 'tags' ] = new_data[ 'tags' ]
+
+        #TODO: sharing with user/permissions?
 
         if changed.keys():
             trans.sa_session.flush()
 
+            # create a slug if none exists (setting importable to false should not remove the slug)
+            if 'importable' in changed and changed[ 'importable' ] and not history.slug:
+                self._create_history_slug( trans, history )
+
         return changed
+
+    def _create_history_slug( self, trans, history ):
+        #TODO: mixins need to die a quick, horrible death
+        #   (this is duplicate from SharableMixin which can't be added to UsesHistory without exposing various urls)
+        cur_slug = history.slug
+
+        # Setup slug base.
+        if cur_slug is None or cur_slug == "":
+            # Item can have either a name or a title.
+            item_name = history.name
+            slug_base = util.ready_name_for_url( item_name.lower() )
+        else:
+            slug_base = cur_slug
+
+        # Using slug base, find a slug that is not taken. If slug is taken,
+        # add integer to end.
+        new_slug = slug_base
+        count = 1
+        while ( trans.sa_session.query( trans.app.model.History )
+                    .filter_by( user=history.user, slug=new_slug, importable=True )
+                    .count() != 0 ):
+            # Slug taken; choose a new slug based on count. This approach can
+            # handle numerous items with the same name gracefully.
+            new_slug = '%s-%i' % ( slug_base, count )
+            count += 1
+
+        # Set slug and return.
+        trans.sa_session.add( history )
+        history.slug = new_slug
+        trans.sa_session.flush()
+        return history.slug == cur_slug
+
+
+class ExportsHistoryMixin:
+
+    def serve_ready_history_export( self, trans, jeha ):
+        assert jeha.ready
+        if jeha.compressed:
+            trans.response.set_content_type( 'application/x-gzip' )
+        else:
+            trans.response.set_content_type( 'application/x-tar' )
+        disposition = 'attachment; filename="%s"' % jeha.export_name
+        trans.response.headers["Content-Disposition"] = disposition
+        return open( trans.app.object_store.get_filename( jeha.dataset ) )
+
+    def queue_history_export( self, trans, history, gzip=True, include_hidden=False, include_deleted=False ):
+        # Convert options to booleans.
+        #
+        if isinstance( gzip, basestring ):
+            gzip = ( gzip in [ 'True', 'true', 'T', 't' ] )
+        if isinstance( include_hidden, basestring ):
+            include_hidden = ( include_hidden in [ 'True', 'true', 'T', 't' ] )
+        if isinstance( include_deleted, basestring ):
+            include_deleted = ( include_deleted in [ 'True', 'true', 'T', 't' ] )
+
+        # Run job to do export.
+        history_exp_tool = trans.app.toolbox.get_tool( '__EXPORT_HISTORY__' )
+        params = {
+            'history_to_export': history,
+            'compress': gzip,
+            'include_hidden': include_hidden,
+            'include_deleted': include_deleted
+        }
+
+        history_exp_tool.execute( trans, incoming=params, history=history, set_output_hid=True )
+
+
+class ImportsHistoryMixin:
+
+    def queue_history_import( self, trans, archive_type, archive_source ):
+        # Run job to do import.
+        history_imp_tool = trans.app.toolbox.get_tool( '__IMPORT_HISTORY__' )
+        incoming = { '__ARCHIVE_SOURCE__' : archive_source, '__ARCHIVE_TYPE__' : archive_type }
+        history_imp_tool.execute( trans, incoming=incoming )
 
 
 class UsesHistoryDatasetAssociationMixin:
@@ -642,9 +741,9 @@ class UsesHistoryDatasetAssociationMixin:
         else:
             #TODO: do we really need the history?
             history = self.get_history( trans, history_id,
-                check_ownership=True, check_accessible=True, deleted=False )
+                check_ownership=False, check_accessible=True, deleted=False )
             hda = self.get_history_dataset_association( trans, history, id,
-                check_ownership=True, check_accessible=True )
+                check_ownership=False, check_accessible=True )
         return hda
 
     def get_hda_list( self, trans, hda_ids, check_ownership=True, check_accessible=False, check_state=True ):
@@ -717,7 +816,9 @@ class UsesHistoryDatasetAssociationMixin:
             return self.get_inaccessible_hda_dict( trans, hda )
         hda_dict[ 'accessible' ] = True
 
+        #TODO: I'm unclear as to which access pattern is right
         hda_dict[ 'annotation' ] = hda.get_item_annotation_str( trans.sa_session, trans.user, hda )
+        #annotation = getattr( hda, 'annotation', hda.get_item_annotation_str( trans.sa_session, trans.user, hda ) )
 
         # ---- return here if deleted AND purged OR can't access
         purged = ( hda.purged or hda.dataset.purged )
@@ -1146,7 +1247,7 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin, UsesLibraryMix
         trans.sa_session.flush()
         return imported_visualization
 
-    def create_visualization( self, trans, type, title="Untitled Genome Vis", slug=None,
+    def create_visualization( self, trans, type, title="Untitled Visualization", slug=None,
                               dbkey=None, annotation=None, config={}, save=True ):
         """
         Create visualiation and first revision.
@@ -1517,10 +1618,18 @@ class UsesStoredWorkflowMixin( SharableItemSecurityMixin, UsesAnnotations ):
             workflow = trans.sa_session.query( trans.model.StoredWorkflow ).get( trans.security.decode_id( id ) )
         except TypeError:
             workflow = None
+
         if not workflow:
             error( "Workflow not found" )
         else:
-            return self.security_check( trans, workflow, check_ownership, check_accessible )
+            self.security_check( trans, workflow, check_ownership, check_accessible )
+
+            # Older workflows may be missing slugs, so set them here.
+            if not workflow.slug:
+                self.create_item_slug( trans.sa_session, workflow )
+                trans.sa_session.flush()
+
+        return workflow
 
     def get_stored_workflow_steps( self, trans, stored_workflow ):
         """ Restores states for a stored workflow's steps. """
@@ -1573,7 +1682,6 @@ class UsesStoredWorkflowMixin( SharableItemSecurityMixin, UsesAnnotations ):
         """
         Creates a workflow from a dict. Created workflow is stored in the database and returned.
         """
-        from galaxy.webapps.galaxy.controllers.workflow import attach_ordered_steps
 
         # Put parameters in workflow mode
         trans.workflow_building_mode = True
@@ -2611,13 +2719,7 @@ class SharableMixin:
                 item_name = item.name
             elif hasattr( item, 'title' ):
                 item_name = item.title
-            # Replace whitespace with '-'
-            slug_base = re.sub( "\s+", "-", item_name.lower() )
-            # Remove all non-alphanumeric characters.
-            slug_base = re.sub( "[^a-zA-Z0-9\-]", "", slug_base )
-            # Remove trailing '-'.
-            if slug_base.endswith('-'):
-                slug_base = slug_base[:-1]
+            slug_base = util.ready_name_for_url( item_name.lower() )
         else:
             slug_base = cur_slug
 

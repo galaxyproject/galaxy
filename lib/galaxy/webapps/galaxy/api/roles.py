@@ -4,11 +4,12 @@ API operations on Role objects.
 import logging
 from galaxy.web.base.controller import BaseAPIController, url_for
 from galaxy import web
-from elementtree.ElementTree import XML
 
 log = logging.getLogger( __name__ )
 
+
 class RoleAPIController( BaseAPIController ):
+
     @web.expose_api
     def index( self, trans, **kwd ):
         """
@@ -61,11 +62,11 @@ class RoleAPIController( BaseAPIController ):
         if not name or not description:
             trans.response.status = 400
             return "Enter a valid name and a description"
-        if trans.sa_session.query( trans.app.model.Role ).filter( trans.app.model.Role.table.c.name==name ).first():
+        if trans.sa_session.query( trans.app.model.Role ).filter( trans.app.model.Role.table.c.name == name ).first():
             trans.response.status = 400
             return "A role with that name already exists"
 
-        role_type = trans.app.model.Role.types.ADMIN #TODO: allow non-admins to create roles
+        role_type = trans.app.model.Role.types.ADMIN  # TODO: allow non-admins to create roles
 
         role = trans.app.model.Role( name=name, description=description, type=role_type )
         trans.sa_session.add( role )
@@ -73,12 +74,15 @@ class RoleAPIController( BaseAPIController ):
         users = [ trans.sa_session.query( trans.model.User ).get( trans.security.decode_id( i ) ) for i in user_ids ]
         group_ids = payload.get( 'group_ids', [] )
         groups = [ trans.sa_session.query( trans.model.Group ).get( trans.security.decode_id( i ) ) for i in group_ids ]
+
         # Create the UserRoleAssociations
         for user in users:
             trans.app.security_agent.associate_user_role( user, role )
+
         # Create the GroupRoleAssociations
         for group in groups:
             trans.app.security_agent.associate_group_role( group, role )
+
         trans.sa_session.flush()
         encoded_id = trans.security.encode_id( role.id )
         item = role.to_dict( view='element', value_mapper={ 'id': trans.security.encode_id } )

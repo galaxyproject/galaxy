@@ -1,6 +1,5 @@
 import logging
 import os
-import string
 import tempfile
 import urllib
 import zipfile
@@ -14,6 +13,7 @@ from galaxy.util.json import from_json_string
 from galaxy.web.base.controller import BaseUIController, ERROR, SUCCESS, url_for, UsesHistoryDatasetAssociationMixin, UsesHistoryMixin, UsesExtendedMetadataMixin
 from galaxy.web.framework.helpers import grids, iff, time_ago
 from galaxy.web.framework.helpers import to_unicode
+from galaxy.tools.errors import EmailErrorReporter
 
 eggs.require( "Paste" )
 import paste.httpexceptions
@@ -26,51 +26,6 @@ try:
     comptypes.append( 'zip' )
 except ImportError:
     pass
-
-
-error_report_template = """
-GALAXY TOOL ERROR REPORT
-------------------------
-
-This error report was sent from the Galaxy instance hosted on the server
-"${host}"
------------------------------------------------------------------------------
-This is in reference to dataset id ${dataset_id} from history id ${history_id}
------------------------------------------------------------------------------
-You should be able to view the history containing the related history item
-
-${hid}: ${history_item_name}
-
-by logging in as a Galaxy admin user to the Galaxy instance referenced above
-and pointing your browser to the following link.
-
-${history_view_link}
------------------------------------------------------------------------------
-The user '${email}' provided the following information:
-
-${message}
------------------------------------------------------------------------------
-job id: ${job_id}
-tool id: ${job_tool_id}
-job pid or drm id: ${job_runner_external_id}
------------------------------------------------------------------------------
-job command line:
-${job_command_line}
------------------------------------------------------------------------------
-job stderr:
-${job_stderr}
------------------------------------------------------------------------------
-job stdout:
-${job_stdout}
------------------------------------------------------------------------------
-job info:
-${job_info}
------------------------------------------------------------------------------
-job traceback:
-${job_traceback}
------------------------------------------------------------------------------
-(This is an automated message).
-"""
 
 class HistoryDatasetAssociationListGrid( grids.Grid ):
     # Custom columns for grid.
@@ -197,50 +152,15 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
         except:
             exit_code = "Invalid dataset ID or you are not allowed to access this dataset"
         return exit_code
+
     @web.expose
     def report_error( self, trans, id, email='', message="", **kwd ):
-        smtp_server = trans.app.config.smtp_server
-        if smtp_server is None:
-            return trans.show_error_message( "Mail is not configured for this galaxy instance" )
-        to_address = trans.app.config.error_email_to
-        if to_address is None:
-            return trans.show_error_message( "Error reporting has been disabled for this galaxy instance" )
-        # Get the dataset and associated job
-        hda = trans.sa_session.query( model.HistoryDatasetAssociation ).get( id )
-        job = hda.creating_job
-        # Get the name of the server hosting the Galaxy instance from which this report originated
-        host = trans.request.host
-        history_view_link = "%s/history/view?id=%s" % ( str( host ), trans.security.encode_id( hda.history_id ) )
-        # Build the email message
-        body = string.Template( error_report_template ) \
-            .safe_substitute( host=host,
-                              dataset_id=hda.dataset_id,
-                              history_id=hda.history_id,
-                              hid=hda.hid,
-                              history_item_name=hda.get_display_name(),
-                              history_view_link=history_view_link,
-                              job_id=job.id,
-                              job_tool_id=job.tool_id,
-                              job_runner_external_id=job.job_runner_external_id,
-                              job_command_line=job.command_line,
-                              job_stderr=util.unicodify( job.stderr ),
-                              job_stdout=util.unicodify( job.stdout ),
-                              job_info=util.unicodify( job.info ),
-                              job_traceback=util.unicodify( job.traceback ),
-                              email=email,
-                              message=util.unicodify( message ) )
-        frm = to_address
-        # Check email a bit
-        email = email.strip()
-        parts = email.split()
-        if len( parts ) == 1 and len( email ) > 0 and self._can_access_dataset( trans, hda ):
-            to = to_address + ", " + email
-        else:
-            to = to_address
-        subject = "Galaxy tool error report from %s" % email
-        # Send it
+        biostar_report = 'biostar' in str( kwd.get( 'submit_error_report') ).lower()
+        if biostar_report:
+            return trans.response.send_redirect( url_for( controller='biostar', action='biostar_tool_bug_report', hda=id, email=email, message=message ) )
         try:
-            util.send_mail( frm, to, subject, body, trans.app.config )
+            error_reporter = EmailErrorReporter( id, trans.app )
+            error_reporter.send_report( user=trans.user, email=email, message=message )
             return trans.show_ok_message( "Your error report has been sent" )
         except Exception, e:
             return trans.show_error_message( "An error occurred sending the report by email: %s" % str( e ) )

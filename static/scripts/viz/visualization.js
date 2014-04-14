@@ -86,14 +86,6 @@ var select_datasets = function(dataset_url, add_track_async_url, filters, succes
     });
 };
 
-
-/**
- * Helper to determine if object is jQuery deferred.
- */
-var is_deferred = function ( d ) {
-    return ('promise' in d);
-};
-
 // --------- Models ---------
 
 /**
@@ -380,11 +372,10 @@ var GenomeDataManager = Cache.extend({
      * Get data from dataset.
      */
     get_data: function(region, mode, resolution, extra_params) {
-                
         // Look for entry and return if it's a deferred or if data available is compatible with mode.
         var entry = this.get_elt(region);
         if ( entry && 
-             ( is_deferred(entry) || this.get('data_mode_compatible')(entry, mode) ) ) {
+             ( util_mod.is_deferred(entry) || this.get('data_mode_compatible')(entry, mode) ) ) {
             return entry;
         }
 
@@ -405,14 +396,14 @@ var GenomeDataManager = Cache.extend({
                 // This entry has data in the requested range. Return if data
                 // is compatible and can be subsetted.
                 entry = obj_cache[entry_region.toString()];
-                if ( is_deferred(entry) || 
+                if ( util_mod.is_deferred(entry) || 
                     ( this.get('data_mode_compatible')(entry, mode) && this.get('can_subset')(entry) ) ) {
                     this.move_key_to_end(entry_region, i);
 
                     // If there's data, subset it.
-                    if ( !is_deferred(entry) ) {
+                    if ( !util_mod.is_deferred(entry) ) {
                         var subset_entry = this.subset_entry(entry, region);
-                        this.set(region, subset_entry);
+                        this.set_data(region, subset_entry);
                         entry = subset_entry;
                     }
 
@@ -619,9 +610,8 @@ var GenomeDataManager = Cache.extend({
                 });
             },
             refseq: function(data, subregion) {
-                var seq_start = subregion.get('start') - entry.region.get('start'),
-                    seq_end = entry.data.length - ( entry.region.get('end') - subregion.get('end') );
-                return entry.data.slice(seq_start, seq_end);
+                var seq_start = subregion.get('start') - entry.region.get('start');
+                return entry.data.slice(seq_start, seq_start + subregion.length());
             }
         };
 
@@ -903,14 +893,12 @@ var BackboneTrack = Backbone.Model.extend(CustomToJSON).extend({
         this.set('dataset', new data_mod.Dataset(options.dataset));
 
         // -- Set up config settings. -- 
-
-        this.set('config', config_mod.ConfigSettingCollection.from_config_dict(options.prefs));
-
-        // Set up some minimal config.
-        this.get('config').add( [
+        var models =  [
             { key: 'name', value: this.get('dataset').get('name') },
             { key: 'color' }
-        ] );
+        ];
+
+        this.set('config', config_mod.ConfigSettingCollection.from_models_and_saved_values(models, options.prefs));
 
         // -- Set up data manager. --
         var preloaded_data = this.get('preloaded_data');
@@ -1002,7 +990,9 @@ var GenomeVisualization = Visualization.extend(CustomToJSON).extend({
     initialize: function(options) {
         // Replace drawables with tracks.
         this.set('drawables', new BackboneTrackCollection(options.tracks));
-        this.set('config', config_mod.ConfigSettingCollection.from_config_dict(options.prefs || {}));
+
+        var models = [];
+        this.set('config', config_mod.ConfigSettingCollection.from_models_and_saved_values(models, options.prefs));
         
         // Clear track and data definitions to avoid storing large objects.
         this.unset('tracks');

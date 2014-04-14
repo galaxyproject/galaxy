@@ -13,6 +13,8 @@ from galaxy.util.odict import odict
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import error, url_for
 from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesHistoryDatasetAssociationMixin, UsesHistoryMixin
+from galaxy.web.base.controller import ExportsHistoryMixin
+from galaxy.web.base.controller import ImportsHistoryMixin
 from galaxy.web.base.controller import ERROR, INFO, SUCCESS, WARNING
 from galaxy.web.framework.helpers import grids, iff, time_ago
 
@@ -104,6 +106,7 @@ class HistoryListGrid( grids.Grid ):
     preserve_state = False
     use_async = True
     use_paging = True
+    info_text = "Histories that have been deleted for more than a time period specified by the Galaxy administrator(s) may be permanently deleted."
 
     def get_current_item( self, trans, **kwargs ):
         return trans.get_history()
@@ -186,7 +189,8 @@ class HistoryAllPublishedGrid( grids.Grid ):
         return query.filter( self.model_class.published == True ).filter( self.model_class.slug != None ).filter( self.model_class.deleted == False )
 
 class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesItemRatings,
-                         UsesHistoryMixin, UsesHistoryDatasetAssociationMixin ):
+                         UsesHistoryMixin, UsesHistoryDatasetAssociationMixin, ExportsHistoryMixin,
+                         ImportsHistoryMixin ):
     @web.expose
     def index( self, trans ):
         return ""
@@ -669,26 +673,13 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                     # TODO: add support for importing via a file.
                     #.add_input( "file", "Archived History File", "archive_file", value=None, error=None )
                                 )
-        # Run job to do import.
-        history_imp_tool = trans.app.toolbox.get_tool( '__IMPORT_HISTORY__' )
-        incoming = { '__ARCHIVE_SOURCE__' : archive_source, '__ARCHIVE_TYPE__' : archive_type }
-        history_imp_tool.execute( trans, incoming=incoming )
+        self.queue_history_import( trans, archive_type=archive_type, archive_source=archive_source )
         return trans.show_message( "Importing history from '%s'. \
                                     This history will be visible when the import is complete" % archive_source )
 
     @web.expose
     def export_archive( self, trans, id=None, gzip=True, include_hidden=False, include_deleted=False ):
         """ Export a history to an archive. """
-        #
-        # Convert options to booleans.
-        #
-        if isinstance( gzip, basestring ):
-            gzip = ( gzip in [ 'True', 'true', 'T', 't' ] )
-        if isinstance( include_hidden, basestring ):
-            include_hidden = ( include_hidden in [ 'True', 'true', 'T', 't' ] )
-        if isinstance( include_deleted, basestring ):
-            include_deleted = ( include_deleted in [ 'True', 'true', 'T', 't' ] )
-
         #
         # Get history to export.
         #
@@ -705,35 +696,15 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         #
         # If history has already been exported and it has not changed since export, stream it.
         #
-        jeha = trans.sa_session.query( model.JobExportHistoryArchive ).filter_by( history=history ) \
-                .order_by( model.JobExportHistoryArchive.id.desc() ).first()
-        if jeha and ( jeha.job.state not in [ model.Job.states.ERROR, model.Job.states.DELETED ] ) \
-           and jeha.job.update_time > history.update_time:
-            if jeha.job.state == model.Job.states.OK:
-                # Stream archive.
-                valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-                hname = history.name
-                hname = ''.join(c in valid_chars and c or '_' for c in hname)[0:150]
-                hname = "Galaxy-History-%s.tar" % ( hname )
-                if jeha.compressed:
-                    hname += ".gz"
-                    trans.response.set_content_type( 'application/x-gzip' )
-                else:
-                    trans.response.set_content_type( 'application/x-tar' )
-                trans.response.headers["Content-Disposition"] = 'attachment; filename="%s"' % ( hname )
-                return open( trans.app.object_store.get_filename( jeha.dataset ) )
-            elif jeha.job.state in [ model.Job.states.RUNNING, model.Job.states.QUEUED, model.Job.states.WAITING ]:
+        jeha = history.latest_export
+        if jeha and jeha.up_to_date:
+            if jeha.ready:
+                return self.serve_ready_history_export( trans, jeha )
+            elif jeha.preparing:
                 return trans.show_message( "Still exporting history %(n)s; please check back soon. Link: <a href='%(s)s'>%(s)s</a>" \
                         % ( { 'n' : history.name, 's' : url_for( controller='history', action="export_archive", id=id, qualified=True ) } ) )
 
-        # Run job to do export.
-        history_exp_tool = trans.app.toolbox.get_tool( '__EXPORT_HISTORY__' )
-        params = {
-            'history_to_export' : history,
-            'compress' : gzip,
-            'include_hidden' : include_hidden,
-            'include_deleted' : include_deleted }
-        history_exp_tool.execute( trans, incoming = params, set_output_hid = True )
+        self.queue_history_export( trans, history, gzip=gzip, include_hidden=include_hidden, include_deleted=include_deleted )
         url = url_for( controller='history', action="export_archive", id=id, qualified=True )
         return trans.show_message( "Exporting History '%(n)s'. Use this link to download \
                                     the archive or import it to another Galaxy server: \
@@ -812,8 +783,8 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         else:
             referer_message = "<a href='%s'>go to Galaxy's start page</a>" % url_for( '/' )
 
-        # include activatable/deleted datasets when copying?
-        include_deleted = util.string_as_bool( kwd.get( 'include_deleted', False ) )
+        # include all datasets when copying?
+        all_datasets = util.string_as_bool( kwd.get( 'all_datasets', False ) )
 
         # Do import.
         if not id:
@@ -828,7 +799,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             #dan: I can import my own history.
             #if import_history.user_id == user.id:
             #    return trans.show_error_message( "You cannot import your own history.<br>You can %s." % referer_message, use_panels=True )
-            new_history = import_history.copy( target_user=user, activatable=include_deleted )
+            new_history = import_history.copy( target_user=user, all_datasets=all_datasets )
             new_history.name = "imported: " + new_history.name
             new_history.user_id = user.id
             galaxy_session = trans.get_galaxy_session()
@@ -872,35 +843,6 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             history. <br>You can <a href="%s">continue and import this history</a> or %s.
             """ % ( web.url_for(controller='history', action='imp',  id=id, confirm=True, referer=trans.request.referer ), referer_message ), use_panels=True )
 
-    # Replaced with view (below) but kept (available via manual URL editing) for now
-    @web.expose
-    def original_view( self, trans, id=None, show_deleted=False, use_panels=True ):
-        """View a history. If a history is importable, then it is viewable by any user."""
-        # Get history to view.
-        if not id:
-            return trans.show_error_message( "You must specify a history you want to view." )
-        history_to_view = self.get_history( trans, id, False)
-        # Integrity checks.
-        if not history_to_view:
-            return trans.show_error_message( "The specified history does not exist." )
-        # Admin users can view any history
-        if( ( history_to_view.user != trans.user )
-        and ( not trans.user_is_admin()  )
-        and ( not history_to_view.importable ) ):
-            error( "Either you are not allowed to view this history or the owner of this history has not made it accessible." )
-        # View history.
-        show_deleted = galaxy.util.string_as_bool( show_deleted )
-        datasets = self.get_history_datasets( trans, history_to_view, show_deleted=show_deleted )
-        try:
-            use_panels = galaxy.util.string_as_bool( use_panels )
-        except:
-            pass # already a bool
-        return trans.stream_template_mako( "history/original_view.mako",
-                                           history = history_to_view,
-                                           datasets = datasets,
-                                           show_deleted = show_deleted,
-                                           use_panels = use_panels )
-
     @web.expose
     def view( self, trans, id=None, show_deleted=False, show_hidden=False, use_panels=True ):
         """
@@ -916,16 +858,19 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
 
         history_dictionary = {}
         hda_dictionaries   = []
+        user_is_owner = False
         try:
-            history_to_view = self.get_history( trans, id, False )
+            history_to_view = self.get_history( trans, id, check_ownership=False, check_accessible=False )
             if not history_to_view:
                 return trans.show_error_message( "The specified history does not exist." )
+            if history_to_view.user == trans.user:
+                user_is_owner = True
 
-            # Admin users can view any history
             if( ( history_to_view.user != trans.user )
-            and ( not trans.user_is_admin()  )
-            and ( not history_to_view.importable ) ):
-                #TODO: no check for shared with
+            # Admin users can view any history
+            and ( not trans.user_is_admin() )
+            and ( not history_to_view.importable )
+            and ( trans.user not in history_to_view.users_shared_with_dot_users ) ):
                 return trans.show_error_message( "Either you are not allowed to view this history"
                                                + " or the owner of this history has not made it accessible." )
 
@@ -954,13 +899,14 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                                             + 'Please contact a Galaxy administrator if the problem persists.' )
 
         return trans.fill_template_mako( "history/view.mako",
-            history=history_dictionary, hdas=hda_dictionaries,
+            history=history_dictionary, hdas=hda_dictionaries, user_is_owner=user_is_owner,
             show_deleted=show_deleted, show_hidden=show_hidden, use_panels=use_panels )
 
     @web.expose
     def display_by_username_and_slug( self, trans, username, slug ):
-        """ Display history based on a username and slug. """
-
+        """
+        Display history based on a username and slug.
+        """
         # Get history.
         session = trans.sa_session
         user = session.query( model.User ).filter_by( username=username ).first()
@@ -970,9 +916,8 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         # Security check raises error if user cannot access history.
         self.security_check( trans, history, False, True)
 
-        # Get datasets.
+        # Get datasets and annotations
         datasets = self.get_history_datasets( trans, history )
-        # Get annotations.
         history.annotation = self.get_item_annotation_str( trans.sa_session, history.user, history )
         for dataset in datasets:
             dataset.annotation = self.get_item_annotation_str( trans.sa_session, history.user, dataset )
@@ -986,8 +931,21 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             else:
                 user_item_rating = 0
         ave_item_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, history )
-        return trans.stream_template_mako( "history/display.mako", item = history, item_data = datasets,
-                                            user_item_rating = user_item_rating, ave_item_rating=ave_item_rating, num_ratings=num_ratings )
+
+        # create ownership flag for template, dictify models
+        # note: adding original annotation since this is published - get_dict returns user-based annos
+        user_is_owner = trans.user == history.user
+        hda_dicts = []
+        for hda in datasets:
+            hda_dict = self.get_hda_dict( trans, hda )
+            hda_dict[ 'annotation' ] = hda.annotation
+            hda_dicts.append( hda_dict )
+        history_dict = self.get_history_dict( trans, history, hda_dictionaries=hda_dicts )
+        history_dict[ 'annotation' ] = history.annotation
+
+        return trans.stream_template_mako( "history/display.mako", item=history, item_data=datasets,
+            user_is_owner=user_is_owner, history_dict=history_dict, hda_dicts=hda_dicts,
+            user_item_rating = user_item_rating, ave_item_rating=ave_item_rating, num_ratings=num_ratings )
 
     @web.expose
     @web.require_login( "share Galaxy histories" )

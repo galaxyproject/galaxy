@@ -1,0 +1,141 @@
+<?xml version="1.0"?>
+<toolshed name="toolshed.g2.bx.psu.edu">
+    <repository owner="devteam" name="analyze_covariates" changeset_revision="738bc749f9a3" description="Analyze Covariates">
+        <tool id="gatk_analyze_covariates" version="0.0.5" file="gatk/analyze_covariates.xml" />
+    </repository>
+    <repository owner="devteam" name="basecoverage" changeset_revision="b8a9e718caa3" description="Base Coverage of all intervals">
+        <tool id="gops_basecoverage_1" version="1.0.0" file="new_operations/basecoverage.xml" />
+    </repository>
+    <repository owner="devteam" name="best_regression_subsets" changeset_revision="4f33ec73e445" description="Perform Best-subsets Regression">
+        <tool id="BestSubsetsRegression1" version="1.0.0" file="regVariation/best_regression_subsets.xml" />
+    </repository>
+    <repository owner="devteam" name="cluster" changeset_revision="520de69b107a" description="Cluster">
+        <tool id="gops_cluster_1" version="1.0.0" file="new_operations/cluster.xml" />
+    </repository>
+    <repository owner="devteam" name="complement" changeset_revision="2221cf5f59aa" description="Complement intervals of a dataset">
+        <tool id="gops_complement_1" version="1.0.0" file="new_operations/complement.xml" />
+    </repository>
+    <repository owner="devteam" name="compute_q_values" changeset_revision="63abfc350814" description="Compute q-values based on multiple simultaneous tests p-values">
+        <tool id="compute_q_values" version="1.0.1" file="regVariation/compute_q_values.xml" />
+    </repository>
+    <repository owner="devteam" name="concat" changeset_revision="855580142a12" description="Concatenate two datasets into one dataset">
+        <tool id="gops_concat_1" version="1.0.1" file="new_operations/concat.xml" />
+    </repository>
+    <repository owner="devteam" name="count_covariates" changeset_revision="14e304b70425" description="Count Covariates on BAM files">
+        <tool id="gatk_count_covariates" version="0.0.5" file="gatk/count_covariates.xml" />
+    </repository>
+    <repository owner="devteam" name="coverage" changeset_revision="16b62a897aac" description="Coverage of a set of intervals on second set of intervals">
+        <tool id="gops_coverage_1" version="1.0.0" file="new_operations/coverage.xml" />
+    </repository>
+    <repository owner="devteam" name="depth_of_coverage" changeset_revision="c3f08370fc82" description="Depth of Coverage on BAM files">
+        <tool id="gatk_depth_of_coverage" version="0.0.2" file="gatk/depth_of_coverage.xml" />
+    </repository>
+    <repository owner="devteam" name="featurecounter" changeset_revision="ac6218e2b686" description="Feature coverage">
+        <tool id="featureCoverage1" version="2.0.0" file="regVariation/featureCounter.xml" />
+    </repository>
+    <repository owner="devteam" name="flanking_features" changeset_revision="90100b587723" description="Fetch closest non-overlapping feature for every interval">
+        <tool id="flanking_features_1" version="4.0.1" file="new_operations/flanking_features.xml" />
+    </repository>
+    <repository owner="devteam" name="get_flanks" changeset_revision="4b14d0e3a837" description="Get flanks - returns flanking region/s for every gene">
+        <tool id="get_flanks1" version="1.0.0" file="new_operations/get_flanks.xml" />
+    </repository>
+    <repository owner="devteam" name="getindelrates_3way" changeset_revision="d427e5acb9ee" description="Estimate Indel Rates for 3-way alignments">
+        <tool id="indelRates_3way" version="1.0.0" file="regVariation/getIndelRates_3way.xml" />
+    </repository>
+    <repository owner="devteam" name="getindels_2way" changeset_revision="f1dc6f5fce6e" description="Fetch Indels from pairwise alignments">
+        <tool id="getIndels_2way" version="1.0.0" file="regVariation/getIndels_2way.xml" />
+    </repository>
+    <repository owner="devteam" name="indel_realigner" changeset_revision="bb0beda6cf83" description="Indel Realigner - perform local realignment">
+        <tool id="gatk_indel_realigner" version="0.0.6" file="gatk/indel_realigner.xml" />
+    </repository>
+    <repository owner="devteam" name="intersect" changeset_revision="77641d5731c8" description="Intersect the intervals of two datasets">
+        <tool id="gops_intersect_1" version="1.0.0" file="new_operations/intersect.xml" />
+    </repository>
+    <repository owner="devteam" name="join" changeset_revision="de21bdbb8d28" description="Join the intervals of two datasets side-by-side">
+        <tool id="gops_join_1" version="1.0.0" file="new_operations/join.xml" />
+    </repository>
+    <repository owner="devteam" name="linear_regression" changeset_revision="cf431604ec3e" description="Perform Linear Regression">
+        <tool id="LinearRegression1" version="1.0.1" file="regVariation/linear_regression.xml" />
+    </repository>
+    <repository owner="devteam" name="logistic_regression_vif" changeset_revision="bd196d7c1ca9" description="Perform Logistic Regression with vif">
+        <tool id="LogisticRegression" version="1.0.1" file="regVariation/logistic_regression_vif.xml" />
+    </repository>
+    <repository owner="devteam" name="maf_cpg_filter" changeset_revision="7f2a12cb047d" description="Mask CpG/non-CpG sites from MAF file">
+        <tool id="cpgFilter" version="1.0.0" file="regVariation/maf_cpg_filter.xml" />
+    </repository>
+    <repository owner="devteam" name="merge" changeset_revision="1bc76ceffa7f" description="Merge the overlapping intervals of a dataset">
+        <tool id="gops_merge_1" version="1.0.0" file="new_operations/merge.xml" />
+    </repository>
+    <repository owner="devteam" name="microsats_alignment_level" changeset_revision="7852385470f3" description="Extract Orthologous Microsatellites from pair-wise alignments">
+        <tool id="microsats_align1" version="1.0.0" file="regVariation/microsats_alignment_level.xml" />
+    </repository>
+    <repository owner="devteam" name="microsats_mutability" changeset_revision="4aa1ee5d8510" description="Estimate microsatellite mutability by specified attributes">
+        <tool id="microsats_mutability1" version="1.1.0" file="regVariation/microsats_mutability.xml" />
+    </repository>
+    <repository owner="devteam" name="partialr_square" changeset_revision="88ef41de020d" description="Compute partial R square">
+        <tool id="partialRsq" version="1.0.0" file="regVariation/partialR_square.xml" />
+    </repository>
+    <repository owner="devteam" name="print_reads" changeset_revision="e768f4851646" description="Print Reads from BAM files">
+        <tool id="gatk_print_reads" version="0.0.1" file="gatk/print_reads.xml" />
+    </repository>
+    <repository owner="devteam" name="quality_filter" changeset_revision="8d65bbc52dfe" description="Filter nucleotides based on quality scores">
+        <tool id="qualityFilter" version="1.0.1" file="regVariation/quality_filter.xml" />
+    </repository>
+    <repository owner="devteam" name="rcve" changeset_revision="7740956d197b" description="Compute RCVE">
+        <tool id="rcve1" version="1.0.0" file="regVariation/rcve.xml" />
+    </repository>
+    <repository owner="devteam" name="realigner_target_creator" changeset_revision="5b8eaae854da" description="Realigner Target Creator for use in local realignment">
+        <tool id="gatk_realigner_target_creator" version="0.0.4" file="gatk/realigner_target_creator.xml" />
+    </repository>
+    <repository owner="devteam" name="substitution_rates" changeset_revision="d1b35bcdaacc" description="Estimate substitution rates for non-coding regions">
+        <tool id="subRate1" version="1.0.0" file="regVariation/substitution_rates.xml" />
+    </repository>
+    <repository owner="devteam" name="substitutions" changeset_revision="c54f5d0bbb58" description="Fetch substitutions from pairwise alignments">
+        <tool id="substitutions1" version="1.0.0" file="regVariation/substitutions.xml" />
+    </repository>
+    <repository owner="devteam" name="subtract" changeset_revision="c19a2a29c561" description="Subtract the intervals of two datasets">
+        <tool id="gops_subtract_1" version="1.0.0" file="new_operations/subtract.xml" />
+    </repository>
+    <repository owner="devteam" name="subtract_query" changeset_revision="5f6ebef89722" description="Subtract Whole Dataset from another dataset">
+        <tool id="subtract_query1" version="0.1" file="new_operations/subtract_query.xml" />
+    </repository>
+    <repository owner="devteam" name="table_recalibration" changeset_revision="30e1dd77e99c" description="Table Recalibration on BAM files">
+        <tool id="gatk_table_recalibration" version="0.0.5" file="gatk/table_recalibration.xml" />
+    </repository>
+    <repository owner="devteam" name="tables_arithmetic_operations" changeset_revision="82fa5062d611" description="Arithmetic Operations on tables">
+        <tool id="tables_arithmetic_operations" version="1.0.0" file="new_operations/tables_arithmetic_operations.xml" />
+    </repository>
+    <repository owner="devteam" name="unified_genotyper" changeset_revision="66dd4d4c1743" description="Unified Genotyper SNP and indel caller">
+        <tool id="gatk_unified_genotyper" version="0.0.6" file="gatk/unified_genotyper.xml" />
+    </repository>
+    <repository owner="devteam" name="variant_annotator" changeset_revision="ae9d0a543e9b" description="Variant Annotator">
+        <tool id="gatk_variant_annotator" version="0.0.5" file="gatk/variant_annotator.xml" />
+    </repository>
+    <repository owner="devteam" name="variant_apply_recalibration" changeset_revision="350a4d0d1678" description="Apply Variant Recalibration">
+        <tool id="gatk_variant_apply_recalibration" version="0.0.4" file="gatk/variant_apply_recalibration.xml" />
+    </repository>
+    <repository owner="devteam" name="variant_combine" changeset_revision="1a6e16391727" description="Combine Variants">
+        <tool id="gatk_variant_combine" version="0.0.4" file="gatk/variant_combine.xml" />
+    </repository>
+    <repository owner="devteam" name="variant_eval" changeset_revision="fbca1c0956d2" description="Eval Variants">
+        <tool id="gatk_variant_eval" version="0.0.8" file="gatk/variant_eval.xml" />
+    </repository>
+    <repository owner="devteam" name="variant_filtration" changeset_revision="da6e2503c62d" description="Variant Filtration on VCF files">
+        <tool id="gatk_variant_filtration" version="0.0.5" file="gatk/variant_filtration.xml" />
+    </repository>
+    <repository owner="devteam" name="variant_recalibrator" changeset_revision="cb7cf57397a7" description="Variant Recalibrator">
+        <tool id="gatk_variant_recalibrator" version="0.0.4" file="gatk/variant_recalibrator.xml" />
+    </repository>
+    <repository owner="devteam" name="variant_select" changeset_revision="135e8721ffc5" description="Select Variants from VCF files">
+        <tool id="gatk_variant_select" version="0.0.2" file="gatk/variant_select.xml" />
+    </repository>
+    <repository owner="devteam" name="variants_validate" changeset_revision="7e1ecaa64370" description="Validate Variants">
+        <tool id="gatk_validate_variants" version="0.0.4" file="gatk/variants_validate.xml" />
+    </repository>
+    <repository owner="devteam" name="weightedaverage" changeset_revision="90611e86a998" description="Assign weighted-average of the values of features overlapping an interval">
+        <tool id="wtavg" version="1.0.0" file="regVariation/WeightedAverage.xml" />
+    </repository>
+    <repository owner="devteam" name="windowsplitter" changeset_revision="75abda2290cc" description="Make windows">
+        <tool id="winSplitter" version="1.0.0" file="regVariation/windowSplitter.xml" />
+    </repository>
+</toolshed>

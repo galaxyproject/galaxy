@@ -95,7 +95,10 @@ class TwillTestCase( unittest.TestCase ):
                 diff = list( difflib.unified_diff( local_file, history_data, "local_file", "history_data" ) )
                 diff_lines = get_lines_diff( diff )
                 if diff_lines > allowed_diff_count:
-                    diff_slice = diff[0:40]
+                    if len(diff) < 60:
+                        diff_slice = diff[0:40]
+                    else:
+                        diff_slice = diff[:25] + ["********\n", "*SNIP *\n", "********\n"] + diff[-25:]
                     #FIXME: This pdf stuff is rather special cased and has not been updated to consider lines_diff
                     #due to unknown desired behavior when used in conjunction with a non-zero lines_diff
                     #PDF forgiveness can probably be handled better by not special casing by __extension__ here
@@ -897,7 +900,8 @@ class TwillTestCase( unittest.TestCase ):
                 errmsg += str( err )
                 raise AssertionError( errmsg )
             finally:
-                os.remove( temp_name )
+                if 'GALAXY_TEST_NO_CLEANUP' not in os.environ:
+                    os.remove( temp_name )
 
     def __default_dataset_fetcher( self ):
         def fetcher( hda_id, filename=None ):
@@ -971,7 +975,8 @@ class TwillTestCase( unittest.TestCase ):
             errmsg += str( err )
             raise AssertionError( errmsg )
         finally:
-            os.remove( temp_name )
+            if 'GALAXY_TEST_NO_CLEANUP' not in os.environ:
+                os.remove( temp_name )
 
     def is_zipped( self, filename ):
         if not zipfile.is_zipfile( filename ):

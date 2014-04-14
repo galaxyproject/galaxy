@@ -11,6 +11,7 @@
 <%inherit file="${inherit( context )}"/>
 <%namespace file="/tagging_common.mako" import="render_individual_tagging_element, render_community_tagging_element" />
 <%namespace file="/display_common.mako" import="*" />
+<%namespace file="webapps/galaxy/history/history_panel.mako" import="history_panel_javascripts" />
 
 ##
 ## Functions used by base.mako and base_panels.mako to display content.
@@ -34,8 +35,9 @@
     ${parent.javascripts()}
     ${h.js( "libs/jquery/jstorage", "libs/jquery/jquery.autocomplete", "libs/jquery/jquery.rating", 
             "galaxy.autocom_tagging" )}
-
-    ${h.js( "galaxy.panels", "libs/jquery/jstorage", "libs/jquery/jquery.event.drag", "libs/jquery/jquery.event.hover","libs/jquery/jquery.mousewheel", "libs/jquery/jquery-ui", "libs/require", "libs/farbtastic" )}
+    ${history_panel_javascripts()}
+    ${h.js( "galaxy.panels", "libs/jquery/jstorage", "libs/jquery/jquery.event.drag", "libs/jquery/jquery.event.hover",
+            "libs/jquery/jquery.mousewheel", "libs/jquery/jquery-ui", "libs/require", "libs/farbtastic" )}
 
     <script type="text/javascript">
         
@@ -85,7 +87,7 @@
             });
             
             // Init history boxes.
-            init_history_items( $("div.historyItemWrapper"), false, "nochanges" );
+            //init_history_items( $("div.historyItemWrapper"), false, "nochanges" );
             
             // Init user item rating.
             $('.user_rating_star').rating({
@@ -115,7 +117,7 @@
 <%def name="stylesheets()">
     ${parent.stylesheets()}
     ${h.css( "autocomplete_tagging", "embed_item", "jquery.rating" )}
-    ${h.css( "history", "autocomplete_tagging", "trackster", "library", 
+    ${h.css( "autocomplete_tagging", "trackster", "library",
              "jquery-ui/smoothness/jquery-ui" )}
     
     <style type="text/css">

@@ -35,6 +35,7 @@ module.exports = function(grunt) {
         uglify: {
             // uglify the concat single file directly into the static dir
             options: {
+                // uncomment these to allow better source mapping during development
                 //mangle      : false,
                 //beautify    : true
             },
