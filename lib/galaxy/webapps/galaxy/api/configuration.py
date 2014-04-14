@@ -3,7 +3,7 @@ API operations allowing clients to determine Galaxy instance's capabilities
 and configuration settings.
 """
 
-from galaxy import web
+from galaxy.web import _future_expose_api as expose_api
 from galaxy.web.base.controller import BaseAPIController
 
 import logging
@@ -30,7 +30,7 @@ class ConfigurationController( BaseAPIController ):
         'allow_user_deletion',
     ]
 
-    @web.expose_api
+    @expose_api
     def index( self, trans, **kwd ):
         """
         GET /api/configuration
