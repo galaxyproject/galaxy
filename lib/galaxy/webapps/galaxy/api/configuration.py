@@ -38,23 +38,11 @@ class ConfigurationController( BaseAPIController ):
 
         Note: a more complete list is returned if the user is an admin.
         """
-        try:
-            config = trans.app.config
-            options = self._get_options( config, self.EXPOSED_USER_OPTIONS )
-            if trans.user_is_admin():
-                options.update( self._get_options( config, self.EXPOSED_ADMIN_OPTIONS ) )
-            return options
+        return self.get_config_dict( trans.app.config, is_admin=trans.user_is_admin() )
 
-        except Exception, exception:
-            log.error( 'could not get configuration: %s', str( exception ), exc_info=True )
-            trans.response.status = 500
-            return { 'error': str( exception ) }
-
-    def _get_options( self, config, keys ):
-        """
-        Build and return a subset of the config dictionary restricted to the
-        list `keys`.
-
-        The attribute value will default to None if not available.
-        """
-        return dict( [ (key, getattr( config, key, None ) ) for key in keys ] )
+    def get_config_dict( self, config, is_admin=False ):
+        options = self.EXPOSED_USER_OPTIONS
+        if is_admin:
+            options.extend( self.EXPOSED_ADMIN_OPTIONS )
+        config_dict = dict( [ ( key, getattr( config, key, None ) ) for key in options ] )
+        return config_dict
