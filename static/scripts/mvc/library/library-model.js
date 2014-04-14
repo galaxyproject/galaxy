@@ -82,13 +82,21 @@ define([], function() {
       urlRoot : '/api/histories/'
     });
 
-    // HISTORY
-    var GalaxyHistory = Backbone.Model.extend({
+    // HISTORY CONTENTS
+    var HistoryContents = Backbone.Collection.extend({
       urlRoot : '/api/histories/',
+      initialize: function(options){
+        this.id = options.id;
+      },
       url : function(){
         return this.urlRoot + this.id + '/contents';
       },
-      model: HistoryItem
+      model : HistoryItem
+    });
+
+    // HISTORY
+    var GalaxyHistory = Backbone.Model.extend({
+      urlRoot : '/api/histories/'
     });
 
     // HISTORIES
@@ -106,6 +114,7 @@ return {
     Folder : Folder,
     FolderContainer : FolderContainer,
     HistoryItem : HistoryItem,
+    HistoryContents : HistoryContents,
     GalaxyHistory : GalaxyHistory,
     GalaxyHistories : GalaxyHistories
 };

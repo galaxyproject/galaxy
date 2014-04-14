@@ -70,6 +70,14 @@ var GalaxyLibrary = Backbone.View.extend({
 
         this.library_router.on('route:folder_content', function(id) {
             // TODO place caching here, sessionstorage/localstorage?
+            if (Galaxy.libraries.folderToolbarView){ 
+              Galaxy.libraries.folderToolbarView.$el.unbind('click');
+              // Galaxy.libraries.folderToolbarView.remove(); 
+            }
+            if (Galaxy.libraries.folderListView){
+              // Galaxy.libraries.folderListView.$el.unbind('click');
+              // Galaxy.libraries.folderListView.remove(); 
+            }
             Galaxy.libraries.folderToolbarView = new mod_foldertoolbar_view.FolderToolbarView({id: id});
             Galaxy.libraries.folderListView = new mod_folderlist_view.FolderListView({id: id});
         });
