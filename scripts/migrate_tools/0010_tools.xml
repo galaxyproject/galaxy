@@ -12,7 +12,7 @@
     <repository owner="devteam" name="cluster" changeset_revision="520de69b107a" description="Cluster">
         <tool id="gops_cluster_1" version="1.0.0" file="new_operations/cluster.xml" />
     </repository>
-    <repository owner="devteam" name="complement" changeset_revision="67c4ed724bfd" description="Complement intervals of a dataset">
+    <repository owner="devteam" name="complement" changeset_revision="2221cf5f59aa" description="Complement intervals of a dataset">
         <tool id="gops_complement_1" version="1.0.0" file="new_operations/complement.xml" />
     </repository>
     <repository owner="devteam" name="compute_q_values" changeset_revision="63abfc350814" description="Compute q-values based on multiple simultaneous tests p-values">
