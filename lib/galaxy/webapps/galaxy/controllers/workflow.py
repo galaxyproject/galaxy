@@ -1201,7 +1201,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                         history=history
             )
         else:
-            extract_workflow(
+            stored_workflow = extract_workflow(
                 trans,
                 user=user,
                 job_ids=job_ids,
@@ -1209,9 +1209,10 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                 workflow_name=workflow_name
             )
             # Index page with message
-            return trans.show_message( "Workflow '%s' created from current history." % workflow_name )
-            ## return trans.show_ok_message( "<p>Workflow '%s' created.</p><p><a target='_top' href='%s'>Click to load in workflow editor</a></p>"
-            ##     % ( workflow_name, web.url_for(controller='workflow', action='editor', id=trans.security.encode_id(stored.id) ) ) )
+            workflow_id = trans.security.encode_id( stored_workflow.id )
+            return trans.show_message( 'Workflow "%s" created from current history. You can <a href="%s" target="_parent">edit</a> or <a href="%s">run</a> the workflow.' %
+                                       ( workflow_name, url_for( controller='workflow', action='editor', id=workflow_id ), 
+                                       url_for( controller='workflow', action='run', id=workflow_id ) ) )
 
     @web.expose
     def run( self, trans, id, history_id=None, multiple_input_mode="product", hide_fixed_params=False, **kwargs ):
