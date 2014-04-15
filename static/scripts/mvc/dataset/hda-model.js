@@ -377,7 +377,6 @@ HistoryDatasetAssociation.STATES = {
 
 /** states that are in a final state (the underlying job is complete) */
 HistoryDatasetAssociation.READY_STATES = [
-    HistoryDatasetAssociation.STATES.NEW,
     HistoryDatasetAssociation.STATES.OK,
     HistoryDatasetAssociation.STATES.EMPTY,
     HistoryDatasetAssociation.STATES.PAUSED,
@@ -392,7 +391,8 @@ HistoryDatasetAssociation.NOT_READY_STATES = [
     HistoryDatasetAssociation.STATES.UPLOAD,
     HistoryDatasetAssociation.STATES.QUEUED,
     HistoryDatasetAssociation.STATES.RUNNING,
-    HistoryDatasetAssociation.STATES.SETTING_METADATA
+    HistoryDatasetAssociation.STATES.SETTING_METADATA,
+    HistoryDatasetAssociation.STATES.NEW
 ];
 
 //==============================================================================

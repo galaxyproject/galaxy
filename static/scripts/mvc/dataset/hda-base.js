@@ -165,7 +165,6 @@ var HDABaseView = Backbone.View.extend( baseMVC.LoggableMixin ).extend(
         // (do show if in error, running)
         if( ( this.model.get( 'state' ) === hdaModel.HistoryDatasetAssociation.STATES.NOT_VIEWABLE )
         ||  ( this.model.get( 'state' ) === hdaModel.HistoryDatasetAssociation.STATES.DISCARDED )
-        ||  ( this.model.get( 'state' ) === hdaModel.HistoryDatasetAssociation.STATES.NEW )
         ||  ( !this.model.get( 'accessible' ) ) ){
             return null;
         }
@@ -184,6 +183,11 @@ var HDABaseView = Backbone.View.extend( baseMVC.LoggableMixin ).extend(
         } else if( this.model.get( 'state' ) === hdaModel.HistoryDatasetAssociation.STATES.UPLOAD ){
             displayBtnData.disabled = true;
             displayBtnData.title = _l( 'This dataset must finish uploading before it can be viewed' );
+
+        // disable if still new
+        } else if( this.model.get( 'state' ) === hdaModel.HistoryDatasetAssociation.STATES.NEW ){
+            displayBtnData.disabled = true;
+            displayBtnData.title = _l( 'This dataset is not yet viewable' );
 
         } else {
             displayBtnData.title = _l( 'View data' );
@@ -312,7 +316,8 @@ var HDABaseView = Backbone.View.extend( baseMVC.LoggableMixin ).extend(
      */
     _render_body_new : function(){
         return this._render_stateBodyHelper(
-            '<div>' + _l( 'This is a new dataset and not all of its data are available yet' ) + '</div>'
+            '<div>' + _l( 'This is a new dataset and not all of its data are available yet' ) + '</div>',
+            this.defaultPrimaryActionButtonRenderers
         );
     },
     /** Render inaccessible, not-owned by curr user. */
