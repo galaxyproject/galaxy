@@ -4,24 +4,36 @@ Galaxy root package -- this is a namespace package.
 
 __import__( "pkg_resources" ).declare_namespace( __name__ )
 
-import os, sys, re
-from distutils.sysconfig import get_config_var, get_config_vars
+import re
+import os
+import sys
+import platform
 
 import pkg_resources
 
 # patch get_platform() for better ABI recognition
 def _get_build_platform():
     plat = pkg_resources._get_build_platform()
-    if sys.version_info[:2] == ( 2, 5 ) and \
-        ( ( os.uname()[-1] in ( 'x86_64', 'i386', 'ppc' ) and sys.platform == 'darwin' and os.path.abspath( sys.prefix ).startswith( '/System' ) ) or \
-          ( sys.platform == 'darwin' and get_config_vars().get('UNIVERSALSDK', '').strip() ) ):
-        plat = 'macosx-10.3-fat'
-    if sys.platform == "sunos5" and not (plat.endswith('_32') or plat.endswith('_64')):
-        if sys.maxint > 2**31:
-            plat += '_64'
-        else:
-            plat += '_32'
-    if sys.platform == "linux2" and sys.maxint < 2**31 and plat.endswith( '-x86_64' ):
+    if sys.platform == 'darwin':
+        # Assert OS X version is new enough
+        current_minor_ver = int( platform.mac_ver()[0].split( '.' )[1] )
+        assert current_minor_ver >= 6, 'Galaxy is not compatible with Mac OS X < 10.6 (your version is %s)' % platform.mac_ver()[0]
+        # Python build target may be even older, but this will prevent it from
+        # fetching our 10.6+ eggs, so fix if necessary (newer versions will be
+        # fine)
+        plat_split = plat.split( '-' )
+        build_minor_ver = int( plat_split[1].split( '.' )[1] )
+        if build_minor_ver < 6:
+            plat_split[1] = '10.6'
+        # Our intel (dual arch) eggs will work fine on single-arch builds
+        if plat_split[-1] in ( 'i386', 'x86_64' ):
+            plat_split[-1] = 'intel'
+        # Ditto universal (if you're not on PPC)
+        if plat_split[-1] == 'universal' and platform.processor() != 'powerpc':
+            plat_split[-1] = 'intel'
+        plat = '-'.join( plat_split )
+    elif sys.platform == "linux2" and sys.maxint < 2**31 and plat.endswith( '-x86_64' ):
+        # 32 bit Python on 64 bit Linux
         plat = plat.replace( '-x86_64', '-i686' )
     if not (plat.endswith('-ucs2') or plat.endswith('-ucs4')):
         if sys.maxunicode > 2**16:
@@ -35,34 +47,6 @@ except:
     pkg_resources._get_build_platform = pkg_resources.get_build_platform
     pkg_resources.get_build_platform = _get_build_platform
     pkg_resources.get_platform = _get_build_platform
-
-# patch compatible_platforms() to allow for Solaris binary compatibility
-solarisVersionString = re.compile(r"solaris-(\d)\.(\d+)-(.*)")
-def _compatible_platforms(provided,required):
-    # this is a bit kludgey since we need to know a bit about what happened in
-    # the original method
-    if provided is None or required is None or provided==required:
-        return True     # easy case
-    reqMac = pkg_resources.macosVersionString.match(required)
-    if reqMac:
-        return pkg_resources._compatible_platforms(provided,required)
-    reqSol = solarisVersionString.match(required)
-    if reqSol:
-        provSol = solarisVersionString.match(provided)
-        if not provSol:
-            return False
-        if provSol.group(1) != reqSol.group(1) or \
-            provSol.group(3) != reqSol.group(3):
-            return False
-        if int(provSol.group(2)) > int(reqSol.group(2)):
-            return False
-        return True
-    return False
-try:
-    assert pkg_resources._compatible_platforms
-except:
-    pkg_resources._compatible_platforms = pkg_resources.compatible_platforms
-    pkg_resources.compatible_platforms = _compatible_platforms
 
 # patch to insert eggs at the beginning of sys.path instead of at the end
 def _insert_on(self, path, loc = None):
