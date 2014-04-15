@@ -1,7 +1,8 @@
 define([
     "mvc/dataset/hda-model",
-    "mvc/base-mvc"
-], function( hdaModel, baseMVC ){
+    "mvc/base-mvc",
+    "utils/localization"
+], function( hdaModel, baseMVC, _l ){
 //==============================================================================
 /** @class Model for a Galaxy history resource - both a record of user
  *      tool use and a collection of the datasets those tools produced.

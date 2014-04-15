@@ -1,6 +1,7 @@
 define([
-    "mvc/base-mvc"
-], function( baseMVC ){
+    "mvc/base-mvc",
+    "utils/localization"
+], function( baseMVC, _l ){
 //==============================================================================
 /** @class (HDA) model for a Galaxy dataset
  *      related to a history.

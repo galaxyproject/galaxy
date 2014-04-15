@@ -2,8 +2,9 @@ define([
     "mvc/dataset/hda-model",
     "mvc/dataset/hda-base",
     "mvc/tags",
-    "mvc/annotations"
-], function( hdaModel, hdaBase, tagsMod, annotationsMod ){
+    "mvc/annotations",
+    "utils/localization"
+], function( hdaModel, hdaBase, tagsMod, annotationsMod, _l ){
 //==============================================================================
 /** @class Editing view for HistoryDatasetAssociation.
  *  @name HDAEditView

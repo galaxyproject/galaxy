@@ -1,7 +1,8 @@
 define([
     "mvc/dataset/hda-model",
-    "mvc/base-mvc"
-], function( hdaModel, baseMVC ){
+    "mvc/base-mvc",
+    "utils/localization"
+], function( hdaModel, baseMVC, _l ){
 /* global Backbone */
 //==============================================================================
 /** @class Read only view for HistoryDatasetAssociation.

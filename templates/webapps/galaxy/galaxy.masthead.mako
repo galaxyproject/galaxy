@@ -67,9 +67,6 @@
         }
     %>
 
-    ##${h.js( "mvc/base-mvc", "utils/localization", "mvc/user/user-model", "mvc/user/user-quotameter" )}
-    ${h.js( "utils/localization" )}
-
     ## load the frame manager
     <script type="text/javascript">
         if( !window.Galaxy ){

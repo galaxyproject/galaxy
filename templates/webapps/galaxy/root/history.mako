@@ -4,7 +4,6 @@
     ${_('Galaxy History')}
 </%def>
 
-<%namespace file="/history/history_panel.mako" import="history_panel_javascripts" />
 <%namespace file="/galaxy.masthead.mako" import="get_user_json" />
 
 ## -----------------------------------------------------------------------------
@@ -21,7 +20,6 @@
 ## -----------------------------------------------------------------------------
 <%def name="javascripts()">
 ${parent.javascripts()}
-${history_panel_javascripts()}
 
 <script type="text/javascript">
 if( !window.Galaxy ){
@@ -33,9 +31,11 @@ $(function(){
 
 require([
     'mvc/user/user-model',
-    'mvc/history/current-history-panel'
-], function( user, historyPanel ){
+    'mvc/history/current-history-panel',
+    'utils/localization'
+], function( user, historyPanel, _l ){
     $(function(){
+        window._l = _l;
         Galaxy.currUser = new user.User( ${h.to_json_string( get_user_json() )} );
         // history module is already in the dpn chain from the panel. We can re-scope it here.
         var historyModel    = require( 'mvc/history/history-model' ),

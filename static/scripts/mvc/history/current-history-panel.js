@@ -1,8 +1,9 @@
 define([
     "mvc/dataset/hda-edit",
     "mvc/history/history-panel",
-    "mvc/base-mvc"
-], function( hdaEdit, hpanel, baseMVC ){
+    "mvc/base-mvc",
+    "utils/localization"
+], function( hdaEdit, hpanel, baseMVC, _l ){
 // ============================================================================
 /** session storage for history panel preferences (and to maintain state)
  */

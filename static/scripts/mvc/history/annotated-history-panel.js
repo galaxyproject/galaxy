@@ -1,8 +1,9 @@
 define([
     "mvc/dataset/hda-model",
     "mvc/dataset/hda-base",
-    "mvc/history/readonly-history-panel"
-], function( hdaModel, hdaBase, readonlyPanel ){
+    "mvc/history/readonly-history-panel",
+    "utils/localization"
+], function( hdaModel, hdaBase, readonlyPanel, _l ){
 /* =============================================================================
 TODO:
 

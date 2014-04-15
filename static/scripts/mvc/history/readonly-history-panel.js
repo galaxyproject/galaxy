@@ -2,8 +2,9 @@ define([
     "mvc/history/history-model",
     "mvc/dataset/hda-base",
     "mvc/user/user-model",
-    "mvc/base-mvc"
-], function( historyModel, hdaBase, userModel, baseMVC ){
+    "mvc/base-mvc",
+    "utils/localization"
+], function( historyModel, hdaBase, userModel, baseMVC, _l ){
 // ============================================================================
 /** session storage for individual history preferences */
 var HistoryPrefs = baseMVC.SessionStorageModel.extend({
