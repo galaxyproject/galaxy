@@ -91,6 +91,7 @@ class HistoryListGrid( grids.Grid ):
         grids.GridOperation( "Switch", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=True ),
         grids.GridOperation( "View", allow_multiple=False ),
         grids.GridOperation( "Share or Publish", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False ),
+        grids.GridOperation( "Copy", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False ),
         grids.GridOperation( "Rename", condition=( lambda item: not item.deleted ), async_compatible=False, inbound=True  ),
         grids.GridOperation( "Delete", condition=( lambda item: not item.deleted ), async_compatible=True ),
         grids.GridOperation( "Delete Permanently", condition=( lambda item: not item.purged ), confirm="History contents will be removed from disk, this cannot be undone.  Continue?", async_compatible=True ),
@@ -237,6 +238,8 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                                                                   show_deleted=history.deleted,
                                                                   use_panels=False ) )
                     #return self.view( trans, id=kwargs['id'], show_deleted=history.deleted, use_panels=False )
+            if operation == 'copy' and kwargs.get( 'id', None ):
+                return self.copy( trans, id=kwargs.get( 'id', None ) )
             history_ids = galaxy.util.listify( kwargs.get( 'id', [] ) )
             # Display no message by default
             status, message = None, None
