@@ -5,11 +5,17 @@
     ##  and steal existing attributes from plain objects already created
     <%
         config_dict = {}
-        if 'configuration' in trans.webapp.api_controllers:
-            config_dict = ( trans.webapp.api_controllers[ 'configuration' ]
-                .get_config_dict( trans.app.config, trans.user_is_admin() ) )
+        user_dict = {}
+        try:
+            if 'configuration' in trans.webapp.api_controllers:
+                config_dict = ( trans.webapp.api_controllers[ 'configuration' ]
+                    .get_config_dict( trans.app.config, trans.user_is_admin() ) )
 
-        user_dict = self.get_user_dict()
+            if 'users' in trans.webapp.api_controllers:
+                user_dict = self.get_user_dict()
+
+        except Exception, exc:
+            pass
 
         # genomes
         # datatypes
