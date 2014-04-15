@@ -46,6 +46,11 @@ GalaxyApp.prototype._init = function init( options ){
     self._initUser( options.userJSON || {} );
     self.debug( 'GalaxyApp.user: ', self.user );
 
+    //TODO: temp
+    if( typeof options.onload === 'function' ){
+        options.onload();
+    }
+
     return self;
 };
 
@@ -69,6 +74,8 @@ GalaxyApp.prototype._initUser = function _initUser( userJSON ){
     var self = this;
     self.debug( '_initUser:', userJSON );
     self.user = new userModel.User( userJSON );
+    //TODO: temp
+    self.currUser = self.user;
     return self;
 };
 

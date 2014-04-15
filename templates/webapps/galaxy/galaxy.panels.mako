@@ -1,4 +1,5 @@
 <%namespace name="masthead" file="/webapps/galaxy/galaxy.masthead.mako"/>
+<%namespace name="galaxy_client" file="../../galaxy_client_app.mako" />
 
 <!DOCTYPE HTML>
 
@@ -93,6 +94,7 @@
     %endif
     </style>
     
+
     ## default script wrapper
     <script type="text/javascript">
         ## configure require
@@ -104,27 +106,25 @@
                 "libs/backbone/backbone": { exports: "Backbone" },
             }
         });
-
-        ## get configuration
+        
+        // load any app configured
         var galaxy_config = ${ h.to_json_string( self.galaxy_config ) };
-
-        ## on page load
-        $(function()
-        {
-            ## check if script is defined
+        Galaxy.onload = function(){
             var jscript = galaxy_config.app.jscript;
-            if (jscript)
-            {
-                ## load galaxy app
-                require([jscript], function(js_lib)
-                {
-                    ## load galaxy module application
-                    var module = new js_lib.GalaxyApp();
+            if( jscript ){
+                $( function(){
+                    require([ jscript ], function( js_lib ){
+                        ## load galaxy module application
+                        var module = new js_lib.GalaxyApp();
+                    });
                 });
-            } else
+            } else {
                 console.log("'galaxy_config.app.jscript' missing.");
-        });
+            }
+        }
     </script>
+    ${ galaxy_client.bootstrap() }
+    
 </%def>
 
 ## default late-load javascripts

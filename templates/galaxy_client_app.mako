@@ -22,6 +22,7 @@
                 userJSON        : ${ get_user_json() },
                 root            : '${h.url_for( "/" )}',
                 //TODO: get these options from the server
+                onload          : window.Galaxy? window.Galaxy.onload: null,
                 loggerOptions   : {
                 }
             });
