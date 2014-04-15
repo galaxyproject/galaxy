@@ -4,13 +4,12 @@
     ## Bootstap dictionaries for GalaxyApp object's JSON, create GalaxyApp,
     ##  and steal existing attributes from plain objects already created
     <%
-        config_dict = ( trans.webapp.api_controllers[ 'configuration' ]
-            .get_config_dict( trans.app.config, trans.user_is_admin() ) )
-        #import pprint
-        #pprint.pprint( config_dict )
+        config_dict = {}
+        if 'configuration' in trans.webapp.api_controllers:
+            config_dict = ( trans.webapp.api_controllers[ 'configuration' ]
+                .get_config_dict( trans.app.config, trans.user_is_admin() ) )
 
         user_dict = self.get_user_dict()
-        #pprint.pprint( user_dict )
 
         # genomes
         # datatypes
