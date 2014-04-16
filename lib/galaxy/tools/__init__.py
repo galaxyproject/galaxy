@@ -2133,28 +2133,31 @@ class Tool( object, Dictifiable ):
                                                                      context,
                                                                      source )
 
-                current_case = input.get_current_case( value, trans )
-                # Current case has changed, throw away old state
-                group_state = state[input.name] = {}
-                # TODO: we should try to preserve values if we can
-                self.fill_in_new_state( trans, input.cases[current_case].inputs, group_state, context, history=history )
-                group_errors = self.populate_state( trans,
-                                                    input.cases[current_case].inputs,
-                                                    group_state,
-                                                    incoming,
-                                                    history,
-                                                    source,
-                                                    prefix=group_prefix,
-                                                    context=context,
-                )
                 if test_param_error:
-                    group_errors[ input.test_param.name ] = test_param_error
-                if group_errors:
-                    errors[ input.name ] = group_errors
-                # Store the current case in a special value
-                group_state['__current_case__'] = current_case
-                # Store the value of the test element
-                group_state[ input.test_param.name ] = value
+                    errors[ input.name ] = [ test_param_error ]
+                    # Store the value of the test element
+                    group_state[ input.test_param.name ] = value
+                else:
+                    current_case = input.get_current_case( value, trans )
+                    # Current case has changed, throw away old state
+                    group_state = state[input.name] = {}
+                    # TODO: we should try to preserve values if we can
+                    self.fill_in_new_state( trans, input.cases[current_case].inputs, group_state, context, history=history )
+                    group_errors = self.populate_state( trans,
+                                                        input.cases[current_case].inputs,
+                                                        group_state,
+                                                        incoming,
+                                                        history,
+                                                        source,
+                                                        prefix=group_prefix,
+                                                        context=context,
+                    )
+                    if group_errors:
+                        errors[ input.name ] = group_errors
+                    # Store the current case in a special value
+                    group_state['__current_case__'] = current_case
+                    # Store the value of the test element
+                    group_state[ input.test_param.name ] = value
             elif isinstance( input, UploadDataset ):
                 group_state = state[input.name]
                 group_errors = []
