@@ -385,12 +385,6 @@ class TwillTestCase( unittest.TestCase ):
                     return value == hda[ key ]
         return False
 
-    def clear_history( self ):
-        """Empties a history of all datasets"""
-        self.visit_page( "clear_history" )
-        self.check_history_for_string( 'Your history is empty' )
-        self.home()
-
     def delete_history( self, id ):
         """Deletes one or more histories"""
         history_list = self.get_histories_as_data_list()
@@ -466,7 +460,8 @@ class TwillTestCase( unittest.TestCase ):
             self.visit_url( "%s/history_new?name=%s" % ( self.url, name ) )
         else:
             self.visit_url( "%s/history_new" % self.url )
-        self.check_history_for_string('Your history is empty')
+        self.check_page_for_string( 'New history created' )
+        assert self.is_history_empty(), 'Creating new history did not result in an empty history.'
         self.home()
 
     def rename_history( self, id, old_name, new_name ):

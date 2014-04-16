@@ -98,7 +98,7 @@ class TestHistory( TwillTestCase ):
         if not historyB.deleted:
             raise AssertionError( "Problem deleting history id %d" % historyB.id )
         # Since we deleted the current history, make sure the history frame was refreshed
-        self.check_history_for_string( 'Your history is empty.' )
+        assert self.is_history_empty(), 'Deleting active history did not result in a new empty history being created.'
         # We'll now test deleting a list of histories
         # After deleting the current history, a new one should have been created
         global history1
@@ -121,7 +121,7 @@ class TestHistory( TwillTestCase ):
         ids = '%s,%s' % ( self.security.encode_id( history1.id ), self.security.encode_id( history2.id ) )
         self.delete_history( ids )
         # Since we deleted the current history, make sure the history frame was refreshed
-        self.check_history_for_string( 'Your history is empty.' )
+        assert self.is_history_empty(), 'Deleting active history did not result in a new empty history being created.'
         try:
             self.view_stored_active_histories( strings_displayed=[ history1.name ] )
             raise AssertionError( "History %s is displayed in the active history list after it was deleted" % history1.name )
@@ -790,7 +790,7 @@ class TestHistory( TwillTestCase ):
         self.check_page_for_string( 'hg15' )
         self.assertEqual( len( self.get_history_as_data_list() ), 1 )
         # Delete the history item
-        self.delete_history_item( str( latest_hda.id ), strings_displayed=[ "Your history is empty" ] )
+        self.delete_history_item( str( latest_hda.id ), strings_displayed=[] )
         self.assertEqual( len( self.get_history_as_data_list() ), 0 )
         # Try deleting an invalid hid
         try:
