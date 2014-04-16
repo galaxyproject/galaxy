@@ -39,7 +39,8 @@
                     hiddenInput.name = button.name;
                     hiddenInput.value = button.value;
                     form.appendChild( hiddenInput );
-                    return true;
+                    form.submit();
+                    return false;
                 }
                 return false;
             }
