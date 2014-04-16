@@ -26,6 +26,7 @@
     </datatype>
     <datatype extension="bedgraph" type="galaxy.datatypes.interval:BedGraph" display_in_upload="true">
       <converter file="bedgraph_to_bigwig_converter.xml" target_datatype="bigwig"/>
+      <display file="igb/bedgraph.xml" />
     </datatype>
     <datatype extension="bedstrict" type="galaxy.datatypes.interval:BedStrict" />
     <datatype extension="bed6" type="galaxy.datatypes.interval:Bed6">
@@ -98,6 +99,7 @@
     <datatype extension="gtf" type="galaxy.datatypes.interval:Gtf" display_in_upload="true">
         <converter file="gff_to_interval_index_converter.xml" target_datatype="interval_index"/>
         <converter file="bed_gff_or_vcf_to_bigwig_converter.xml" target_datatype="bigwig"/>
+        <display file="igb/gtf.xml" />
     </datatype>
     <datatype extension="toolshed.gz" type="galaxy.datatypes.binary:Binary" mimetype="multipart/x-gzip" subclass="True" />
     <datatype extension="h5" type="galaxy.datatypes.binary:Binary" mimetype="application/octet-stream" subclass="True" />
