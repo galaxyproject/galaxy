@@ -1,4 +1,3 @@
-// dependencies
 define([
     "galaxy.masthead",
     "mvc/base-mvc",
@@ -13,7 +12,6 @@ function(mod_masthead,
          mod_library_model,
          mod_library_libraryrow_view) {
 
-// galaxy library view
 var LibraryListView = Backbone.View.extend({
     el: '#libraries_element',
 
@@ -23,6 +21,7 @@ var LibraryListView = Backbone.View.extend({
 
     modal: null,
 
+    // collection of {Item}s
     collection: null,
 
     // map of library model ids to library views = cache
@@ -115,21 +114,10 @@ var LibraryListView = Backbone.View.extend({
     sortLibraries: function(sort_by, order){
         if (sort_by === 'name'){
             if (order === 'asc'){
-                // this.collection.sort_order = 'asc';
-                this.collection.comparator = function(libraryA, libraryB){
-                      if (libraryA.get('name').toLowerCase() > libraryB.get('name').toLowerCase()) {return 1;} // after
-                      if (libraryB.get('name').toLowerCase() > libraryA.get('name').toLowerCase()) {return -1;} // before
-                      return 0; // equal
-                };
+                this.collection.sortByNameAsc();
             } else if (order === 'desc'){
-                // this.collection.sort_order = 'desc';
-                this.collection.comparator = function(libraryA, libraryB){
-                      if (libraryA.get('name').toLowerCase() > libraryB.get('name').toLowerCase()) {return -1;} // before
-                      if (libraryB.get('name').toLowerCase() > libraryA.get('name').toLowerCase()) {return 1;} // after
-                      return 0; // equal
-                };
+                this.collection.sortByNameDesc();
             }
-            this.collection.sort();
         }
     },
 

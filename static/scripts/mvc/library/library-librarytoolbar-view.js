@@ -1,4 +1,3 @@
-// dependencies
 define([
     "galaxy.masthead",
     "utils/utils",
@@ -23,10 +22,16 @@ var LibraryToolbarView = Backbone.View.extend({
 
   render: function(){
     var toolbar_template = this.templateToolBar();
-    var is_admin = Galaxy.currUser.isAdmin();
-    var is_anonym = Galaxy.currUser.isAnonymous();
+    var is_admin = false;
+    var is_anonym = false;
+    if (Galaxy.currUser){
+      is_admin = Galaxy.currUser.isAdmin();
+      is_anonym = Galaxy.currUser.isAnonymous();
+    } else {
+      is_anonym = true;
+    }
     this.$el.html(toolbar_template({admin_user: is_admin, anon_user: is_anonym}));
-    if (Galaxy.currUser.isAdmin() === true){
+    if (is_admin){
       this.$el.find('#include_deleted_chk')[0].checked = Galaxy.libraries.preferences.get('with_deleted');
     }
   },

@@ -7,12 +7,12 @@ from galaxy.web import _future_expose_api as expose_api
 from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
 from sqlalchemy.orm.exc import MultipleResultsFound
 from sqlalchemy.orm.exc import NoResultFound
-from galaxy.web.base.controller import BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems
+from galaxy.web.base.controller import BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems, UsesHistoryDatasetAssociationMixin
 
 import logging
 log = logging.getLogger( __name__ )
 
-class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems ):
+class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems, UsesHistoryDatasetAssociationMixin ):
     """
     Class controls retrieval, creation and updating of folder contents.
     """
@@ -146,21 +146,61 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
                 content_items.append( dataset )
         return content_items
 
+    @expose_api
+    def create( self, trans, encoded_folder_id, payload, **kwd ):
+        """
+        create( self, trans, library_id, payload, **kwd )
+        * POST /api/folders/{encoded_id}/contents
+            create a new library file from an HDA
+
+        :param  payload:    dictionary structure containing:
+        :type   payload:    dict
+
+            * folder_id:    the parent folder of the new item
+            * from_hda_id:  (optional) the id of an accessible HDA to copy into the library
+            * ldda_message: (optional) the new message attribute of the LDDA created
+            * extended_metadata: (optional) dub-dictionary containing any extended
+                metadata to associate with the item
+
+        :returns:   a dictionary containing the id, name, and 'show' url of the new item
+        :rtype:     dict
+        """
+        class_name, encoded_folder_id_16 = self.__decode_library_content_id( trans, encoded_folder_id )
+        from_hda_id, ldda_message = ( payload.pop( 'from_hda_id', None ), payload.pop( 'ldda_message', '' ) )
+        if ldda_message:
+            ldda_message = util.sanitize_html.sanitize_html( ldda_message, 'utf-8' )
+        rval = {}
+        try:
+            hda = self.get_dataset( trans, from_hda_id, check_ownership=True, check_accessible=True, check_state=True )
+            folder = self.get_library_folder( trans, encoded_folder_id_16, check_accessible=True )
+
+            if not self.can_current_user_add_to_library_item( trans, folder ):
+                raise exceptions.InsufficientPermissionsException( 'You do not have proper permissions to add a dataset to a folder with id (%s)' % ( encoded_folder_id ) )
+
+            ldda = self.copy_hda_to_library_folder( trans, hda, folder, ldda_message=ldda_message )
+            ldda_dict = ldda.to_dict()
+            rval = trans.security.encode_dict_ids( ldda_dict )
+
+        except Exception, exc:
+            if 'not accessible to the current user' in str( exc ):
+                raise exceptions.ItemAccessibilityException( 'You do not have access to the requested item' )
+            else:
+                log.exception( exc )
+                raise exceptions.InternalServerError( 'An unknown error ocurred. Please try again.' )
+        return rval
+
+    def __decode_library_content_id( self, trans, encoded_folder_id ):
+        if ( len( encoded_folder_id )  == 17 and encoded_folder_id.startswith( 'F' )):
+            return 'LibraryFolder', encoded_folder_id[1:]
+        else:
+            raise exceptions.MalformedId( 'Malformed folder id ( %s ) specified, unable to decode.' % str( encoded_folder_id ) )
+
     @web.expose_api
     def show( self, trans, id, library_id, **kwd ):
         """
         GET /api/folders/{encoded_folder_id}/
         """
         raise exceptions.NotImplemented( 'Showing the library folder content is not implemented.' )
-
-    @web.expose_api
-    def create( self, trans, library_id, payload, **kwd ):
-        """
-        POST /api/folders/{encoded_folder_id}/contents
-        Creates a new folder. This should be superseded by the
-        LibraryController.
-        """
-        raise exceptions.NotImplemented( 'Creating the library folder content is not implemented.' )
 
     @web.expose_api
     def update( self, trans, id,  library_id, payload, **kwd ):

@@ -1,4 +1,3 @@
-// dependencies
 define([
     "galaxy.masthead",
     "utils/utils",
@@ -36,7 +35,10 @@ var FolderToolbarView = Backbone.View.extend({
   render: function(options){
     this.options = _.extend(this.options, options);
     var toolbar_template = this.templateToolBar();
-    var is_admin = Galaxy.currUser.isAdmin();
+    var is_admin = false;
+    if (Galaxy.currUser){
+      is_admin = Galaxy.currUser.isAdmin();
+    }
     this.$el.html(toolbar_template({id: this.options.id, admin_user: is_admin}));
   },
 
@@ -87,9 +89,8 @@ var FolderToolbarView = Backbone.View.extend({
             success: function (folder) {
               self.modal.hide();
               mod_toastr.success('Folder created');
-              folder.set({'type' : 'folder'})
-              Galaxy.libraries.folderListView.folderContainer.attributes.folder.add(folder);
-              Galaxy.libraries.folderListView.render({id: current_folder_id});
+              folder.set({'type' : 'folder'});
+              Galaxy.libraries.folderListView.collection.add(folder);
             },
             error: function(){
               mod_toastr.error('An error occured :(');
@@ -163,8 +164,8 @@ var FolderToolbarView = Backbone.View.extend({
               dataset_ids.push(this.parentElement.parentElement.id);
           }
       });
-      var progress_bar_tmpl = this.templateProgressBar();
-      $(this.modal.elMain).find('.modal-body').html(progress_bar_tmpl({ history_name : history_name }));
+      var progress_bar_tmpl = this.templateImportIntoHistoryProgressBar();
+      this.modal.$el.find('.modal-body').html(progress_bar_tmpl({ history_name : history_name }));
 
       // init the progress bar
       var progressStep = 100 / dataset_ids.length;
@@ -254,15 +255,20 @@ var FolderToolbarView = Backbone.View.extend({
           title           : 'Add datasets from history to ' + self.options.folder_name,
           body            : template_modal({histories: self.histories.models}),
           buttons         : {
-              'Add'       : function() {self.addFiles();},
+              'Add'       : function() {self.addAllDatasetsFromHistory();},
               'Close'     : function() {Galaxy.modal.hide();}
           }
       });
-      self.fetchAndDisplayHistoryContents(self.histories.models[0].id);
-      $( "#dataset_add_bulk" ).change(function(event) {
-        self.fetchAndDisplayHistoryContents(event.target.value);
-      });
-
+      
+      // user should always have a history, even anonymous user
+      if (self.histories.models.length > 0){
+        self.fetchAndDisplayHistoryContents(self.histories.models[0].id);
+        $( "#dataset_add_bulk" ).change(function(event) {
+          self.fetchAndDisplayHistoryContents(event.target.value);
+        });
+      } else {
+        mod_toastr.error('Unable to retrieve histories. Please report this error.');
+      }
     });
   },
 
@@ -282,8 +288,54 @@ var FolderToolbarView = Backbone.View.extend({
     });
   },
 
-  addFiles: function(){
-    alert('adding files');
+  // add all selected datasets from history into current folder
+  addAllDatasetsFromHistory : function (){
+      //disable the button to prevent multiple submission
+      this.modal.disableButton('Add');
+
+      var history_dataset_ids = [];
+      this.modal.$el.find('#selected_history_content').find(':checked').each(function(){
+        var hid = $(this.parentElement).data('id');
+          if (hid) {
+              history_dataset_ids.push(hid);
+          }
+      });
+      var folder_name = this.options.folder_name;
+      var progress_bar_tmpl = this.templateAddingDatasetsProgressBar();
+      this.modal.$el.find('.modal-body').html(progress_bar_tmpl({ folder_name : folder_name }));
+
+      // init the progress bar
+      this.progressStep = 100 / history_dataset_ids.length;
+      this.progress = 0;
+
+      // prepare the dataset items to be added
+      var hdas_to_add = [];
+      for (var i = history_dataset_ids.length - 1; i >= 0; i--) {
+          history_dataset_id = history_dataset_ids[i];
+          var folder_item = new mod_library_model.Item();
+          var self = this;
+          folder_item.url = '/api/folders/' + this.options.id + '/contents';
+          folder_item.set({'from_hda_id':history_dataset_id});
+          hdas_to_add.push(folder_item);
+      }
+      // call the recursive function to call ajax one after each other (request FIFO queue)
+      this.chainCallAddingHdas(hdas_to_add);
+  },
+
+  chainCallAddingHdas: function(hdas_set){
+    var self = this;
+    this.added_hdas = new mod_library_model.Folder();
+    var popped_item = hdas_set.pop();
+    if (typeof popped_item === "undefined") {
+      mod_toastr.success('Selected datasets from history imported');
+      this.modal.hide();
+      return this.added_hdas;
+    }
+    var promise = $.when(popped_item.save({from_hda_id: popped_item.get('from_hda_id')})).done(function(a1){
+      Galaxy.libraries.folderListView.collection.add(a1);
+      self.updateProgress();
+      self.chainCallAddingHdas(hdas_set);
+    });
   },
 
   templateToolBar: function(){
@@ -345,11 +397,27 @@ var FolderToolbarView = Backbone.View.extend({
     return _.template(tmpl_array.join(''));
   },
 
-  templateProgressBar : function (){
+  templateImportIntoHistoryProgressBar : function (){
     var tmpl_array = [];
 
     tmpl_array.push('<div class="import_text">');
     tmpl_array.push('Importing selected datasets to history <b><%= _.escape(history_name) %></b>');
+    tmpl_array.push('</div>');
+    tmpl_array.push('<div class="progress">');
+    tmpl_array.push('   <div class="progress-bar progress-bar-import" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 00%;">');
+    tmpl_array.push('       <span class="completion_span">0% Complete</span>');
+    tmpl_array.push('   </div>');
+    tmpl_array.push('</div>');
+    tmpl_array.push('');
+
+    return _.template(tmpl_array.join(''));
+  },
+
+  templateAddingDatasetsProgressBar : function (){
+    var tmpl_array = [];
+
+    tmpl_array.push('<div class="import_text">');
+    tmpl_array.push('Adding selected datasets from history to library folder <b><%= _.escape(folder_name) %></b>');
     tmpl_array.push('</div>');
     tmpl_array.push('<div class="progress">');
     tmpl_array.push('   <div class="progress-bar progress-bar-import" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 00%;">');

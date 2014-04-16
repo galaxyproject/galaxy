@@ -1,13 +1,13 @@
-// dependencies
 define([], function() {
 
-    // LIBRARY
+// ============================================================================
+// LIBRARY RELATED MODELS
+
     var Library = Backbone.Model.extend({
       urlRoot: '/api/libraries/',
 
-      /** based on show_deleted
-       *      would this lib show in the list of lib's?
-       *  @param {Boolean} show_deleted are we showing deleted libraries?
+      /** based on show_deleted would this lib show in the list of lib's?
+       *  @param {Boolean} show_deleted are we including deleted libraries?
        */
       isVisible : function(show_deleted){
           var isVisible = true;
@@ -18,12 +18,6 @@ define([], function() {
       }
     });
 
-    // FOLDER AS MODEL
-    var FolderAsModel = Backbone.Model.extend({
-      urlRoot: '/api/folders'
-    });
-
-    // LIBRARIES
     var Libraries = Backbone.Collection.extend({
       url: '/api/libraries',
 
@@ -38,31 +32,119 @@ define([], function() {
       },
 
       /** Get every 'shown' library in this collection based on deleted filter
-       *  @param {Boolean} show_deleted are we showing deleted libraries?
+       *  @param {Boolean} show_deleted are we including deleted libraries?
        *  @returns array of library models
        */
       getVisible : function(show_deleted, filters){
           filters = filters || [];
-          // always filter by show deleted first
           var filteredLibraries = new Libraries( this.filter( function( item ){
               return item.isVisible(show_deleted);
           }));
 
           return filteredLibraries;
+      },
+
+      /** Sort collection by library name (ascending) and return the sorted
+       *  collection 
+       */
+      sortByNameAsc: function(){
+        this.comparator = function(libraryA, libraryB){
+          if (libraryA.get('name').toLowerCase() > libraryB.get('name').toLowerCase()) {
+            return 1; // after
+          }
+          if (libraryB.get('name').toLowerCase() > libraryA.get('name').toLowerCase()) {
+            return -1; // before
+          }
+          return 0; // equal
+        };
+        this.sort();
+        return this;
+      },
+
+      /** Sort collection by library name (descending) and return the sorted
+       *  collection 
+       */
+      sortByNameDesc: function(){
+        this.comparator = function(libraryA, libraryB){
+          if (libraryA.get('name').toLowerCase() > libraryB.get('name').toLowerCase()) {
+            return -1; // before
+          }
+            if (libraryB.get('name').toLowerCase() > libraryA.get('name').toLowerCase()) {
+          return 1; // after
+          }
+          return 0; // equal
+        };
+        this.sort();
+        return this;
       }
+
     });
 
-    // ITEM
+// ============================================================================
+// FOLDER RELATED MODELS
+
     var Item = Backbone.Model.extend({
         urlRoot : '/api/libraries/datasets'
     });
 
-    // FOLDER AS COLLECTION
-    var Folder = Backbone.Collection.extend({
-      model: Item
+    var FolderAsModel = Backbone.Model.extend({
+      urlRoot: '/api/folders'
     });
 
-    // CONTAINER for folder contents (folders, items and metadata).
+    var Folder = Backbone.Collection.extend({
+      model: Item,
+
+      /** Sort collection by item name (ascending) and return the sorted
+       *  collection. Folders go before datasets. 
+       */
+      sortByNameAsc: function(){
+        this.comparator = function(itemA, itemB){
+          if (itemA.get('type') === itemB.get('type')){
+            if (itemA.get('name').toLowerCase() > itemB.get('name').toLowerCase()) {
+              return 1; // after
+            }
+            if (itemB.get('name').toLowerCase() > itemA.get('name').toLowerCase()) {
+              return -1; // before
+            }
+            return 0; // equal
+          } else {
+            if (itemA.get('type') === 'folder'){
+              return -1; // folder is always before dataset
+            } else {
+              return 1;
+            }
+          }
+        };
+        this.sort();
+        return this;
+      },
+
+      /** Sort collection by item name (descending) and return the sorted
+       *  collection. Folders go before datasets. 
+       */
+      sortByNameDesc: function(){
+        this.comparator = function(itemA, itemB){
+          if (itemA.get('type') === itemB.get('type')){
+            if (itemA.get('name').toLowerCase() > itemB.get('name').toLowerCase()) {
+              return -1; // after
+            }
+            if (itemB.get('name').toLowerCase() > itemA.get('name').toLowerCase()) {
+              return 1; // before
+            }
+            return 0; // equal
+          } else {
+            if (itemA.get('type') === 'folder'){
+              return -1; // folder is always before dataset
+            } else {
+              return 1;
+            }
+          }
+        };
+        this.sort();
+        return this;
+      }
+    });
+
     var FolderContainer = Backbone.Model.extend({
         defaults : {
             folder : new Folder(),
@@ -77,12 +159,15 @@ define([], function() {
       }
     });
 
-    // HISTORY ITEM
+
+// ============================================================================
+// HISTORY RELATED MODELS
+// TODO UNITE
+
     var HistoryItem = Backbone.Model.extend({
       urlRoot : '/api/histories/'
     });
 
-    // HISTORY CONTENTS
     var HistoryContents = Backbone.Collection.extend({
       urlRoot : '/api/histories/',
       initialize: function(options){
@@ -94,18 +179,15 @@ define([], function() {
       model : HistoryItem
     });
 
-    // HISTORY
     var GalaxyHistory = Backbone.Model.extend({
       urlRoot : '/api/histories/'
     });
 
-    // HISTORIES
     var GalaxyHistories = Backbone.Collection.extend({
       url : '/api/histories',
       model : GalaxyHistory
     });
 
-// return
 return {
     Library: Library,
     FolderAsModel : FolderAsModel,

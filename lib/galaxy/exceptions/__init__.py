@@ -89,6 +89,10 @@ class ConfigDoesNotAllowException( MessageException ):
     status_code = 403
     err_code = error_codes.CONFIG_DOES_NOT_ALLOW
 
+class InsufficientPermissionsException( MessageException ):
+    status_code = 403
+    err_code = error_codes.INSUFFICIENT_PERMISSIONS
+
 class ObjectNotFound( MessageException ):
     """ Accessed object was not found """
     status_code = 404

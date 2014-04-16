@@ -224,26 +224,9 @@ def app_factory( global_conf, **kwargs ):
                            action='download',
                            conditions=dict( method=[ "POST", "GET" ] ) )
 
-    webapp.mapper.connect( 'create_folder',
-                           '/api/folders/:encoded_parent_folder_id',
-                           controller='folders',
-                           action='create',
-                           conditions=dict( method=[ "POST" ] ) )
-
     webapp.mapper.resource_with_deleted( 'library',
                                          'libraries',
                                          path_prefix='/api' )
-    webapp.mapper.resource( 'folder',
-                            'folders',
-                            path_prefix='/api' )
-
-    webapp.mapper.resource( 'content',
-                            'contents',
-                            controller='folder_contents',
-                            name_prefix='folder_',
-                            path_prefix='/api/folders/:folder_id',
-                            parent_resources=dict( member_name='folder', collection_name='folders' ),
-                            conditions=dict( method=[ "GET" ] )  )
 
     webapp.mapper.resource( 'content',
                             'contents',
@@ -257,6 +240,38 @@ def app_factory( global_conf, **kwargs ):
                             path_prefix='/api/libraries/:library_id',
                             parent_resources=dict( member_name='library', collection_name='libraries' ) )
 
+    _add_item_extended_metadata_controller( webapp,
+                               name_prefix="library_dataset_",
+                               path_prefix='/api/libraries/:library_id/contents/:library_content_id' )
+
+    # =======================
+    # ===== FOLDERS API =====
+    # =======================
+
+    webapp.mapper.connect( 'add_history_datasets_to_library',
+                           '/api/folders/:encoded_folder_id/contents',
+                           controller='folder_contents',
+                           action='create',
+                           conditions=dict( method=[ "POST" ] ) )
+
+    webapp.mapper.connect( 'create_folder',
+                           '/api/folders/:encoded_parent_folder_id',
+                           controller='folders',
+                           action='create',
+                           conditions=dict( method=[ "POST" ] ) )
+
+    webapp.mapper.resource( 'folder',
+                            'folders',
+                            path_prefix='/api' )
+
+    webapp.mapper.resource( 'content',
+                            'contents',
+                            controller='folder_contents',
+                            name_prefix='folder_',
+                            path_prefix='/api/folders/:folder_id',
+                            parent_resources=dict( member_name='folder', collection_name='folders' ),
+                            conditions=dict( method=[ "GET" ] )  )
+
     webapp.mapper.resource( 'job',
                             'jobs',
                             path_prefix='/api' )
@@ -268,12 +283,7 @@ def app_factory( global_conf, **kwargs ):
                             controller="job_files",
                             name_prefix="job_",
                             path_prefix='/api/jobs/:job_id',
-                            parent_resources=dict( member_name="job", collection_name="jobs")
-    )
-
-    _add_item_extended_metadata_controller( webapp,
-                               name_prefix="library_dataset_",
-                               path_prefix='/api/libraries/:library_id/contents/:library_content_id' )
+                            parent_resources=dict( member_name="job", collection_name="jobs" ) )
 
     _add_item_extended_metadata_controller( webapp,
                                name_prefix="history_dataset_",

@@ -23,10 +23,13 @@ var FolderListView = Backbone.View.extend({
 
   folderContainer: null,
 
+  sort: 'asc',
+
   // event binding
   events: {
-    'click #select-all-checkboxes' : 'selectAll',
-    'click .dataset_row' : 'selectClickedRow'
+    'click #select-all-checkboxes'  : 'selectAll',
+    'click .dataset_row'            : 'selectClickedRow',
+    'click .sort-folder-link'       : 'sort_clicked'
   },
     // initialize
     initialize : function(options){
@@ -34,12 +37,18 @@ var FolderListView = Backbone.View.extend({
         this.options = _.defaults(this.options || {}, options);
         this.queue = jQuery.Deferred();
         this.queue.resolve();
-
+        this.collection = new mod_library_model.Folder();
+        this.listenTo(this.collection, 'add', this.addOne);
+        
         this.folderContainer = new mod_library_model.FolderContainer({id: this.options.id});
         this.folderContainer.url = this.folderContainer.attributes.urlRoot + this.options.id + '/contents';
         this.folderContainer.fetch({
-            success: function (folderContainer) {
-                that.render();
+            success: function (folder_container) {
+              that.render();
+
+              var items = folder_container.get('folder').models;
+              that.addAll(items);
+
             },
             error: function(){
               mod_toastr.error('An error occured :(');
@@ -54,13 +63,13 @@ var FolderListView = Backbone.View.extend({
 
       // TODO move to server
       // prepare nice size strings
-      for (var i = 0; i < this.folderContainer.attributes.folder.models.length; i++) {
-        var model = this.folderContainer.attributes.folder.models[i];
-        if (model.get('type') === 'file'){
-          contains_file = true;
-          model.set('readable_size', this.size_to_string(model.get('file_size')));
-        }
-      }
+      // for (var i = 0; i < this.collection.models.length; i++) {
+      //   var model = this.collection.models[i];
+      //   if (model.get('type') === 'file'){
+      //     contains_file = true;
+      //     model.set('readable_size', this.size_to_string(model.get('file_size')));
+      //   }
+      // }
 
       // TODO move to server
       // find the upper id in the full path
@@ -73,16 +82,16 @@ var FolderListView = Backbone.View.extend({
       }
       // TODO add template when folder is empty
 
-      this.$el.html(template({ path: this.folderContainer.attributes.metadata.full_path, id: this.options.id, upper_folder_id: upper_folder_id }));
+      this.$el.html(template({ path: this.folderContainer.attributes.metadata.full_path, id: this.options.id, upper_folder_id: upper_folder_id, order: this.sort}));
       // this.$el.html(template({ path: this.folderContainer.attributes.metadata.full_path, items: this.folderContainer.attributes.folder.models, id: this.options.id, upper_folder_id: upper_folder_id }));
 
-      if (this.folderContainer.attributes.folder.models.length > 0){
+      if (this.collection.models.length > 0){
         this.renderRows();
       }
       // if (this.folderContainer.attributes.metadata.can_add_library_item === true){
-      var metadata = this.folderContainer.attributes.metadata;
-      metadata.contains_file = contains_file;
-      Galaxy.libraries.folderToolbarView.configureElements(metadata);
+      var options = this.folderContainer.attributes.metadata;
+      options.contains_file = this.options.contains_file;
+      Galaxy.libraries.folderToolbarView.configureElements(options);
       // Galaxy.libraries.folderToolbarView.configureElements({ can_add_library_item: this.folderContainer.attributes.metadata.can_add_library_item, contains_file: contains_file });
       // }
 
@@ -93,92 +102,128 @@ var FolderListView = Backbone.View.extend({
     },
 
     renderRows: function(){
-      for (var i = 0; i < this.folderContainer.attributes.folder.models.length; i++) {
-        var folder_item = this.folderContainer.attributes.folder.models[i];
+      for (var i = 0; i < this.collection.models.length; i++) {
+        var folder_item = this.collection.models[i];
         var rowView = new mod_library_folderrow_view.FolderRowView(folder_item);
         this.$el.find('#folder_list_body').append(rowView.el);
       }
     },
 
-      // convert size to nice string
-      size_to_string : function (size){
-        // identify unit
-        var unit = "";
-        if (size >= 100000000000)   { size = size / 100000000000; unit = "TB"; } else
-        if (size >= 100000000)      { size = size / 100000000; unit = "GB"; } else
-        if (size >= 100000)         { size = size / 100000; unit = "MB"; } else
-        if (size >= 100)            { size = size / 100; unit = "KB"; } else
-        { size = size * 10; unit = "b"; }
-        // return formatted string
-        return (Math.round(size) / 10) + unit;
+    addAll:function(items){
+      _.each(items.reverse(), function(item) {
+        Galaxy.libraries.folderListView.collection.add(item);
+      });
+    },
+
+    addOne: function(model){
+      if (model.get('type') === 'file'){
+          this.options.contains_file = true;
+          model.set('readable_size', this.size_to_string(model.get('file_size')));
+        }
+      var rowView = new mod_library_folderrow_view.FolderRowView(model);
+      this.$el.find('#folder_list_body').prepend(rowView.el);
+    },
+
+    sort_clicked : function(event){
+      event.preventDefault();
+      if (this.sort === 'asc'){
+          this.sortFolder('name','desc');
+          this.sort = 'desc';
+      } else {
+          this.sortFolder('name','asc');
+          this.sort = 'asc';
+      }
+      this.render();
+    },
+
+    /** Sorts the underlying collection according to the parameters received. 
+    Currently supports only sorting by name. */
+    sortFolder: function(sort_by, order){
+        if (sort_by === 'name'){
+            if (order === 'asc'){
+                this.collection.sortByNameAsc();
+            } else if (order === 'desc'){
+                this.collection.sortByNameDesc();
+            }
+        }
+    },
+
+    // convert size to nice string
+    size_to_string : function (size){
+      // identify unit
+      var unit = "";
+      if (size >= 100000000000)   { size = size / 100000000000; unit = "TB"; } else
+      if (size >= 100000000)      { size = size / 100000000; unit = "GB"; } else
+      if (size >= 100000)         { size = size / 100000; unit = "MB"; } else
+      if (size >= 100)            { size = size / 100; unit = "KB"; } else
+      { size = size * 10; unit = "b"; }
+      // return formatted string
+      return (Math.round(size) / 10) + unit;
+    },
+
+      // select all datasets
+      selectAll : function (event) {
+           var selected = event.target.checked;
+           that = this;
+           // Iterate each checkbox
+           $(':checkbox').each(function() {
+              this.checked = selected;
+              $row = $(this.parentElement.parentElement);
+              // Change color of selected/unselected
+              (selected) ? that.makeDarkRow($row) : that.makeWhiteRow($row);
+          });
+           // Show the tools in menu
+           // this.checkTools();
+       },
+
+      // Check checkbox on row itself or row checkbox click
+      selectClickedRow : function (event) {
+        var checkbox = '';
+        var $row;
+        var source;
+        if (event.target.localName === 'input'){
+            checkbox = event.target;
+            $row = $(event.target.parentElement.parentElement);
+            source = 'input';
+        } else if (event.target.localName === 'td') {
+            checkbox = $("#" + event.target.parentElement.id).find(':checkbox')[0];
+            $row = $(event.target.parentElement);
+            source = 'td';
+        }
+        if (checkbox.checked){
+            if (source==='td'){
+                checkbox.checked = '';
+                this.makeWhiteRow($row);
+            } else if (source==='input') {
+                this.makeDarkRow($row);
+            }
+        } else {
+            if (source==='td'){
+                checkbox.checked = 'selected';
+                this.makeDarkRow($row);
+            } else if (source==='input') {
+                this.makeWhiteRow($row);
+            }
+        }
       },
 
-        // select all datasets
-        selectAll : function (event) {
-             var selected = event.target.checked;
-             that = this;
-             // Iterate each checkbox
-             $(':checkbox').each(function() {
-                this.checked = selected;
-                $row = $(this.parentElement.parentElement);
-                // Change color of selected/unselected
-                (selected) ? that.makeDarkRow($row) : that.makeWhiteRow($row);
-            });
-             // Show the tools in menu
-             // this.checkTools();
-         },
+      makeDarkRow: function($row){
+        $row.removeClass('light');
+        $row.find('a').removeClass('light');
+        $row.addClass('dark');
+        $row.find('a').addClass('dark');
+        $row.find('span').removeClass('fa-file-o');
+        $row.find('span').addClass('fa-file');
+      },
 
-         // Check checkbox on row itself or row checkbox click
-         selectClickedRow : function (event) {
-            var checkbox = '';
-            var $row;
-            var source;
-            if (event.target.localName === 'input'){
-                checkbox = event.target;
-                $row = $(event.target.parentElement.parentElement);
-                source = 'input';
-            } else if (event.target.localName === 'td') {
-                checkbox = $("#" + event.target.parentElement.id).find(':checkbox')[0];
-                $row = $(event.target.parentElement);
-                source = 'td';
-            }
-
-                if (checkbox.checked){
-                    if (source==='td'){
-                        checkbox.checked = '';
-                        this.makeWhiteRow($row);
-                    } else if (source==='input') {
-                        this.makeDarkRow($row);
-                    }
-                } else {
-                    if (source==='td'){
-                        checkbox.checked = 'selected';
-                        this.makeDarkRow($row);
-                    } else if (source==='input') {
-                        this.makeWhiteRow($row);
-                    }
-                }
-                // this.checkTools();
-        },
-
-        makeDarkRow: function($row){
-            $row.removeClass('light');
-            $row.find('a').removeClass('light');
-            $row.addClass('dark');
-            $row.find('a').addClass('dark');
-            $row.find('span').removeClass('fa-file-o');
-            $row.find('span').addClass('fa-file');
-
-        },
-
-        makeWhiteRow: function($row){
-            $row.removeClass('dark');
-            $row.find('a').removeClass('dark');
-            $row.addClass('light');
-            $row.find('a').addClass('light');
-            $row.find('span').addClass('fa-file-o');
-            $row.find('span').removeClass('fa-file');
-        },
+      makeWhiteRow: function($row){
+        $row.removeClass('dark');
+        $row.find('a').removeClass('dark');
+        $row.addClass('light');
+        $row.find('a').addClass('light');
+        $row.find('span').addClass('fa-file-o');
+        $row.find('span').removeClass('fa-file');
+      },
 
 // MMMMMMMMMMMMMMMMMM
 // === TEMPLATES ====
@@ -205,20 +250,20 @@ var FolderListView = Backbone.View.extend({
         tmpl_array.push('   <thead>');
         tmpl_array.push('       <th class="button_heading"></th>');
         tmpl_array.push('       <th style="text-align: center; width: 20px; "><input id="select-all-checkboxes" style="margin: 0;" type="checkbox"></th>');
-        tmpl_array.push('       <th>name</th>');
+        tmpl_array.push('       <th><a class="sort-folder-link" title="Click to reverse order" href="#">name</a> <span title="Sorted alphabetically" class="fa fa-sort-alpha-<%- order %>"></span></th>');
         tmpl_array.push('       <th>data type</th>');
         tmpl_array.push('       <th>size</th>');
         tmpl_array.push('       <th>time updated (UTC)</th>');
         tmpl_array.push('   </thead>');
         tmpl_array.push('   <tbody id="folder_list_body">');
-        tmpl_array.push('       <tr>');
-        tmpl_array.push('           <td><a href="#<% if (upper_folder_id !== 0){ print("folders/" + upper_folder_id)} %>" title="Go to parent folder" class="btn_open_folder btn btn-default btn-xs">..<a></td>');
-        tmpl_array.push('           <td></td>');
-        tmpl_array.push('           <td></td>');
-        tmpl_array.push('           <td></td>');
-        tmpl_array.push('           <td></td>');
-        tmpl_array.push('           <td></td>');
-        tmpl_array.push('       </tr>');
+        // tmpl_array.push('       <tr>');
+        // tmpl_array.push('           <td><a href="#<% if (upper_folder_id !== 0){ print("folders/" + upper_folder_id)} %>" title="Go to parent folder" class="btn_open_folder btn btn-default btn-xs">..<a></td>');
+        // tmpl_array.push('           <td></td>');
+        // tmpl_array.push('           <td></td>');
+        // tmpl_array.push('           <td></td>');
+        // tmpl_array.push('           <td></td>');
+        // tmpl_array.push('           <td></td>');
+        // tmpl_array.push('       </tr>');
 
         tmpl_array.push('   </tbody>');
         tmpl_array.push('</table>');

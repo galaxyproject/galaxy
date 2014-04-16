@@ -75,6 +75,11 @@
     "message": "The configuration of this Galaxy instance does not allow that operation"
    },
    {
+    "name": "INSUFFICIENT_PERMISSIONS",
+    "code": 403005,
+    "message": "You don't have proper permissions to perform the requested operation"
+   },
+   {
     "name": "USER_OBJECT_NOT_FOUND",
     "code": 404001,
     "message": "No such object found."
