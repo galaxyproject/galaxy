@@ -4,6 +4,10 @@ define(['mvc/ui/ui-portlet', 'plugin/library/ui', 'utils/utils'],
 
 // widget
 return Backbone.View.extend({
+
+    // list of canvas elements
+    canvas: [],
+    
     // initialize
     initialize: function(app, options) {
         // link app
@@ -81,22 +85,31 @@ return Backbone.View.extend({
         });
     },
     
-    // create
-    _create_canvas: function(element) {
-        // clear canvas
-        if (this.canvas) {
-            this.canvas.remove();
+    // creates n canvas elements
+    _create_canvas: function(tag, n) {
+        // check size of requested canvas elements
+        n = n || 1;
+    
+        // clear previous canvas elements
+        for (var i in this.canvas) {
+            this.canvas[i].remove();
+            this.canvas.slice(i, 0);
         }
         
-        // create
-        this.$el.append($(this._template_canvas(element)));
-        
-        // find canvas element
-        var canvas_el = this.$el.find('.canvas');
-        if (element == 'svg') {
-            this.canvas = d3.select(canvas_el[0]);
-        } else {
-            this.canvas = canvas_el;
+        // create requested canvas elements
+        for (var i = 0; i < n; i++) {
+            // create element
+            var canvas_el = $(this._template_canvas(tag, parseInt(100 / n)));
+            
+            // add to view
+            this.$el.append(canvas_el);
+            
+            // find canvas element
+            if (tag == 'svg') {
+                this.canvas[i] = d3.select(canvas_el[0]);
+            } else {
+                this.canvas[i] = canvas_el;
+            }
         }
     },
     
@@ -114,8 +127,17 @@ return Backbone.View.extend({
         // load chart settings
         this.chart_settings = this.app.types.get(chart_type);
         
-        // create canvas element
-        this._create_canvas(this.chart_settings.element);
+        // read settings
+        var use_panels = this.chart_settings.use_panels;
+        
+        // determine number of svg/div-elements to create
+        var n_panels = 1;
+        if (use_panels) {
+            n_panels = chart.groups.length;
+        }
+        
+        // create canvas element and add to canvas list
+        this._create_canvas(this.chart_settings.tag, n_panels);
             
         // set chart state
         chart.state('wait', 'Please wait...');
@@ -247,8 +269,8 @@ return Backbone.View.extend({
     },
     
     // template svg/div element
-    _template_canvas: function(element) {
-        return '<' + element + ' class="canvas" style="height: 100%;"/>';
+    _template_canvas: function(tag, width) {
+        return '<' + tag + ' class="canvas" style="float: left; display: block; width:' + width + '%; height: 100%;"/>';
     }
     
 });

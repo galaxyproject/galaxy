@@ -48,8 +48,8 @@ return Backbone.View.extend(
                 }
                 
                 // parse data to canvas
-                self.options.canvas.datum(request_dictionary.groups)
-                                   .call(nvd3_model);
+                self.options.canvas[0].datum(request_dictionary.groups)
+                                      .call(nvd3_model);
      
                 // refresh on window resize
                 nv.utils.windowResize(nvd3_model.update);

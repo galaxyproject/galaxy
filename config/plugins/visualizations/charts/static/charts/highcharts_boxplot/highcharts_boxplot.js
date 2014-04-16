@@ -108,7 +108,7 @@ return Backbone.View.extend(
             self.hc_config.series[0].data = data;
         
             // draw plot
-            self.options.canvas.highcharts(self.hc_config);
+            self.options.canvas[0].highcharts(self.hc_config);
             
             // set chart state
             chart.state('ok', 'Box plot drawn.');

@@ -3,7 +3,7 @@ define([], function() {
 return {
     title       : '',
     library     : 'nvd3.js',
-    element     : 'svg',
+    tag         : 'svg',
     columns : {
         y : {
             title   : 'Values for y-axis'
@@ -213,7 +213,7 @@ return {
                     value   : 'false'
                 }
             ]
-        },
+        }
     }
 };
 
