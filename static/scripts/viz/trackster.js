@@ -29,9 +29,7 @@ require(
 });
 
 // trackster viewer
-define( ["libs/backbone/backbone", "viz/visualization", "viz/trackster_ui"],
-        function(backbone, visualization, trackster_ui)
-{
+define( ["libs/backbone/backbone", "viz/trackster_ui"], function(backbone, trackster_ui) {
 
 var TracksterView = Backbone.View.extend(
 {
@@ -65,13 +63,6 @@ var TracksterView = Backbone.View.extend(
             this.view_existing();
         else
             this.view_new();
-    },
-
-    // set up router
-    set_up_router : function(options)
-    {
-        browser_router = new visualization.TrackBrowserRouter(options);
-        Backbone.history.start();   
     },
 
     // view
@@ -221,9 +212,6 @@ var TracksterView = Backbone.View.extend(
 
         // initialize keyboard
         ui.init_keyboard_nav(view);
-
-        // set up router
-        this.set_up_router({view: view});
     }
 });
 

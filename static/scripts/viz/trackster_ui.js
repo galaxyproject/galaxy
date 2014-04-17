@@ -283,8 +283,20 @@ var TracksterUI = base.Base.extend({
             // View has no changes as of yet.
             view.has_changes = false;
         });
+
+        // Final initialization.
+        this.set_up_router({view: view});
         
         return view;
+    },
+
+    /**
+     * Set up location router to use hashes as track browser locations.
+     */
+    set_up_router : function(options)
+    {
+        new visualization.TrackBrowserRouter(options);
+        Backbone.history.start();
     },
 
     /**
