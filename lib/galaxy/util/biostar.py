@@ -2,6 +2,7 @@
 Support for integration with the Biostar application
 """
 
+import logging
 import hmac
 import urlparse
 import re
@@ -9,6 +10,8 @@ from unicodedata import normalize
 from galaxy.web.base.controller import url_for
 from galaxy.tools.errors import ErrorReporter
 from . import smart_str
+
+log = logging.getLogger( __name__ )
 
 _punct_re = re.compile(r'[\t !"#$%&\'()*\-/<=>?@\[\\\]^_`{|},.]+')
 
@@ -113,7 +116,10 @@ def determine_cookie_domain( galaxy_hostname, biostar_hostname ):
     
     return galaxy_hostname
 
-def create_cookie( trans, key_name, key, email, age=DEFAULT_BIOSTAR_COOKIE_AGE ):
+def create_cookie( trans, key_name, key, email, age=DEFAULT_BIOSTAR_COOKIE_AGE, override_never_authenticate=False ):
+    if trans.app.config.biostar_never_authenticate and not override_never_authenticate:
+        log.debug( 'A BioStar link was clicked, but never authenticate has been enabled, so we will not create the login cookie.' )
+        return
     digest = hmac.new( key, email ).hexdigest()
     value = "%s:%s" % (email, digest)
     trans.set_cookie( value, name=key_name, path='/', age=age, version='1' )
@@ -125,7 +131,7 @@ def create_cookie( trans, key_name, key, email, age=DEFAULT_BIOSTAR_COOKIE_AGE )
 def delete_cookie( trans, key_name ):
     #Set expiration of Cookie to time in past, to cause browser to delete
     if key_name in trans.request.cookies:
-        create_cookie( trans, trans.app.config.biostar_key_name, '', '', age=-90 )
+        create_cookie( trans, trans.app.config.biostar_key_name, '', '', age=-90, override_never_authenticate=True )
 
 def biostar_logged_in( trans ):
     if biostar_enabled( trans.app ):
