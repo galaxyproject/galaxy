@@ -4,10 +4,10 @@ from base.twilltestcase import *
 from base.test_db_util import *
 
 
-# TODO: Functional tests start failing at 025, fix or eliminate rest of tests.
 class TestFormsAndSampleTracking( TwillTestCase ):
     # ====== Setup Users, Groups & Roles required for this test suite ========= 
-    def test_000_initiate_users( self ):
+
+    def test_0000_initiate_users( self ):
         """Ensuring all required user accounts exist"""
         self.logout()
         self.login( email='test1@bx.psu.edu', username='regular-user1' )
@@ -37,7 +37,8 @@ class TestFormsAndSampleTracking( TwillTestCase ):
         assert admin_user is not None, 'Problem retrieving user with email "test@bx.psu.edu" from the database'
         global admin_user_private_role
         admin_user_private_role = get_private_role( admin_user )
-    def test_005_create_required_groups_and_roles( self ):
+
+    def test_0005_create_required_groups_and_roles( self ):
         """Testing creating all required groups and roles for this script"""
         # Logged in as admin_user
         # Create role1
@@ -80,7 +81,8 @@ class TestFormsAndSampleTracking( TwillTestCase ):
         global role2
         role2 = get_role_by_name( name )
         assert role2 is not None, 'Problem retrieving role named "Role2" from the database'
-    def test_006_create_library_and_folder( self ):
+
+    def test_0010_create_library( self ):
         """Testing creating the target data library and folder"""
         # Logged in as admin_user
         for index in range( 0, 2 ):
@@ -108,6 +110,8 @@ class TestFormsAndSampleTracking( TwillTestCase ):
                                       str( role1.id ),
                                       permissions_in,
                                       permissions_out )
+
+    def test_0015_create_folders( self ):
         # adding a folder
         for library in [ library1, library2 ]:
             name = "%s_folder1" % library.name
@@ -161,7 +165,8 @@ class TestFormsAndSampleTracking( TwillTestCase ):
     #
     # ====== Form definition test methods ================================================ 
     #
-    def test_010_create_request_form_definition( self ):
+
+    def test_0020_create_request_form_definition( self ):
         """Testing creating a sequencing request form definition, editing the name and description and adding fields"""
         # Logged in as admin_user
         # Create a form definition
@@ -175,10 +180,15 @@ class TestFormsAndSampleTracking( TwillTestCase ):
                           field_name='1_field_name',
                           strings_displayed=[ 'Create a new form definition' ],
                           strings_displayed_after_submit=[ tmp_name, tmp_desc, form_type ] )
+
+    def test_0025_edit_request_form_fields( self ):
+        # field names
+        tmp_name = "Temp form"
         tmp_form = get_form( tmp_name )
         # Edit the name and description of the form definition, and add 3 fields.
         new_name = "Request Form"
         new_desc = "Request Form description"
+        form_type = galaxy.model.FormDefinition.types.REQUEST
         # labels
         global request_field_label1
         request_field_label1 = 'Request form field1'
@@ -186,7 +196,6 @@ class TestFormsAndSampleTracking( TwillTestCase ):
         request_field_label2 = 'Request form field2'
         global request_field_label3
         request_field_label3 = 'Request form field3'
-        # field names
         global request_form_field_name1
         request_form_field_name1 = 'request_form_field1'
         global request_form_field_name2
@@ -227,7 +236,8 @@ class TestFormsAndSampleTracking( TwillTestCase ):
                         form_desc=new_desc,
                         form_type=form_type,
                         field_dicts=field_dicts )
-    def test_015_create_sample_form_definition( self ):
+
+    def test_0030_create_sample_form_definition( self ):
         """Testing creating sequencing sample form definition and adding fields"""
         name = "Sample Form"
         desc = "This is Sample Form's description"
@@ -242,8 +252,13 @@ class TestFormsAndSampleTracking( TwillTestCase ):
                           field_name='1_field_name',
                           strings_displayed=[ 'Create a new form definition' ],
                           strings_displayed_after_submit=[ "The form '%s' has been updated with the changes." % name ] )
-        tmp_form = get_form( name )
+
+    def test_0035_add_fields_to_sample_form( self ):
         # now add fields to the sample form definition
+        name = "Sample Form"
+        desc = "This is Sample Form's description"
+        form_type = galaxy.model.FormDefinition.types.SAMPLE
+        tmp_form = get_form( name )
         global sample_field_label1
         sample_field_label1 = 'Sample form field1'
         global sample_field_label2
@@ -284,7 +299,8 @@ class TestFormsAndSampleTracking( TwillTestCase ):
                         form_type=form_type,
                         form_layout_name=sample_form_layout_grid_name,
                         field_dicts=field_dicts )
-    def test_020_create_request_type( self ):
+
+    def test_0040_create_request_type( self ):
         """Testing creating a request_type"""
         name = 'Request type1'
         sample_states = [  ( 'New', 'Sample entered into the system' ), 
@@ -308,11 +324,12 @@ class TestFormsAndSampleTracking( TwillTestCase ):
                                 strings_displayed=[ request_form_definition1.name,
                                                     sample_form_definition1.name ],
                                 sample_states=sample_states)
-        # Set permissions
-        permissions_in = [ k for k, v in galaxy.model.RequestType.permitted_actions.items() ]
-        permissions_out = []
+
+    def test_0045_set_request_type_permissions( self ):
         # Role1 members are: admin_user, regular_user1, regular_user3.  Each of these users will be permitted for
         # REQUEST_TYPE_ACCESS on this request_type
+        permissions_in = [ k for k, v in galaxy.model.RequestType.permitted_actions.items() ]
+        permissions_out = []
         self.request_type_permissions( self.security.encode_id( request_type1.id ),
                                        request_type1.name,
                                        str( role1.id ),
@@ -330,7 +347,8 @@ class TestFormsAndSampleTracking( TwillTestCase ):
         self.logout()
         self.login( email=admin_user.email )
     # ====== Sequencing request test methods - regular user perspective ================ 
-    def test_025_create_request( self ):
+
+    def test_0050_create_request( self ):
         """Testing creating a sequencing request as a regular user"""
         # logged in as admin_user
         # Create a user_address
@@ -369,7 +387,9 @@ class TestFormsAndSampleTracking( TwillTestCase ):
                              strings_displayed_after_submit=[ 'The sequencing request has been created.',
                                                               name, desc ] )
         global request1
-        request1 = get_request_by_name( name )        
+        request1 = get_request_by_name( name )
+
+    def test_0055_verify_request_details( self ):
         # Make sure the request's state is now set to NEW
         assert request1.state is not request1.states.NEW, "The state of the request '%s' should be set to '%s'" \
             % ( request1.name, request1.states.NEW )
@@ -394,7 +414,8 @@ class TestFormsAndSampleTracking( TwillTestCase ):
                                    strings_not_displayed=[ request1.states.SUBMITTED,
                                                            request1.states.COMPLETE,
                                                            request1.states.REJECTED ] )
-    def test_030_edit_basic_request_info( self ):
+
+    def test_0060_edit_basic_request_info( self ):
         """Testing editing the basic information and email settings of a sequencing request"""
         # logged in as regular_user1
         fields = [ ( request_form_field_name1, 'option2' ), 
@@ -443,7 +464,8 @@ class TestFormsAndSampleTracking( TwillTestCase ):
                            request_id=self.security.encode_id( request1.id ),
                            strings_displayed=strings_displayed,
                            strings_not_displayed=[] )
-    def test_035_add_samples_to_request( self ):
+
+    def test_0065_add_samples_to_request( self ):
         """Testing adding samples to request"""
         # logged in as regular_user1
         # Sample fields - the tuple represents a sample name and a list of sample form field values
@@ -481,7 +503,8 @@ class TestFormsAndSampleTracking( TwillTestCase ):
                            request_id=self.security.encode_id( request1.id ),
                            strings_displayed=strings_displayed,
                            strings_displayed_count=strings_displayed_count )
-    def test_040_edit_samples_of_new_request( self ):
+
+    def test_0070_edit_samples_of_new_request( self ):
         """Testing editing the sample information of new request1"""
         # logged in as regular_user1
         # target data library - change it to library1
@@ -519,7 +542,8 @@ class TestFormsAndSampleTracking( TwillTestCase ):
                            request_id=self.security.encode_id( request1.id ),
                            strings_displayed=strings_displayed,
                            strings_displayed_count=strings_displayed_count )
-    def test_045_submit_request( self ):
+
+    def test_0075_submit_request( self ):
         """Testing submitting a sequencing request"""
         # logged in as regular_user1
         self.submit_request( cntrller='requests',
@@ -555,7 +579,8 @@ class TestFormsAndSampleTracking( TwillTestCase ):
                                    strings_not_displayed=[ request1.states.COMPLETE,
                                                            request1.states.REJECTED ] )
     # ====== Sequencing request test methods - Admin perspective ================ 
-    def test_050_receive_request_as_admin( self ):
+
+    def test_0080_receive_request_as_admin( self ):
         """Testing receiving a sequencing request and assigning it barcodes"""
         # logged in as regular_user1
         self.logout()
@@ -571,6 +596,8 @@ class TestFormsAndSampleTracking( TwillTestCase ):
         self.view_request( cntrller='requests_admin',
                            request_id=self.security.encode_id( request1.id ),
                            strings_displayed=strings_displayed )
+
+    def test_0085_add_bar_codes( self ):
         # Set bar codes for the samples
         bar_codes = [ '10001', '10002', '10003' ]
         strings_displayed_after_submit = [ 'Changes made to the samples have been saved.' ]
@@ -604,7 +631,8 @@ class TestFormsAndSampleTracking( TwillTestCase ):
                                       sample_id=self.security.encode_id( sample.id ),
                                       strings_displayed=strings_displayed,
                                       strings_not_displayed=strings_not_displayed )
-    def test_055_request_lifecycle( self ):
+
+    def test_0090_request_lifecycle( self ):
         """Testing request life-cycle as it goes through all the states"""
         # logged in as admin_user
         self.check_request_grid( cntrller='requests_admin',
@@ -645,7 +673,8 @@ class TestFormsAndSampleTracking( TwillTestCase ):
                                  strings_displayed=[ request1.name ] )
         assert request1.state is not request1.states.COMPLETE, "The state of the sequencing request '%s' should be set to '%s'" \
             % ( request1.name, request1.states.COMPLETE )
-    def test_060_admin_create_request_on_behalf_of_regular_user( self ):
+
+    def test_0095_admin_create_request_on_behalf_of_regular_user( self ):
         """Testing creating and submitting a request as an admin on behalf of a regular user"""
         # Logged in as regular_user1
         self.logout()
@@ -691,7 +720,9 @@ class TestFormsAndSampleTracking( TwillTestCase ):
         # Make sure the request's state is now set to 'new'
         assert request2.state is not request2.states.NEW, "The state of the request '%s' should be set to '%s'" \
             % ( request2.name, request2.states.NEW )
-        target_library_info = dict(library='none', folder='none' )
+
+    def test_0100_add_samples_to_request( self ):
+        target_library_info = dict( library='none', folder='none' )
         # Sample fields - the tuple represents a sample name and a list of sample form field values
         sample_value_tuples = \
         [ ( 'Sample1', target_library_info, [ 'option1', 'sample1 field2 value', 'sample1 field3 value' ] ),
@@ -710,7 +741,7 @@ class TestFormsAndSampleTracking( TwillTestCase ):
                                               '<input type="text" name="sample_0_name" value="Sample_1" size="10"/>' ], # sample name input field
                           strings_displayed_after_submit=strings_displayed_after_submit )
         # Submit the request
-        select_target_library_message = "Select a target data library and folder for a sample before selecting it's datasets to transfer from the external service"
+        select_target_library_message = "Select a target data library and folder for a sample before selecting its datasets to transfer from the external service"
         self.submit_request( cntrller='requests_admin',
                              request_id=self.security.encode_id( request2.id ),
                              request_name=request2.name,
@@ -728,6 +759,8 @@ class TestFormsAndSampleTracking( TwillTestCase ):
         self.check_request_grid( cntrller='requests_admin',
                                  state='All',
                                  strings_displayed=[ request1.name, request2.name ] )
+
+    def test_0105_set_request_target_library( self ):
         # list folders that populates folder selectfield when a data library is selected
         folder_options = [ library2_folder1.name, library2_folder2.name, library2_folder3.name, library2_folder4.name ]
         # set the target data library to library2 using sample operation user interface
@@ -749,7 +782,8 @@ class TestFormsAndSampleTracking( TwillTestCase ):
                            strings_displayed=strings_displayed,
                            strings_not_displayed=[ select_target_library_message ],
                            strings_displayed_count=strings_displayed_count )
-    def test_065_reject_request( self ):
+
+    def test_0110_reject_request( self ):
         """Testing rejecting a request"""
         # Logged in as admin_user
         rejection_reason="This is why the sequencing request was rejected."
@@ -790,7 +824,8 @@ class TestFormsAndSampleTracking( TwillTestCase ):
                            strings_not_displayed=[ request1.states.SUBMITTED,
                                                    request1.states.COMPLETE,
                                                    request1.states.NEW] )
-    def __test_070_select_datasets_for_transfer( self ):
+
+    def __test_0115_select_datasets_for_transfer( self ):
         """Testing selecting datasets for data transfer"""
         # Logged in as admin_user
         self.logout()
@@ -820,7 +855,8 @@ class TestFormsAndSampleTracking( TwillTestCase ):
                                   sample1_dataset.transfer_status.NOT_STARTED ]
             self.view_sample_dataset( sample_dataset_id=self.security.encode_id( sample1_dataset.id ),
                                       strings_displayed=strings_displayed )
-    def __test_075_manage_sample_datasets( self ):
+
+    def __test_0120_manage_sample_datasets( self ):
         """Testing renaming, deleting and initiating transfer of sample datasets"""
         # Logged in as admin_user
         # Check renaming datasets
@@ -873,6 +909,7 @@ class TestFormsAndSampleTracking( TwillTestCase ):
                                   sample1_dataset.transfer_status.NOT_STARTED ]
             self.view_sample_dataset( sample_dataset_id=self.security.encode_id( sample1_dataset.id ),
                                       strings_displayed=strings_displayed )
+
     def test_999_reset_data_for_later_test_runs( self ):
         """Reseting data to enable later test runs to pass"""
         # Logged in as admin_user
@@ -887,8 +924,7 @@ class TestFormsAndSampleTracking( TwillTestCase ):
                                       self.security.encode_id( library.id ),
                                       library.name,
                                       item_type='library' )
-            self.purge_library( self.security.encode_id( library.id ), library.name )
-            
+            self.purge_library( self.security.encode_id( library.id ), library.name )             
         ##################
         # Mark all requests deleted and delete all their samples
         ##################
