@@ -43,7 +43,7 @@ return Backbone.Model.extend(
        
         // configure tool
         data = {
-            'tool_id'       : 'chartskit',
+            'tool_id'       : 'charts',
             'inputs'        : {
                 'input'     : {
                     'id'    : chart.get('dataset_id'),
@@ -122,7 +122,7 @@ return Backbone.Model.extend(
                 }
                 
                 // update state
-                chart.state('failed', 'This visualization requires the Charts-Kit. Please make sure it is installed. ' + message);
+                chart.state('failed', 'This visualization requires the \'charts\' tool. Please make sure it is installed. ' + message);
                 
                 // call error
                 error && error();
