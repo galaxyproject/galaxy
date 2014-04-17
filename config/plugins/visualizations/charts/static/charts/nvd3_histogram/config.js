@@ -13,10 +13,10 @@ return $.extend(true, {}, nvd3_config, {
             init : 'Breaks'
         },
         y_axis_label : {
-            init : 'Probability'
+            init : 'Density'
         },
         y_axis_type : {
-            init : 'p'
+            init : 'f'
         },
         y_axis_tick : {
             init : '.2'
