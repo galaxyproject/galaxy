@@ -167,8 +167,8 @@ return Backbone.Collection.extend(
                     
                     // get/fix value
                     var v = column_data[k];
-                    if (!column.is_label) {
-                        v = parseFloat(v);
+                    if (isNaN(v) && !column.is_label) {
+                        v = 0;
                     }
                     
                     // add to dict
@@ -231,7 +231,7 @@ return Backbone.Collection.extend(
                     for (var j in row) {
                         // get group
                         var v = row[j];
-                        if (v !== undefined && v != 'undefined') {
+                        if (v !== undefined && v != 2147483647) {
                             // add to result
                             result[j].push(v);
                         }
