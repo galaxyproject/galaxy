@@ -264,7 +264,7 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         adding ``ldda_message`` to the new ldda's ``message``.
 
         ``library_contents.create`` will branch to this if called with 'from_hda_id'
-        in it's payload.
+        in its payload.
         """
         log.debug( '_copy_hda_to_library_folder: %s' %( str(( from_hda_id, library_id, folder_id, ldda_message )) ) )
         #PRECONDITION: folder_id has already been altered to remove the folder prefix ('F')

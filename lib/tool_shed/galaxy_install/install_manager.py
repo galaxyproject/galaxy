@@ -159,7 +159,7 @@ class InstallManager( object ):
 
     def create_or_update_tool_shed_repository_records( self, name, changeset_revision, repository_dependencies_dict ):
         """
-        Make sure the repository defined by name and changeset_revision and all of it's repository dependencies have
+        Make sure the repository defined by name and changeset_revision and all of its repository dependencies have
         associated tool_shed_repository table rows in the Galaxy database.
         """
         created_tool_shed_repositories = []

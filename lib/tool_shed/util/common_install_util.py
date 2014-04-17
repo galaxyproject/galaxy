@@ -278,7 +278,7 @@ def get_installed_and_missing_repository_dependencies_for_new_or_updated_install
                         if new_rd_tup not in installed_rd_tups:
                             installed_rd_tups.append( new_rd_tup )
                     else:
-                        # A repository dependency that is not installed will not be considered missing if it's value
+                        # A repository dependency that is not installed will not be considered missing if its value
                         # for only_if_compiling_contained_td is True  This is because this type of repository dependency
                         # will only be considered at the time that the specified tool dependency is being installed, and
                         # even then only if the compiled binary of the tool dependency could not be installed due to the
@@ -296,7 +296,7 @@ def get_installed_and_missing_repository_dependencies_for_new_or_updated_install
                                    None,
                                   'Never installed' ]
                     if not util.asbool( only_if_compiling_contained_td ):
-                        # A repository dependency that is not installed will not be considered missing if it's value for
+                        # A repository dependency that is not installed will not be considered missing if its value for
                         # only_if_compiling_contained_td is True - see above...
                         if new_rd_tup not in missing_rd_tups:
                             missing_rd_tups.append( new_rd_tup )

@@ -24,7 +24,7 @@ class RepositoryRevisionsController( BaseAPIController ):
     def export( self, trans, payload, **kwd ):
         """
         POST /api/repository_revisions/export
-        Creates and saves a gzip compressed tar archive of a repository and optionally all of it's repository dependencies.
+        Creates and saves a gzip compressed tar archive of a repository and optionally all of its repository dependencies.
 
         The following parameters are included in the payload.
         :param tool_shed_url (required): the base URL of the Tool Shed from which the Repository is to be exported

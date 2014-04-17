@@ -107,7 +107,7 @@ def get_archives_from_manifest( manifest_file_path ):
     return archives, error_message
 
 def get_export_info_dict( export_info_file_path ):
-    """Parse the export_info.xml file contained within the capsule and return a dictionary containing it's entries."""
+    """Parse the export_info.xml file contained within the capsule and return a dictionary containing its entries."""
     export_info_tree, error_message = xml_util.parse_xml( export_info_file_path )
     export_info_root = export_info_tree.getroot()
     export_info_dict = {}
@@ -355,7 +355,7 @@ def upload_capsule( trans, **kwd ):
     return return_dict
 
 def validate_capsule( trans, **kwd ):
-    """Inspect the uploaded capsule's manifest and it's contained files to ensure it is a valid repository capsule."""
+    """Inspect the uploaded capsule's manifest and its contained files to ensure it is a valid repository capsule."""
     capsule_dict = {}
     capsule_dict.update( kwd )
     encoded_file_path = capsule_dict.get( 'encoded_file_path', '' )

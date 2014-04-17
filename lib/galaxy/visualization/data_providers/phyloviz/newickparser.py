@@ -80,7 +80,7 @@ class Newick_Parser(Base_Parser):
     def _mapName(self, newickString, nameMap):
         """
         Necessary to replace names of terms inside nexus representation
-        Also, its here because Mailaud's doesnt deal with id_strings outside of quotes(" ")
+        Also, it's here because Mailaud's doesnt deal with id_strings outside of quotes(" ")
         """
         newString = ""
         start = 0
@@ -120,7 +120,7 @@ class Newick_Parser(Base_Parser):
         # Base case where there is only an empty string
         if string == "":
             return
-            # Base case there its only an internal claude
+            # Base case there it's only an internal claude
         if string.find("(") == -1:
             return self._makeNodesFromString(string, depth)
 
@@ -172,7 +172,7 @@ class Newick_Parser(Base_Parser):
                     start = j + 1
                 continue
 
-        if depth == 0:    # if its the root node, we do nothing about it and return
+        if depth == 0:    # if it's the root node, we do nothing about it and return
             return nodes[0]
 
         # Adding last most set of children

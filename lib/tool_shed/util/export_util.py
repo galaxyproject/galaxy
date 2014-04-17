@@ -209,7 +209,7 @@ def get_repo_info_dict_for_import( encoded_repository_id, encoded_repository_ids
     """
     The received encoded_repository_ids and repo_info_dicts are lists that contain associated elements at each
     location in the list.  This method will return the element from repo_info_dicts associated with the received
-    encoded_repository_id by determining it's location in the received encoded_repository_ids list.
+    encoded_repository_id by determining its location in the received encoded_repository_ids list.
     """
     for index, repository_id in enumerate( encoded_repository_ids ):
         if repository_id == encoded_repository_id:

@@ -410,7 +410,7 @@ def handle_environment_variables( app, tool_dependency, install_dir, env_var_dic
 
     The second tag set defines a specific package dependency that has been previously installed (guaranteed by the
     tag set discussed above) and compiled, where the compiled dependency is needed by the tool dependency currently
-    being installed (osra version 2.0.0 in this case) and complied in order for it's installation and compilation to
+    being installed (osra version 2.0.0 in this case) and complied in order for its installation and compilation to
     succeed.  This tag set is contained within the <package name="osra" version="2.0.0"> tag set, which implies that
     version 2.0.0 of the osra package requires version 1.3.18 of the graphicsmagick package in order to successfully
     compile.  When this tag set is handled, one of the effects is that the env.sh file associated with graphicsmagick

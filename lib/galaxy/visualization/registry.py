@@ -473,7 +473,7 @@ class VisualizationsConfigParser( object ):
             returned[ 'render_target' ] = render_target.text
         else:
             returned[ 'render_target' ] = 'galaxy_main'
-        # consider unifying the above into it's own element and parsing method
+        # consider unifying the above into its own element and parsing method
 
         return returned
 
@@ -791,7 +791,7 @@ class ResourceParser( object ):
             # optionally rename the variable returned, defaulting to the original name
             var_name_in_template = param_config.get( 'var_name_in_template', param_name )
 
-            # if the param is present, get it's value, any param modifiers for that param, and parse it into a resource
+            # if the param is present, get its value, any param modifiers for that param, and parse it into a resource
             # use try catch here and not caller to fall back on the default value or re-raise if required
             resource = None
             query_val = query_params.get( param_name, None )

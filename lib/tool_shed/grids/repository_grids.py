@@ -1213,7 +1213,7 @@ class RepositoriesWithInvalidToolsGrid( RepositoryGrid ):
             grids.GridColumn.__init__( self, col_name )
 
         def get_value( self, trans, grid, repository ):
-            # At the time this grid is displayed we know that the received repository will have invalid tools in it's latest changeset revision
+            # At the time this grid is displayed we know that the received repository will have invalid tools in its latest changeset revision
             # that has associated metadata.
             val = ''
             repository_metadata = get_latest_repository_metadata_if_it_includes_invalid_tools( trans, repository )

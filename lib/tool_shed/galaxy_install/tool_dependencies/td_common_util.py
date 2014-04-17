@@ -189,7 +189,7 @@ def get_env_shell_file_paths( app, elem ):
                 tool_dependency_name = sub_elem.get( 'name' )
                 tool_dependency_version = sub_elem.get( 'version' )
                 if tool_dependency_type and tool_dependency_name and tool_dependency_version:
-                    # Get the tool_dependency so we can get it's installation directory.
+                    # Get the tool_dependency so we can get its installation directory.
                     tool_dependency = None
                     for tool_dependency in repository.tool_dependencies:
                         if tool_dependency.type == tool_dependency_type and \
@@ -335,7 +335,7 @@ def parse_package_elem( package_elem, platform_info_dict=None, include_after_ins
     # tag set) to be processed in the order they are defined in the tool_dependencies.xml file.
     actions_elem_tuples = []
     # The tag sets that will go into the actions_elem_list are those that install a compiled binary if
-    # the architecture and operating system match it's defined attributes.  If compiled binary is not
+    # the architecture and operating system match its defined attributes.  If compiled binary is not
     # installed, the first <actions> tag set [following those that have the os and architecture attributes]
     # that does not have os or architecture attributes will be processed.  This tag set must contain the
     # recipe for downloading and compiling source.

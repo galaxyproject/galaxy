@@ -3,7 +3,7 @@
 ## HACK: these should probably go in the web helper object.
 ##
 ## TODO: FIXME Cannot import model here, because grids are
-## used across webapps, and each webapp has it's own model.
+## used across webapps, and each webapp has its own model.
 
 <%! from galaxy import model %>
 

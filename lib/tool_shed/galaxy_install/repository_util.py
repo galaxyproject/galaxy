@@ -150,7 +150,7 @@ def get_repair_dict( trans, repository ):
     """
     Inspect the installed repository dependency hierarchy for a specified repository and attempt to make sure they are all properly installed as well as
     each repository's tool dependencies.  This method is called only from Galaxy when attempting to correct issues with an installed repository that has
-    installation problems somewhere in it's dependency hierarchy.
+    installation problems somewhere in its dependency hierarchy.
     """
     tsr_ids = []
     repo_info_dicts = []
@@ -287,7 +287,7 @@ def get_repository_components_for_installation( encoded_tsr_id, encoded_tsr_ids,
     """
     The received encoded_tsr_ids, repo_info_dicts, and tool_panel_section_keys are 3 lists that contain associated elements at each location in
     the list.  This method will return the elements from repo_info_dicts and tool_panel_section_keys associated with the received encoded_tsr_id
-    by determining it's location in the received encoded_tsr_ids list.
+    by determining its location in the received encoded_tsr_ids list.
     """
     for index, tsr_id in enumerate( encoded_tsr_ids ):
         if tsr_id == encoded_tsr_id:

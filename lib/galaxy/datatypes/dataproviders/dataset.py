@@ -33,7 +33,7 @@ log = logging.getLogger( __name__ )
 class DatasetDataProvider( base.DataProvider ):
     """
     Class that uses the file contents and/or metadata from a Galaxy DatasetInstance
-    as it's source.
+    as its source.
 
     DatasetDataProvider can be seen as the intersection between a datatype's
     metadata and a dataset's file contents. It (so far) mainly provides helper
@@ -173,7 +173,7 @@ class ConvertedDatasetDataProvider( DatasetDataProvider ):
 # ----------------------------------------------------------------------------- uses metadata for settings
 class DatasetColumnarDataProvider( column.ColumnarDataProvider ):
     """
-    Data provider that uses a DatasetDataProvider as it's source and the
+    Data provider that uses a DatasetDataProvider as its source and the
     dataset's metadata to buuild settings for the ColumnarDataProvider it's
     inherited from.
     """
@@ -196,7 +196,7 @@ class DatasetColumnarDataProvider( column.ColumnarDataProvider ):
 
 class DatasetDictDataProvider( column.DictDataProvider ):
     """
-    Data provider that uses a DatasetDataProvider as it's source and the
+    Data provider that uses a DatasetDataProvider as its source and the
     dataset's metadata to buuild settings for the DictDataProvider it's
     inherited from.
     """
@@ -255,7 +255,7 @@ class GenomicRegionDataProvider( column.ColumnarDataProvider ):
     Data provider that parses chromosome, start, and end data from a file
     using the datasets metadata settings.
 
-    Is a ColumnarDataProvider that uses a DatasetDataProvider as it's source.
+    Is a ColumnarDataProvider that uses a DatasetDataProvider as its source.
 
     If `named_columns` is true, will return dictionaries with the keys
     'chrom', 'start', 'end'.
@@ -565,7 +565,7 @@ class DatasetSubprocessDataProvider( external.SubprocessDataProvider ):
     """
     Create a source from running a subprocess on a dataset's file.
 
-    Uses a subprocess as it's source and has a dataset (gen. as an input file
+    Uses a subprocess as its source and has a dataset (gen. as an input file
     for the process).
     """
     #TODO: below should be a subclass of this and not RegexSubprocess
@@ -581,7 +581,7 @@ class DatasetSubprocessDataProvider( external.SubprocessDataProvider ):
 
 class SamtoolsDataProvider( line.RegexLineDataProvider ):
     """
-    Data provider that uses samtools on a Sam or Bam file as it's source.
+    Data provider that uses samtools on a Sam or Bam file as its source.
 
     This can be piped through other providers (column, map, genome region, etc.).
 
@@ -680,7 +680,7 @@ class SamtoolsDataProvider( line.RegexLineDataProvider ):
 
 class BcftoolsDataProvider( line.RegexLineDataProvider ):
     """
-    Data provider that uses an bcftools on a bcf (or vcf?) file as it's source.
+    Data provider that uses an bcftools on a bcf (or vcf?) file as its source.
 
     This can be piped through other providers (column, map, genome region, etc.).
     """
@@ -692,7 +692,7 @@ class BcftoolsDataProvider( line.RegexLineDataProvider ):
 
 class BGzipTabixDataProvider( base.DataProvider ):
     """
-    Data provider that uses an g(un)zip on a file as it's source.
+    Data provider that uses an g(un)zip on a file as its source.
 
     This can be piped through other providers (column, map, genome region, etc.).
     """

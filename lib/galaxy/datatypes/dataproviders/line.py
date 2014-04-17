@@ -22,7 +22,7 @@ log = logging.getLogger( __name__ )
 # ----------------------------------------------------------------------------- text
 class FilteredLineDataProvider( base.LimitedOffsetDataProvider ):
     """
-    Data provider that yields lines of data from it's source allowing
+    Data provider that yields lines of data from its source allowing
     optional control over which line to start on and how many lines
     to return.
     """
@@ -86,7 +86,7 @@ class FilteredLineDataProvider( base.LimitedOffsetDataProvider ):
 
 class RegexLineDataProvider( FilteredLineDataProvider ):
     """
-    Data provider that yields only those lines of data from it's source
+    Data provider that yields only those lines of data from its source
     that do (or do not when `invert` is True) match one or more of the given list
     of regexs.
 
@@ -137,7 +137,7 @@ class BlockDataProvider( base.LimitedOffsetDataProvider ):
     Class that uses formats where multiple lines combine to describe a single
     datum. The data output will be a list of either map/dicts or sub-arrays.
 
-    Uses FilteredLineDataProvider as it's source (kwargs **not** passed).
+    Uses FilteredLineDataProvider as its source (kwargs **not** passed).
 
     e.g. Fasta, GenBank, MAF, hg log
     Note: mem intensive (gathers list of lines before output)

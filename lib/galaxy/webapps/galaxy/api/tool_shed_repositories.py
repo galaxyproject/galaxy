@@ -60,7 +60,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
             annotation = exported_workflow_dict.get( 'annotation', '' )
             format_version = exported_workflow_dict.get( 'format-version', '' )
             workflow_name = exported_workflow_dict.get( 'name', '' )
-            # Since we don't have an in-memory object with an id, we'll identify the exported workflow via it's
+            # Since we don't have an in-memory object with an id, we'll identify the exported workflow via its
             # location (i.e., index) in the list.
             display_dict = dict( index=index, annotation=annotation, format_version=format_version, workflow_name=workflow_name )
             exported_workflows.append( display_dict )
@@ -95,7 +95,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
             raise HTTPBadRequest( detail="Missing required parameter 'index'." )
         repository = suc.get_tool_shed_repository_by_id( trans, tool_shed_repository_id )
         exported_workflows = json.from_json_string( self.exported_workflows( trans, tool_shed_repository_id ) )
-        # Since we don't have an in-memory object with an id, we'll identify the exported workflow via it's location (i.e., index) in the list.
+        # Since we don't have an in-memory object with an id, we'll identify the exported workflow via its location (i.e., index) in the list.
         exported_workflow = exported_workflows[ int( index ) ]
         workflow_name = exported_workflow[ 'workflow_name' ]
         workflow, status, error_message = workflow_util.import_workflow( trans, repository, workflow_name )

@@ -174,7 +174,7 @@ spaceghost.then( function checkPanelStructure(){
 });
 
 // ------------------------------------------------------------------- tags
-// keeping this light here - better for it's own test file
+// keeping this light here - better for its own test file
 //TODO: check tooltips
 spaceghost.then( function openTags(){
     this.test.comment( 'tag area should open when the history panel tag icon is clicked' );
@@ -194,7 +194,7 @@ spaceghost.then( function closeAnnotation(){
 });
 
 // ------------------------------------------------------------------- annotation
-// keeping this light here - better for it's own test file
+// keeping this light here - better for its own test file
 //TODO: check tooltips
 spaceghost.then( function openAnnotation(){
     this.test.comment( 'annotation area should open when the history panel annotation icon is clicked' );

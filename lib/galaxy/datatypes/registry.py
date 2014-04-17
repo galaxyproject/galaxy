@@ -76,7 +76,7 @@ class Registry( object ):
         an installed Tool Shed repository.  If deactivate is True, an installed Tool Shed repository that includes custom datatypes
         is being deactivated or uninstalled, so appropriate loaded datatypes will be removed from the registry.  The value of
         override will be False when a Tool Shed repository is being installed.  Since installation is occurring after the datatypes
-        registry has been initialized at server startup, it's contents cannot be overridden by newly introduced conflicting data types.
+        registry has been initialized at server startup, its contents cannot be overridden by newly introduced conflicting data types.
         """
 
         def __import_module( full_path, datatype_module, datatype_class_name ):
@@ -309,7 +309,7 @@ class Registry( object ):
         distributed config) or contained within an installed Tool Shed repository.  If deactivate is True, an installed Tool
         Shed repository that includes custom sniffers is being deactivated or uninstalled, so appropriate loaded sniffers will
         be removed from the registry.  The value of override will be False when a Tool Shed repository is being installed.
-        Since installation is occurring after the datatypes registry has been initialized at server startup, it's contents
+        Since installation is occurring after the datatypes registry has been initialized at server startup, its contents
         cannot be overridden by newly introduced conflicting sniffers.
         """
         sniffer_elem_classes = [ e.attrib[ 'type' ] for e in self.sniffer_elems ]

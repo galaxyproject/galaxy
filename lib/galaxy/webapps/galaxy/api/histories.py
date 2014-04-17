@@ -209,7 +209,7 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin,
         :param  kwd:    (optional) dictionary structure containing:
 
             * payload:     a dictionary itself containing:
-                * purge:   if True, purge the history and all of it's HDAs
+                * purge:   if True, purge the history and all of its HDAs
 
         :rtype:     dict
         :returns:   an error object if an error occurred or a dictionary containing:

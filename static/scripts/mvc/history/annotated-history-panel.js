@@ -62,7 +62,7 @@ var AnnotatedHistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
         return $newRender;
     },
 
-    /** render the history's annotation as it's own field */
+    /** render the history's annotation as its own field */
     renderHistoryAnnotation : function(){
         var annotation = this.model.get( 'annotation' );
         if( !annotation ){ return null; }

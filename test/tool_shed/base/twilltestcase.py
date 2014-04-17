@@ -1361,7 +1361,7 @@ class ShedTwillTestCase( TwillTestCase ):
         # in the tool shed, all contained .loc.sample files are copied to this directory and the 
         # ToolDataTableManager parses and loads the files in the same way that Galaxy does with a very
         # important exception.  When the tool shed loads a tool and parses and loads the copied ,loc.sample
-        # files, the ToolDataTableManager is already instantiated, and so it's add_new_entries_from_config_file()
+        # files, the ToolDataTableManager is already instantiated, and so its add_new_entries_from_config_file()
         # method is called and the tool_data_path parameter is used to over-ride the hard-coded "tool-data"
         # directory that Galaxy always uses.
         #

@@ -713,8 +713,8 @@ def get_next_downloadable_changeset_revision( repository, repo, after_changeset_
 
 def get_next_prior_import_or_install_required_dict_entry( prior_required_dict, processed_tsr_ids ):
     """
-    This method is used in the Tool Shed when exporting a repository and it's dependencies, and in Galaxy
-    when a repository and it's dependencies are being installed.  The order in which the prior_required_dict
+    This method is used in the Tool Shed when exporting a repository and its dependencies, and in Galaxy
+    when a repository and its dependencies are being installed.  The order in which the prior_required_dict
     is processed is critical in order to ensure that the ultimate repository import or installation order is
     correctly defined.  This method determines the next key / value pair from the received prior_required_dict
     that should be processed.
@@ -813,7 +813,7 @@ def get_previous_metadata_changeset_revision( repository, repo, before_changeset
 
 def get_prior_import_or_install_required_dict( trans, tsr_ids, repo_info_dicts ):
     """
-    This method is used in the Tool Shed when exporting a repository and it's dependencies, and in Galaxy when a repository and it's dependencies
+    This method is used in the Tool Shed when exporting a repository and its dependencies, and in Galaxy when a repository and its dependencies
     are being installed.  Return a dictionary whose keys are the received tsr_ids and whose values are a list of tsr_ids, each of which is contained
     in the received list of tsr_ids and whose associated repository must be imported or installed prior to the repository associated with the tsr_id key.
     """
@@ -1077,9 +1077,9 @@ def get_repository_heads( repo ):
 
 def get_repository_ids_requiring_prior_import_or_install( trans, tsr_ids, repository_dependencies ):
     """
-    This method is used in the Tool Shed when exporting a repository and it's dependencies, and in Galaxy when a repository and it's dependencies
+    This method is used in the Tool Shed when exporting a repository and its dependencies, and in Galaxy when a repository and its dependencies
     are being installed.  Inspect the received repository_dependencies and determine if the encoded id of each required repository is in the received
-    tsr_ids.  If so, then determine whether that required repository should be imported / installed prior to it's dependent repository.  Return a list
+    tsr_ids.  If so, then determine whether that required repository should be imported / installed prior to its dependent repository.  Return a list
     of encoded repository ids, each of which is contained in the received list of tsr_ids, and whose associated repositories must be imported / installed
     prior to the dependent repository associated with the received repository_dependencies.
     """
@@ -1093,7 +1093,7 @@ def get_repository_ids_requiring_prior_import_or_install( trans, tsr_ids, reposi
                     common_util.parse_repository_dependency_tuple( rd_tup )
                 # If only_if_compiling_contained_td is False, then the repository dependency is not required to be installed prior to the dependent
                 # repository even if prior_installation_required is True.  This is because the only meaningful content of the repository dependency
-                # is it's contained tool dependency, which is required in order to compile the dependent repository's tool dependency.  In the scenario
+                # is its contained tool dependency, which is required in order to compile the dependent repository's tool dependency.  In the scenario
                 # where the repository dependency is not installed prior to the dependent repository's tool dependency compilation process, the tool
                 # dependency compilation framework will install the repository dependency prior to compilation of the dependent repository's tool
                 # dependency.

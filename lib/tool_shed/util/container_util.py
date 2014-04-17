@@ -1755,7 +1755,7 @@ def prune_repository_dependencies( folder ):
     Since the object used to generate a repository dependencies container is a dictionary and not an odict() (it must be
     json-serialize-able), the order in which the dictionary is processed to create the container sometimes results in
     repository dependency entries in a folder that also includes the repository dependency as a sub-folder (if the
-    repository dependency has it's own repository dependency).  This method will remove all repository dependencies from
+    repository dependency has its own repository dependency).  This method will remove all repository dependencies from
     folder that are also sub-folders of folder.
     """
     repository_dependencies = [ rd for rd in folder.repository_dependencies ]

@@ -894,7 +894,7 @@ nv.utils.windowSize = function() {
 
 
 // Easy way to bind multiple functions to window.onresize
-// TODO: give a way to remove a function after its bound, other than removing all of them
+// TODO: give a way to remove a function after it's bound, other than removing all of them
 nv.utils.windowResize = function(fun){
   if (fun === undefined) return;
   var oldresize = window.onresize;
@@ -10405,7 +10405,7 @@ nv.models.pie = function() {
                     .attr("ry", 3);
 
                 group.append('text')
-                    .style('text-anchor', labelSunbeamLayout ? ((d.startAngle + d.endAngle) / 2 < Math.PI ? 'start' : 'end') : 'middle') //center the text on it's origin or begin/end if orthogonal aligned
+                    .style('text-anchor', labelSunbeamLayout ? ((d.startAngle + d.endAngle) / 2 < Math.PI ? 'start' : 'end') : 'middle') //center the text on its origin or begin/end if orthogonal aligned
                     .style('fill', '#000')
 
             });
@@ -10447,7 +10447,7 @@ nv.models.pie = function() {
                     }
                 });
           pieLabels.select(".nv-label text")
-                .style('text-anchor', labelSunbeamLayout ? ((d.startAngle + d.endAngle) / 2 < Math.PI ? 'start' : 'end') : 'middle') //center the text on it's origin or begin/end if orthogonal aligned
+                .style('text-anchor', labelSunbeamLayout ? ((d.startAngle + d.endAngle) / 2 < Math.PI ? 'start' : 'end') : 'middle') //center the text on its origin or begin/end if orthogonal aligned
                 .text(function(d, i) {
                   var percent = (d.endAngle - d.startAngle) / (2 * Math.PI);
                   var labelTypes = {

@@ -223,7 +223,7 @@ def compare_repository_dependencies( trans, ancestor_repository_dependencies, cu
                     break
             if not found_in_current:
                 # In some cases, the only difference between a dependency definition in the lists is the changeset_revision value.  We'll
-                # check to see if this is the case, and if the defined dependency is a repository that has metadata set only on it's tip.
+                # check to see if this is the case, and if the defined dependency is a repository that has metadata set only on its tip.
                 if not different_revision_defines_tip_only_repository_dependency( trans, ancestor_tup, current_repository_dependencies ):
                     return NOT_EQUAL_AND_NOT_SUBSET
                 return SUBSET
@@ -586,7 +586,7 @@ def generate_metadata_for_changeset_revision( app, repository, changeset_revisio
                                               resetting_all_metadata_on_repository=False, updating_installed_repository=False,
                                               persist=False ):
     """
-    Generate metadata for a repository using it's files on disk.  To generate metadata for changeset revisions older than
+    Generate metadata for a repository using its files on disk.  To generate metadata for changeset revisions older than
     the repository tip, the repository will have been cloned to a temporary location and updated to a specified changeset
     revision to access that changeset revision's disk files, so the value of repository_files_dir will not always be
     repository.repo_path( app ) (it could be an absolute path to a temporary directory containing a clone).  If it is an
@@ -650,7 +650,7 @@ def generate_metadata_for_changeset_revision( app, repository, changeset_revisio
     # Copy all sample files included in the repository to a single directory location so we can load tools that depend on them.
     for sample_file in sample_file_copy_paths:
         tool_util.copy_sample_file( app, sample_file, dest_path=work_dir )
-        # If the list of sample files includes a tool_data_table_conf.xml.sample file, laad it's table elements into memory.
+        # If the list of sample files includes a tool_data_table_conf.xml.sample file, load its table elements into memory.
         relative_path, filename = os.path.split( sample_file )
         if filename == 'tool_data_table_conf.xml.sample':
             new_table_elems, error_message = \
@@ -1282,7 +1282,7 @@ def handle_repository_elem( app, repository_elem, only_if_compiling_contained_td
                 return repository_dependency_tup, is_valid, error_message
             repo = hg.repository( hg_util.get_configured_ui(), repository.repo_path( app ) )
             # The received changeset_revision may be None since defining it in the dependency definition is optional.
-            # If this is the case, the default will be to set it's value to the repository dependency tip revision.
+            # If this is the case, the default will be to set its value to the repository dependency tip revision.
             # This probably occurs only when handling circular dependency definitions.
             tip_ctx = repo.changectx( repo.changelog.tip() )
             # Make sure the repo.changlog includes at least 1 revision.
@@ -1505,7 +1505,7 @@ def new_repository_dependency_metadata_required( trans, repository_metadata, met
                 for saved_repository_dependency in saved_repository_dependencies:
                     if saved_repository_dependency not in new_repository_dependencies:
                         # In some cases, the only difference between a dependency definition in the lists is the changeset_revision value.  We'll
-                        # check to see if this is the case, and if the defined dependency is a repository that has metadata set only on it's tip.
+                        # check to see if this is the case, and if the defined dependency is a repository that has metadata set only on its tip.
                         if not different_revision_defines_tip_only_repository_dependency( trans, saved_repository_dependency, new_repository_dependencies ):
                             return True
                 return False

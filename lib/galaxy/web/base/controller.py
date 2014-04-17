@@ -1018,7 +1018,7 @@ class UsesLibraryMixinItems( SharableItemSecurityMixin ):
 
     def _apply_library_folder_permissions_to_ldda( self, trans, library_folder, ldda ):
         """
-        Copy actions/roles from library folder to an ldda (and it's library_dataset).
+        Copy actions/roles from library folder to an ldda (and its library_dataset).
         """
         #PRECONDITION: permissions for this action on library_folder and ldda have been checked
         security_agent = trans.app.security_agent
@@ -1072,7 +1072,7 @@ class UsesLibraryMixinItems( SharableItemSecurityMixin ):
         if flush_needed:
             trans.sa_session.flush()
 
-        # finally, apply the new library_dataset to it's associated ldda (must be the same)
+        # finally, apply the new library_dataset to its associated ldda (must be the same)
         security_agent.copy_library_permissions( trans, library_dataset, ldda )
         return security_agent.get_permissions( ldda )
 
@@ -2348,8 +2348,8 @@ class UsesFormDefinitionsMixin:
                     trans.sa_session.flush()
                     # Create a new info_association between the current library item and form_values
                     if item_type == 'folder':
-                        # A LibraryFolder is a special case because if it inherited the template from it's parent,
-                        # we want to set inheritable to True for it's info_association.  This allows for the default
+                        # A LibraryFolder is a special case because if it inherited the template from its parent,
+                        # we want to set inheritable to True for its info_association.  This allows for the default
                         # inheritance to be False for each level in the Library hierarchy unless we're creating a new
                         # level in the hierarchy, in which case we'll inherit the "inheritable" setting from the parent
                         # level.

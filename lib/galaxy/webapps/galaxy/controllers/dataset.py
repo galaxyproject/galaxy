@@ -966,7 +966,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
                     toolbox = self.get_toolbox()
                     tool = toolbox.get_tool( job.tool_id )
                     assert tool is not None, 'Requested tool has not been loaded.'
-                    #Load parameter objects, if a parameter type has changed, its possible for the value to no longer be valid
+                    #Load parameter objects, if a parameter type has changed, it's possible for the value to no longer be valid
                     try:
                         params_objects = job.get_param_values( trans.app, ignore_errors=False )
                     except:

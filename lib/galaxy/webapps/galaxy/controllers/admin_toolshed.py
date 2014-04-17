@@ -217,7 +217,7 @@ class AdminToolshed( AdminGalaxy ):
     def deactivate_or_uninstall_repository( self, trans, **kwd ):
         """
         Handle all changes when a tool shed repository is being deactivated or uninstalled.  Notice that if the repository contents include
-        a file named tool_data_table_conf.xml.sample, it's entries are not removed from the defined config.shed_tool_data_table_config.  This
+        a file named tool_data_table_conf.xml.sample, its entries are not removed from the defined config.shed_tool_data_table_config.  This
         is because it becomes a bit complex to determine if other installed repositories include tools that require the same entry.  For now
         we'll never delete entries from config.shed_tool_data_table_config, but we may choose to do so in the future if it becomes necessary.
         """
@@ -1270,7 +1270,7 @@ class AdminToolshed( AdminGalaxy ):
         tool_panel_section_keys = []
         metadata = tool_shed_repository.metadata
         # Keep track of tool dependencies defined for the current repository or those defined for any of
-        # it's repository dependencies.
+        # its repository dependencies.
         includes_tool_dependencies = tool_shed_repository.includes_tool_dependencies
         if tool_shed_repository.includes_tools_for_display_in_tool_panel:
             # Handle the selected tool panel location for loading tools included in the tool shed repository.
@@ -1494,7 +1494,7 @@ class AdminToolshed( AdminGalaxy ):
             includes_tool_dependencies = updated_repo_info_dict.get( 'includes_tool_dependencies', False )
             repo_info_dict = updated_repo_info_dict[ 'repo_info_dict' ]
         else:
-            # There are no updates available from the tool shed for the repository, so use it's locally stored metadata.
+            # There are no updates available from the tool shed for the repository, so use its locally stored metadata.
             has_repository_dependencies = False
             includes_data_managers = False
             includes_datatypes = False

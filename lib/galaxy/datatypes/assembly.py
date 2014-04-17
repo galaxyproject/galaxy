@@ -94,7 +94,7 @@ class Sequences( sequence.Fasta ):
                             break
                         return True
                     else:
-                        break #we found a non-empty line, but its not a fasta header
+                        break #we found a non-empty line, but it's not a fasta header
             fh.close()
         except:
             pass
@@ -128,7 +128,7 @@ class Roadmaps( data.Text ):
                         break
                     return True
                 else:
-                    break #we found a non-empty line, but its not a fasta header
+                    break #we found a non-empty line, but it's not a fasta header
             fh.close()
         except:
             pass

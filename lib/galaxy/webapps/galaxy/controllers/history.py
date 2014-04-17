@@ -339,7 +339,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         if n_deleted:
             part = "Deleted %d %s" % ( n_deleted, iff( n_deleted != 1, "histories", "history" ) )
             if purge and trans.app.config.allow_user_dataset_purge:
-                part += " and removed %s datasets from disk" % iff( n_deleted != 1, "their", "its" )
+                part += " and removed %s dataset%s from disk" % ( iff( n_deleted != 1, "their", "its" ), iff( n_deleted != 1, 's', '' ) )
             elif purge:
                 part += " but the datasets were not removed from disk because that feature is not enabled in this Galaxy instance"
             message_parts.append( "%s.  " % part )
@@ -1121,7 +1121,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                                 elif action == "public":
                                     trans.app.security_agent.make_dataset_public( hda.dataset )
                     # Populate histories_for_sharing with the history after performing any requested actions on
-                    # it's datasets to make them accessible by the other user.
+                    # its datasets to make them accessible by the other user.
                     if send_to_user not in histories_for_sharing:
                         histories_for_sharing[ send_to_user ] = [ history ]
                     elif history not in histories_for_sharing[ send_to_user ]:

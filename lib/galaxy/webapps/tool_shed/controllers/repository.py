@@ -838,7 +838,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         repository_id = kwd.get( 'id', None )
         if 'f-free-text-search' in kwd:
             if 'f-Category.name' in kwd:
-                # The user browsed to a category and then entered a search string, so get the category associated with it's value.
+                # The user browsed to a category and then entered a search string, so get the category associated with its value.
                 category_name = kwd[ 'f-Category.name' ]
                 category = suc.get_category_by_name( trans, category_name )
                 # Set the id value in kwd since it is required by the ValidRepositoryGrid.build_initial_query method.

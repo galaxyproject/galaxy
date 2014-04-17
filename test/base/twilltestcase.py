@@ -2259,9 +2259,9 @@ class TwillTestCase( unittest.TestCase ):
         self.visit_url( url )
         if item_type == 'library':
             if contents:
-                check_str = "The data library (%s) and all it's contents have been made publicly accessible." % library_name
+                check_str = "The data library (%s) and all its contents have been made publicly accessible." % library_name
             else:
-                check_str = "The data library (%s) has been made publicly accessible, but access to it's contents has been left unchanged." % library_name
+                check_str = "The data library (%s) has been made publicly accessible, but access to its contents has been left unchanged." % library_name
         elif item_type == 'folder':
             check_str = "All of the contents of folder (%s) have been made publicly accessible." % folder_name
         elif item_type == 'ldda':

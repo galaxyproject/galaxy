@@ -49,7 +49,7 @@ ${render_galaxy_repository_actions( repository )}
                         </tr>
                     </table>
                     <div class="toolParamHelp" style="clear: both;">
-                            * The repository and all of it's contents will remain on disk and can still be used by dependent items.
+                            * The repository and all of its contents will remain on disk and can still be used by dependent items.
                     </div>
                     %if repository.includes_tools_for_display_in_tool_panel:
                         <div class="toolParamHelp" style="clear: both;">
@@ -80,7 +80,7 @@ ${render_galaxy_repository_actions( repository )}
                         </tr>
                     </table>
                     <div class="toolParamHelp" style="clear: both;">
-                        * The repository and all of it's contents will be removed from disk and can no longer be used by dependent items.
+                        * The repository and all of its contents will be removed from disk and can no longer be used by dependent items.
                     </div>
                     %if repository.includes_tools_for_display_in_tool_panel:
                         <div class="toolParamHelp" style="clear: both;">

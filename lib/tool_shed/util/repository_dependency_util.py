@@ -153,7 +153,7 @@ def create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_
                                                         trans.install_model.ToolShedRepository.installation_status.LOADING_PROPRIETARY_DATATYPES ]:
                         debug_msg = "Skipping installation of revision %s of repository '%s' because it was installed " % \
                             ( str( changeset_revision ), str( repository_db_record.name ) )
-                        debug_msg += "with the (possibly updated) revision %s and it's current installation status is '%s'." % \
+                        debug_msg += "with the (possibly updated) revision %s and its current installation status is '%s'." % \
                             ( str( installed_changeset_revision ), str( repository_db_record.status ) )
                         log.debug( debug_msg )
                         can_update_db_record = False
@@ -161,14 +161,14 @@ def create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_
                         if repository_db_record.status in [ trans.install_model.ToolShedRepository.installation_status.ERROR,
                                                             trans.install_model.ToolShedRepository.installation_status.NEW,
                                                             trans.install_model.ToolShedRepository.installation_status.UNINSTALLED ]:
-                            # The current tool shed repository is not currently installed, so we can update it's record in the database.
+                            # The current tool shed repository is not currently installed, so we can update its record in the database.
                             name = repository_db_record.name
                             installed_changeset_revision = repository_db_record.installed_changeset_revision
                             metadata_dict = repository_db_record.metadata
                             dist_to_shed = repository_db_record.dist_to_shed
                             can_update_db_record = True
                         elif repository_db_record.status in [ trans.install_model.ToolShedRepository.installation_status.DEACTIVATED ]:
-                            # The current tool shed repository is deactivated, so updating it's database record is not necessary - just activate it.
+                            # The current tool shed repository is deactivated, so updating its database record is not necessary - just activate it.
                             log.debug( "Reactivating deactivated tool_shed_repository '%s'." % str( repository_db_record.name ) )
                             common_install_util.activate_repository( trans, repository_db_record )
                             # No additional updates to the database record are necessary.
@@ -802,7 +802,7 @@ def populate_repository_dependency_objects_for_processing( trans, current_reposi
                 filtered_current_repository_key_rd_dicts.append( key_rd_dict )
                 repository_dependency = key_rd_dict[ current_repository_key ]
                 if current_repository_key in all_repository_dependencies:
-                    # Add all repository dependencies for the current repository into it's entry in all_repository_dependencies.
+                    # Add all repository dependencies for the current repository into its entry in all_repository_dependencies.
                     all_repository_dependencies_val = all_repository_dependencies[ current_repository_key ]
                     if repository_dependency not in all_repository_dependencies_val:
                         all_repository_dependencies_val.append( repository_dependency )

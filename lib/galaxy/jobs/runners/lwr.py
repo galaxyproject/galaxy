@@ -389,7 +389,7 @@ class LwrJobRunner( AsynchronousJobRunner ):
         # Right now remote metadata handling assumes from_work_dir outputs
         # have been copied over before it runs. So do that remotely. This is
         # not the default though because adding it to the command line is not
-        # cross-platform (no cp on Windows) and its un-needed work outside
+        # cross-platform (no cp on Windows) and it's un-needed work outside
         # the context of metadata settting (just as easy to download from
         # either place.)
         return LwrJobRunner.__remote_metadata( lwr_client )

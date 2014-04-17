@@ -354,7 +354,7 @@ class ToolShedRepository( object ):
                     tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
                     common_util.parse_repository_dependency_tuple( rd_tup, contains_error=False )
                     # The repository dependency will only be required to be previously installed if it does not fall into the category of
-                    # a repository that must be installed only so that it's contained tool dependency can be used for compiling the tool
+                    # a repository that must be installed only so that its contained tool dependency can be used for compiling the tool
                     # dependency of the dependent repository.
                     if not asbool( only_if_compiling_contained_td ):
                         if asbool( prior_installation_required ):

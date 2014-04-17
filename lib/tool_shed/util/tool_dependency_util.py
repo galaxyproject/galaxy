@@ -643,7 +643,7 @@ def sync_database_with_file_system( app, tool_shed_repository, tool_dependency_n
 def tool_dependency_is_orphan( type, name, version, tools ):
     """
     Determine if the combination of the received type, name and version is defined in the <requirement> tag for at least one tool in the
-    received list of tools.  If not, the tool dependency defined by the combination is considered an orphan in it's repository in the tool
+    received list of tools.  If not, the tool dependency defined by the combination is considered an orphan in its repository in the tool
     shed.
     """
     if type == 'package':

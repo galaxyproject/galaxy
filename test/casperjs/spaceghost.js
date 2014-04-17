@@ -475,7 +475,7 @@ SpaceGhost.prototype.start = function start(){
  */
 SpaceGhost.prototype.open = function open(){
     //TODO: this can be moved to start (I think...?)
-    //!! override bc phantom has it's lang as 'en-US,*' and galaxy doesn't handle the '*' well (server error)
+    //!! override bc phantom has its lang as 'en-US,*' and galaxy doesn't handle the '*' well (server error)
     this.page.customHeaders = { 'Accept-Language': 'en-US' };
     return Casper.prototype.open.apply( this, arguments );
 };

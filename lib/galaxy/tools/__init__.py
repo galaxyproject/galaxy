@@ -589,7 +589,7 @@ class ToolBox( object, Dictifiable ):
                 # the case where the tool is contained in a repository installed from the tool shed, and the Galaxy
                 # administrator has retrieved updates to the installed repository.  In this case, the tool may have
                 # been updated, but the version was not changed, so the tool should always be reloaded here.  We used
-                # to only load the tool if it's it was not found in self.tools_by_id, but performing that check did
+                # to only load the tool if it was not found in self.tools_by_id, but performing that check did
                 # not enable this scenario.
                 self.tools_by_id[ tool.id ] = tool
                 if load_panel_dict:
@@ -2117,7 +2117,7 @@ class Tool( object, Dictifiable ):
             elif isinstance( input, Conditional ):
                 group_state = state[input.name]
                 group_prefix = "%s|" % ( key )
-                # Deal with the 'test' element and see if it's value changed
+                # Deal with the 'test' element and see if its value changed
                 if input.value_ref and not input.value_ref_in_group:
                     # We are referencing an existent parameter, which is not
                     # part of this group
@@ -2210,7 +2210,7 @@ class Tool( object, Dictifiable ):
         Update the tool state in `state` using the user input in `incoming`.
         This is designed to be called recursively: `inputs` contains the
         set of inputs being processed, and `prefix` specifies a prefix to
-        add to the name of each input to extract it's value from `incoming`.
+        add to the name of each input to extract its value from `incoming`.
 
         If `update_only` is True, values that are not in `incoming` will
         not be modified. In this case `old_errors` can be provided, and any
@@ -2290,7 +2290,7 @@ class Tool( object, Dictifiable ):
                 group_old_errors = old_errors.get( input.name, {} )
                 old_current_case = group_state['__current_case__']
                 group_prefix = "%s|" % ( key )
-                # Deal with the 'test' element and see if it's value changed
+                # Deal with the 'test' element and see if its value changed
                 if input.value_ref and not input.value_ref_in_group:
                     # We are referencing an existent parameter, which is not
                     # part of this group
