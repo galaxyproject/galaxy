@@ -106,7 +106,7 @@ return Backbone.View.extend(
         
         // add title
         title_element.attr('x', width / 2)
-                     .attr('y', height)
+                     .attr('y', height - 10)
                      .attr('text-anchor', 'middle')
                      .text(title_text);
     }

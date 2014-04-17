@@ -231,7 +231,7 @@ return Backbone.Collection.extend(
                     for (var j in row) {
                         // get group
                         var v = row[j];
-                        if (v !== undefined) {
+                        if (v !== undefined && v !== null) {
                             // add to result
                             result[j].push(v);
                         }
