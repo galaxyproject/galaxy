@@ -167,8 +167,8 @@ return Backbone.Collection.extend(
                     
                     // get/fix value
                     var v = column_data[k];
-                    if (isNaN(v) && !column.is_label) {
-                        v = 0;
+                    if (!column.is_label) {
+                        v = parseFloat(v);
                     }
                     
                     // add to dict
@@ -231,13 +231,13 @@ return Backbone.Collection.extend(
                     for (var j in row) {
                         // get group
                         var v = row[j];
-                        if (v !== undefined && v !== null) {
+                        if (v !== undefined && v != 'undefined') {
                             // add to result
                             result[j].push(v);
                         }
                     }
                 }
-        
+                
                 // log
                 console.debug('Datasets::_fetch() - Fetching complete.');
         
