@@ -686,10 +686,19 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
             msg = []
             refresh = False
             display_app = trans.app.datatypes_registry.display_applications.get( app_name )
-            assert display_app, "Unknown display application has been requested: %s" % app_name
+            if not display_app:
+                log.debug( "Unknown display application has been requested: %s", app_name )
+                return paste.httpexceptions.HTTPNotFound( "The requested display application (%s) is not available." % ( app_name ) )
             dataset_hash, user_hash = encode_dataset_user( trans, data, user )
-            display_link = display_app.get_link( link_name, data, dataset_hash, user_hash, trans, app_kwds )
-            assert display_link, "Unknown display link has been requested: %s" % link_name
+            try:
+                display_link = display_app.get_link( link_name, data, dataset_hash, user_hash, trans, app_kwds )
+            except Exception, e:
+                log.debug( "Error generating display_link: %s", e )
+                # User can sometimes recover from, e.g. conversion errors by fixing input metadata, so use conflict
+                return paste.httpexceptions.HTTPConflict( "Error generating display_link: %s" % e )
+            if not display_link:
+                log.debug( "Unknown display link has been requested: %s", link_name )
+                return paste.httpexceptions.HTTPNotFound( "Unknown display link has been requested: %s" % link_name )
             if data.state == data.states.ERROR:
                 msg.append( ( 'This dataset is in an error state, you cannot view it at an external display application.', 'error' ) )
             elif data.deleted:
@@ -715,8 +724,12 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
                         assert value, "An invalid parameter name was provided: %s" % action_param
                         assert value.parameter.viewable, "This parameter is not viewable."
                         if value.parameter.type == 'data':
-                            content_length = os.path.getsize( value.file_name )
-                            rval = open( value.file_name )
+                            try:
+                                content_length = os.path.getsize( value.file_name )
+                                rval = open( value.file_name )
+                            except OSError, e:
+                                log.debug( "Unable to access requested file in display application: %s", e )
+                                return paste.httpexceptions.HTTPNotFound( "This file is no longer available." )
                         else:
                             rval = str( value )
                             content_length = len( rval )
