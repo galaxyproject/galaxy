@@ -12,7 +12,7 @@ from . import smart_str
 
 _punct_re = re.compile(r'[\t !"#$%&\'()*\-/<=>?@\[\\\]^_`{|},.]+')
 
-DEFAULT_GALAXY_TAG = 'galaxy'
+DEFAULT_GALAXY_TAG = ''
 
 # Default values for new posts to Biostar
 DEFAULT_PAYLOAD = {
@@ -77,7 +77,10 @@ def tag_for_tool( tool ):
 def populate_tag_payload( payload=None, tool=None ):
     if payload is None:
         payload = {}
-    tag_val = [ DEFAULT_GALAXY_TAG ]
+    if DEFAULT_GALAXY_TAG:
+        tag_val = [ DEFAULT_GALAXY_TAG ]
+    else:
+        tag_val = []
     if tool:
         tag_val.append( tag_for_tool( tool ) )
     payload[ 'tag_val' ] =  ','.join( tag_val )
