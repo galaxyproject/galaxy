@@ -139,6 +139,7 @@ def biostar_logout( trans ):
 class BiostarErrorReporter( ErrorReporter ):
     def _send_report( self, user, email=None, message=None, **kwd ):
         assert biostar_enabled( self.app ), ValueError( "Biostar is not configured for this galaxy instance" )
+        assert self.app.config.biostar_enable_bug_reports, ValueError( "Biostar is not configured to allow bug reporting for this galaxy instance" )
         assert self._can_access_dataset( user ), Exception( "You are not allowed to access this dataset." )
         tool_version_select_field, tools, tool = \
             self.app.toolbox.get_tool_components( self.tool_id, tool_version=None, get_loaded_tools_by_lineage=False, set_selected=True )
