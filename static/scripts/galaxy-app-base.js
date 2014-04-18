@@ -2,8 +2,9 @@ define([
     'mvc/user/user-model',
     'utils/metrics-logger',
     'utils/add-logging',
-    'utils/localization'
-], function( userModel, metricsLogger, addLogging, localize ){
+    'utils/localization',
+    'bootstrapped-data'
+], function( userModel, metricsLogger, addLogging, localize, bootstrapped ){
 // ============================================================================
 /** Base galaxy client-side application.
  *      Iniitializes:
@@ -17,21 +18,28 @@ function GalaxyApp( options ){
     var self = this;
     return self._init( options || {} );
 }
+
 // add logging shortcuts for this object
 addLogging( GalaxyApp, 'GalaxyApp' );
 
 /** default options */
-GalaxyApp.defaultOptions = {
+GalaxyApp.prototype.defaultOptions = {
+    /** monkey patch attributes from existing window.Galaxy object? */
+    patchExisting   : true,
     /** root url of this app */
     // move to self.root?
-    root        : '/'
+    root            : '/'
 };
 
 /** initalize options and sub-components */
 GalaxyApp.prototype._init = function init( options ){
     var self = this;
+    _.extend( self, Backbone.Events );
 
     self._processOptions( options );
+    self.debug( 'GalaxyApp.options: ', self.options );
+
+    self._patchGalaxy( window.Galaxy );
     self.debug( 'GalaxyApp.options: ', self.options );
 
     self._initLogger( options.loggerOptions || {} );
@@ -40,16 +48,17 @@ GalaxyApp.prototype._init = function init( options ){
     self._initLocale();
     self.debug( 'GalaxyApp.localize: ', self.localize );
 
-    self.config = options.config || {};
+    self.config = options.config || bootstrapped.config || {};
     self.debug( 'GalaxyApp.config: ', self.config );
 
-    self._initUser( options.userJSON || {} );
+    self._initUser( options.user || bootstrapped.user || {} );
     self.debug( 'GalaxyApp.user: ', self.user );
 
     //TODO: temp
-    if( typeof options.onload === 'function' ){
-        options.onload();
-    }
+    self.trigger( 'ready', self );
+    //if( typeof options.onload === 'function' ){
+    //    options.onload();
+    //}
 
     return self;
 };
@@ -57,7 +66,7 @@ GalaxyApp.prototype._init = function init( options ){
 /** add an option from options if the key matches an option in defaultOptions */
 GalaxyApp.prototype._processOptions = function _processOptions( options ){
     var self = this,
-        defaults = GalaxyApp.defaultOptions;
+        defaults = self.defaultOptions;
     self.debug( '_processOptions: ', options );
 
     self.options = {};
@@ -69,14 +78,21 @@ GalaxyApp.prototype._processOptions = function _processOptions( options ){
     return self;
 };
 
-/** set up the current user as a Backbone model (mvc/user/user-model) */
-GalaxyApp.prototype._initUser = function _initUser( userJSON ){
+/** add an option from options if the key matches an option in defaultOptions */
+GalaxyApp.prototype._patchGalaxy = function _processOptions( patchWith ){
     var self = this;
-    self.debug( '_initUser:', userJSON );
-    self.user = new userModel.User( userJSON );
-    //TODO: temp
-    self.currUser = self.user;
-    return self;
+    // in case req or plain script tag order has created a prev. version of the Galaxy obj...
+    if( self.options.patchExisting && patchWith ){
+        self.debug( 'found existing Galaxy object:', patchWith );
+        // ...(for now) monkey patch any added attributes that the previous Galaxy may have had
+        //TODO: move those attributes to more formal assignment in GalaxyApp
+        for( var k in patchWith ){
+            if( patchWith.hasOwnProperty( k ) ){
+                self.debug( '\t patching in ' + k + ' to Galaxy' );
+                self[ k ] = patchWith[ k ];
+            }
+        }
+    }
 };
 
 /** set up the metrics logger (utils/metrics-logger) and pass loggerOptions */
@@ -94,6 +110,16 @@ GalaxyApp.prototype._initLocale = function _initLocale( options ){
     self.localize = localize;
     // add to window as global shortened alias
     window._l = self.localize;
+    return self;
+};
+
+/** set up the current user as a Backbone model (mvc/user/user-model) */
+GalaxyApp.prototype._initUser = function _initUser( userJSON ){
+    var self = this;
+    self.debug( '_initUser:', userJSON );
+    self.user = new userModel.User( userJSON );
+    //TODO: temp - old alias
+    self.currUser = self.user;
     return self;
 };
 

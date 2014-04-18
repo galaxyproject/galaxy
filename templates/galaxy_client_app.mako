@@ -1,33 +1,41 @@
 
 ## ============================================================================
-<%def name="bootstrap()">
+<%def name="bootstrap( **kwargs )">
     ## Bootstap dictionaries for GalaxyApp object's JSON, create GalaxyApp,
     ##  and steal existing attributes from plain objects already created
+    <%
+        kwargs.update({
+            'config'    : get_config_dict(),
+            'user'      : get_user_dict(),
+        })
+    %>
     <script type="text/javascript">
-        require([ 'galaxy-app-base' ], function( app ){
-            galaxy = new app.GalaxyApp({
-                config          : ${ get_config_json() },
-                userJSON        : ${ get_user_json() },
+        %for key in kwargs:
+            ( window.bootstrapped = window.bootstrapped || {} )[ '${key}' ] = (
+                ${ h.to_json_string( kwargs[ key ], indent=( 2 if trans.debug else 0 ) )} );
+        %endfor
+        define( 'bootstrapped-data', function(){
+            return window.bootstrapped;
+        });
+    </script>
+</%def>
+
+<%def name="load( init_fn=None, **kwargs )">
+    ${ self.bootstrap( **kwargs ) }
+    <script type="text/javascript">
+        require([ 'require', 'galaxy-app-base' ], function( require, galaxy ){
+            //TODO: global...
+            window.Galaxy = new galaxy.GalaxyApp({
                 root            : '${h.url_for( "/" )}',
                 //TODO: get these options from the server
-                onload          : window.Galaxy? window.Galaxy.onload: null,
-                loggerOptions   : {
-                }
+                loggerOptions   : {}
             });
-            // in case req or plain script tag order has created a prev. version of the Galaxy obj...
-            if( window.Galaxy ){
-                // ...(for now) monkey patch any added attributes that the previous Galaxy may have had
-                //TODO: move those attributes to more formal assignment in GalaxyApp
-                for( var k in window.Galaxy ){
-                    if( window.Galaxy.hasOwnProperty( k ) ){
-                        galaxy.debug( 'patching in ' + k + ' to Galaxy' )
-                        galaxy[ k ] = window.Galaxy[ k ];
-                    }
-                }
-            }
-            window.Galaxy = galaxy;
-        });
 
+            var initFn = ${ 'window[ "%s" ]' %( init_fn ) if init_fn else 'undefined' };
+            if( typeof initFn === 'function' ){
+                initFn();
+            }
+        });
     </script>
 </%def>
 
@@ -69,6 +77,7 @@ ${ h.to_json_string( get_config_dict() )}
                 # tags used
                 users_api_controller = trans.webapp.api_controllers[ 'users' ]
                 user_dict[ 'tags_used' ] = users_api_controller.get_user_tags_used( trans, user=trans.user )
+                user_dict[ 'is_admin' ] = trans.user_is_admin()
                 return user_dict
 
             usage = 0

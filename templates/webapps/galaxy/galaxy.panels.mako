@@ -1,5 +1,5 @@
 <%namespace name="masthead" file="/webapps/galaxy/galaxy.masthead.mako"/>
-<%namespace name="galaxy_client" file="../../galaxy_client_app.mako" />
+<%namespace name="galaxy_client" file="/galaxy_client_app.mako" />
 
 <!DOCTYPE HTML>
 
@@ -38,10 +38,7 @@
         'libs/d3',
         'galaxy.base',
         'galaxy.panels',
-        'libs/handlebars.runtime'
-    )}
-
-    ${h.js(
+        'libs/handlebars.runtime',
         "mvc/ui"
     )}
     
@@ -109,11 +106,11 @@
         
         // load any app configured
         var galaxy_config = ${ h.to_json_string( self.galaxy_config ) };
-        Galaxy.onload = function(){
+        window.init = function(){
             var jscript = galaxy_config.app.jscript;
             if( jscript ){
-                $( function(){
-                    require([ jscript ], function( js_lib ){
+                require([ jscript ], function( js_lib ){
+                    $( function(){
                         ## load galaxy module application
                         var module = new js_lib.GalaxyApp();
                     });
@@ -123,7 +120,7 @@
             }
         }
     </script>
-    ${ galaxy_client.bootstrap() }
+    ${ galaxy_client.load( init_fn='init' ) }
     
 </%def>
 
