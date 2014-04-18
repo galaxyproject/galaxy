@@ -3,7 +3,7 @@ from StringIO import StringIO
 from galaxy.tools.parameters import grouping
 from galaxy import eggs
 eggs.require( "requests" )
-from galaxy.util import listify
+from galaxy import util
 from galaxy.util.odict import odict
 import galaxy.model
 from galaxy.model.orm import and_, desc
@@ -13,7 +13,10 @@ from json import dumps, loads
 from logging import getLogger
 log = getLogger( __name__ )
 
-VERBOSE_ERRORS = False
+# Off by default because it can pound the database pretty heavily
+# and result in sqlite errors on larger tests or larger numbers of
+# tests.
+VERBOSE_ERRORS = util.asbool( os.environ.get( "GALAXY_TEST_VERBOSE_ERRORS", False ) )
 ERROR_MESSAGE_DATASET_SEP = "--------------------------------------"
 
 
