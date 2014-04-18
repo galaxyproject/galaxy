@@ -17,7 +17,9 @@ define([
         self.lastMessage = null;
         [ 'log', 'debug', 'info', 'warn', 'error' ].forEach( function( fnName ){
             self[ fnName ] = function(){
-                self.lastMessage = { level: fnName, args: Array.prototype.slice.call( arguments, 0 ) };
+                var args = Array.prototype.slice.call( arguments, 0 );
+                //console.debug( 'MockConsole:', fnName, JSON.stringify( args ) );
+                self.lastMessage = { level: fnName, args: args };
             };
         });
     };
@@ -169,6 +171,70 @@ define([
         //TODO: still doesn't solve the problem that when cache == max, post will be tried on every emit
 
         server.restore();
+    });
+
+    // ------------------------------------------------------------------------ Emit to console
+    test( "emit to console at level", function() {
+        var mockConsole = new MockConsole(),
+            logger = new metrics.MetricsLogger({
+                consoleLevel    : 'debug',
+                consoleLogger   : mockConsole
+            });
+        equal( logger.options.consoleLevel, metrics.MetricsLogger.DEBUG );
+        equal( logger.consoleLogger.constructor, MockConsole );
+
+        logger.emit( 'debug', 'test', [ 1, 2, { three: 3 }] );
+        equal( logger.cache.length(), 0 );
+        //console.debug( JSON.stringify( mockConsole.lastMessage ) );
+        equal( mockConsole.lastMessage.level, 'debug' );
+        equal( mockConsole.lastMessage.args.length, 4 );
+        equal( mockConsole.lastMessage.args[0], 'test' );
+        equal( mockConsole.lastMessage.args[3].three, 3 );
+    });
+
+    test( "emit to console below does not output", function() {
+        var mockConsole = new MockConsole(),
+            logger = new metrics.MetricsLogger({
+                consoleLevel    : 'error',
+                consoleLogger   : mockConsole
+            });
+        logger.emit( 'debug', 'test', [ 1, 2, { three: 3 }] );
+        equal( mockConsole.lastMessage, null );
+    });
+
+    // ------------------------------------------------------------------------ Shortcuts
+    test( "logger shortcuts emit to default namespace properly", function() {
+        var logger = new metrics.MetricsLogger({
+                logLevel    : 'all'
+            });
+        equal( logger.options.logLevel, metrics.MetricsLogger.ALL );
+        logger.log( 0 );
+        logger.debug( 1 );
+        logger.info( 2 );
+        logger.warn( 3 );
+        logger.error( 4 );
+        logger.metric( 5 );
+
+        equal( logger.cache.length(), 6 );
+        var cached = logger.cache.remove( 6 ).map( JSON.parse ),
+            entry;
+
+        cached.forEach( function( entry ){
+            ok( entry.namespace === logger.options.clientPrefix + logger.options.defaultNamespace );
+            ok( jQuery.type( entry.args ) === 'array' );
+            ok( typeof entry.time === 'string' );
+        });
+
+        // log is different
+        entry = cached[0];
+        ok( entry.level === 1 );
+        ok( entry.args[0] === 0 );
+
+        [ 'debug', 'info', 'warn', 'error', 'metric' ].forEach( function( level, i ){
+            entry = cached[( i + 1 )];
+            ok( entry.level === logger._parseLevel( level ) );
+            ok( entry.args[0] === ( i + 1 ) );
+        });
     });
 
 

@@ -165,7 +165,7 @@ User.prototype.login = function login( email, password ){
 User.prototype.loggedInAs = function loggedInAs(){
     var currUser = this.spaceghost.api.users.show( 'current' );
     //this.spaceghost.debug( this.spaceghost.jsonStr( currUser ) );
-    return currUser.email;
+    return currUser.email || '';
 //TODO: due to late rendering of masthead this is no longer reliable - need a wait for in the main page
     //return this.spaceghost.jumpToTop( function(){
     //    var userEmail = '';

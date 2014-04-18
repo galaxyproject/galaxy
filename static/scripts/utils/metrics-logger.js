@@ -33,7 +33,8 @@ function MetricsLogger( options ){
 
     //TODO: this might be used if we store the logs in browser storage
     ///**  */
-    //self.userId = options.userId || null;
+    self.userId = window.bootstrapped? window.bootstrapped.user.id: null;
+    self.userId = self.userId || options.userId || null;
 
     /** the (optional) console to emit logs to */
     self.consoleLogger = options.consoleLogger || null;
@@ -161,10 +162,10 @@ MetricsLogger.prototype._addToCache = function _addToCache( level, namespace, lo
         }
     // discard entry if an error occurs, but warn if level set to do so
     } catch( err ){
-        if( self.options.consoleLevel <= MetricsLogger.WARN ){
-            console.warn( 'Metrics logger could not stringify logArguments:', namespace, logArguments );
-            console.error( err );
-        }
+        self._emitToConsole( 'warn', 'MetricsLogger',
+            [ 'Metrics logger could not stringify logArguments:', namespace, logArguments ] );
+        self._emitToConsole( 'error', 'MetricsLogger', [ err ] );
+
     }
     return self;
 };
@@ -268,34 +269,40 @@ MetricsLogger.prototype._emitToConsole = function _emitToConsole( level, namespa
 
 //----------------------------------------------------------------------------- shortcuts
 // generic functions when logging from non-namespaced object (e.g. templates)
-/** debug to default namespace */
-MetricsLogger.prototype.debug = function debug(){
-    this.emit( MetricsLogger.DEBUG, this.options.defaultNamespace, arguments );
-};
-
 /** log to default namespace */
 MetricsLogger.prototype.log = function log(){
-    this.emit( 1, this.options.defaultNamespace, arguments );
+    this.emit( 1, this.options.defaultNamespace,
+        Array.prototype.slice.call( arguments, 0 ) );
+};
+
+/** debug to default namespace */
+MetricsLogger.prototype.debug = function debug(){
+    this.emit( MetricsLogger.DEBUG, this.options.defaultNamespace,
+        Array.prototype.slice.call( arguments, 0 ) );
 };
 
 /** info to default namespace */
 MetricsLogger.prototype.info = function info(){
-    this.emit( MetricsLogger.INFO, this.options.defaultNamespace, arguments );
+    this.emit( MetricsLogger.INFO, this.options.defaultNamespace,
+        Array.prototype.slice.call( arguments, 0 ) );
 };
 
 /** warn to default namespace */
 MetricsLogger.prototype.warn = function warn(){
-    this.emit( MetricsLogger.WARN, this.options.defaultNamespace, arguments );
+    this.emit( MetricsLogger.WARN, this.options.defaultNamespace,
+        Array.prototype.slice.call( arguments, 0 ) );
 };
 
 /** error to default namespace */
 MetricsLogger.prototype.error = function error(){
-    this.emit( MetricsLogger.ERROR, this.options.defaultNamespace, arguments );
+    this.emit( MetricsLogger.ERROR, this.options.defaultNamespace,
+        Array.prototype.slice.call( arguments, 0 ) );
 };
 
 /** metric to default namespace */
 MetricsLogger.prototype.metric = function metric(){
-    this.emit( MetricsLogger.METRIC, this.options.defaultNamespace, arguments );
+    this.emit( MetricsLogger.METRIC, this.options.defaultNamespace,
+        Array.prototype.slice.call( arguments, 0 ) );
 };
 
 
