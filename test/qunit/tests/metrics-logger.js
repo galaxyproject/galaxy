@@ -17,7 +17,7 @@ define([
     test( "logger construction/initializiation defaults", function() {
         var logger = new metrics.MetricsLogger({});
         equal( logger.consoleLogger, null );
-        equal( logger.options.logLevel,         metrics.MetricsLogger.INFO );
+        equal( logger.options.logLevel,         metrics.MetricsLogger.NONE );
         equal( logger.options.consoleLevel,     metrics.MetricsLogger.NONE );
         equal( logger.options.defaultNamespace, 'Galaxy' );
         equal( logger.options.clientPrefix,     'client.' );

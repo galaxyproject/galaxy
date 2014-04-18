@@ -40,7 +40,6 @@ GalaxyApp.prototype._init = function init( options ){
     self.debug( 'GalaxyApp.options: ', self.options );
 
     self._patchGalaxy( window.Galaxy );
-    self.debug( 'GalaxyApp.options: ', self.options );
 
     self._initLogger( options.loggerOptions || {} );
     self.debug( 'GalaxyApp.logger: ', self.logger );
