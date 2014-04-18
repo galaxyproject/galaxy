@@ -7,7 +7,7 @@
         --input="${in_type.genome.fields.path}"
         --genome=$in_type.genome
       #else
-        --input=$in_type.input1
+        --input="${ in_type.input1 }"
       #end if
       --read_len=$read_len
       --avg_coverage=$avg_coverage
@@ -15,10 +15,10 @@
       --num_sims=$num_sims
       --polymorphism=$polymorphism
       --detection_thresh=$detection_thresh
-      --output_png=$output_png
+      --output_png="${ output_png }"
       --summary_out=$summary_out
-      --output_summary=$output_summary
-      --new_file_path=$__new_file_path__
+      --output_summary="${ output_summary }"
+      --new_file_path="."
   </command>
 <!-- If want to include all simulation results file
         sim_results=$sim_results
