@@ -1713,9 +1713,11 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         changeset_revision = kwd.get( 'changeset_revision', None )
         repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
         repository_id = trans.security.encode_id( repository.id )
-        # We aren't concerned with repository's of type tool_dependency_definition here if a repository_metadata record is not returned
-        # because repositories of this type will never have repository dependencies.
-        repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
+        # We aren't concerned with repositories of type tool_dependency_definition here if a repository_metadata record is not returned
+        # because repositories of this type will never have repository dependencies. However, if a readme file is uploaded, or some other
+        # change is made that does not create a new downloadable changeset revision but updates the existing one, we still want to be able
+        # to get repository dependencies.
+        repository_metadata = suc.get_current_repository_metadata_for_changeset_revision( trans, repository, changeset_revision )
         if repository_metadata:
             metadata = repository_metadata.metadata
             if metadata:
