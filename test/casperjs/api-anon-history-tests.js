@@ -114,25 +114,29 @@ spaceghost.then( function(){
     this.test.assert( hda.deleted, 'successfully deleted' );
 
     // ------------------------------------------------------------------------------------------- anon forbidden
-    //TODO: should be allowed...
-    this.test.comment( 'Calling create should fail for an anonymous user' );
-    this.api.assertRaises( function(){
-        this.api.hdas.create( current.id, { source: 'hda', content: 'doesntmatter' });
-    }, 403, 'API authentication required for this request', 'create failed with error' );
+    this.test.comment( 'Creating an hda should work for an anonymous user' );
+    var returned = this.api.hdas.create( current.id, { source: 'hda', content: hda.id });
+    //this.debug( this.jsonStr( returned ) );
+    this.test.assert( returned.name === hda.name, 'name matches: ' + returned.name );
+    this.test.assert( returned.id !== hda.id, 'new id: ' + returned.id );
 
-    //TODO: should be allowed (along with purge) and automatically creates new history (as UI)
-    this.test.comment( 'Calling delete should fail for an anonymous user' );
+    //TODO: should be allowed
+    this.test.comment( 'Calling hda delete should fail for an anonymous user' );
     this.api.assertRaises( function(){
         this.api.hdas.delete_( current.id, hda.id );
     }, 403, 'API authentication required for this request', 'delete failed with error' );
 
     //TODO: only sharing, tags, annotations should be blocked/prevented
     this.test.comment( 'Calling update with keys other than "visible" or "deleted" should fail silently' );
+    this.test.comment( 'Calling update on tags should fail silently' );
     changed = this.api.hdas.update( current.id, hda.id, { tags: [ 'one' ] });
     hda = this.api.hdas.show( current.id, hda.id );
-    this.debug( this.jsonStr( hda.tags ) );
+    this.test.assert( hda.tags.length === 0, 'tags were not set: ' + this.jsonStr( hda.tags ) );
 
-    this.test.assert( hda.tags.length === 0, 'tags were not set' );
+    this.test.comment( 'Calling update on annotation should fail silently' );
+    changed = this.api.hdas.update( current.id, hda.id, { annotation: 'yup yup yup' });
+    hda = this.api.hdas.show( current.id, hda.id );
+    this.test.assert( !hda.annotation, 'annotation was not set: ' + hda.annotation );
 
 });
 
