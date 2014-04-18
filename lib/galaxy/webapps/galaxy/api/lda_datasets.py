@@ -13,6 +13,7 @@ import urllib
 import urllib2
 import zipfile
 from galaxy import exceptions
+from galaxy.exceptions import ItemAccessibilityException, MessageException, ItemDeletionException, ObjectNotFound
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
 from galaxy import util

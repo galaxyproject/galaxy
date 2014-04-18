@@ -116,12 +116,12 @@ var FolderListView = Backbone.View.extend({
     },
 
     addOne: function(model){
-      if (model.get('type') === 'file'){
+      if (model.get('data_type') !== 'folder'){
           this.options.contains_file = true;
           model.set('readable_size', this.size_to_string(model.get('file_size')));
         }
       var rowView = new mod_library_folderrow_view.FolderRowView(model);
-      this.$el.find('#folder_list_body').prepend(rowView.el);
+      this.$el.find('#first_folder_item').after(rowView.el);
     },
 
     sort_clicked : function(event){
@@ -256,14 +256,14 @@ var FolderListView = Backbone.View.extend({
         tmpl_array.push('       <th>time updated (UTC)</th>');
         tmpl_array.push('   </thead>');
         tmpl_array.push('   <tbody id="folder_list_body">');
-        // tmpl_array.push('       <tr>');
-        // tmpl_array.push('           <td><a href="#<% if (upper_folder_id !== 0){ print("folders/" + upper_folder_id)} %>" title="Go to parent folder" class="btn_open_folder btn btn-default btn-xs">..<a></td>');
-        // tmpl_array.push('           <td></td>');
-        // tmpl_array.push('           <td></td>');
-        // tmpl_array.push('           <td></td>');
-        // tmpl_array.push('           <td></td>');
-        // tmpl_array.push('           <td></td>');
-        // tmpl_array.push('       </tr>');
+        tmpl_array.push('       <tr id="first_folder_item">');
+        tmpl_array.push('           <td><a href="#<% if (upper_folder_id !== 0){ print("folders/" + upper_folder_id)} %>" title="Go to parent folder" class="btn_open_folder btn btn-default btn-xs">..<a></td>');
+        tmpl_array.push('           <td></td>');
+        tmpl_array.push('           <td></td>');
+        tmpl_array.push('           <td></td>');
+        tmpl_array.push('           <td></td>');
+        tmpl_array.push('           <td></td>');
+        tmpl_array.push('       </tr>');
 
         tmpl_array.push('   </tbody>');
         tmpl_array.push('</table>');

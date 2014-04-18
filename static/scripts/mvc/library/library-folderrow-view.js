@@ -206,7 +206,7 @@ var FolderRowView = Backbone.View.extend({
     tmpl_array.push('  <td></td>');
     //  print item count only if it is given
     // tmpl_array.push('  <td><% if (typeof content_item.get("item_count") !== "undefined") { _.escape(content_item.get("item_count")); print("item(s)") } %> </td>');
-    tmpl_array.push('  <td><%= _.escape(content_item.get("time_updated")) %></td>'); // time updated
+    tmpl_array.push('  <td><%= _.escape(content_item.get("update_time")) %></td>'); // time updated
     tmpl_array.push('</tr>');
 
     return _.template(tmpl_array.join(''));
@@ -223,7 +223,7 @@ var FolderRowView = Backbone.View.extend({
     tmpl_array.push('  <td><a href="#" class="library-dataset"><%- content_item.get("name") %><a></td>'); // dataset
     tmpl_array.push('  <td><%= _.escape(content_item.get("data_type")) %></td>'); // data type
     tmpl_array.push('  <td><%= _.escape(content_item.get("readable_size")) %></td>'); // size
-    tmpl_array.push('  <td><%= _.escape(content_item.get("time_updated")) %></td>'); // time updated
+    tmpl_array.push('  <td><%= _.escape(content_item.get("update_time")) %></td>'); // time updated
     tmpl_array.push('</tr>');
 
     return _.template(tmpl_array.join(''));

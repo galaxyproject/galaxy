@@ -152,10 +152,12 @@ var FolderToolbarView = Backbone.View.extend({
 
   // import all selected datasets into history
   importAllIntoHistory : function (){
-      //disable the button to prevent multiple submission
+      // disable the button to prevent multiple submission
       this.modal.disableButton('Import');
 
       var history_id = $("select[name=dataset_import_bulk] option:selected").val();
+      // we can save last used history to pre-select it next time
+      this.options.last_used_history_id = history_id;
       var history_name = $("select[name=dataset_import_bulk] option:selected").text();
 
       var dataset_ids = [];
@@ -174,29 +176,35 @@ var FolderToolbarView = Backbone.View.extend({
       // prepare the dataset objects to be imported
       var datasets_to_import = [];
       for (var i = dataset_ids.length - 1; i >= 0; i--) {
-          library_dataset_id = dataset_ids[i];
+          var library_dataset_id = dataset_ids[i];
           var historyItem = new mod_library_model.HistoryItem();
-          var self = this;
           historyItem.url = historyItem.urlRoot + history_id + '/contents';
           historyItem.content = library_dataset_id;
           historyItem.source = 'library';
           datasets_to_import.push(historyItem);
       }
       // call the recursive function to call ajax one after each other (request FIFO queue)
-      this.chainCall(datasets_to_import);
+      this.chainCall(datasets_to_import, history_name);
   },
 
-  chainCall: function(history_item_set){
+  chainCall: function(history_item_set, history_name){
     var self = this;
     var popped_item = history_item_set.pop();
     if (typeof popped_item === "undefined") {
-        mod_toastr.success('All datasets imported');
+        mod_toastr.success('Datasets were imported to history: ' + history_name);
         this.modal.hide();
         return;
     }
-        var promise = $.when(popped_item.save({content: popped_item.content, source: popped_item.source})).done(function(a1){
-                self.updateProgress();
-                self.chainCall(history_item_set);
+    var promise = $.when(popped_item.save({content: popped_item.content, source: popped_item.source}));
+
+    promise.done(function(a1){
+              self.updateProgress();
+              self.chainCall(history_item_set, history_name);
+            })
+            .fail(function(a1){
+              mod_toastr.error('An error occured :(');
+              self.updateProgress();
+              self.chainCall(history_item_set, history_name);
             });
   },
 
@@ -231,7 +239,7 @@ var FolderToolbarView = Backbone.View.extend({
     //url and data options required
     if( url && data ){
             //data can be string of parameters or array/object
-            data = typeof data == 'string' ? data : $.param(data);
+            data = typeof data === 'string' ? data : $.param(data);
             //split params into form inputs
             var inputs = '';
             $.each(data.split('&'), function(){
@@ -267,7 +275,7 @@ var FolderToolbarView = Backbone.View.extend({
           self.fetchAndDisplayHistoryContents(event.target.value);
         });
       } else {
-        mod_toastr.error('Unable to retrieve histories. Please report this error.');
+        mod_toastr.error('An error ocurred :(');
       }
     });
   },
@@ -278,12 +286,11 @@ var FolderToolbarView = Backbone.View.extend({
     history_contents.fetch({
       success: function(history_contents){
         var history_contents_template = self.templateHistoryContents();
-        mod_toastr.success('history contents fetched');
         self.histories.get(history_id).set({'contents' : history_contents});
         self.modal.$el.find('#selected_history_content').html(history_contents_template({history_contents: history_contents.models.reverse()}));
       },
       error: function(){
-        mod_toastr.error('history contents fetch failed');
+        mod_toastr.error('An error ocurred :(');
       }
     });
   },
@@ -313,7 +320,6 @@ var FolderToolbarView = Backbone.View.extend({
       for (var i = history_dataset_ids.length - 1; i >= 0; i--) {
           history_dataset_id = history_dataset_ids[i];
           var folder_item = new mod_library_model.Item();
-          var self = this;
           folder_item.url = '/api/folders/' + this.options.id + '/contents';
           folder_item.set({'from_hda_id':history_dataset_id});
           hdas_to_add.push(folder_item);
@@ -327,15 +333,28 @@ var FolderToolbarView = Backbone.View.extend({
     this.added_hdas = new mod_library_model.Folder();
     var popped_item = hdas_set.pop();
     if (typeof popped_item === "undefined") {
-      mod_toastr.success('Selected datasets from history imported');
+      mod_toastr.success('Datasets from history added to the folder');
       this.modal.hide();
       return this.added_hdas;
     }
-    var promise = $.when(popped_item.save({from_hda_id: popped_item.get('from_hda_id')})).done(function(a1){
-      Galaxy.libraries.folderListView.collection.add(a1);
-      self.updateProgress();
-      self.chainCallAddingHdas(hdas_set);
-    });
+    var promise = $.when(popped_item.save({from_hda_id: popped_item.get('from_hda_id')}));
+
+    promise.done(function(a1){
+              // we are fine
+              Galaxy.libraries.folderListView.collection.add(a1);
+              self.updateProgress();
+              self.chainCallAddingHdas(hdas_set);
+            })
+            .fail(function(data){
+              // we have a problem
+              if (data.status===403){
+                mod_toastr.error('You are not allowed to access a dataset');
+              } else {
+                mod_toastr.error('An error occured :(');
+              }
+              self.updateProgress();
+              self.chainCallAddingHdas(hdas_set);
+            });
   },
 
   templateToolBar: function(){
@@ -346,10 +365,12 @@ var FolderToolbarView = Backbone.View.extend({
     tmpl_array.push('<h3>Data Libraries Beta Test. This is work in progress. Please report problems & ideas via <a href="mailto:galaxy-bugs@bx.psu.edu?Subject=DataLibrariesBeta_Feedback" target="_blank">email</a> and <a href="https://trello.com/c/nwYQNFPK/56-data-library-ui-progressive-display-of-folders" target="_blank">Trello</a>.</h3>');
     // TOOLBAR
     tmpl_array.push('<div id="library_folder_toolbar" >');
-    tmpl_array.push('   <button data-toggle="tooltip" data-placement="top" title="Create New Folder" id="toolbtn_create_folder" class="primary-button" type="button" style="display:none;"><span class="fa fa-plus"></span> <span class="fa fa-folder"></span></button>');
-    tmpl_array.push('   <button data-toggle="tooltip" data-placement="top" title="Add Datasets to Current Folder" id="toolbtn_add_files" class="toolbtn_add_files primary-button" type="button" style="display:none;"><span class="fa fa-plus"></span> <span class="fa fa-file"></span></span></button>');
-    tmpl_array.push('   <button data-toggle="tooltip" data-placement="top" title="Import selected datasets into history" id="toolbtn_bulk_import" class="primary-button" style="margin-left: 0.5em; display:none;" type="button"><span class="fa fa-book"></span> to history</button>');
-    tmpl_array.push('   <div id="toolbtn_dl" class="btn-group" style="margin-left: 0.5em; display:none; ">');
+    tmpl_array.push('<div class="btn-group">');
+    tmpl_array.push('   <button data-toggle="tooltip" data-placement="top" title="Create New Folder" id="toolbtn_create_folder" class="btn btn-default primary-button" type="button" style="display:none;"><span class="fa fa-plus"></span> <span class="fa fa-folder"></span></button>');
+    tmpl_array.push('   <button data-toggle="tooltip" data-placement="top" title="Add Datasets to Current Folder" id="toolbtn_add_files" class="btn btn-default toolbtn_add_files primary-button" type="button" style="display:none;"><span class="fa fa-plus"></span> <span class="fa fa-file"></span></span></button>');
+    tmpl_array.push('</div>');
+    tmpl_array.push('   <button data-toggle="tooltip" data-placement="top" title="Import selected datasets into history" id="toolbtn_bulk_import" class="primary-button" style="margin-left: 0.5em; " type="button"><span class="fa fa-book"></span> to history</button>');
+    tmpl_array.push('   <div id="toolbtn_dl" class="btn-group" style="margin-left: 0.5em; ">');
     tmpl_array.push('       <button title="Download selected datasets" id="drop_toggle" type="button" class="primary-button dropdown-toggle" data-toggle="dropdown">');
     tmpl_array.push('       <span class="fa fa-download"></span> download <span class="caret"></span>');
     tmpl_array.push('       </button>');

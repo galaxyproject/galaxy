@@ -30,7 +30,6 @@ function(mod_masthead,
 var LibraryRouter = Backbone.Router.extend({
     routes: {
         ""                                      : "libraries",
-        "sort/:sort_by/:order"                  : "sort_libraries",
         "folders/:id"                           : "folder_content",
         "folders/:folder_id/download/:format"   : "download"
     }
@@ -72,11 +71,6 @@ var GalaxyLibrary = Backbone.View.extend({
             // TODO place caching here, sessionstorage/localstorage?
             if (Galaxy.libraries.folderToolbarView){ 
               Galaxy.libraries.folderToolbarView.$el.unbind('click');
-              // Galaxy.libraries.folderToolbarView.remove(); 
-            }
-            if (Galaxy.libraries.folderListView){
-              // Galaxy.libraries.folderListView.$el.unbind('click');
-              // Galaxy.libraries.folderListView.remove(); 
             }
             Galaxy.libraries.folderToolbarView = new mod_foldertoolbar_view.FolderToolbarView({id: id});
             Galaxy.libraries.folderListView = new mod_folderlist_view.FolderListView({id: id});

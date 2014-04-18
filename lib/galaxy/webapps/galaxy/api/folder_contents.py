@@ -86,16 +86,16 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
         full_path = build_path( folder )[::-1]
 
         folder_contents = []
-        time_updated = ''
-        time_created = ''
+        update_time = ''
+        create_time = ''
         # Go through every accessible item in the folder and include its meta-data.
         for content_item in self._load_folder_contents( trans, folder ):
             can_access = trans.app.security_agent.can_access_library_item( current_user_roles, content_item, trans.user )
             if ( can_access or ( content_item.api_type == 'folder' and trans.app.security_agent.folder_is_unrestricted( content_item ) ) ):
                 return_item = {}
                 encoded_id = trans.security.encode_id( content_item.id )
-                time_updated = content_item.update_time.strftime( "%Y-%m-%d %I:%M %p" )
-                time_created = content_item.create_time.strftime( "%Y-%m-%d %I:%M %p" )
+                update_time = content_item.update_time.strftime( "%Y-%m-%d %I:%M %p" )
+                create_time = content_item.create_time.strftime( "%Y-%m-%d %I:%M %p" )
 
                 # For folder return also hierarchy values
                 if content_item.api_type == 'folder':
@@ -118,8 +118,8 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
                 return_item.update( dict( id = encoded_id,
                                    type = content_item.api_type,
                                    name = content_item.name,
-                                   time_updated = time_updated,
-                                   time_created = time_created
+                                   update_time = update_time,
+                                   create_time = create_time
                                     ) )
                 folder_contents.append( return_item )
 
@@ -178,11 +178,14 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
                 raise exceptions.InsufficientPermissionsException( 'You do not have proper permissions to add a dataset to a folder with id (%s)' % ( encoded_folder_id ) )
 
             ldda = self.copy_hda_to_library_folder( trans, hda, folder, ldda_message=ldda_message )
+            update_time = ldda.update_time.strftime( "%Y-%m-%d %I:%M %p" )
             ldda_dict = ldda.to_dict()
             rval = trans.security.encode_dict_ids( ldda_dict )
+            rval['update_time'] = update_time
 
         except Exception, exc:
-            if 'not accessible to the current user' in str( exc ):
+            # TODO handle exceptions better within the mixins
+            if ( ( 'not accessible to the current user' in str( exc ) ) or ( 'You are not allowed to access this dataset' in str( exc ) ) ):
                 raise exceptions.ItemAccessibilityException( 'You do not have access to the requested item' )
             else:
                 log.exception( exc )
