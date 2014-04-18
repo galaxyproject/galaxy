@@ -23,7 +23,6 @@ define([
     };
 
     module( "Metrics logger tests" );
-
     // ======================================================================== MetricsLogger
     test( "logger construction/initializiation defaults", function() {
         var logger = new metrics.MetricsLogger({});
@@ -95,7 +94,84 @@ define([
         logger.emit( 'metric', 'test', [{ window: window }] );
         equal( logger.cache.length(), 0 );
     });
-    
+
+    function metricsFromRequestBody( request ){
+        // assumes 'metrics' is only entry in requestBody
+        return JSON.parse( decodeURIComponent( request.requestBody.replace( 'metrics=', '' ) ) );
+    }
+
+    test( "_postCache success", function () {
+        var callback = sinon.spy(),
+            logger = new metrics.MetricsLogger({
+                logLevel : 'metric',
+                onServerResponse : function( response ){ callback(); }
+            });
+
+        var server = sinon.fakeServer.create(),
+            metricsOnServer;
+        server.respondWith( 'POST', '/api/metrics', function( request ){
+            metricsOnServer = metricsFromRequestBody( request );
+            request.respond(
+                200,
+                { "Content-Type": "application/json" },
+                JSON.stringify({
+                    fakeResponse: 'yes'
+                })
+            );
+        });
+
+        logger.emit( 'metric', 'test', [ 1, 2, { three: 3 }] );
+        logger._postCache();
+        server.respond();
+        ok( callback.calledOnce, 'onServerResponse was called' );
+        equal( logger.cache.length(), 0, 'should have emptied cache (on success)' );
+        equal( logger._postSize, 1000, '_postSize still at default' );
+
+        // metrics were in proper form on server
+        equal( metricsOnServer.length, 1 );
+        var metric = metricsOnServer[0];
+        equal( metric.level, metrics.MetricsLogger.METRIC );
+        equal( metric.namespace, 'client.test' );
+        equal( metric.args.length, 3 );
+        equal( metric.args[2].three, 3 );
+        ok( typeof metric.time === 'string' );
+        ok( metric.time === new Date( metric.time ).toISOString() );
+
+        server.restore();
+    });
+
+    test( "_postCache failure", function () {
+        var callback = sinon.spy(),
+            logger = new metrics.MetricsLogger({
+                logLevel : 'metric',
+                onServerResponse : function( response ){ callback(); }
+            });
+
+        var server = sinon.fakeServer.create();
+        server.respondWith( 'POST', '/api/metrics', function( request ){
+            request.respond(
+                500,
+                { "Content-Type": "application/json" },
+                JSON.stringify({
+                    err_msg: 'NoooOPE!'
+                })
+            );
+        });
+
+        logger.emit( 'metric', 'test', [ 1, 2, { three: 3 }] );
+        logger._postCache();
+        server.respond();
+        //TODO: is the following what we want?
+        ok( !callback.calledOnce, 'onServerResponse was NOT called' );
+        equal( logger.cache.length(), 1, 'should NOT have emptied cache' );
+        equal( logger._postSize, logger.options.maxCacheSize, '_postSize changed to max' );
+
+        //TODO: still doesn't solve the problem that when cache == max, post will be tried on every emit
+
+        server.restore();
+    });
+
+
     // ======================================================================== LoggingCache
     test( "cache construction/initializiation defaults", function() {
         var cache = new metrics.LoggingCache();
