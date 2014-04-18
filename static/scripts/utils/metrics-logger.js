@@ -224,7 +224,7 @@ MetricsLogger.prototype._postCache = function _postCache( options ){
             }
             // only remove if post successful
             self.cache.remove( entriesLength );
-            console.debug( 'removed entries:', entriesLength, 'size now:', self.cache.length() );
+            //console.debug( 'removed entries:', entriesLength, 'size now:', self.cache.length() );
             // if we succeeded, reset the post target to the normal num of entries
             self._postSize = self.options.postSize;
         });
