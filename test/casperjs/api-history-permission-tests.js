@@ -30,6 +30,7 @@ var inaccessibleHistory, accessibleHistory, publishedHistory,
 //// ------------------------------------------------------------------------------------------- create 3 histories
 spaceghost.user.loginOrRegisterUser( email, password );
 spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
+    this.test.comment( '(logged in as ' + this.user.loggedInAs() + ')' );
     // create three histories: make the 2nd importable (via the API), and the third published
 
     this.test.comment( 'importable, slug, and published should all be returned by show and initially off' );
@@ -216,6 +217,7 @@ function testAccessible( history, hdas ){
 
 spaceghost.user.loginOrRegisterUser( email2, password2 );
 spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
+    this.test.comment( '(logged in as ' + this.user.loggedInAs() + ')' );
     testInaccessible.call( spaceghost, inaccessibleHistory, inaccessibleHdas );
     testAccessible.call( spaceghost, accessibleHistory, accessibleHdas );
     testAccessible.call( spaceghost, publishedHistory, publishedHdas );
@@ -226,6 +228,7 @@ spaceghost.user.logout();
 //// ------------------------------------------------------------------------------------------- user1 revoke perms
 spaceghost.user.loginOrRegisterUser( email, password );
 spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
+    this.test.comment( '(logged in as ' + this.user.loggedInAs() + ')' );
     this.test.comment( 'revoking perms should prevent access' );
     this.api.histories.update( accessibleHistory.id, {
         importable : false
@@ -250,6 +253,7 @@ spaceghost.user.logout();
 //// ------------------------------------------------------------------------------------------- user2 retry perms
 spaceghost.user.loginOrRegisterUser( email2, password2 );
 spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
+    this.test.comment( '(logged in as ' + this.user.loggedInAs() + ')' );
     testInaccessible.call( spaceghost, accessibleHistory, accessibleHdas );
     testInaccessible.call( spaceghost, publishedHistory, publishedHdas );
 });

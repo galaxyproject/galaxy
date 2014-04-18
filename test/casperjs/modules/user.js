@@ -163,19 +163,24 @@ User.prototype.login = function login( email, password ){
  *  @returns {String} email of currently logged in user or '' if no one logged in
  */
 User.prototype.loggedInAs = function loggedInAs(){
-    return this.spaceghost.jumpToTop( function(){
-        var userEmail = '';
-        try {
-            var emailSelector = xpath( this.data.selectors.masthead.userMenu.userEmail_xpath ),
-                loggedInInfo = this.elementInfoOrNull( emailSelector );
-            if( loggedInInfo !== null ){
-                userEmail = loggedInInfo.text.replace( 'Logged in as ', '' );
-            }
-        } catch( err ){
-            this.warn( err );
-        }
-        return userEmail;
-    });
+    var currUser = this.spaceghost.api.users.show( 'current' );
+    //this.spaceghost.debug( this.spaceghost.jsonStr( currUser ) );
+    return currUser.email;
+//TODO: due to late rendering of masthead this is no longer reliable - need a wait for in the main page
+    //return this.spaceghost.jumpToTop( function(){
+    //    var userEmail = '';
+    //    try {
+    //        var emailSelector = xpath( this.data.selectors.masthead.userMenu.userEmail_xpath ),
+    //            loggedInInfo = this.elementInfoOrNull( emailSelector );
+    //        this.debug( '\n\n' + this.jsonStr( loggedInInfo ) + '\n' );
+    //        if( loggedInInfo !== null ){
+    //            userEmail = loggedInInfo.text.replace( 'Logged in as ', '' );
+    //        }
+    //    } catch( err ){
+    //        this.warn( err );
+    //    }
+    //    return userEmail;
+    //});
 };
 
 /** Log out the current user
