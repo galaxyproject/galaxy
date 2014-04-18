@@ -19,6 +19,7 @@ def __main__():
     
     species = sys.argv[3].split(',')
     partial = sys.argv[4]
+    output_id = sys.argv[6]
     out_files = {}
     primary_spec = None
     
@@ -47,10 +48,7 @@ def __main__():
             out_files[spec] = open( output_filename, 'w' )
             primary_spec = spec
         else:
-            out_files[spec] = tempfile.NamedTemporaryFile( mode = 'w', dir = database_tmp_dir, suffix = '.maf_to_bed' )
-            filename = out_files[spec].name
-            out_files[spec].close()
-            out_files[spec] = open( filename, 'w' )
+            out_files[ spec ] = open( os.path.join( database_tmp_dir, 'primary_%s_%s_visible_bed_%s' % ( output_id, spec, spec ) ), 'wb+' )
     num_species = len( species )
     
     print "Restricted to species:", ",".join( species )
@@ -71,10 +69,7 @@ def __main__():
             if not spec or not chrom:
                     spec = chrom = c.src
             if spec not in out_files.keys():
-                out_files[spec] = tempfile.NamedTemporaryFile( mode='w', dir = database_tmp_dir, suffix = '.maf_to_bed' )
-                filename = out_files[spec].name
-                out_files[spec].close()
-                out_files[spec] = open( filename, 'w' )
+                out_files[ spec ] = open( os.path.join( database_tmp_dir, 'primary_%s_%s_visible_bed_%s' % ( output_id, spec, spec ) ), 'wb+' )
             
             if c.strand == "-":
                 out_files[spec].write( chrom + "\t" + str( c.src_size - c.end ) + "\t" + str( c.src_size - c.start ) + "\t" + spec + "_" + str( block_num ) + "\t" + "0\t" + c.strand + "\n" )
@@ -85,10 +80,6 @@ def __main__():
     for file_out in out_files.keys():
         out_files[file_out].close()
 
-    for spec in out_files.keys():
-        if spec != primary_spec:
-            print "#FILE\t" + spec + "\t" + os.path.join( database_tmp_dir, os.path.split( out_files[spec].name )[1] )
-        else:
-            print "#FILE1\t" + spec + "\t" + out_files[spec].name
+    print "#FILE1_DBKEY\t%s" % ( primary_spec )
 
 if __name__ == "__main__": __main__()
