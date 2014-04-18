@@ -240,10 +240,13 @@ class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
                 # parse test_result based on result_type (curr: only datatype has to do this)
                 if result_type == 'datatype':
                     # convert datatypes to their actual classes (for use with isinstance)
-                    test_result = trans.app.datatypes_registry.get_datatype_class_by_name( test_result )
+                    datatype_class_name = test_result
+                    test_result = trans.app.datatypes_registry.get_datatype_class_by_name( datatype_class_name )
                     if not test_result:
                         # warn if can't find class, but continue (with other tests)
-                        log.warn( 'visualizations_registry cannot find class (%s) for applicability test', test_result )
+                        log.warn( 'visualizations_registry cannot find class (%s)' +
+                                  ' for applicability test on: %s, id: %s', datatype_class_name,
+                                  target_object, getattr( target_object, 'id', '' ) )
                         continue
 
             #NOTE: tests are OR'd, if any test passes - the visualization can be applied
