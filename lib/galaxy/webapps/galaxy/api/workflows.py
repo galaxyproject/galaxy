@@ -14,6 +14,7 @@ from galaxy.web.base.controller import BaseAPIController, url_for, UsesStoredWor
 from galaxy.web.base.controller import UsesHistoryMixin
 from galaxy.workflow.modules import module_factory
 from galaxy.workflow.run import invoke
+from galaxy.workflow.run import WorkflowRunConfig
 from galaxy.workflow.extract import extract_workflow
 
 
@@ -325,12 +326,17 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
 
         # Run each step, connecting outputs to inputs
         replacement_dict = payload.get('replacement_params', {})
-        outputs = invoke(
-            trans=trans,
-            workflow=workflow,
+
+        run_config = WorkflowRunConfig(
             target_history=history,
             replacement_dict=replacement_dict,
             ds_map=ds_map,
+        )
+
+        outputs = invoke(
+            trans=trans,
+            workflow=workflow,
+            workflow_run_config=run_config,
         )
         trans.sa_session.flush()
 

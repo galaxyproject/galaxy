@@ -8,28 +8,50 @@ from galaxy.tools.parameters import visit_input_values
 from galaxy.util.odict import odict
 
 
-def invoke( trans, workflow, target_history, replacement_dict, copy_inputs_to_history=False, ds_map={} ):
+class WorkflowRunConfig( object ):
+    """ Wrapper around all the ways a workflow execution can be parameterized.
+
+    :param target_history: History to execute workflow in.
+    :type target_history: galaxy.model.History.
+
+    :param replacement_dict: Workflow level parameters used for renaming post
+        job actions.
+    :type replacement_dict: dict
+
+    :param copy_inputs_to_history: Should input data parameters be copied to
+        target_history. (Defaults to False)
+    :type copy_inputs_to_history: bool
+
+    :param ds_map: Map from step ids to dict's containing HDA for these steps.
+    :type ds_map: dict
+    """
+
+    def __init__( self, target_history, replacement_dict, copy_inputs_to_history=False, ds_map={} ):
+        self.target_history = target_history
+        self.replacement_dict = replacement_dict
+        self.copy_inputs_to_history = copy_inputs_to_history
+        self.ds_map = ds_map
+
+
+def invoke( trans, workflow, workflow_run_config ):
     """ Run the supplied workflow in the supplied target_history.
     """
     return WorkflowInvoker(
         trans,
         workflow,
-        target_history,
-        replacement_dict,
-        copy_inputs_to_history=copy_inputs_to_history,
-        ds_map=ds_map,
+        workflow_run_config,
     ).invoke()
 
 
 class WorkflowInvoker( object ):
 
-    def __init__( self, trans, workflow, target_history, replacement_dict, copy_inputs_to_history, ds_map ):
+    def __init__( self, trans, workflow, workflow_run_config ):
         self.trans = trans
         self.workflow = workflow
-        self.target_history = target_history
-        self.replacement_dict = replacement_dict
-        self.copy_inputs_to_history = copy_inputs_to_history
-        self.ds_map = ds_map
+        self.target_history = workflow_run_config.target_history
+        self.replacement_dict = workflow_run_config.replacement_dict
+        self.copy_inputs_to_history = workflow_run_config.copy_inputs_to_history
+        self.ds_map = workflow_run_config.ds_map
 
         self.outputs = odict()
 
@@ -128,4 +150,4 @@ class WorkflowInvoker( object ):
                 replacement = outputs[ connection[ 0 ].output_step.id ][ connection[ 0 ].output_name ]
         return replacement
 
-__all__ = [ invoke ]
+__all__ = [ invoke, WorkflowRunConfig ]

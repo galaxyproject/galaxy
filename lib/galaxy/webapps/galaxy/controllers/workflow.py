@@ -29,6 +29,7 @@ from galaxy.web.framework.helpers import grids, time_ago
 from galaxy.web.framework.helpers import to_unicode
 from galaxy.workflow.modules import module_factory
 from galaxy.workflow.run import invoke
+from galaxy.workflow.run import WorkflowRunConfig
 from galaxy.workflow.extract import summarize
 from galaxy.workflow.extract import extract_workflow
 from galaxy.workflow.steps import (
@@ -1322,12 +1323,16 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                             if k.startswith('wf_parm|'):
                                 replacement_dict[k[8:]] = v
 
-                        outputs = invoke(
-                            trans=trans,
-                            workflow=workflow,
+                        run_config = WorkflowRunConfig(
                             target_history=target_history,
                             replacement_dict=replacement_dict,
                             copy_inputs_to_history=new_history is not None
+                        )
+
+                        outputs = invoke(
+                            trans=trans,
+                            workflow=workflow,
+                            workflow_run_config=run_config
                         )
 
                         invocations.append({'outputs': outputs,
