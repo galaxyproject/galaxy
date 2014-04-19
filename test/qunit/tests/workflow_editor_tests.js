@@ -58,7 +58,7 @@ define([
         setup: function() {
             this.node = {  };
             this.element = $( "<div>" );
-            this.input_terminal = new InputTerminal( this.element, [ "txt" ] );
+            this.input_terminal = new InputTerminal( { element: this.element, datatypes: [ "txt" ] } );
             this.input_terminal.node = this.node;
         },
         test_connector: function( attr ) {
@@ -81,25 +81,25 @@ define([
     } );
 
     test( "test connect", function() {
-        this.node.changed = sinon.spy();
+        this.node.markChanged = sinon.spy();
 
         var connector = {};
         this.input_terminal.connect( connector );
 
-        // Assert node changed called
-        ok( this.node.changed.called );
+        // Assert node markChanged called
+        ok( this.node.markChanged.called );
         // Assert connectors updated
         ok( this.input_terminal.connectors[ 0 ] === connector );
     } );
 
     test( "test disconnect", function() {
-        this.node.changed = sinon.spy();
+        this.node.markChanged = sinon.spy();
 
         var connector = this.test_connector( {} );
         this.input_terminal.disconnect( connector );
 
-        // Assert node changed called
-        ok( this.node.changed.called );
+        // Assert node markChanged called
+        ok( this.node.markChanged.called );
         // Assert connectors updated
         equal( this.input_terminal.connectors.length, 0 );
     } );
@@ -204,7 +204,7 @@ define([
             this.input_terminal = { destroy: sinon.spy(), redraw: sinon.spy() };
             this.output_terminal = { destroy: sinon.spy(), redraw: sinon.spy() };
             this.element = $("<div><div class='toolFormBody'></div></div>");
-            this.node = new Node( this.element );
+            this.node = new Node( { element: this.element } );
             this.node.input_terminals.i1 = this.input_terminal;
             this.node.output_terminals.o1 = this.output_terminal;
         },
@@ -375,5 +375,93 @@ define([
             ok( add_node_spy.calledWith( node ) );
         } );
     } );
+
+    /* global NodeView */
+    module( "Node view ", {
+       setup: function() {
+            this.set_for_node( {} );
+        },
+        set_for_node: function( node ) {
+            var element = $("<div>");
+            this.view = new NodeView( { node: node, el: element[ 0 ] } );
+        },
+    } );
+
+    test( "tool error styling", function() {
+        this.set_for_node( { tool_errors: false } );
+        this.view.render();
+        ok( ! this.view.$el.hasClass( "tool-node-error" ) );
+        this.set_for_node( { tool_errors: true } );
+        this.view.render();
+        ok( this.view.$el.hasClass( "tool-node-error" ) );
+    } );
+
+    test( "rendering correct width", function() {
+        // Default width is 150
+        this.view.render();
+        equal( this.view.$el.width(), 150 );
+
+        // If any data rows are greater, it will update
+        this.view.updateMaxWidth( 200 );
+        this.view.render();
+        equal( this.view.$el.width(), 200 );
+
+        // However 250 is the maximum width of node
+        this.view.updateMaxWidth( 300 );
+        this.view.render();
+        equal( this.view.$el.width(), 250 );
+
+    } );
+
+    /* global InputTerminalView */
+    module( "Input terminal view", {
+        setup: function() {
+            this.node = { input_terminals: [] };
+            this.input = { name: "i1", extensions: "txt", multiple: false };
+            this.view = new InputTerminalView( {
+                node: this.node,
+                input: this.input,
+            });
+        }
+    } );
+
+    test( "terminal added to node", function() {
+        ok( this.node.input_terminals.i1 );
+        equal( this.node.input_terminals.i1.datatypes, [ "txt" ] );
+        equal( this.node.input_terminals.i1.multiple, false );
+    } );
+
+    test( "terminal element", function() {
+        var el = this.view.el;
+        equal( el.tagName, "DIV" );
+        equal( el.className, "terminal input-terminal");
+    } );
+
+    // TODO: Test binding... not sure how to do that exactly..
+
+    /* global OutputTerminalView */
+    module( "Output terminal view", {
+        setup: function() {
+            this.node = { output_terminals: [] };
+            this.output = { name: "o1", extensions: "txt" };
+            this.view = new OutputTerminalView( {
+                node: this.node,
+                output: this.output,
+            });
+        }
+    } );
+
+    test( "terminal added to node", function() {
+        ok( this.node.output_terminals.o1 );
+        equal( this.node.output_terminals.o1.datatypes, [ "txt" ] );
+    } );
+
+    test( "terminal element", function() {
+        var el = this.view.el;
+        equal( el.tagName, "DIV" );
+        equal( el.className, "terminal output-terminal");
+    } );
+
+    // TODO: Test bindings
 
 });
