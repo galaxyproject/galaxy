@@ -21,39 +21,6 @@ from galaxy.workflow.extract import extract_workflow
 log = logging.getLogger(__name__)
 
 
-def _update_step_parameters(step, param_map):
-    """
-    Update ``step`` parameters based on the user-provided ``param_map`` dict.
-
-    ``param_map`` should be structured as follows::
-
-      PARAM_MAP = {STEP_ID: PARAM_DICT, ...}
-      PARAM_DICT = {NAME: VALUE, ...}
-
-    For backwards compatibility, the following (deprecated) format is
-    also supported for ``param_map``::
-
-      PARAM_MAP = {TOOL_ID: PARAM_DICT, ...}
-
-    in which case PARAM_DICT affects all steps with the given tool id.
-    If both by-tool-id and by-step-id specifications are used, the
-    latter takes precedence.
-
-    Finally (again, for backwards compatibility), PARAM_DICT can also
-    be specified as::
-
-      PARAM_DICT = {'param': NAME, 'value': VALUE}
-
-    Note that this format allows only one parameter to be set per step.
-    """
-    param_dict = param_map.get(step.tool_id, {}).copy()
-    param_dict.update(param_map.get(str(step.id), {}))
-    if param_dict:
-        if 'param' in param_dict and 'value' in param_dict:
-            param_dict[param_dict['param']] = param_dict['value']
-        step.state.inputs.update(param_dict)
-
-
 class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHistoryMixin):
 
     @web.expose_api
@@ -290,40 +257,6 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
                 trans.response.status = 400
                 return "Invalid Dataset '%s' Specified" % ds_map[k]['id']
 
-        # Build the state for each step
-        for step in workflow.steps:
-            step_errors = None
-            input_connections_by_name = {}
-            for conn in step.input_connections:
-                input_name = conn.input_name
-                if not input_name in input_connections_by_name:
-                    input_connections_by_name[input_name] = []
-                input_connections_by_name[input_name].append(conn)
-            step.input_connections_by_name = input_connections_by_name
-
-            if step.type == 'tool' or step.type is None:
-                step.module = module_factory.from_workflow_step( trans, step )
-                # Check for missing parameters
-                step.upgrade_messages = step.module.check_and_update_state()
-                # Any connected input needs to have value DummyDataset (these
-                # are not persisted so we need to do it every time)
-                step.module.add_dummy_datasets( connections=step.input_connections )
-                step.state = step.module.state
-                _update_step_parameters(step, param_map)
-                if step.tool_errors:
-                    trans.response.status = 400
-                    return "Workflow cannot be run because of validation errors in some steps: %s" % step_errors
-                if step.upgrade_messages:
-                    trans.response.status = 400
-                    return "Workflow cannot be run because of step upgrade messages: %s" % step.upgrade_messages
-            else:
-                # This is an input step. Make sure we have an available input.
-                if step.type == 'data_input' and str(step.id) not in ds_map:
-                    trans.response.status = 400
-                    return "Workflow cannot be run because an expected input step '%s' has no input dataset." % step.id
-                step.module = module_factory.from_workflow_step( trans, step )
-                step.state = step.module.get_runtime_state()
-
         # Run each step, connecting outputs to inputs
         replacement_dict = payload.get('replacement_params', {})
 
@@ -331,6 +264,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
             target_history=history,
             replacement_dict=replacement_dict,
             ds_map=ds_map,
+            param_map=param_map,
         )
 
         outputs = invoke(
