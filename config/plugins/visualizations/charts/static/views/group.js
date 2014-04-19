@@ -144,7 +144,7 @@ return Backbone.View.extend(
             }
             
             // loading
-            self.chart.state('wait', 'Metadata initialized...');
+            self.chart.state('ok', 'Metadata initialized...');
             
             // unregister
             self.chart.deferred.done(process_id);
