@@ -598,8 +598,8 @@ def install_repository( app, repository_dict ):
     # Get the repository record now that the tests that install it have completed.
     repository = get_repository( name, owner, changeset_revision )
     if repository is None:
-        error_message = 'Error getting revision %s of repository %s owned by %s: %s' % ( changeset_revision, name, owner, str( e ) )
-        log.exception( error_message )            
+        error_message = 'Error getting revision %s of repository %s owned by %s: An entry for the repository was not found in the database.' % ( changeset_revision, name, owner )
+        log.error( error_message )
     return repository, error_message
 
 def is_excluded( exclude_list_dicts, name, owner, changeset_revision, encoded_repository_metadata_id ):
