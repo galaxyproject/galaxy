@@ -76,7 +76,7 @@ define([
         },
         test_accept: function( other ) {
             other = other || { node: {}, datatypes: [ "txt" ] };
-            return this.input_terminal.can_accept( other );
+            return this.input_terminal.canAccept( other );
         }
     } );
 

@@ -41,7 +41,7 @@ var InputTerminal = Terminal.extend( {
         this.datatypes = attr.datatypes;
         this.multiple = attr.multiple;
     },
-    can_accept: function ( other ) {
+    canAccept: function ( other ) {
         if ( this.connectors.length < 1 || this.multiple) {
             for ( var t in this.datatypes ) {
                 var cat_outputs = new Array();
@@ -989,7 +989,7 @@ var InputTerminalView = Backbone.View.extend( {
         var terminal = this.el.terminal;
         // Accept a dragable if it is an output terminal and has a
         // compatible type
-        return $(d.drag).hasClass( "output-terminal" ) && terminal.can_accept( d.drag.terminal );
+        return $(d.drag).hasClass( "output-terminal" ) && terminal.canAccept( d.drag.terminal );
     },
 
     onDropStart: function( e, d  ) {
