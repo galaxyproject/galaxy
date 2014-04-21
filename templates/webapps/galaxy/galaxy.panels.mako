@@ -55,9 +55,6 @@
     
     ## make sure console exists
     <script type="text/javascript">
-        // start a Galaxy namespace for objects created
-        window.Galaxy = window.Galaxy || {};
-
         // console protection
         window.console = window.console ||
         {
@@ -91,7 +88,6 @@
     %endif
     </style>
     
-
     ## default script wrapper
     <script type="text/javascript">
         ## configure require
@@ -103,25 +99,33 @@
                 "libs/backbone/backbone": { exports: "Backbone" },
             }
         });
+        var galaxy_config = ${ h.to_json_string( self.galaxy_config ) };
         
         // load any app configured
-        var galaxy_config = ${ h.to_json_string( self.galaxy_config ) };
-        window.init = function(){
+        define( 'app', function(){
             var jscript = galaxy_config.app.jscript;
             if( jscript ){
                 require([ jscript ], function( js_lib ){
                     $( function(){
-                        ## load galaxy module application
+                        // load galaxy module application
                         var module = new js_lib.GalaxyApp();
                     });
                 });
             } else {
                 console.log("'galaxy_config.app.jscript' missing.");
             }
-        }
+        });
     </script>
-    ${ galaxy_client.load( init_fn='init' ) }
+    ## load the Galaxy global js var and run 'app' from above
+    ${ galaxy_client.load( app='app' ) }
+
+    ## alternate call where the module calls itself when included (no call to GalaxyApp()) - the above won't be needed
+    ##precondition: module must call jq onready itself
+    ##<% app_config = self.galaxy_config[ 'app' ]; print app_config %>
+    ##${ galaxy_client.load( app=( app_config[ 'jscript' ] if 'jscript' in app_config else None )) }
     
+    ##TODO: at that point, we can think about optimizing the various apps
+
 </%def>
 
 ## default late-load javascripts

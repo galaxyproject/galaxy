@@ -60,8 +60,6 @@
         "mvc/ui"
     )}
     
-    ${ galaxy_client.load() }
-
     <script type="text/javascript">
         ## global configuration object
         var galaxy_config =
@@ -92,6 +90,10 @@
             }
         });
     </script>
+
+    ## load the Galaxy global js var
+    ${ galaxy_client.load() }
+
 </%def>
 
 ## Default late-load javascripts

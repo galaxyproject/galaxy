@@ -1,3 +1,6 @@
+<%namespace name="galaxy_client" file="/galaxy_client_app.mako" />
+<% self.js_app = None %>
+
 <% _=n_ %>
 <!DOCTYPE HTML>
 <html>
@@ -79,6 +82,8 @@
             }
         });
     </script>
+
+    ${ galaxy_client.load( app=self.js_app ) }
 
     %if not form_input_auto_focus is UNDEFINED and form_input_auto_focus:
         <script type="text/javascript">

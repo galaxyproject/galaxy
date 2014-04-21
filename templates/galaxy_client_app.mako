@@ -1,8 +1,10 @@
 
 ## ============================================================================
 <%def name="bootstrap( **kwargs )">
-    ## Bootstap dictionaries for GalaxyApp object's JSON, create GalaxyApp,
-    ##  and steal existing attributes from plain objects already created
+    ## 1) Bootstap all kwargs to json, assigning to:
+    ##      global 'bootstrapped' var
+    ##      named require module 'bootstrapped-data'
+    ## 2) and automatically include json for config and user in bootstapped data
     <%
         kwargs.update({
             'config'    : get_config_dict(),
@@ -10,6 +12,7 @@
         })
     %>
     <script type="text/javascript">
+        //TODO: global...
         %for key in kwargs:
             ( window.bootstrapped = window.bootstrapped || {} )[ '${key}' ] = (
                 ${ h.to_json_string( kwargs[ key ], indent=( 2 if trans.debug else 0 ) )} );
@@ -20,7 +23,8 @@
     </script>
 </%def>
 
-<%def name="load( init_fn=None, **kwargs )">
+<%def name="load( app=None, **kwargs )">
+    ## 1) bootstrap kwargs (as above), 2) build Galaxy global var, 3) load 'app' by AMD (optional)
     ${ self.bootstrap( **kwargs ) }
     <script type="text/javascript">
         require([ 'require', 'galaxy-app-base' ], function( require, galaxy ){
@@ -31,10 +35,9 @@
                 loggerOptions   : {}
             });
 
-            var initFn = ${ 'window[ "%s" ]' %( init_fn ) if init_fn else 'undefined' };
-            if( typeof initFn === 'function' ){
-                initFn();
-            }
+            %if app:
+                require([ '${app}' ]);
+            %endif
         });
     </script>
 </%def>

@@ -6,26 +6,16 @@
 </%def>
 
 ## -----------------------------------------------------------------------------
-<%def name="stylesheets()">
-    ${ parent.stylesheets() }
-    <style>
-        body.historyPage {
-            margin: 0px;
-            padding: 0px;
-        }
-    </style>
-</%def>
-
-## -----------------------------------------------------------------------------
 <%def name="javascripts()">
 ${ parent.javascripts() }
 
 <script type="text/javascript">
 $(function(){
-    $( 'body' ).addClass( 'historyPage' ).addClass( 'history-panel' );
+    $( 'body' ).addClass( 'historyPage' ).addClass( 'history-panel' )
+        .css({ margin: '0px', padding: '0px' });
 });
 
-window.app = function(){
+define( 'app', function(){
     require([
         'mvc/history/current-history-panel'
     ], function( historyPanel ){
@@ -38,13 +28,13 @@ window.app = function(){
                 el              : $( "body" ),
                 model           : new historyModel.History( bootstrapped.history, bootstrapped.hdas ),
                 onready         : function(){
-                    this.render( 0 );
+                    this.render();
                 }
             });
         });
     });
-}
+})
 </script>
-${ galaxy_client.load( 'app', history=history, hdas=hdas, show_deleted=show_deleted, show_hidden=show_hidden ) }
+${ galaxy_client.load( app='app', history=history, hdas=hdas, show_deleted=show_deleted, show_hidden=show_hidden ) }
 
 </%def>
