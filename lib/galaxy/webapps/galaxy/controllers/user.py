@@ -623,7 +623,6 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
     @web.expose
     def create( self, trans, cntrller='user', redirect_url='', refresh_frames=[], **kwd ):
         params = util.Params( kwd )
-                
         # If the honeypot field is not empty we are dealing with a bot.
         honeypot_field = params.get( 'bear_field', '' )
         if honeypot_field != '':
@@ -927,6 +926,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                                         user_type_fd_id_select_field=user_type_fd_id_select_field,
                                         user_info_forms=user_info_forms,
                                         user_type_form_definition=user_type_form_definition,
+                                        user_type_fd_id=user_type_fd_id,
                                         widgets=widgets,
                                         addresses=addresses,
                                         show_filter=show_filter,

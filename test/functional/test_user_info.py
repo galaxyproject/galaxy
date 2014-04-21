@@ -1,9 +1,8 @@
 from base.twilltestcase import *
 from base.test_db_util import *
 
-
-# TODO: Functional tests start failing at 020, fix or eliminate rest of tests.
 class TestUserInfo( TwillTestCase ):
+
     def test_000_initiate_users( self ):
         """Ensuring all required user accounts exist"""
         self.logout()
@@ -34,91 +33,65 @@ class TestUserInfo( TwillTestCase ):
         assert admin_user is not None, 'Problem retrieving user with email "test@bx.psu.edu" from the database'
         global admin_user_private_role
         admin_user_private_role = get_private_role( admin_user )
+
     def test_005_create_user_info_forms( self ):
         """Testing creating a new user info form and editing it"""
         # Logged in as admin_user
         # Create a the first form
-        name = "Student"
-        desc = "This is Student user info form's description"
-        form_type = get_user_info_form_definition()
-        self.create_form( name=name,
-                          description=desc,
-                          form_type=form_type,
+        self.create_form( name='Student',
+                          description="This is Student user info form's description",
+                          form_type=get_user_info_form_definition(),
                           num_fields=0,
                           strings_displayed=[ 'Create a new form definition' ],
-                          strings_displayed_after_submit=[ name, desc, form_type ] )
-        tmp_form = get_form( name )
-        # field names
-        global affiliation_field_name
-        affiliation_field_name = 'affiliation'
-        global organization_field_name
-        organization_field_name = 'name_of_organization'
-        global feedback_field_name
-        feedback_field_name = 'contact_for_feedback'
+                          strings_displayed_after_submit=[] )
+        tmp_form = get_form( 'Student' )
         # Add fields to the form
         field_dicts = [ dict( label='Affiliation',
                               desc='The type of  organization you are affiliated with',
                               type='SelectField',
                               required='optional',
                               selectlist=[ 'Educational', 'Research', 'Commercial' ],
-                              name=affiliation_field_name ),
+                              name='affiliation' ),
                         dict( label='Name of Organization',
                               desc='',
                               type='TextField',
                               required='optional',
-                              name=organization_field_name ),
+                              name='name_of_oganization' ),
                         dict( label='Contact for feedback',
                               desc='',
                               type='CheckboxField',
                               required='optional',
-                              name=feedback_field_name ) ]
+                              name='contact_for_feedback' ) ]
         self.edit_form( id=self.security.encode_id( tmp_form.current.id ),
                         field_dicts=field_dicts,
                         field_index=len( tmp_form.fields ),
-                        strings_displayed=[ 'Edit form definition "%s"' % name ],
-                        strings_displayed_after_submit=[ "The form '%s' has been updated with the changes." % name ] )
+                        strings_displayed=[ 'Edit form definition "Student"' ],
+                        strings_displayed_after_submit=[ "The form 'Student' has been updated with the changes." ] )
         # Get the form_definition object for later tests
         global form_one
-        form_one = get_form( name )
-        assert form_one is not None, 'Problem retrieving form named "%s" from the database' % name
+        form_one = get_form( 'Student' )
+        assert form_one is not None, 'Problem retrieving form named "Student" from the database'
         assert len( form_one.fields ) == len( tmp_form.fields ) + len( field_dicts )
         # Create the second form
-        name = "Researcher"
-        desc = "This is Researcher user info form's description"
-        self.create_form( name=name,
-                          description=desc,
-                          form_type=form_type,
+        self.create_form( name='Researcher',
+                          description="This is Researcher user info form's description",
+                          form_type=get_user_info_form_definition(),
                           num_fields=0,
                           strings_displayed=[ 'Create a new form definition' ],
-                          strings_displayed_after_submit=[ name, desc, form_type ] )
-        tmp_form = get_form( name )
+                          strings_displayed_after_submit=[] )
+        tmp_form = get_form( 'Researcher' )
         # Add fields to the form
-        field_dicts = [ dict( label='Affiliation',
-                              desc='The type of  organization you are affiliated with',
-                              type='SelectField',
-                              required='optional',
-                              selectlist=[ 'Educational', 'Research', 'Commercial' ],
-                              name=affiliation_field_name ),
-                        dict( label='Name of Organization',
-                              desc='',
-                              type='TextField',
-                              required='optional',
-                              name=organization_field_name ),
-                        dict( label='Contact for feedback',
-                              desc='',
-                              type='CheckboxField',
-                              required='optional',
-                              name=feedback_field_name ) ]
         self.edit_form( id=self.security.encode_id( tmp_form.current.id ),
                         field_dicts=field_dicts,
                         field_index=len( tmp_form.fields ),
-                        strings_displayed=[ 'Edit form definition "%s"' % name ],
-                        strings_displayed_after_submit=[ "The form '%s' has been updated with the changes." % name ] )
+                        strings_displayed=[ 'Edit form definition "Researcher"' ],
+                        strings_displayed_after_submit=[ "The form 'Researcher' has been updated with the changes." ] )
         # Get the form_definition object for later tests
         global form_two
-        form_two = get_form( name )
-        assert form_two is not None, 'Problem retrieving form named "%s" from the database' % name
+        form_two = get_form( 'Researcher' )
+        assert form_two is not None, 'Problem retrieving form named "Researcher" from the database'
         assert len( form_two.fields ) == len( tmp_form.fields ) + len( field_dicts )
+
     def test_010_user_reqistration_multiple_user_info_forms( self ):
         """Testing user registration with multiple user info forms"""
         # Logged in as admin_user
@@ -129,9 +102,9 @@ class TestUserInfo( TwillTestCase ):
         email = 'test11@bx.psu.edu'
         password = 'testuser'
         username = 'test11'
-        user_info_values=[ ( affiliation_field_name, 'Educational' ), 
-                           ( organization_field_name, 'Penn State' ), 
-                           ( feedback_field_name, '1' ) ]
+        user_info_values=[ ( 'affiliation', 'Educational' ), 
+                           ( 'name_of_oganization', 'Penn State' ), 
+                           ( 'contact_for_feedback', '1' ) ]
         self.create_user_with_info( cntrller='admin',
                                     email=email,
                                     password=password,
@@ -147,12 +120,13 @@ class TestUserInfo( TwillTestCase ):
         self.logout()
         self.login( email=regular_user11.email, username=username )
         global form_checkbox_field3_string
-        form_checkbox_field3_string = '<input type="checkbox" id="%s" name="%s" value="true" checked="checked">' % ( feedback_field_name, feedback_field_name )
+        form_checkbox_field3_string = '<input type="checkbox" id="contact_for_feedback" name="contact_for_feedback" value="true" checked="checked">'
         self.edit_user_info( cntrller='user',
                              strings_displayed=[ "Manage User Information",
                                                  user_info_values[0][1],
                                                  user_info_values[1][1],
                                                  form_checkbox_field3_string ] )
+
     def test_015_user_reqistration_single_user_info_forms( self ):
         """Testing user registration with a single user info form"""
         # Logged in as regular_user_11
@@ -166,9 +140,9 @@ class TestUserInfo( TwillTestCase ):
         email = 'test12@bx.psu.edu'
         password = 'testuser'
         username = 'test12'
-        user_info_values=[ ( affiliation_field_name, 'Educational' ), 
-                           ( organization_field_name, 'Penn State' ), 
-                           ( feedback_field_name, '1' ) ]
+        user_info_values=[ ( 'affiliation', 'Educational' ), 
+                           ( 'name_of_oganization', 'Penn State' ), 
+                           ( 'contact_for_feedback', '1' ) ]
         self.create_user_with_info( cntrller='admin',
                                     email=email,
                                     password=password,
@@ -188,10 +162,12 @@ class TestUserInfo( TwillTestCase ):
                                                  user_info_values[0][1],
                                                  user_info_values[1][1],
                                                  form_checkbox_field3_string ] )
+
     def test_020_edit_user_info( self ):
         """Testing editing user info as a regular user"""
         # Logged in as regular_user_12
         # Test changing email and user name - first try an invalid user name
+        regular_user12 = get_user( 'test12@bx.psu.edu' )
         self.edit_user_info( cntrller='user',
                              new_email='test12_new@bx.psu.edu',
                              new_username='test12_new',
@@ -214,11 +190,12 @@ class TestUserInfo( TwillTestCase ):
         # Test logging in with new email and password
         self.login( email=regular_user12.email, password='testuser#' )
         # Test editing the user info
-        new_user_info_values=[ ( affiliation_field_name, 'Educational' ), 
-                               ( organization_field_name, 'Penn State' ) ]
+        new_user_info_values=[ ( 'affiliation', 'Educational' ), 
+                               ( 'name_of_oganization', 'Penn State' ) ]
         self.edit_user_info( cntrller='user',
                              info_values=new_user_info_values,
                              strings_displayed_after_submit=[ "The user information has been updated with the changes" ] )
+
     def test_999_reset_data_for_later_test_runs( self ):
         """Reseting data to enable later test runs to pass"""
         # Logged in as regular_user_12

@@ -1039,17 +1039,17 @@ class TwillTestCase( unittest.TestCase ):
                                strings_displayed=[], strings_displayed_after_submit=[] ):
         # This method creates a new user with associated info
         self.visit_url( "%s/user/create?cntrller=%s&use_panels=False" % ( self.url, cntrller ) )
-        tc.fv( "1", "email", email )
-        tc.fv( "1", "password", password )
-        tc.fv( "1", "confirm", password )
-        tc.fv( "1", "username", username )
+        tc.fv( "registration", "email", email )
+        tc.fv( "registration", "password", password )
+        tc.fv( "registration", "confirm", password )
+        tc.fv( "registration", "username", username )
         if user_type_fd_id:
             # The user_type_fd_id SelectField requires a refresh_on_change
-            self.refresh_form( 'user_type_fd_id', user_type_fd_id )
-            tc.fv( "1", "password", password )
-            tc.fv( "1", "confirm", password )
+            self.refresh_form( 'user_type_fd_id', user_type_fd_id, form_id='registration' )
+            tc.fv( "registration", "password", password )
+            tc.fv( "registration", "confirm", password )
             for index, ( field_name, info_value ) in enumerate( user_info_values ):
-                tc.fv( "1", field_name, info_value )
+                tc.fv( "registration", field_name, info_value )
         for check_str in strings_displayed:
             self.check_page_for_string( check_str)
         tc.submit( "create_user_button" )
@@ -1345,12 +1345,12 @@ class TwillTestCase( unittest.TestCase ):
                 pass
         tc.submit( button )
 
-    def refresh_form( self, control_name, value, form_no=0, **kwd ):
+    def refresh_form( self, control_name, value, form_no=0, form_id=None, **kwd ):
         """Handles Galaxy's refresh_on_change for forms without ultimately submitting the form"""
         # control_name is the name of the form field that requires refresh_on_change, and value is
         # the value to which that field is being set.
         for i, f in enumerate( self.showforms() ):
-            if i == form_no:
+            if i == form_no or ( form_id is not None and f.id == form_id ):
                 break
         try:
             control = f.find_control( name=control_name )
@@ -1684,6 +1684,7 @@ class TwillTestCase( unittest.TestCase ):
                      num_fields=1, num_options=0, field_name='1_field_name', strings_displayed=[],
                      strings_displayed_after_submit=[] ):
         """Create a new form definition."""
+        strings_displayed_after_submit.extend( [ name, description, form_type ] )
         self.visit_url( "%s/forms/create_form_definition" % self.url )
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
