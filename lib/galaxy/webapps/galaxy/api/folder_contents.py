@@ -174,8 +174,11 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
             hda = self.get_dataset( trans, from_hda_id, check_ownership=True, check_accessible=True, check_state=True )
             folder = self.get_library_folder( trans, encoded_folder_id_16, check_accessible=True )
 
+            library = folder.parent_library
+            if library.deleted:
+                raise exceptions.ObjectAttributeInvalidException()
             if not self.can_current_user_add_to_library_item( trans, folder ):
-                raise exceptions.InsufficientPermissionsException( 'You do not have proper permissions to add a dataset to a folder with id (%s)' % ( encoded_folder_id ) )
+                raise exceptions.InsufficientPermissionsException()
 
             ldda = self.copy_hda_to_library_folder( trans, hda, folder, ldda_message=ldda_message )
             update_time = ldda.update_time.strftime( "%Y-%m-%d %I:%M %p" )
@@ -183,6 +186,10 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
             rval = trans.security.encode_dict_ids( ldda_dict )
             rval['update_time'] = update_time
 
+        except exceptions.ObjectAttributeInvalidException:
+            raise exceptions.ObjectAttributeInvalidException( 'You cannot add datasets into deleted library. Undelete it first.' )
+        except exceptions.InsufficientPermissionsException:
+            raise exceptions.exceptions.InsufficientPermissionsException( 'You do not have proper permissions to add a dataset to a folder with id (%s)' % ( encoded_folder_id ) )
         except Exception, exc:
             # TODO handle exceptions better within the mixins
             if ( ( 'not accessible to the current user' in str( exc ) ) or ( 'You are not allowed to access this dataset' in str( exc ) ) ):

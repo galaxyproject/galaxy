@@ -19,7 +19,11 @@ var FolderToolbarView = Backbone.View.extend({
 
   defaults: {
     'can_add_library_item'  : false,
-    'contains_file'         : false
+    'contains_file'         : false,
+    'adding_datasets'       : {
+                                'total_number'  : 0,
+                                'failed_number' : 0
+                              }
   },
 
   modal : null,
@@ -301,8 +305,11 @@ var FolderToolbarView = Backbone.View.extend({
 
   // add all selected datasets from history into current folder
   addAllDatasetsFromHistory : function (){
-      //disable the button to prevent multiple submission
+      // disable the button to prevent multiple submission
       this.modal.disableButton('Add');
+      // init the counters
+      this.options.adding_datasets.total_number = 0;
+      this.options.adding_datasets.failed_number = 0;
 
       var history_dataset_ids = [];
       this.modal.$el.find('#selected_history_content').find(':checked').each(function(){
@@ -328,6 +335,7 @@ var FolderToolbarView = Backbone.View.extend({
           folder_item.set({'from_hda_id':history_dataset_id});
           hdas_to_add.push(folder_item);
       }
+      this.options.adding_datasets.total_number = hdas_to_add.length;
       // call the recursive function to call ajax one after each other (request FIFO queue)
       this.chainCallAddingHdas(hdas_to_add);
   },
@@ -337,8 +345,14 @@ var FolderToolbarView = Backbone.View.extend({
     this.added_hdas = new mod_library_model.Folder();
     var popped_item = hdas_set.pop();
     if (typeof popped_item === "undefined") {
-      mod_toastr.success('Datasets from history added to the folder');
-      this.modal.hide();
+      if (this.options.adding_datasets.failed_number === 0){
+        mod_toastr.success('Selected datasets from history added to the folder');
+      } else if (this.options.adding_datasets.failed_number === this.options.adding_datasets.total_number){
+        mod_toastr.error('There was an error and no datasets were added to the folder.');
+      } else if (this.options.adding_datasets.failed_number < this.options.adding_datasets.total_number){
+        mod_toastr.warning('Some of the datasets could not be added to the folder');
+      }
+      Galaxy.modal.hide();
       return this.added_hdas;
     }
     var promise = $.when(popped_item.save({from_hda_id: popped_item.get('from_hda_id')}));
@@ -351,11 +365,12 @@ var FolderToolbarView = Backbone.View.extend({
             })
             .fail(function(data){
               // we have a problem
-              if (data.status===403){
-                mod_toastr.error('You are not allowed to access a dataset');
-              } else {
-                mod_toastr.error('An error occured :(');
-              }
+              self.options.adding_datasets.failed_number += 1;
+              // if (typeof data.responseJSON !== "undefined"){
+              //   mod_toastr.error(data.responseJSON.err_msg);
+              // } else {
+              //   mod_toastr.error('An error ocurred :(');
+              // }
               self.updateProgress();
               self.chainCallAddingHdas(hdas_set);
             });
