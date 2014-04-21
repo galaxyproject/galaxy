@@ -9,6 +9,7 @@ from galaxy.util import rst_to_html
 from galaxy.util import unicodify
 import tool_shed.util.shed_util_common as suc
 from tool_shed.util import common_util
+from tool_shed.util import hg_util
 
 eggs.require( 'mercurial' )
 
@@ -25,7 +26,7 @@ def build_readme_files_dict( trans, repository, changeset_revision, metadata, to
     if trans.webapp.name == 'galaxy':
         can_use_disk_files = True
     else:
-        repo = hg.repository( suc.get_configured_ui(), repository.repo_path( trans.app ) )
+        repo = hg.repository( hg_util.get_configured_ui(), repository.repo_path( trans.app ) )
         latest_downloadable_changeset_revision = suc.get_latest_downloadable_changeset_revision( trans, repository, repo )
         can_use_disk_files = changeset_revision == latest_downloadable_changeset_revision
     readme_files_dict = {}
@@ -74,7 +75,7 @@ def build_readme_files_dict( trans, repository, changeset_revision, metadata, to
                         readme_files_dict[ readme_file_name ] = text_of_reasonable_length
                 else:
                     # We must be in the tool shed and have an old changeset_revision, so we need to retrieve the file contents from the repository manifest.
-                    ctx = suc.get_changectx_for_changeset( repo, changeset_revision )
+                    ctx = hg_util.get_changectx_for_changeset( repo, changeset_revision )
                     if ctx:
                         fctx = suc.get_file_context_from_ctx( ctx, readme_file_name )
                         if fctx and fctx not in [ 'DELETED' ]:
@@ -95,9 +96,11 @@ def get_readme_files_dict_for_display( trans, tool_shed_url, repo_info_dict ):
     repo_info_tuple = repo_info_dict[ name ]
     description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, installed_td = \
         suc.get_repo_info_tuple_contents( repo_info_tuple )
-    # Handle README files.
-    url = suc.url_join( tool_shed_url,
-                       'repository/get_readme_files?name=%s&owner=%s&changeset_revision=%s' % ( name, repository_owner, changeset_revision ) )
+    # Handle changing HTTP protocols over time.
+    tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( trans.app, tool_shed_url )
+    params = '?name=%s&owner=%s&changeset_revision=%s' % ( name, repository_owner, changeset_revision )
+    url = common_util.url_join( tool_shed_url,
+                                'repository/get_readme_files%s' % params )
     raw_text = common_util.tool_shed_get( trans.app, tool_shed_url, url )
     readme_files_dict = json.from_json_string( raw_text )
     return readme_files_dict

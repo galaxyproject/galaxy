@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Export a specified repository revision and optionally all of it's defined repository dependencies from the tool shed into a compressed archive.
+Export a specified repository revision and optionally all of its defined repository dependencies from the tool shed into a compressed archive.
 
 Here is a working example of how to use this script to export a repository from the tool shed.
 ./export.py --url http://testtoolshed.g2.bx.psu.edu --name chemicaltoolbox --owner bgruening --revision 4133dbf7ff4d --export_repository_dependencies True --download_dir /tmp

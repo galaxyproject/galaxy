@@ -5,9 +5,6 @@ define(['plugin/library/ui-table', 'plugin/library/ui', 'utils/utils'],
 // widget
 return Backbone.View.extend(
 {
-    // columns
-    columns: [],
-    
     // initialize
     initialize: function(app, options) {
         // link app
@@ -121,28 +118,33 @@ return Backbone.View.extend(
         
         // get dataset
         this.app.datasets.request({id : dataset_id}, function(dataset) {
-            // configure columns
-            self.columns = [];
-            var meta = dataset.metadata_column_types;
-            for (var key in meta) {
-                // check type
-                if(meta[key] == 'int' || meta[key] == 'float') {
-                    // add to selection
-                    self.columns.push({
-                        'label' : 'Column: ' + (parseInt(key) + 1) + ' [' + meta[key] + ']',
-                        'value' : key
-                    });
-                }
-            }
-            
             // update select fields
-            for (var key in list) {
-                list[key].update(self.columns);
-                list[key].show();
+            for (var id in list) {
+                
+                // is a numeric number required
+                var is_label = chart_settings.columns[id].is_label;
+            
+                // configure columns
+                var columns = [];
+                var meta = dataset.metadata_column_types;
+                for (var key in meta) {
+                    // check type
+                    if ((!is_label && (meta[key] == 'int' || meta[key] == 'float')) || is_label) {
+                        // add to selection
+                        columns.push({
+                            'label' : 'Column: ' + (parseInt(key) + 1) + ' [' + meta[key] + ']',
+                            'value' : key
+                        });
+                    }
+                }
+            
+                // list
+                list[id].update(columns);
+                list[id].show();
             }
             
             // loading
-            self.chart.state('wait', 'Metadata initialized...');
+            self.chart.state('ok', 'Metadata initialized...');
             
             // unregister
             self.chart.deferred.done(process_id);

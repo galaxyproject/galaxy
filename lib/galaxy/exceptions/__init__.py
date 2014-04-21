@@ -60,6 +60,10 @@ class MalformedId( MessageException ):
     status_code = 400
     err_code = error_codes.MALFORMED_ID
 
+class UnknownContentsType( MessageException ):
+    status_code = 400
+    err_code = error_codes.UNKNOWN_CONTENTS_TYPE
+
 class RequestParameterMissingException( MessageException ):
     status_code = 400
     err_code = error_codes.USER_REQUEST_MISSING_PARAMETER
@@ -84,6 +88,10 @@ class ItemOwnershipException( MessageException ):
 class ConfigDoesNotAllowException( MessageException ):
     status_code = 403
     err_code = error_codes.CONFIG_DOES_NOT_ALLOW
+
+class InsufficientPermissionsException( MessageException ):
+    status_code = 403
+    err_code = error_codes.INSUFFICIENT_PERMISSIONS
 
 class ObjectNotFound( MessageException ):
     """ Accessed object was not found """

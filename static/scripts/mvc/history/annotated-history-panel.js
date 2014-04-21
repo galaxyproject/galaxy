@@ -1,8 +1,9 @@
 define([
     "mvc/dataset/hda-model",
     "mvc/dataset/hda-base",
-    "mvc/history/readonly-history-panel"
-], function( hdaModel, hdaBase, readonlyPanel ){
+    "mvc/history/readonly-history-panel",
+    "utils/localization"
+], function( hdaModel, hdaBase, readonlyPanel, _l ){
 /* =============================================================================
 TODO:
 
@@ -61,7 +62,7 @@ var AnnotatedHistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
         return $newRender;
     },
 
-    /** render the history's annotation as it's own field */
+    /** render the history's annotation as its own field */
     renderHistoryAnnotation : function(){
         var annotation = this.model.get( 'annotation' );
         if( !annotation ){ return null; }

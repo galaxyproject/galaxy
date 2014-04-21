@@ -1,5 +1,4 @@
 <%inherit file="/display_base.mako"/>
-<%namespace file="history_panel.mako" import="history_panel_javascripts" />
 
 ## Set vars so that there's no need to change the code below.
 <%
@@ -9,7 +8,6 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${history_panel_javascripts()}
 </%def>
 
 <%def name="stylesheets()">

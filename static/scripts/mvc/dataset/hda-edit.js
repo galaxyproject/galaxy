@@ -2,8 +2,9 @@ define([
     "mvc/dataset/hda-model",
     "mvc/dataset/hda-base",
     "mvc/tags",
-    "mvc/annotations"
-], function( hdaModel, hdaBase, tagsMod, annotationsMod ){
+    "mvc/annotations",
+    "utils/localization"
+], function( hdaModel, hdaBase, tagsMod, annotationsMod, _l ){
 //==============================================================================
 /** @class Editing view for HistoryDatasetAssociation.
  *  @name HDAEditView
@@ -64,8 +65,7 @@ var HDAEditView = hdaBase.HDABaseView.extend(
     _render_editButton : function(){
         // don't show edit while uploading, in-accessible
         // DO show if in error (ala previous history panel)
-        if( ( this.model.get( 'state' ) === hdaModel.HistoryDatasetAssociation.STATES.NEW )
-        ||  ( this.model.get( 'state' ) === hdaModel.HistoryDatasetAssociation.STATES.DISCARDED )
+        if( ( this.model.get( 'state' ) === hdaModel.HistoryDatasetAssociation.STATES.DISCARDED )
         ||  ( this.model.get( 'state' ) === hdaModel.HistoryDatasetAssociation.STATES.NOT_VIEWABLE )
         ||  ( !this.model.get( 'accessible' ) ) ){
             return null;
@@ -93,6 +93,11 @@ var HDAEditView = hdaBase.HDABaseView.extend(
         } else if( this.model.get( 'state' ) === hdaModel.HistoryDatasetAssociation.STATES.UPLOAD ){
             editBtnData.disabled = true;
             editBtnData.title = _l( 'This dataset must finish uploading before it can be edited' );
+
+        // disable if new
+        } else if( this.model.get( 'state' ) === hdaModel.HistoryDatasetAssociation.STATES.NEW ){
+            editBtnData.disabled = true;
+            editBtnData.title = _l( 'This dataset is not yet editable' );
         }
         editBtnData.faIcon = 'fa-pencil';
         return faIconButton( editBtnData );
@@ -103,8 +108,7 @@ var HDAEditView = hdaBase.HDABaseView.extend(
      */
     _render_deleteButton : function(){
         // don't show delete if...
-        if( ( this.model.get( 'state' ) === hdaModel.HistoryDatasetAssociation.STATES.NEW )
-        ||  ( this.model.get( 'state' ) === hdaModel.HistoryDatasetAssociation.STATES.NOT_VIEWABLE )
+        if( ( this.model.get( 'state' ) === hdaModel.HistoryDatasetAssociation.STATES.NOT_VIEWABLE )
         ||  ( !this.model.get( 'accessible' ) ) ){
             return null;
         }

@@ -62,10 +62,13 @@ var View = Backbone.View.extend(
     },
     
     // add row cell
-    add: function($el, width) {
+    add: function($el, width, align) {
         var wrapper = $('<td></td>');
         if (width) {
             wrapper.css('width', width);
+        }
+        if (align) {
+            wrapper.css('text-align', align);
         }
         wrapper.append($el);
         this.row.append(wrapper);

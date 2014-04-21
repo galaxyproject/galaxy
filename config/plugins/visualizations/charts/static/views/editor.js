@@ -65,38 +65,15 @@ return Backbone.View.extend(
         //
         this.table = new Table.View({
             header : false,
-            onconfirm : function(type) {
-                if (self.chart.groups.length > 0) {
-                    // show modal
-                    self.app.modal.show({
-                        title   : 'Switching to another chart type?',
-                        body    : 'If you continue your settings and selections will be cleared.',
-                        buttons : {
-                            'Cancel'    : function() {
-                                // hide modal
-                                self.app.modal.hide();
-                            },
-                            'Continue'  : function() {
-                                // hide modal
-                                self.app.modal.hide();
-                                
-                                // confirm
-                                self.table.value(type);
-                            }
-                        }
-                    });
-                } else {
-                    // confirm
-                    self.table.value(type);
-                }
-            },
             onchange : function(type) {
                 // reset type relevant chart content
-                self.chart.groups.reset();
                 self.chart.settings.clear();
                 
                 // update chart type
                 self.chart.set({type: type});
+                
+                // set modified flag
+                self.chart.set('modified', true);
             },
             ondblclick  : function(chart_id) {
                 self.tabs.show('settings');
@@ -104,16 +81,25 @@ return Backbone.View.extend(
             content: 'No chart types available'
         });
         
+        // make table header
+        this.table.addHeader('No.');
+        this.table.addHeader('Type');
+        this.table.addHeader('Library');
+        this.table.addHeader('Processing*');
+        this.table.appendHeader();
+        
         // load chart types into table
         var types_n = 0;
         var types = app.types.attributes;
         for (var id in types){
             var chart_type = types[id];
             this.table.add (++types_n + '.');
+            this.table.add(chart_type.title);
+            this.table.add(chart_type.library, '10%');
             if (chart_type.execute) {
-                this.table.add(chart_type.title + ' (requires processing)');
+                this.table.add(new Ui.Icon({icon: 'fa-check'}).$el, '10%', 'center');
             } else {
-                this.table.add (chart_type.title);
+                this.table.add('');
             }
             this.table.append(id);
         }
@@ -147,6 +133,10 @@ return Backbone.View.extend(
         $main.append(Utils.wrap(this.title.$el));
         $main.append(Utils.wrap((new Ui.Label({ title : 'Select a chart type:'})).$el));
         $main.append(Utils.wrap(this.table.$el));
+        $main.append(new Ui.Text({
+            title: '*Certain chart types pre-process data before rendering the visualization. The pre-processing is done using the chartskit available in the Toolshed.',
+            cls: 'toolParamHelp'
+        }).$el);
         
         // add tab
         this.tabs.add({
@@ -294,7 +284,7 @@ return Backbone.View.extend(
     _resetChart: function() {
         // reset chart details
         this.chart.set('id', Utils.uuid());
-        this.chart.set('type', 'bardiagram');
+        this.chart.set('type', 'nvd3_bardiagram');
         this.chart.set('dataset_id', this.app.options.config.dataset_id);
         this.chart.set('title', 'New Chart');
         

@@ -6,36 +6,73 @@ from galaxy.jobs.actions.post import ActionBox
 from galaxy.tools.parameters.basic import DataToolParameter
 from galaxy.tools.parameters import visit_input_values
 from galaxy.util.odict import odict
+from galaxy.workflow import modules
 
 
-def invoke( trans, workflow, target_history, replacement_dict, copy_inputs_to_history=False, ds_map={} ):
+class WorkflowRunConfig( object ):
+    """ Wrapper around all the ways a workflow execution can be parameterized.
+
+    :param target_history: History to execute workflow in.
+    :type target_history: galaxy.model.History.
+
+    :param replacement_dict: Workflow level parameters used for renaming post
+        job actions.
+    :type replacement_dict: dict
+
+    :param copy_inputs_to_history: Should input data parameters be copied to
+        target_history. (Defaults to False)
+    :type copy_inputs_to_history: bool
+
+    :param ds_map: Map from step ids to dict's containing HDA for these steps.
+    :type ds_map: dict
+
+    :param param_map: Override tool and/or step parameters (see documentation on
+        _update_step_parameters below).
+    :type param_map:
+    """
+
+    def __init__( self, target_history, replacement_dict, copy_inputs_to_history=False, ds_map={}, param_map={} ):
+        self.target_history = target_history
+        self.replacement_dict = replacement_dict
+        self.copy_inputs_to_history = copy_inputs_to_history
+        self.ds_map = ds_map
+        self.param_map = param_map
+
+
+def invoke( trans, workflow, workflow_run_config ):
     """ Run the supplied workflow in the supplied target_history.
     """
     return WorkflowInvoker(
         trans,
         workflow,
-        target_history,
-        replacement_dict,
-        copy_inputs_to_history=copy_inputs_to_history,
-        ds_map=ds_map,
+        workflow_run_config,
     ).invoke()
 
 
 class WorkflowInvoker( object ):
 
-    def __init__( self, trans, workflow, target_history, replacement_dict, copy_inputs_to_history, ds_map ):
+    def __init__( self, trans, workflow, workflow_run_config ):
         self.trans = trans
         self.workflow = workflow
-        self.target_history = target_history
-        self.replacement_dict = replacement_dict
-        self.copy_inputs_to_history = copy_inputs_to_history
-        self.ds_map = ds_map
+        self.target_history = workflow_run_config.target_history
+        self.replacement_dict = workflow_run_config.replacement_dict
+        self.copy_inputs_to_history = workflow_run_config.copy_inputs_to_history
+        self.ds_map = workflow_run_config.ds_map
+        self.param_map = workflow_run_config.param_map
 
         self.outputs = odict()
 
     def invoke( self ):
         workflow_invocation = model.WorkflowInvocation()
         workflow_invocation.workflow = self.workflow
+
+        # Web controller will populate state on each step before calling
+        # invoke but not API controller. More work should be done to further
+        # harmonize these methods going forward if possible - if possible
+        # moving more web controller logic here.
+        state_populated = not self.workflow.steps or hasattr( self.workflow.steps[ 0 ], "state" )
+        if not state_populated:
+            self._populate_state( )
 
         for step in self.workflow.steps:
             job = None
@@ -128,4 +165,74 @@ class WorkflowInvoker( object ):
                 replacement = outputs[ connection[ 0 ].output_step.id ][ connection[ 0 ].output_name ]
         return replacement
 
-__all__ = [ invoke ]
+    def _populate_state( self ):
+        # Build the state for each step
+        for step in self.workflow.steps:
+            step_errors = None
+            input_connections_by_name = {}
+            for conn in step.input_connections:
+                input_name = conn.input_name
+                if not input_name in input_connections_by_name:
+                    input_connections_by_name[input_name] = []
+                input_connections_by_name[input_name].append(conn)
+            step.input_connections_by_name = input_connections_by_name
+
+            if step.type == 'tool' or step.type is None:
+                step.module = modules.module_factory.from_workflow_step( self.trans, step )
+                # Check for missing parameters
+                step.upgrade_messages = step.module.check_and_update_state()
+                # Any connected input needs to have value DummyDataset (these
+                # are not persisted so we need to do it every time)
+                step.module.add_dummy_datasets( connections=step.input_connections )
+                step.state = step.module.state
+                _update_step_parameters( step, self.param_map )
+                if step.tool_errors:
+                    message = "Workflow cannot be run because of validation errors in some steps: %s" % step_errors
+                    raise exceptions.MessageException( message )
+                if step.upgrade_messages:
+                    message = "Workflow cannot be run because of step upgrade messages: %s" % step.upgrade_messages
+                    raise exceptions.MessageException( message )
+            else:
+                # This is an input step. Make sure we have an available input.
+                if step.type == 'data_input' and str( step.id ) not in self.ds_map:
+                    message = "Workflow cannot be run because an expected input step '%s' has no input dataset." % step.id
+                    raise exceptions.MessageException( message )
+
+                step.module = modules.module_factory.from_workflow_step( self.trans, step )
+                step.state = step.module.get_runtime_state()
+
+
+def _update_step_parameters(step, param_map):
+    """
+    Update ``step`` parameters based on the user-provided ``param_map`` dict.
+
+    ``param_map`` should be structured as follows::
+
+      PARAM_MAP = {STEP_ID: PARAM_DICT, ...}
+      PARAM_DICT = {NAME: VALUE, ...}
+
+    For backwards compatibility, the following (deprecated) format is
+    also supported for ``param_map``::
+
+      PARAM_MAP = {TOOL_ID: PARAM_DICT, ...}
+
+    in which case PARAM_DICT affects all steps with the given tool id.
+    If both by-tool-id and by-step-id specifications are used, the
+    latter takes precedence.
+
+    Finally (again, for backwards compatibility), PARAM_DICT can also
+    be specified as::
+
+      PARAM_DICT = {'param': NAME, 'value': VALUE}
+
+    Note that this format allows only one parameter to be set per step.
+    """
+    param_dict = param_map.get(step.tool_id, {}).copy()
+    param_dict.update(param_map.get(str(step.id), {}))
+    if param_dict:
+        if 'param' in param_dict and 'value' in param_dict:
+            param_dict[param_dict['param']] = param_dict['value']
+        step.state.inputs.update(param_dict)
+
+
+__all__ = [ invoke, WorkflowRunConfig ]

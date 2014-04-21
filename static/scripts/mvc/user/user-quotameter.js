@@ -1,6 +1,7 @@
 define([
-    "mvc/base-mvc"
-], function( baseMVC ){
+    "mvc/base-mvc",
+    "utils/localization"
+], function( baseMVC, _l ){
 //==============================================================================
 /** @class View to display a user's disk/storage usage
  *      either as a progress bar representing the percentage of a quota used

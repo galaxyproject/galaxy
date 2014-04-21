@@ -183,6 +183,9 @@ class ToolParameter( object, Dictifiable ):
         for validator in self.validators:
             validator.validate( value, history )
 
+    def need_late_validation( self, trans, context ):
+        return False
+
     def to_dict( self, trans, view='collection', value_mapper=None ):
         """ to_dict tool parameter. This can be overridden by subclasses. """
         tool_dict = super( ToolParameter, self ).to_dict()
@@ -979,7 +982,7 @@ class SelectToolParameter( ToolParameter ):
                 if option[2]:
                     # Found selected option.
                     value = option[1]
-            d[ 'value' ] = options
+            d[ 'value' ] = value
 
         return d
 
@@ -1773,6 +1776,11 @@ class DataToolParameter( ToolParameter ):
                     validator.validate( v, history )
             else:
                 validator.validate( value, history )
+
+    def need_late_validation( self, trans, context ):
+        if trans is None or trans.workflow_building_mode:
+            return True
+        return False
 
     def get_dependencies( self ):
         """

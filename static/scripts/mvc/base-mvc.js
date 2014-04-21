@@ -1,5 +1,6 @@
 define([
-], function(){
+    'utils/add-logging'
+], function( addLogging ){
 //ASSUMES: backbone
 //==============================================================================
 /** @class Mixin to add logging capabilities to an object.
@@ -29,7 +30,8 @@ var LoggableMixin =  /** @lends LoggableMixin# */{
      *      messages. Null will supress all logging. Commonly set to console.
      */
     // replace null with console (if available) to see all logs
-    logger      : null,
+    logger       : null,
+    _logNamespace : '?',
     
     /** Output log messages/arguments to logger.
      *  @param {Arguments} ... (this function is variadic)
@@ -46,6 +48,7 @@ var LoggableMixin =  /** @lends LoggableMixin# */{
         return undefined;
     }
 };
+addLogging( LoggableMixin );
 
 
 //==============================================================================

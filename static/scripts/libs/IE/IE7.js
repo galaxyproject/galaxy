@@ -1929,12 +1929,12 @@ new function(_) {
       element.runtimeStyle.autoLeft = element.currentStyle.right != "auto" &&
         element.currentStyle.left == "auto";
     //}
-    // reset the element's "left" value and get it's natural position
+    // reset the element's "left" value and get its natural position
     element.runtimeStyle.left = "";
     element.runtimeStyle.screenLeft = getScreenLeft(element);
     element.runtimeStyle.pixelLeft = element.runtimeStyle.screenLeft;
     // if the element is contained by another fixed element then there is no need to
-    //  continually recalculate it's left position
+    //  continually recalculate its left position
     if (!recalc && !_isFixed(element.offsetParent)) {
       // onsrcoll produces jerky movement, so we use an expression
       _setExpression(element, "pixelLeft", "runtimeStyle.screenLeft+runtimeStyle.shiftLeft+document." + $viewport + ".scrollLeft");

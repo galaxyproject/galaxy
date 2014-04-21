@@ -135,7 +135,7 @@
                 </li>
                 <li>
                     <strong>user</strong> - this is currently not used, but eventually any registered user will be able to create a new role
-                    and this will be it's type.
+                    and this will be its type.
                 </li>
                 <li>
                     <strong>sharing</strong> - a role created automatically during a Galaxy session that enables a user to share data with 

@@ -40,6 +40,7 @@ from galaxy.util.json import to_json_string
 import galaxy.webapps.tool_shed.model.mapping
 
 from nose.plugins import Plugin
+from tool_shed.util import common_util
 from tool_shed.util import tool_dependency_util
 
 from tool_shed.util.xml_util import parse_xml
@@ -213,23 +214,6 @@ class RepositoryMetadataApplication( object ):
 
     def shutdown( self ):
         pass
-
-def clean_tool_shed_url( base_url ):
-    """Eliminate the protocol from the received base_url and return the possibly altered url."""
-    # The tool_shed value stored in the tool_shed_repository record does not include the protocol, but does
-    # include the port if one exists.
-    if base_url:
-        if base_url.find( '://' ) > -1:
-            try:
-                protocol, base = base_url.split( '://' )
-            except ValueError, e:
-                # The received base_url must be an invalid url.
-                log.debug( "Returning unchanged invalid base_url from clean_tool_shed_url: %s" % str( base_url ) )
-                return base_url
-            return base.rstrip( '/' )
-        return base_url.rstrip( '/' )
-    log.debug( "Returning base_url from clean_tool_shed_url: %s" % str( base_url ) )
-    return base_url
 
 def display_repositories_by_owner( repository_tups ):
     """Group summary display by repository owner."""
@@ -614,8 +598,8 @@ def install_repository( app, repository_dict ):
     # Get the repository record now that the tests that install it have completed.
     repository = get_repository( name, owner, changeset_revision )
     if repository is None:
-        error_message = 'Error getting revision %s of repository %s owned by %s: %s' % ( changeset_revision, name, owner, str( e ) )
-        log.exception( error_message )            
+        error_message = 'Error getting revision %s of repository %s owned by %s: An entry for the repository was not found in the database.' % ( changeset_revision, name, owner )
+        log.error( error_message )
     return repository, error_message
 
 def is_excluded( exclude_list_dicts, name, owner, changeset_revision, encoded_repository_metadata_id ):
@@ -939,7 +923,7 @@ def populate_install_containers_for_repository_dependencies( app, repository, re
                 # Make sure all expected entries are available in the tool_test_results_dict.
                 tool_test_results_dict = initialize_tool_tests_results_dict( app, tool_test_results_dict )
                 # Get the installed repository record from the Galaxy database.
-                cleaned_tool_shed_url = clean_tool_shed_url( galaxy_tool_shed_url )
+                cleaned_tool_shed_url = remove_protocol_from_tool_shed_url( galaxy_tool_shed_url )
                 required_repository = \
                     suc.get_tool_shed_repository_by_shed_name_owner_changeset_revision( app,
                                                                                         cleaned_tool_shed_url,
@@ -1050,6 +1034,23 @@ def print_install_and_test_results( install_stage_type, install_and_test_statist
             display_repositories_by_owner( at_least_one_test_failed )
         print "####################################################################################"
 
+def remove_protocol_from_tool_shed_url( base_url ):
+    """Eliminate the protocol from the received base_url and return the possibly altered url."""
+    # The tool_shed value stored in the tool_shed_repository record does not include the protocol, but does
+    # include the port if one exists.
+    if base_url:
+        if base_url.find( '://' ) > -1:
+            try:
+                protocol, base = base_url.split( '://' )
+            except ValueError, e:
+                # The received base_url must be an invalid url.
+                log.debug( "Returning unchanged invalid base_url from remove_protocol_from_tool_shed_url: %s" % str( base_url ) )
+                return base_url
+            return base.rstrip( '/' )
+        return base_url.rstrip( '/' )
+    log.debug( "Returning base_url from remove_protocol_from_tool_shed_url: %s" % str( base_url ) )
+    return base_url
+
 def run_tests( test_config ):
     loader = nose.loader.TestLoader( config=test_config )
     test_config.plugins.addPlugin( ReportResults() )
@@ -1093,7 +1094,7 @@ def save_test_results_for_changeset_revision( url, tool_test_results_dicts, tool
                 params[ 'tool_test_results' ] = tool_test_results_dicts
                 # Set the time_last_tested entry so that the repository_metadata.time_last_tested will be set in the tool shed.
                 params[ 'time_last_tested' ] = 'This entry will result in this value being set via the Tool Shed API.'
-                url = '%s' % ( suc.url_join( galaxy_tool_shed_url,'api', 'repository_revisions', str( metadata_revision_id ) ) )
+                url = '%s' % ( common_util.url_join( galaxy_tool_shed_url,'api', 'repository_revisions', str( metadata_revision_id ) ) )
                 print 'url: ', url
                 print 'params: ', params
                 try:

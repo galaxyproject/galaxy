@@ -1,7 +1,8 @@
 define([
     "mvc/dataset/hda-model",
-    "mvc/base-mvc"
-], function( hdaModel, baseMVC ){
+    "mvc/base-mvc",
+    "utils/localization"
+], function( hdaModel, baseMVC, _l ){
 //==============================================================================
 /** @class Model for a Galaxy history resource - both a record of user
  *      tool use and a collection of the datasets those tools produced.
@@ -215,7 +216,7 @@ var History = Backbone.Model.extend( baseMVC.LoggableMixin ).extend(
  */
 History.UPDATE_DELAY = 4000;
 
-/** Get data for a history then it's hdas using a sequential ajax call, return a deferred to receive both */
+/** Get data for a history then its hdas using a sequential ajax call, return a deferred to receive both */
 History.getHistoryData = function getHistoryData( historyId, options ){
     options = options || {};
     var hdaDetailIds = options.hdaDetailIds || [];
@@ -261,7 +262,7 @@ History.getHistoryData = function getHistoryData( historyId, options ){
         df.notify({ status: 'history data retrieved', historyJSON: historyJSON });
     });
     historyXHR.fail( function( xhr, status, message ){
-        // call reject on the outer deferred to allow it's fail callback to run
+        // call reject on the outer deferred to allow its fail callback to run
         df.reject( xhr, 'loading the history' );
     });
 
@@ -272,7 +273,7 @@ History.getHistoryData = function getHistoryData( historyId, options ){
         df.resolve( historyJSON, hdaJSON );
     });
     hdaXHR.fail( function( xhr, status, message ){
-        // call reject on the outer deferred to allow it's fail callback to run
+        // call reject on the outer deferred to allow its fail callback to run
         df.reject( xhr, 'loading the datasets', { history: historyJSON } );
     });
 

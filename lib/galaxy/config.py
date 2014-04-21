@@ -217,7 +217,7 @@ class Configuration( object ):
         self.message_box_visible = kwargs.get( 'message_box_visible', False )
         self.message_box_content = kwargs.get( 'message_box_content', None )
         self.message_box_class = kwargs.get( 'message_box_class', 'info' )
-        self.support_url = kwargs.get( 'support_url', 'http://wiki.g2.bx.psu.edu/Support' )
+        self.support_url = kwargs.get( 'support_url', 'https://wiki.galaxyproject.org/Support' )
         self.wiki_url = kwargs.get( 'wiki_url', 'http://wiki.galaxyproject.org/' )
         self.blog_url = kwargs.get( 'blog_url', None )
         self.screencasts_url = kwargs.get( 'screencasts_url', None )
@@ -329,6 +329,8 @@ class Configuration( object ):
         self.biostar_url = kwargs.get( 'biostar_url', None )
         self.biostar_key_name = kwargs.get( 'biostar_key_name', None )
         self.biostar_key = kwargs.get( 'biostar_key', None )
+        self.biostar_enable_bug_reports = string_as_bool( kwargs.get( 'biostar_enable_bug_reports', True ) )
+        self.biostar_never_authenticate = string_as_bool( kwargs.get( 'biostar_never_authenticate', False ) )
         self.pretty_datetime_format = expand_pretty_datetime_format( kwargs.get( 'pretty_datetime_format', '$locale (UTC)' ) )
         self.master_api_key = kwargs.get( 'master_api_key', None )
         if self.master_api_key == "changethis":  # default in sample config file

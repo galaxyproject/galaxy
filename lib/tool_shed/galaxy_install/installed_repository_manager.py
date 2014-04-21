@@ -3,7 +3,7 @@ Class encapsulating the management of repositories installed from Galaxy tool sh
 """
 import logging
 import os
-import tool_shed.util.shed_util_common as suc
+from tool_shed.util import common_util
 from tool_shed.util import datatype_util
 from tool_shed.util import repository_dependency_util
 from tool_shed.util import tool_dependency_util
@@ -175,7 +175,7 @@ class InstalledRepositoryManager( object ):
             root = tree.getroot()
             tool_path = root.get( 'tool_path', None )
             if tool_path:
-                ts = suc.clean_tool_shed_url( tool_shed_repository.tool_shed )
+                ts = common_util.remove_port_from_tool_shed_url( str( tool_shed_repository.tool_shed ) )
                 relative_path = os.path.join( tool_path,
                                               ts,
                                               'repos',

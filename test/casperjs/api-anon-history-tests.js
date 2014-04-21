@@ -1,29 +1,11 @@
-/* Utility to load a specific page and output html, page text, or a screenshot
- *  Optionally wait for some time, text, or dom selector
- */
-try {
-    //...if there's a better way - please let me know, universe
-    var scriptDir = require( 'system' ).args[3]
-            // remove the script filename
-            .replace( /[\w|\.|\-|_]*$/, '' )
-            // if given rel. path, prepend the curr dir
-            .replace( /^(?!\/)/, './' ),
-        spaceghost = require( scriptDir + 'spaceghost' ).create({
-            // script options here (can be overridden by CLI)
-            //verbose: true,
-            //logLevel: debug,
-            scriptDir: scriptDir
-        });
+var require = patchRequire( require ),
+    spaceghost = require( 'spaceghost' ).fromCasper( casper ),
+    xpath = require( 'casper' ).selectXPath,
+    utils = require( 'utils' ),
+    format = utils.format;
 
-} catch( error ){
-    console.debug( error );
-    phantom.exit( 1 );
-}
-spaceghost.start();
-
-
-// =================================================================== SET UP
-var utils = require( 'utils' );
+spaceghost.test.begin( 'Test API functions for histories with an anonymous user', 0, function suite( test ){
+    spaceghost.start();
 
 // =================================================================== TESTS
 spaceghost.thenOpen( spaceghost.baseUrl ).waitForSelector( '.history-name' );
@@ -98,7 +80,7 @@ spaceghost.thenOpen( spaceghost.baseUrl ).waitForSelector( '.history-name' );
 //TODO: can't use this - get a 400 when tools checks for history: 'logged in to manage'
 //spaceghost.then( function(){
 //    this.api.tools.thenUpload( spaceghost.api.histories.show( 'current' ).id, {
-//        filepath: this.options.scriptDir + '/../../test-data/1.sam'
+//        filepath: '../../test-data/1.sam'
 //    });
 //});
 spaceghost.then( function(){
@@ -132,28 +114,33 @@ spaceghost.then( function(){
     this.test.assert( hda.deleted, 'successfully deleted' );
 
     // ------------------------------------------------------------------------------------------- anon forbidden
-    //TODO: should be allowed...
-    this.test.comment( 'Calling create should fail for an anonymous user' );
-    this.api.assertRaises( function(){
-        this.api.hdas.create( current.id, { source: 'hda', content: 'doesntmatter' });
-    }, 403, 'API authentication required for this request', 'create failed with error' );
+    this.test.comment( 'Creating an hda should work for an anonymous user' );
+    var returned = this.api.hdas.create( current.id, { source: 'hda', content: hda.id });
+    //this.debug( this.jsonStr( returned ) );
+    this.test.assert( returned.name === hda.name, 'name matches: ' + returned.name );
+    this.test.assert( returned.id !== hda.id, 'new id: ' + returned.id );
 
-    //TODO: should be allowed (along with purge) and automatically creates new history (as UI)
-    this.test.comment( 'Calling delete should fail for an anonymous user' );
+    //TODO: should be allowed
+    this.test.comment( 'Calling hda delete should fail for an anonymous user' );
     this.api.assertRaises( function(){
         this.api.hdas.delete_( current.id, hda.id );
     }, 403, 'API authentication required for this request', 'delete failed with error' );
 
     //TODO: only sharing, tags, annotations should be blocked/prevented
     this.test.comment( 'Calling update with keys other than "visible" or "deleted" should fail silently' );
+    this.test.comment( 'Calling update on tags should fail silently' );
     changed = this.api.hdas.update( current.id, hda.id, { tags: [ 'one' ] });
     hda = this.api.hdas.show( current.id, hda.id );
-    this.debug( this.jsonStr( hda.tags ) );
+    this.test.assert( hda.tags.length === 0, 'tags were not set: ' + this.jsonStr( hda.tags ) );
 
-    this.test.assert( hda.tags.length === 0, 'tags were not set' );
+    this.test.comment( 'Calling update on annotation should fail silently' );
+    changed = this.api.hdas.update( current.id, hda.id, { annotation: 'yup yup yup' });
+    hda = this.api.hdas.show( current.id, hda.id );
+    this.test.assert( !hda.annotation, 'annotation was not set: ' + hda.annotation );
 
 });
 
 // ===================================================================
-spaceghost.run( function(){
+    spaceghost.run( function(){ test.done(); });
 });
+

@@ -984,13 +984,13 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
         config = None
         data = None
 
-        # if id, then this is a saved visualization; get it's config and the dataset_id from there
+        # if id, then this is a saved visualization; get its config and the dataset_id from there
         if id:
             visualization = self.get_visualization( trans, id )
             config = self.get_visualization_config( trans, visualization )
             dataset_id = config.get( 'dataset_id', None )
 
-        # get the hda if we can, then it's data using the phyloviz parsers
+        # get the hda if we can, then its data using the phyloviz parsers
         if dataset_id:
             hda = self.get_dataset( trans, dataset_id, check_ownership=False, check_accessible=True )
         else:

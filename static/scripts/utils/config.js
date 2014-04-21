@@ -304,6 +304,7 @@ var ConfigSettingCollectionView = Backbone.View.extend({
 });
 
 return {
+    ConfigSetting: ConfigSetting,
     ConfigSettingCollection: ConfigSettingCollection,
     ConfigSettingCollectionView: ConfigSettingCollectionView
 };

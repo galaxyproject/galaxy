@@ -24,7 +24,7 @@ log = logging.getLogger( __name__ )
 
 def activate_repository( trans, repository ):
     """Activate an installed tool shed repository that has been marked as deactivated."""
-    repository_clone_url = suc.generate_clone_url_for_installed_repository( trans.app, repository )
+    repository_clone_url = common_util.generate_clone_url_for_installed_repository( trans.app, repository )
     shed_tool_conf, tool_path, relative_install_dir = suc.get_tool_panel_config_tool_path_install_dir( trans.app, repository )
     repository.deleted = False
     repository.status = trans.install_model.ToolShedRepository.installation_status.INSTALLED
@@ -90,7 +90,7 @@ def get_dependencies_for_repository( trans, tool_shed_url, repo_info_dict, inclu
         # Inspect the tool_dependencies dictionary to separate the installed and missing tool dependencies.
         # We don't add to installed_td and missing_td here because at this point they are empty.
         installed_td, missing_td = \
-            get_installed_and_missing_tool_dependencies_for_repository( trans, tool_shed_url, tool_dependencies )
+            get_installed_and_missing_tool_dependencies_for_repository( trans, tool_dependencies )
     # In cases where a repository dependency is required only for compiling a dependent repository's
     # tool dependency, the value of repository_dependencies will be an empty dictionary here.
     if repository_dependencies:
@@ -130,9 +130,7 @@ def get_dependencies_for_repository( trans, tool_shed_url, repo_info_dict, inclu
             if required_tool_dependencies:
                 # Discover and categorize all tool dependencies defined for this repository's repository dependencies.
                 required_installed_td, required_missing_td = \
-                    get_installed_and_missing_tool_dependencies_for_repository( trans,
-                                                                                tool_shed_url,
-                                                                                required_tool_dependencies )
+                    get_installed_and_missing_tool_dependencies_for_repository( trans, required_tool_dependencies )
                 if required_installed_td:
                     if not includes_tool_dependencies:
                         includes_tool_dependencies = True
@@ -189,7 +187,7 @@ def get_installed_and_missing_repository_dependencies( trans, repository ):
         installed_rd_tups = []
         missing_rd_tups = []
         for tsr in repository.repository_dependencies:
-            prior_installation_required = suc.set_prior_installation_required( repository, tsr )
+            prior_installation_required = suc.set_prior_installation_required( trans.app, repository, tsr )
             only_if_compiling_contained_td = suc.set_only_if_compiling_contained_td( repository, tsr )
             rd_tup = [ tsr.tool_shed,
                        tsr.name,
@@ -261,7 +259,7 @@ def get_installed_and_missing_repository_dependencies_for_new_or_updated_install
                 # that includes the correct repository owner which we get from the current rd_tup.  The current
                 # tuple looks like: ( description, repository_clone_url, changeset_revision, ctx_rev, repository_owner,
                 #                     repository_dependencies, installed_td )
-                tmp_clone_url = suc.generate_clone_url_from_repo_info_tup( rd_tup )
+                tmp_clone_url = common_util.generate_clone_url_from_repo_info_tup( trans, rd_tup )
                 tmp_repo_info_tuple = ( None, tmp_clone_url, changeset_revision, None, owner, None, None )
                 repository, installed_changeset_revision = suc.repository_was_previously_installed( trans,
                                                                                                     tool_shed,
@@ -280,7 +278,7 @@ def get_installed_and_missing_repository_dependencies_for_new_or_updated_install
                         if new_rd_tup not in installed_rd_tups:
                             installed_rd_tups.append( new_rd_tup )
                     else:
-                        # A repository dependency that is not installed will not be considered missing if it's value
+                        # A repository dependency that is not installed will not be considered missing if its value
                         # for only_if_compiling_contained_td is True  This is because this type of repository dependency
                         # will only be considered at the time that the specified tool dependency is being installed, and
                         # even then only if the compiled binary of the tool dependency could not be installed due to the
@@ -298,7 +296,7 @@ def get_installed_and_missing_repository_dependencies_for_new_or_updated_install
                                    None,
                                   'Never installed' ]
                     if not util.asbool( only_if_compiling_contained_td ):
-                        # A repository dependency that is not installed will not be considered missing if it's value for
+                        # A repository dependency that is not installed will not be considered missing if its value for
                         # only_if_compiling_contained_td is True - see above...
                         if new_rd_tup not in missing_rd_tups:
                             missing_rd_tups.append( new_rd_tup )
@@ -312,7 +310,7 @@ def get_installed_and_missing_repository_dependencies_for_new_or_updated_install
         missing_repository_dependencies[ 'description' ] = description
     return installed_repository_dependencies, missing_repository_dependencies
 
-def get_installed_and_missing_tool_dependencies_for_repository( trans, tool_shed_url, tool_dependencies_dict ):
+def get_installed_and_missing_tool_dependencies_for_repository( trans, tool_dependencies_dict ):
     """
     Return the lists of installed tool dependencies and missing tool dependencies for a set of repositories
     being installed into Galaxy.
@@ -439,7 +437,10 @@ def get_required_repo_info_dicts( trans, tool_shed_url, repo_info_dicts ):
                     encoded_required_repository_tups.append( encoding_util.encoding_sep.join( required_repository_tup ) )
                 encoded_required_repository_str = encoding_util.encoding_sep2.join( encoded_required_repository_tups )
                 encoded_required_repository_str = encoding_util.tool_shed_encode( encoded_required_repository_str )
-                url = suc.url_join( tool_shed_url, '/repository/get_required_repo_info_dict' )
+                if trans.webapp.name == 'galaxy':
+                    # Handle secure / insecure Tool Shed URL protocol changes and port changes.
+                    tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( trans.app, tool_shed_url )
+                url = common_util.url_join( tool_shed_url, '/repository/get_required_repo_info_dict' )
                 request = urllib2.Request( url, data=urllib.urlencode( dict( encoded_str=encoded_required_repository_str ) ) )
                 response = urllib2.urlopen( request ).read()
                 if response:
@@ -569,7 +570,10 @@ def repository_dependency_needed_only_for_compiling_tool_dependency( repository,
         tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = rd_tup
         # TODO: we may discover that we need to check more than just installed_changeset_revision and changeset_revision here, in which
         # case we'll need to contact the tool shed to get the list of all possible changeset_revisions.
-        if repository_dependency.tool_shed == tool_shed and \
+        cleaned_tool_shed = common_util.remove_protocol_and_port_from_tool_shed_url( tool_shed )
+        cleaned_repository_dependency_tool_shed = \
+            common_util.remove_protocol_and_port_from_tool_shed_url( str( repository_dependency.tool_shed ) )
+        if cleaned_repository_dependency_tool_shed == cleaned_tool_shed and \
             repository_dependency.name == name and \
             repository_dependency.owner == owner and \
             ( repository_dependency.installed_changeset_revision == changeset_revision or \

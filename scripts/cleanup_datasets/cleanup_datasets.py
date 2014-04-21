@@ -284,10 +284,10 @@ def delete_datasets( app, cutoff_time, remove_from_disk, info_only = False, forc
     skip = []
     # Handle library datasets.  This is a bit tricky, so here's some clarification.  We have a list of all
     # LibraryDatasets that were marked deleted before our cutoff_time, but have not yet been marked purged.
-    # A LibraryDataset object is marked purged when all of it's LibraryDatasetDatasetAssociations have been
+    # A LibraryDataset object is marked purged when all of its LibraryDatasetDatasetAssociations have been
     # marked deleted.  When a LibraryDataset has been marked purged, it can never be undeleted in the data
-    # library.  We have several steps to complete here.  For each LibraryDataset, get it's associated Dataset
-    # and add it to our accrued list of Datasets for later processing.  We mark  as deleted all of it's
+    # library.  We have several steps to complete here.  For each LibraryDataset, get its associated Dataset
+    # and add it to our accrued list of Datasets for later processing.  We mark  as deleted all of its
     # LibraryDatasetDatasetAssociations.  Then we mark the LibraryDataset as purged.  We then process our
     # list of Datasets.
     library_dataset_ids = [ row.id for row in library_dataset_ids_query.execute() ]

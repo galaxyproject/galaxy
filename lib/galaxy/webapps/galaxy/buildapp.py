@@ -224,26 +224,9 @@ def app_factory( global_conf, **kwargs ):
                            action='download',
                            conditions=dict( method=[ "POST", "GET" ] ) )
 
-    webapp.mapper.connect( 'create_folder',
-                           '/api/folders/:encoded_parent_folder_id',
-                           controller='folders',
-                           action='create',
-                           conditions=dict( method=[ "POST" ] ) )
-
     webapp.mapper.resource_with_deleted( 'library',
                                          'libraries',
                                          path_prefix='/api' )
-    webapp.mapper.resource( 'folder',
-                            'folders',
-                            path_prefix='/api' )
-
-    webapp.mapper.resource( 'content',
-                            'contents',
-                            controller='folder_contents',
-                            name_prefix='folder_',
-                            path_prefix='/api/folders/:folder_id',
-                            parent_resources=dict( member_name='folder', collection_name='folders' ),
-                            conditions=dict( method=[ "GET" ] )  )
 
     webapp.mapper.resource( 'content',
                             'contents',
@@ -257,6 +240,38 @@ def app_factory( global_conf, **kwargs ):
                             path_prefix='/api/libraries/:library_id',
                             parent_resources=dict( member_name='library', collection_name='libraries' ) )
 
+    _add_item_extended_metadata_controller( webapp,
+                               name_prefix="library_dataset_",
+                               path_prefix='/api/libraries/:library_id/contents/:library_content_id' )
+
+    # =======================
+    # ===== FOLDERS API =====
+    # =======================
+
+    webapp.mapper.connect( 'add_history_datasets_to_library',
+                           '/api/folders/:encoded_folder_id/contents',
+                           controller='folder_contents',
+                           action='create',
+                           conditions=dict( method=[ "POST" ] ) )
+
+    webapp.mapper.connect( 'create_folder',
+                           '/api/folders/:encoded_parent_folder_id',
+                           controller='folders',
+                           action='create',
+                           conditions=dict( method=[ "POST" ] ) )
+
+    webapp.mapper.resource( 'folder',
+                            'folders',
+                            path_prefix='/api' )
+
+    webapp.mapper.resource( 'content',
+                            'contents',
+                            controller='folder_contents',
+                            name_prefix='folder_',
+                            path_prefix='/api/folders/:folder_id',
+                            parent_resources=dict( member_name='folder', collection_name='folders' ),
+                            conditions=dict( method=[ "GET" ] )  )
+
     webapp.mapper.resource( 'job',
                             'jobs',
                             path_prefix='/api' )
@@ -268,12 +283,7 @@ def app_factory( global_conf, **kwargs ):
                             controller="job_files",
                             name_prefix="job_",
                             path_prefix='/api/jobs/:job_id',
-                            parent_resources=dict( member_name="job", collection_name="jobs")
-    )
-
-    _add_item_extended_metadata_controller( webapp,
-                               name_prefix="library_dataset_",
-                               path_prefix='/api/libraries/:library_id/contents/:library_content_id' )
+                            parent_resources=dict( member_name="job", collection_name="jobs" ) )
 
     _add_item_extended_metadata_controller( webapp,
                                name_prefix="history_dataset_",
@@ -284,7 +294,7 @@ def app_factory( global_conf, **kwargs ):
     # ====================
 
     # Handle displaying tool help images and README file images contained in repositories installed from the tool shed.
-    webapp.add_route( '/admin_toolshed/static/images/:repository_id/:image_file',
+    webapp.add_route( '/admin_toolshed/static/images/:repository_id/{image_file:.+?}',
                       controller='admin_toolshed',
                       action='display_image_in_repository',
                       repository_id=None,
@@ -304,10 +314,22 @@ def app_factory( global_conf, **kwargs ):
                             new={ 'install_repository_revision' : 'POST' },
                             parent_resources=dict( member_name='tool_shed_repository', collection_name='tool_shed_repositories' ) )
 
+
+    # ==== Trace/Metrics Logger
     # Connect logger from app
     if app.trace_logger:
         webapp.trace_logger = app.trace_logger
 
+    # metrics logging API
+    #webapp.mapper.connect( "index", "/api/metrics",
+    #    controller="metrics", action="index", conditions=dict( method=["GET"] ) )
+    #webapp.mapper.connect( "show", "/api/metrics/{id}",
+    #    controller="metrics", action="show", conditions=dict( method=["GET"] ) )
+    webapp.mapper.connect( "create", "/api/metrics",
+        controller="metrics", action="create", conditions=dict( method=["POST"] ) )
+
+
+    # ==== Done
     # Indicate that all configuration settings have been provided
     webapp.finalize_config()
 

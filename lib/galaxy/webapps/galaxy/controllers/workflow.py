@@ -29,6 +29,7 @@ from galaxy.web.framework.helpers import grids, time_ago
 from galaxy.web.framework.helpers import to_unicode
 from galaxy.workflow.modules import module_factory
 from galaxy.workflow.run import invoke
+from galaxy.workflow.run import WorkflowRunConfig
 from galaxy.workflow.extract import summarize
 from galaxy.workflow.extract import extract_workflow
 from galaxy.workflow.steps import (
@@ -1201,7 +1202,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                         history=history
             )
         else:
-            extract_workflow(
+            stored_workflow = extract_workflow(
                 trans,
                 user=user,
                 job_ids=job_ids,
@@ -1209,9 +1210,10 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                 workflow_name=workflow_name
             )
             # Index page with message
-            return trans.show_message( "Workflow '%s' created from current history." % workflow_name )
-            ## return trans.show_ok_message( "<p>Workflow '%s' created.</p><p><a target='_top' href='%s'>Click to load in workflow editor</a></p>"
-            ##     % ( workflow_name, web.url_for(controller='workflow', action='editor', id=trans.security.encode_id(stored.id) ) ) )
+            workflow_id = trans.security.encode_id( stored_workflow.id )
+            return trans.show_message( 'Workflow "%s" created from current history. You can <a href="%s" target="_parent">edit</a> or <a href="%s">run</a> the workflow.' %
+                                       ( workflow_name, url_for( controller='workflow', action='editor', id=workflow_id ), 
+                                       url_for( controller='workflow', action='run', id=workflow_id ) ) )
 
     @web.expose
     def run( self, trans, id, history_id=None, multiple_input_mode="product", hide_fixed_params=False, **kwargs ):
@@ -1321,12 +1323,16 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                             if k.startswith('wf_parm|'):
                                 replacement_dict[k[8:]] = v
 
-                        outputs = invoke(
-                            trans=trans,
-                            workflow=workflow,
+                        run_config = WorkflowRunConfig(
                             target_history=target_history,
                             replacement_dict=replacement_dict,
                             copy_inputs_to_history=new_history is not None
+                        )
+
+                        outputs = invoke(
+                            trans=trans,
+                            workflow=workflow,
+                            workflow_run_config=run_config
                         )
 
                         invocations.append({'outputs': outputs,

@@ -1361,7 +1361,7 @@ class ShedTwillTestCase( TwillTestCase ):
         # in the tool shed, all contained .loc.sample files are copied to this directory and the 
         # ToolDataTableManager parses and loads the files in the same way that Galaxy does with a very
         # important exception.  When the tool shed loads a tool and parses and loads the copied ,loc.sample
-        # files, the ToolDataTableManager is already instantiated, and so it's add_new_entries_from_config_file()
+        # files, the ToolDataTableManager is already instantiated, and so its add_new_entries_from_config_file()
         # method is called and the tool_data_path parameter is used to over-ride the hard-coded "tool-data"
         # directory that Galaxy always uses.
         #
@@ -1418,10 +1418,10 @@ class ShedTwillTestCase( TwillTestCase ):
     def verify_repository_reviews( self, repository, reviewer=None, strings_displayed=[], strings_not_displayed=[] ):
         changeset_revision = self.get_repository_tip( repository )
         # Verify that the currently logged in user has a repository review for the specified repository, reviewer, and changeset revision.
-        strings_displayed=[ repository.name, reviewer.username, changeset_revision ]
+        strings_displayed=[ repository.name, reviewer.username ]
         self.display_reviewed_repositories_owned_by_user( strings_displayed=strings_displayed )
         # Verify that the reviewer has reviewed the specified repository's changeset revision.
-        strings_displayed=[ repository.name, repository.description, changeset_revision ]
+        strings_displayed=[ repository.name, repository.description ]
         self.display_repository_reviews_by_user( reviewer, strings_displayed=strings_displayed )
         # Load the review and check for the components passed in strings_displayed.
         review = test_db_util.get_repository_review_by_user_id_changeset_revision( reviewer.id, repository.id, changeset_revision )

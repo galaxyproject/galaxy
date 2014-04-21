@@ -43,13 +43,13 @@ return Backbone.Model.extend(
        
         // configure tool
         data = {
-            'tool_id'       : 'chartskit',
+            'tool_id'       : 'charts',
             'inputs'        : {
                 'input'     : {
                     'id'    : chart.get('dataset_id'),
                     'src'   : 'hda'
                 },
-                'module'    : chart_type,
+                'module'    : chart_settings.execute,
                 'columns'   : columns_string,
                 'settings'  : settings_string
             }
@@ -82,7 +82,7 @@ return Backbone.Model.extend(
                     
                     // save
                     this.app.storage.save();
-                      
+                    
                     // wait for job completion
                     self._loop(job.id, function(job) {
                         switch (job.state) {
@@ -120,8 +120,9 @@ return Backbone.Model.extend(
                 if (response && response.message && response.message.data && response.message.data.input) {
                     message = response.message.data.input + '.';
                 }
+                
                 // update state
-                chart.state('failed', 'This visualization requires the Charts-Kit. Please make sure it is installed. ' + message);
+                chart.state('failed', 'This visualization requires the \'charts\' tool. Please make sure it is installed. ' + message);
                 
                 // call error
                 error && error();
@@ -133,7 +134,7 @@ return Backbone.Model.extend(
     // request job details
     _loop: function(id, callback) {
         var self = this;
-        Utils.request('GET', config.root + 'api/jobs/' + id, {}, function(job) {
+        Utils.request('GET', config.root + 'api/datasets/' + id, {}, function(job) {
             if (!callback(job)) {
                 setTimeout(function() { self._loop(id, callback); }, self.app.config.get('query_timeout'));
             }

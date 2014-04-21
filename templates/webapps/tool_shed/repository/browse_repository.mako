@@ -57,7 +57,7 @@ ${render_tool_shed_repository_actions( repository, changeset_revision=changeset_
                         Loading...
                     </div>
                     <div class="toolParamHelp" style="clear: both;">
-                        Click on a file to display it's contents below.  You may delete files from the repository by clicking the check box next to each file and clicking the <b>Delete selected files</b> button.
+                        Click on a file to display its contents below.  You may delete files from the repository by clicking the check box next to each file and clicking the <b>Delete selected files</b> button.
                     </div>
                     <input id="selected_files_to_delete" name="selected_files_to_delete" type="hidden" value=""/>
                 </div>

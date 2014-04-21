@@ -192,7 +192,12 @@ class ToolRunner( BaseUIController ):
         #This needs to be done recursively through grouping parameters
         def rerun_callback( input, value, prefixed_name, prefixed_label ):
             if isinstance( value, UnvalidatedValue ):
-                return str( value )
+                try:
+                    return input.to_html_value( value.value, trans.app )
+                except Exception, e:
+                    # Need to determine when (if ever) the to_html_value call could fail.
+                    log.debug( "Failed to use input.to_html_value to determine value of unvalidated parameter, defaulting to string: %s" % ( e ) )
+                    return str( value )
             if isinstance( input, DataToolParameter ):
                 if isinstance(value,list):
                     values = []

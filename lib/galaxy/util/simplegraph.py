@@ -42,7 +42,7 @@ class SimpleGraphEdge( object ):
 
 class SimpleGraph( object ):
     """
-    Each node is unique (by id) and stores it's own index in the node list/odict.
+    Each node is unique (by id) and stores its own index in the node list/odict.
     Each edge is represented as two indeces into the node list/odict.
     Both nodes and edges allow storing extra information if needed.
 

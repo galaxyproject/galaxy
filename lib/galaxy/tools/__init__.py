@@ -63,6 +63,7 @@ from galaxy.web import url_for
 from galaxy.web.form_builder import SelectField
 from galaxy.model.item_attrs import Dictifiable
 from galaxy.model import Workflow
+from tool_shed.util import common_util
 from tool_shed.util import shed_util_common as suc
 from .loader import load_tool, template_macro_params
 from .wrappers import (
@@ -467,6 +468,8 @@ class ToolBox( object, Dictifiable ):
                                              .first()
 
     def __get_tool_shed_repository( self, tool_shed, name, owner, installed_changeset_revision ):
+        # We store only the port, if one exists, in the database.
+        tool_shed = common_util.remove_protocol_from_tool_shed_url( tool_shed )
         return self.app.install_model.context.query( self.app.install_model.ToolShedRepository ) \
                               .filter( and_( self.app.install_model.ToolShedRepository.table.c.tool_shed == tool_shed,
                                              self.app.install_model.ToolShedRepository.table.c.name == name,
@@ -532,7 +535,10 @@ class ToolBox( object, Dictifiable ):
                     # Backward compatibility issue - the tag used to be named 'changeset_revision'.
                     installed_changeset_revision_elem = elem.find( "changeset_revision" )
                 installed_changeset_revision = installed_changeset_revision_elem.text
-                tool_shed_repository = self.__get_tool_shed_repository( tool_shed, repository_name, repository_owner, installed_changeset_revision )
+                tool_shed_repository = self.__get_tool_shed_repository( tool_shed,
+                                                                        repository_name,
+                                                                        repository_owner,
+                                                                        installed_changeset_revision )
                 if tool_shed_repository:
                     # Only load tools if the repository is not deactivated or uninstalled.
                     can_load_into_panel_dict = not tool_shed_repository.deleted
@@ -583,7 +589,7 @@ class ToolBox( object, Dictifiable ):
                 # the case where the tool is contained in a repository installed from the tool shed, and the Galaxy
                 # administrator has retrieved updates to the installed repository.  In this case, the tool may have
                 # been updated, but the version was not changed, so the tool should always be reloaded here.  We used
-                # to only load the tool if it's it was not found in self.tools_by_id, but performing that check did
+                # to only load the tool if it was not found in self.tools_by_id, but performing that check did
                 # not enable this scenario.
                 self.tools_by_id[ tool.id ] = tool
                 if load_panel_dict:
@@ -2111,7 +2117,7 @@ class Tool( object, Dictifiable ):
             elif isinstance( input, Conditional ):
                 group_state = state[input.name]
                 group_prefix = "%s|" % ( key )
-                # Deal with the 'test' element and see if it's value changed
+                # Deal with the 'test' element and see if its value changed
                 if input.value_ref and not input.value_ref_in_group:
                     # We are referencing an existent parameter, which is not
                     # part of this group
@@ -2127,28 +2133,31 @@ class Tool( object, Dictifiable ):
                                                                      context,
                                                                      source )
 
-                current_case = input.get_current_case( value, trans )
-                # Current case has changed, throw away old state
-                group_state = state[input.name] = {}
-                # TODO: we should try to preserve values if we can
-                self.fill_in_new_state( trans, input.cases[current_case].inputs, group_state, context, history=history )
-                group_errors = self.populate_state( trans,
-                                                    input.cases[current_case].inputs,
-                                                    group_state,
-                                                    incoming,
-                                                    history,
-                                                    source,
-                                                    prefix=group_prefix,
-                                                    context=context,
-                )
                 if test_param_error:
-                    group_errors[ input.test_param.name ] = test_param_error
-                if group_errors:
-                    errors[ input.name ] = group_errors
-                # Store the current case in a special value
-                group_state['__current_case__'] = current_case
-                # Store the value of the test element
-                group_state[ input.test_param.name ] = value
+                    errors[ input.name ] = [ test_param_error ]
+                    # Store the value of the test element
+                    group_state[ input.test_param.name ] = value
+                else:
+                    current_case = input.get_current_case( value, trans )
+                    # Current case has changed, throw away old state
+                    group_state = state[input.name] = {}
+                    # TODO: we should try to preserve values if we can
+                    self.fill_in_new_state( trans, input.cases[current_case].inputs, group_state, context, history=history )
+                    group_errors = self.populate_state( trans,
+                                                        input.cases[current_case].inputs,
+                                                        group_state,
+                                                        incoming,
+                                                        history,
+                                                        source,
+                                                        prefix=group_prefix,
+                                                        context=context,
+                    )
+                    if group_errors:
+                        errors[ input.name ] = group_errors
+                    # Store the current case in a special value
+                    group_state['__current_case__'] = current_case
+                    # Store the value of the test element
+                    group_state[ input.test_param.name ] = value
             elif isinstance( input, UploadDataset ):
                 group_state = state[input.name]
                 group_errors = []
@@ -2201,7 +2210,7 @@ class Tool( object, Dictifiable ):
         Update the tool state in `state` using the user input in `incoming`.
         This is designed to be called recursively: `inputs` contains the
         set of inputs being processed, and `prefix` specifies a prefix to
-        add to the name of each input to extract it's value from `incoming`.
+        add to the name of each input to extract its value from `incoming`.
 
         If `update_only` is True, values that are not in `incoming` will
         not be modified. In this case `old_errors` can be provided, and any
@@ -2281,7 +2290,7 @@ class Tool( object, Dictifiable ):
                 group_old_errors = old_errors.get( input.name, {} )
                 old_current_case = group_state['__current_case__']
                 group_prefix = "%s|" % ( key )
-                # Deal with the 'test' element and see if it's value changed
+                # Deal with the 'test' element and see if its value changed
                 if input.value_ref and not input.value_ref_in_group:
                     # We are referencing an existent parameter, which is not
                     # part of this group

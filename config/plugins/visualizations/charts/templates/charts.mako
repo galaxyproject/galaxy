@@ -22,9 +22,13 @@
         ${h.css( 'base' )}
 
         ## install nv.d3 module
-        ${h.javascript_link( app_root + "plugins/nv.d3.js" )}
-        ${h.stylesheet_link( app_root + "plugins/nv.d3.css" )}
+        ${h.javascript_link( app_root + "plugins/nvd3/nv.d3.js" )}
+        ${h.stylesheet_link( app_root + "plugins/nvd3/nv.d3.css" )}
 
+        ## install highcharts module
+        ${h.javascript_link( app_root + "plugins/highcharts/highcharts.js" )}
+        ${h.javascript_link( app_root + "plugins/highcharts/highcharts-more.js" )}
+        
         ## install boxplot module
         ##${h.javascript_link( app_root + "plugins/box.js" )}
 

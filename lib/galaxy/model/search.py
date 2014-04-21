@@ -3,7 +3,7 @@ The GQL (Galaxy Query Language) search engine parsers a simple 'SQL-Like' query
 syntax to obtain items from the Galaxy installations.
 Rather then allow/force the user to do queries on the Galaxy schema, it uses
 a small set of 'Views' which are simple table representations of complex galaxy ideas.
-So while a history and it's tags may exist in seperate tables in the real schema, in
+So while a history and its tags may exist in seperate tables in the real schema, in
 GQL they exist in the same view
 
 Example Queries:

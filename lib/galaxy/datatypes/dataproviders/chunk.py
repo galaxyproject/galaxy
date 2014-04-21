@@ -20,7 +20,7 @@ log = logging.getLogger( __name__ )
 # -----------------------------------------------------------------------------
 class ChunkDataProvider( base.DataProvider ):
     """
-    Data provider that yields chunks of data from it's file.
+    Data provider that yields chunks of data from its file.
 
     Note: this version does not account for lines and works with Binary datatypes.
     """
@@ -75,7 +75,7 @@ class ChunkDataProvider( base.DataProvider ):
 
 class Base64ChunkDataProvider( ChunkDataProvider ):
     """
-    Data provider that yields chunks of base64 encoded data from it's file.
+    Data provider that yields chunks of base64 encoded data from its file.
     """
     def encode( self, chunk ):
         """

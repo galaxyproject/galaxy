@@ -98,7 +98,7 @@ class TestHistory( TwillTestCase ):
         if not historyB.deleted:
             raise AssertionError( "Problem deleting history id %d" % historyB.id )
         # Since we deleted the current history, make sure the history frame was refreshed
-        self.check_history_for_string( 'Your history is empty.' )
+        assert self.is_history_empty(), 'Deleting active history did not result in a new empty history being created.'
         # We'll now test deleting a list of histories
         # After deleting the current history, a new one should have been created
         global history1
@@ -121,7 +121,7 @@ class TestHistory( TwillTestCase ):
         ids = '%s,%s' % ( self.security.encode_id( history1.id ), self.security.encode_id( history2.id ) )
         self.delete_history( ids )
         # Since we deleted the current history, make sure the history frame was refreshed
-        self.check_history_for_string( 'Your history is empty.' )
+        assert self.is_history_empty(), 'Deleting active history did not result in a new empty history being created.'
         try:
             self.view_stored_active_histories( strings_displayed=[ history1.name ] )
             raise AssertionError( "History %s is displayed in the active history list after it was deleted" % history1.name )
@@ -665,7 +665,7 @@ class TestHistory( TwillTestCase ):
                 if hda[ 'id' ] == self.security.encode_id( hda_2_bed.id ):
                     return ( not hda[ 'accessible' ] )
             return False
-        self.check_history_json( r'\bhdaJSON\s*=\s*(.*);', hda_2_bed_is_inaccessible )
+        self.check_history_json( hda_2_bed_is_inaccessible )
 
         # Admin users can view all datasets ( using the history/view feature ), so make sure 2.bed is accessible to the admin
         self.logout()
@@ -738,28 +738,26 @@ class TestHistory( TwillTestCase ):
                 .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) )
                 .first() )
 
-        # delete that item and make sure the 'history empty' message shows
+        # delete that item and make sure the history is not empty
         self.home()
         log.info( 'deleting last hda' )
         self.delete_history_item( str( latest_hda.id ) )
-        # check the historyPanel settings.show_deleted for a null json value (no show_deleted in query string)
-        self.check_history_json( r'\bshow_deleted\s*:\s*(.*),', lambda x: x == None )
+        # check the number of items returned from the api
+        self.check_history_json( lambda x: len( x ) != 0 )
 
         # reload this history with the show_deleted flag set in the query string
         #   the deleted dataset should be there with the proper 'deleted' text
-        self.home()
         log.info( 'turning show_deleted on' )
-        #self.visit_url( "%s/history/?show_deleted=True" % self.url )
-        # check the historyPanel settings.show_deleted for a true json value
-        self.check_history_json( r'\bshow_deleted\s*:\s*(.*),', lambda x: x == True, show_deleted=True )
+        #self.visit_url( "/api/histories/<id>/contents?deleted=True" )
+        # check the number of items returned from the api
+        self.check_history_json( lambda x: len( x ) != 0, show_deleted=True )
 
         # reload this history again with the show_deleted flag set TO FALSE in the query string
-        #   make sure the 'history empty' message shows
-        self.home()
+        #   make sure the history is empty
         log.info( 'turning show_deleted off' )
-        #self.visit_url( "%s/history/?show_deleted=False" % self.url )
-        # check the historyPanel settings.show_deleted for a false json value
-        self.check_history_json( r'\bshow_deleted\s*:\s*(.*),', lambda x: x == False, show_deleted=False )
+        #self.visit_url( "/api/histories/<id>/contents?deleted=False" )
+        # check the number of items returned from the api
+        self.check_history_json( lambda x: len( x ) == 0, show_deleted=False )
 
         # delete this history
         self.delete_history( self.security.encode_id( latest_history.id ) )
@@ -790,7 +788,7 @@ class TestHistory( TwillTestCase ):
         self.check_page_for_string( 'hg15' )
         self.assertEqual( len( self.get_history_as_data_list() ), 1 )
         # Delete the history item
-        self.delete_history_item( str( latest_hda.id ), strings_displayed=[ "Your history is empty" ] )
+        self.delete_history_item( str( latest_hda.id ), strings_displayed=[] )
         self.assertEqual( len( self.get_history_as_data_list() ), 0 )
         # Try deleting an invalid hid
         try:

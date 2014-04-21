@@ -6,6 +6,7 @@ from galaxy import util
 from galaxy.util.odict import odict
 from galaxy.util.template import fill_template
 from galaxy.tools.data import TabularToolDataTable
+from tool_shed.util import common_util
 import tool_shed.util.shed_util_common as suc
 
 #set up logger
@@ -15,6 +16,7 @@ log = logging.getLogger( __name__ )
 SUPPORTED_DATA_TABLE_TYPES = ( TabularToolDataTable )
 VALUE_TRANSLATION_FUNCTIONS = dict( abspath=os.path.abspath )
 DEFAULT_VALUE_TRANSLATION_TYPE = 'template'
+
 
 class DataManagers( object ):
     def __init__( self, app, xml_filename=None ):
@@ -26,6 +28,7 @@ class DataManagers( object ):
         self.load_from_xml( self.filename )
         if self.app.config.shed_data_manager_config_file:
             self.load_from_xml( self.app.config.shed_data_manager_config_file, store_tool_path=False, replace_existing=True )
+
     def load_from_xml( self, xml_filename, store_tool_path=True, replace_existing=False ):
         try:
             tree = util.parse_xml( xml_filename )
@@ -45,6 +48,7 @@ class DataManagers( object ):
             self.tool_path = tool_path
         for data_manager_elem in root.findall( 'data_manager' ):
             self.load_manager_from_elem( data_manager_elem, replace_existing=replace_existing )
+
     def load_manager_from_elem( self, data_manager_elem, tool_path=None, add_manager=True, replace_existing=False ):
         try:
             data_manager = DataManager( self, data_manager_elem, tool_path=tool_path )
@@ -55,6 +59,7 @@ class DataManagers( object ):
             self.add_manager( data_manager, replace_existing=replace_existing )
         log.debug( 'Loaded Data Manager: %s' % ( data_manager.id ) )
         return data_manager
+
     def add_manager( self, data_manager, replace_existing=False ):
         if not replace_existing:
             assert data_manager.id not in self.data_managers, "A data manager has been defined twice: %s" % ( data_manager.id )
@@ -67,8 +72,10 @@ class DataManagers( object ):
             if data_table_name not in self.managed_data_tables:
                 self.managed_data_tables[ data_table_name ] = []
             self.managed_data_tables[ data_table_name ].append( data_manager )
+
     def get_manager( self, *args, **kwds ):
         return self.data_managers.get( *args, **kwds )
+
     def remove_manager( self, manager_ids ):
         if not isinstance( manager_ids, list ):
             manager_ids = [ manager_ids ]
@@ -89,6 +96,7 @@ class DataManagers( object ):
                     if remove_data_table_tracking and data_table_name in self.managed_data_tables:
                         del self.managed_data_tables[ data_table_name ]
 
+
 class DataManager( object ):
     GUID_TYPE = 'data_manager'
     DEFAULT_VERSION = "0.0.1"
@@ -108,6 +116,7 @@ class DataManager( object ):
         self.tool_shed_repository_info_dict = None
         if elem is not None:
             self.load_from_element( elem, tool_path or self.data_managers.tool_path )
+
     def load_from_element( self, elem, tool_path ):
         assert elem.tag == 'data_manager', 'A data manager configuration must have a "data_manager" tag as the root. "%s" is present' % ( elem.tag )
         self.declared_id = elem.get( 'id', None )
@@ -122,14 +131,24 @@ class DataManager( object ):
             path = tool_elem.get( "file", None )
             tool_guid = tool_elem.get( "guid", None )
             #need to determine repository info so that dependencies will work correctly
-            tool_shed = tool_elem.find( 'tool_shed' ).text
+            tool_shed_url = tool_elem.find( 'tool_shed' ).text
+            # Handle protocol changes.
+            tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( self.data_managers.app, tool_shed_url )
             repository_name = tool_elem.find( 'repository_name' ).text
             repository_owner = tool_elem.find( 'repository_owner' ).text
             installed_changeset_revision = tool_elem.find( 'installed_changeset_revision' ).text
-            #save repository info here
-            self.tool_shed_repository_info_dict = dict( tool_shed=tool_shed, name=repository_name, owner=repository_owner, installed_changeset_revision=installed_changeset_revision )
-            #get tool_shed repo id
-            tool_shed_repository = suc.get_tool_shed_repository_by_shed_name_owner_installed_changeset_revision( self.data_managers.app, tool_shed, repository_name, repository_owner, installed_changeset_revision )
+            self.tool_shed_repository_info_dict = dict( tool_shed_url=tool_shed_url,
+                                                        name=repository_name,
+                                                        owner=repository_owner,
+                                                        installed_changeset_revision=installed_changeset_revision )
+            # The protocol is not stored in the database.
+            tool_shed = common_util.remove_protocol_from_tool_shed_url( tool_shed_url )
+            tool_shed_repository = \
+                suc.get_tool_shed_repository_by_shed_name_owner_installed_changeset_revision( self.data_managers.app,
+                                                                                              tool_shed,
+                                                                                              repository_name,
+                                                                                              repository_owner,
+                                                                                              installed_changeset_revision )
             if tool_shed_repository is None:
                 log.warning( 'Could not determine tool shed repository from database. This should only ever happen when running tests.' )
                 #we'll set tool_path manually here from shed_conf_file
@@ -147,7 +166,10 @@ class DataManager( object ):
                 if shed_conf:
                     tool_path = shed_conf.get( "tool_path", tool_path )
         assert path is not None, "A tool file path could not be determined:\n%s" % ( util.xml_to_string( elem ) )
-        self.load_tool( os.path.join( tool_path, path ), guid=tool_guid, data_manager_id=self.id, tool_shed_repository_id=tool_shed_repository_id )
+        self.load_tool( os.path.join( tool_path, path ),
+                        guid=tool_guid,
+                        data_manager_id=self.id,
+                        tool_shed_repository_id=tool_shed_repository_id )
         self.name = elem.get( 'name', self.tool.name )
         self.description = elem.get( 'description', self.tool.description )
 
@@ -206,12 +228,23 @@ class DataManager( object ):
                             target_value = target_elem.text
                         if data_table_name not in self.move_by_data_table_column:
                             self.move_by_data_table_column[ data_table_name ] = {}
-                        self.move_by_data_table_column[ data_table_name ][ data_table_coumn_name ] = dict( type=move_type, source_base=source_base, source_value=source_value, target_base=target_base, target_value=target_value, relativize_symlinks=relativize_symlinks )
+                        self.move_by_data_table_column[ data_table_name ][ data_table_coumn_name ] = \
+                            dict( type=move_type,
+                                  source_base=source_base,
+                                  source_value=source_value,
+                                  target_base=target_base,
+                                  target_value=target_value,
+                                  relativize_symlinks=relativize_symlinks )
+
     @property
     def id( self ):
         return self.guid or self.declared_id #if we have a guid, we will use that as the data_manager id
+
     def load_tool( self, tool_filename, guid=None, data_manager_id=None, tool_shed_repository_id=None ):
-        tool = self.data_managers.app.toolbox.load_tool( tool_filename, guid=guid, data_manager_id=data_manager_id, repository_id=tool_shed_repository_id )
+        tool = self.data_managers.app.toolbox.load_tool( tool_filename,
+                                                         guid=guid,
+                                                         data_manager_id=data_manager_id,
+                                                         repository_id=tool_shed_repository_id )
         self.data_managers.app.toolbox.data_manager_tools[ tool.id ] = tool
         self.data_managers.app.toolbox.tools_by_id[ tool.id ] = tool
         self.tool = tool
@@ -294,7 +327,6 @@ class DataManager( object ):
                 except OSError, e:
                     if e.errno != errno.EEXIST:
                         raise e
-                    #log.debug( 'Error creating directory "%s": %s' % ( dirs, e ) )
             #moving a directory and the target already exists, we move the contents instead
             util.move_merge( source, target )
 

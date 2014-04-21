@@ -60,7 +60,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
             annotation = exported_workflow_dict.get( 'annotation', '' )
             format_version = exported_workflow_dict.get( 'format-version', '' )
             workflow_name = exported_workflow_dict.get( 'name', '' )
-            # Since we don't have an in-memory object with an id, we'll identify the exported workflow via it's
+            # Since we don't have an in-memory object with an id, we'll identify the exported workflow via its
             # location (i.e., index) in the list.
             display_dict = dict( index=index, annotation=annotation, format_version=format_version, workflow_name=workflow_name )
             exported_workflows.append( display_dict )
@@ -95,7 +95,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
             raise HTTPBadRequest( detail="Missing required parameter 'index'." )
         repository = suc.get_tool_shed_repository_by_id( trans, tool_shed_repository_id )
         exported_workflows = json.from_json_string( self.exported_workflows( trans, tool_shed_repository_id ) )
-        # Since we don't have an in-memory object with an id, we'll identify the exported workflow via it's location (i.e., index) in the list.
+        # Since we don't have an in-memory object with an id, we'll identify the exported workflow via its location (i.e., index) in the list.
         exported_workflow = exported_workflows[ int( index ) ]
         workflow_name = exported_workflow[ 'workflow_name' ]
         workflow, status, error_message = workflow_util.import_workflow( trans, repository, workflow_name )
@@ -207,9 +207,9 @@ class ToolShedRepositoriesController( BaseAPIController ):
         # Keep track of all repositories that are installed - there may be more than one if repository dependencies are installed.
         installed_tool_shed_repositories = []
         # Get all of the information necessary for installing the repository from the specified tool shed.
-        url = suc.url_join( tool_shed_url,
-                            'api/repositories/get_repository_revision_install_info?name=%s&owner=%s&changeset_revision=%s' % \
-                            ( name, owner, changeset_revision ) )
+        params = '?name=%s&owner=%s&changeset_revision=%s' % ( name, owner, changeset_revision )
+        url = common_util.url_join( tool_shed_url,
+                                    'api/repositories/get_repository_revision_install_info%s' % params )
         try:
             raw_text = common_util.tool_shed_get( trans.app, tool_shed_url, url )
         except Exception, e:

@@ -44,7 +44,7 @@ class PluginManager( object ):
 
     A PluginManager discovers and manages these plugins.
 
-    This is an non-abstract class but it's usefulness is limited and is meant
+    This is an non-abstract class but its usefulness is limited and is meant
     to be inherited.
     """
 
@@ -53,7 +53,7 @@ class PluginManager( object ):
         Set up the manager and load all plugins.
 
         :type   app:    UniverseApplication
-        :param  app:    the application (and it's configuration) using this manager
+        :param  app:    the application (and its configuration) using this manager
         :type   directories_setting: string (default: None)
         :param  directories_setting: the filesystem path (or paths)
             to search for plugins. Can be CSV string of paths. Will be treated as
@@ -267,7 +267,7 @@ class HookPluginManager( PluginManager ):
         try:
             #TODO: hate this hack but only way to get package imports inside the plugin to work?
             sys.path.append( plugin.path )
-            # sys.modules will now have import_as in it's list
+            # sys.modules will now have import_as in its list
             module = imp.load_module( import_as, module_file, pathname, description )
         finally:
             module_file.close()
@@ -382,7 +382,7 @@ class PageServingPluginManager( PluginManager ):
         Set up the manager and load all plugins.
 
         :type   app:        UniverseApplication
-        :param  app:        the application (and it's configuration) using this manager
+        :param  app:        the application (and its configuration) using this manager
         :type   base_url:   string
         :param  base_url:   url to prefix all plugin urls with
         :type   template_cache_dir: string

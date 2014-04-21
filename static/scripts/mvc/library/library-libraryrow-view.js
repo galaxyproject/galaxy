@@ -1,11 +1,11 @@
 // dependencies
 define([
-    "galaxy.masthead", 
+    "galaxy.masthead",
     "utils/utils",
     "libs/toastr",
-    "mvc/library/library-model"], 
-function(mod_masthead, 
-         mod_utils, 
+    "mvc/library/library-model"],
+function(mod_masthead,
+         mod_utils,
          mod_toastr,
          mod_library_model) {
 
@@ -39,7 +39,7 @@ var LibraryRowView = Backbone.View.extend({
 
   render: function(library){
     if (typeof library === 'undefined'){
-      var library = Galaxy.libraries.libraryListView.collection.get(this.$el.data('id'));
+      library = Galaxy.libraries.libraryListView.collection.get(this.$el.data('id'));
     }
     this.prepareButtons(library);
     var tmpl = this.templateRow();
@@ -51,7 +51,7 @@ var LibraryRowView = Backbone.View.extend({
   repaint: function(library){
     /* need to hide manually because of the element removal in setElement 
     invoked in render() */
-    $(".tooltip").hide(); 
+    $(".tooltip").hide();
     /* we need to store the old element to be able to replace it with 
     new one */
     var old_element = this.$el;
@@ -83,13 +83,13 @@ var LibraryRowView = Backbone.View.extend({
         vis_config.undelete_library_btn = false;
         if (library.get('can_user_add') === true){
           vis_config.upload_library_btn = true;
-        }    
+        }
         if (library.get('can_user_modify') === true){
           vis_config.edit_library_btn = true;
-        }    
+        }
         if (library.get('can_user_manage') === true){
           vis_config.permission_library_btn = true;
-        }    
+        }
       }
     } else if (this.edit_mode === true){
       vis_config.upload_library_btn = false;
@@ -136,7 +136,7 @@ var LibraryRowView = Backbone.View.extend({
             is_changed = true;
         } else{
             mod_toastr.warning('Library name has to be at least 3 characters long');
-            return
+            return;
         }
     }
 
@@ -183,7 +183,7 @@ var LibraryRowView = Backbone.View.extend({
         Galaxy.libraries.libraryListView.collection.add(library);
         row_view.edit_mode = false;
         if (Galaxy.libraries.preferences.get('with_deleted') === false){
-          $(".tooltip").hide(); 
+          $('.tooltip').hide();
           row_view.$el.remove();
         } else if (Galaxy.libraries.preferences.get('with_deleted') === true){
           row_view.repaint(library);
@@ -247,12 +247,11 @@ var LibraryRowView = Backbone.View.extend({
     tmpl_array.push('               </td>');
     tmpl_array.push('           </tr>');
 
-    return _.template(tmpl_array.join('')); 
+    return _.template(tmpl_array.join(''));
   }
    
 });
 
-  // return
 return {
     LibraryRowView: LibraryRowView
 };

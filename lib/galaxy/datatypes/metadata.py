@@ -637,7 +637,6 @@ class JobExternalOutputMetadataWrapper( object ):
         # for the compute server.
         def metadata_path_on_compute(path):
             compute_path = path
-            log.info(compute_tmp_dir)
             if compute_tmp_dir and tmp_dir and in_directory(path, tmp_dir):
                 path_relative = os.path.relpath(path, tmp_dir)
                 compute_path = os.path.join(compute_tmp_dir, path_relative)

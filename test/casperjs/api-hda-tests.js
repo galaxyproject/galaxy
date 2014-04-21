@@ -1,29 +1,13 @@
-/* Utility to load a specific page and output html, page text, or a screenshot
- *  Optionally wait for some time, text, or dom selector
- */
-try {
-    //...if there's a better way - please let me know, universe
-    var scriptDir = require( 'system' ).args[3]
-            // remove the script filename
-            .replace( /[\w|\.|\-|_]*$/, '' )
-            // if given rel. path, prepend the curr dir
-            .replace( /^(?!\/)/, './' ),
-        spaceghost = require( scriptDir + 'spaceghost' ).create({
-            // script options here (can be overridden by CLI)
-            //verbose: true,
-            //logLevel: debug,
-            scriptDir: scriptDir
-        });
+var require = patchRequire( require ),
+    spaceghost = require( 'spaceghost' ).fromCasper( casper ),
+    xpath = require( 'casper' ).selectXPath,
+    utils = require( 'utils' ),
+    format = utils.format;
 
-} catch( error ){
-    console.debug( error );
-    phantom.exit( 1 );
-}
-spaceghost.start();
+spaceghost.test.begin( 'Test the HDA API', 0, function suite( test ){
+    spaceghost.start();
 
 // =================================================================== SET UP
-var utils = require( 'utils' );
-
 var email = spaceghost.user.getRandomEmail(),
     password = '123456';
 if( spaceghost.fixtureData.testUser ){
@@ -33,13 +17,14 @@ if( spaceghost.fixtureData.testUser ){
 spaceghost.user.loginOrRegisterUser( email, password );
 
 spaceghost.thenOpen( spaceghost.baseUrl, function(){
+    this.test.comment( '(logged in as ' + this.user.loggedInAs() + ')' );
     this.api.tools.thenUpload( spaceghost.api.histories.show( 'current' ).id, {
-        filepath: this.options.scriptDir + '/../../test-data/1.sam'
+        filepath: '../../test-data/1.sam'
     });
 });
 
 // =================================================================== TESTS
-var summaryKeys = [ 'id', 'name', 'type', 'url' ],
+var summaryKeys = [ 'id', 'name', 'history_id', 'state', 'deleted', 'purged', 'visible', 'url', 'type' ],
     detailKeys  = [
         // the following are always present regardless of datatype
         'id', 'name', 'api_type', 'model_class',
@@ -100,6 +85,18 @@ spaceghost.then( function(){
 
     // ------------------------------------------------------------------------------------------- CREATE
     //TODO: create from_ld_id
+    this.test.comment( 'create should allow copying an accessible hda' );
+    hdaShow = this.api.hdas.show( lastHistory.id, firstHda.id );
+    var returned = this.api.hdas.create( lastHistory.id, {
+        source  : 'hda',
+        content : hdaShow.id
+    });
+    //this.debug( 'returned:' + this.jsonStr( returned ) );
+    this.test.assert( this.hasKeys( returned, detailKeys ), 'Has the proper keys' );
+    this.test.assert( typeof returned.id !== 'number' && isNaN( Number( returned.id ) ),
+        'id seems to be encoded: ' + returned.id );
+    this.test.assert( typeof returned.history_id !== 'number' && isNaN( Number( returned.history_id ) ),
+        'history_id seems to be encoded: ' + returned.history_id );
 
 
     // ------------------------------------------------------------------------------------------- UPDATE
@@ -367,5 +364,6 @@ spaceghost.then( function(){
 
 
 // ===================================================================
-spaceghost.run( function(){
+    spaceghost.run( function(){ test.done(); });
 });
+

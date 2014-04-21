@@ -1,28 +1,13 @@
-// have to handle errors here - or phantom/casper won't bail but _HANG_
-try {
-    var utils = require( 'utils' ),
-        xpath = require( 'casper' ).selectXPath,
-        format = utils.format,
+var require = patchRequire( require ),
+    spaceghost = require( 'spaceghost' ).fromCasper( casper ),
+    xpath = require( 'casper' ).selectXPath,
+    utils = require( 'utils' ),
+    format = utils.format;
 
-        //...if there's a better way - please let me know, universe
-        scriptDir = require( 'system' ).args[3]
-            // remove the script filename
-            .replace( /[\w|\.|\-|_]*$/, '' )
-            // if given rel. path, prepend the curr dir
-            .replace( /^(?!\/)/, './' ),
-        spaceghost = require( scriptDir + 'spaceghost' ).create({
-            // script options here (can be overridden by CLI)
-            //verbose: true,
-            //logLevel: debug,
-            scriptDir: scriptDir
-        });
-
+spaceghost.test.begin( 'Testing the history options menu', 0, function suite( test ){
     spaceghost.start();
-
-} catch( error ){
-    console.debug( error );
-    phantom.exit( 1 );
-}
+    spaceghost.openHomePage().then( function(){
+    });
 
 // ===================================================================
 /* TODO:
@@ -144,6 +129,5 @@ spaceghost.then( function(){
 });
 
 // ===================================================================
-spaceghost.run( function(){
-    this.test.done();
+    spaceghost.run( function(){ test.done(); });
 });

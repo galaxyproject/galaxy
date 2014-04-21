@@ -1,5 +1,6 @@
 <!DOCTYPE HTML>
 
+<%namespace name="galaxy_client" file="/galaxy_client_app.mako" />
 <%
     self.has_left_panel = hasattr( self, 'left_panel' )
     self.has_right_panel = hasattr( self, 'right_panel' )
@@ -58,7 +59,7 @@
         'libs/require',
         "mvc/ui"
     )}
-
+    
     <script type="text/javascript">
         ## global configuration object
         var galaxy_config =
@@ -69,9 +70,6 @@
         ## load additional style sheet
         if (window != window.top)
             $('<link href="' + galaxy_config.root + 'static/style/galaxy.frame.masthead.css" rel="stylesheet">').appendTo('head');
-
-        // start a Galaxy namespace for objects created
-        window.Galaxy = window.Galaxy || {};
 
         // console protection
         window.console = window.console || {
@@ -92,6 +90,10 @@
             }
         });
     </script>
+
+    ## load the Galaxy global js var
+    ${ galaxy_client.load() }
+
 </%def>
 
 ## Default late-load javascripts

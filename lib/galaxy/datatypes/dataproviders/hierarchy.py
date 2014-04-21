@@ -61,7 +61,7 @@ class XMLDataProvider( HierarchalDataProvider ):
         """
         # search for partial match of selector to the element tag
         #TODO: add more flexibility here w/o re-implementing xpath
-        #TODO: fails with '#' - browser thinks it's anchor - use urlencode
+        #TODO: fails with '#' - browser thinks it's an anchor - use urlencode
         #TODO: need removal/replacement of etree namespacing here - then move to string match
         return bool( ( selector == None )
                   or ( isinstance( element, elementtree.Element ) and selector in element.tag ) )

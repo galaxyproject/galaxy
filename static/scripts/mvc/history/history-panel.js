@@ -3,8 +3,9 @@ define([
     "mvc/dataset/hda-edit",
     "mvc/history/readonly-history-panel",
     "mvc/tags",
-    "mvc/annotations"
-], function( hdaModel, hdaEdit, readonlyPanel, tagsMod, annotationsMod ){
+    "mvc/annotations",
+    "utils/localization"
+], function( hdaModel, hdaEdit, readonlyPanel, tagsMod, annotationsMod, _l ){
 /* =============================================================================
 TODO:
 

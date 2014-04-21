@@ -6,6 +6,7 @@ from galaxy.model.orm import and_
 from galaxy.model.orm import or_
 from tool_shed.grids.repository_grids import RepositoryGrid
 import tool_shed.util.shed_util_common as suc
+from tool_shed.util import hg_util
 from tool_shed.util import metadata_util
 
 from galaxy import eggs
@@ -66,10 +67,10 @@ class RepositoriesWithReviewsGrid( RepositoryGrid ):
             # Restrict to revisions that have been reviewed.
             if repository.reviews:
                 rval = ''
-                repo = hg.repository( suc.get_configured_ui(), repository.repo_path( trans.app ) )
+                repo = hg.repository( hg_util.get_configured_ui(), repository.repo_path( trans.app ) )
                 for review in repository.reviews:
                     changeset_revision = review.changeset_revision
-                    rev, label = suc.get_rev_label_from_changeset_revision( repo, changeset_revision )
+                    rev, label = hg_util.get_rev_label_from_changeset_revision( repo, changeset_revision )
                     rval += '<a href="manage_repository_reviews_of_revision?id=%s&changeset_revision=%s">%s</a><br/>' % \
                         ( trans.security.encode_id( repository.id ), changeset_revision, label )
                 return rval
@@ -85,9 +86,11 @@ class RepositoriesWithReviewsGrid( RepositoryGrid ):
                 rval = ''
                 for repository_metadata in repository_metadata_revisions:
                     rev, label, changeset_revision = \
-                        metadata_util.get_rev_label_changeset_revision_from_repository_metadata( trans,
-                                                                                                 repository_metadata,
-                                                                                                 repository=repository )
+                        hg_util.get_rev_label_changeset_revision_from_repository_metadata( trans,
+                                                                                           repository_metadata,
+                                                                                           repository=repository,
+                                                                                           include_date=True,
+                                                                                           include_hash=False )
                     rval += '<a href="manage_repository_reviews_of_revision?id=%s&changeset_revision=%s">%s</a><br/>' % \
                         ( trans.security.encode_id( repository.id ), changeset_revision, label )
                 return rval
@@ -308,7 +311,11 @@ class RepositoryReviewsByUserGrid( grids.Grid ):
                 rval += 'edit_review'
             else:
                 rval +='browse_review'
-            revision_label = suc.get_revision_label( trans, review.repository, review.changeset_revision, include_date=True )
+            revision_label = hg_util.get_revision_label( trans,
+                                                         review.repository,
+                                                         review.changeset_revision,
+                                                         include_date=True,
+                                                         include_hash=False )
             rval += '?id=%s">%s</a>' % ( encoded_review_id, revision_label )
             return rval
 

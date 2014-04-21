@@ -2,10 +2,7 @@
 <%namespace file="/admin/tool_shed_repository/repository_actions_menu.mako" import="*" />
 <%namespace file="/message.mako" import="render_msg" />
 
-<% 
-    import os
-    from tool_shed.util.common_util import parse_repository_dependency_tuple
-%>
+<% import os %>
 
 ${render_galaxy_repository_actions( repository )}
 

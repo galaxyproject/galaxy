@@ -194,6 +194,12 @@ class TwillTestCase( unittest.TestCase ):
             file_dir = self.file_dir
         return os.path.abspath( os.path.join( file_dir, filename ) )
 
+    def get_form_controls( self, form ):
+        formcontrols = []
+        for i, control in enumerate( form.controls ):
+            formcontrols.append( "control %d: %s" % ( i, str( control ) ) )
+        return formcontrols
+
     def save_log( *path ):
         """Saves the log to a file"""
         filename = os.path.join( *path )
@@ -270,11 +276,31 @@ class TwillTestCase( unittest.TestCase ):
         return from_json_string( self.last_page() )
 
     # Functions associated with histories
-    def get_history_from_api( self, encoded_history_id=None ):
+    def get_history_from_api( self, encoded_history_id=None, show_deleted=None, show_details=False ):
         if encoded_history_id is None:
             history = self.get_latest_history()
             encoded_history_id = history[ 'id' ]
-        return self.json_from_url( '/api/histories/%s/contents' % encoded_history_id )
+        params = dict()
+        if show_deleted is not None:
+            params[ 'deleted' ] = show_deleted
+        api_url = '/api/histories/%s/contents?%s' % ( encoded_history_id, urllib.urlencode( params ) ) 
+        json_data = self.json_from_url( api_url )
+        if show_deleted is not None:
+            hdas = []
+            for hda in json_data:
+                if show_deleted:
+                    hdas.append( hda )
+                else:
+                    if not hda[ 'deleted' ]:
+                        hdas.append( hda )
+            json_data = hdas
+        if show_details:
+            params[ 'details' ] = ','.join( [ hda[ 'id' ] for hda in json_data ] )
+            api_url = '/api/histories/%s/contents?%s' % ( encoded_history_id, urllib.urlencode( params ) )
+            json_data = self.json_from_url( api_url )
+            log.debug( 'detailed url: %s' % api_url )
+            log.debug( 'detailed json data: %s' % json_data )
+        return json_data
 
     def get_latest_history( self ):
         return self.json_from_url( '/api/histories' )[ 0 ]
@@ -325,33 +351,21 @@ class TwillTestCase( unittest.TestCase ):
             raise AssertionError( errmsg )
         self.home()
 
-    def check_history_json( self, pattern, check_fn, show_deleted=None, multiline=True ):
+    def check_history_json( self, check_fn, show_deleted=None ):
         """
         Tries to find a JSON string in the history page using the regex pattern,
         parse it, and assert check_fn returns True when called on that parsed
         data.
         """
-        self.home()
-        if show_deleted:
-            self.visit_page( "history?show_deleted=True" )
-        elif show_deleted == False:
-            self.visit_page( "history?show_deleted=False" )
-        else:
-            self.visit_page( "history" )
-        json_data = {}
         try:
-            tc.find( pattern, flags=( 'm' if multiline else '' ) )
-            # twill stores the regex match in a special stack variable
-            match = twill.namespaces.get_twill_glocals()[1][ '__match__' ]
-            json_data = from_json_string( match )
-            assert check_fn( json_data ), 'failed check_fn: %s' % ( check_fn.func_name )
-
-        except Exception, exc:
-            log.error( exc, exc_info=True )
+            json_data = self.get_history_from_api( show_deleted=show_deleted, show_details=True )
+            check_result = check_fn( json_data )
+            assert check_result, 'failed check_fn: %s (got %s)' % ( check_fn.func_name, str( check_result ) )
+        except Exception, e:
+            log.exception( e )
             log.debug( 'json_data: %s', ( '\n' + pprint.pformat( json_data ) if json_data else '(no match)' ) )
             fname = self.write_temp_file( tc.browser.get_html() )
-            errmsg = ( "json '%s' could not be found or failed check_fn" % ( pattern ) +
-                       "\npage content written to '%s'" % ( fname ) )
+            errmsg = ( "json could not be read\npage content written to '%s'" % ( fname ) )
             raise AssertionError( errmsg )
 
         self.home()
@@ -384,12 +398,6 @@ class TwillTestCase( unittest.TestCase ):
                 else:
                     return value == hda[ key ]
         return False
-
-    def clear_history( self ):
-        """Empties a history of all datasets"""
-        self.visit_page( "clear_history" )
-        self.check_history_for_string( 'Your history is empty' )
-        self.home()
 
     def delete_history( self, id ):
         """Deletes one or more histories"""
@@ -466,7 +474,8 @@ class TwillTestCase( unittest.TestCase ):
             self.visit_url( "%s/history_new?name=%s" % ( self.url, name ) )
         else:
             self.visit_url( "%s/history_new" % self.url )
-        self.check_history_for_string('Your history is empty')
+        self.check_page_for_string( 'New history created' )
+        assert self.is_history_empty(), 'Creating new history did not result in an empty history.'
         self.home()
 
     def rename_history( self, id, old_name, new_name ):
@@ -1044,17 +1053,17 @@ class TwillTestCase( unittest.TestCase ):
                                strings_displayed=[], strings_displayed_after_submit=[] ):
         # This method creates a new user with associated info
         self.visit_url( "%s/user/create?cntrller=%s&use_panels=False" % ( self.url, cntrller ) )
-        tc.fv( "1", "email", email )
-        tc.fv( "1", "password", password )
-        tc.fv( "1", "confirm", password )
-        tc.fv( "1", "username", username )
+        tc.fv( "registration", "email", email )
+        tc.fv( "registration", "password", password )
+        tc.fv( "registration", "confirm", password )
+        tc.fv( "registration", "username", username )
         if user_type_fd_id:
             # The user_type_fd_id SelectField requires a refresh_on_change
-            self.refresh_form( 'user_type_fd_id', user_type_fd_id )
-            tc.fv( "1", "password", password )
-            tc.fv( "1", "confirm", password )
+            self.refresh_form( 'user_type_fd_id', user_type_fd_id, form_id='registration' )
+            tc.fv( "registration", "password", password )
+            tc.fv( "registration", "confirm", password )
             for index, ( field_name, info_value ) in enumerate( user_info_values ):
-                tc.fv( "1", field_name, info_value )
+                tc.fv( "registration", field_name, info_value )
         for check_str in strings_displayed:
             self.check_page_for_string( check_str)
         tc.submit( "create_user_button" )
@@ -1231,10 +1240,8 @@ class TwillTestCase( unittest.TestCase ):
         # To help with debugging a tool, print out the form controls when the test fails
         print "form '%s' contains the following controls ( note the values )" % f.name
         controls = {}
-        formcontrols = []
+        formcontrols = self.get_form_controls( f )
         hc_prefix = '<HiddenControl('
-        for i, control in enumerate( f.controls ):
-            formcontrols.append( "control %d: %s" % ( i, str( control ) ) )
         for i, control in enumerate( f.controls ):
             if not hc_prefix in str( control ):
                 try:
@@ -1350,16 +1357,18 @@ class TwillTestCase( unittest.TestCase ):
                 pass
         tc.submit( button )
 
-    def refresh_form( self, control_name, value, form_no=0, **kwd ):
+    def refresh_form( self, control_name, value, form_no=0, form_id=None, form_name=None, **kwd ):
         """Handles Galaxy's refresh_on_change for forms without ultimately submitting the form"""
         # control_name is the name of the form field that requires refresh_on_change, and value is
         # the value to which that field is being set.
         for i, f in enumerate( self.showforms() ):
-            if i == form_no:
+            if i == form_no or ( form_id is not None and f.id == form_id ) or ( form_name is not None and f.name == form_name ):
                 break
+        formcontrols = self.get_form_controls( f )
         try:
             control = f.find_control( name=control_name )
         except:
+            log.debug( '\n'.join( formcontrols ) )
             # This assumes we always want the first control of the given name, which may not be ideal...
             control = f.find_control( name=control_name, nr=0 )
         # Check for refresh_on_change attribute, submit a change if required
@@ -1689,6 +1698,7 @@ class TwillTestCase( unittest.TestCase ):
                      num_fields=1, num_options=0, field_name='1_field_name', strings_displayed=[],
                      strings_displayed_after_submit=[] ):
         """Create a new form definition."""
+        strings_displayed_after_submit.extend( [ name, description, form_type ] )
         self.visit_url( "%s/forms/create_form_definition" % self.url )
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
@@ -2264,9 +2274,9 @@ class TwillTestCase( unittest.TestCase ):
         self.visit_url( url )
         if item_type == 'library':
             if contents:
-                check_str = "The data library (%s) and all it's contents have been made publicly accessible." % library_name
+                check_str = "The data library (%s) and all its contents have been made publicly accessible." % library_name
             else:
-                check_str = "The data library (%s) has been made publicly accessible, but access to it's contents has been left unchanged." % library_name
+                check_str = "The data library (%s) has been made publicly accessible, but access to its contents has been left unchanged." % library_name
         elif item_type == 'folder':
             check_str = "All of the contents of folder (%s) have been made publicly accessible." % folder_name
         elif item_type == 'ldda':
@@ -2530,13 +2540,22 @@ class TwillTestCase( unittest.TestCase ):
                 errmsg += 'Unpacked archive remains in: %s\n' % tmpd
                 raise AssertionError( errmsg )
         shutil.rmtree( tmpd )
+
     def move_library_item( self, cntrller, item_type, item_id, source_library_id, make_target_current,
-                           target_library_id='', target_folder_id='', strings_displayed=[], strings_displayed_after_submit=[] ):
+                           target_library_id=None, target_folder_id=None, strings_displayed=[], strings_displayed_after_submit=[] ):
         self.home()
-        self.visit_url( "%s/library_common/move_library_item?cntrller=%s&item_type=%s&item_id=%s&source_library_id=%s&make_target_current=%s" \
-                        % ( self.url, cntrller, item_type, item_id, source_library_id, make_target_current ) )
+        params = dict( cntrller=cntrller, 
+                       item_type=item_type, 
+                       item_id=item_id, 
+                       source_library_id=source_library_id, 
+                       make_target_current=make_target_current )
+        if target_library_id is not None:
+            params[ 'target_library_id' ] = target_library_id
+        if target_folder_id is not None:
+            params[ 'target_folder_id' ] = target_folder_id
+        self.visit_url( "%s/library_common/move_library_item?%s" % ( self.url, urllib.urlencode( params ) ) )
         if target_library_id:
-            self.refresh_form( 'target_library_id', target_library_id )
+            self.refresh_form( 'target_library_id', target_library_id, form_name='move_library_item' )
         if target_folder_id:
             tc.fv( '1', 'target_folder_id', target_folder_id )
         for check_str in strings_displayed:
@@ -2545,6 +2564,7 @@ class TwillTestCase( unittest.TestCase ):
         for check_str in strings_displayed_after_submit:
             self.check_page_for_string( check_str )
         self.home()
+
     def delete_library_item( self, cntrller, library_id, item_id, item_name, item_type='library_dataset' ):
         """Mark a library item as deleted"""
         self.home()

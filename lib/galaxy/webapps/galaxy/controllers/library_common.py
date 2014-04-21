@@ -1645,9 +1645,9 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
             contents = util.string_as_bool( params.get( 'contents', 'False' ) )
             trans.app.security_agent.make_library_public( library, contents=contents )
             if contents:
-                message = "The data library (%s) and all it's contents have been made publicly accessible." % library.name
+                message = "The data library (%s) and all its contents have been made publicly accessible." % library.name
             else:
-                message = "The data library (%s) has been made publicly accessible, but access to it's contents has been left unchanged." % library.name
+                message = "The data library (%s) has been made publicly accessible, but access to its contents has been left unchanged." % library.name
         elif item_type == 'folder':
             folder = trans.sa_session.query( trans.model.LibraryFolder ).get( trans.security.decode_id( id ) )
             self._check_access( trans, cntrller, is_admin, folder, current_user_roles, use_panels, library_id, show_deleted )
@@ -2281,13 +2281,13 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                 include = True
                 if move_folder:
                     if __is_contained_in( folder, move_folder ):
-                        # Don't allow moving a folder to one of it's sub-folders (circular issues in db)
+                        # Don't allow moving a folder to one of its sub-folders (circular issues in db)
                         include = False
                     if move_folder.id == folder.id:
                         # Don't allow moving a folder to itself
                         include = False
                     if move_folder.parent and move_folder.parent.id == folder.id:
-                        # Don't allow moving a folder to it's current parent folder
+                        # Don't allow moving a folder to its current parent folder
                         include = False
                 if include:
                     filtered_folders.append( folder )

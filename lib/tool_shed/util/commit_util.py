@@ -12,6 +12,7 @@ from galaxy.util import json
 from galaxy.util.odict import odict
 from galaxy.web import url_for
 import tool_shed.util.shed_util_common as suc
+from tool_shed.util import hg_util
 from tool_shed.util import tool_util
 from tool_shed.util import xml_util
 import tool_shed.repository_types.util as rt_util
@@ -138,8 +139,8 @@ def handle_bz2( repository, uploaded_file_name ):
 
 def handle_complex_repository_dependency_elem( trans, elem, sub_elem_index, sub_elem, sub_elem_altered, altered, unpopulate=False ):
     """
-    Populate or unpopulate the toolshed and changeset_revision attributes of a <repository> tag that defines a complex repository
-    dependency.
+    Populate or unpopulate the toolshed and changeset_revision attributes of a <repository> tag that defines
+    a complex repository dependency.
     """
     # The received sub_elem looks something like the following:
     # <repository name="package_eigen_2_0" owner="test" prior_installation_required="True" />
@@ -153,15 +154,16 @@ def handle_complex_repository_dependency_elem( trans, elem, sub_elem_index, sub_
             altered = True
     return altered, sub_elem_altered, elem, error_message
 
-def handle_directory_changes( trans, repository, full_path, filenames_in_archive, remove_repo_files_not_in_tar, new_repo_alert, commit_message,
-                              undesirable_dirs_removed, undesirable_files_removed ):
+def handle_directory_changes( trans, repository, full_path, filenames_in_archive, remove_repo_files_not_in_tar, new_repo_alert,
+                              commit_message, undesirable_dirs_removed, undesirable_files_removed ):
     repo_dir = repository.repo_path( trans.app )
-    repo = hg.repository( suc.get_configured_ui(), repo_dir )
+    repo = hg.repository( hg_util.get_configured_ui(), repo_dir )
     content_alert_str = ''
     files_to_remove = []
     filenames_in_archive = [ os.path.join( full_path, name ) for name in filenames_in_archive ]
     if remove_repo_files_not_in_tar and not repository.is_new( trans.app ):
-        # We have a repository that is not new (it contains files), so discover those files that are in the repository, but not in the uploaded archive.
+        # We have a repository that is not new (it contains files), so discover those files that are in the
+        # repository, but not in the uploaded archive.
         for root, dirs, files in os.walk( full_path ):
             if root.find( '.hg' ) < 0 and root.find( 'hgrc' ) < 0:
                 for undesirable_dir in UNDESIRABLE_DIRS:
@@ -341,7 +343,7 @@ def handle_repository_dependency_elem( trans, elem, unpopulate=False ):
         repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
         if repository:
             repo_dir = repository.repo_path( trans.app )
-            repo = hg.repository( suc.get_configured_ui(), repo_dir )
+            repo = hg.repository( hg_util.get_configured_ui(), repo_dir )
             lastest_installable_changeset_revision = suc.get_latest_downloadable_changeset_revision( trans, repository, repo )
             if lastest_installable_changeset_revision != suc.INITIAL_CHANGELOG_HASH:
                 elem.attrib[ 'changeset_revision' ] = lastest_installable_changeset_revision
@@ -413,9 +415,10 @@ def handle_tool_dependencies_definition( trans, tool_dependencies_config, unpopu
                         # <install version="1.0">
                         for actions_index, actions_elem in enumerate( package_elem ):
                             if actions_elem.tag == 'actions_group':
-                                # Inspect all entries in the <actions_group> tag set, skipping <actions> tag sets that define os and architecture
-                                # attributes.  We want to inspect only the last <actions> tag set contained within the <actions_group> tag set to
-                                # see if a complex repository dependency is defined.
+                                # Inspect all entries in the <actions_group> tag set, skipping <actions>
+                                # tag sets that define os and architecture attributes.  We want to inspect
+                                # only the last <actions> tag set contained within the <actions_group> tag
+                                # set to see if a complex repository dependency is defined.
                                 for actions_group_index, actions_group_elem in enumerate( actions_elem ):
                                     if actions_group_elem.tag == 'actions':
                                         # Skip all actions tags that include os or architecture attributes.

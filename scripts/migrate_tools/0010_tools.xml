@@ -3,29 +3,29 @@
     <repository owner="devteam" name="analyze_covariates" changeset_revision="738bc749f9a3" description="Analyze Covariates">
         <tool id="gatk_analyze_covariates" version="0.0.5" file="gatk/analyze_covariates.xml" />
     </repository>
-    <repository owner="devteam" name="basecoverage" changeset_revision="1e6a9e97fa41" description="Base Coverage of all intervals">
-        <tool id="gops_basecoverage_1" version="0.0.1" file="new_operations/basecoverage.xml" />
+    <repository owner="devteam" name="basecoverage" changeset_revision="b8a9e718caa3" description="Base Coverage of all intervals">
+        <tool id="gops_basecoverage_1" version="1.0.0" file="new_operations/basecoverage.xml" />
     </repository>
-    <repository owner="devteam" name="best_regression_subsets" changeset_revision="e769cde223a5" description="Perform Best-subsets Regression">
-        <tool id="BestSubsetsRegression1" version="0.0.1" file="regVariation/best_regression_subsets.xml" />
+    <repository owner="devteam" name="best_regression_subsets" changeset_revision="4f33ec73e445" description="Perform Best-subsets Regression">
+        <tool id="BestSubsetsRegression1" version="1.0.0" file="regVariation/best_regression_subsets.xml" />
     </repository>
-    <repository owner="devteam" name="cluster" changeset_revision="d5677eecbad4" description="Cluster">
-        <tool id="gops_cluster_1" version="0.0.1" file="new_operations/cluster.xml" />
+    <repository owner="devteam" name="cluster" changeset_revision="520de69b107a" description="Cluster">
+        <tool id="gops_cluster_1" version="1.0.0" file="new_operations/cluster.xml" />
     </repository>
-    <repository owner="devteam" name="complement" changeset_revision="d958d5a0d1e8" description="Complement intervals of a dataset">
-        <tool id="gops_complement_1" version="0.0.1" file="new_operations/complement.xml" />
+    <repository owner="devteam" name="complement" changeset_revision="2221cf5f59aa" description="Complement intervals of a dataset">
+        <tool id="gops_complement_1" version="1.0.0" file="new_operations/complement.xml" />
     </repository>
     <repository owner="devteam" name="compute_q_values" changeset_revision="63abfc350814" description="Compute q-values based on multiple simultaneous tests p-values">
         <tool id="compute_q_values" version="1.0.1" file="regVariation/compute_q_values.xml" />
     </repository>
-    <repository owner="devteam" name="concat" changeset_revision="8aa939ace6ba" description="Concatenate two datasets into one dataset">
+    <repository owner="devteam" name="concat" changeset_revision="855580142a12" description="Concatenate two datasets into one dataset">
         <tool id="gops_concat_1" version="1.0.1" file="new_operations/concat.xml" />
     </repository>
     <repository owner="devteam" name="count_covariates" changeset_revision="14e304b70425" description="Count Covariates on BAM files">
         <tool id="gatk_count_covariates" version="0.0.5" file="gatk/count_covariates.xml" />
     </repository>
-    <repository owner="devteam" name="coverage" changeset_revision="1e864693a1c0" description="Coverage of a set of intervals on second set of intervals">
-        <tool id="gops_coverage_1" version="0.0.1" file="new_operations/coverage.xml" />
+    <repository owner="devteam" name="coverage" changeset_revision="16b62a897aac" description="Coverage of a set of intervals on second set of intervals">
+        <tool id="gops_coverage_1" version="1.0.0" file="new_operations/coverage.xml" />
     </repository>
     <repository owner="devteam" name="depth_of_coverage" changeset_revision="c3f08370fc82" description="Depth of Coverage on BAM files">
         <tool id="gatk_depth_of_coverage" version="0.0.2" file="gatk/depth_of_coverage.xml" />
@@ -36,23 +36,23 @@
     <repository owner="devteam" name="flanking_features" changeset_revision="90100b587723" description="Fetch closest non-overlapping feature for every interval">
         <tool id="flanking_features_1" version="4.0.1" file="new_operations/flanking_features.xml" />
     </repository>
-    <repository owner="devteam" name="get_flanks" changeset_revision="a72f0decd7b3" description="Get flanks - returns flanking region/s for every gene">
-        <tool id="get_flanks1" version="0.0.1" file="new_operations/get_flanks.xml" />
+    <repository owner="devteam" name="get_flanks" changeset_revision="4b14d0e3a837" description="Get flanks - returns flanking region/s for every gene">
+        <tool id="get_flanks1" version="1.0.0" file="new_operations/get_flanks.xml" />
     </repository>
     <repository owner="devteam" name="getindelrates_3way" changeset_revision="d427e5acb9ee" description="Estimate Indel Rates for 3-way alignments">
         <tool id="indelRates_3way" version="1.0.0" file="regVariation/getIndelRates_3way.xml" />
     </repository>
-    <repository owner="devteam" name="getindels_2way" changeset_revision="91655316fcf0" description="Fetch Indels from pairwise alignments">
-        <tool id="getIndels_2way" version="0.0.1" file="regVariation/getIndels_2way.xml" />
+    <repository owner="devteam" name="getindels_2way" changeset_revision="f1dc6f5fce6e" description="Fetch Indels from pairwise alignments">
+        <tool id="getIndels_2way" version="1.0.0" file="regVariation/getIndels_2way.xml" />
     </repository>
     <repository owner="devteam" name="indel_realigner" changeset_revision="bb0beda6cf83" description="Indel Realigner - perform local realignment">
         <tool id="gatk_indel_realigner" version="0.0.6" file="gatk/indel_realigner.xml" />
     </repository>
-    <repository owner="devteam" name="intersect" changeset_revision="5b3c6135a982" description="Intersect the intervals of two datasets">
-        <tool id="gops_intersect_1" version="0.0.1" file="new_operations/intersect.xml" />
+    <repository owner="devteam" name="intersect" changeset_revision="77641d5731c8" description="Intersect the intervals of two datasets">
+        <tool id="gops_intersect_1" version="1.0.0" file="new_operations/intersect.xml" />
     </repository>
-    <repository owner="devteam" name="join" changeset_revision="e56b47dce68a" description="Join the intervals of two datasets side-by-side">
-        <tool id="gops_join_1" version="0.0.1" file="new_operations/join.xml" />
+    <repository owner="devteam" name="join" changeset_revision="de21bdbb8d28" description="Join the intervals of two datasets side-by-side">
+        <tool id="gops_join_1" version="1.0.0" file="new_operations/join.xml" />
     </repository>
     <repository owner="devteam" name="linear_regression" changeset_revision="cf431604ec3e" description="Perform Linear Regression">
         <tool id="LinearRegression1" version="1.0.1" file="regVariation/linear_regression.xml" />
@@ -63,11 +63,11 @@
     <repository owner="devteam" name="maf_cpg_filter" changeset_revision="7f2a12cb047d" description="Mask CpG/non-CpG sites from MAF file">
         <tool id="cpgFilter" version="1.0.0" file="regVariation/maf_cpg_filter.xml" />
     </repository>
-    <repository owner="devteam" name="merge" changeset_revision="b488a1fa07f6" description="Merge the overlapping intervals of a dataset">
-        <tool id="gops_merge_1" version="0.0.1" file="new_operations/merge.xml" />
+    <repository owner="devteam" name="merge" changeset_revision="1bc76ceffa7f" description="Merge the overlapping intervals of a dataset">
+        <tool id="gops_merge_1" version="1.0.0" file="new_operations/merge.xml" />
     </repository>
-    <repository owner="devteam" name="microsats_alignment_level" changeset_revision="d4368a5a3fc7" description="Extract Orthologous Microsatellites from pair-wise alignments">
-        <tool id="microsats_align1" version="0.0.1" file="regVariation/microsats_alignment_level.xml" />
+    <repository owner="devteam" name="microsats_alignment_level" changeset_revision="7852385470f3" description="Extract Orthologous Microsatellites from pair-wise alignments">
+        <tool id="microsats_align1" version="1.0.0" file="regVariation/microsats_alignment_level.xml" />
     </repository>
     <repository owner="devteam" name="microsats_mutability" changeset_revision="4aa1ee5d8510" description="Estimate microsatellite mutability by specified attributes">
         <tool id="microsats_mutability1" version="1.1.0" file="regVariation/microsats_mutability.xml" />
@@ -84,7 +84,7 @@
     <repository owner="devteam" name="rcve" changeset_revision="7740956d197b" description="Compute RCVE">
         <tool id="rcve1" version="1.0.0" file="regVariation/rcve.xml" />
     </repository>
-    <repository owner="devteam" name="realigner_target_creator" changeset_revision="b83a853a3156" description="Realigner Target Creator for use in local realignment">
+    <repository owner="devteam" name="realigner_target_creator" changeset_revision="5b8eaae854da" description="Realigner Target Creator for use in local realignment">
         <tool id="gatk_realigner_target_creator" version="0.0.4" file="gatk/realigner_target_creator.xml" />
     </repository>
     <repository owner="devteam" name="substitution_rates" changeset_revision="d1b35bcdaacc" description="Estimate substitution rates for non-coding regions">
@@ -93,13 +93,13 @@
     <repository owner="devteam" name="substitutions" changeset_revision="c54f5d0bbb58" description="Fetch substitutions from pairwise alignments">
         <tool id="substitutions1" version="1.0.0" file="regVariation/substitutions.xml" />
     </repository>
-    <repository owner="devteam" name="subtract" changeset_revision="5bc2dacbe729" description="Subtract the intervals of two datasets">
-        <tool id="gops_subtract_1" version="0.0.1" file="new_operations/subtract.xml" />
+    <repository owner="devteam" name="subtract" changeset_revision="c19a2a29c561" description="Subtract the intervals of two datasets">
+        <tool id="gops_subtract_1" version="1.0.0" file="new_operations/subtract.xml" />
     </repository>
     <repository owner="devteam" name="subtract_query" changeset_revision="5f6ebef89722" description="Subtract Whole Dataset from another dataset">
         <tool id="subtract_query1" version="0.1" file="new_operations/subtract_query.xml" />
     </repository>
-    <repository owner="devteam" name="table_recalibration" changeset_revision="53dd1bfced54" description="Table Recalibration on BAM files">
+    <repository owner="devteam" name="table_recalibration" changeset_revision="30e1dd77e99c" description="Table Recalibration on BAM files">
         <tool id="gatk_table_recalibration" version="0.0.5" file="gatk/table_recalibration.xml" />
     </repository>
     <repository owner="devteam" name="tables_arithmetic_operations" changeset_revision="82fa5062d611" description="Arithmetic Operations on tables">
@@ -135,7 +135,7 @@
     <repository owner="devteam" name="weightedaverage" changeset_revision="90611e86a998" description="Assign weighted-average of the values of features overlapping an interval">
         <tool id="wtavg" version="1.0.0" file="regVariation/WeightedAverage.xml" />
     </repository>
-    <repository owner="devteam" name="windowsplitter" changeset_revision="e5490ea33640" description="Make windows">
-        <tool id="winSplitter" version="0.0.1" file="regVariation/windowSplitter.xml" />
+    <repository owner="devteam" name="windowsplitter" changeset_revision="75abda2290cc" description="Make windows">
+        <tool id="winSplitter" version="1.0.0" file="regVariation/windowSplitter.xml" />
     </repository>
 </toolshed>

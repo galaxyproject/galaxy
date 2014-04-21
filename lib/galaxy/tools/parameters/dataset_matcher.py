@@ -68,7 +68,7 @@ class DatasetMatcher( object ):
         accessible = self.hda_accessible( hda )
         if accessible and ( hda.visible or ( self.selected( hda ) and not hda.implicitly_converted_parent_datasets ) ):
             # If we are sending data to an external application, then we need to make sure there are no roles
-            # associated with the dataset that restrict it's access from "public".
+            # associated with the dataset that restrict its access from "public".
             require_public = self.tool and self.tool.tool_type == 'data_destination'
             if require_public and not self.trans.app.security_agent.dataset_is_public( hda.dataset ):
                 return False

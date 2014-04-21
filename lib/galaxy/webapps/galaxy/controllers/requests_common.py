@@ -888,7 +888,7 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
                 field_values = {}
                 if copy_sample_index != -1:
                     # The user has selected a sample to copy.
-                    library_id = displayable_sample_widgets[ copy_sample_index][ 'library_select_field' ].get_selected( return_value=True )
+                    library_id = displayable_sample_widgets[ copy_sample_index ][ 'library_select_field' ].get_selected( return_value=True )
                     folder_id = displayable_sample_widgets[ copy_sample_index ][ 'folder_select_field' ].get_selected( return_value=True )
                     name = displayable_sample_widgets[ copy_sample_index ][ 'name' ] + '_%i' % ( len( displayable_sample_widgets ) + 1 )
                     history_id = displayable_sample_widgets[ copy_sample_index ][ 'history_select_field' ].get_selected( return_value=True )
@@ -1347,7 +1347,7 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
                         if not sample.bar_code:
                             # If the sample's associated SampleState is still the initial state
                             # configured by the admin for the request's RequestType, this must be
-                            # the first time a bar code was added to the sample, so change it's state
+                            # the first time a bar code was added to the sample, so change its state
                             # to the next associated SampleState.
                             if sample.state.id == request.type.states[0].id:
                                 # Change the sample state only if its request_type
@@ -1659,7 +1659,7 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
         return build_select_field( trans, active_users, 'email', 'user_id', selected_value=selected_value, refresh_on_change=True )
     def __build_sample_operation_select_field( self, trans, is_admin, request, selected_value ):
         # The sample_operation SelectField is displayed only after the request has been submitted.
-        # It's label is "For selected samples"
+        # its label is "For selected samples"
         if is_admin:
             if request.is_complete:
                 bulk_operations = [ trans.model.Sample.bulk_operations.CHANGE_STATE ]

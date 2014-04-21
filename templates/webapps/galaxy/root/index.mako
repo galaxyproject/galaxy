@@ -1,7 +1,6 @@
 <%inherit file="/webapps/galaxy/base_panels.mako"/>
 
 <%namespace file="/root/tool_menu.mako" import="*" />
-<%namespace file="/history/history_panel.mako" import="current_history_panel" />
 
 <%def name="stylesheets()">
     ${parent.stylesheets()}
@@ -181,6 +180,7 @@
 </%def>
 
 <%def name="right_panel()">
+    <!-- current history panel -->
     <div class="unified-panel-header" unselectable="on">
         <div class="unified-panel-header-inner">
             <div style="float: right">
@@ -198,7 +198,22 @@
     <div class="unified-panel-body">
         <div id="current-history-panel" class="history-panel"></div>
         ## Don't bootstrap data here - confuses the browser history: load via API
-        ${current_history_panel( selector_to_attach_to='#current-history-panel' )}
+        <script type="text/javascript">
+        require([ "mvc/history/current-history-panel" ], function( historyPanel ){
+            $(function(){
+                var currPanel = new historyPanel.CurrentHistoryPanel({
+                    el              : $( "#current-history-panel" ),
+                    linkTarget      : 'galaxy_main',
+                    onready         : function loadAsCurrentHistoryPanel(){
+                        this.connectToQuotaMeter( Galaxy.quotaMeter )
+                            .connectToOptionsMenu( Galaxy.historyOptionsMenu );
+                        this.loadCurrentHistory();
+                    }
+                });
+                Galaxy.currHistoryPanel = currPanel;
+            });
+        });
+        </script>
         <script type="text/javascript">
             $(function(){
                 $( '#history-refresh-button' ).on( 'click', function(){

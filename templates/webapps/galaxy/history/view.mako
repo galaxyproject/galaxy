@@ -1,4 +1,3 @@
-<%namespace file="/history/history_panel.mako" import="history_panel_javascripts" />
 <%namespace file="/galaxy.masthead.mako" import="get_user_json" />
 
 ## ----------------------------------------------------------------------------
@@ -70,7 +69,6 @@ a.btn {
 ## ----------------------------------------------------------------------------
 <%def name="javascripts()">
 ${parent.javascripts()}
-${history_panel_javascripts()}
 
 %if not use_panels:
 <script type="text/javascript">
@@ -107,7 +105,9 @@ window.Galaxy = {};
 <div id="history-${ history[ 'id' ] }" class="history-panel unified-panel-body" style="overflow: auto;"></div>
 
 <script type="text/javascript">
-    $(function(){
+
+    function setUpBehaviors(){
+
         $( '#toggle-deleted' ).modeButton({
             initialMode : "${ 'showing_deleted' if show_deleted else 'not_showing_deleted' }",
             modes: [
@@ -118,7 +118,7 @@ window.Galaxy = {};
             // allow the 'include/exclude deleted' button to control whether the 'import' button includes deleted
             //  datasets when importing or not; when deleted datasets are shown, they'll be imported
             $( '#import' ).modeButton( 'setMode',
-                $( this ).modeButton( 'current' ) === 'showing_deleted'? 'with_deleted': 'without_deleted' )
+                $( this ).modeButton( 'current' ) === 'showing_deleted'? 'with_deleted': 'without_deleted' );
         });
 
         $( '#toggle-hidden' ).modeButton({
@@ -142,13 +142,12 @@ window.Galaxy = {};
                     onclick: function importWithoutDeleted(){
                         window.location = '${imp_without_deleted_url}';
                     }
-                },
+                }
             ]
         });
-    });
+    }
 
-    var debugging    = JSON.parse( sessionStorage.getItem( 'debugging' ) ) || false,
-        userIsOwner  = ${'true' if user_is_owner else 'false'},
+    var userIsOwner  = ${'true' if user_is_owner else 'false'},
         historyJSON  = ${h.to_json_string( history )},
         hdaJSON      = ${h.to_json_string( hdas )};
         panelToUse   = ( userIsOwner )?
@@ -157,8 +156,10 @@ window.Galaxy = {};
 
     require.config({
         baseUrl : "${h.url_for( '/static/scripts' )}"
-    })([ 'mvc/user/user-model', panelToUse.location ], function( user, panelMod ){
+    })([ 'mvc/user/user-model', panelToUse.location, 'utils/localization' ], function( user, panelMod, _l ){
         $(function(){
+            window._l = _l;
+            setUpBehaviors();
             if( !Galaxy.currUser ){
                 Galaxy.currUser = new user.User( ${h.to_json_string( get_user_json() )} );
             }
@@ -167,9 +168,7 @@ window.Galaxy = {};
                 // history module is already in the dpn chain from the panel. We can re-scope it here.
                 historyModel = require( 'mvc/history/history-model' ),
                 hdaBaseView  = require( 'mvc/dataset/hda-base' ),
-                history = new historyModel.History( historyJSON, hdaJSON, {
-                    logger: ( debugging )?( console ):( null )
-                });
+                history = new historyModel.History( historyJSON, hdaJSON );
 
             window.historyPanel = new panelClass({
                 show_deleted    : ${show_deleted_json},

@@ -2441,7 +2441,7 @@ WYMeditor.XhtmlValidator = {
 /**
 *    Compounded regular expression. Any of
 *    the contained patterns could match and
-*    when one does, it's label is returned.
+*    when one does, its label is returned.
 *
 *    Constructor. Starts with no patterns.
 *    @param boolean case    True for case sensitive, false

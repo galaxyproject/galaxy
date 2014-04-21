@@ -8,6 +8,7 @@ from galaxy import util
 from galaxy.datatypes import checkers
 from tool_shed.util import commit_util
 from tool_shed.util import encoding_util
+from tool_shed.util import hg_util
 from tool_shed.util import metadata_util
 from tool_shed.util import xml_util
 import tool_shed.util.shed_util_common as suc
@@ -106,7 +107,7 @@ def get_archives_from_manifest( manifest_file_path ):
     return archives, error_message
 
 def get_export_info_dict( export_info_file_path ):
-    """Parse the export_info.xml file contained within the capsule and return a dictionary containing it's entries."""
+    """Parse the export_info.xml file contained within the capsule and return a dictionary containing its entries."""
     export_info_tree, error_message = xml_util.parse_xml( export_info_file_path )
     export_info_root = export_info_tree.getroot()
     export_info_dict = {}
@@ -212,7 +213,7 @@ def import_repository_archive( trans, repository, repository_archive_dict ):
     archive_file_path = os.path.join( file_path, archive_file_name )
     archive = tarfile.open( archive_file_path, 'r:*' )
     repo_dir = repository.repo_path( trans.app )
-    repo = hg.repository( suc.get_configured_ui(), repo_dir )
+    repo = hg.repository( hg_util.get_configured_ui(), repo_dir )
     undesirable_dirs_removed = 0
     undesirable_files_removed = 0
     ok, error_message = commit_util.check_archive( repository, archive )
@@ -343,7 +344,6 @@ def upload_capsule( trans, **kwd ):
             return_dict[ 'error_message' ] = error_message
             return_dict[ 'status' ] = 'error'
             uploaded_file.close()
-            tar_archive.close()
             return return_dict
         return_dict[ 'tar_archive' ] = tar_archive
         return_dict[ 'capsule_file_name' ] = uploaded_file_filename
@@ -355,7 +355,7 @@ def upload_capsule( trans, **kwd ):
     return return_dict
 
 def validate_capsule( trans, **kwd ):
-    """Inspect the uploaded capsule's manifest and it's contained files to ensure it is a valid repository capsule."""
+    """Inspect the uploaded capsule's manifest and its contained files to ensure it is a valid repository capsule."""
     capsule_dict = {}
     capsule_dict.update( kwd )
     encoded_file_path = capsule_dict.get( 'encoded_file_path', '' )

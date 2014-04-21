@@ -378,3 +378,10 @@
         </div>
     </div>
 %endif
+%if tool.tool_shed_repository:
+    <% tool_url = tool.tool_shed_repository.get_sharable_url( tool.app ) %>
+    %if tool_url:
+        <br/>
+        ${ render_msg( 'This tool was installed from a ToolShed, you may be able to find additional information by following this link: <a href="%s" target="_blank">%s</a>' % ( tool_url, tool_url ), 'info' ) }
+    %endif
+%endif

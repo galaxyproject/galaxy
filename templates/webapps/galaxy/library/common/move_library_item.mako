@@ -67,7 +67,7 @@
         <div class="toolFormBody">
             %if target_library:
                 <div class="form-row">
-                    %if len( target_folder_id_select_field.options ) > 1:
+                    %if len( target_folder_id_select_field.options ) >= 1:
                         ${target_folder_id_select_field.get_html()}
                     %else:
                         %if source_library and source_library.id == target_library.id:

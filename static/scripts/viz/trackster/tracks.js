@@ -1661,7 +1661,7 @@ var TracksterTool = tools_mod.Tool.extend({
  var ToolParameterView = Backbone.View.extend({
 
     events: {
-        'change input': 'update_value'
+        'change :input': 'update_value'
     },
 
     render: function() {
@@ -2243,7 +2243,7 @@ extend(Track.prototype, Drawable.prototype, {
             on_click_fn: function(track) {
                 var template =
                     '<strong>Tool</strong>: <%= track.tool.get("name") %><br/>' +
-                    '<strong>Dataset</strong>: <%= track.config.get("name") %><br/>' +
+                    '<strong>Dataset</strong>: <%= track.config.get_value("name") %><br/>' +
                     '<strong>Region(s)</strong>: <select name="regions">' +
                     '<option value="cur">current viewing area</option>' +
                     '<option value="bookmarks">bookmarks</option>' +
@@ -3797,26 +3797,30 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         TiledTrack.prototype.postdraw_actions.call(this, tiles, width, w_scale, clear_after);
         
         var track = this,
-            i;
+            i,
+            line_track_tiles = _.filter(tiles, function(t) {
+                return (t instanceof LineTrackTile);
+            });
 
         //
         // Draw incomplete features across tiles.
         //
-
-        // Gather incomplete features together.
-        var all_incomplete_features = {};
-        _.each(_.pluck(tiles, 'incomplete_features'), function(inc_features) {
-            _.each(inc_features, function(feature) {
-                all_incomplete_features[feature[0]] = feature;
+        if (line_track_tiles.length === 0) {
+            // Gather incomplete features together.
+            var all_incomplete_features = {};
+            _.each(_.pluck(tiles, 'incomplete_features'), function(inc_features) {
+                _.each(inc_features, function(feature) {
+                    all_incomplete_features[feature[0]] = feature;
+                });
             });
-        });
 
-        // Draw features on each tile.
-        var self = this;
-        _.each(tiles, function(tile) {
-            self.draw_tile({ 'data': _.values(all_incomplete_features) }, tile.canvas.getContext('2d'), 
-                           tile.mode, tile.region, w_scale, tile.seq_data, true);
-        });
+            // Draw features on each tile.
+            var self = this;
+            _.each(tiles, function(tile) {
+                self.draw_tile({ 'data': _.values(all_incomplete_features) }, tile.canvas.getContext('2d'), 
+                               tile.mode, tile.region, w_scale, tile.seq_data, true);
+            });
+        }
                 
         // If mode is Coverage and tiles do not share max, redraw tiles as necessary using new max.
         /*
@@ -3993,6 +3997,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
      * @param region region to draw on tile
      * @param w_scale pixels per base
      * @param ref_seq reference sequence data
+     * @param cur_tile true if drawing is occurring on a currently visible tile.
      */
     draw_tile: function(result, ctx, mode, region, w_scale, ref_seq, cur_tile) {
         var track = this,
