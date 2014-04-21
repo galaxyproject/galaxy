@@ -194,6 +194,12 @@ class TwillTestCase( unittest.TestCase ):
             file_dir = self.file_dir
         return os.path.abspath( os.path.join( file_dir, filename ) )
 
+    def get_form_controls( self, form ):
+        formcontrols = []
+        for i, control in enumerate( form.controls ):
+            formcontrols.append( "control %d: %s" % ( i, str( control ) ) )
+        return formcontrols
+
     def save_log( *path ):
         """Saves the log to a file"""
         filename = os.path.join( *path )
@@ -1234,10 +1240,8 @@ class TwillTestCase( unittest.TestCase ):
         # To help with debugging a tool, print out the form controls when the test fails
         print "form '%s' contains the following controls ( note the values )" % f.name
         controls = {}
-        formcontrols = []
+        formcontrols = self.get_form_controls( f )
         hc_prefix = '<HiddenControl('
-        for i, control in enumerate( f.controls ):
-            formcontrols.append( "control %d: %s" % ( i, str( control ) ) )
         for i, control in enumerate( f.controls ):
             if not hc_prefix in str( control ):
                 try:
@@ -1353,16 +1357,18 @@ class TwillTestCase( unittest.TestCase ):
                 pass
         tc.submit( button )
 
-    def refresh_form( self, control_name, value, form_no=0, form_id=None, **kwd ):
+    def refresh_form( self, control_name, value, form_no=0, form_id=None, form_name=None, **kwd ):
         """Handles Galaxy's refresh_on_change for forms without ultimately submitting the form"""
         # control_name is the name of the form field that requires refresh_on_change, and value is
         # the value to which that field is being set.
         for i, f in enumerate( self.showforms() ):
-            if i == form_no or ( form_id is not None and f.id == form_id ):
+            if i == form_no or ( form_id is not None and f.id == form_id ) or ( form_name is not None and f.name == form_name ):
                 break
+        formcontrols = self.get_form_controls( f )
         try:
             control = f.find_control( name=control_name )
         except:
+            log.debug( '\n'.join( formcontrols ) )
             # This assumes we always want the first control of the given name, which may not be ideal...
             control = f.find_control( name=control_name, nr=0 )
         # Check for refresh_on_change attribute, submit a change if required
@@ -2534,13 +2540,22 @@ class TwillTestCase( unittest.TestCase ):
                 errmsg += 'Unpacked archive remains in: %s\n' % tmpd
                 raise AssertionError( errmsg )
         shutil.rmtree( tmpd )
+
     def move_library_item( self, cntrller, item_type, item_id, source_library_id, make_target_current,
-                           target_library_id='', target_folder_id='', strings_displayed=[], strings_displayed_after_submit=[] ):
+                           target_library_id=None, target_folder_id=None, strings_displayed=[], strings_displayed_after_submit=[] ):
         self.home()
-        self.visit_url( "%s/library_common/move_library_item?cntrller=%s&item_type=%s&item_id=%s&source_library_id=%s&make_target_current=%s" \
-                        % ( self.url, cntrller, item_type, item_id, source_library_id, make_target_current ) )
+        params = dict( cntrller=cntrller, 
+                       item_type=item_type, 
+                       item_id=item_id, 
+                       source_library_id=source_library_id, 
+                       make_target_current=make_target_current )
+        if target_library_id is not None:
+            params[ 'target_library_id' ] = target_library_id
+        if target_folder_id is not None:
+            params[ 'target_folder_id' ] = target_folder_id
+        self.visit_url( "%s/library_common/move_library_item?%s" % ( self.url, urllib.urlencode( params ) ) )
         if target_library_id:
-            self.refresh_form( 'target_library_id', target_library_id )
+            self.refresh_form( 'target_library_id', target_library_id, form_name='move_library_item' )
         if target_folder_id:
             tc.fv( '1', 'target_folder_id', target_folder_id )
         for check_str in strings_displayed:
@@ -2549,6 +2564,7 @@ class TwillTestCase( unittest.TestCase ):
         for check_str in strings_displayed_after_submit:
             self.check_page_for_string( check_str )
         self.home()
+
     def delete_library_item( self, cntrller, library_id, item_id, item_name, item_type='library_dataset' ):
         """Mark a library item as deleted"""
         self.home()
