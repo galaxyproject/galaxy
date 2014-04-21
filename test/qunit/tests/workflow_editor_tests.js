@@ -16,20 +16,25 @@ define([
     window.workflow = null;
     window.canvas_manager = null;
 
-    // Stub used over stubbing issubtype for unit testing datatype comparisons.
-    var issubtypeStub = null;
 
     QUnit.moduleStart(function() {
-        if( issubtypeStub === null) {
-            issubtypeStub = sinon.stub( window, "issubtype" );
-        }
-    });
-    QUnit.moduleDone(function() {
-        if( issubtypeStub !== null) {
-            issubtypeStub.restore();
-            issubtypeStub = null;
-        }
-    });
+        window.populate_datatype_info({
+            ext_to_class_name: {
+                'txt': 'Text',
+                'data': 'Data',
+                'tabular': 'Tabular',
+                'binary': 'Binary',
+                'bam': 'Bam'
+            },
+            class_to_classes: {
+                'Data': { 'Data': true },
+                'Text': { 'Text': true, 'Data': true },
+                'Tabular': { 'Tabular': true, 'Text': true, 'Data': true },
+                'Binary': { 'Data': true, 'Binary': true },
+                'Bam': { 'Data': true, 'Binary': true, 'Bam': true }
+            }
+        } );
+    } );
 
     var with_canvas_container = function( f ) {
         var canvas_container = $("<div id='canvas-container'>");
@@ -77,6 +82,11 @@ define([
         test_accept: function( other ) {
             other = other || { node: {}, datatypes: [ "txt" ] };
             return this.input_terminal.canAccept( other );
+        },
+        pja_change_datatype_node: function( output_name, newtype ) {
+            var pja = { action_type: "ChangeDatatypeAction", output_name: output_name, action_arguments: { newtype: newtype } };
+            var otherNode = { post_job_actions: [ pja ] };
+            return otherNode;
         }
     } );
 
@@ -119,18 +129,46 @@ define([
         ok( connector.destroy.called );
     } );
 
-    test( "can accept correct datatype", function() {
-        issubtypeStub.returns(true);
+    test( "can accept exact datatype", function() {
+        var other = { node: {}, datatypes: [ "txt" ] }; // input also txt
+
         ok( this.test_accept() ) ;
     } );
 
-    test( "cannot accept incorrect datatypes", function() {
-        issubtypeStub.returns(false);
-        ok( ! this.test_accept() );
+    test( "can accept subclass datatype", function() {
+        var other = { node: {}, datatypes: [ "tabular" ] }; // tabular subclass of input txt
+
+        ok( this.test_accept() ) ;
+    } );
+
+    test( "cannot accept incorrect datatype", function() {
+        var other = { node: {}, datatypes: [ "binary" ] }; // binary is not txt
+
+        ok( ! this.test_accept( other ) );
+    } );
+
+    test( "can accept incorrect datatype if converted with PJA", function() {
+        var otherNode = this.pja_change_datatype_node( "out1", "txt" );
+        var other = { node: otherNode, datatypes: [ "binary" ], name: "out1" }; // Was binary but converted to txt
+
+        ok( this.test_accept( other ) );
+    } );
+
+    test( "cannot accept incorrect datatype if converted with PJA to incompatible type", function() {
+        var otherNode = this.pja_change_datatype_node( "out1", "bam" ); // bam's are not txt
+        var other = { node: otherNode, datatypes: [ "binary" ], name: "out1" }; 
+
+        ok( ! this.test_accept( other ) );
+    } );
+
+    test( "cannot accept incorrect datatype if some other output converted with PJA to compatible type", function() {
+        var otherNode = this.pja_change_datatype_node( "out2", "txt" );
+        var other = { node: otherNode, datatypes: [ "binary" ], name: "out1" };
+
+        ok( ! this.test_accept( other ) );
     } );
 
     test( "can accept inputs", function() {
-        issubtypeStub.returns(false);
         // Other is data input module - always accept (currently - could be
         // more intelligent by looking at what else input is connected to.
         var other = { node: {}, datatypes: [ "input" ] };
@@ -138,7 +176,6 @@ define([
     } );
 
     test( "cannot accept when already connected", function() {
-        issubtypeStub.returns(true);
         var self = this;
         // If other is subtype but already connected, cannot accept
         this.with_test_connector( {}, function() {
@@ -379,12 +416,22 @@ define([
     /* global NodeView */
     module( "Node view ", {
        setup: function() {
-            this.set_for_node( {} );
+            this.set_for_node( { input_terminals: {}, output_terminals: {}, markChanged: function() {} } );
         },
         set_for_node: function( node ) {
-            var element = $("<div>");
+            var element = $("<div><div class='toolFormBody'></div></div>");
             this.view = new NodeView( { node: node, el: element[ 0 ] } );
         },
+        connectAttachedTerminal: function( inputType, outputType ) {
+            this.view.addDataInput( { name: "TestName", extensions: [ inputType ] } );
+            var terminal = this.view.node.input_terminals[ "TestName" ];
+
+            var outputTerminal = new OutputTerminal( { name: "TestOuptut", datatypes: [ outputType ] } );
+            outputTerminal.node = { markChanged: function() {}, post_job_actions: [] };
+            var c = new Connector( outputTerminal, terminal );
+
+            return c;
+        }
     } );
 
     test( "tool error styling", function() {
@@ -411,6 +458,14 @@ define([
         this.view.render();
         equal( this.view.$el.width(), 250 );
 
+    } );
+
+    test( "replacing terminal on data input update preserves connections", function() {
+        var connector = this.connectAttachedTerminal( "txt", "txt" );
+        var newElement = $("<div class='inputs'></div>");
+        this.view.replaceDataInput( { name: "TestName", extensions: ["txt"] }, newElement );
+        var terminal = newElement.find(".input-terminal")[ 0 ].terminal;
+        ok( connector.handle2 === terminal );
     } );
 
     /* global InputTerminalView */
