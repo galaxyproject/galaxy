@@ -41,6 +41,7 @@
             'enable_cloud_launch'       : app.config.get_bool('enable_cloud_launch', False),
             'lims_doc_url'              : app.config.get("lims_doc_url", "http://main.g2.bx.psu.edu/u/rkchak/p/sts"),
             'biostar_url'               : app.config.biostar_url,
+            'biostar_url_redirect'      : h.url_for( controller='biostar', action='biostar_redirect', qualified=True ),
             'support_url'               : app.config.get("support_url", "http://wiki.galaxyproject.org/Support"),
             'search_url'                : app.config.get("search_url", "http://galaxyproject.org/search/usegalaxy/"),
             'mailing_lists'             : app.config.get("mailing_lists", "http://wiki.galaxyproject.org/MailingLists"),
