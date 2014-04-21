@@ -69,7 +69,7 @@ class WorkflowInvoker( object ):
         # Web controller will populate stateful modules on each step before calling invoke
         # but not API controller. More work should be done to further harmonize these methods
         # going forward if possible - if possible moving more web controller logic here.
-        modules_populated = not self.workflow.steps or hasattr( self.workflow.steps[ 0 ], "module" )
+        modules_populated = not self.workflow.steps or hasattr( self.workflow.steps[ 0 ], "state" )
         if not modules_populated:
             self._populate_modules( )
 
