@@ -3,8 +3,10 @@ define([
 /*global window, jQuery, console */
 /*=============================================================================
 TODO:
-    broken pipe due to onunload post in webkit, safari
-        need to use persistence
+    while anon: logs saved to 'logs-null' - this will never post
+        unless we manually do so at/after login
+        OR prepend when userId and localStorage has 'logs-null'
+    wire up _delayPost and test
 
 =============================================================================*/
 /** @class MetricsLogger
@@ -31,8 +33,7 @@ function MetricsLogger( options ){
     options = options || {};
     var self = this;
 
-    //TODO: this might be used if we store the logs in browser storage
-    ///**  */
+    ///** get the current user's id from bootstrapped data or options */
     self.userId = window.bootstrapped? window.bootstrapped.user.id: null;
     self.userId = self.userId || options.userId || null;
 
@@ -73,9 +74,13 @@ MetricsLogger.defaultOptions = {
     postSize            : 1000,
     /** T/F whether to add a timestamp to incoming cached messages */
     addTime             : true,
+    /** string to prefix to userid for cache web storage */
+    cacheKeyPrefix      : 'logs-',
 
     /** the relative url to post messages to */
     postUrl             : '/api/metrics',
+    /** delay before trying post again after two failures */
+    delayPostInMs       : 1000 * 60 * 10,
 
     /** an (optional) function that should return an object; used to send additional data with the metrics */
     getPingData         : undefined,
@@ -97,8 +102,13 @@ MetricsLogger.prototype._init = function _init( options ){
     self.options.consoleLevel = self._parseLevel( self.options.consoleLevel );
     //self._emitToConsole( 'debug', 'MetricsLogger', 'MetricsLogger.options:', self.options );
 
+    /** is the logger currently sending? */
     self._sending = false;
+    /** the setTimeout id if the logger POST has failed more than once */
+    self._waiting = null;
+    /** the current number of entries to send in a POST */
     self._postSize = self.options.postSize;
+
     self._initCache();
 
     return self;
@@ -106,8 +116,15 @@ MetricsLogger.prototype._init = function _init( options ){
 
 /** initialize the cache */
 MetricsLogger.prototype._initCache = function _initCache(){
-    this.cache = new LoggingCache({ maxSize : this.options.maxCacheSize });
-
+    try {
+        this.cache = new LoggingCache({
+            maxSize : this.options.maxCacheSize,
+            key     : this.options.cacheKeyPrefix + this.userId
+        });
+    } catch( err ){
+        this._emitToConsole( 'warn', 'MetricsLogger', [ 'Could not intitialize logging cache:', err ] );
+        this.options.logLevel = MetricsLogger.NONE;
+    }
 };
 
 /** return the numeric log level if level in 'none, debug, log, info, warn, error' */
@@ -134,7 +151,7 @@ MetricsLogger.prototype.emit = function emit( level, namespace, logArguments ){
         return self;
     }
     // add to cache if proper level
-//TODO: respect do not track?
+    //TODO: respect do not track?
     //if( !navigator.doNotTrack && level >= self.options.logLevel ){
     level = self._parseLevel( level );
     if( level >= self.options.logLevel ){
@@ -192,7 +209,6 @@ MetricsLogger.prototype._buildEntry = function _buildEntry( level, namespace, lo
 MetricsLogger.prototype._postCache = function _postCache( options ){
     options = options || {};
     this._emitToConsole( 'info', 'MetricsLogger', [ '_postCache', options, this._postSize ]);
-//TODO: remove jq dependence
 
     // short circuit if we're already sending
     if( !this.options.postUrl || this._sending ){
@@ -209,15 +225,22 @@ MetricsLogger.prototype._postCache = function _postCache( options ){
     //console.debug( postSize, entriesLength );
 
     // add the metrics and send
-    postData.metrics = self._preprocessCache( entries );
+    postData.metrics = JSON.stringify( entries );
+    //console.debug( postData.metrics );
     self._sending = true;
     return jQuery.post( self.options.postUrl, postData )
         .always( function(){
             self._sending = false;
         })
-        .fail( function(){
+        .fail( function( xhr, status, message ){
             // if we failed the previous time, set the next post target to the max num of entries
             self._postSize = self.options.maxCacheSize;
+//TODO:??
+            // log this failure to explain any gap in metrics
+            this.emit( 'error', 'MetricsLogger', [ '_postCache error:',
+                xhr.readyState, xhr.status, xhr.responseJSON || xhr.responseText ]);
+//TODO: still doesn't solve the problem that when cache == max, post will be tried on every emit
+//TODO: see _delayPost
         })
         .done( function( response ){
             if( typeof self.options.onServerResponse === 'function' ){
@@ -232,10 +255,13 @@ MetricsLogger.prototype._postCache = function _postCache( options ){
     // return the xhr promise
 };
 
-/** Preprocess a number of cache entries for sending to the server (stringification) */
-MetricsLogger.prototype._preprocessCache = function _preprocessCache( entries ){
-    return [ '[', ( entries.join( ',\n' ) ), ']' ].join( '\n' );
-    //return [ '[', ( entries.join( ',' ) ), ']' ].join( '' );
+/** set _waiting to true and, after delayPostInMs, set it back to false */
+MetricsLogger.prototype._delayPost = function _delayPost(){
+//TODO: this won't work between pages
+    var self = this;
+    self._waiting = setTimeout( function(){
+        self._waiting = null;
+    }, self.options.delayPostInMs );
 };
 
 
@@ -306,7 +332,11 @@ MetricsLogger.prototype.metric = function metric(){
 };
 
 
-//=============================================================================
+/* ============================================================================
+TODO:
+    need a performance pass - the JSON un/parsing is a bit much
+
+============================================================================ */
 /** @class LoggingCache
  *  Simple implementation of cache wrapping an array.
  *
@@ -315,7 +345,6 @@ MetricsLogger.prototype.metric = function metric(){
  */
 function LoggingCache( options ){
     var self = this;
-    self._cache = [];
     return self._init( options || {} );
 }
 
@@ -327,52 +356,104 @@ LoggingCache.defaultOptions = {
 
 /** initialize with options */
 LoggingCache.prototype._init = function _init( options ){
+    if( !this._hasStorage() ){
+        //TODO: fall back to jstorage
+        throw new Error( 'LoggingCache needs localStorage' );
+    }
+    if( !options.key ){
+        throw new Error( 'LoggingCache needs key for localStorage' );
+    }
+    this.key = options.key;
+    this._initStorage();
+
     this.maxSize = options.maxSize || LoggingCache.defaultOptions.maxSize;
+    return this;
+};
+
+/** tests for localStorage fns */
+LoggingCache.prototype._hasStorage = function _hasStorage(){
+//TODO: modernizr
+    var test = 'test';
+    try {
+        localStorage.setItem( test, test );
+        localStorage.removeItem( test );
+        return true;
+    } catch( e ){
+        return false;
+    }
+};
+
+/** if no localStorage set for key, initialize to empty array */
+LoggingCache.prototype._initStorage = function _initStorage(){
+    if( localStorage.getItem( this.key ) === null ){
+        return this.empty();
+    }
     return this;
 };
 
 /** add an entry to the cache, removing the oldest beforehand if size >= maxSize */
 LoggingCache.prototype.add = function add( entry ){
     var self = this,
-        overage = ( self.length() + 1 ) - self.maxSize;
+        _cache = self._fetchAndParse(),
+        overage = ( _cache.length + 1 ) - self.maxSize;
     if( overage > 0 ){
-        self.remove( overage );
+        _cache.splice( 0, overage );
     }
-    self._cache.push( self._preprocessEntry( entry ) );
-    return self.length();
+    _cache.push( entry );
+    self._unparseAndStore( _cache );
+    return _cache.length;
 };
 
-/** process the entry before caching */
-LoggingCache.prototype._preprocessEntry = function _preprocessEntry( entry ){
-    return JSON.stringify( entry );
+/** get the entries from localStorage and parse them */
+LoggingCache.prototype._fetchAndParse = function _fetchAndParse(){
+    var self = this;
+    return JSON.parse( localStorage.getItem( self.key ) );
 };
+
+/** stringify the entries and put them in localStorage */
+LoggingCache.prototype._unparseAndStore = function _unparseAndStore( entries ){
+    var self = this;
+    return localStorage.setItem( self.key, JSON.stringify( entries ) );
+};
+
+///** process the entry before caching */
+//LoggingCache.prototype._preprocessEntry = function _preprocessEntry( entry ){
+//    return JSON.stringify( entry );
+//};
 
 /** return the length --- oh, getters where are you? */
 LoggingCache.prototype.length = function length(){
-    return this._cache.length;
+    return this._fetchAndParse().length;
 };
 
 /** get count number of entries starting with the oldest */
 LoggingCache.prototype.get = function get( count ){
-    return this._cache.slice( 0, count );
+    return this._fetchAndParse().slice( 0, count );
 };
 
 /** remove count number of entries starting with the oldest */
 LoggingCache.prototype.remove = function remove( count ){
-    return this._cache.splice( 0, count );
+    var _cache = this._fetchAndParse(),
+        removed = _cache.splice( 0, count );
+    this._unparseAndStore( _cache );
+    return removed;
+};
+
+/** empty/clear the entire cache */
+LoggingCache.prototype.empty = function empty(){
+    localStorage.setItem( this.key, '[]' );
+    return this;
 };
 
 /** stringify count number of entries (but do not remove) */
 LoggingCache.prototype.stringify = function stringify( count ){
-    return [ '[', ( this.get( count ).join( ',\n' ) ), ']' ].join( '\n' );
+    return JSON.stringify( this.get( count ) );
 };
 
 /** outputs entire cache to console */
 LoggingCache.prototype.print = function print(){
     // popup? (really, carl? a popup?) - easier to copy/paste
-    this._cache.forEach( function( entry ){
-        console.log( entry );
-    });
+    console.log( JSON.stringify( this._fetchAndParse(), null, '  ' ) );
 };
 
 
