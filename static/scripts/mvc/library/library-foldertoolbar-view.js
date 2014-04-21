@@ -84,16 +84,20 @@ var FolderToolbarView = Backbone.View.extend({
           current_folder_id = url_items[url_items.length-1];
           folder.url = folder.urlRoot + '/' + current_folder_id ;
 
-          var self = this;
           folder.save(folderDetails, {
             success: function (folder) {
-              self.modal.hide();
+              Galaxy.modal.hide();
               mod_toastr.success('Folder created');
               folder.set({'type' : 'folder'});
               Galaxy.libraries.folderListView.collection.add(folder);
             },
-            error: function(){
-              mod_toastr.error('An error occured :(');
+            error: function(model, response){
+              Galaxy.modal.hide();
+              if (typeof response.responseJSON !== "undefined"){
+                mod_toastr.error(response.responseJSON.err_msg);
+              } else {
+                mod_toastr.error('An error ocurred :(');
+              }
             }
           });
       } else {
@@ -289,7 +293,7 @@ var FolderToolbarView = Backbone.View.extend({
         self.histories.get(history_id).set({'contents' : history_contents});
         self.modal.$el.find('#selected_history_content').html(history_contents_template({history_contents: history_contents.models.reverse()}));
       },
-      error: function(){
+      error: function(model, response){
         mod_toastr.error('An error ocurred :(');
       }
     });

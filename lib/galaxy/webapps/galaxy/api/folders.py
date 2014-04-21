@@ -7,10 +7,8 @@ from galaxy import exceptions
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
 from galaxy.web.base.controller import BaseAPIController,UsesLibraryMixin,UsesLibraryMixinItems
-# from galaxy.util.sanitize_html import sanitize_html
-
-# from cgi import escape, FieldStorage
-# from paste.httpexceptions import HTTPBadRequest
+from sqlalchemy.orm.exc import MultipleResultsFound
+from sqlalchemy.orm.exc import NoResultFound
 
 import logging
 log = logging.getLogger( __name__ )
@@ -47,7 +45,7 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
                                            check_accessible=True )
         return self.encode_all_ids( trans, content.to_dict( view='element' ) )
 
-    @web.expose_api
+    @expose_api
     def create( self, trans, encoded_parent_folder_id, **kwd ):
 
         """
@@ -83,11 +81,23 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
 
         # encoded_parent_folder_id may be prefixed by 'F'
         encoded_parent_folder_id = self.__cut_the_prefix( encoded_parent_folder_id )
-        
         try:
             decoded_parent_folder_id = trans.security.decode_id( encoded_parent_folder_id )
         except ValueError:
             raise exceptions.MalformedId( "Malformed folder id ( %s ) specified, unable to decode" % ( str( id ) ) )
+
+        try:
+            parent_folder = trans.sa_session.query( trans.app.model.LibraryFolder ).filter( trans.app.model.LibraryFolder.table.c.id == decoded_parent_folder_id ).one()
+        except MultipleResultsFound:
+            raise exceptions.InconsistentDatabase( 'Multiple folders found with the same id.' )
+        except NoResultFound:
+            raise exceptions.RequestParameterInvalidException( 'No folder found with the id provided.' )
+        except Exception, e:
+            raise exceptions.InternalServerError( 'Error loading from the database.'  + str(e))
+
+        library = parent_folder.parent_library
+        if library.deleted:
+            raise exceptions.ObjectAttributeInvalidException( 'You cannot create folder within a deleted library. Undelete it first.' )
 
         # TODO: refactor the functionality for use here instead of calling another controller
         params = dict( [ ( "name", name ), ( "description", description ) ] )
