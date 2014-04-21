@@ -2,7 +2,6 @@
 // === MAIN GALAXY LIBRARY MODULE ====
 // MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 
-// dependencies
 define([
     "galaxy.masthead",
     "utils/utils",
@@ -26,7 +25,7 @@ function(mod_masthead,
          ) {
 
 // ============================================================================
-//ROUTER
+// ROUTER
 var LibraryRouter = Backbone.Router.extend({
     routes: {
         ""                                      : "libraries",
@@ -48,11 +47,13 @@ var LibraryPrefs = mod_baseMVC.SessionStorageModel.extend({
 // ============================================================================
 // Main controller of Galaxy Library
 var GalaxyLibrary = Backbone.View.extend({
+
     libraryToolbarView: null,
     libraryListView: null,
     library_router: null,
     folderToolbarView: null,
     folderListView: null,
+
     initialize : function(){
         Galaxy.libraries = this;
 
@@ -79,11 +80,7 @@ var GalaxyLibrary = Backbone.View.extend({
        this.library_router.on('route:download', function(folder_id, format) {
           if ($('#center').find(':checked').length === 0) {
             mod_toastr.info('You have to select some datasets to download')
-            // this happens rarely when there is a server/data error and client gets an actual response instead of an attachment
-            // we don't know what was selected so we can't download again, we redirect to the folder provided
-            Galaxy.libraries.library_router.navigate('folders/' + folder_id, {trigger: true, replace: true});
           } else {
-            // send download stream
             Galaxy.libraries.folderToolbarView.download(folder_id, format);
             Galaxy.libraries.library_router.navigate('folders/' + folder_id, {trigger: false, replace: true});
           }

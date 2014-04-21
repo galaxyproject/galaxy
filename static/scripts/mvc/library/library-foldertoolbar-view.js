@@ -20,7 +20,7 @@ var FolderToolbarView = Backbone.View.extend({
   defaults: {
     'can_add_library_item'  : false,
     'contains_file'         : false,
-    'adding_datasets'       : {
+    'chain_call_control'    : {
                                 'total_number'  : 0,
                                 'failed_number' : 0
                               }
@@ -153,7 +153,12 @@ var FolderToolbarView = Backbone.View.extend({
       success: function (){
         callback(self);
       },
-      error: function(){
+      error: function(model, response){
+        if (typeof response.responseJSON !== "undefined"){
+          mod_toastr.error(response.responseJSON.err_msg);
+        } else {
+          mod_toastr.error('An error ocurred :(');
+        }
       }
     });
   },
@@ -162,6 +167,10 @@ var FolderToolbarView = Backbone.View.extend({
   importAllIntoHistory : function (){
       // disable the button to prevent multiple submission
       this.modal.disableButton('Import');
+
+      // init the control counters
+      this.options.chain_call_control.total_number = 0;
+      this.options.chain_call_control.failed_number = 0;
 
       var history_id = $("select[name=dataset_import_bulk] option:selected").val();
       // we can save last used history to pre-select it next time
@@ -191,6 +200,7 @@ var FolderToolbarView = Backbone.View.extend({
           historyItem.source = 'library';
           datasets_to_import.push(historyItem);
       }
+      this.options.chain_call_control.total_number = datasets_to_import.length;
       // call the recursive function to call ajax one after each other (request FIFO queue)
       this.chainCall(datasets_to_import, history_name);
   },
@@ -199,18 +209,26 @@ var FolderToolbarView = Backbone.View.extend({
     var self = this;
     var popped_item = history_item_set.pop();
     if (typeof popped_item === "undefined") {
-        mod_toastr.success('Datasets were imported to history: ' + history_name);
-        this.modal.hide();
-        return;
+      if (this.options.chain_call_control.failed_number === 0){
+        mod_toastr.success('Selected datasets imported into history');
+      } else if (this.options.chain_call_control.failed_number === this.options.chain_call_control.total_number){
+        mod_toastr.error('There was an error and no datasets were imported into history.');
+      } else if (this.options.chain_call_control.failed_number < this.options.chain_call_control.total_number){
+        mod_toastr.warning('Some of the datasets could not be imported into history');
+      }
+      Galaxy.modal.hide();
+      return;
     }
     var promise = $.when(popped_item.save({content: popped_item.content, source: popped_item.source}));
 
     promise.done(function(a1){
+              // we are fine
               self.updateProgress();
               self.chainCall(history_item_set, history_name);
             })
             .fail(function(a1){
-              mod_toastr.error('An error occured :(');
+              // we have a problem
+              self.options.chain_call_control.failed_number += 1;
               self.updateProgress();
               self.chainCall(history_item_set, history_name);
             });
@@ -307,9 +325,9 @@ var FolderToolbarView = Backbone.View.extend({
   addAllDatasetsFromHistory : function (){
       // disable the button to prevent multiple submission
       this.modal.disableButton('Add');
-      // init the counters
-      this.options.adding_datasets.total_number = 0;
-      this.options.adding_datasets.failed_number = 0;
+      // init the control counters
+      this.options.chain_call_control.total_number = 0;
+      this.options.chain_call_control.failed_number = 0;
 
       var history_dataset_ids = [];
       this.modal.$el.find('#selected_history_content').find(':checked').each(function(){
@@ -335,7 +353,7 @@ var FolderToolbarView = Backbone.View.extend({
           folder_item.set({'from_hda_id':history_dataset_id});
           hdas_to_add.push(folder_item);
       }
-      this.options.adding_datasets.total_number = hdas_to_add.length;
+      this.options.chain_call_control.total_number = hdas_to_add.length;
       // call the recursive function to call ajax one after each other (request FIFO queue)
       this.chainCallAddingHdas(hdas_to_add);
   },
@@ -345,11 +363,11 @@ var FolderToolbarView = Backbone.View.extend({
     this.added_hdas = new mod_library_model.Folder();
     var popped_item = hdas_set.pop();
     if (typeof popped_item === "undefined") {
-      if (this.options.adding_datasets.failed_number === 0){
+      if (this.options.chain_call_control.failed_number === 0){
         mod_toastr.success('Selected datasets from history added to the folder');
-      } else if (this.options.adding_datasets.failed_number === this.options.adding_datasets.total_number){
+      } else if (this.options.chain_call_control.failed_number === this.options.chain_call_control.total_number){
         mod_toastr.error('There was an error and no datasets were added to the folder.');
-      } else if (this.options.adding_datasets.failed_number < this.options.adding_datasets.total_number){
+      } else if (this.options.chain_call_control.failed_number < this.options.chain_call_control.total_number){
         mod_toastr.warning('Some of the datasets could not be added to the folder');
       }
       Galaxy.modal.hide();
@@ -365,12 +383,7 @@ var FolderToolbarView = Backbone.View.extend({
             })
             .fail(function(data){
               // we have a problem
-              self.options.adding_datasets.failed_number += 1;
-              // if (typeof data.responseJSON !== "undefined"){
-              //   mod_toastr.error(data.responseJSON.err_msg);
-              // } else {
-              //   mod_toastr.error('An error ocurred :(');
-              // }
+              self.options.chain_call_control.failed_number += 1;
               self.updateProgress();
               self.chainCallAddingHdas(hdas_set);
             });
