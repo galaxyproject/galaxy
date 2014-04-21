@@ -468,6 +468,16 @@ define([
         ok( connector.handle2 === terminal );
     } );
 
+    test( "replacing terminal on data input destroys invalid connections", function() {
+        var connector = this.connectAttachedTerminal( "txt", "txt" );
+        var newElement = $("<div class='inputs'></div>");
+        var connector_destroy_spy = sinon.spy( connector, "destroy" );
+        // Replacing input with same name - but now of type bam should destroy connection.
+        this.view.replaceDataInput( { name: "TestName", extensions: ["bam"] }, newElement );
+        var terminal = newElement.find(".input-terminal")[ 0 ].terminal;
+        ok( connector_destroy_spy.called );
+    } );
+
     /* global InputTerminalView */
     module( "Input terminal view", {
         setup: function() {

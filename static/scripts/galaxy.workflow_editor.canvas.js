@@ -806,8 +806,14 @@ var NodeView = Backbone.View.extend( {
             $(this).find( ".input-terminal" ).each( function() {
                 var c = this.terminal.connectors[0];
                 if ( c ) {
-                    t.terminal.connectors[0] = c;
-                    c.handle2 = t.terminal;
+                    var terminal = t.terminal;
+                    if( c.handle1 && ! terminal.attachable( c.handle1 ) ) {
+                        // connection no longer valid, destroy it
+                        c.destroy();
+                    } else {
+                        terminal.connectors[0] = c;
+                        c.handle2 = terminal;
+                    }
                 }
             });
             $(this).remove();
