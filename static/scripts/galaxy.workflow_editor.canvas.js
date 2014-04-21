@@ -42,23 +42,31 @@ var InputTerminal = Terminal.extend( {
         this.multiple = attr.multiple;
     },
     canAccept: function ( other ) {
-        if ( this.connectors.length < 1 || this.multiple) {
-            for ( var t in this.datatypes ) {
-                var cat_outputs = new Array();
-                cat_outputs = cat_outputs.concat(other.datatypes);
-                if (other.node.post_job_actions){
-                    for (var pja_i in other.node.post_job_actions){
-                        var pja = other.node.post_job_actions[pja_i];
-                        if (pja.action_type == "ChangeDatatypeAction" && (pja.output_name == '' || pja.output_name == other.name) && pja.action_arguments){
-                            cat_outputs.push(pja.action_arguments['newtype']);
-                        }
+        if( this._inputFilled() ) {
+            return false;
+        } else {
+            return this.attachable( other );
+        }
+    },
+    _inputFilled: function( ) {
+        return ! ( this.connectors.length < 1 || this.multiple );
+    },
+    attachable: function( other ) {
+        for ( var t in this.datatypes ) {
+            var cat_outputs = new Array();
+            cat_outputs = cat_outputs.concat(other.datatypes);
+            if (other.node.post_job_actions){
+                for (var pja_i in other.node.post_job_actions){
+                    var pja = other.node.post_job_actions[pja_i];
+                    if (pja.action_type == "ChangeDatatypeAction" && (pja.output_name == '' || pja.output_name == other.name) && pja.action_arguments){
+                        cat_outputs.push(pja.action_arguments['newtype']);
                     }
                 }
-                // FIXME: No idea what to do about case when datatype is 'input'
-                for ( var other_datatype_i in cat_outputs ) {
-                    if ( cat_outputs[other_datatype_i] == "input" || issubtype( cat_outputs[other_datatype_i], this.datatypes[t] ) ) {
-                        return true;
-                    }
+            }
+            // FIXME: No idea what to do about case when datatype is 'input'
+            for ( var other_datatype_i in cat_outputs ) {
+                if ( cat_outputs[other_datatype_i] == "input" || issubtype( cat_outputs[other_datatype_i], this.datatypes[t] ) ) {
+                    return true;
                 }
             }
         }
