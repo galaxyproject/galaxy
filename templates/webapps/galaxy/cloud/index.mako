@@ -65,7 +65,7 @@
                                     clusterlist.append($('<option/>').val('New Cluster').text('New Cluster'));
                                     if (_.size(result.clusters) > 0){
                                         _.each(result.clusters, function(cluster, index){
-                                            clusterlist.append($('<option/>').val(cluster.name).text(cluster.name));
+                                            clusterlist.append($('<option/>').val(cluster.cluster_name).text(cluster.cluster_name));
                                         });
                                         $('#existing_instance_wrapper').show();
                                     }
@@ -95,13 +95,13 @@
                     type: 'POST',
                     dataType: 'json',
                     beforeSubmit: function(data, form){
-                        // Dig up zone info for selected cluster, set hidden input.
+                        // Dig up placement info for selected cluster, set hidden input.
                         // This is not necessary to present to the user though the interface may prove useful.
                         var ei_val = _.find(data, function(f_obj){return f_obj.name === 'existing_instance'});
                         if( ei_val && (ei_val.value !== "New Cluster")){
-                            var cluster = _.find(cloudlaunch_clusters, function(cluster){return cluster.name === ei_val.value});
-                            var zdata = _.find(data, function(f_obj){return f_obj.name === 'zone'});
-                            zdata.value = cluster.zone;
+                            var cluster = _.find(cloudlaunch_clusters, function(cluster){return cluster.cluster_name === ei_val.value});
+                            var placement_field = _.find(data, function(f_obj){return f_obj.name === 'placement'});
+                            placement_field.value = cluster.placement;
                         }else if($('#id_cluster_name').val() === ''){
                             // If we're not using an existing cluster, this must be set.
                             form.prepend('<div class="errormessage">You must specify a cluster name</div>');
@@ -188,7 +188,7 @@ Credentials section of the AWS Console</a>.  </div>
                                 <label for="id_existing_instance">Instances in your account</label>
                                 <select name="existing_instance" id="id_existing_instance" style="min-width: 228px">
                                 </select>
-                                <input id='id_zone' type='hidden' name='zone' value=''/>
+                                <input id='id_placement' type='hidden' name='placement' value=''/>
                         </div>
                         %endif
                         <div id='cluster_name_wrapper' class="form-row">
