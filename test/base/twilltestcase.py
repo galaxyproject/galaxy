@@ -270,11 +270,31 @@ class TwillTestCase( unittest.TestCase ):
         return from_json_string( self.last_page() )
 
     # Functions associated with histories
-    def get_history_from_api( self, encoded_history_id=None ):
+    def get_history_from_api( self, encoded_history_id=None, show_deleted=None, show_details=False ):
         if encoded_history_id is None:
             history = self.get_latest_history()
             encoded_history_id = history[ 'id' ]
-        return self.json_from_url( '/api/histories/%s/contents' % encoded_history_id )
+        params = dict()
+        if show_deleted is not None:
+            params[ 'deleted' ] = show_deleted
+        api_url = '/api/histories/%s/contents?%s' % ( encoded_history_id, urllib.urlencode( params ) ) 
+        json_data = self.json_from_url( api_url )
+        if show_deleted is not None:
+            hdas = []
+            for hda in json_data:
+                if show_deleted:
+                    hdas.append( hda )
+                else:
+                    if not hda[ 'deleted' ]:
+                        hdas.append( hda )
+            json_data = hdas
+        if show_details:
+            params[ 'details' ] = ','.join( [ hda[ 'id' ] for hda in json_data ] )
+            api_url = '/api/histories/%s/contents?%s' % ( encoded_history_id, urllib.urlencode( params ) )
+            json_data = self.json_from_url( api_url )
+            log.debug( 'detailed url: %s' % api_url )
+            log.debug( 'detailed json data: %s' % json_data )
+        return json_data
 
     def get_latest_history( self ):
         return self.json_from_url( '/api/histories' )[ 0 ]
@@ -325,33 +345,21 @@ class TwillTestCase( unittest.TestCase ):
             raise AssertionError( errmsg )
         self.home()
 
-    def check_history_json( self, pattern, check_fn, show_deleted=None, multiline=True ):
+    def check_history_json( self, check_fn, show_deleted=None ):
         """
         Tries to find a JSON string in the history page using the regex pattern,
         parse it, and assert check_fn returns True when called on that parsed
         data.
         """
-        self.home()
-        if show_deleted:
-            self.visit_page( "history?show_deleted=True" )
-        elif show_deleted == False:
-            self.visit_page( "history?show_deleted=False" )
-        else:
-            self.visit_page( "history" )
-        json_data = {}
         try:
-            tc.find( pattern, flags=( 'm' if multiline else '' ) )
-            # twill stores the regex match in a special stack variable
-            match = twill.namespaces.get_twill_glocals()[1][ '__match__' ]
-            json_data = from_json_string( match )
-            assert check_fn( json_data ), 'failed check_fn: %s' % ( check_fn.func_name )
-
-        except Exception, exc:
-            log.error( exc, exc_info=True )
+            json_data = self.get_history_from_api( show_deleted=show_deleted, show_details=True )
+            check_result = check_fn( json_data )
+            assert check_result, 'failed check_fn: %s (got %s)' % ( check_fn.func_name, str( check_result ) )
+        except Exception, e:
+            log.exception( e )
             log.debug( 'json_data: %s', ( '\n' + pprint.pformat( json_data ) if json_data else '(no match)' ) )
             fname = self.write_temp_file( tc.browser.get_html() )
-            errmsg = ( "json '%s' could not be found or failed check_fn" % ( pattern ) +
-                       "\npage content written to '%s'" % ( fname ) )
+            errmsg = ( "json could not be read\npage content written to '%s'" % ( fname ) )
             raise AssertionError( errmsg )
 
         self.home()
