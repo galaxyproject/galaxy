@@ -195,7 +195,7 @@ var GalaxyMenu = Backbone.Model.extend(
         if (this.options.biostar_url)
         {
             tab_help.add({
-                title   : "Galaxy Q&A Site",
+                title   : "Galaxy Biostar",
                 content : this.options.biostar_url_redirect,
                 target  : "_blank"
             });
