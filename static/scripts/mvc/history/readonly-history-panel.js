@@ -249,7 +249,7 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( baseMVC.LoggableMixin ).extend(
     /** Modify an error message to be fancy and wear a monocle. */
     _bePolite : function( msg ){
         msg = msg || _l( 'An error occurred while getting updates from the server' );
-        return msg + '. ' + _l( 'Please contact a Galaxy administrator if the problem persists.' );
+        return msg + '. ' + _l( 'Please contact a Galaxy administrator if the problem persists' ) + '.';
     },
 
     // ------------------------------------------------------------------------ loading history/hda models
@@ -284,6 +284,7 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( baseMVC.LoggableMixin ).extend(
         return panel._loadHistoryFromXHR( xhr, attributes )
             .fail( function( xhr, where, history ){
                 // throw an error up for the error handler
+//TODO: difficult to localize - use template
                 panel.trigger( 'error', panel, xhr, attributes, _l( 'An error was encountered while ' + where ),
                     { historyId: historyId, history: history || {} });
             })
@@ -1002,8 +1003,8 @@ var _panelTemplate = [
         '</div>',
 
         '<div class="quota-message errormessage">',
-            _l( 'You are over your disk quota.' ),
-            _l( 'Tool execution is on hold until your disk usage drops below your allocated quota.' ),
+            _l( 'You are over your disk quota' ), '. ',
+            _l( 'Tool execution is on hold until your disk usage drops below your allocated quota' ), '.',
         '</div>',
 
         '<div class="tags-display"></div>',
@@ -1024,7 +1025,7 @@ var _panelTemplate = [
     // where the datasets/hdas are added
     '<div class="datasets-list"></div>',
     '<div class="empty-history-message infomessagesmall">',
-        _l( 'Your history is empty. Click \'Get Data\' on the left pane to start' ),
+        _l( 'This history is empty' ),
     '</div>'
 ].join( '' );
 

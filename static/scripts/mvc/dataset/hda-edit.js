@@ -223,7 +223,7 @@ var HDAEditView = hdaBase.HDABaseView.extend(
 
         // No need for popup menu because there's a single visualization.
         if( visualizations.length === 1 ){
-            $icon.attr( 'data-original-title', _l( 'Visualize in ' ) + _l( titleCase( visualizations[0] ) ) );
+            $icon.attr( 'data-original-title', _l( 'Visualize in' ) + ' ' + _l( titleCase( visualizations[0] ) ) );
             $icon.click( create_viz_action( visualizations[0] ) );
 
         // >1: Populate menu dict with visualization fns, make the popupmenu
@@ -253,7 +253,7 @@ var HDAEditView = hdaBase.HDABaseView.extend(
         // No need for popup menu because there's a single visualization.
         if( visualizations.length === 1 ) {
             var onlyVisualization = visualizations[0];
-            $icon.attr( 'data-original-title', _l( 'Visualize in ' ) + onlyVisualization.html );
+            $icon.attr( 'data-original-title', _l( 'Visualize in' ) + ' ' + onlyVisualization.html );
             $icon.attr( 'href', onlyVisualization.href );
 
         // >1: Populate menu dict with visualization fns, make the popupmenu
@@ -284,13 +284,20 @@ var HDAEditView = hdaBase.HDABaseView.extend(
     _buildNewRender : function(){
         var $newRender = hdaBase.HDABaseView.prototype._buildNewRender.call( this );
 
-        //TODO: this won't localize easily
-        $newRender.find( '.dataset-deleted-msg' ).append(
-            _l( ' Click <a href="javascript:void(0);" class="dataset-undelete">here</a> to undelete it' +
-            ' or <a href="javascript:void(0);" class="dataset-purge">here</a> to immediately remove it from disk' ));
+//TODO: this won't localize easily
+        var br = '<br />', p = '.',
+            link = function( t, c ){
+                return [ '<a href="javascript:void(0)" class="', c, '">', t, '</a>' ].join( '' );
+            };
 
-        $newRender.find( '.dataset-hidden-msg' ).append(
-            _l( ' Click <a href="javascript:void(0);" class="dataset-unhide">here</a> to unhide it' ));
+        $newRender.find( '.dataset-deleted-msg' ).append([
+            br, link( _l( 'Undelete it' ), 'dataset-undelete' ), p,
+            br, link( _l( 'Permanently remove it from disk' ), 'dataset-purge' ), p
+        ].join( '' ));
+
+        $newRender.find( '.dataset-hidden-msg' ).append([
+            br, link( _l( 'Unhide it' ), 'dataset-unhide' ), p
+        ].join( '' ));
 
         return $newRender;
     },

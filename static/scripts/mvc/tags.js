@@ -1,6 +1,7 @@
 define([
-    "mvc/base-mvc"
-], function( baseMVC ){
+    "mvc/base-mvc",
+    "utils/localization"
+], function( baseMVC, _l ){
 // =============================================================================
 /** A view on any model that has a 'tags' attribute (a list of tag strings)
  *      Incorporates the select2 jQuery plugin for tags display/editing:

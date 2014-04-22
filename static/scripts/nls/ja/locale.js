@@ -1,389 +1,217 @@
 /** ja localization */
 define({
 
-// templates/history/options.mako:24
-"Are you sure you want to delete the current history?" :
-"現在のヒストリーを消すことに同意しますか？",
-
-// templates/root/history.mako:38
-"collapse all" :
-"すべてをおりたたむ",
-
-// templates/dataset/edit_attributes.mako:2
-"History Item Attributes" :
-"ヒストリーアイテム変数",
-
-// templates/dataset/edit_attributes.mako:19
-"Edit Attributes" :
-"変数を編集する",
-
-// templates/dataset/edit_attributes.mako:64
-"This will inspect the dataset and attempt to correct the above column values if they are not accurate." :
-"これはデータセットを調査して上記のカラムの値を修正することを試みます。",
-
-// templates/dataset/edit_attributes.mako:68
-"Required metadata values are missing. Some of these values may not be editable by the user. Selecting \"Auto-detect\" will attempt to fix these values." :
-"必要なメタデータの値が不明です。それらのいくつかの値はユーザによって編集可能にはなっていません。「自動判定」を選択するとそれらの値をただしくできるかもしれません。",
-
-// templates/dataset/edit_attributes.mako:78
-"Convert to new format" :
-"新しいフォーマットに変換する",
-
-// templates/dataset/edit_attributes.mako:84
-"Convert to" :
-"変換する",
-
-// templates/dataset/edit_attributes.mako:95
-"This will create a new dataset with the contents of this dataset converted to a new format." :
-"新しいフォーマットに変換したデータセットを新規作成します。",
-
-// templates/dataset/edit_attributes.mako:111
-"Change data type" :
-"データタイプを変更する",
-
-// templates/dataset/edit_attributes.mako:117
-"New Type" :
-"新しいタイプ",
-
-// templates/dataset/edit_attributes.mako:124
-"This will change the datatype of the existing dataset but <i>not</i> modify its contents. Use this if Galaxy has incorrectly guessed the type of your dataset." :
-"これは既存のデータセットのデータタイプを変更します。しかしデータセットの中身は変更しません。データセットのタイプの誤判定があったときに使用します。",
-
-// templates/dataset/edit_attributes.mako:137
-"Copy History Item" :
-"ヒストリーアイテムをコピーする",
-
-// templates/history/list.mako:3
-"Your saved histories" :
-"保存したヒストリー",
-
-// templates/history/list.mako:19
-"Stored Histories" :
-"格納してあるヒストリー",
-
-// templates/history/list.mako:21 templates/root/history.mako:239
-"hide deleted" :
-"削除したヒストリーを隠す",
-
-// templates/history/list.mako:23
-"show deleted" :
-"削除したヒストリーを表示する",
-
-// templates/history/list.mako:27
-"Name" :
-"名前",
-
-// templates/history/list.mako:27
-"Size" :
-"サイズ",
-
-// templates/history/list.mako:27
-"Last modified" :
-"最終更新日",
-
-// templates/history/list.mako:27
-"Actions" :
-"操作",
-
-// templates/history/list.mako:45
-"rename" :
-"名称変更する",
-
-// templates/history/list.mako:46
-"switch to" :
-"変更する",
-
-// templates/history/list.mako:47
-"delete" :
-"削除する",
-
-// templates/history/list.mako:49
-"undelete" :
-"削除から戻す",
-
-// templates/history/list.mako:55
-"Action" :
-"操作",
-
-// templates/history/list.mako:56 templates/history/options.mako:21
-"Share" :
-"共有",
-
-// templates/history/list.mako:56 templates/history/options.mako:15
-"Rename" :
-"名称変更する",
-
-// templates/history/list.mako:56 templates/history/options.mako:24
-"Delete" :
-"削除する",
-
-// templates/history/list.mako:58
-"Undelete" :
-"削除から戻す",
-
-// templates/history/list.mako:65
-"You have no stored histories" :
-"保管してあるヒストリーはありません",
-
-// templates/history/options.mako:5
-"History Options" :
-"ヒストリーオプション",
-
-// templates/history/options.mako:9
-"You must be " :
-"あなたは",
-
-// templates/history/options.mako:9
-"logged in" :
-"ログイン",
-
-// templates/history/options.mako:9
-" to store or switch histories." :
-"しないとヒストリーの保管や変更ができません。",
-
-// templates/history/options.mako:15
-// python-format
-" current history (stored as \"%s\")" :
-" 現在のヒストリー（\"%s\" として保管されています）",
-
-// templates/history/options.mako:16
-"List" :
-"リストする",
-
-// templates/history/options.mako:16
-" previously stored histories" :
-" 以前に保管したヒストリー",
-
-// templates/history/options.mako:18
-"Create" :
-"作成する",
-
-// templates/history/options.mako:18
-" a new empty history" :
-" 新規ヒストリー",
-
-// templates/history/options.mako:20
-"Construct workflow" :
-"ワークフローを構築する",
-
-// templates/history/options.mako:20
-" from the current history" :
-" 現在のヒストリーから",
-
-// templates/history/options.mako:21 templates/history/options.mako:24
-" current history" :
-" 現在のヒストリー",
-
-// templates/history/options.mako:23
-"Show deleted" :
-"削除したヒストリーを表示する",
-
-// templates/history/options.mako:23
-" datasets in history" :
-" ヒストリーのデータセット",
-
-// templates/history/rename.mako:3 templates/history/rename.mako:6
-"Rename History" :
-"ヒストリーの名称変更をする",
-
-
-"Rename Histories" :
-"名称変更する",
-
-"Perform Action" :
-"操作を実行する",
-
-"Submit" :
-"登録する",
-
-
-
-// templates/history/rename.mako:10
-"Current Name" :
-"現在の名称",
-
-// templates/history/rename.mako:10
-"New Name" :
-"新しい名称",
-
-// templates/history/share.mako:3
-"Share histories" :
-"ヒストリーを共有する",
-
-// templates/history/share.mako:6
-"Share Histories" :
-"ヒストリーを共有する",
-
-// templates/history/share.mako:9
-"History Name:" :
-"ヒストリー名",
-
-// templates/history/share.mako:9
-"Number of Datasets:" :
-"データセット数",
-
-// templates/history/share.mako:9
-"Share Link" :
-"共有リンク",
-
-// templates/history/share.mako:15
-"This history contains no data." :
-"このヒストリーにはデータがありません。",
-
-// templates/history/share.mako:21
-"copy link to share" :
-"共有リンクをコピーする",
-
-// templates/history/share.mako:24
-"Email of User to share with:" :
-"共有したいユーザのEメール:",
-//"つぎのヒストリーを共有するユーザのEメールアドレス:"
-
-// templates/root/history.mako:7
-"Galaxy History" :
-"Galaxy ヒストリー",
-
-// templates/root/history.mako:237
-"refresh" :
-"リフレッシュ",
-
-// templates/root/history.mako:245
+// ---------------------------------------------------------------------------- histories
+// ---- history-model
+// ---- readonly-history-panel
+"This history is empty" :
+"ヒストリーは空です",
+"No matching datasets found" :
+"一致するデータセットが見つかりませんでした",
+//"An error occurred while getting updates from the server" :
+//false,
+//"Please contact a Galaxy administrator if the problem persists" :
+//false,
+//TODO:
+//"An error was encountered while <% where %>" :
+//false,
+"Search datasets" :
+"データセットを検索する",
 "You are currently viewing a deleted history!" :
 "消去したヒストリーをみています。",
+"You are over your disk quota" :
+"あなたはディスククォータを超えている",
+//"Tool execution is on hold until your disk usage drops below your allocated quota" :
+//false,
+"All" :
+"一式",
+"None" :
+"なし",
+"For all selected" :
+"各項目を",
 
-// templates/root/history.mako:289
-"Your history is empty. Click 'Get Data' on the left pane to start" :
+// ---- history-panel
+//"Edit history tags" :
+//false,
+//"Edit history Annotation" :
+//false,
+"Click to rename history" :
+"ヒストリーの名前を変更するにはクリック",
+// multi operations
+"Operations on multiple datasets" :
+"複数のデータセットに対する操作",
+//"Hide datasets" :
+//false,
+//"Unhide datasets" :
+//false,
+//"Delete datasets" :
+//false,
+//"Undelete datasets" :
+//false,
+"Permanently delete datasets" :
+"永久にデータセットを削除",
+"This will permanently remove the data in your datasets. Are you sure?" :
+"これは永久にあなたのデータセット内のデータを削除します。本当に？",
+
+// ---- annotated-history-panel
+"Dataset" :
+"データセット",
+//"Annotation" :
+//false,
+
+// ---- current-history-panel
+"This history is empty. Click 'Get Data' on the left tool menu to start" :
 "ヒストリーは空です。解析をはじめるには、左パネルの 'データ取得' をクリック",
+"No matching datasets found" :
+"一致するデータセットが見つかりませんでした",
+"You must be logged in to create histories" :
+"ヒストリーを作成するためにはログインする必要があります",
+//TODO:
+//"You can <% loadYourOwn %> or <% externalSource %>" :
+//false,
+//"load your own data" :
+//false,
+//"get data from an external source" :
+//false,
 
-// templates/root/history_common.mako:41
-"Job is waiting to run" :
+// these aren't in zh/ginga.po and the template doesn't localize
+//"Include Deleted Datasets" :
+//false,
+//"Include Hidden Datasets" :
+//false,
+
+
+// ---------------------------------------------------------------------------- datasets
+// ---- hda-model
+//"Unable to purge dataset" :
+//false,
+
+// ---- hda-base
+// display button
+//"Cannot display datasets removed from disk" :
+//false,
+//"This dataset must finish uploading before it can be viewed" :
+//false,
+//"This dataset is not yet viewable" :
+//false,
+"View data" :
+"データを表示",
+// download button
+"Download" :
+"ダウンロード",
+"Download dataset" :
+"データセットをダウンロード",
+//"Additional files" :
+//false,
+// info/show_params
+"View details" :
+"細部を表示",
+
+// dataset states
+// state: new
+//"This is a new dataset and not all of its data are available yet" :
+//false,
+// state: noPermission
+//"You do not have permission to view this dataset" :
+//false,
+// state: discarded
+//"The job creating this dataset was cancelled before completion" :
+//false,
+// state: queued
+"This job is waiting to run" :
 "ジョブは実行待ちです",
-
-// templates/root/history_common.mako:43
-"Job is currently running" :
+// state: upload
+//"This dataset is currently uploading" :
+//false,
+// state: setting_metadata
+//"Metadata is being auto-detected" :
+//false,
+// state: running
+"This job is currently running" :
 "ジョブは実行中です",
+// state: paused
+//"This job is paused. Use the \"Resume Paused Jobs\" in the history menu to resume" :
+//false,
+// state: error
+"An error occurred with this dataset" :
+"このジョブの実行中に発生したエラー",
+// state: empty
+"No data" :
+"データ無し",
+// state: failed_metadata
+//"An error occurred setting the metadata for this dataset" :
+//false,
 
-// templates/root/history_common.mako:46
-"An error occurred running this job: " :
-"このジョブの実行中に発生したエラー: ",
+// ajax error prefix
+//"There was an error getting the data for this dataset" :
+//false,
 
-// templates/root/history_common.mako:47
-"report this error" :
-"このエラーを報告する",
+// purged'd/del'd msg
+"This dataset has been deleted and removed from disk" :
+"このデータセットは、永続的にディスクから削除されました",
+"This dataset has been deleted" :
+"このデータセットは削除されました",
+"This dataset has been hidden" :
+"このデータセットは、非表示にされた",
 
-// templates/root/history_common.mako:54
-"No data: " :
-"データ無し: ",
+"format" :
+"フォーマット",
+"database" :
+"データベース",
 
-// templates/root/history_common.mako:58
-"format: " :
-"フォーマット: ",
+// ---- hda-edit
+"Edit attributes" :
+"変数を編集する",
+//"Cannot edit attributes of datasets removed from disk" :
+//false,
+//"Undelete dataset to edit attributes" :
+//false,
+//"This dataset must finish uploading before it can be edited" :
+//false,
+//"This dataset is not yet editable" :
+//false,
 
-// templates/root/history_common.mako:59
-"database: " :
-"データベース: ",
+"Delete" :
+"削除する",
+//"Dataset is already deleted" :
+//false,
 
-// templates/root/history_common.mako:66 templates/root/masthead.mako:20
-"Info: " :
-"情報: ",
+"View or report this error" :
+"このエラーを届け出る",
 
-// templates/root/history_common.mako:85
-// python-format
-"Error: unknown dataset state \"%s\"." :
-"エラー: 不明なデータ状態 \"%s\"。",
+"Run this job again" :
+"もう一度このジョブを実行する",
 
-// templates/root/index.mako:32
-"Options" :
-"オプション",
+"Visualize" :
+"可視化する",
+//"Visualize in" :
+//false,
 
-// templates/root/index.mako:34
-"History" :
-"ヒストリー",
+"Undelete it" :
+"復元する",
+"Permanently remove it from disk" :
+"永久にディスクから削除",
+"Unhide it" :
+"非表示解除する",
 
-// templates/root/masthead.mako:20
-"report bugs" :
-"バグを報告する",
+//"You may be able to" :
+//false,
+//"set it manually or retry auto-detection" :
+//false,
 
-// templates/root/masthead.mako:21
-"wiki" :
-"wiki",
+//"Edit dataset tags" :
+//false,
+//"Edit dataset annotation" :
+//false,
 
-// templates/root/masthead.mako:22
-"screencasts" :
-"スクリーンキャスト",
 
-// templates/root/masthead.mako:23
-"blog" :
-"ブログ",
+// ---------------------------------------------------------------------------- misc. MVC
+//"Tags" :
+//false,
+//"Annotation" :
+//false,
+//"Edit annotation" :
+//false,
 
-// templates/root/masthead.mako:31
-// python-format
-"Logged in as %s: " :
-"%s としてログイン中: ",
 
-// templates/root/masthead.mako:31
-"manage" :
-"管理",
-
-// templates/root/masthead.mako:32
-"logout" :
-"ログアウト",
-
-// templates/root/masthead.mako:34
-"Account: " :
-"アカウント: ",
-
-// templates/root/masthead.mako:34
-"create" :
-"作成",
-
-// templates/root/masthead.mako:35
-"login" :
-"ログイン",
-
-// templates/root/tool_menu.mako:52
-"Galaxy Tools" :
-"Galaxy ツール群",
-
-// templates/root/tool_menu.mako:129
-"Workflow" :
-"ワークフロー",
-
-// templates/root/tool_menu.mako:134
-"Manage" :
-"管理",
-
-// templates/root/tool_menu.mako:134
-"workflows" :
-"ワークフロー",
-
-// templates/user/index.mako:2 templates/user/index.mako:4
-"Account settings" :
-"アカウント設定",
-
-// templates/user/index.mako:7
-// python-format
-"You are currently logged in as %s." :
-"%s としてログイン中。",
-
-// templates/user/index.mako:9
-"Change your password" :
-"パスワード変更",
-
-// templates/user/index.mako:10
-"Update your email address" :
-"メールアドレス変更",
-
-// templates/user/index.mako:11
-"Logout" :
-"ログアウト",
-
-// templates/user/index.mako:16
-"Login" :
-"ログイン",
-
-// templates/user/index.mako:17
-"Create new account" :
-"新規アカウントを作成する"
-
-})
+});

@@ -137,7 +137,7 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
                 panel.toggleHDAAnnotationEditors( false, panel.fxSpeed );
             },
             $activator      : faIconButton({
-                title   : _l( 'Edit history Annotation' ),
+                title   : _l( 'Edit history annotation' ),
                 classes : 'history-annotate-btn',
                 faIcon  : 'fa-comment'
             }).appendTo( $where.find( '.history-secondary-actions' ) )

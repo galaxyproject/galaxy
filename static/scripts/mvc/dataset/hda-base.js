@@ -239,8 +239,8 @@ var HDABaseView = Backbone.View.extend( baseMVC.LoggableMixin ).extend(
         var menuId = 'dataset-' + this.model.get( 'id' ) + '-popup',
             html = [
                 '<div popupmenu="' + menuId + '">',
-                    '<a href="' + urls.download + '">', _l( 'Download Dataset' ), '</a>',
-                    '<a>' + _l( 'Additional Files' ) + '</a>',
+                    '<a href="' + urls.download + '">', _l( 'Download dataset' ), '</a>',
+                    '<a>' + _l( 'Additional files' ) + '</a>',
 
                     _.map( meta_files, function( meta_file ){
                         return [
@@ -647,13 +647,13 @@ var skeletonTemplate = [
             // purged and deleted
             '<% if( hda.purged ){ %>',
                 '<div class="dataset-purged-msg warningmessagesmall"><strong>',
-                    _l( 'This dataset has been deleted and removed from disk.' ),
+                    _l( 'This dataset has been deleted and removed from disk' ) + '.',
                 '</strong></div>',
 
             // deleted not purged
             '<% } else { %>',
                 '<div class="dataset-deleted-msg warningmessagesmall"><strong>',
-                    _l( 'This dataset has been deleted.' ),
+                    _l( 'This dataset has been deleted' ) + '.',
                 '</strong></div>',
             '<% } %>',
         '<% } %>',
@@ -661,7 +661,7 @@ var skeletonTemplate = [
         // hidden
         '<% if( !hda.visible ){ %>',
             '<div class="dataset-hidden-msg warningmessagesmall"><strong>',
-                _l( 'This dataset has been hidden.' ),
+                _l( 'This dataset has been hidden' ) + '.',
             '</strong></div>',
         '<% } %>',
     '</div>',

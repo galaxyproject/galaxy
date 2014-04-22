@@ -184,11 +184,13 @@
     <div class="unified-panel-header" unselectable="on">
         <div class="unified-panel-header-inner">
             <div style="float: right">
-                <a id="history-refresh-button" class='panel-header-button' href="javascript:void(0)" title="Refresh history">
+                <a id="history-refresh-button" class='panel-header-button' href="javascript:void(0)"
+                   title="${ _( 'Refresh history' ) }">
                     <span class="fa fa-refresh"></span>
                 </a>
                 <a id="history-options-button" class='panel-header-button'
-                   href="${h.url_for( controller='root', action='history_options' )}" target="galaxy_main" title="History options">
+                   href="${h.url_for( controller='root', action='history_options' )}" target="galaxy_main"
+                   title="${ _( 'History options' ) }">
                     <span class="fa fa-cog"></span>
                 </a>
             </div>
@@ -216,12 +218,13 @@
         </script>
         <script type="text/javascript">
             $(function(){
-                $( '#history-refresh-button' ).on( 'click', function(){
-                    if( top.Galaxy && top.Galaxy.currHistoryPanel ){
-                        top.Galaxy.currHistoryPanel.loadCurrentHistory();
-                        inside_galaxy_frameset = true;
-                    }
-                });
+                $( '#history-refresh-button' )
+                    .on( 'click', function(){
+                        if( top.Galaxy && top.Galaxy.currHistoryPanel ){
+                            top.Galaxy.currHistoryPanel.loadCurrentHistory();
+                            inside_galaxy_frameset = true;
+                        }
+                    });
             });
         </script>
     </div>

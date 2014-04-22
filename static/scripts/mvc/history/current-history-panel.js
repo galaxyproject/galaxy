@@ -221,7 +221,7 @@ var CurrentHistoryPanel = hpanel.HistoryPanel.extend(
             $emptyMsg.empty();
 
             $emptyMsg.html([
-                _l( 'This history is empty. ' ), _l( 'You can ' ),
+                _l( 'This history is empty' ), '. ', _l( 'You can ' ),
                 '<a class="uploader-link" href="javascript:void(0)">',
                     _l( 'load your own data' ),
                 '</a>',
