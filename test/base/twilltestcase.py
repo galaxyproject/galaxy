@@ -1698,17 +1698,16 @@ class TwillTestCase( unittest.TestCase ):
                      num_fields=1, num_options=0, field_name='1_field_name', strings_displayed=[],
                      strings_displayed_after_submit=[] ):
         """Create a new form definition."""
-        strings_displayed_after_submit.extend( [ name, description, form_type ] )
         self.visit_url( "%s/forms/create_form_definition" % self.url )
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
-        tc.fv( "1", "name", name )
-        tc.fv( "1", "description", description )
-        tc.fv( "1", "form_type_select_field", form_type )
+        tc.fv( "create_form_definition", "name", name )
+        tc.fv( "create_form_definition", "description", description )
+        tc.fv( "create_form_definition", "form_type_select_field", form_type )
         tc.submit( "create_form_button" )
         if form_type == "Sequencing Sample Form":
             tc.submit( "add_layout_grid" )
-            tc.fv( "1", "grid_layout0", form_layout_name )
+            tc.fv( "create_form_definition", "grid_layout0", form_layout_name )
         # if not adding any fields at this time, remove the default empty field
         if num_fields == 0:
             tc.submit( "remove_button" )
@@ -1720,8 +1719,8 @@ class TwillTestCase( unittest.TestCase ):
             field_help_contents = 'Field %i help' % index1
             field_default = 'field_default_0'
             field_default_contents = '%s default contents' % form_type
-            tc.fv( "1", field_label, field_contents )
-            tc.fv( "1", field_help_name, field_help_contents )
+            tc.fv( "edit_form_definition", field_label, field_contents )
+            tc.fv( "edit_form_definition", field_help_name, field_help_contents )
             if field_type == 'SelectField':
                 # SelectField field_type requires a refresh_on_change
                 self.refresh_form( 'field_type_0', field_type )
@@ -1735,11 +1734,11 @@ class TwillTestCase( unittest.TestCase ):
                 for index2 in range( num_options ):
                     option_field_name = 'field_0_option_%i' % index2
                     option_field_value = 'Option%i' % index2
-                    tc.fv( "1", option_field_name, option_field_value )
+                    tc.fv( "edit_form_definition", option_field_name, option_field_value )
             else:
-                tc.fv( "1", "field_type_0", field_type )
-            tc.fv( "1", 'field_name_0', field_name )
-            tc.fv( "1", field_default, field_default_contents )
+                tc.fv( "edit_form_definition", "field_type_0", field_type )
+            tc.fv( "edit_form_definition", 'field_name_0', field_name )
+            tc.fv( "edit_form_definition", field_default, field_default_contents )
         # All done... now save
         tc.submit( "save_changes_button" )
         for check_str in strings_displayed_after_submit:

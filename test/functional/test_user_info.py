@@ -38,12 +38,15 @@ class TestUserInfo( TwillTestCase ):
         """Testing creating a new user info form and editing it"""
         # Logged in as admin_user
         # Create a the first form
-        self.create_form( name='Student',
-                          description="This is Student user info form's description",
-                          form_type=get_user_info_form_definition(),
+        name = "Student"
+        desc = "This is Student user info form's description"
+        form_type = get_user_info_form_definition()
+        self.create_form( name=name,
+                          description=desc,
+                          form_type=form_type,
                           num_fields=0,
                           strings_displayed=[ 'Create a new form definition' ],
-                          strings_displayed_after_submit=[] )
+                          strings_displayed_after_submit=[ name, desc, form_type ] )
         tmp_form = get_form( 'Student' )
         # Add fields to the form
         field_dicts = [ dict( label='Affiliation',
@@ -73,12 +76,14 @@ class TestUserInfo( TwillTestCase ):
         assert form_one is not None, 'Problem retrieving form named "Student" from the database'
         assert len( form_one.fields ) == len( tmp_form.fields ) + len( field_dicts )
         # Create the second form
-        self.create_form( name='Researcher',
-                          description="This is Researcher user info form's description",
-                          form_type=get_user_info_form_definition(),
+        name = "Researcher"
+        desc = "This is Researcher user info form's description"
+        self.create_form( name=name,
+                          description=desc,
+                          form_type=form_type,
                           num_fields=0,
                           strings_displayed=[ 'Create a new form definition' ],
-                          strings_displayed_after_submit=[] )
+                          strings_displayed_after_submit=[ name, desc, form_type ] )
         tmp_form = get_form( 'Researcher' )
         # Add fields to the form
         self.edit_form( id=self.security.encode_id( tmp_form.current.id ),

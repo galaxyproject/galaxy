@@ -436,7 +436,7 @@ class TestLibraryFeatures( TwillTestCase ):
                              strings_displayed=[ 'SelectField', 'Option1' ] )
         # Import a dataset from the current history
         filename = '8.bed'
-        self.new_history( name='import with SelectField' )
+        self.new_history( name='import+with+SelectField' )
         self.upload_file( filename )
         hda = get_latest_hda()
         self.upload_library_dataset( cntrller='library_admin',
