@@ -361,7 +361,11 @@ def get_repository_dependencies_for_installed_tool_shed_repository( trans, repos
                                                            str( repository.changeset_revision ) )
     url = common_util.url_join( tool_shed_url,
                                 'repository/get_repository_dependencies%s' % params )
-    raw_text = common_util.tool_shed_get( trans.app, tool_shed_url, url )
+    try:
+        raw_text = common_util.tool_shed_get( trans.app, tool_shed_url, url )
+    except Exception, e:
+        print "The URL\n%s\nraised the exception:\n%s\n" % ( url, str( e ) )
+        return ''
     if len( raw_text ) > 2:
         encoded_text = json.from_json_string( raw_text )
         text = encoding_util.tool_shed_decode( encoded_text )
