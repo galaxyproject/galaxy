@@ -445,26 +445,35 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         return self.user_openid_grid( trans, **kwd )
 
     @web.expose
-    def login( self, trans, redirect_url='', refresh_frames=[], **kwd ):
+    def login( self, trans, refresh_frames=[], **kwd ):
         '''Handle Galaxy Log in'''
         redirect = kwd.get( 'redirect', trans.request.referer ).strip()
+        root_url = url_for( '/', qualified=True )
+        redirect_url = '' #always start with redirect_url being empty
+        # compare urls, to prevent a redirect from pointing (directly) outside of galaxy 
+        # or to enter a logout/login loop
+        if not util.compare_urls( root_url, redirect, compare_path=False ) or util.compare_urls( url_for( controller='user', action='logout', qualified=True ), redirect ):
+            redirect = root_url
         use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
         message = kwd.get( 'message', '' )
         status = kwd.get( 'status', 'done' )
         header = ''
-        user = None
+        user = trans.user
         email = kwd.get( 'email', '' )
-        if kwd.get( 'login_button', False ):
+        if user:
+            #already logged in
+            redirect_url = redirect
+            message = 'You are already logged in.'
+            status = 'info'
+        elif kwd.get( 'login_button', False ):
             if trans.webapp.name == 'galaxy' and not refresh_frames:
                 if trans.app.config.require_login:
                     refresh_frames = [ 'masthead', 'history', 'tools' ]
                 else:
                     refresh_frames = [ 'masthead', 'history' ]
             message, status, user, success = self.__validate_login( trans, **kwd )
-            if success and redirect and not redirect.startswith( trans.request.base + url_for( controller='user', action='logout' ) ):
+            if success:
                 redirect_url = redirect
-            elif success:
-                redirect_url = url_for( '/' )
         if not user and trans.app.config.require_login:
             if trans.app.config.allow_user_creation:
                 create_account_str = "  If you don't already have an account, <a href='%s'>you may create one</a>." % \
