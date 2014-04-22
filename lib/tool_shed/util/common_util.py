@@ -45,30 +45,37 @@ def check_for_missing_tools( app, tool_panel_configs, latest_tool_migration_scri
                                                                                                   repository_name,
                                                                                                   REPOSITORY_OWNER,
                                                                                                   changeset_revision )
-                # Accumulate all tool dependencies defined for repository dependencies for display to the user.
-                for rd_key, rd_tups in repository_dependencies_dict.items():
-                    if rd_key in [ 'root_key', 'description' ]:
-                        continue
-                    for rd_tup in rd_tups:
-                        tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
-                            parse_repository_dependency_tuple( rd_tup )
+                if tool_shed_accessible:
+                    # Accumulate all tool dependencies defined for repository dependencies for display to the user.
+                    for rd_key, rd_tups in repository_dependencies_dict.items():
+                        if rd_key in [ 'root_key', 'description' ]:
+                            continue
+                        for rd_tup in rd_tups:
+                            tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
+                                parse_repository_dependency_tuple( rd_tup )
+                        tool_shed_accessible, tool_dependencies = get_tool_dependencies( app,
+                                                                                         tool_shed_url,
+                                                                                         name,
+                                                                                         owner,
+                                                                                         changeset_revision )
+                        all_tool_dependencies = accumulate_tool_dependencies( tool_shed_accessible, tool_dependencies, all_tool_dependencies )
                     tool_shed_accessible, tool_dependencies = get_tool_dependencies( app,
                                                                                      tool_shed_url,
-                                                                                     name,
-                                                                                     owner,
+                                                                                     repository_name,
+                                                                                     REPOSITORY_OWNER,
                                                                                      changeset_revision )
                     all_tool_dependencies = accumulate_tool_dependencies( tool_shed_accessible, tool_dependencies, all_tool_dependencies )
-                tool_shed_accessible, tool_dependencies = get_tool_dependencies( app, tool_shed_url, repository_name, REPOSITORY_OWNER, changeset_revision )
-                all_tool_dependencies = accumulate_tool_dependencies( tool_shed_accessible, tool_dependencies, all_tool_dependencies )
-                for tool_elem in elem.findall( 'tool' ):
-                    tool_config_file_name = tool_elem.get( 'file' )
-                    if tool_config_file_name:
-                        # We currently do nothing with repository dependencies except install them (we do not display repositories that will be
-                        # installed to the user).  However, we'll store them in the following dictionary in case we choose to display them in the
-                        # future.
-                        dependencies_dict = dict( tool_dependencies=all_tool_dependencies,
-                                                  repository_dependencies=repository_dependencies )
-                        migrated_tool_configs_dict[ tool_config_file_name ] = dependencies_dict
+                    for tool_elem in elem.findall( 'tool' ):
+                        tool_config_file_name = tool_elem.get( 'file' )
+                        if tool_config_file_name:
+                            # We currently do nothing with repository dependencies except install them (we do not display repositories that will be
+                            # installed to the user).  However, we'll store them in the following dictionary in case we choose to display them in the
+                            # future.
+                            dependencies_dict = dict( tool_dependencies=all_tool_dependencies,
+                                                      repository_dependencies=repository_dependencies )
+                            migrated_tool_configs_dict[ tool_config_file_name ] = dependencies_dict
+                else:
+                    break
         if tool_shed_accessible:
             # Parse the proprietary tool_panel_configs (the default is tool_conf.xml) and generate the list of missing tool config file names.
             for tool_panel_config in tool_panel_configs:
