@@ -785,24 +785,14 @@ var NodeView = Backbone.View.extend( {
         this.tool_body.append( $( "<div class='rule'></div>" ) );
     },
 
-    addDataInput: function( input ) {
-        var terminalView = new InputTerminalView( {
-            node: this.node,
-            input: input
-        } );
-        this.terminalViews[ input.name ] = terminalView;
-        var terminalElement = terminalView.el;
-        var inputView = new DataInputView( {
-            "terminalElement": terminalElement,
-            "input": input, 
-            "nodeView": this,
-        } );
-        var ib = inputView.$el;
-        var terminalElement = inputView.terminalElement;
-        this.$( ".inputs" ).append( ib.prepend( terminalElement ) );
-    },
-
-    replaceDataInput: function( input, new_body ) {
+    addDataInput: function( input, body ) {
+        var skipResize = true;
+        if( ! body ) {
+            body = this.$( ".inputs" );
+            // initial addition to node - resize input to help calculate node
+            // width.
+            skipResize = false;
+        }
         var terminalView = this.terminalViews[ input.name ];
         if( ! terminalView ) {
             terminalView = new InputTerminalView( {
@@ -819,17 +809,17 @@ var NodeView = Backbone.View.extend( {
             } );
         }
         this.terminalViews[ input.name ] = terminalView;
-        var t = terminalView.el;
+        var terminalElement = terminalView.el;
         var inputView = new DataInputView( {
-            "terminalElement": t,
-            "input": input, 
-            "nodeView": this,
-            "skipResize": true,
+            terminalElement: terminalElement,
+            input: input, 
+            nodeView: this,
+            skipResize: skipResize
         } );
         var ib = inputView.$el;
 
-        // Append to new body
-        new_body.append( ib.prepend( t ) );
+        var terminalElement = inputView.terminalElement;
+        body.append( ib.prepend( terminalElement ) );
         return terminalView;
     },
 

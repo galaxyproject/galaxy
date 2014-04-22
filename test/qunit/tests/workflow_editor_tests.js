@@ -477,7 +477,7 @@ define([
     test( "replacing terminal on data input update preserves connections", function() {
         var connector = this.connectAttachedTerminal( "txt", "txt" );
         var newElement = $("<div class='inputs'></div>");
-        this.view.replaceDataInput( { name: "TestName", extensions: ["txt"] }, newElement );
+        this.view.addDataInput( { name: "TestName", extensions: ["txt"] }, newElement );
         var terminal = newElement.find(".input-terminal")[ 0 ].terminal;
         ok( connector.handle2 === terminal );
     } );
@@ -487,7 +487,7 @@ define([
         var newElement = $("<div class='inputs'></div>");
         var connector_destroy_spy = sinon.spy( connector, "destroy" );
         // Replacing input with same name - but now of type bam should destroy connection.
-        this.view.replaceDataInput( { name: "TestName", extensions: ["bam"] }, newElement );
+        this.view.addDataInput( { name: "TestName", extensions: ["bam"] }, newElement );
         var terminal = newElement.find(".input-terminal")[ 0 ].terminal;
         ok( connector_destroy_spy.called );
     } );
