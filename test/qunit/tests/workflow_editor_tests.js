@@ -63,7 +63,8 @@ define([
         setup: function() {
             this.node = {  };
             this.element = $( "<div>" );
-            this.input_terminal = new InputTerminal( { element: this.element, datatypes: [ "txt" ] } );
+            var input = { extensions: [ "txt" ], multiple: false };
+            this.input_terminal = new InputTerminal( { element: this.element, input: input } );
             this.input_terminal.node = this.node;
         },
         test_connector: function( attr ) {
@@ -88,6 +89,16 @@ define([
             var otherNode = { post_job_actions: [ pja ] };
             return otherNode;
         }
+    } );
+
+    test( "test update", function() {
+        deepEqual( this.input_terminal.datatypes, [ 'txt' ] );
+        equal( this.input_terminal.multiple, false );
+
+        this.input_terminal.update( { extensions: [ 'bam' ], multiple: true } );
+
+        deepEqual( this.input_terminal.datatypes, [ 'bam' ] );
+        equal( this.input_terminal.multiple, true );
     } );
 
     test( "test connect", function() {

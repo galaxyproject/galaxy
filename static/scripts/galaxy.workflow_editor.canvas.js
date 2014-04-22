@@ -38,8 +38,11 @@ var OutputTerminal = Terminal.extend( {
 var InputTerminal = Terminal.extend( {
     initialize: function( attr ) {
         Terminal.prototype.initialize.call( this, attr );
-        this.datatypes = attr.datatypes;
-        this.multiple = attr.multiple;
+        this.update( attr.input );
+    },
+    update: function( input ) {
+        this.datatypes = input.extensions;
+        this.multiple = input.multiple;
     },
     canAccept: function ( other ) {
         if( this._inputFilled() ) {
@@ -981,13 +984,9 @@ var InputTerminalView = Backbone.View.extend( {
         var input = options.input;
         
         var name = input.name;
-        var types = input.extensions;
-        var multiple = input.multiple;
-
-        var terminal = this.el.terminal = new InputTerminal( { element: this.el, datatypes: types, multiple: multiple } );
+        var terminal = this.el.terminal = new InputTerminal( { element: this.el, input: input } );
         terminal.node = node;
         terminal.name = name;
-
         node.input_terminals[name] = terminal;
     },
 
