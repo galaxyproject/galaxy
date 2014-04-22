@@ -205,6 +205,7 @@
             $(function(){
                 var currPanel = new historyPanel.CurrentHistoryPanel({
                     el              : $( "#current-history-panel" ),
+                    purgeAllowed    : Galaxy.config.allow_user_dataset_purge,
                     linkTarget      : 'galaxy_main',
                     onready         : function loadAsCurrentHistoryPanel(){
                         this.connectToQuotaMeter( Galaxy.quotaMeter )

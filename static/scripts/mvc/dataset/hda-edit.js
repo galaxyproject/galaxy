@@ -36,6 +36,9 @@ var HDAEditView = hdaBase.HDABaseView.extend(
             this._render_rerunButton
         ];
 
+        /** allow user purge of dataset files? */
+        this.purgeAllowed = attributes.purgeAllowed || false;
+
         //TODO: move to HiddenUntilActivatedViewMixin
         /** should the tags editor be shown or hidden initially? */
         this.tagsEditorShown        = attributes.tagsEditorShown || false;
@@ -291,9 +294,14 @@ var HDAEditView = hdaBase.HDABaseView.extend(
             };
 
         $newRender.find( '.dataset-deleted-msg' ).append([
-            br, link( _l( 'Undelete it' ), 'dataset-undelete' ), p,
-            br, link( _l( 'Permanently remove it from disk' ), 'dataset-purge' ), p
+            br, link( _l( 'Undelete it' ), 'dataset-undelete' ), p
         ].join( '' ));
+
+        if( this.purgeAllowed ){
+            $newRender.find( '.dataset-deleted-msg' ).append([
+                br, link( _l( 'Permanently remove it from disk' ), 'dataset-purge' ), p
+            ].join( '' ));
+        }
 
         $newRender.find( '.dataset-hidden-msg' ).append([
             br, link( _l( 'Unhide it' ), 'dataset-unhide' ), p

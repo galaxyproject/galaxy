@@ -25,6 +25,7 @@ define( 'app', function(){
             window.panel = new historyPanel.CurrentHistoryPanel({
                 show_deleted    : bootstrapped.show_deleted,
                 show_hidden     : bootstrapped.show_hidden,
+                purgeAllowed    : Galaxy.config.allow_user_dataset_purge,
                 el              : $( "body" ),
                 model           : new historyModel.History( bootstrapped.history, bootstrapped.hdas ),
                 onready         : function(){

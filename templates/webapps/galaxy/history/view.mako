@@ -173,6 +173,7 @@ window.Galaxy = {};
             window.historyPanel = new panelClass({
                 show_deleted    : ${show_deleted_json},
                 show_hidden     : ${show_hidden_json},
+                purgeAllowed    : Galaxy.config.allow_user_dataset_purge,
                 el              : $( "#history-" + historyJSON.id ),
                 model           : history,
                 onready         : function(){

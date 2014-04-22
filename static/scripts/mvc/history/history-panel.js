@@ -50,6 +50,9 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
         /** editor for annotations - sub-view */
         this.annotationEditor = null;
 
+        /** allow user purge of dataset files? */
+        this.purgeAllowed = attributes.purgeAllowed || false;
+
         // states/modes the panel can be in
         /** is the panel currently showing the dataset selection controls? */
         this.selecting = attributes.selecting || false;
@@ -197,41 +200,40 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
      *  ajax calls made for multiple datasets are queued
      */
     _setUpDatasetActionsPopup : function( $where ){
-        var panel = this;
-        ( new PopupMenu( $where.find( '.history-dataset-action-popup-btn' ), [
-            {
-                html: _l( 'Hide datasets' ), func: function(){
-                    var action = hdaModel.HistoryDatasetAssociation.prototype.hide;
-                    panel.getSelectedHdaCollection().ajaxQueue( action );
+        var panel = this,
+            actions = [
+                {   html: _l( 'Hide datasets' ), func: function(){
+                        var action = hdaModel.HistoryDatasetAssociation.prototype.hide;
+                        panel.getSelectedHdaCollection().ajaxQueue( action );
+                    }
+                },
+                {   html: _l( 'Unhide datasets' ), func: function(){
+                        var action = hdaModel.HistoryDatasetAssociation.prototype.unhide;
+                        panel.getSelectedHdaCollection().ajaxQueue( action );
+                    }
+                },
+                {   html: _l( 'Delete datasets' ), func: function(){
+                        var action = hdaModel.HistoryDatasetAssociation.prototype['delete'];
+                        panel.getSelectedHdaCollection().ajaxQueue( action );
+                    }
+                },
+                {   html: _l( 'Undelete datasets' ), func: function(){
+                        var action = hdaModel.HistoryDatasetAssociation.prototype.undelete;
+                        panel.getSelectedHdaCollection().ajaxQueue( action );
+                    }
                 }
-            },
-            {
-                html: _l( 'Unhide datasets' ), func: function(){
-                    var action = hdaModel.HistoryDatasetAssociation.prototype.unhide;
-                    panel.getSelectedHdaCollection().ajaxQueue( action );
-                }
-            },
-            {
-                html: _l( 'Delete datasets' ), func: function(){
-                    var action = hdaModel.HistoryDatasetAssociation.prototype['delete'];
-                    panel.getSelectedHdaCollection().ajaxQueue( action );
-                }
-            },
-            {
-                html: _l( 'Undelete datasets' ), func: function(){
-                    var action = hdaModel.HistoryDatasetAssociation.prototype.undelete;
-                    panel.getSelectedHdaCollection().ajaxQueue( action );
-                }
-            },
-            {
+            ];
+        if( panel.purgeAllowed ){
+            actions.push({
                 html: _l( 'Permanently delete datasets' ), func: function(){
                     if( confirm( _l( 'This will permanently remove the data in your datasets. Are you sure?' ) ) ){
                         var action = hdaModel.HistoryDatasetAssociation.prototype.purge;
                         panel.getSelectedHdaCollection().ajaxQueue( action );
                     }
                 }
-            }
-        ]));
+            });
+        }
+        return new PopupMenu( $where.find( '.history-dataset-action-popup-btn' ), actions );
     },
 
     // ------------------------------------------------------------------------ hda sub-views
@@ -265,6 +267,7 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
                 expanded        : this.storage.get( 'expandedHdas' )[ hdaId ],
                 //draggable       : true,
                 selectable      : this.selecting,
+                purgeAllowed    : this.purgeAllowed,
                 hasUser         : this.model.ownedByCurrUser(),
                 logger          : this.logger,
                 tagsEditorShown       : ( this.tagsEditor && !this.tagsEditor.hidden ),
