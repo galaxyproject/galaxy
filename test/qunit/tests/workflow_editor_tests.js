@@ -385,11 +385,14 @@ define([
             var old_input_terminal = node.input_terminals.input1;
             old_input_terminal.connectors.push( connector );
 
+            // Update node, make sure connector still the same...
             test.update_field_data_with_new_input();
-            
             var new_input_terminal = node.input_terminals.input1;
-            equal( old_input_terminal, old_input_terminal );
-            notEqual( old_input_terminal, new_input_terminal );
+            equal( connector, new_input_terminal.connectors[ 0 ] );
+
+            // Update a second time, make sure connector still the same...
+            test.update_field_data_with_new_input();
+            new_input_terminal = node.input_terminals.input1;
             equal( connector, new_input_terminal.connectors[ 0 ] );
         } );
     } );

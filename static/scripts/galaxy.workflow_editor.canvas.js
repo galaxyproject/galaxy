@@ -257,14 +257,17 @@ var Node = Backbone.Model.extend({
         // Update input rows
         var old_body = nodeView.$( "div.inputs" );
         var new_body = nodeView.newInputsDiv();
-        $.each( data.data_inputs, function( i, input ) {
-            node.nodeView.replaceDataInput( input, new_body );
+        var newTerminalViews = {};
+        _.each( data.data_inputs, function( input ) {
+            var terminalView = node.nodeView.addDataInput( input, new_body );
+            newTerminalViews[ input.name ] = terminalView;
         });
-        old_body.replaceWith( new_body );
         // Cleanup any leftover terminals
-        old_body.find( "div.input-data-row > .terminal" ).each( function() {
-            this.terminal.destroy();
-        });
+        _.each( _.difference( _.values( nodeView.terminalViews ), _.values( newTerminalViews ) ), function( unusedView ) {
+            unusedView.el.terminal.destroy();
+        } );
+        nodeView.terminalViews = newTerminalViews;
+        old_body.replaceWith( new_body );
         // If active, reactivate with new form_html
         this.markChanged();
         this.redraw();
@@ -754,6 +757,7 @@ var NodeView = Backbone.View.extend( {
         this.tool_body = this.$el.find( ".toolFormBody" );
         this.tool_body.find( "div" ).remove();
         this.newInputsDiv().appendTo( this.tool_body );
+        this.terminalViews = {};
     },
 
     render : function() {
@@ -786,6 +790,7 @@ var NodeView = Backbone.View.extend( {
             node: this.node,
             input: input
         } );
+        this.terminalViews[ input.name ] = terminalView;
         var terminalElement = terminalView.el;
         var inputView = new DataInputView( {
             "terminalElement": terminalElement,
@@ -798,29 +803,23 @@ var NodeView = Backbone.View.extend( {
     },
 
     replaceDataInput: function( input, new_body ) {
-        var terminalView = new InputTerminalView( {
-            node: this.node,
-            input: input
-        } );
-        var t = terminalView.el;
-
-        // If already connected save old connection
-        this.$( "div[name='" + input.name + "']" ).each( function() {
-            $(this).find( ".input-terminal" ).each( function() {
-                var c = this.terminal.connectors[0];
-                if ( c ) {
-                    var terminal = t.terminal;
-                    if( c.handle1 && ! terminal.attachable( c.handle1 ) ) {
-                        // connection no longer valid, destroy it
-                        c.destroy();
-                    } else {
-                        terminal.connectors[0] = c;
-                        c.handle2 = terminal;
-                    }
+        var terminalView = this.terminalViews[ input.name ];
+        if( ! terminalView ) {
+            terminalView = new InputTerminalView( {
+                node: this.node,
+                input: input
+            } );             
+        } else {
+            var terminal = terminalView.el.terminal;
+            terminal.update( input );
+            _.each( terminal.connectors, function( connector ) {
+                if( connector.handle1 && ! terminal.attachable( connector.handle1 ) ) {
+                    connector.destroy();
                 }
-            });
-            $(this).remove();
-        });
+            } );
+        }
+        this.terminalViews[ input.name ] = terminalView;
+        var t = terminalView.el;
         var inputView = new DataInputView( {
             "terminalElement": t,
             "input": input, 
@@ -831,7 +830,7 @@ var NodeView = Backbone.View.extend( {
 
         // Append to new body
         new_body.append( ib.prepend( t ) );
-
+        return terminalView;
     },
 
     addDataOutput: function( output ) {
