@@ -39,7 +39,6 @@ class InstallTestRepository( TwillTestCase ):
         # TODO: Figure out a way to alter these attributes during tests.
         self.galaxy_tool_dependency_dir = os.environ.get( 'GALAXY_INSTALL_TEST_TOOL_DEPENDENCY_DIR' )
         self.shed_tools_dict = {}
-        self.home()
 
     def initiate_installation_process( self, install_tool_dependencies=False, install_repository_dependencies=True, no_changes=True,
                                        new_tool_panel_section_label=None ):

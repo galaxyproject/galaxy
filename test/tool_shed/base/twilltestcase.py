@@ -61,7 +61,6 @@ class ShedTwillTestCase( TwillTestCase ):
         # TODO: Figure out a way to alter these attributes during tests.
         self.galaxy_tool_dependency_dir = os.environ.get( 'GALAXY_TEST_TOOL_DEPENDENCY_DIR' )
         self.shed_tools_dict = {}
-        self.home()
         
     def add_repository_review_component( self, **kwd ):
         url = '/repository_review/create_component?operation=create'
@@ -597,10 +596,8 @@ class ShedTwillTestCase( TwillTestCase ):
             self.submit_form( '1', 'login_button', email=email, redirect=redirect, password=password )
         
     def galaxy_logout( self ):
-        self.home()
         self.visit_galaxy_url( "/user/logout" )
         self.check_page_for_string( "You have been logged out" )
-        self.home()
         
     def generate_complex_dependency_xml( self, filename, filepath, repository_tuples, package, version ):
         file_path = os.path.join( filepath, filename )

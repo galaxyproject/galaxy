@@ -14,6 +14,7 @@ import unittest
 import urllib
 import zipfile
 
+from urlparse import urlparse
 from galaxy.web import security
 from galaxy.web.framework.helpers import iff
 from galaxy.util.json import from_json_string
@@ -63,7 +64,6 @@ class TwillTestCase( unittest.TestCase ):
                 os.makedirs(self.keepOutdir)
             except:
                 pass
-        self.home()
 
     # Functions associated with files
     def files_diff( self, file1, file2, attributes=None ):
@@ -232,7 +232,6 @@ class TwillTestCase( unittest.TestCase ):
                     tc.config("readonly_controls_writeable", 1)
                     tc.fv( "tool_form", "NAME", name )
             tc.submit( "runtool_btn" )
-            self.home()
         except AssertionError, err:
             errmsg = "Uploading file resulted in the following exception.  Make sure the file (%s) exists.  " % filename
             errmsg += str( err )
@@ -251,13 +250,12 @@ class TwillTestCase( unittest.TestCase ):
 
     def upload_url_paste( self, url_paste, ftype='auto', dbkey='unspecified (?)' ):
         """Pasted data in the upload utility"""
-        self.visit_page( "tool_runner/index?tool_id=upload1" )
+        self.visit_url( "/tool_runner/index?tool_id=upload1" )
         try: 
             self.refresh_form( "file_type", ftype ) #Refresh, to support composite files
             tc.fv( "tool_form", "dbkey", dbkey )
             tc.fv( "tool_form", "url_paste", url_paste )
             tc.submit( "runtool_btn" )
-            self.home()
         except Exception, e:
             errmsg = "Problem executing upload utility using url_paste: %s" % str( e )
             raise AssertionError( errmsg )
@@ -271,8 +269,8 @@ class TwillTestCase( unittest.TestCase ):
         # Wait for upload processing to finish (TODO: this should be done in each test case instead)
         self.wait()
 
-    def json_from_url( self, url ):
-        self.visit_url( url )
+    def json_from_url( self, url, params={} ):
+        self.visit_url( url, params )
         return from_json_string( self.last_page() )
 
     # Functions associated with histories
@@ -283,8 +281,8 @@ class TwillTestCase( unittest.TestCase ):
         params = dict()
         if show_deleted is not None:
             params[ 'deleted' ] = show_deleted
-        api_url = '/api/histories/%s/contents?%s' % ( encoded_history_id, urllib.urlencode( params ) ) 
-        json_data = self.json_from_url( api_url )
+        api_url = '/api/histories/%s/contents' % encoded_history_id 
+        json_data = self.json_from_url( api_url, params=params )
         if show_deleted is not None:
             hdas = []
             for hda in json_data:
@@ -296,8 +294,8 @@ class TwillTestCase( unittest.TestCase ):
             json_data = hdas
         if show_details:
             params[ 'details' ] = ','.join( [ hda[ 'id' ] for hda in json_data ] )
-            api_url = '/api/histories/%s/contents?%s' % ( encoded_history_id, urllib.urlencode( params ) )
-            json_data = self.json_from_url( api_url )
+            api_url = '/api/histories/%s/contents' % encoded_history_id
+            json_data = self.json_from_url( api_url, params=params )
             log.debug( 'detailed url: %s' % api_url )
             log.debug( 'detailed json data: %s' % json_data )
         return json_data
@@ -314,19 +312,18 @@ class TwillTestCase( unittest.TestCase ):
 
     def check_history_for_errors( self ):
         """Raises an exception if there are errors in a history"""
-        self.home()
-        self.visit_page( "history" )
+        self.visit_url( "/history" )
         page = self.last_page()
         if page.find( 'error' ) > -1:
             raise AssertionError( 'Errors in the history for user %s' % self.user )
 
     def check_history_for_string( self, patt, show_deleted=False ):
         """Breaks patt on whitespace and searches for each element seperately in the history"""
-        self.home()
         if show_deleted:
-            self.visit_page( "history?show_deleted=True" )
+            params = dict( show_deleted=True )
+            self.visit_url( "/history", params )
         else:
-            self.visit_page( "history" )
+            self.visit_url( "/history" )
         for subpatt in patt.split():
             try:
                 tc.find( subpatt )
@@ -334,22 +331,19 @@ class TwillTestCase( unittest.TestCase ):
                 fname = self.write_temp_file( tc.browser.get_html() )
                 errmsg = "no match to '%s'\npage content written to '%s'" % ( subpatt, fname )
                 raise AssertionError( errmsg )
-        self.home()
 
     def check_history_for_exact_string( self, string, show_deleted=False ):
         """Looks for exact match to 'string' in history page"""
-        self.home()
         if show_deleted:
-            self.visit_page( "history?show_deleted=True" )
+            self.visit_url( "/history?show_deleted=True" )
         else:
-            self.visit_page( "history" )
+            self.visit_url( "/history" )
         try:
             tc.find( string )
         except:
             fname = self.write_temp_file( tc.browser.get_html() )
             errmsg = "no match to '%s'\npage content written to '%s'" % ( string, fname )
             raise AssertionError( errmsg )
-        self.home()
 
     def check_history_json( self, check_fn, show_deleted=None ):
         """
@@ -367,8 +361,6 @@ class TwillTestCase( unittest.TestCase ):
             fname = self.write_temp_file( tc.browser.get_html() )
             errmsg = ( "json could not be read\npage content written to '%s'" % ( fname ) )
             raise AssertionError( errmsg )
-
-        self.home()
 
     def is_history_empty( self ):
         """
@@ -404,20 +396,15 @@ class TwillTestCase( unittest.TestCase ):
         history_list = self.get_histories_as_data_list()
         self.assertTrue( history_list )
         num_deleted = len( id.split( ',' ) )
-        self.home()
-        self.visit_page( "history/list?operation=delete&id=%s" % ( id ) )
-
+        self.visit_url( "/history/list?operation=delete&id=%s" % ( id ) )
         check_str = 'Deleted %d %s' % ( num_deleted, iff( num_deleted != 1, "histories", "history" ) )
         self.check_page_for_string( check_str )
-        self.home()
 
     def delete_current_history( self, strings_displayed=[] ):
         """Deletes the current history"""
-        self.home()
-        self.visit_page( "history/delete_current" )
+        self.visit_url( "/history/delete_current" )
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
-        self.home()
 
     def get_histories_as_data_list( self ):
         """Returns the data elements of all histories"""
@@ -433,24 +420,21 @@ class TwillTestCase( unittest.TestCase ):
 
     def history_as_xml_tree( self, show_deleted=False ):
         """Returns a parsed xml object of a history"""
-        self.home()
-        self.visit_page( 'history?as_xml=True&show_deleted=%s' % show_deleted )
+        self.visit_url( '/history?as_xml=True&show_deleted=%s' % show_deleted )
         xml = self.last_page()
         tree = ElementTree.fromstring(xml)
         return tree
 
     def histories_as_xml_tree( self ):
         """Returns a parsed xml object of all histories"""
-        self.home()
-        self.visit_page( 'history/list_as_xml' )
+        self.visit_url( '/history/list_as_xml' )
         xml = self.last_page()
         tree = ElementTree.fromstring(xml)
         return tree
 
     def history_options( self, user=False, active_datasets=False, activatable_datasets=False, histories_shared_by_others=False ):
         """Mimics user clicking on history options link"""
-        self.home()
-        self.visit_page( "root/history_options" )
+        self.visit_url( "/root/history_options" )
         if user:
             self.check_page_for_string( 'Previously</a> stored histories' )
             if active_datasets:
@@ -465,35 +449,28 @@ class TwillTestCase( unittest.TestCase ):
             self.check_page_for_string( 'Show deleted</a> datasets in current history' )
         self.check_page_for_string( 'Rename</a> current history' )
         self.check_page_for_string( 'Delete</a> current history' )
-        self.home()
 
     def new_history( self, name=None ):
         """Creates a new, empty history"""
-        self.home()
         if name:
             self.visit_url( "%s/history_new?name=%s" % ( self.url, name ) )
         else:
             self.visit_url( "%s/history_new" % self.url )
         self.check_page_for_string( 'New history created' )
         assert self.is_history_empty(), 'Creating new history did not result in an empty history.'
-        self.home()
 
     def rename_history( self, id, old_name, new_name ):
         """Rename an existing history"""
-        self.home()
-        self.visit_page( "history/rename?id=%s&name=%s" % ( id, new_name ) )
+        self.visit_url( "/history/rename", params=dict( id=id, name=new_name ) )
         check_str = 'History: %s renamed to: %s' % ( old_name, urllib.unquote( new_name ) )
         self.check_page_for_string( check_str )
-        self.home()
 
     def set_history( self ):
         """Sets the history (stores the cookies for this run)"""
         if self.history_id:
-            self.home()
-            self.visit_page( "history?id=%s" % self.history_id )
+            self.visit_url( "/history", params=dict( id=self.history_id ) )
         else:
             self.new_history()
-        self.home()
 
     def share_current_history( self, email, strings_displayed=[], strings_displayed_after_submit=[],
                                action='', action_strings_displayed=[], action_strings_displayed_after_submit=[] ):
@@ -514,7 +491,6 @@ class TwillTestCase( unittest.TestCase ):
             tc.submit( "share_restricted_button" )
             for check_str in action_strings_displayed_after_submit:
                 self.check_page_for_string( check_str )
-        self.home()
 
     def share_histories_with_users( self, ids, emails, strings_displayed=[], strings_displayed_after_submit=[],
                                     action=None, action_strings_displayed=[] ):
@@ -533,97 +509,70 @@ class TwillTestCase( unittest.TestCase ):
 
             for check_str in action_strings_displayed:
                 self.check_page_for_string( check_str )
-        self.home()
 
     def unshare_history( self, history_id, user_id, strings_displayed=[] ):
         """Unshare a history that has been shared with another user"""
-        self.visit_url( "%s/history/list?id=%s&operation=share+or+publish" % ( self.url, history_id ) )
+        self.visit_url( "/history/sharing", params=dict( id=history_id ) )
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
-        self.visit_url( "%s/history/sharing?unshare_user=%s&id=%s" % ( self.url, user_id, history_id ) )
-        self.home()
+        self.visit_url( "/history/sharing", params=dict( unshare_user=user_id, id=history_id ) )
 
     def switch_history( self, id='', name='' ):
         """Switches to a history in the current list of histories"""
-        self.visit_url( "%s/history/list?operation=switch&id=%s" % ( self.url, id ) )
+        params = dict( operation='switch', id=id )
+        self.visit_url( "/history/list", params )
         if name:
             self.check_history_for_exact_string( name )
-        self.home()
 
     def view_stored_active_histories( self, strings_displayed=[] ):
-        self.home()
-        self.visit_page( "history/list" )
+        self.visit_url( "/history/list" )
         self.check_page_for_string( 'Saved Histories' )
         self.check_page_for_string( 'operation=Rename' )
         self.check_page_for_string( 'operation=Switch' )
         self.check_page_for_string( 'operation=Delete' )
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
-        self.home()
 
     def view_stored_deleted_histories( self, strings_displayed=[] ):
-        self.home()
-        self.visit_page( "history/list?f-deleted=True" )
+        self.visit_url( "/history/list?f-deleted=True" )
         self.check_page_for_string( 'Saved Histories' )
         self.check_page_for_string( 'operation=Undelete' )
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
-        self.home()
 
     def view_shared_histories( self, strings_displayed=[] ):
-        self.home()
-        self.visit_page( "history/list_shared" )
+        self.visit_url( "/history/list_shared" )
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
-        self.home()
 
     def copy_history( self, history_id, copy_choice, strings_displayed=[], strings_displayed_after_submit=[] ):
-        self.home()
-        self.visit_page( "history/copy?id=%s" % history_id )
+        self.visit_url( "/history/copy?id=%s" % history_id )
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
         tc.fv( '1', 'copy_choice', copy_choice )
         tc.submit( 'copy_choice_button' )
         for check_str in strings_displayed_after_submit:
             self.check_page_for_string( check_str )
-        self.home()
 
     def make_accessible_via_link( self, history_id, strings_displayed=[], strings_displayed_after_submit=[] ):
-        self.home()
-        self.visit_page( "history/list?operation=share+or+publish&id=%s" % history_id )
-        for check_str in strings_displayed:
-            self.check_page_for_string( check_str )
         # twill barfs on this form, possibly because it contains no fields, but not sure.
         # In any case, we have to mimic the form submission
-        self.home()
-        self.visit_page( 'history/sharing?id=%s&make_accessible_via_link=True' % history_id )
-        for check_str in strings_displayed_after_submit:
-            self.check_page_for_string( check_str )
-        self.home()
+        self.visit_url( '/history/sharing', dict( id=history_id, make_accessible_via_link=True ) )
+        self.check_for_strings( strings_displayed=strings_displayed_after_submit )
 
     def disable_access_via_link( self, history_id, strings_displayed=[], strings_displayed_after_submit=[] ):
-        self.home()
-        self.visit_page( "history/list?operation=share+or+publish&id=%s" % history_id )
-        for check_str in strings_displayed:
-            self.check_page_for_string( check_str )
         # twill barfs on this form, possibly because it contains no fields, but not sure.
         # In any case, we have to mimic the form submission
-        self.home()
-        self.visit_page( 'history/sharing?id=%s&disable_link_access=True' % history_id )
-        for check_str in strings_displayed_after_submit:
-            self.check_page_for_string( check_str )
-        self.home()
+        self.visit_url( '/history/sharing', dict( id=history_id, disable_link_access=True ) )
+        self.check_for_strings( strings_displayed=strings_displayed_after_submit )
 
     def import_history_via_url( self, history_id, email, strings_displayed_after_submit=[] ):
-        self.home()
-        self.visit_page( "history/imp?&id=%s" % history_id )
-        for check_str in strings_displayed_after_submit:
-            self.check_page_for_string( check_str )
-        self.home()
+        self.visit_url( "/history/imp", params=dict( id=history_id ) )
+        self.check_for_strings( strings_displayed=strings_displayed_after_submit )
 
     # Functions associated with datasets (history items) and meta data
     def _get_job_stream_output( self, hda_id, stream, format ):
-        self.visit_page( "datasets/%s/%s" % ( self.security.encode_id( hda_id ), stream ) )
+        self.visit_url( "/datasets/%s/%s" % ( self.security.encode_id( hda_id ), stream ) )
 
         output = self.last_page()
         return self._format_stream( output, stream, format )
@@ -657,7 +606,7 @@ class TwillTestCase( unittest.TestCase ):
             elem = data_list[-1]
             hid = int( elem.get('hid') )
         self.assertTrue( hid )
-        self.visit_page( "dataset/edit?hid=%s" % hid )
+        self.visit_url( "/dataset/edit?hid=%s" % hid )
         for subpatt in patt.split():
             tc.find(subpatt)
 
@@ -686,19 +635,16 @@ class TwillTestCase( unittest.TestCase ):
         self.visit_url( '%s/datasets/%s/display/' % ( self.url, self.security.encode_id( hda_id ) ) )
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
-        self.home()
 
     def view_history( self, history_id, strings_displayed=[] ):
         """Displays a history for viewing"""
         self.visit_url( '%s/history/view?id=%s' % ( self.url, self.security.encode_id( history_id ) ) )
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
-        self.home()
 
     def edit_hda_attribute_info( self, hda_id, new_name='', new_info='', new_dbkey='', new_startcol='',
                                  strings_displayed=[], strings_not_displayed=[] ):
         """Edit history_dataset_association attribute information"""
-        self.home()
         self.visit_url( "%s/datasets/%s/edit" % ( self.url, self.security.encode_id( hda_id ) ) )
         submit_required = False
         self.check_page_for_string( 'Edit Attributes' )
@@ -725,7 +671,6 @@ class TwillTestCase( unittest.TestCase ):
                 raise AssertionError( "String (%s) incorrectly displayed on Edit Attributes page." % check_str )
             except:
                 pass
-        self.home()
 
     def check_hda_attribute_info( self, hda_id, strings_displayed=[] ):
         """Edit history_dataset_association attribute information"""
@@ -734,7 +679,6 @@ class TwillTestCase( unittest.TestCase ):
 
     def auto_detect_metadata( self, hda_id ):
         """Auto-detect history_dataset_association metadata"""
-        self.home()
         self.visit_url( "%s/datasets/%s/edit" % ( self.url, self.security.encode_id( hda_id ) ) )
         self.check_page_for_string( 'This will inspect the dataset and attempt' )
         tc.fv( 'auto_detect', 'detect', 'Auto-detect' )
@@ -745,28 +689,23 @@ class TwillTestCase( unittest.TestCase ):
         except AssertionError:
             self.check_page_for_string( 'Attributes updated' )
         #self.check_page_for_string( 'Attributes updated' )
-        self.home()
 
     def convert_format( self, hda_id, target_type ):
         """Convert format of history_dataset_association"""
-        self.home()
         self.visit_url( "%s/datasets/%s/edit" % ( self.url, self.security.encode_id( hda_id ) ) )
         self.check_page_for_string( 'This will inspect the dataset and attempt' )
         tc.fv( 'convert_data', 'target_type', target_type )
         tc.submit( 'convert_data' )
         self.check_page_for_string( 'The file conversion of Convert BED to GFF on data' )
         self.wait()  # wait for the format convert tool to finish before returning
-        self.home()
 
     def change_datatype( self, hda_id, datatype ):
         """Change format of history_dataset_association"""
-        self.home()
         self.visit_url( "%s/datasets/%s/edit" % ( self.url, self.security.encode_id( hda_id ) ) )
         self.check_page_for_string( 'This will change the datatype of the existing dataset but' )
         tc.fv( 'change_datatype', 'datatype', datatype )
         tc.submit( 'change' )
         self.check_page_for_string( 'Changed the type of dataset' )
-        self.home()
 
     def copy_history_item( self, source_dataset_id=None, target_history_id=None, all_target_history_ids=[],
                            deleted_history_ids=[] ):
@@ -774,7 +713,6 @@ class TwillTestCase( unittest.TestCase ):
         Copy 1 history_dataset_association to 1 history (Limited by twill since it doesn't support multiple
         field names, such as checkboxes
         """
-        self.home()
         self.visit_url( "%s/dataset/copy_datasets?source_dataset_ids=%s" % ( self.url, source_dataset_id ) )
         self.check_page_for_string( 'Source History:' )
         # Make sure all of users active histories are displayed
@@ -792,7 +730,6 @@ class TwillTestCase( unittest.TestCase ):
         tc.submit( 'do_copy' )
         check_str = '1 dataset copied to 1 history'
         self.check_page_for_string( check_str )
-        self.home()
 
     def get_hids_in_history( self ):
         """Returns the list of hid values for items in a history"""
@@ -915,11 +852,10 @@ class TwillTestCase( unittest.TestCase ):
     def __default_dataset_fetcher( self ):
         def fetcher( hda_id, filename=None ):
             if filename is None:
-                page_url = "display?encoded_id=%s" % hda_id
-                self.home()  # I assume this is not needed.
+                page_url = "/display?encoded_id=%s" % hda_id
             else:
-                page_url = "datasets/%s/display/%s" % ( hda_id, filename )
-            self.visit_page( page_url )
+                page_url = "/datasets/%s/display/%s" % ( hda_id, filename )
+            self.visit_url( page_url )
             data = self.last_page()
             return data
 
@@ -1019,7 +955,8 @@ class TwillTestCase( unittest.TestCase ):
     def create( self, cntrller='user', email='test@bx.psu.edu', password='testuser', username='admin-user', redirect='' ):
         # HACK: don't use panels because late_javascripts() messes up the twill browser and it
         # can't find form fields (and hence user can't be logged in).
-        self.visit_url( "%s/user/create?cntrller=%s&use_panels=False" % ( self.url, cntrller ) )
+        params = dict( cntrller=cntrller, use_panels=False )
+        self.visit_url( "/user/create", params )
         tc.fv( 'registration', 'email', email )
         tc.fv( 'registration', 'redirect', redirect )
         tc.fv( 'registration', 'password', password )
@@ -1095,7 +1032,6 @@ class TwillTestCase( unittest.TestCase ):
             tc.submit( "edit_user_info_button" )
         for check_str in strings_displayed_after_submit:
             self.check_page_for_string( check_str )
-        self.home()
 
     def user_set_default_permissions( self, cntrller='user', permissions_out=[], permissions_in=[], role_id='2' ):
         # role.id = 2 is Private Role for test2@bx.psu.edu
@@ -1112,7 +1048,6 @@ class TwillTestCase( unittest.TestCase ):
             url = "%s&%s=%s" % ( url, key, str( role_id ) )
         self.visit_url( "%s/%s" % ( self.url, url ) )
         self.check_page_for_string( 'Default new history permissions have been changed.' )
-        self.home()
 
     def history_set_default_permissions( self, permissions_out=[], permissions_in=[], role_id=3 ):  # role.id = 3 is Private Role for test3@bx.psu.edu
         # NOTE: Twill has a bug that requires the ~/user/permissions page to contain at least 1 option value
@@ -1126,10 +1061,8 @@ class TwillTestCase( unittest.TestCase ):
         for pi in permissions_in:
             key = '%s_in' % pi
             url = "%s&%s=%s" % ( url, key, str( role_id ) )
-        self.home()
         self.visit_url( "%s/%s" % ( self.url, url ) )
         self.check_page_for_string( 'Default history permissions have been changed.' )
-        self.home()
 
     def login( self, email='test@bx.psu.edu', password='testuser', username='admin-user', redirect='' ):
         # test@bx.psu.edu is configured as an admin user
@@ -1139,14 +1072,12 @@ class TwillTestCase( unittest.TestCase ):
             # The acount has previously been created, so just login.
             # HACK: don't use panels because late_javascripts() messes up the twill browser and it
             # can't find form fields (and hence user can't be logged in).
-            self.visit_url( "%s/user/login?use_panels=False" % self.url )
+            self.visit_url( "/user/login?use_panels=False" )
             self.submit_form( 1, 'login_button', email=email, redirect=redirect, password=password )
 
     def logout( self ):
-        self.home()
-        self.visit_page( "user/logout" )
+        self.visit_url( "%s/user/logout" % self.url )
         self.check_page_for_string( "You have been logged out" )
-        self.home()
 
     # Functions associated with browsers, cookies, HTML forms and page visits
 
@@ -1207,9 +1138,6 @@ class TwillTestCase( unittest.TestCase ):
     def clear_form( self, form=0 ):
         """Clears a form"""
         tc.formclear(str(form))
-
-    def home( self ):
-        self.visit_url( self.url )
 
     def last_page( self ):
         return tc.browser.get_html()
@@ -1383,16 +1311,30 @@ class TwillTestCase( unittest.TestCase ):
             # Submit for refresh
             tc.submit( '___refresh_grouping___' )
 
-    def visit_page( self, page ):
-        # tc.go("./%s" % page)
-        if not page.startswith( "/" ):
-            page = "/" + page
-        tc.go( self.url + page )
-        tc.code( 200 )
-
-    def visit_url( self, url ):
-        tc.go("%s" % url)
-        tc.code( 200 )
+    def visit_url( self, url, params=None, checkbox_params=None, allowed_codes=[ 200 ] ):
+        if params is None:
+            params = dict()
+        parsed_url = urlparse( url )
+        if len( parsed_url.netloc ) == 0:
+            url = 'http://%s:%s%s' % ( self.host, self.port, parsed_url.path ) 
+        else:
+            url = '%s://%s%s' % ( parsed_url.scheme, parsed_url.netloc, parsed_url.path )
+        if parsed_url.query:
+            for query_parameter in parsed_url.query.split( '&' ):
+                key, value = query_parameter.split( '=' )
+                params[ key ] = value
+        if params:
+            url += '?%s' % urllib.urlencode( params )
+        if checkbox_params is not None:
+            if params or parsed_url.query:
+                url += '&%s&%s' % ( urllib.urlencode( checkbox_params ), urllib.urlencode( checkbox_params ) )
+            else:
+                url += '?%s&%s' % ( urllib.urlencode( checkbox_params ), urllib.urlencode( checkbox_params ) )
+        new_url = tc.go( url )
+        return_code = tc.browser.get_code()
+        assert return_code in allowed_codes, 'Invalid HTTP return code %s, allowed codes: %s' % \
+            ( return_code, ', '.join( str( code ) for code in allowed_codes ) )
+        return new_url
 
     """Functions associated with Galaxy tools"""
     def run_tool( self, tool_id, repeat_name=None, **kwd ):
@@ -1412,9 +1354,9 @@ class TwillTestCase( unittest.TestCase ):
     def run_ucsc_main( self, track_params, output_params ):
         """Gets Data From UCSC"""
         tool_id = "ucsc_table_direct1"
-        track_string = urllib.urlencode( track_params )
         galaxy_url = urllib.quote_plus( "%s/tool_runner/index?" % self.url )
-        self.visit_url( "http://genome.ucsc.edu/cgi-bin/hgTables?GALAXY_URL=%s&hgta_compressType=none&tool_id=%s&%s" % ( galaxy_url, tool_id, track_string ) )
+        track_params.update( dict( GALAXY_URL=galaxy_url, hgta_compressType='none', tool_id=tool_id ) )
+        self.visit_url( "http://genome.ucsc.edu/cgi-bin/hgTables", params=track_params )
         tc.fv( "mainForm", "hgta_doTopSubmit", "get output" )
         self.submit_form( button="get output" )
         tc.fv( 2, "hgta_doGalaxyQuery", "Send query to Galaxy" )
@@ -1486,41 +1428,32 @@ class TwillTestCase( unittest.TestCase ):
 
     def reset_password_as_admin( self, user_id, password='testreset' ):
         """Reset a user password"""
-        self.home()
         self.visit_url( "%s/admin/reset_user_password?id=%s" % ( self.url, user_id ) )
         tc.fv( "1", "password", password )
         tc.fv( "1", "confirm", password )
         tc.submit( "reset_user_password_button" )
         self.check_page_for_string( "Passwords reset for 1 user." )
-        self.home()
 
     def mark_user_deleted( self, user_id, email='' ):
         """Mark a user as deleted"""
-        self.home()
         self.visit_url( "%s/admin/users?operation=delete&id=%s" % ( self.url, user_id ) )
         check_str = "Deleted 1 users"
         self.check_page_for_string( check_str )
-        self.home()
 
     def undelete_user( self, user_id, email='' ):
         """Undelete a user"""
-        self.home()
         self.visit_url( "%s/admin/users?operation=undelete&id=%s" % ( self.url, user_id ) )
         check_str = "Undeleted 1 users"
         self.check_page_for_string( check_str )
-        self.home()
 
     def purge_user( self, user_id, email ):
         """Purge a user account"""
-        self.home()
         self.visit_url( "%s/admin/users?operation=purge&id=%s" % ( self.url, user_id ) )
         check_str = "Purged 1 users"
         self.check_page_for_string( check_str )
-        self.home()
 
     def manage_roles_and_groups_for_user( self, user_id, in_role_ids=[], out_role_ids=[],
                                           in_group_ids=[], out_group_ids=[], strings_displayed=[] ):
-        self.home()
         url = "%s/admin/manage_roles_and_groups_for_user?id=%s" % ( self.url, user_id )
         if in_role_ids:
             url += "&in_roles=%s" % ','.join( in_role_ids )
@@ -1535,7 +1468,6 @@ class TwillTestCase( unittest.TestCase ):
         self.visit_url( url )
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
-        self.home()
     # Tests associated with roles
 
     def browse_roles( self, strings_displayed=[] ):
@@ -1552,16 +1484,17 @@ class TwillTestCase( unittest.TestCase ):
                      private_role='',
                      strings_displayed=[] ):
         """Create a new role"""
-        url = "%s/admin/roles?operation=create&create_role_button=Save&name=%s&description=%s" % \
-            ( self.url, name.replace( ' ', '+' ), description.replace( ' ', '+' ) )
+        url = "/admin/roles"
+        url_params = dict( operation='create', create_role_button='Save', name=name, description=description )
         if in_user_ids:
-            url += "&in_users=%s" % ','.join( in_user_ids )
+            url_params[ 'in_users' ] = ','.join( in_user_ids )
         if in_group_ids:
-            url += "&in_groups=%s" % ','.join( in_group_ids )
+            url_params[ 'in_groups' ] = ','.join( in_group_ids )
         if create_group_for_role == 'yes':
-            url += '&create_group_for_role=yes&create_group_for_role=yes'
-        self.home()
-        self.visit_url( url )
+            checkbox_params = dict( create_group_for_role='yes' )
+        else:
+            checkbox_params = None
+        self.visit_url( url, url_params, checkbox_params=checkbox_params )
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
         if private_role:
@@ -1573,47 +1506,36 @@ class TwillTestCase( unittest.TestCase ):
             except AssertionError:
                 # Reaching here is the behavior we want since no private roles should be displayed
                 pass
-        self.home()
         self.visit_url( "%s/admin/roles" % self.url )
         self.check_page_for_string( name )
-        self.home()
 
     def rename_role( self, role_id, name='Role One Renamed', description='This is Role One Re-described' ):
         """Rename a role"""
-        self.home()
         self.visit_url( "%s/admin/roles?operation=rename&id=%s" % ( self.url, role_id ) )
         self.check_page_for_string( 'Change role name and description' )
         tc.fv( "1", "name", name )
         tc.fv( "1", "description", description )
         tc.submit( "rename_role_button" )
-        self.home()
 
     def mark_role_deleted( self, role_id, role_name ):
         """Mark a role as deleted"""
-        self.home()
         self.visit_url( "%s/admin/roles?operation=delete&id=%s" % ( self.url, role_id ) )
         check_str = "Deleted 1 roles:  %s" % role_name
         self.check_page_for_string( check_str )
-        self.home()
 
     def undelete_role( self, role_id, role_name ):
         """Undelete an existing role"""
-        self.home()
         self.visit_url( "%s/admin/roles?operation=undelete&id=%s" % ( self.url, role_id ) )
         check_str = "Undeleted 1 roles:  %s" % role_name
         self.check_page_for_string( check_str )
-        self.home()
 
     def purge_role( self, role_id, role_name ):
         """Purge an existing role"""
-        self.home()
         self.visit_url( "%s/admin/roles?operation=purge&id=%s" % ( self.url, role_id ) )
         check_str = "Purged 1 roles:  %s" % role_name
         self.check_page_for_string( check_str )
-        self.home()
 
     def associate_users_and_groups_with_role( self, role_id, role_name, user_ids=[], group_ids=[] ):
-        self.home()
         url = "%s/admin/role?id=%s&role_members_edit_button=Save" % ( self.url, role_id )
         if user_ids:
             url += "&in_users=%s" % ','.join( user_ids )
@@ -1622,26 +1544,25 @@ class TwillTestCase( unittest.TestCase ):
         self.visit_url( url )
         check_str = "Role '%s' has been updated with %d associated users and %d associated groups" % ( role_name, len( user_ids ), len( group_ids ) )
         self.check_page_for_string( check_str )
-        self.home()
 
     # Tests associated with groups
     def create_group( self, name='Group One', in_user_ids=[], in_role_ids=[], create_role_for_group='', strings_displayed=[] ):
         """Create a new group"""
-        url = "%s/admin/groups?operation=create&create_group_button=Save&name=%s" % ( self.url, name.replace( ' ', '+' ) )
+        url = "/admin/groups"
+        params = dict( operation='create', create_group_button='Save', name=name )
         if in_user_ids:
-            url += "&in_users=%s" % ','.join( in_user_ids )
+            params [ 'in_users' ] = ','.join( in_user_ids )
         if in_role_ids:
-            url += "&in_roles=%s" % ','.join( in_role_ids )
+            params[ 'in_roles' ] = ','.join( in_role_ids )
         if create_role_for_group == 'yes':
-            url += '&create_role_for_group=yes&create_role_for_group=yes'
-        self.home()
-        self.visit_url( url )
+            checkbox_params = dict( create_role_for_group='yes' )
+        else:
+            checkbox_params = None
+        self.visit_url( url, params=params, checkbox_params=checkbox_params )
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
-        self.home()
-        self.visit_url( "%s/admin/groups" % self.url )
+        self.visit_url( "/admin/groups" )
         self.check_page_for_string( name )
-        self.home()
 
     def browse_groups( self, strings_displayed=[] ):
         self.visit_url( '%s/admin/groups' % self.url )
@@ -1650,15 +1571,12 @@ class TwillTestCase( unittest.TestCase ):
 
     def rename_group( self, group_id, name='Group One Renamed' ):
         """Rename a group"""
-        self.home()
         self.visit_url( "%s/admin/groups?operation=rename&id=%s" % ( self.url, group_id ) )
         self.check_page_for_string( 'Change group name' )
         tc.fv( "1", "name", name )
         tc.submit( "rename_group_button" )
-        self.home()
 
     def associate_users_and_roles_with_group( self, group_id, group_name, user_ids=[], role_ids=[] ):
-        self.home()
         url = "%s/admin/manage_users_and_roles_for_group?id=%s&group_roles_users_edit_button=Save" % ( self.url, group_id )
         if user_ids:
             url += "&in_users=%s" % ','.join( user_ids )
@@ -1667,31 +1585,24 @@ class TwillTestCase( unittest.TestCase ):
         self.visit_url( url )
         check_str = "Group '%s' has been updated with %d associated roles and %d associated users" % ( group_name, len( role_ids ), len( user_ids ) )
         self.check_page_for_string( check_str )
-        self.home()
 
     def mark_group_deleted( self, group_id, group_name ):
         """Mark a group as deleted"""
-        self.home()
         self.visit_url( "%s/admin/groups?operation=delete&id=%s" % ( self.url, group_id ) )
         check_str = "Deleted 1 groups:  %s" % group_name
         self.check_page_for_string( check_str )
-        self.home()
 
     def undelete_group( self, group_id, group_name ):
         """Undelete an existing group"""
-        self.home()
         self.visit_url( "%s/admin/groups?operation=undelete&id=%s" % ( self.url, group_id ) )
         check_str = "Undeleted 1 groups:  %s" % group_name
         self.check_page_for_string( check_str )
-        self.home()
 
     def purge_group( self, group_id, group_name ):
         """Purge an existing group"""
-        self.home()
         self.visit_url( "%s/admin/groups?operation=purge&id=%s" % ( self.url, group_id ) )
         check_str = "Purged 1 groups:  %s" % group_name
         self.check_page_for_string( check_str )
-        self.home()
 
     # Form stuff
     def create_form( self, name, description, form_type, field_type='TextField', form_layout_name='',
@@ -1743,12 +1654,10 @@ class TwillTestCase( unittest.TestCase ):
         tc.submit( "save_changes_button" )
         for check_str in strings_displayed_after_submit:
             self.check_page_for_string( check_str )
-        self.home()
 
     def edit_form( self, id, form_type='', new_form_name='', new_form_desc='', field_dicts=[], field_index=0,
                    strings_displayed=[], strings_not_displayed=[], strings_displayed_after_submit=[] ):
         """Edit form details; name and description"""
-        self.home()
         self.visit_url( "%s/forms/edit_form_definition?id=%s" % ( self.url, id ) )
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
@@ -1784,10 +1693,9 @@ class TwillTestCase( unittest.TestCase ):
         tc.submit( "save_changes_button" )
         for check_str in strings_displayed_after_submit:
             self.check_page_for_string( check_str )
-        self.home()
+
     def view_form( self, id, form_type='', form_name='', form_desc='', form_layout_name='', field_dicts=[] ):
         '''View form details'''
-        self.home()
         self.visit_url( "%s/forms/view_latest_form_definition?id=%s" % ( self.url, id ) )
         #self.check_page_for_string( form_type )
         self.check_page_for_string( form_name )
@@ -1800,15 +1708,13 @@ class TwillTestCase( unittest.TestCase ):
             if field_dict[ 'type' ].lower() == 'selectfield':
                 for option_index, option in enumerate( field_dict[ 'selectlist' ] ):
                     self.check_page_for_string( option )
-        self.home()
+
     def mark_form_deleted( self, form_id ):
         """Mark a form_definition as deleted"""
-        self.home()
         url = "%s/forms/delete_form_definition?id=%s" % ( self.url, form_id )
         self.visit_url( url )
         check_str = "1 forms have been deleted."
         self.check_page_for_string( check_str )
-        self.home()
     
     # External services stuff
     def reload_external_service( self, external_service_type_id, strings_displayed=[], strings_displayed_after_submit=[] ):
@@ -1819,6 +1725,7 @@ class TwillTestCase( unittest.TestCase ):
         tc.submit( "reload_external_service_type_button" )
         for check_str in strings_displayed_after_submit:
             self.check_page_for_string( check_str )
+
     def create_external_service( self, name, description, version, external_service_type_id, field_values={}, strings_displayed=[], strings_displayed_after_submit=[] ):
         self.visit_url( '%s/external_service/create_external_service' % self.url )
         for check_str in strings_displayed:
@@ -1832,10 +1739,12 @@ class TwillTestCase( unittest.TestCase ):
         tc.submit( "create_external_service_button" )
         for check_str in strings_displayed_after_submit:
             self.check_page_for_string( check_str )
+
     def view_external_service( self, external_service_id, strings_displayed=[] ):
         self.visit_url( '%s/external_service/view_external_service?id=%s' % ( self.url, external_service_id ) )
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
+
     def edit_external_service( self, external_service_id, field_values={}, strings_displayed=[], strings_displayed_after_submit=[] ):
         self.visit_url( '%s/external_service/edit_external_service?id=%s' % ( self.url, external_service_id ) )
         for check_str in strings_displayed:
@@ -1852,7 +1761,6 @@ class TwillTestCase( unittest.TestCase ):
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
     def create_request_type( self, name, desc, request_form_id, sample_form_id, states, strings_displayed=[], strings_displayed_after_submit=[] ):
-        self.home()
         self.visit_url( "%s/request_type/create_request_type" % self.url )
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
@@ -1876,14 +1784,11 @@ class TwillTestCase( unittest.TestCase ):
         for pi in permissions_in:
             key = '%s_in' % pi
             url = "%s&%s=%s" % ( url, key, role_ids_str )
-        self.home()
         self.visit_url( "%s/%s" % ( self.url, url ) )
         check_str = "Permissions updated for request type '%s'" % request_type_name
         self.check_page_for_string( check_str )
-        self.home()
     def view_request_type( self, request_type_id, request_type_name, sample_states, strings_displayed=[] ):
         '''View request_type details'''
-        self.home()
         self.visit_url( "%s/request_type/view_request_type?id=%s" % ( self.url, request_type_id ) )
         self.check_page_for_string( '"%s" request type' % request_type_name )
         for name, desc in sample_states:
@@ -1926,7 +1831,6 @@ class TwillTestCase( unittest.TestCase ):
         tc.submit( "create_request_button" )
         for check_str in strings_displayed_after_submit:
             self.check_page_for_string( check_str )
-        self.home()
     def view_request( self, cntrller, request_id, strings_displayed=[], strings_displayed_count=[], strings_not_displayed=[] ):
         self.visit_url( "%s/%s/browse_requests?operation=view_request&id=%s" % ( self.url, cntrller, request_id ) )
         self.check_page( strings_displayed, strings_displayed_count, strings_not_displayed )
@@ -2121,7 +2025,6 @@ class TwillTestCase( unittest.TestCase ):
         for check_str, count in strings_displayed_count:
             self.check_string_count_in_page( check_str, count )
     def add_user_address( self, user_id, address_dict ):
-        self.home()
         self.visit_url( "%s/user/new_address?cntrller=user&user_id=%s" % ( self.url, user_id ) )
         self.check_page_for_string( 'Add new address' )
         for field_name, value in address_dict.items():
@@ -2137,7 +2040,6 @@ class TwillTestCase( unittest.TestCase ):
         dis-inherit your template, call the manage_library_template_inheritance() below immediately after you call this
         method in your test code.  Templates added to Requesttype objects are always inherited to samples.
         """
-        self.home()
         if item_type == 'library':
             url = "%s/library_common/add_template?cntrller=%s&item_type=%s&form_type=%s&library_id=%s" % \
             ( self.url, cntrller, item_type, form_type, library_id )
@@ -2155,10 +2057,9 @@ class TwillTestCase( unittest.TestCase ):
         tc.fv( "select_template", "inheritable", '1' )
         tc.submit( "add_template_button" )
         self.check_page_for_string = 'A template based on the form "%s" has been added to this' % form_name
-        self.home()
+
     def manage_library_template_inheritance( self, cntrller, item_type, library_id, folder_id=None, ldda_id=None, inheritable=True ):
         # If inheritable is True, the item is currently inheritable.
-        self.home()
         if item_type == 'library':
             url = "%s/library_common/manage_template_inheritance?cntrller=%s&item_type=%s&library_id=%s" % \
             ( self.url, cntrller, item_type, library_id )
@@ -2173,7 +2074,7 @@ class TwillTestCase( unittest.TestCase ):
             self.check_page_for_string = 'will no longer be inherited to contained folders and datasets'
         else:
             self.check_page_for_string = 'will now be inherited to contained folders and datasets'
-        self.home()
+
     def browse_libraries_admin( self, deleted=False, strings_displayed=[], strings_not_displayed=[] ):
         self.visit_url( '%s/library_admin/browse_libraries?sort=name&f-description=All&f-name=All&f-deleted=%s' % ( self.url, str( deleted ) ) )
         for check_str in strings_displayed:
@@ -2214,7 +2115,7 @@ class TwillTestCase( unittest.TestCase ):
         tc.submit( "create_library_button" )
         check_str = "The new library named '%s' has been created" % name
         self.check_page_for_string( check_str )
-        self.home()
+
     def edit_template( self, cntrller, item_type, form_type, library_id, field_type, field_label_1, field_helptext_1, field_default_1,
                        folder_id='', ldda_id='', action='add_field'  ):
         """Edit the form fields defining a library template"""
@@ -2251,7 +2152,7 @@ class TwillTestCase( unittest.TestCase ):
                 # Set the template field value
                 tc.fv( "edit_info", field_name, field_value )
             tc.submit( 'edit_info_button' )
-        self.home()
+
     def library_permissions( self, library_id, library_name, role_ids_str, permissions_in, permissions_out, cntrller='library_admin' ):
         # role_ids_str must be a comma-separated string of role ids
         url = "library_common/library_permissions?id=%s&cntrller=%s&update_roles_button=Save" % ( library_id, cntrller )
@@ -2261,11 +2162,10 @@ class TwillTestCase( unittest.TestCase ):
         for pi in permissions_in:
             key = '%s_in' % pi
             url = "%s&%s=%s" % ( url, key, role_ids_str )
-        self.home()
         self.visit_url( "%s/%s" % ( self.url, url ) )
         check_str = "Permissions updated for library '%s'." % library_name
         self.check_page_for_string( check_str )
-        self.home()
+
     def make_library_item_public( self, library_id, id, cntrller='library_admin', item_type='library',
                                   contents=False, library_name='', folder_name='', ldda_name='' ):
         url = "%s/library_common/make_library_item_public?cntrller=%s&library_id=%s&item_type=%s&id=%s&contents=%s" % \
@@ -2293,7 +2193,7 @@ class TwillTestCase( unittest.TestCase ):
         tc.submit( "new_folder_button" )
         check_str = "The new folder named '%s' has been added to the data library." % name
         self.check_page_for_string( check_str )
-        self.home()
+
     def folder_info( self, cntrller, folder_id, library_id, name='', new_name='', description='', template_refresh_field_name='1_field_name',
                      template_refresh_field_contents='', template_fields=[], strings_displayed=[], strings_not_displayed=[],
                      strings_displayed_after_submit=[], strings_not_displayed_after_submit=[] ):
@@ -2331,7 +2231,6 @@ class TwillTestCase( unittest.TestCase ):
                 raise AssertionError( "String (%s) incorrectly displayed." % check_str )
             except:
                 pass
-        self.home()
 
     # Library dataset stuff
     def upload_library_dataset( self, cntrller, library_id, folder_id, filename='', server_dir='', replace_id='',
@@ -2342,29 +2241,29 @@ class TwillTestCase( unittest.TestCase ):
         """Add datasets to library using any upload_option"""
         # NOTE: due to the library_wait() method call at the end of this method, no tests should be done
         # for strings_displayed_after_submit.
-        url = "%s/library_common/upload_library_dataset?cntrller=%s&library_id=%s&folder_id=%s" % \
-            ( self.url, cntrller, library_id, folder_id )
+        params = dict( cntrller=cntrller, library_id=library_id, folder_id=folder_id )
+        url = "%s/library_common/upload_library_dataset" % self.url
         if replace_id:
             # If we're uploading a new version of a library dataset, we have to include the replace_id param in the
             # request because the form field named replace_id will not be displayed on the upload form if we dont.
-            url += "&replace_id=%s" % replace_id
-        self.visit_url( url )
+            params[ 'replace_id' ] = replace_id
+        self.visit_url( url, params=params )
         if template_refresh_field_contents:
             # A template containing an AddressField is displayed on the upload form, so we need to refresh the form 
             # with the received template_refresh_field_contents.
             self.refresh_form( template_refresh_field_name, template_refresh_field_contents )
         for tup in template_fields:
             tc.fv( "1", tup[0], tup[1] )
-        tc.fv( "1", "library_id", library_id )
-        tc.fv( "1", "folder_id", folder_id )
-        tc.fv( "1", "show_deleted", show_deleted )
-        tc.fv( "1", "ldda_message", ldda_message )
-        tc.fv( "1", "file_type", file_type )
-        tc.fv( "1", "dbkey", dbkey )
+        tc.fv( "upload_library_dataset", "library_id", library_id )
+        tc.fv( "upload_library_dataset", "folder_id", folder_id )
+        tc.fv( "upload_library_dataset", "show_deleted", show_deleted )
+        tc.fv( "upload_library_dataset", "ldda_message", ldda_message )
+        tc.fv( "upload_library_dataset", "file_type", file_type )
+        tc.fv( "upload_library_dataset", "dbkey", dbkey )
         if space_to_tab:
-            tc.fv( "1", "space_to_tab", space_to_tab )
+            tc.fv( "upload_library_dataset", "space_to_tab", space_to_tab )
         for role_id in roles:
-            tc.fv( "1", "roles", role_id )
+            tc.fv( "upload_library_dataset", "roles", role_id )
         # Refresh the form by selecting the upload_option - we do this here to ensure
         # all previously entered form contents are retained.
         self.refresh_form( 'upload_option', upload_option )
@@ -2380,21 +2279,21 @@ class TwillTestCase( unittest.TestCase ):
             tc.submit( 'add_history_datasets_to_library_button' )
         else:
             if upload_option in [ 'upload_paths', 'upload_directory' ]:
-                tc.fv( "1", "link_data_only", link_data_only )
+                tc.fv( "upload_library_dataset", "link_data_only", link_data_only )
             if upload_option == 'upload_paths':
-                tc.fv( "1", "filesystem_paths", filesystem_paths )
+                tc.fv( "upload_library_dataset", "filesystem_paths", filesystem_paths )
             if upload_option == 'upload_directory' and server_dir:
-                tc.fv( "1", "server_dir", server_dir )
+                tc.fv( "upload_library_dataset", "server_dir", server_dir )
             if upload_option == 'upload_file':
                 if filename:
                     filename = self.get_filename( filename )
-                    tc.formfile( "1", "files_0|file_data", filename )
+                    tc.formfile( "upload_library_dataset", "files_0|file_data", filename )
             for check_str in strings_displayed:
                 self.check_page_for_string( check_str )
             tc.submit( "runtool_btn" )
         # Give the files some time to finish uploading
         self.library_wait( library_id )
-        self.home()
+
     def ldda_permissions( self, cntrller, library_id, folder_id, id, role_ids_str,
                           permissions_in=[], permissions_out=[], strings_displayed=[], ldda_name='' ):
         # role_ids_str must be a comma-separated string of role ids
@@ -2413,7 +2312,7 @@ class TwillTestCase( unittest.TestCase ):
             strings_displayed = [ "Permissions updated for dataset '%s'." % ldda_name ]
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
-        self.home()
+
     def ldda_info( self, cntrller, library_id, folder_id, ldda_id, strings_displayed=[], strings_not_displayed=[] ):
         """View library_dataset_dataset_association information"""
         self.visit_url( "%s/library_common/ldda_info?cntrller=%s&library_id=%s&folder_id=%s&id=%s" % \
@@ -2426,7 +2325,7 @@ class TwillTestCase( unittest.TestCase ):
                 raise AssertionError( "String (%s) should not have been displayed on ldda info page." % check_str )
             except:
                 pass
-        self.home()
+
     def ldda_edit_info( self, cntrller, library_id, folder_id, ldda_id, ldda_name, new_ldda_name='', template_refresh_field_name='1_field_name',
                         template_refresh_field_contents='', template_fields=[], strings_displayed=[], strings_not_displayed=[] ):
         """Edit library_dataset_dataset_association information, optionally template element information"""
@@ -2458,7 +2357,7 @@ class TwillTestCase( unittest.TestCase ):
                 raise AssertionError( "String (%s) should not have been displayed on ldda Edit Attributes page." % check_str )
             except:
                 pass
-        self.home()
+
     def act_on_multiple_datasets( self, cntrller, library_id, do_action, ldda_ids='', strings_displayed=[] ):
         # Can't use the ~/library_admin/libraries form as twill barfs on it so we'll simulate the form submission
         # by going directly to the form action
@@ -2474,7 +2373,6 @@ class TwillTestCase( unittest.TestCase ):
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
     def download_archive_of_library_files( self, cntrller, library_id, ldda_ids, format ):
-        self.home()
         # Here it would be ideal to have twill set form values and submit the form, but
         # twill barfs on that due to the recently introduced page wrappers around the contents
         # of the browse_library.mako template which enable panel layout when visiting the
@@ -2494,7 +2392,6 @@ class TwillTestCase( unittest.TestCase ):
         self.visit_url( url )
         tc.code( 200 )
         archive = self.write_temp_file( self.last_page(), suffix='.' + format )
-        self.home()
         return archive
     def check_archive_contents( self, archive, lddas ):
         def get_ldda_path( ldda ):
@@ -2542,7 +2439,6 @@ class TwillTestCase( unittest.TestCase ):
 
     def move_library_item( self, cntrller, item_type, item_id, source_library_id, make_target_current,
                            target_library_id=None, target_folder_id=None, strings_displayed=[], strings_displayed_after_submit=[] ):
-        self.home()
         params = dict( cntrller=cntrller, 
                        item_type=item_type, 
                        item_id=item_id, 
@@ -2552,7 +2448,7 @@ class TwillTestCase( unittest.TestCase ):
             params[ 'target_library_id' ] = target_library_id
         if target_folder_id is not None:
             params[ 'target_folder_id' ] = target_folder_id
-        self.visit_url( "%s/library_common/move_library_item?%s" % ( self.url, urllib.urlencode( params ) ) )
+        self.visit_url( "%s/library_common/move_library_item" % self.url, params=params )
         if target_library_id:
             self.refresh_form( 'target_library_id', target_library_id, form_name='move_library_item' )
         if target_folder_id:
@@ -2562,39 +2458,36 @@ class TwillTestCase( unittest.TestCase ):
         tc.submit( 'move_library_item_button' )
         for check_str in strings_displayed_after_submit:
             self.check_page_for_string( check_str )
-        self.home()
 
     def delete_library_item( self, cntrller, library_id, item_id, item_name, item_type='library_dataset' ):
         """Mark a library item as deleted"""
-        self.home()
-        self.visit_url( "%s/library_common/delete_library_item?cntrller=%s&library_id=%s&item_id=%s&item_type=%s" \
-                        % ( self.url, cntrller, library_id, item_id, item_type ) )
+        params = dict( cntrller=cntrller, library_id=library_id, item_id=item_id, item_type=item_type )
+        self.visit_url( "/library_common/delete_library_item", params )
         if item_type == 'library_dataset':
             item_desc = 'Dataset'
         else:
             item_desc = item_type.capitalize()
         check_str = "marked deleted"
-        self.check_page_for_string( check_str )
-        self.home()
+        self.check_for_strings( strings_displayed=[ item_desc, check_str ] )
+
     def undelete_library_item( self, cntrller, library_id, item_id, item_name, item_type='library_dataset' ):
         """Mark a library item as deleted"""
-        self.home()
-        self.visit_url( "%s/library_common/undelete_library_item?cntrller=%s&library_id=%s&item_id=%s&item_type=%s" \
-                        % ( self.url, cntrller, library_id, item_id, item_type ) )
+        params = dict( cntrller=cntrller, library_id=library_id, item_id=item_id, item_type=item_type )
+        self.visit_url( "/library_common/undelete_library_item", params )
         if item_type == 'library_dataset':
             item_desc = 'Dataset'
         else:
             item_desc = item_type.capitalize()
         check_str = "marked undeleted"
-        self.check_page_for_string( check_str )
-        self.home()
+        self.check_for_strings( strings_displayed=[ item_desc, check_str ] )
+
     def purge_library( self, library_id, library_name ):
         """Purge a library"""
-        self.home()
-        self.visit_url( "%s/library_admin/purge_library?id=%s" % ( self.url, library_id ) )
+        params = dict( id=library_id )
+        self.visit_url( "/library_admin/purge_library", params )
         check_str = "Library '%s' and all of its contents have been purged" % library_name
         self.check_page_for_string( check_str )
-        self.home()
+
     def library_wait( self, library_id, cntrller='library_admin', maxiter=90 ):
         """Waits for the tools to finish"""
         count = 0
