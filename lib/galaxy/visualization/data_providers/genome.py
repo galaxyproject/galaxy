@@ -972,7 +972,7 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
             return { 'data': [], 'message': None, 'max_low': start, 'max_high': start }
 
         read_len = len( first_read.seq )
-        num_reads = ( end - start ) * mean_depth / float ( read_len )
+        num_reads = max( ( end - start ) * mean_depth / float ( read_len ), 1 )
         threshold = float( max_vals )/ num_reads
         iterator = itertools.chain( iter( [ first_read ] ), iterator )
 
