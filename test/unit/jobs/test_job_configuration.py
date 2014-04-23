@@ -22,7 +22,7 @@ class JobConfXmlParserTestCase( unittest.TestCase ):
             use_tasked_jobs=False,
         )
         self.__write_config_from( SIMPLE_JOB_CONF )
-        self.app = bunch.Bunch( config=self.config )
+        self.app = bunch.Bunch( config=self.config, job_metrics=MockJobMetrics() )
         self.__job_configuration = None
 
     def tearDown( self ):
@@ -111,6 +111,8 @@ class JobConfXmlParserTestCase( unittest.TestCase ):
         assert limits.concurrent_jobs[ "longjobs" ] == 1
         assert limits.walltime_delta == datetime.timedelta( 0, 0, 0, 0, 0, 24 )
 
+    # TODO: Add job metrics parsing test.
+
     @property
     def job_config( self ):
         if not self.__job_configuration:
@@ -126,3 +128,12 @@ class JobConfXmlParserTestCase( unittest.TestCase ):
     def __write_config( self, contents ):
         with open( os.path.join( self.temp_directory, "job_conf.xml" ), "w" ) as f:
             f.write( contents )
+
+
+class MockJobMetrics( object ):
+
+    def __init__( self ):
+        pass
+
+    def set_destination_conf_element( self, id, element ):
+        pass
