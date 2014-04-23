@@ -126,10 +126,6 @@
       var_name_in_template  CDATA #IMPLIED
   >
 
-<!-- template_root: the directory to search for the template relative to templates/webapps/galaxy
-      (optional) DEFAULT: visualizations
--->
-<!ELEMENT template_root (#PCDATA)>
 <!-- template: the template used to render the visualization. REQUIRED -->
 <!ELEMENT template (#PCDATA)>
 <!-- render_target: used as the target attribute of the link to the visualization.
