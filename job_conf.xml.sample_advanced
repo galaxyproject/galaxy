@@ -159,8 +159,8 @@
     <limits>
         <!-- Certain limits can be defined. -->
         <limit type="registered_user_concurrent_jobs">2</limit>
-        <limit type="unregistered_user_concurrent_jobs">1</limit>
-        <limit type="job_walltime">24:00:00</limit>
+        <limit type="anonymous_user_concurrent_jobs">1</limit>
+        <limit type="walltime">24:00:00</limit>
         <limit type="concurrent_jobs" id="local">1</limit>
         <limit type="concurrent_jobs" tag="mycluster">2</limit>
         <limit type="concurrent_jobs" tag="longjobs">1</limit>
