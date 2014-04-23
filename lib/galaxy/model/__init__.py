@@ -95,10 +95,18 @@ class HasJobMetrics:
         self.numeric_metrics = []
 
     def add_metric( self, plugin, metric_name, metric_value ):
+        if isinstance( plugin, str ):
+            plugin = unicode( plugin, 'utf-8' )
+
+        if isinstance( metric_name, str ):
+            metric_name = unicode( metric_name, 'utf-8' )
+
         if isinstance( metric_value, numbers.Number ):
             metric = self._numeric_metric( plugin, metric_name, metric_value )
             self.numeric_metrics.append( metric )
         else:
+            if isinstance( metric_value, str ):
+                metric_value = unicode( metric_value, 'utf-8' )
             metric = self._text_metric( plugin, metric_name, metric_value )
             self.text_metrics.append( metric )
 
