@@ -502,7 +502,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         # Sort items by age
         items.sort( key=( lambda x: x[0].create_time ), reverse=True )
         #
-        return trans.fill_template( "history/display_structured.mako", items=items )
+        return trans.fill_template( "history/display_structured.mako", items=items, history=history )
 
     @web.expose
     def delete_hidden_datasets( self, trans ):

@@ -18,9 +18,6 @@
 %>
 </%def>
 
-<%def name="center_panel()">
-</%def>
-
 ## ----------------------------------------------------------------------------
 <%def name="body()">
     ${center_panel()}
@@ -69,12 +66,6 @@ a.btn {
 ## ----------------------------------------------------------------------------
 <%def name="javascripts()">
 ${parent.javascripts()}
-
-%if not use_panels:
-<script type="text/javascript">
-window.Galaxy = {};
-</script>
-%endif
 
 </%def>
 

@@ -1621,50 +1621,50 @@ div.permissionContainer{padding-left:20px}
 .search-input .search-clear,.search-input .search-loading{position:relative;display:inline-block;float:right;margin-top:-23px;margin-right:4px;font-size:1.4em;line-height:23px;color:grey}
 .search-input .search-clear:hover{color:#303030}
 #history-refresh-button,#history-options-button{display:inline-block;height:22px;width:22px;text-align:center;line-height:19px;font-size:1.2em;padding:0px}
-.history-panel .dataset{border:1px solid #bfbfbf}.history-panel .dataset .vertical-spacing{margin-bottom:8px}
-.history-panel .dataset .info-section{border-radius:3px;border:1px solid rgba(153,153,153,0.30000000000000004);padding:4px}
-.history-panel .dataset .dataset-padding{padding:6px 10px 6px 8px}
-.history-panel .dataset [class$=messagesmall]{margin:6px 10px 2px 8px;font-size:90%}
-.history-panel .dataset .help-text{font-weight:normal;color:#555}
-.history-panel .dataset .dataset-selector{float:left;display:none;width:32px;height:32px;margin:0 0 -6px 0;padding:8px 0 2px 7px;font-size:80%;color:#333;cursor:pointer;vertical-align:middle}
-.history-panel .dataset .dataset-selector:hover{color:maroon}
-.history-panel .dataset .dataset-title-bar{cursor:pointer;outline:none;padding:6px 10px 6px 8px}
-.history-panel .dataset .dataset-title-bar .dataset-title{display:inline;font-weight:bold;text-decoration:underline;word-wrap:break-word;word-break:break-all;line-height:16px}
-.history-panel .dataset .dataset-primary-actions{display:inline-block;float:right;margin:6px 10px 0}.history-panel .dataset .dataset-primary-actions .icon-btn:not(:last-child){margin:0px;border-radius:0px;border-right:none}
-.history-panel .dataset .dataset-primary-actions .icon-btn:first-child{margin-right:0px;border-top-left-radius:3px;border-bottom-left-radius:3px}
-.history-panel .dataset .dataset-primary-actions .icon-btn:last-child{margin-left:0px;border-radius:0px 3px 3px 0px}
-.history-panel .dataset .dataset-primary-actions .icon-btn:only-child{margin:0px;border-radius:3px}
-.history-panel .dataset .dataset-primary-actions .icon-btn{margin-left:2px}
-.history-panel .dataset .dataset-body{display:none;padding:0 10px 6px 8px}.history-panel .dataset .dataset-body [class$=messagesmall]{margin:0px 0px 8px 0px}
-.history-panel .dataset .dataset-body label{margin:0px;padding:0px;font-weight:normal}
-.history-panel .dataset .dataset-body .prompt{font-weight:normal;color:#555}
-.history-panel .dataset .dataset-body .prompt:after{content:':';margin-right:4px}
-.history-panel .dataset .dataset-body .dataset-summary{margin-bottom:8px}.history-panel .dataset .dataset-body .dataset-summary .dataset-blurb{margin-bottom:2px}
-.history-panel .dataset .dataset-body .dataset-summary .dataset-datatype,.history-panel .dataset .dataset-body .dataset-summary .dataset-dbkey{display:inline}.history-panel .dataset .dataset-body .dataset-summary .dataset-datatype .value,.history-panel .dataset .dataset-body .dataset-summary .dataset-dbkey .value{font-weight:bold}
-.history-panel .dataset .dataset-body .dataset-summary .dataset-datatype .value:after{content:',';font-weight:normal;color:#555;margin-right:4px}
-.history-panel .dataset .dataset-body .dataset-summary .dataset-dbkey:after{content:' ';display:block;margin-bottom:8px}
-.history-panel .dataset .dataset-body .dataset-summary .dataset-info{border-radius:3px;border:1px solid rgba(153,153,153,0.30000000000000004);padding:4px;overflow:auto}.history-panel .dataset .dataset-body .dataset-summary .dataset-info .value{white-space:pre-line}
-.history-panel .dataset .dataset-body .dataset-summary .job-error-text{border-radius:3px;border:1px solid rgba(153,153,153,0.30000000000000004);padding:4px;overflow:auto;white-space:pre}
-.history-panel .dataset .dataset-body .dataset-actions .left{display:inline-block;float:left}.history-panel .dataset .dataset-body .dataset-actions .left .icon-btn:not(:last-child){margin:0px;border-radius:0px;border-right:none}
-.history-panel .dataset .dataset-body .dataset-actions .left .icon-btn:first-child{margin-right:0px;border-top-left-radius:3px;border-bottom-left-radius:3px}
-.history-panel .dataset .dataset-body .dataset-actions .left .icon-btn:last-child{margin-left:0px;border-radius:0px 3px 3px 0px}
-.history-panel .dataset .dataset-body .dataset-actions .left .icon-btn:only-child{margin:0px;border-radius:3px}
-.history-panel .dataset .dataset-body .dataset-actions .left .icon-btn{margin-right:2px}
-.history-panel .dataset .dataset-body .dataset-actions .left:not(:empty){margin-bottom:8px}
-.history-panel .dataset .dataset-body .dataset-actions .right{display:inline-block;float:right}.history-panel .dataset .dataset-body .dataset-actions .right .icon-btn:not(:last-child){margin:0px;border-radius:0px;border-right:none}
-.history-panel .dataset .dataset-body .dataset-actions .right .icon-btn:first-child{margin-right:0px;border-top-left-radius:3px;border-bottom-left-radius:3px}
-.history-panel .dataset .dataset-body .dataset-actions .right .icon-btn:last-child{margin-left:0px;border-radius:0px 3px 3px 0px}
-.history-panel .dataset .dataset-body .dataset-actions .right .icon-btn:only-child{margin:0px;border-radius:3px}
-.history-panel .dataset .dataset-body .dataset-actions .right .icon-btn{margin-left:2px}
-.history-panel .dataset .dataset-body .tags-display{display:none;margin-bottom:8px}.history-panel .dataset .dataset-body .tags-display .select2-container{min-width:0px}.history-panel .dataset .dataset-body .tags-display .select2-container .select2-choices{border-radius:3px}
-.history-panel .dataset .dataset-body .annotation-display{display:none;margin-bottom:8px}.history-panel .dataset .dataset-body .annotation-display .annotation{border-radius:3px;border:1px solid rgba(153,153,153,0.30000000000000004);padding:4px;white-space:pre-line}
-.history-panel .dataset .dataset-body .annotation-display .annotation:empty{height:22px}
-.history-panel .dataset .dataset-body .annotation-display .annotation:empty:after{position:relative;top:-4px;font-size:10px;font-style:italic;color:grey;content:'Click here to edit annotation'}
-.history-panel .dataset .dataset-body .annotation-display textarea{margin:0px 0px 2px 0px;display:block;border-radius:3px;width:100%}
-.history-panel .dataset .dataset-body .dataset-display-applications .display-application:last-child{margin-bottom:8px}
-.history-panel .dataset .dataset-body .dataset-peek{margin-bottom:8px}.history-panel .dataset .dataset-body .dataset-peek pre.peek{width:100%;margin:0px;border-radius:3px;background:white;color:black;font-size:10px;overflow:auto}.history-panel .dataset .dataset-body .dataset-peek pre.peek th{color:white;background:#5f6990}
-.history-panel .dataset .dataset-body .dataset-peek pre.peek table,.history-panel .dataset .dataset-body .dataset-peek pre.peek th,.history-panel .dataset .dataset-body .dataset-peek pre.peek tr,.history-panel .dataset .dataset-body .dataset-peek pre.peek td{font-family:Monaco,Menlo,Consolas,"Courier New",monospace;font-size:10px}
-.history-panel .dataset .state-icon{font-family:FontAwesome;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;display:inline-block;margin-right:4px;vertical-align:middle;width:16px;height:16px;line-height:16px;text-align:center;font-size:16px}
+.hda.dataset{border:1px solid #bfbfbf}.hda.dataset .vertical-spacing{margin-bottom:8px}
+.hda.dataset .info-section{border-radius:3px;border:1px solid rgba(153,153,153,0.30000000000000004);padding:4px}
+.hda.dataset .dataset-padding{padding:6px 10px 6px 8px}
+.hda.dataset [class$=messagesmall]{margin:6px 10px 2px 8px;font-size:90%}
+.hda.dataset .help-text{font-weight:normal;color:#555}
+.hda.dataset .dataset-selector{float:left;display:none;width:32px;height:32px;margin:0 0 -6px 0;padding:8px 0 2px 7px;font-size:80%;color:#333;cursor:pointer;vertical-align:middle}
+.hda.dataset .dataset-selector:hover{color:maroon}
+.hda.dataset .dataset-title-bar{cursor:pointer;outline:none;padding:6px 10px 6px 8px}
+.hda.dataset .dataset-title-bar .dataset-title{display:inline;font-weight:bold;text-decoration:underline;word-wrap:break-word;word-break:break-all;line-height:16px}
+.hda.dataset .dataset-primary-actions{display:inline-block;float:right;margin:6px 10px 0}.hda.dataset .dataset-primary-actions .icon-btn:not(:last-child){margin:0px;border-radius:0px;border-right:none}
+.hda.dataset .dataset-primary-actions .icon-btn:first-child{margin-right:0px;border-top-left-radius:3px;border-bottom-left-radius:3px}
+.hda.dataset .dataset-primary-actions .icon-btn:last-child{margin-left:0px;border-radius:0px 3px 3px 0px}
+.hda.dataset .dataset-primary-actions .icon-btn:only-child{margin:0px;border-radius:3px}
+.hda.dataset .dataset-primary-actions .icon-btn{margin-left:2px}
+.hda.dataset .dataset-body{display:none;padding:0 10px 6px 8px}.hda.dataset .dataset-body [class$=messagesmall]{margin:0px 0px 8px 0px}
+.hda.dataset .dataset-body label{margin:0px;padding:0px;font-weight:normal}
+.hda.dataset .dataset-body .prompt{font-weight:normal;color:#555}
+.hda.dataset .dataset-body .prompt:after{content:':';margin-right:4px}
+.hda.dataset .dataset-body .dataset-summary{margin-bottom:8px}.hda.dataset .dataset-body .dataset-summary .dataset-blurb{margin-bottom:2px}
+.hda.dataset .dataset-body .dataset-summary .dataset-datatype,.hda.dataset .dataset-body .dataset-summary .dataset-dbkey{display:inline}.hda.dataset .dataset-body .dataset-summary .dataset-datatype .value,.hda.dataset .dataset-body .dataset-summary .dataset-dbkey .value{font-weight:bold}
+.hda.dataset .dataset-body .dataset-summary .dataset-datatype .value:after{content:',';font-weight:normal;color:#555;margin-right:4px}
+.hda.dataset .dataset-body .dataset-summary .dataset-dbkey:after{content:' ';display:block;margin-bottom:8px}
+.hda.dataset .dataset-body .dataset-summary .dataset-info{border-radius:3px;border:1px solid rgba(153,153,153,0.30000000000000004);padding:4px;overflow:auto}.hda.dataset .dataset-body .dataset-summary .dataset-info .value{white-space:pre-line}
+.hda.dataset .dataset-body .dataset-summary .job-error-text{border-radius:3px;border:1px solid rgba(153,153,153,0.30000000000000004);padding:4px;overflow:auto;white-space:pre}
+.hda.dataset .dataset-body .dataset-actions .left{display:inline-block;float:left}.hda.dataset .dataset-body .dataset-actions .left .icon-btn:not(:last-child){margin:0px;border-radius:0px;border-right:none}
+.hda.dataset .dataset-body .dataset-actions .left .icon-btn:first-child{margin-right:0px;border-top-left-radius:3px;border-bottom-left-radius:3px}
+.hda.dataset .dataset-body .dataset-actions .left .icon-btn:last-child{margin-left:0px;border-radius:0px 3px 3px 0px}
+.hda.dataset .dataset-body .dataset-actions .left .icon-btn:only-child{margin:0px;border-radius:3px}
+.hda.dataset .dataset-body .dataset-actions .left .icon-btn{margin-right:2px}
+.hda.dataset .dataset-body .dataset-actions .left:not(:empty){margin-bottom:8px}
+.hda.dataset .dataset-body .dataset-actions .right{display:inline-block;float:right}.hda.dataset .dataset-body .dataset-actions .right .icon-btn:not(:last-child){margin:0px;border-radius:0px;border-right:none}
+.hda.dataset .dataset-body .dataset-actions .right .icon-btn:first-child{margin-right:0px;border-top-left-radius:3px;border-bottom-left-radius:3px}
+.hda.dataset .dataset-body .dataset-actions .right .icon-btn:last-child{margin-left:0px;border-radius:0px 3px 3px 0px}
+.hda.dataset .dataset-body .dataset-actions .right .icon-btn:only-child{margin:0px;border-radius:3px}
+.hda.dataset .dataset-body .dataset-actions .right .icon-btn{margin-left:2px}
+.hda.dataset .dataset-body .tags-display{display:none;margin-bottom:8px}.hda.dataset .dataset-body .tags-display .select2-container{min-width:0px}.hda.dataset .dataset-body .tags-display .select2-container .select2-choices{border-radius:3px}
+.hda.dataset .dataset-body .annotation-display{display:none;margin-bottom:8px}.hda.dataset .dataset-body .annotation-display .annotation{border-radius:3px;border:1px solid rgba(153,153,153,0.30000000000000004);padding:4px;white-space:pre-line}
+.hda.dataset .dataset-body .annotation-display .annotation:empty{height:22px}
+.hda.dataset .dataset-body .annotation-display .annotation:empty:after{position:relative;top:-4px;font-size:10px;font-style:italic;color:grey;content:'Click here to edit annotation'}
+.hda.dataset .dataset-body .annotation-display textarea{margin:0px 0px 2px 0px;display:block;border-radius:3px;width:100%}
+.hda.dataset .dataset-body .dataset-display-applications .display-application:last-child{margin-bottom:8px}
+.hda.dataset .dataset-body .dataset-peek{margin-bottom:8px}.hda.dataset .dataset-body .dataset-peek pre.peek{width:100%;margin:0px;border-radius:3px;background:white;color:black;font-size:10px;overflow:auto}.hda.dataset .dataset-body .dataset-peek pre.peek th{color:white;background:#5f6990}
+.hda.dataset .dataset-body .dataset-peek pre.peek table,.hda.dataset .dataset-body .dataset-peek pre.peek th,.hda.dataset .dataset-body .dataset-peek pre.peek tr,.hda.dataset .dataset-body .dataset-peek pre.peek td{font-family:Monaco,Menlo,Consolas,"Courier New",monospace;font-size:10px}
+.hda.dataset .state-icon{font-family:FontAwesome;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;display:inline-block;margin-right:4px;vertical-align:middle;width:16px;height:16px;line-height:16px;text-align:center;font-size:16px}
 .state-icon-error{background-color:white;border-radius:8px}.state-icon-error:before{font-size:20px;line-height:16px;color:red;content:"\f057"}
 .history-panel [class$="messagesmall"]{margin:0px}
 .history-panel .editable-text{border:solid transparent 1px}
