@@ -162,8 +162,21 @@ class JobConfiguration( object ):
 
         # Parse destinations
         destinations = root.find('destinations')
+        job_metrics = self.app.job_metrics
         for destination in self.__findall_with_required(destinations, 'destination', ('id', 'runner')):
             id = destination.get('id')
+            destination_metrics = destination.get( "metrics", None )
+            if destination_metrics:
+                if not util.asbool( destination_metrics ):
+                    # disable
+                    job_metrics.set_destination_instrumenter( id, None )
+                else:
+                    metrics_conf_path = self.app.config.resolve_path( destination_metrics )
+                    job_metrics.set_destination_conf_file( id, metrics_conf_path )
+            else:
+                metrics_elements = self.__findall_with_required( destination, 'job_metrics', () )
+                if metrics_elements:
+                    job_metrics.set_destination_conf_element( id, metrics_elements[ 0 ] )
             job_destination = JobDestination(**dict(destination.items()))
             job_destination['params'] = self.__get_params(destination)
             self.destinations[id] = (job_destination,)
@@ -1068,8 +1081,10 @@ class JobWrapper( object ):
         # Finally set the job state.  This should only happen *after* all
         # dataset creation, and will allow us to eliminate force_history_refresh.
         job.state = final_job_state
+        if not job.tasks:
+            # If job was composed of tasks, don't attempt to recollect statisitcs
+            self._collect_metrics( job )
         self.sa_session.flush()
-
         log.debug( 'job %d ended' % self.job_id )
         delete_files = self.app.config.cleanup_job == 'always' or ( job.state == job.states.OK and self.app.config.cleanup_job == 'onsuccess' )
         self.cleanup( delete_files=delete_files )
@@ -1093,6 +1108,16 @@ class JobWrapper( object ):
                 self.app.object_store.delete(self.get_job(), base_dir='job_work', entire_dir=True, dir_only=True, extra_dir=str(self.job_id))
         except:
             log.exception( "Unable to cleanup job %d" % self.job_id )
+
+    def _collect_metrics( self, has_metrics ):
+        job = has_metrics.get_job()
+        per_plugin_properties = self.app.job_metrics.collect_properties( job.destination_id, self.job_id, self.working_directory )
+        if per_plugin_properties:
+            log.info( "Collecting job metrics for %s" % has_metrics )
+        for plugin, properties in per_plugin_properties.iteritems():
+            for metric_name, metric_value in properties.iteritems():
+                if metric_value is not None:
+                    has_metrics.add_metric( plugin, metric_name, metric_value )
 
     def get_output_sizes( self ):
         sizes = []
@@ -1508,6 +1533,7 @@ class TaskWrapper(JobWrapper):
         task.stdout = util.shrink_string_by_size( stdout, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
         if len( stderr ) > DATABASE_MAX_STRING_SIZE:
             log.error( "stderr for task %d is greater than %s, only a portion will be logged to database" % ( task.id, DATABASE_MAX_STRING_SIZE_PRETTY ) )
+        self._collect_metrics( task )
         task.stderr = util.shrink_string_by_size( stderr, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
         task.exit_code = tool_exit_code
         task.command_line = self.command_line

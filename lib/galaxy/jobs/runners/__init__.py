@@ -251,7 +251,10 @@ class BaseJobRunner( object ):
             log.debug( 'execution of external set_meta for job %d finished' % job_wrapper.job_id )
 
     def get_job_file(self, job_wrapper, **kwds):
+        job_metrics = job_wrapper.app.job_metrics
+        job_instrumenter = job_metrics.job_instrumenters[ job_wrapper.job_destination.id ]
         options = dict(
+            job_instrumenter=job_instrumenter,
             galaxy_lib=job_wrapper.galaxy_lib_dir,
             env_setup_commands=job_wrapper.get_env_setup_clause(),
             working_directory=os.path.abspath( job_wrapper.working_directory ),

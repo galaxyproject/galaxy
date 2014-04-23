@@ -470,6 +470,52 @@ model.JobImportHistoryArchive.table = Table( "job_import_history_archive", metad
     Column( "archive_dir", TEXT )
     )
 
+
+JOB_METRIC_MAX_LENGTH = 1023
+
+model.JobMetricText.table = Table(
+    "job_metric_text",
+    metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "job_id", Integer, ForeignKey( "job.id" ), index=True ),
+    Column( "plugin", Unicode(255), ),
+    Column( "metric_name", Unicode(255), ),
+    Column( "metric_value", Unicode(JOB_METRIC_MAX_LENGTH), ),
+)
+
+model.TaskMetricText.table = Table(
+    "task_metric_text",
+    metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "task_id", Integer, ForeignKey( "task.id" ), index=True ),
+    Column( "plugin", Unicode(255), ),
+    Column( "metric_name", Unicode(255), ),
+    Column( "metric_value", Unicode(JOB_METRIC_MAX_LENGTH), ),
+)
+
+
+model.JobMetricNumeric.table = Table(
+    "job_metric_numeric",
+    metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "job_id", Integer, ForeignKey( "job.id" ), index=True ),
+    Column( "plugin", Unicode(255), ),
+    Column( "metric_name", Unicode(255), ),
+    Column( "metric_value", Numeric( 22, 7 ), ),
+)
+
+
+model.TaskMetricNumeric.table = Table(
+    "task_metric_numeric",
+    metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "task_id", Integer, ForeignKey( "task.id" ), index=True ),
+    Column( "plugin", Unicode(255), ),
+    Column( "metric_name", Unicode(255), ),
+    Column( "metric_value", Numeric( 22, 7 ), ),
+)
+
+
 model.GenomeIndexToolData.table = Table( "genome_index_tool_data", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "job_id", Integer, ForeignKey( "job.id" ), index=True ),
@@ -1568,6 +1614,26 @@ mapper( model.JobToOutputLibraryDatasetAssociation,
         model.JobToOutputLibraryDatasetAssociation.table, properties=dict(
             job=relation( model.Job ), dataset=relation(
                 model.LibraryDatasetDatasetAssociation, lazy=False ) ) )
+
+simple_mapping(
+    model.JobMetricText,
+    job=relation( model.Job, backref="text_metrics" ),
+)
+
+simple_mapping(
+    model.TaskMetricText,
+    task=relation( model.Task, backref="text_metrics" ),
+)
+
+simple_mapping(
+    model.JobMetricNumeric,
+    job=relation( model.Job, backref="numeric_metrics" ),
+)
+
+simple_mapping(
+    model.TaskMetricNumeric,
+    task=relation( model.Task, backref="numeric_metrics" ),
+)
 
 mapper( model.JobParameter, model.JobParameter.table )
 

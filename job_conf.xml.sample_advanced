@@ -62,6 +62,11 @@
           <!-- Warning: Local slot count doesn't tie up additional worker threads, to prevent over 
                allocating machine define a second local runner with different name and fewer workers
                to run this destination. -->
+          <job_metrics /> 
+          <!-- Above element demonstrates embedded job metrics definition - see
+               job_metrics_conf.xml.sample for full documentation on possible nested
+               elements. This empty block will simply disable job metrics for the
+               corresponding destination. -->
         </destination>
         <destination id="pbs" runner="pbs" tags="mycluster"/>
         <destination id="pbs_longjobs" runner="pbs" tags="mycluster,longjobs">

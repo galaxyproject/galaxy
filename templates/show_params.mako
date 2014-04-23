@@ -126,6 +126,13 @@
         %if job and job.command_line and trans.user_is_admin():
             <tr><td>Job Command-Line:</td><td>${ job.command_line | h }</td></tr>
         %endif
+        %if job and trans.user_is_admin():
+            <% job_metrics = trans.app.job_metrics %>
+            %for metric in job.metrics:
+                <% metric_title, metric_value = job_metrics.format( metric.plugin, metric.metric_name, metric.metric_value ) %>
+                <tr><td>${ metric_title | h }</td><td>${ metric_value | h }</td></tr>
+            %endfor
+        %endif
 </table>
 <br />
 

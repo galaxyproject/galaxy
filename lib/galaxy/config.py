@@ -137,6 +137,7 @@ class Configuration( object ):
         self.template_path = resolve_path( kwargs.get( "template_path", "templates" ), self.root )
         self.template_cache = resolve_path( kwargs.get( "template_cache_path", "database/compiled_templates" ), self.root )
         self.dependency_resolvers_config_file = resolve_path( kwargs.get( 'dependency_resolvers_config_file', 'dependency_resolvers_conf.xml' ), self.root )
+        self.job_metrics_config_file = resolve_path( kwargs.get( 'job_metrics_config_file', 'job_metrics_conf.xml' ), self.root )
         self.job_config_file = resolve_path( kwargs.get( 'job_config_file', 'job_conf.xml' ), self.root )
         self.local_job_queue_workers = int( kwargs.get( "local_job_queue_workers", "5" ) )
         self.cluster_job_queue_workers = int( kwargs.get( "cluster_job_queue_workers", "3" ) )
@@ -454,6 +455,11 @@ class Configuration( object ):
         """
         admin_users = [ x.strip() for x in self.get( "admin_users", "" ).split( "," ) ]
         return ( user is not None and user.email in admin_users )
+
+    def resolve_path( self, path ):
+        """ Resolve a path relative to Galaxy's root.
+        """
+        return resolve_path( path, self.root )
 
 def get_database_engine_options( kwargs, model_prefix='' ):
     """

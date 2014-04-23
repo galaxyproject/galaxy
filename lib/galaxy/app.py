@@ -15,7 +15,7 @@ from galaxy.tools.genome_index import load_genome_index_tools
 from galaxy.sample_tracking import external_service_types
 from galaxy.openid.providers import OpenIDProviders
 from galaxy.tools.data_manager.manager import DataManagers
-
+from galaxy.jobs import metrics as job_metrics
 from galaxy.web.base import pluginframework
 
 import logging
@@ -59,6 +59,10 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
         self.data_provider_registry = DataProviderRegistry()
 
         self._configure_tool_data_tables( from_shed_config=False )
+
+        # Initialize job metrics manager, needs to be in place before
+        # config so per-destination modifications can be made.
+        self.job_metrics = job_metrics.JobMetrics( self.config.job_metrics_config_file, app=self )
 
         # Initialize the job management configuration
         self.job_config = jobs.JobConfiguration(self)
