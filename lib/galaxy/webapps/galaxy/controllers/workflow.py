@@ -763,7 +763,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                 def callback( input, value, prefixed_name, prefixed_label ):
                     if isinstance( input, DataToolParameter ):
                         data_input_names[ prefixed_name ] = True
-                        multiple_input[input.name] = input.multiple
+                        multiple_input[ prefixed_name ] = input.multiple
                 visit_input_values( module.tool.inputs, module.state.inputs, callback )
                 # Filter
                 # FIXME: this removes connection without displaying a message currently!
