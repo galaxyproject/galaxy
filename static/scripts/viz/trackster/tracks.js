@@ -4234,8 +4234,9 @@ var ReadTrack = function (view, container, obj_dict) {
 
 extend(ReadTrack.prototype, Drawable.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
     config_params: _.union( Drawable.prototype.config_params, [
-        { key: 'block_color', label: 'Block and sense strand color', type: 'color', 'default_value': '#DDDDDD' },
-        { key: 'reverse_strand_color', label: 'Antisense strand color', type: 'color', 'default_value': '#AAAAAA' },
+        { key: 'block_color', label: 'Histogram color', type: 'color' },
+        { key: 'detail_block_color', label: 'Sense strand block color', type: 'color', 'default_value': '#AAAAAA' },
+        { key: 'reverse_strand_color', label: 'Antisense strand block color', type: 'color', 'default_value': '#DDDDDD' },
         { key: 'label_color', label: 'Label color', type: 'color', default_value: 'black' },
         { key: 'show_insertions', label: 'Show insertions', type: 'bool', default_value: false },
         { key: 'show_differences', label: 'Show differences only', type: 'bool', default_value: true },
