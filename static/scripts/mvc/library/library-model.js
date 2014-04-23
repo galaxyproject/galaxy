@@ -11,7 +11,7 @@ define([], function() {
        */
       isVisible : function(show_deleted){
           var isVisible = true;
-          if( (!show_delete) && (this.get('deleted')) ){
+          if( (!show_deleted) && (this.get('deleted')) ){
               isVisible = false;
           }
           return isVisible;

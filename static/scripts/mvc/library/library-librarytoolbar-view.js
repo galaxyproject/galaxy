@@ -1,12 +1,5 @@
-define([
-    "galaxy.masthead",
-    "utils/utils",
-    "libs/toastr",
-    "mvc/library/library-model"],
-function(mod_masthead,
-         mod_utils,
-         mod_toastr,
-         mod_library_model) {
+define([],
+function() {
 
 var LibraryToolbarView = Backbone.View.extend({
   el: '#center',

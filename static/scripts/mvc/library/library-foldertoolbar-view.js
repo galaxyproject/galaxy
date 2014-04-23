@@ -221,12 +221,12 @@ var FolderToolbarView = Backbone.View.extend({
     }
     var promise = $.when(popped_item.save({content: popped_item.content, source: popped_item.source}));
 
-    promise.done(function(a1){
+    promise.done(function(){
               // we are fine
               self.updateProgress();
               self.chainCall(history_item_set, history_name);
             })
-            .fail(function(a1){
+            .fail(function(){
               // we have a problem
               self.options.chain_call_control.failed_number += 1;
               self.updateProgress();
@@ -315,7 +315,7 @@ var FolderToolbarView = Backbone.View.extend({
         self.histories.get(history_id).set({'contents' : history_contents});
         self.modal.$el.find('#selected_history_content').html(history_contents_template({history_contents: history_contents.models.reverse()}));
       },
-      error: function(model, response){
+      error: function(){
         mod_toastr.error('An error ocurred :(');
       }
     });
@@ -381,7 +381,7 @@ var FolderToolbarView = Backbone.View.extend({
               self.updateProgress();
               self.chainCallAddingHdas(hdas_set);
             })
-            .fail(function(data){
+            .fail(function(){
               // we have a problem
               self.options.chain_call_control.failed_number += 1;
               self.updateProgress();

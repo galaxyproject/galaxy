@@ -27,7 +27,6 @@ var LibraryListView = Backbone.View.extend({
     // map of library model ids to library views = cache
     rowViews: {},
 
-    // initialize
     initialize : function(options){
         this.options = _.defaults(this.options || {}, options);
         var viewContext = this;
@@ -37,18 +36,18 @@ var LibraryListView = Backbone.View.extend({
         this.collection = new mod_library_model.Libraries();
 
         this.collection.fetch({
-          success: function(libraries){
+          success: function(){
             viewContext.render();
           },
-          error: function(model, response){
+          error: function(){
             mod_toastr.error('An error occured. Please try again.');
           }
         });
     },
 
     /** Renders the libraries table either from the object's own collection, 
-     or from a given array of library models,
-     or renders an empty list in case no data is given. */
+     *  or from a given array of library models,
+     *  or renders an empty list in case no data is given. */
     render: function (options) {
         var template = this.templateLibraryList();
         var libraries_to_render = null;
@@ -60,6 +59,7 @@ var LibraryListView = Backbone.View.extend({
         }
 
         if (this.collection !== null && models === null){
+            this.sortLibraries();
             if (include_deleted){ // show all the libraries
               libraries_to_render = this.collection.models;
             } else{ // show only undeleted libraries
@@ -82,6 +82,7 @@ var LibraryListView = Backbone.View.extend({
         $("#center").css('overflow','auto');
     },
 
+    /** Render all given models as rows in the library list */
     renderRows: function(libraries_to_render){
         for (var i = 0; i < libraries_to_render.length; i++) {
           var library = libraries_to_render[i];
@@ -98,12 +99,11 @@ var LibraryListView = Backbone.View.extend({
         }
     },
 
+    /** Table heading was clicked, update sorting preferences and re-render */
     sort_clicked : function(){
         if (Galaxy.libraries.preferences.get('sort_order') === 'asc'){
-            this.sortLibraries('name','desc');
             Galaxy.libraries.preferences.set({'sort_order': 'desc'});
         } else {
-            this.sortLibraries('name','asc');
             Galaxy.libraries.preferences.set({'sort_order': 'asc'});
         }
         this.render();
@@ -111,11 +111,11 @@ var LibraryListView = Backbone.View.extend({
 
     /** Sorts the underlying collection according to the parameters received. 
         Currently supports only sorting by name. */
-    sortLibraries: function(sort_by, order){
-        if (sort_by === 'name'){
-            if (order === 'asc'){
+    sortLibraries: function(){
+        if (Galaxy.libraries.preferences.get('sort_by') === 'name'){
+            if (Galaxy.libraries.preferences.get('sort_order') === 'asc'){
                 this.collection.sortByNameAsc();
-            } else if (order === 'desc'){
+            } else if (Galaxy.libraries.preferences.get('sort_order') === 'desc'){
                 this.collection.sortByNameDesc();
             }
         }
@@ -220,7 +220,7 @@ var LibraryListView = Backbone.View.extend({
         $("input[name='Synopsis']").val('');
     },
 
-    // serialize data from the form
+    // serialize data from the new library form
     serialize_new_library : function(){
         return {
             name: $("input[name='Name']").val(),

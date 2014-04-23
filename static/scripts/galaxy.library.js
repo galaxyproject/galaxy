@@ -79,7 +79,7 @@ var GalaxyLibrary = Backbone.View.extend({
 
        this.library_router.on('route:download', function(folder_id, format) {
           if ($('#center').find(':checked').length === 0) {
-            mod_toastr.info('You have to select some datasets to download')
+            mod_toastr.info('You have to select some datasets to download');
           } else {
             Galaxy.libraries.folderToolbarView.download(folder_id, format);
             Galaxy.libraries.library_router.navigate('folders/' + folder_id, {trigger: false, replace: true});

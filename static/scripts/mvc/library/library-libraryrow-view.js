@@ -2,12 +2,10 @@
 define([
     "galaxy.masthead",
     "utils/utils",
-    "libs/toastr",
-    "mvc/library/library-model"],
+    "libs/toastr"],
 function(mod_masthead,
          mod_utils,
-         mod_toastr,
-         mod_library_model) {
+         mod_toastr) {
 
 // galaxy library row view
 var LibraryRowView = Backbone.View.extend({
@@ -161,7 +159,7 @@ var LibraryRowView = Backbone.View.extend({
             row_view.repaint(library);
             mod_toastr.success('Changes to library saved');
           },
-          error: function(model, response){
+          error: function(){
             mod_toastr.error('An error occured during updating the library :(');
           }
         });
@@ -237,7 +235,7 @@ var LibraryRowView = Backbone.View.extend({
     tmpl_array.push('                   <% } else if(library.get("public") === true) { %>');
     tmpl_array.push('                     <span data-toggle="tooltip" data-placement="top" title="Public" style="color:grey;" class="fa fa-globe fa-lg public_lib_ico"> </span>');
     tmpl_array.push('                   <% }%>');
-    tmpl_array.push('                   <button data-toggle="tooltip" data-placement="top" title="Upload to library" class="primary-button btn-xs upload_library_btn" type="button" style="<% if(button_config.upload_library_btn === false) { print("display:none;") } %>"><span class="fa fa-upload"></span></button>');
+    // tmpl_array.push('                   <button data-toggle="tooltip" data-placement="top" title="Upload to library" class="primary-button btn-xs upload_library_btn" type="button" style="<% if(button_config.upload_library_btn === false) { print("display:none;") } %>"><span class="fa fa-upload"></span></button>');
     tmpl_array.push('                   <button data-toggle="tooltip" data-placement="top" title="Modify library" class="primary-button btn-xs edit_library_btn" type="button" style="<% if(button_config.edit_library_btn === false) { print("display:none;") } %>"><span class="fa fa-pencil"></span></button>');
     tmpl_array.push('                   <button data-toggle="tooltip" data-placement="top" title="Modify permissions" class="primary-button btn-xs permission_library_btn" type="button" style="<% if(button_config.permission_library_btn === false) { print("display:none;") } %>"><span class="fa fa-group"></span></button>');
     tmpl_array.push('                   <button data-toggle="tooltip" data-placement="top" title="Save changes" class="primary-button btn-xs save_library_btn" type="button" style="<% if(button_config.save_library_btn === false) { print("display:none;") } %>"><span class="fa fa-floppy-o"> Save</span></button>');
