@@ -4,7 +4,8 @@ from galaxy.util import parse_xml_string
 
 from tool_shed.galaxy_install.tool_dependencies import fabric_util
 from tool_shed.galaxy_install.tool_dependencies import td_common_util
-from tool_shed.galaxy_install.recipe.recipe_manager import EnvFileBuilder
+from tool_shed.galaxy_install.tool_dependencies.recipe.recipe_manager import EnvFileBuilder
+
 TEST_DEPENDENCIES_DIR = "/opt/galaxy/dependencies"
 TEST_INSTALL_DIR = "%s/test_install_dir" % TEST_DEPENDENCIES_DIR
 
