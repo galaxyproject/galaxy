@@ -450,14 +450,20 @@ class SetEnvironment( RecipeStep ):
         env_var_dicts = action_dict[ 'environment_variable' ]
         for env_var_dict in env_var_dicts:
             # Check for the presence of the $ENV[] key string and populate it if possible.
-            env_var_dict = self.handle_environment_variables( app, tool_dependency, install_dir, env_var_dict, cmds )
+            env_var_dict = self.handle_environment_variables( app=app,
+                                                              install_environment=install_environment,
+                                                              tool_dependency=tool_dependency,
+                                                              install_dir=install_dir,
+                                                              env_var_dict=env_var_dict,
+                                                              set_prior_environment_commands=cmds )
             env_file_builder.append_line( **env_var_dict )
         # The caller should check the status of the returned tool_dependency since return_code is not
         # returned by this function.
         return_code = env_file_builder.return_code
         return tool_dependency, None, None
 
-    def handle_environment_variables( self, app, tool_dependency, install_dir, env_var_dict, set_prior_environment_commands ):
+    def handle_environment_variables( self, app, install_environment, tool_dependency, install_dir, env_var_dict,
+                                      set_prior_environment_commands ):
         """
         This method works with with a combination of three tool dependency definition tag sets, which are defined
         in the tool_dependencies.xml file in the order discussed here.  The example for this discussion is the
@@ -539,7 +545,6 @@ class SetEnvironment( RecipeStep ):
             set_prior_environment_commands.append( 'echo %s: $%s' % ( inherited_env_var_name, inherited_env_var_name ) )
             command = ' ; '.join( set_prior_environment_commands )
             # Run the command and capture the output.
-            install_environment = recipe_manager.InstallEnvironment()
             command_return = install_environment.handle_command( app, tool_dependency, install_dir, command, return_output=True )
             # And extract anything labeled with the name of the environment variable we're populating here.
             if '%s: ' % inherited_env_var_name in command_return:
