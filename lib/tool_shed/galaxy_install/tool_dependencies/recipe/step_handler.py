@@ -592,7 +592,7 @@ class SetEnvironmentForInstall( RecipeStep ):
         install_environment.add_env_shell_file_paths( action_dict[ 'env_shell_file_paths' ] )
         return tool_dependency, None, None
 
-    def prepare_step( self, app, tool_dependency, action_elem, action_dict, install_dir, is_binary_downloa ):
+    def prepare_step( self, app, tool_dependency, action_elem, action_dict, install_dir, is_binary_download ):
         # <action type="set_environment_for_install">
         #    <repository toolshed="http://localhost:9009/" name="package_numpy_1_7" owner="test" changeset_revision="c84c6a8be056">
         #        <package name="numpy" version="1.7.1" />
