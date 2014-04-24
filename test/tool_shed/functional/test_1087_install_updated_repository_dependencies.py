@@ -111,8 +111,9 @@ class TestRepositoryDependencies( ShedTwillTestCase ):
         convert_repository = self.test_db_util.get_repository_by_name_and_owner( convert_repository_name, common.test_user_1_name )
         strings_displayed=[ 'Handle repository dependencies', 'convert_chars_1087', self.get_repository_tip( convert_repository ) ]
         # Due to twill's limitations, only check for strings on the (redirected) reselect tool panel section page, don't actually reinstall.
-        url = '/admin_toolshed/browse_repositories?operation=activate+or+reinstall&id=%s' % self.security.encode_id( installed_column_repository.id )
-        self.visit_galaxy_url( url )
+        params = dict( operation='activate or reinstall', id=self.security.encode_id( installed_column_repository.id ) )
+        url = '/admin_toolshed/browse_repositories'
+        self.visit_galaxy_url( url, params )
         self.check_for_strings( strings_displayed )
         strings_not_displayed = [ 'column_maker_1087' ]
         self.display_galaxy_browse_repositories_page( strings_not_displayed=strings_not_displayed )
