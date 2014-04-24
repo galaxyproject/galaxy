@@ -253,10 +253,13 @@ class BaseJobRunner( object ):
     def get_job_file(self, job_wrapper, **kwds):
         job_metrics = job_wrapper.app.job_metrics
         job_instrumenter = job_metrics.job_instrumenters[ job_wrapper.job_destination.id ]
+
+        env_setup_commands = kwds.get( 'env_setup_commands', [] )
+        env_setup_commands.append( job_wrapper.get_env_setup_clause() or '' )
         options = dict(
             job_instrumenter=job_instrumenter,
             galaxy_lib=job_wrapper.galaxy_lib_dir,
-            env_setup_commands=job_wrapper.get_env_setup_clause(),
+            env_setup_commands=[job_wrapper.get_env_setup_clause()],
             working_directory=os.path.abspath( job_wrapper.working_directory ),
             command=job_wrapper.runner_command_line,
         )

@@ -296,7 +296,7 @@ class PBSJobRunner( AsynchronousJobRunner ):
         else:
             stage_commands = ''
 
-        env_setup_commands = '%s\n%s' % (stage_commands, job_wrapper.get_env_setup_clause())
+        env_setup_commands = [ stage_commands ]
         script = self.get_job_file(job_wrapper, exit_code_path=ecfile, env_setup_commands=env_setup_commands)
         job_file = "%s/%s.sh" % (self.app.config.cluster_files_directory, job_wrapper.job_id)
         fh = file(job_file, "w")
