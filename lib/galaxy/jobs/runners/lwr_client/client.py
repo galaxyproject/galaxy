@@ -41,6 +41,7 @@ class BaseJobClient(object):
             job_directory = None
         self.env = destination_params.get( "env", [] )
         self.files_endpoint = destination_params.get("files_endpoint", None)
+        self.env = destination_params.get("env", [])
         self.job_directory = job_directory
 
         self.default_file_action = self.destination_params.get("default_file_action", "transfer")

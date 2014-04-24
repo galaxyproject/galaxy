@@ -134,6 +134,7 @@ class LwrJobRunner( AsynchronousJobRunner ):
                 tool=job_wrapper.tool,
                 config_files=job_wrapper.extra_filenames,
                 requirements=requirements,
+                env=client.env,
                 rewrite_paths=rewrite_paths,
                 arbitrary_files=unstructured_path_rewrites,
             )
@@ -222,14 +223,15 @@ class LwrJobRunner( AsynchronousJobRunner ):
         for key, value in params.iteritems():
             if value:
                 params[key] = model.User.expand_user_properties( job_wrapper.get_job().user, value )
-        return self.get_client( params, job_id )
+        env = getattr( job_wrapper.job_destination, "env", [] )
+        return self.get_client( params, job_id, env )
 
     def get_client_from_state(self, job_state):
         job_destination_params = job_state.job_destination.params
         job_id = job_state.job_id
         return self.get_client( job_destination_params, job_id )
 
-    def get_client( self, job_destination_params, job_id ):
+    def get_client( self, job_destination_params, job_id, env=[] ):
         # Cannot use url_for outside of web thread.
         #files_endpoint = url_for( controller="job_files", job_id=encoded_job_id )
 
@@ -243,6 +245,7 @@ class LwrJobRunner( AsynchronousJobRunner ):
         get_client_kwds = dict(
             job_id=str( job_id ),
             files_endpoint=files_endpoint,
+            env=env
         )
         return self.client_manager.get_client( job_destination_params, **get_client_kwds )
 

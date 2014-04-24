@@ -17,6 +17,7 @@ from galaxy import model
 from galaxy.util import DATABASE_MAX_STRING_SIZE, shrink_stream_by_size
 from galaxy.util import in_directory
 from galaxy.jobs.runners.util.job_script import job_script
+from galaxy.jobs.runners.util.env import env_to_statement
 
 log = logging.getLogger( __name__ )
 
@@ -256,10 +257,14 @@ class BaseJobRunner( object ):
 
         env_setup_commands = kwds.get( 'env_setup_commands', [] )
         env_setup_commands.append( job_wrapper.get_env_setup_clause() or '' )
+        destination = job_wrapper.job_destination or {}
+        envs = destination.get( "env", [] )
+        for env in envs:
+            env_setup_commands.append( env_to_statement( env ) )
         options = dict(
             job_instrumenter=job_instrumenter,
             galaxy_lib=job_wrapper.galaxy_lib_dir,
-            env_setup_commands=[job_wrapper.get_env_setup_clause()],
+            env_setup_commands=env_setup_commands,
             working_directory=os.path.abspath( job_wrapper.working_directory ),
             command=job_wrapper.runner_command_line,
         )

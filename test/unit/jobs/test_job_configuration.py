@@ -111,6 +111,16 @@ class JobConfXmlParserTestCase( unittest.TestCase ):
         assert limits.concurrent_jobs[ "longjobs" ] == 1
         assert limits.walltime_delta == datetime.timedelta( 0, 0, 0, 0, 0, 24 )
 
+    def test_env_parsing( self ):
+        self.__with_advanced_config()
+        env_dest = self.job_config.destinations[ "java_cluster" ][ 0 ]
+        assert len( env_dest.env ) == 2, len( env_dest.env )
+        assert env_dest.env[ 0 ][ "name" ] == "_JAVA_OPTIONS"
+        assert env_dest.env[ 0 ][ "value" ] == '-Xmx=6GB'
+
+        assert env_dest.env[ 1 ][ "name" ] == "ANOTHER_OPTION"
+        assert env_dest.env[ 1 ][ "raw" ] is True
+
     # TODO: Add job metrics parsing test.
 
     @property

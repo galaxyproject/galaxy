@@ -51,7 +51,7 @@ def job_script(template=DEFAULT_JOB_FILE_TEMPLATE, **kwds):
         raise Exception("Failed to create job_script, a required parameter is missing.")
     job_instrumenter = kwds.get("job_instrumenter", None)
     if job_instrumenter:
-        del kwds[ "job_instrumenter" ]
+        del kwds["job_instrumenter"]
         working_directory = kwds["working_directory"]
         kwds["instrument_pre_commands"] = job_instrumenter.pre_execute_commands(working_directory) or ''
         kwds["instrument_post_commands"] = job_instrumenter.post_execute_commands(working_directory) or ''

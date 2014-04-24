@@ -179,6 +179,7 @@ class JobConfiguration( object ):
                     job_metrics.set_destination_conf_element( id, metrics_elements[ 0 ] )
             job_destination = JobDestination(**dict(destination.items()))
             job_destination['params'] = self.__get_params(destination)
+            job_destination['env'] = self.__get_envs(destination)
             self.destinations[id] = (job_destination,)
             if job_destination.tags is not None:
                 for tag in job_destination.tags:
@@ -348,6 +349,23 @@ class JobConfiguration( object ):
         rval = {}
         for param in parent.findall('param'):
             rval[param.get('id')] = param.text
+        return rval
+
+    def __get_envs(self, parent):
+        """Parses any child <env> tags in to a dictionary suitable for persistence.
+
+        :param parent: Parent element in which to find child <param> tags.
+        :type parent: ``xml.etree.ElementTree.Element``
+
+        :returns: dict
+        """
+        rval = []
+        for param in parent.findall('env'):
+            rval.append( dict(
+                name=param.get('id'),
+                value=param.text,
+                raw=util.asbool(param.get('raw', 'false'))
+            ) )
         return rval
 
     @property

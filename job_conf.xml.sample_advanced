@@ -74,6 +74,13 @@
             <param id="Resource_List">walltime=72:00:00</param>
         </destination>
         <destination id="remote_cluster" runner="drmaa" tags="longjobs"/>
+        <destination id="java_cluster" runner="drmaa">
+          <!-- set arbitrary environment variables at runtime - like metrics
+               doesn't yet work with local or CLI runners. But should work with
+               DRMAA/SLURM, PBS, Condor, and LWR. -->
+          <env id="_JAVA_OPTIONS">-Xmx=6GB</env>
+          <env id="ANOTHER_OPTION" raw="true">'5'</env> <!-- raw disables auto quoting -->
+        </destination>
         <destination id="real_user_cluster" runner="drmaa">
             <!-- TODO: The real user options should maybe not be considered runner params. -->
             <param id="galaxy_external_runjob_script">scripts/drmaa_external_runner.py</param>
