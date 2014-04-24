@@ -32,6 +32,8 @@ class ClientJobDescription(object):
         Local path created by Galaxy for running this job.
     requirements : list
         List of requirements for tool execution.
+    env: list
+        List of dict object describing environment variables to populate.
     version_file : str
         Path to version file expected on the client server
     arbitrary_files : dict()
@@ -54,6 +56,7 @@ class ClientJobDescription(object):
         client_outputs,
         working_directory,
         requirements,
+        env=[],
         arbitrary_files=None,
         rewrite_paths=True,
     ):
@@ -64,6 +67,7 @@ class ClientJobDescription(object):
         self.client_outputs = client_outputs
         self.working_directory = working_directory
         self.requirements = requirements
+        self.env = env
         self.rewrite_paths = rewrite_paths
         self.arbitrary_files = arbitrary_files or {}
 
@@ -156,5 +160,5 @@ class LwrOutputs(object):
             return join(output_directory, self.path_helper.local_name(name))
 
         files_directory = "%s_files%s" % (basename(output_file)[0:-len(".dat")], self.path_helper.separator)
-        names = filter(lambda o: o.startswith(files_directory),  self.output_directory_contents)
+        names = filter(lambda o: o.startswith(files_directory), self.output_directory_contents)
         return dict(map(lambda name: (local_path(name), name), names))

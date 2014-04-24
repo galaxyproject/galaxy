@@ -39,6 +39,7 @@ class BaseJobClient(object):
             )
         else:
             job_directory = None
+        self.env = destination_params.get( "env", [] )
         self.files_endpoint = destination_params.get("files_endpoint", None)
         self.job_directory = job_directory
 
@@ -81,7 +82,7 @@ class JobClient(BaseJobClient):
         super(JobClient, self).__init__(destination_params, job_id)
         self.job_manager_interface = job_manager_interface
 
-    def launch(self, command_line, requirements=[], remote_staging=[], job_config=None):
+    def launch(self, command_line, requirements=[], env=[], remote_staging=[], job_config=None):
         """
         Queue up the execution of the supplied `command_line` on the remote
         server. Called launch for historical reasons, should be renamed to
@@ -98,6 +99,8 @@ class JobClient(BaseJobClient):
             launch_params['params'] = dumps(submit_params_dict)
         if requirements:
             launch_params['requirements'] = dumps([requirement.to_dict() for requirement in requirements])
+        if env:
+            launch_params['env'] = dumps(env)
         if remote_staging:
             launch_params['remote_staging'] = dumps(remote_staging)
         if job_config and self.setup_handler.local:
@@ -291,7 +294,7 @@ class MessageJobClient(BaseJobClient):
             raise Exception(error_message)
         self.client_manager = client_manager
 
-    def launch(self, command_line, requirements=[], remote_staging=[], job_config=None):
+    def launch(self, command_line, requirements=[], env=[], remote_staging=[], job_config=None):
         """
         """
         launch_params = dict(command_line=command_line, job_id=self.job_id)
@@ -300,6 +303,8 @@ class MessageJobClient(BaseJobClient):
             launch_params['params'] = submit_params_dict
         if requirements:
             launch_params['requirements'] = [requirement.to_dict() for requirement in requirements]
+        if env:
+            launch_params['env'] = env
         if remote_staging:
             launch_params['remote_staging'] = remote_staging
         if job_config and self.setup_handler.local:

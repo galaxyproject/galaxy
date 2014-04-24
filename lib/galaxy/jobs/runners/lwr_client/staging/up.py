@@ -25,6 +25,7 @@ def submit_job(client, client_job_description, job_config=None):
     launch_kwds = dict(
         command_line=rebuilt_command_line,
         requirements=client_job_description.requirements,
+        env=client_job_description.env,
     )
     if file_stager.job_config:
         launch_kwds["job_config"] = file_stager.job_config
