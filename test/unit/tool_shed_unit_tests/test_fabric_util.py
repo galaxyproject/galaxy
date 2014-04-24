@@ -1,10 +1,11 @@
 from contextlib import contextmanager
+from tool_shed.galaxy_install.recipe.recipe_manager import EnvFileBuilder
 from tool_shed.galaxy_install.tool_dependencies import fabric_util
 
 
 def test_env_file_builder():
     install_dir = "/opt/galaxy/dependencies/foo/"
-    env_file_builder = fabric_util.EnvFileBuilder( install_dir )
+    env_file_builder = EnvFileBuilder( install_dir )
     added_lines = []
     mock_return = dict(value=0)
 

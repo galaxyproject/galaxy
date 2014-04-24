@@ -17,6 +17,7 @@ log = logging.getLogger( __name__ )
 
 # Set no activity timeout to 20 minutes.
 NO_OUTPUT_TIMEOUT = 1200.0
+INSTALLATION_LOG = 'INSTALLATION.log'
 
 
 class CompressedFile( object ):

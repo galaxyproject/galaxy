@@ -5,9 +5,10 @@ import stat
 import subprocess
 import sys
 import tempfile
-from string import Template
 import fabric_util
 import td_common_util
+from tool_shed.galaxy_install.tool_dependencies.recipe.recipe_manager import EnvFileBuilder
+from tool_shed.galaxy_install.tool_dependencies.recipe.recipe_manager import RecipeManager
 import tool_shed.util.shed_util_common as suc
 from tool_shed.util import common_util
 from tool_shed.util import encoding_util
@@ -94,7 +95,7 @@ def create_tool_dependency_with_initialized_env_sh_file( app, dependent_install_
                                                                                               package_name,
                                                                                               package_version,
                                                                                               required_repository )
-                        env_file_builder = fabric_util.EnvFileBuilder( tool_dependency.installation_directory( app ) )
+                        env_file_builder = EnvFileBuilder( tool_dependency.installation_directory( app ) )
                         env_file_builder.append_line( action="source", value=required_tool_dependency_env_file_path )
                         return_code = env_file_builder.return_code
                         if return_code:
@@ -497,19 +498,24 @@ def install_package( app, elem, tool_shed_repository, tool_dependencies=None, fr
             elif package_elem.tag == 'readme':
                 # Nothing to be done.
                 continue
-            #elif package_elem.tag == 'proprietary_fabfile':
+            #elif package_elem.tag == 'custom_fabfile':
             #    # TODO: This is not yet supported or functionally correct...
-            #    # Handle tool dependency installation where the repository includes one or more proprietary fabric scripts.
+            #    # Handle tool dependency installation where the repository includes one or more custom fabric scripts.
             #    if not fabric_version_checked:
             #        check_fabric_version()
             #        fabric_version_checked = True
             #    fabfile_name = package_elem.get( 'name', None )
-            #    proprietary_fabfile_path = os.path.abspath( os.path.join( os.path.split( tool_dependencies_config )[ 0 ], fabfile_name ) )
-            #    print 'Installing tool dependencies via fabric script ', proprietary_fabfile_path
+            #    custom_fabfile_path = os.path.abspath( os.path.join( os.path.split( tool_dependencies_config )[ 0 ], fabfile_name ) )
+            #    print 'Installing tool dependencies via fabric script ', custom_fabfile_path
     return tool_dependency
 
-def install_via_fabric( app, tool_dependency, install_dir, package_name=None, proprietary_fabfile_path=None, actions_elem=None, action_elem=None, **kwd ):
-    """Parse a tool_dependency.xml file's <actions> tag set to gather information for the installation via fabric."""
+def install_via_fabric( app, tool_dependency, install_dir, package_name=None, custom_fabfile_path=None,
+                        actions_elem=None, action_elem=None, **kwd ):
+    """
+    Parse a tool_dependency.xml file's <actions> tag set to gather information for installation using the
+    fabric_util.install_and_build_package() method.  The use of fabric is being eliminated, so some of these
+    functions may need to be renamed at some point.
+    """
     sa_session = app.install_model.context
     if not os.path.exists( install_dir ):
         os.makedirs( install_dir )
@@ -517,278 +523,30 @@ def install_via_fabric( app, tool_dependency, install_dir, package_name=None, pr
     if package_name:
         actions_dict[ 'package_name' ] = package_name
     actions = []
-    all_env_shell_file_paths = []
-    env_var_dicts = []
+    is_binary_download = False
     if actions_elem is not None:
         elems = actions_elem
         if elems.get( 'os' ) is not None and elems.get( 'architecture' ) is not None:
             is_binary_download = True
-        else:
-            is_binary_download = False
     elif action_elem is not None:
         # We were provided with a single <action> element to perform certain actions after a platform-specific tarball was downloaded.
         elems = [ action_elem ]
     else:
         elems = []
+    recipe_manager = RecipeManager()
     for action_elem in elems:
         # Make sure to skip all comments, since they are now included in the XML tree.
         if action_elem.tag != 'action':
             continue
         action_dict = {}
         action_type = action_elem.get( 'type', 'shell_command' )
-        if action_type == 'download_binary':
-            platform_info_dict = tool_dependency_util.get_platform_info_dict()
-            platform_info_dict[ 'name' ] = tool_dependency.name
-            platform_info_dict[ 'version' ] = tool_dependency.version
-            url_template_elems = action_elem.findall( 'url_template' )
-            # Check if there are multiple url_template elements, each with attrib entries for a specific platform.
-            if len( url_template_elems ) > 1:
-                # <base_url os="darwin" extract="false">http://hgdownload.cse.ucsc.edu/admin/exe/macOSX.${architecture}/faToTwoBit</base_url>
-                # This method returns the url_elem that best matches the current platform as received from os.uname().
-                # Currently checked attributes are os and architecture.
-                # These correspond to the values sysname and processor from the Python documentation for os.uname().
-                url_template_elem = tool_dependency_util.get_download_url_for_platform( url_template_elems, platform_info_dict )
-            else:
-                url_template_elem = url_template_elems[ 0 ]
-            action_dict[ 'url' ] = Template( url_template_elem.text ).safe_substitute( platform_info_dict )
-            action_dict[ 'target_directory' ] = action_elem.get( 'target_directory', None )
-        elif action_type == 'shell_command':
-            # <action type="shell_command">make</action>
-            action_elem_text = td_common_util.evaluate_template( action_elem.text, install_dir )
-            if action_elem_text:
-                action_dict[ 'command' ] = action_elem_text
-            else:
-                continue
-        elif action_type == 'template_command':
-            # Default to Cheetah as it's the first template language supported.
-            language = action_elem.get( 'language', 'cheetah' ).lower()
-            if language == 'cheetah':
-                # Cheetah template syntax.
-                # <action type="template_command" language="cheetah">
-                #     #if env.PATH:
-                #         make
-                #     #end if
-                # </action>
-                action_elem_text = action_elem.text.strip()
-                if action_elem_text:
-                    action_dict[ 'language' ] = language
-                    action_dict[ 'command' ] = action_elem_text
-                else:
-                    continue
-            else:
-                log.debug( "Unsupported template language '%s'. Not proceeding." % str( language ) )
-                raise Exception( "Unsupported template language '%s' in tool dependency definition." % str( language ) )
-        elif action_type == 'download_by_url':
-            # <action type="download_by_url">http://sourceforge.net/projects/samtools/files/samtools/0.1.18/samtools-0.1.18.tar.bz2</action>
-            if is_binary_download:
-                action_dict[ 'is_binary' ] = True
-            if action_elem.text:
-                action_dict[ 'url' ] = action_elem.text
-                target_filename = action_elem.get( 'target_filename', None )
-                if target_filename:
-                    action_dict[ 'target_filename' ] = target_filename
-            else:
-                continue
-        elif action_type == 'download_file':
-            # <action type="download_file">http://effectors.org/download/version/TTSS_GUI-1.0.1.jar</action>
-            if action_elem.text:
-                action_dict[ 'url' ] = action_elem.text
-                target_filename = action_elem.get( 'target_filename', None )
-                if target_filename:
-                    action_dict[ 'target_filename' ] = target_filename
-                action_dict[ 'extract' ] = asbool( action_elem.get( 'extract', False ) )
-            else:
-                continue
-        elif action_type == 'make_directory':
-            # <action type="make_directory">$INSTALL_DIR/lib/python</action>
-            if action_elem.text:
-                action_dict[ 'full_path' ] = td_common_util.evaluate_template( action_elem.text, install_dir )
-            else:
-                continue
-        elif action_type == 'change_directory':
-            # <action type="change_directory">PHYLIP-3.6b</action>
-            if action_elem.text:
-                action_dict[ 'directory' ] = action_elem.text
-            else:
-                continue
-        elif action_type == 'move_directory_files':
-            # <action type="move_directory_files">
-            #     <source_directory>bin</source_directory>
-            #     <destination_directory>$INSTALL_DIR/bin</destination_directory>
-            # </action>
-            for move_elem in action_elem:
-                move_elem_text = td_common_util.evaluate_template( move_elem.text, install_dir )
-                if move_elem_text:
-                    action_dict[ move_elem.tag ] = move_elem_text
-        elif action_type == 'move_file':
-            # <action type="move_file" rename_to="new_file_name">
-            #     <source>misc/some_file</source>
-            #     <destination>$INSTALL_DIR/bin</destination>
-            # </action>
-            action_dict[ 'source' ] = td_common_util.evaluate_template( action_elem.find( 'source' ).text, install_dir )
-            action_dict[ 'destination' ] = td_common_util.evaluate_template( action_elem.find( 'destination' ).text, install_dir )
-            action_dict[ 'rename_to' ] = action_elem.get( 'rename_to' )
-        elif action_type == 'set_environment':
-            # <action type="set_environment">
-            #     <environment_variable name="PYTHONPATH" action="append_to">$INSTALL_DIR/lib/python</environment_variable>
-            #     <environment_variable name="PATH" action="prepend_to">$INSTALL_DIR/bin</environment_variable>
-            # </action>
-            for env_elem in action_elem:
-                if env_elem.tag == 'environment_variable':
-                    env_var_dict = td_common_util.create_env_var_dict( env_elem, tool_dependency_install_dir=install_dir )
-                    if env_var_dict:
-                        env_var_dicts.append( env_var_dict )
-            if env_var_dicts:
-                # The last child of an <action type="set_environment"> might be a comment, so manually set it to be 'environment_variable'.
-                action_dict[ 'environment_variable' ] = env_var_dicts
-            else:
-                continue
-        elif action_type == 'set_environment_for_install':
-            # <action type="set_environment_for_install">
-            #    <repository toolshed="http://localhost:9009/" name="package_numpy_1_7" owner="test" changeset_revision="c84c6a8be056">
-            #        <package name="numpy" version="1.7.1" />
-            #    </repository>
-            # </action>
-            # This action type allows for defining an environment that will properly compile a tool dependency.  Currently, tag set definitions like
-            # that above are supported, but in the future other approaches to setting environment variables or other environment attributes can be
-            # supported.  The above tag set will result in the installed and compiled numpy version 1.7.1 binary to be used when compiling the current
-            # tool dependency package.  See the package_matplotlib_1_2 repository in the test tool shed for a real-world example.
-            for env_elem in action_elem:
-                if env_elem.tag == 'repository':
-                    env_shell_file_paths = td_common_util.get_env_shell_file_paths( app, env_elem )
-                    if env_shell_file_paths:
-                        all_env_shell_file_paths.extend( env_shell_file_paths )
-            if all_env_shell_file_paths:
-                action_dict[ 'env_shell_file_paths' ] = all_env_shell_file_paths
-            else:
-                continue
-        elif action_type == 'setup_virtualenv':
-            # <action type="setup_virtualenv" />
-            ## Install requirements from file requirements.txt of downloaded bundle - or -
-            # <action type="setup_virtualenv">tools/requirements.txt</action>
-            ## Install requirements from specified file from downloaded bundle -or -
-            # <action type="setup_virtualenv">pyyaml==3.2.0
-            # lxml==2.3.0</action>
-            ## Manually specify contents of requirements.txt file to create dynamically.
-            action_dict[ 'requirements' ] = td_common_util.evaluate_template( action_elem.text or 'requirements.txt', install_dir )
-        elif action_type == 'autoconf':
-            # Handle configure, make and make install allow providing configuration options
-            if action_elem.text:
-                configure_opts = td_common_util.evaluate_template( action_elem.text, install_dir )
-                action_dict[ 'configure_opts' ] = configure_opts
-        elif action_type == 'setup_r_environment':
-            # setup an R environment.
-            # <action type="setup_r_environment">
-            #       <repository name="package_r_3_0_1" owner="bgruening">
-            #           <package name="R" version="3.0.1" />
-            #       </repository>
-            #       <!-- allow installing an R packages -->
-            #       <package>https://github.com/bgruening/download_store/raw/master/DESeq2-1_0_18/BiocGenerics_0.6.0.tar.gz</package>
-            # </action>
-            # Discover all child repository dependency tags and define the path to an env.sh file associated with each repository.
-            # This will potentially update the value of the 'env_shell_file_paths' entry in action_dict.
-            action_dict = td_common_util.get_env_shell_file_paths_from_setup_environment_elem( app, all_env_shell_file_paths, action_elem, action_dict )
-            r_packages = list()
-            for env_elem in action_elem:
-                if env_elem.tag == 'package':
-                    r_packages.append( env_elem.text.strip() )
-            if r_packages:
-                action_dict[ 'r_packages' ] = r_packages
-            else:
-                continue
-        elif action_type == 'setup_ruby_environment':
-            # setup a Ruby environment.
-            # <action type="setup_ruby_environment">
-            #       <repository name="package_ruby_2_0" owner="bgruening">
-            #           <package name="ruby" version="2.0" />
-            #       </repository>
-            #       <!-- allow downloading and installing an Ruby package from http://rubygems.org/ -->
-            #       <package>protk</package>
-            #       <package>protk=1.2.4</package>
-            #       <package>http://url-to-some-gem-file.de/protk.gem</package>
-            # </action>
-            # Discover all child repository dependency tags and define the path to an env.sh file associated with each repository.
-            # This will potentially update the value of the 'env_shell_file_paths' entry in action_dict.
-            action_dict = td_common_util.get_env_shell_file_paths_from_setup_environment_elem( app, all_env_shell_file_paths, action_elem, action_dict )
-            ruby_package_tups = []
-            for env_elem in action_elem:
-                if env_elem.tag == 'package':
-                    #A valid gem definition can be:
-                    #    protk=1.2.4
-                    #    protk
-                    #    ftp://ftp.gruening.de/protk.gem
-                    gem_token = env_elem.text.strip().split( '=' )
-                    if len( gem_token ) == 2:
-                        # version string
-                        gem_name = gem_token[ 0 ]
-                        gem_version = gem_token[ 1 ]
-                        ruby_package_tups.append( ( gem_name, gem_version ) )
-                    else:
-                        # gem name for rubygems.org without version number
-                        gem = env_elem.text.strip()
-                        ruby_package_tups.append( ( gem, None ) )
-            if ruby_package_tups:
-                action_dict[ 'ruby_package_tups' ] = ruby_package_tups
-            else:
-                continue
-        elif action_type == 'setup_perl_environment':
-            # setup a Perl environment.
-            # <action type="setup_perl_environment">
-            #       <repository name="package_perl_5_18" owner="bgruening">
-            #           <package name="perl" version="5.18.1" />
-            #       </repository>
-            #       <!-- allow downloading and installing an Perl package from cpan.org-->
-            #       <package>XML::Parser</package>
-            #       <package>http://search.cpan.org/CPAN/authors/id/C/CJ/CJFIELDS/BioPerl-1.6.922.tar.gz</package>
-            # </action>
-            # Discover all child repository dependency tags and define the path to an env.sh file associated with each repository.
-            # This will potentially update the value of the 'env_shell_file_paths' entry in action_dict.
-            action_dict = td_common_util.get_env_shell_file_paths_from_setup_environment_elem( app, all_env_shell_file_paths, action_elem, action_dict )
-            perl_packages = []
-            for env_elem in action_elem:
-                if env_elem.tag == 'package':
-                    # A valid package definition can be:
-                    #    XML::Parser
-                    #     http://search.cpan.org/CPAN/authors/id/C/CJ/CJFIELDS/BioPerl-1.6.922.tar.gz
-                    # Unfortunately CPAN does not support versioning, so if you want real reproducibility you need to specify
-                    # the tarball path and the right order of different tarballs manually.
-                    perl_packages.append( env_elem.text.strip() )
-            if perl_packages:
-                action_dict[ 'perl_packages' ] = perl_packages
-            else:
-                continue
-        elif action_type == 'make_install':
-            # make; make install; allow providing make options
-            if action_elem.text:
-                make_opts = td_common_util.evaluate_template( action_elem.text, install_dir )
-                action_dict[ 'make_opts' ] = make_opts
-        elif action_type == 'chmod':
-            # Change the read, write, and execute bits on a file.
-            # <action type="chmod">
-            #   <file mode="750">$INSTALL_DIR/bin/faToTwoBit</file>
-            # </action>
-            file_elems = action_elem.findall( 'file' )
-            chmod_actions = []
-            # A unix octal mode is the sum of the following values:
-            # Owner:
-            # 400 Read    200 Write    100 Execute
-            # Group:
-            # 040 Read    020 Write    010 Execute
-            # World:
-            # 004 Read    002 Write    001 Execute
-            for file_elem in file_elems:
-                # So by the above table, owner read/write/execute and group read permission would be 740.
-                # Python's os.chmod uses base 10 modes, convert received unix-style octal modes to base 10.
-                received_mode = int( file_elem.get( 'mode', 600 ), base=8 )
-                # For added security, ensure that the setuid and setgid bits are not set.
-                mode = received_mode & ~( stat.S_ISUID | stat.S_ISGID )
-                file = td_common_util.evaluate_template( file_elem.text, install_dir )
-                chmod_tuple = ( file, mode )
-                chmod_actions.append( chmod_tuple )
-            action_dict[ 'change_modes' ] = chmod_actions
-        else:
-            log.debug( "Unsupported action type '%s'. Not proceeding." % str( action_type ) )
-            raise Exception( "Unsupported action type '%s' in tool dependency definition." % str( action_type ) )
+        action_dict = recipe_manager.prepare_step( app=app,
+                                                   tool_dependency=tool_dependency,
+                                                   action_type=action_type,
+                                                   action_elem=action_elem,
+                                                   action_dict=action_dict,
+                                                   install_dir=install_dir,
+                                                   is_binary_download=is_binary_download )
         action_tuple = ( action_type, action_dict )
         if action_type == 'set_environment':
             if action_tuple not in actions:
@@ -797,15 +555,15 @@ def install_via_fabric( app, tool_dependency, install_dir, package_name=None, pr
             actions.append( action_tuple )
     if actions:
         actions_dict[ 'actions' ] = actions
-    if proprietary_fabfile_path:
+    if custom_fabfile_path is not None:
         # TODO: this is not yet supported or functional, but when it is handle it using the fabric api.
-        # run_proprietary_fabric_method( app, elem, proprietary_fabfile_path, install_dir, package_name=package_name )
+        # execute_custom_fabric_script( app, elem, custom_fabfile_path, install_dir, package_name=package_name )
         raise Exception( 'Tool dependency installation using proprietary fabric scripts is not yet supported.' )
     else:
         tool_dependency = install_and_build_package_via_fabric( app, tool_dependency, actions_dict )
     return tool_dependency
 
-def run_proprietary_fabric_method( app, elem, proprietary_fabfile_path, install_dir, package_name=None, **kwd ):
+def execute_custom_fabric_script( app, elem, custom_fabfile_path, install_dir, package_name=None, **kwd ):
     """
     TODO: Handle this using the fabric api.
     Parse a tool_dependency.xml file's fabfile <method> tag set to build the method parameters and execute the method.
@@ -834,10 +592,10 @@ def run_proprietary_fabric_method( app, elem, proprietary_fabfile_path, install_
     else:
         params_str = params_str.rstrip( ',' )
     try:
-        cmd = 'fab -f %s %s:%s' % ( proprietary_fabfile_path, method_name, params_str )
+        cmd = 'fab -f %s %s:%s' % ( custom_fabfile_path, method_name, params_str )
         returncode, message = run_subprocess( app, cmd )
     except Exception, e:
-        return "Exception executing fabric script %s: %s.  " % ( str( proprietary_fabfile_path ), str( e ) )
+        return "Exception executing fabric script %s: %s.  " % ( str( custom_fabfile_path ), str( e ) )
     if returncode:
         return message
     handle_environment_settings( app, tool_dependency, install_dir, cmd )
@@ -913,7 +671,7 @@ def set_environment( app, elem, tool_shed_repository, attr_tups_of_dependencies_
                                                                                set_status=True )
                     if env_var_version == '1.0':
                         # Create this tool dependency's env.sh file.
-                        env_file_builder = fabric_util.EnvFileBuilder( install_dir )
+                        env_file_builder = EnvFileBuilder( install_dir )
                         return_code = env_file_builder.append_line( make_executable=True, **env_var_dict )
                         if return_code:
                             error_message = 'Error creating env.sh file for tool dependency %s, return_code: %s' % \

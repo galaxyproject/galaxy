@@ -4,8 +4,7 @@ from galaxy.util import parse_xml_string
 
 from tool_shed.galaxy_install.tool_dependencies import fabric_util
 from tool_shed.galaxy_install.tool_dependencies import td_common_util
-
-
+from tool_shed.galaxy_install.recipe.recipe_manager import EnvFileBuilder
 TEST_DEPENDENCIES_DIR = "/opt/galaxy/dependencies"
 TEST_INSTALL_DIR = "%s/test_install_dir" % TEST_DEPENDENCIES_DIR
 
@@ -17,7 +16,7 @@ class MockApp( object ):
 
 def test_create_or_update_env_shell_file():
     test_path = "/usr/share/R/libs"
-    env_file_builder = fabric_util.EnvFileBuilder( test_path )
+    env_file_builder = EnvFileBuilder( test_path )
     line, path = env_file_builder.create_or_update_env_shell_file( TEST_INSTALL_DIR, dict( action="append_to", name="R_LIBS", value=test_path ) )
     assert path == join( TEST_INSTALL_DIR, "env.sh" )
     assert line == "R_LIBS=$R_LIBS:/usr/share/R/libs; export R_LIBS"
