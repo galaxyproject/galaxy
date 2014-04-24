@@ -226,7 +226,7 @@ class UploadController( BaseUIController ):
                                                      admin_only=admin_only )
                 if ok:
                     # Update the repository files for browsing.
-                    suc.update_repository( repo )
+                    hg_util.update_repository( repo )
                     # Get the new repository tip.
                     if tip == repository.tip( trans.app ):
                         message = 'No changes to repository.  '

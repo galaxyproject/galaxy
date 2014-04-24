@@ -2,6 +2,7 @@
 Manage automatic installation of tools configured in the xxx.xml files in ~/scripts/migrate_tools (e.g., 0002_tools.xml).
 All of the tools were at some point included in the Galaxy distribution, but are now hosted in the main Galaxy tool shed.
 """
+import json
 import os
 import shutil
 import tempfile
@@ -9,12 +10,11 @@ import threading
 import logging
 from galaxy import util
 from galaxy.tools import ToolSection
-from galaxy.util.json import from_json_string
-from galaxy.util.json import to_json_string
 import tool_shed.util.shed_util_common as suc
 from tool_shed.util import common_install_util
 from tool_shed.util import common_util
 from tool_shed.util import datatype_util
+from tool_shed.util import hg_util
 from tool_shed.util import metadata_util
 from tool_shed.util import tool_dependency_util
 from tool_shed.util import tool_util
@@ -505,8 +505,10 @@ class InstallManager( object ):
                                        tool_shed_repository.owner,
                                        tool_shed_repository.installed_changeset_revision )
             if not cloned_ok:
-                suc.update_tool_shed_repository_status( self.app, tool_shed_repository, self.app.install_model.ToolShedRepository.installation_status.CLONING )
-                cloned_ok, error_message = suc.clone_repository( repository_clone_url, os.path.abspath( install_dir ), ctx_rev )
+                suc.update_tool_shed_repository_status( self.app,
+                                                        tool_shed_repository,
+                                                        self.app.install_model.ToolShedRepository.installation_status.CLONING )
+                cloned_ok, error_message = hg_util.clone_repository( repository_clone_url, os.path.abspath( install_dir ), ctx_rev )
             if cloned_ok and not is_installed:
                 self.handle_repository_contents( tool_shed_repository=tool_shed_repository,
                                                  repository_clone_url=repository_clone_url,
@@ -525,7 +527,7 @@ class InstallManager( object ):
                         ( self.tool_shed_url, tool_shed_repository.name, self.repository_owner, tool_shed_repository.installed_changeset_revision )
                     text = common_util.tool_shed_get( self.app, self.tool_shed_url, url )
                     if text:
-                        tool_version_dicts = from_json_string( text )
+                        tool_version_dicts = json.loads( text )
                         tool_util.handle_tool_versions( self.app, tool_version_dicts, tool_shed_repository )
                     else:
                         # Set the tool versions since they seem to be missing for this repository in the tool shed.

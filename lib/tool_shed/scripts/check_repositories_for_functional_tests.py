@@ -112,7 +112,7 @@ def check_and_update_repository_metadata( app, info_only=False, verbosity=1 ):
             repo_dir = repository.repo_path( app )
             repo = hg.repository( hg_util.get_configured_ui(), repo_dir )
             work_dir = tempfile.mkdtemp( prefix="tmp-toolshed-cafr"  )
-            cloned_ok, error_message = suc.clone_repository( repo_dir, work_dir, changeset_revision )
+            cloned_ok, error_message = hg_util.clone_repository( repo_dir, work_dir, changeset_revision )
             if cloned_ok:
                 # Iterate through all the directories in the cloned changeset revision and determine whether there's a
                 # directory named test-data. If this directory is not present update the metadata record for the changeset

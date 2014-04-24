@@ -560,14 +560,17 @@ def install_tool_shed_repository( trans, tool_shed_repository, repo_info_dict, t
     if isinstance( repo_info_dict, basestring ):
         repo_info_dict = encoding_util.tool_shed_decode( repo_info_dict )
     # Clone each repository to the configured location.
-    suc.update_tool_shed_repository_status( trans.app, tool_shed_repository, trans.install_model.ToolShedRepository.installation_status.CLONING )
+    suc.update_tool_shed_repository_status( trans.app,
+                                            tool_shed_repository,
+                                            trans.install_model.ToolShedRepository.installation_status.CLONING )
     repo_info_tuple = repo_info_dict[ tool_shed_repository.name ]
     description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = repo_info_tuple
-    relative_clone_dir = suc.generate_tool_shed_repository_install_dir( repository_clone_url, tool_shed_repository.installed_changeset_revision )
+    relative_clone_dir = suc.generate_tool_shed_repository_install_dir( repository_clone_url,
+                                                                        tool_shed_repository.installed_changeset_revision )
     clone_dir = os.path.join( tool_path, relative_clone_dir )
     relative_install_dir = os.path.join( relative_clone_dir, tool_shed_repository.name )
     install_dir = os.path.join( tool_path, relative_install_dir )
-    cloned_ok, error_message = suc.clone_repository( repository_clone_url, os.path.abspath( install_dir ), ctx_rev )
+    cloned_ok, error_message = hg_util.clone_repository( repository_clone_url, os.path.abspath( install_dir ), ctx_rev )
     if cloned_ok:
         if reinstalling:
             # Since we're reinstalling the repository we need to find the latest changeset revision to which it can be updated.
@@ -577,7 +580,7 @@ def install_tool_shed_repository( trans, tool_shed_repository, repo_info_dict, t
             if current_ctx_rev != ctx_rev:
                 repo = hg.repository( hg_util.get_configured_ui(), path=os.path.abspath( install_dir ) )
                 pull_repository( repo, repository_clone_url, current_changeset_revision )
-                suc.update_repository( repo, ctx_rev=current_ctx_rev )
+                hg_util.update_repository( repo, ctx_rev=current_ctx_rev )
         handle_repository_contents( trans,
                                     tool_shed_repository=tool_shed_repository,
                                     tool_path=tool_path,

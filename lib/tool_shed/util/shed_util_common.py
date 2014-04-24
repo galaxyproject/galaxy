@@ -25,10 +25,7 @@ from urllib2 import HTTPError
 from galaxy import eggs
 eggs.require( 'mercurial' )
 
-from mercurial import cmdutil
-from mercurial import commands
 from mercurial import hg
-from mercurial import ui
 
 eggs.require( 'markupsafe' )
 import markupsafe
@@ -139,15 +136,6 @@ def changeset_is_malicious( trans, id, changeset_revision, **kwd ):
         return repository_metadata.malicious
     return False
 
-def changeset_is_valid( app, repository, changeset_revision ):
-    """Make sure a changeset hash is valid for a specified repository."""
-    repo = hg.repository( hg_util.get_configured_ui(), repository.repo_path( app ) )
-    for changeset in repo.changelog:
-        changeset_hash = str( repo.changectx( changeset ) )
-        if changeset_revision == changeset_hash:
-            return True
-    return False
-
 def check_or_update_tool_shed_status_for_installed_repository( trans, repository ):
     updated = False
     tool_shed_status_dict = get_tool_shed_status_for_installed_repository( trans.app, repository )
@@ -161,21 +149,6 @@ def check_or_update_tool_shed_status_for_installed_repository( trans, repository
     else:
         ok = False
     return ok, updated
-
-def clone_repository( repository_clone_url, repository_file_dir, ctx_rev ):
-    """Clone the repository up to the specified changeset_revision.  No subsequent revisions will be present in the cloned repository."""
-    try:
-        commands.clone( hg_util.get_configured_ui(),
-                        str( repository_clone_url ),
-                        dest=str( repository_file_dir ),
-                        pull=True,
-                        noupdate=False,
-                        rev=util.listify( str( ctx_rev ) ) )
-        return True, None
-    except Exception, e:
-        error_message = 'Error cloning repository: %s' % str( e )
-        log.debug( error_message )
-        return False, error_message
 
 def config_elems_to_xml_file( app, config_elems, config_filename, tool_path ):
     """Persist the current in-memory list of config_elems to a file named by the value of config_filename."""
@@ -654,18 +627,6 @@ def get_latest_downloadable_changeset_revision( trans, repository, repo ):
     if changeset_revisions:
         return changeset_revisions[ -1 ]
     return INITIAL_CHANGELOG_HASH
-
-def get_mercurial_default_options_dict( command, command_table=None, **kwd ):
-    '''Borrowed from repoman - get default parameters for a mercurial command.'''
-    if command_table is None:
-        command_table = commands.table
-    possible = cmdutil.findpossible( command, command_table )
-    if len( possible ) != 1:
-        raise Exception, 'unable to find mercurial command "%s"' % command
-    default_options_dict = dict( ( r[ 1 ].replace( '-', '_' ), r[ 2 ] ) for r in possible[ possible.keys()[ 0 ] ][ 1 ][ 1 ] )
-    for option in kwd:
-        default_options_dict[ option ] = kwd[ option ]
-    return default_options_dict
 
 def get_named_tmpfile_from_ctx( ctx, filename, dir ):
     """Return a named temporary file created from a specified file with a given name included in a repository changeset revision."""
@@ -1783,24 +1744,6 @@ def update_in_shed_tool_config( app, repository ):
                     elem = guid_to_tool_elem_dict[ guid ]
             config_elems.append( elem )
         config_elems_to_xml_file( app, config_elems, shed_tool_conf, tool_path )
-
-def update_repository( repo, ctx_rev=None ):
-    """
-    Update the cloned repository to changeset_revision.  It is critical that the installed repository is updated to the desired
-    changeset_revision before metadata is set because the process for setting metadata uses the repository files on disk.
-    """
-    # TODO: We may have files on disk in the repo directory that aren't being tracked, so they must be removed.
-    # The codes used to show the status of files are as follows.
-    # M = modified
-    # A = added
-    # R = removed
-    # C = clean
-    # ! = deleted, but still tracked
-    # ? = not tracked
-    # I = ignored
-    # It would be nice if we could use mercurial's purge extension to remove untracked files.  The problem is that
-    # purging is not supported by the mercurial API.
-    commands.update( hg_util.get_configured_ui(), repo, rev=ctx_rev )
 
 def update_tool_shed_repository_status( app, tool_shed_repository, status, error_message=None ):
     """Update the status of a tool shed repository in the process of being installed into Galaxy."""

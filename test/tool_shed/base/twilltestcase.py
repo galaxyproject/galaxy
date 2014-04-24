@@ -19,6 +19,7 @@ from galaxy.util.json import from_json_string
 from galaxy.web import security
 from tool_shed.util.encoding_util import tool_shed_encode
 from tool_shed.util import shed_util_common as suc
+from tool_shed.util import hg_util
 from tool_shed.util import xml_util
 
 from galaxy import eggs
@@ -260,7 +261,7 @@ class ShedTwillTestCase( TwillTestCase ):
         
     def clone_repository( self, repository, destination_path ):
         url = '%s/repos/%s/%s' % ( self.url, repository.user.username, repository.name )
-        success, message = suc.clone_repository( url, destination_path, self.get_repository_tip( repository ) )
+        success, message = hg_util.clone_repository( url, destination_path, self.get_repository_tip( repository ) )
         assert success is True, message
         
     def commit_and_push( self, repository, hgrepo, options, username, password ):

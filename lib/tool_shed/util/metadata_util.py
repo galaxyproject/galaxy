@@ -1799,7 +1799,7 @@ def reset_all_metadata_on_repository_in_tool_shed( trans, id ):
         current_changeset_revision = str( repo.changectx( changeset ) )
         ctx = repo.changectx( changeset )
         log.debug( "Cloning repository changeset revision: %s", str( ctx.rev() ) )
-        cloned_ok, error_message = suc.clone_repository( repository_clone_url, work_dir, str( ctx.rev() ) )
+        cloned_ok, error_message = hg_util.clone_repository( repository_clone_url, work_dir, str( ctx.rev() ) )
         if cloned_ok:
             log.debug( "Generating metadata for changset revision: %s", str( ctx.rev() ) )
             current_metadata_dict, invalid_tups = generate_metadata_for_changeset_revision( app=trans.app,
@@ -1811,7 +1811,8 @@ def reset_all_metadata_on_repository_in_tool_shed( trans, id ):
                                                                                             resetting_all_metadata_on_repository=True,
                                                                                             updating_installed_repository=False,
                                                                                             persist=False )
-            # We'll only display error messages for the repository tip (it may be better to display error messages for each installable changeset revision).
+            # We'll only display error messages for the repository tip (it may be better to display error
+            # messages for each installable changeset revision).
             if current_changeset_revision == repository.tip( trans.app ):
                 invalid_file_tups.extend( invalid_tups )
             if current_metadata_dict:

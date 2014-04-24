@@ -722,7 +722,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         repository = suc.get_repository_in_tool_shed( trans, id )
         repo = hg.repository( hg_util.get_configured_ui(), repository.repo_path( trans.app ) )
         # Update repository files for browsing.
-        suc.update_repository( repo )
+        hg_util.update_repository( repo )
         changeset_revision = repository.tip( trans.app )
         metadata = metadata_util.get_repository_metadata_by_repository_id_changeset_revision( trans, id, changeset_revision, metadata_only=True )
         repository_type_select_field = rt_util.build_repository_type_select_field( trans, repository=repository )
@@ -2743,7 +2743,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                 commands.commit( repo.ui, repo, repo_dir, user=trans.user.username, message=commit_message )
                 suc.handle_email_alerts( trans, repository )
                 # Update the repository files for browsing.
-                suc.update_repository( repo )
+                hg_util.update_repository( repo )
                 # Get the new repository tip.
                 repo = hg.repository( hg_util.get_configured_ui(), repo_dir )
                 if tip == repository.tip( trans.app ):
@@ -3117,7 +3117,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         else:
             ctx_child = None
         diffs = []
-        options_dict = suc.get_mercurial_default_options_dict( 'diff' )
+        options_dict = hg_util.get_mercurial_default_options_dict( 'diff' )
         # Not quite sure if the following settings make any difference, but with a combination of them and the size check on each
         # diff, we don't run out of memory when viewing the changelog of the cisortho2 repository on the test tool shed.
         options_dict[ 'maxfile' ] = suc.MAXDIFFSIZE
@@ -3252,7 +3252,11 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             else:
                 message += malicious_error
             status = 'error'
-        containers_dict = container_util.build_repository_containers_for_tool_shed( trans, repository, changeset_revision, repository_dependencies, repository_metadata )
+        containers_dict = container_util.build_repository_containers_for_tool_shed( trans,
+                                                                                    repository,
+                                                                                    changeset_revision,
+                                                                                    repository_dependencies,
+                                                                                    repository_metadata )
         repository_type_select_field = rt_util.build_repository_type_select_field( trans, repository=repository )
         heads = suc.get_repository_heads( repo )
         return trans.fill_template( '/webapps/tool_shed/repository/view_repository.mako',

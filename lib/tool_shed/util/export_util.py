@@ -39,7 +39,7 @@ class ExportedRepositoryRegistry( object ):
 def archive_repository_revision( trans, ui, repository, archive_dir, changeset_revision ):
     '''Create an un-versioned archive of a repository.'''
     repo = hg.repository( hg_util.get_configured_ui(), repository.repo_path( trans.app ) )
-    options_dict = suc.get_mercurial_default_options_dict( 'archive' )
+    options_dict = hg_util.get_mercurial_default_options_dict( 'archive' )
     options_dict[ 'rev' ] = changeset_revision
     error_message = ''
     return_code = None
