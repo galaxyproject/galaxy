@@ -86,7 +86,7 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                                                          install_dir=install_dir,
                                                          current_dir=current_dir,
                                                          initial_download=False )
-                        if tool_dependency.status in [ app.model.ToolDependency.installation_status.ERROR ]:
+                        if tool_dependency.status in [ app.install_model.ToolDependency.installation_status.ERROR ]:
                             # If the tool_dependency status is in an error state, return it with no additional
                             # processing.
                             return tool_dependency
