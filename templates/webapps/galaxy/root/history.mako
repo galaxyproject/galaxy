@@ -8,13 +8,16 @@
 ## -----------------------------------------------------------------------------
 <%def name="javascripts()">
 ${ parent.javascripts() }
-
 <script type="text/javascript">
 $(function(){
     $( 'body' ).addClass( 'historyPage' ).addClass( 'history-panel' )
         .css({ margin: '0px', padding: '0px' });
 });
+</script>
+</%def>
 
+<%def name="javascript_app()">
+<script type="text/javascript">
 define( 'app', function(){
     require([
         'mvc/history/current-history-panel'
@@ -34,8 +37,7 @@ define( 'app', function(){
             });
         });
     });
-})
+});
 </script>
 ${ galaxy_client.load( app='app', history=history, hdas=hdas, show_deleted=show_deleted, show_hidden=show_hidden ) }
-
 </%def>

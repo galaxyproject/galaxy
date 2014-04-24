@@ -1,6 +1,6 @@
 <!DOCTYPE HTML>
-
 <%namespace name="galaxy_client" file="/galaxy_client_app.mako" />
+
 <%
     self.has_left_panel = hasattr( self, 'left_panel' )
     self.has_right_panel = hasattr( self, 'right_panel' )
@@ -20,7 +20,10 @@
 
 ## Default stylesheets
 <%def name="stylesheets()">
-    ${h.css('base','jquery.rating')}
+    ${h.css(
+        'base',
+        'jquery.rating'
+    )}
     <style type="text/css">
     #center {
         %if not self.has_left_panel:
@@ -67,9 +70,9 @@
             root: '${h.url_for( "/" )}'
         };
 
-        ## load additional style sheet
-        if (window != window.top)
-            $('<link href="' + galaxy_config.root + 'static/style/galaxy.frame.masthead.css" rel="stylesheet">').appendTo('head');
+        //## load additional style sheet
+        //if (window != window.top)
+        //    $('<link href="' + galaxy_config.root + 'static/style/galaxy.frame.masthead.css" rel="stylesheet">').appendTo('head');
 
         // console protection
         window.console = window.console || {
@@ -91,16 +94,24 @@
         });
     </script>
 
+</%def>
+
+<%def name="javascript_app()">
     ## load the Galaxy global js var
     ${ galaxy_client.load() }
-
 </%def>
 
 ## Default late-load javascripts
 <%def name="late_javascripts()">
     ## Scripts can be loaded later since they progressively add features to
     ## the panels, but do not change layout
-    ${h.js( 'libs/jquery/jquery.event.drag', 'libs/jquery/jquery.event.hover', 'libs/jquery/jquery.form', 'libs/jquery/jquery.rating', 'galaxy.panels' )}
+    ${h.js(
+        'libs/jquery/jquery.event.drag',
+        'libs/jquery/jquery.event.hover',
+        'libs/jquery/jquery.form',
+        'libs/jquery/jquery.rating',
+        'galaxy.panels'
+    )}
     <script type="text/javascript">
         
     ensure_dd_helper();
@@ -295,6 +306,7 @@
         <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
         ${self.stylesheets()}
         ${self.javascripts()}
+        ${self.javascript_app()}
     </head>
     
     <%

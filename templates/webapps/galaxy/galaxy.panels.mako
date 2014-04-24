@@ -101,6 +101,11 @@
         });
         var galaxy_config = ${ h.to_json_string( self.galaxy_config ) };
         
+    </script>
+</%def>
+
+<%def name="javascript_app()">
+    <script type="text/javascript">
         // load any app configured
         define( 'app', function(){
             var jscript = galaxy_config.app.jscript;
@@ -116,6 +121,7 @@
             }
         });
     </script>
+
     ## load the Galaxy global js var and run 'app' from above
     ${ galaxy_client.load( app='app' ) }
 
@@ -125,7 +131,6 @@
     ##${ galaxy_client.load( app=( app_config[ 'jscript' ] if 'jscript' in app_config else None )) }
     
     ##TODO: at that point, we can think about optimizing the various apps
-
 </%def>
 
 ## default late-load javascripts
@@ -165,6 +170,7 @@
  
         ## load scripts
         ${self.javascripts()}
+        ${self.javascript_app()}
     </head>
     
     <body scroll="no" class="full-content">
