@@ -1,6 +1,9 @@
 define([],
 function() {
-
+/**
+ * This view represents the top part of the library page.
+ * It contains the tool bar with buttons.
+ */
 var LibraryToolbarView = Backbone.View.extend({
   el: '#center',
 
@@ -30,7 +33,7 @@ var LibraryToolbarView = Backbone.View.extend({
   },
 
   delegate_modal: function(event){
-    // probably should refactor to have this functionality in this view, not in the library list view
+    // TODO probably should refactor to have this functionality in this view, not in the library list view
     Galaxy.libraries.libraryListView.show_library_modal(event);
   },
 

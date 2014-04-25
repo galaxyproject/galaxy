@@ -12,7 +12,6 @@ function(mod_masthead,
          mod_library_folderrow_view) {
 
 var FolderListView = Backbone.View.extend({
-  // main element definition
   el : '#folder_items_element',
   // progress percentage
   progress: 0,
@@ -32,29 +31,31 @@ var FolderListView = Backbone.View.extend({
   },
   
   initialize : function(options){
-      var that = this;
-      this.options = _.defaults(this.options || {}, options);
-      this.collection = new mod_library_model.Folder();
+    this.options = _.defaults(this.options || {}, options);
+    this.collection = new mod_library_model.Folder();
+    // start to listen if someone adds a model to the collection
+    this.listenTo(this.collection, 'add', this.renderOne);
+    this.fetchFolder();
+  },
 
-      // start to listen if someone adds a model to the collection
-      this.listenTo(this.collection, 'add', this.addOne);
-      
-      this.folderContainer = new mod_library_model.FolderContainer({id: this.options.id});
-      this.folderContainer.url = this.folderContainer.attributes.urlRoot + this.options.id + '/contents';
-      this.folderContainer.fetch({
-          success: function (folder_container) {
-            that.render();
-            var items = folder_container.get('folder').models;
-            that.addAll(items);
-          },
-          error: function(model, response){
-            if (typeof response.responseJSON !== "undefined"){
-              mod_toastr.error(response.responseJSON.err_msg);
-            } else {
-              mod_toastr.error('An error ocurred :(');
-            }
+  fetchFolder: function(){
+    var that = this;
+    this.folderContainer = new mod_library_model.FolderContainer({id: this.options.id});
+    this.folderContainer.url = this.folderContainer.attributes.urlRoot + this.options.id + '/contents';
+    this.folderContainer.fetch({
+        success: function(folder_container) {
+          that.folder_container = folder_container;
+          that.render();
+          that.addAll(folder_container.get('folder').models)
+        },
+        error: function(model, response){
+          if (typeof response.responseJSON !== "undefined"){
+            mod_toastr.error(response.responseJSON.err_msg);
+          } else {
+            mod_toastr.error('An error ocurred :(');
           }
-      });
+        }
+    });
   },
 
   render: function (options) {
@@ -83,16 +84,33 @@ var FolderListView = Backbone.View.extend({
     $("#center").css('overflow','auto');
   },
 
-  /** Adds all given models to the collection. */
-  addAll:function(items){
-    _.each(items.reverse(), function(item) {
-      Galaxy.libraries.folderListView.collection.add(item);
+  /**
+   * Adds all given models to the collection.
+   * @param {array of Item or FolderAsModel} array of models that should
+   *  be added to the view's collection.
+   */
+  addAll: function(models){
+    _.each(models.reverse(), function(model) {
+      Galaxy.libraries.folderListView.collection.add(model);
     });
     this.checkEmptiness();
   },
 
-  /** Creates a view for the given model and adds it to the folder view. */ 
-  addOne: function(model){
+  /**
+   * Renders whole collection of models as views
+   */
+  renderAll: function(){
+    var that = this;
+    _.each(this.collection.models.reverse(), function(model) {
+      that.renderOne(model);
+    });
+  },
+
+  /**
+   * Creates a view for the given model and adds it to the folder view.
+   * @param {Item or FolderAsModel} model of the view that will be rendered
+   */
+  renderOne: function(model){
     if (model.get('data_type') !== 'folder'){
         this.options.contains_file = true;
         model.set('readable_size', this.size_to_string(model.get('file_size')));
@@ -124,34 +142,42 @@ var FolderListView = Backbone.View.extend({
         this.sort = 'asc';
     }
     this.render();
+    this.renderAll();
   },
 
-  /** Sorts the underlying collection according to the parameters received. 
-   *  Currently supports only sorting by name. */
+  /**
+   *  Sorts the underlying collection according to the parameters received. 
+   *  Currently supports only sorting by name. 
+   */
   sortFolder: function(sort_by, order){
       if (sort_by === 'name'){
           if (order === 'asc'){
-              this.collection.sortByNameAsc();
+              return this.collection.sortByNameAsc();
           } else if (order === 'desc'){
-              this.collection.sortByNameDesc();
+              return this.collection.sortByNameDesc();
           }
       }
   },
 
-  /** convert size to nice string */
+  /** 
+   * convert size to nice string
+   * @param  {int} size
+   * @return {string} readable representation of size with units
+   */
   size_to_string : function (size){
-    // identify unit
     var unit = "";
     if (size >= 100000000000)   { size = size / 100000000000; unit = "TB"; } else
     if (size >= 100000000)      { size = size / 100000000; unit = "GB"; } else
     if (size >= 100000)         { size = size / 100000; unit = "MB"; } else
     if (size >= 100)            { size = size / 100; unit = "KB"; } else
     { size = size * 10; unit = "b"; }
-    // return formatted string
     return (Math.round(size) / 10) + unit;
   },
 
-  /** User clicked the checkbox in the table heading */
+  /**
+   * User clicked the checkbox in the table heading
+   * @param  {context} event
+   */
   selectAll : function (event) {
        var selected = event.target.checked;
        that = this;
@@ -168,8 +194,10 @@ var FolderListView = Backbone.View.extend({
       });
    },
 
-  /** Check checkbox if user clicks on the whole row or 
-   *  on the checkbox itself */
+  /** 
+   * Check checkbox if user clicks on the whole row or 
+   *  on the checkbox itself 
+   */
   selectClickedRow : function (event) {
     var checkbox = '';
     var $row;
