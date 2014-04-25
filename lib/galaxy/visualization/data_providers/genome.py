@@ -952,8 +952,7 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
 
             # Convert threshold to N for stepping through iterator.
             n = int( 1/threshold )
-            for e in itertools.islice( read_iterator, None, None, n ):
-                yield e
+            return itertools.islice( read_iterator, None, None, n )
 
             # Alternatate and much slower implementation that looks for pending pairs.
             '''
