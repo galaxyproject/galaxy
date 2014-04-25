@@ -18,6 +18,7 @@ from urlparse import urlparse
 from galaxy.web import security
 from galaxy.web.framework.helpers import iff
 from galaxy.util.json import from_json_string
+from galaxy.util import asbool
 from base.asserts import verify_assertions
 
 from galaxy import eggs
@@ -1325,11 +1326,25 @@ class TwillTestCase( unittest.TestCase ):
                 params[ key ] = value
         if params:
             url += '?%s' % urllib.urlencode( params )
+        checked_boxes = dict()
+        unchecked_boxes = dict()
         if checkbox_params is not None:
+            for checkbox_field in checkbox_params:
+                if checkbox_field in checked_boxes or checkbox_field in unchecked_boxes:
+                    continue
+                if asbool( checkbox_params[ checkbox_field ] ):
+                    checked_boxes[ checkbox_field ] = True
+                else:
+                    unchecked_boxes[ checkbox_field ] = False
+            # Any checkbox field that is found twice in the controller's incoming parameters is considered checked,
+            # while any field that only appears once is considered unchecked.
+            checkbox_params = '&'.join( [ urllib.urlencode( checked_boxes ), 
+                                          urllib.urlencode( checked_boxes ), 
+                                          urllib.urlencode( unchecked_boxes ) ] )
             if params or parsed_url.query:
-                url += '&%s&%s' % ( urllib.urlencode( checkbox_params ), urllib.urlencode( checkbox_params ) )
+                url += '&%s' % checkbox_params
             else:
-                url += '?%s&%s' % ( urllib.urlencode( checkbox_params ), urllib.urlencode( checkbox_params ) )
+                url += '?%s' % checkbox_params
         new_url = tc.go( url )
         return_code = tc.browser.get_code()
         assert return_code in allowed_codes, 'Invalid HTTP return code %s, allowed codes: %s' % \
