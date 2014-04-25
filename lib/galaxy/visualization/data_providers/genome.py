@@ -1018,7 +1018,7 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
                 if qname in paired_pending:
                     # Found pair.
                     pair = paired_pending[qname]
-                    results.append( [ "%i_%s" % ( pair['start'], qname ),
+                    results.append( [ hash( "%i_%s" % ( pair['start'], qname ) ),
                                       pair['start'],
                                       read.pos + read_len,
                                       qname,
@@ -1033,7 +1033,7 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
                                               'rlen': read_len, 'strand': strand, 'cigar': read.cigar, 'mapq': read.mapq }
                     count += 1
             else:
-                results.append( [ "%i_%s" % ( read.pos, qname ),
+                results.append( [ hash( "%i_%s" % ( read.pos, qname ) ),
                                 read.pos, read.pos + read_len, qname,
                                 read.cigar, strand, read.seq, read.mapq ] )
                 count += 1
