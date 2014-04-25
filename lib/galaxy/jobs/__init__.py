@@ -363,6 +363,8 @@ class JobConfiguration( object ):
         for param in parent.findall('env'):
             rval.append( dict(
                 name=param.get('id'),
+                file=param.get('file'),
+                execute=param.get('exec'),
                 value=param.text,
                 raw=util.asbool(param.get('raw', 'false'))
             ) )
