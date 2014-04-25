@@ -2,6 +2,7 @@
 API operations on the contents of a library folder.
 """
 from galaxy import web
+from galaxy import util
 from galaxy import exceptions
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
@@ -21,10 +22,32 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
     def index( self, trans, folder_id, **kwd ):
         """
         GET /api/folders/{encoded_folder_id}/contents
-        Displays a collection (list) of a folder's contents (files and folders).
-        Encoded folder ID is prepended with 'F' if it is a folder as opposed to a data set which does not have it.
-        Full path is provided in response as a separate object providing data for breadcrumb path building.
+
+        Displays a collection (list) of a folder's contents 
+        (files and folders). Encoded folder ID is prepended
+        with 'F' if it is a folder as opposed to a data set
+        which does not have it. Full path is provided in
+        response as a separate object providing data for 
+        breadcrumb path building.
+
+        :param  folder_id: encoded ID of the folder which 
+            contents should be library_dataset_dict
+        :type   folder_id: encoded string
+
+        :param kwd: keyword dictionary with other params
+        :type  kwd: dict
+
+        :returns: dictionary containing all items and metadata
+        :type:    dict
+
+        :raises: MalformedId, InconsistentDatabase, ObjectNotFound,
+             InternalServerError
         """
+        deleted = kwd.get( 'deleted', 'missing' )
+        try:
+            deleted = util.asbool( deleted )
+        except ValueError:
+            deleted = False
 
         if ( len( folder_id ) == 17 and folder_id.startswith( 'F' ) ):
             try:
@@ -69,7 +92,14 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
         
         def build_path( folder ):
             """
-            Search the path upwards recursively and load the whole route of names and ids for breadcrumb building purposes.
+            Search the path upwards recursively and load the whole route of
+            names and ids for breadcrumb building purposes.
+
+            :param folder: current folder for navigating up
+            :param type:   Galaxy LibraryFolder
+
+            :returns:   list consisting of full path to the library
+            :type:      list
             """
             path_to_root = []
             # We are almost in root
@@ -89,7 +119,7 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
         update_time = ''
         create_time = ''
         # Go through every accessible item in the folder and include its meta-data.
-        for content_item in self._load_folder_contents( trans, folder ):
+        for content_item in self._load_folder_contents( trans, folder, deleted ):
             can_access = trans.app.security_agent.can_access_library_item( current_user_roles, content_item, trans.user )
             if ( can_access or ( content_item.api_type == 'folder' and trans.app.security_agent.folder_is_unrestricted( content_item ) ) ):
                 return_item = {}
@@ -119,31 +149,74 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
                                    type = content_item.api_type,
                                    name = content_item.name,
                                    update_time = update_time,
-                                   create_time = create_time
+                                   create_time = create_time,
+                                   deleted = content_item.deleted
                                     ) )
                 folder_contents.append( return_item )
 
         return { 'metadata' : { 'full_path' : full_path, 'can_add_library_item': can_add_library_item, 'folder_name': folder.name }, 'folder_contents' : folder_contents }
 
-    def _load_folder_contents( self, trans, folder ):
+    def _load_folder_contents( self, trans, folder, include_deleted ):
         """
-        Loads all contents of the folder (folders and data sets) but only in the first level.
+        Loads all contents of the folder (folders and data sets) but only
+        in the first level. Include deleted if the flag is set and if the
+        user has access to undelete it.
+
+        :param  folder:          the folder which contents are being loaded
+        :type   folder:          Galaxy LibraryFolder
+
+        :param  include_deleted: flag, when true the items that are deleted
+            and can be undeleted by current user are shown 
+        :type   include_deleted: boolean
+
+        :returns:   a list containing the requested items
+        :type:      list
         """
         current_user_roles = trans.get_current_user_roles()
         is_admin = trans.user_is_admin()
         content_items = []
         for subfolder in folder.active_folders:
-            if not is_admin:
-                can_access, folder_ids = trans.app.security_agent.check_folder_contents( trans.user, current_user_roles, subfolder )
-            if (is_admin or can_access) and not subfolder.deleted:
-                subfolder.api_type = 'folder'
-                content_items.append( subfolder )
+            if subfolder.deleted:
+                if include_deleted:
+                    if is_admin:
+                        subfolder.api_type = 'folder'
+                        content_items.append( subfolder )
+                    else:
+                        can_modify = trans.app.security_agent.can_modify_library_item( current_user_roles, subfolder )
+                        if can_modify:
+                            subfolder.api_type = 'folder'
+                            content_items.append( subfolder )
+            else:
+                if is_admin:
+                    subfolder.api_type = 'folder'
+                    content_items.append( subfolder )
+                else:
+                    can_access, folder_ids = trans.app.security_agent.check_folder_contents( trans.user, current_user_roles, subfolder )
+                    if can_access:
+                        subfolder.api_type = 'folder'
+                        content_items.append( subfolder )
+
         for dataset in folder.datasets:
-            if not is_admin:
-                can_access = trans.app.security_agent.can_access_dataset( current_user_roles, dataset.library_dataset_dataset_association.dataset )
-            if (is_admin or can_access) and not dataset.deleted:
-                dataset.api_type = 'file'
-                content_items.append( dataset )
+            if dataset.deleted:
+                if include_deleted:
+                    if is_admin:
+                        dataset.api_type = 'file'
+                        content_items.append( dataset )
+                    else:
+                        can_modify = trans.app.security_agent.can_modify_library_item( current_user_roles, dataset )
+                        if can_modify:
+                            dataset.api_type = 'file'
+                            content_items.append( dataset )
+            else:
+                if is_admin:
+                    dataset.api_type = 'file'
+                    content_items.append( dataset )
+                else:
+                    can_access, folder_ids = trans.app.security_agent.can_access_dataset( current_user_roles, dataset.library_dataset_dataset_association.dataset )
+                    if can_access:
+                        dataset.api_type = 'file'
+                        content_items.append( dataset )
+
         return content_items
 
     @expose_api
@@ -157,15 +230,22 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
         :type   payload:    dict
 
             * folder_id:    the parent folder of the new item
-            * from_hda_id:  (optional) the id of an accessible HDA to copy into the library
-            * ldda_message: (optional) the new message attribute of the LDDA created
-            * extended_metadata: (optional) dub-dictionary containing any extended
-                metadata to associate with the item
+            * from_hda_id:  (optional) the id of an accessible HDA to copy 
+                into the library
+            * ldda_message: (optional) the new message attribute of the LDDA
+                 created
+            * extended_metadata: (optional) dub-dictionary containing any 
+                extended metadata to associate with the item
 
-        :returns:   a dictionary containing the id, name, and 'show' url of the new item
+        :returns:   a dictionary containing the id, name, 
+            and 'show' url of the new item
         :rtype:     dict
+
+        :raises:    ObjectAttributeInvalidException, 
+            InsufficientPermissionsException, ItemAccessibilityException, 
+            InternalServerError
         """
-        class_name, encoded_folder_id_16 = self.__decode_library_content_id( trans, encoded_folder_id )
+        encoded_folder_id_16 = self.__decode_library_content_id( trans, encoded_folder_id )
         from_hda_id, ldda_message = ( payload.pop( 'from_hda_id', None ), payload.pop( 'ldda_message', '' ) )
         if ldda_message:
             ldda_message = util.sanitize_html.sanitize_html( ldda_message, 'utf-8' )
@@ -200,8 +280,21 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
         return rval
 
     def __decode_library_content_id( self, trans, encoded_folder_id ):
+        """
+        Identifies whether the id provided is properly encoded
+        LibraryFolder.
+
+        :param  encoded_folder_id:  encoded id of Galaxy LibraryFolder
+        :type   encoded_folder_id:  encoded string
+
+        :returns:   last 16 chars of the encoded id in case it was Folder 
+            (had 'F' prepended)
+        :type:  string
+
+        :raises:    MalformedId
+        """
         if ( len( encoded_folder_id )  == 17 and encoded_folder_id.startswith( 'F' )):
-            return 'LibraryFolder', encoded_folder_id[1:]
+            return encoded_folder_id[1:]
         else:
             raise exceptions.MalformedId( 'Malformed folder id ( %s ) specified, unable to decode.' % str( encoded_folder_id ) )
 
