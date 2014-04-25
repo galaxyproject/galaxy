@@ -525,7 +525,7 @@ class ShedTwillTestCase( TwillTestCase ):
     def enable_email_alerts( self, repository, strings_displayed=[], strings_not_displayed=[] ):
         repository_id = self.security.encode_id( repository.id )
         params = dict( operation='Receive email alerts', id=repository_id )
-        self.visit_url( '/repository/browse_repositories' )
+        self.visit_url( '/repository/browse_repositories', params )
         self.check_for_strings( strings_displayed )
 
     def escape_html( self, string, unescape=False ):
@@ -796,7 +796,7 @@ class ShedTwillTestCase( TwillTestCase ):
         self.check_for_strings( strings_displayed, strings_not_displayed )
         params = dict( operation='manage users and groups', id=self.security.encode_id( role.id ) )
         url = '/admin/roles'
-        self.visit_url( url )
+        self.visit_url( url, params )
         strings_displayed = [ common.test_user_1_email, common.test_user_2_email ]
         self.check_for_strings( strings_displayed, strings_not_displayed )
         # As elsewhere, twill limits the possibility of submitting the form, this time due to not executing the javascript
