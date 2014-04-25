@@ -356,6 +356,9 @@ $.fn.make_text_editable = function(config_dict) {
                     // Enter key.
                     set_text($(this).val());
                 }
+
+                // Do not propogate event to avoid unwanted side effects.
+                e.stopPropagation();
             });
         }
                                 
