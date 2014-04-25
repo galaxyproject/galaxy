@@ -2,6 +2,7 @@ import logging
 import os
 import re
 import shutil
+import stat
 import sys
 import tarfile
 import time
@@ -110,6 +111,31 @@ class CompressedFile( object ):
     def open_zip( self, filepath, mode ):
         return zipfile.ZipFile( filepath, mode )
 
+def assert_directory_exists( full_path ):
+    """Return True if a directory exists and is not a symbolic link."""
+    if os.path.islink( full_path ):
+        return False
+    if os.path.is_dir( full_path ):
+        return True
+    return False
+
+def assert_file_exists( full_path ):
+    """Return True if a file exists.  This will work for both symbolic linke and files."""
+    if os.path.exists( full_path ):
+        return True
+    return False
+
+def assert_file_executable( full_path ):
+    """Return True if a file exists and is executable."""
+    if os.path.islink( full_path ):
+        return False
+    if os.path.is_file( full_path ):
+        # Make sure the owner has execute permission on the file.
+        # See http://docs.python.org/2/library/stat.html
+        if stat.S_IXUSR & os.stat( full_path )[ stat.ST_MODE ] == 64:
+            return True
+    return False
+
 def create_env_var_dict( elem, tool_dependency_install_dir=None, tool_shed_repository_install_dir=None ):
     env_var_name = elem.get( 'name', 'PATH' )
     env_var_action = elem.get( 'action', 'prepend_to' )
@@ -154,6 +180,10 @@ def egrep_escape( text ):
     # Whereas single quotes should not be escaped
     regex = regex.replace( r"\'", "'" )
     return regex
+
+def evaluate_template( text, install_dir ):
+    """ Substitute variables defined in XML blocks from dependencies file."""
+    return Template( text ).safe_substitute( get_env_var_values( install_dir ) )
 
 def format_traceback():
     ex_type, ex, tb = sys.exc_info()
@@ -444,6 +474,10 @@ def parse_package_elem( package_elem, platform_info_dict=None, include_after_ins
             continue
     return actions_elem_tuples
 
+def __shellquote( s ):
+    """Quote and escape the supplied string for use in shell expressions."""
+    return "'" + s.replace( "'", "'\\''" ) + "'"
+
 def url_download( install_dir, downloaded_file_name, download_url, extract=True ):
     file_path = os.path.join( install_dir, downloaded_file_name )
     src = None
@@ -494,11 +528,3 @@ def zipfile_ok( path_to_archive ):
         if not member_path.startswith( basename ):
             return False
     return True
-
-def __shellquote(s):
-    """Quote and escape the supplied string for use in shell expressions."""
-    return "'" + s.replace( "'", "'\\''" ) + "'"
-
-def evaluate_template( text, install_dir ):
-    """ Substitute variables defined in XML blocks from dependencies file."""
-    return Template( text ).safe_substitute( get_env_var_values( install_dir ) )

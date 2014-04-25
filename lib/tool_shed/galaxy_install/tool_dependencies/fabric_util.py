@@ -4,6 +4,8 @@ import os
 from galaxy import eggs
 
 eggs.require( 'Fabric' )
+eggs.require( 'ssh' )
+eggs.require( 'paramiko' )
 
 from fabric.api import env
 from fabric.api import lcd

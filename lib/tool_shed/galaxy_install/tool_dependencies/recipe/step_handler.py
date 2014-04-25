@@ -14,6 +14,9 @@ from tool_shed.galaxy_install.tool_dependencies import td_common_util
 # TODO: eliminate the use of fabric here.
 from galaxy import eggs
 eggs.require( 'Fabric' )
+eggs.require( 'ssh' )
+eggs.require( 'paramiko' )
+
 from fabric.api import settings
 from fabric.api import lcd
 
@@ -31,6 +34,105 @@ class RecipeStep( object ):
 
     def prepare_step( self, app, tool_dependency, action_elem, action_dict, install_dir, is_binary_download ):
         raise "Unimplemented Method"
+
+
+class AssertDirectoryExists( RecipeStep ):
+
+    def __init__( self ):
+        self.type = 'assert_directory_exists'
+
+    def execute_step( self, app, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
+                      install_environment, work_dir, install_dir, current_dir=None, initial_download=False ):
+        """
+        Make sure a directory on disk exists.  Since this class is not used in the initial download stage,
+        no recipe step filtering is performed here, and None values are always returned for filtered_actions
+        and dir.
+        """
+        if os.path.isabs( action_dict[ 'full_path' ] ):
+            full_path = action_dict[ 'full_path' ]
+        else:
+            full_path = os.path.join( current_dir, action_dict[ 'full_path' ] )
+        if not td_common_util.assert_directory_exists( full_path=full_path ):
+            status = app.install_model.ToolDependency.installation_status.ERROR
+            error_message = 'The required directory %s does not exist.' % str( full_path )
+            tool_dependency = tool_dependency_util.set_tool_dependency_attributes( app,
+                                                                                   tool_dependency,
+                                                                                   status=status,
+                                                                                   error_message=error_message,
+                                                                                   remove_from_disk=False )
+        return tool_dependency, None, None
+
+    def prepare_step( self, app, tool_dependency, action_elem, action_dict, install_dir, is_binary_download ):
+        # <action type="make_directory">$INSTALL_DIR/mira</action>
+        if action_elem.text:
+            action_dict[ 'full_path' ] = td_common_util.evaluate_template( action_elem.text, install_dir )
+        return action_dict
+
+
+class AssertFileExecutable( RecipeStep ):
+
+    def __init__( self ):
+        self.type = 'assert_file_executable'
+
+    def execute_step( self, app, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
+                      install_environment, work_dir, install_dir, current_dir=None, initial_download=False ):
+        """
+        Make sure a file on disk exists and is executable.  Since this class is not used in the initial
+        download stage, no recipe step filtering is performed here, and None values are always returned
+        for filtered_actions and dir.
+        """
+        if os.path.isabs( action_dict[ 'full_path' ] ):
+            full_path = action_dict[ 'full_path' ]
+        else:
+            full_path = os.path.join( current_dir, action_dict[ 'full_path' ] )
+        if not td_common_util.assert_file_executable( full_path=full_path ):
+            status = app.install_model.ToolDependency.installation_status.ERROR
+            error_message = 'The file %s is not executable by the owner.' % str( full_path )
+            tool_dependency = tool_dependency_util.set_tool_dependency_attributes( app,
+                                                                                   tool_dependency,
+                                                                                   status=status,
+                                                                                   error_message=error_message,
+                                                                                   remove_from_disk=False )
+        return tool_dependency, None, None
+
+    def prepare_step( self, app, tool_dependency, action_elem, action_dict, install_dir, is_binary_download ):
+        # <action type="assert_executable">$INSTALL_DIR/mira/my_file</action>
+        if action_elem.text:
+            action_dict[ 'full_path' ] = td_common_util.evaluate_template( action_elem.text, install_dir )
+        return action_dict
+
+
+class AssertFileExists( RecipeStep ):
+
+    def __init__( self ):
+        self.type = 'assert_file_exists'
+
+    def execute_step( self, app, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
+                      install_environment, work_dir, install_dir, current_dir=None, initial_download=False ):
+        """
+        Make sure a file on disk exists.  Since this class is not used in the initial download stage,
+        no recipe step filtering is performed here, and None values are always returned for
+        filtered_actions and dir.
+        """
+        if os.path.isabs( action_dict[ 'full_path' ] ):
+            full_path = action_dict[ 'full_path' ]
+        else:
+            full_path = os.path.join( current_dir, action_dict[ 'full_path' ] )
+        if not td_common_util.assert_file_exists( full_path=full_path ):
+            status = app.install_model.ToolDependency.installation_status.ERROR
+            error_message = 'The required file %s does not exist.' % str( full_path )
+            tool_dependency = tool_dependency_util.set_tool_dependency_attributes( app,
+                                                                                   tool_dependency,
+                                                                                   status=status,
+                                                                                   error_message=error_message,
+                                                                                   remove_from_disk=False )
+        return tool_dependency, None, None
+
+    def prepare_step( self, app, tool_dependency, action_elem, action_dict, install_dir, is_binary_download ):
+        # <action type="assert_on_path">$INSTALL_DIR/mira/my_file</action>
+        if action_elem.text:
+            action_dict[ 'full_path' ] = td_common_util.evaluate_template( action_elem.text, install_dir )
+        return action_dict
 
 
 class Autoconf( RecipeStep ):

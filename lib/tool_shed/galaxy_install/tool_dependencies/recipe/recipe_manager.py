@@ -13,6 +13,8 @@ from contextlib import contextmanager
 # TODO: eliminate the use of fabric here.
 from galaxy import eggs
 eggs.require( 'Fabric' )
+eggs.require( 'ssh' )
+eggs.require( 'paramiko' )
 
 from fabric.operations import _AttributeString
 from fabric import state
@@ -412,7 +414,10 @@ class RecipeManager( object ):
         return tool_dependency, filtered_actions, dir
 
     def load_step_handlers( self ):
-        step_handlers_by_type = dict( autoconf=step_handler.Autoconf(),
+        step_handlers_by_type = dict( assert_directory_exists=step_handler.AssertDirectoryExists(),
+                                      assert_file_executable=step_handler.AssertFileExecutable(),
+                                      assert_file_exists=step_handler.AssertFileExists(),
+                                      autoconf=step_handler.Autoconf(),
                                       change_directory=step_handler.ChangeDirectory(),
                                       chmod=step_handler.Chmod(),
                                       download_binary=step_handler.DownloadBinary(),
