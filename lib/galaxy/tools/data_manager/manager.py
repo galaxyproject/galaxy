@@ -134,15 +134,15 @@ class DataManager( object ):
             tool_shed_url = tool_elem.find( 'tool_shed' ).text
             # Handle protocol changes.
             tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( self.data_managers.app, tool_shed_url )
+            # The protocol is not stored in the database.
+            tool_shed = common_util.remove_protocol_from_tool_shed_url( tool_shed_url )
             repository_name = tool_elem.find( 'repository_name' ).text
             repository_owner = tool_elem.find( 'repository_owner' ).text
             installed_changeset_revision = tool_elem.find( 'installed_changeset_revision' ).text
-            self.tool_shed_repository_info_dict = dict( tool_shed_url=tool_shed_url,
+            self.tool_shed_repository_info_dict = dict( tool_shed=tool_shed,
                                                         name=repository_name,
                                                         owner=repository_owner,
                                                         installed_changeset_revision=installed_changeset_revision )
-            # The protocol is not stored in the database.
-            tool_shed = common_util.remove_protocol_from_tool_shed_url( tool_shed_url )
             tool_shed_repository = \
                 suc.get_tool_shed_repository_by_shed_name_owner_installed_changeset_revision( self.data_managers.app,
                                                                                               tool_shed,
