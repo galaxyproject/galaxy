@@ -72,12 +72,14 @@ class TestLibraryFeatures( TwillTestCase ):
                 # Pass number of options we want in our SelectField
                 num_options = 2
             # Create form for library template
+            strings_displayed_after_submit = [ "The form '%s' has been updated with the changes." % type ]
             self.create_form( name=type,
                               description=form_desc,
                               form_type=galaxy.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE,
                               field_type=type,
                               num_options=num_options,
-                              field_name=field_name )
+                              field_name=field_name,
+                              strings_displayed_after_submit=strings_displayed_after_submit )
         # Get all of the new form definitions for later use
         global AddressField_form
         AddressField_form = get_form( 'AddressField' )
@@ -145,7 +147,7 @@ class TestLibraryFeatures( TwillTestCase ):
         # Add a template containing an AddressField to library1
         self.add_template( cntrller='library_admin',
                            item_type='library',
-                           form_type=galaxy.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE.replace( ' ', '+' ),
+                           form_type=galaxy.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE,
                            form_id=self.security.encode_id( AddressField_form.id ),
                            form_name=AddressField_form.name,
                            library_id=self.security.encode_id( library1.id ) )
@@ -287,7 +289,7 @@ class TestLibraryFeatures( TwillTestCase ):
         # Add a template containing an CheckboxField to library1
         self.add_template( cntrller='library_admin',
                            item_type='library',
-                           form_type=galaxy.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE.replace( ' ', '+' ),
+                           form_type=galaxy.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE,
                            form_id=self.security.encode_id( CheckboxField_form.id ),
                            form_name=CheckboxField_form.name,
                            library_id=self.security.encode_id( library2.id ) )
@@ -363,7 +365,7 @@ class TestLibraryFeatures( TwillTestCase ):
         # Logged in as admin_user
         self.add_template( cntrller='library_admin',
                            item_type='library',
-                           form_type=galaxy.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE.replace( ' ', '+' ),
+                           form_type=galaxy.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE,
                            form_id=self.security.encode_id( SelectField_form.id ),
                            form_name=SelectField_form.name,
                            library_id=self.security.encode_id( library3.id ) )
@@ -464,7 +466,7 @@ class TestLibraryFeatures( TwillTestCase ):
         # Add an inheritable template to library4
         self.add_template( cntrller='library_admin',
                            item_type='library',
-                           form_type=galaxy.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE.replace( ' ', '+' ),
+                           form_type=galaxy.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE,
                            form_id=self.security.encode_id( TextArea_form.id ),
                            form_name=TextArea_form.name,
                            library_id=self.security.encode_id( library4.id ) )
@@ -533,7 +535,7 @@ class TestLibraryFeatures( TwillTestCase ):
         # Add an inheritable template to library5
         self.add_template( cntrller='library_admin',
                            item_type='library',
-                           form_type=galaxy.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE.replace( ' ', '+' ),
+                           form_type=galaxy.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE,
                            form_id=self.security.encode_id( TextField_form.id ),
                            form_name=TextField_form.name,
                            library_id=self.security.encode_id( library5.id ) )
@@ -602,7 +604,7 @@ class TestLibraryFeatures( TwillTestCase ):
         # Currently there is only a TextField, and we'll add a TextArea.
         self.edit_template( cntrller='library_admin',
                             item_type='library',
-                            form_type=galaxy.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE.replace( ' ', '+' ),
+                            form_type=galaxy.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE,
                             library_id=self.security.encode_id( library5.id ),
                             field_type='TextArea',
                             field_label_1=TextArea_form.name,
@@ -647,7 +649,7 @@ class TestLibraryFeatures( TwillTestCase ):
         # We won't select an option since we have no workflow to select
         self.add_template( cntrller='library_admin',
                            item_type='library',
-                           form_type=galaxy.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE.replace( ' ', '+' ),
+                           form_type=galaxy.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE,
                            form_id=self.security.encode_id( WorkflowField_form.id ),
                            form_name=WorkflowField_form.name,
                            library_id=self.security.encode_id( library6.id ) )

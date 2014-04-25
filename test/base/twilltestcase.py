@@ -2040,16 +2040,13 @@ class TwillTestCase( unittest.TestCase ):
         dis-inherit your template, call the manage_library_template_inheritance() below immediately after you call this
         method in your test code.  Templates added to Requesttype objects are always inherited to samples.
         """
-        if item_type == 'library':
-            url = "%s/library_common/add_template?cntrller=%s&item_type=%s&form_type=%s&library_id=%s" % \
-            ( self.url, cntrller, item_type, form_type, library_id )
-        elif item_type == 'folder':
-            url = "%s/library_common/add_template?cntrller=%s&item_type=%s&form_type=%s&library_id=%s&folder_id=%s" % \
-            ( self.url, cntrller, item_type, form_type, library_id, folder_id )
+        params = dict( cntrller=cntrller, item_type=item_type, form_type=form_type, library_id=library_id )
+        url = "/library_common/add_template"
+        if item_type == 'folder':
+            params[ 'folder_id' ] = folder_id
         elif item_type == 'ldda':
-            url = "%s/library_common/add_template?cntrller=%s&item_type=%s&form_type=%s&library_id=%s&folder_id=%s&ldda_id=%s" % \
-            ( self.url, cntrller, item_type, form_type, library_id, folder_id, ldda_id )
-        self.visit_url( url )
+            params[ 'ldda_id' ] = ldda_id
+        self.visit_url( url, params )
         self.check_page_for_string ( "Select a template for the" )
         self.refresh_form( "form_id", form_id )
         # For some unknown reason, twill barfs if the form number ( 1 ) is used in the following
