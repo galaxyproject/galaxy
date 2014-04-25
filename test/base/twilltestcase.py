@@ -2254,7 +2254,7 @@ class TwillTestCase( unittest.TestCase ):
         # NOTE: due to the library_wait() method call at the end of this method, no tests should be done
         # for strings_displayed_after_submit.
         params = dict( cntrller=cntrller, library_id=library_id, folder_id=folder_id )
-        url = "%s/library_common/upload_library_dataset" % self.url
+        url = "/library_common/upload_library_dataset"
         if replace_id:
             # If we're uploading a new version of a library dataset, we have to include the replace_id param in the
             # request because the form field named replace_id will not be displayed on the upload form if we dont.
@@ -2309,17 +2309,15 @@ class TwillTestCase( unittest.TestCase ):
     def ldda_permissions( self, cntrller, library_id, folder_id, id, role_ids_str,
                           permissions_in=[], permissions_out=[], strings_displayed=[], ldda_name='' ):
         # role_ids_str must be a comma-separated string of role ids
-        url = "%s/library_common/ldda_permissions?cntrller=%s&library_id=%s&folder_id=%s&id=%s" % \
-            ( self.url, cntrller, library_id, folder_id, id )
+        params = dict( cntrller=cntrller, library_id=library_id, folder_id=folder_id, id=id )
+        url = "/library_common/ldda_permissions"
         for po in permissions_out:
-            key = '%s_out' % po
-            url = "%s&%s=%s" % ( url, key, role_ids_str )
+            params[ '%s_out' % po ] = role_ids_str
         for pi in permissions_in:
-            key = '%s_in' % pi
-            url = "%s&%s=%s" % ( url, key, role_ids_str )
+            params[ '%s_in' % pi ] = role_ids_str
         if permissions_in or permissions_out:
-            url += "&update_roles_button=Save"
-            self.visit_url( url )
+            params[ 'update_roles_button' ] = 'Save'
+            self.visit_url( url, params )
         if not strings_displayed:
             strings_displayed = [ "Permissions updated for dataset '%s'." % ldda_name ]
         for check_str in strings_displayed:
