@@ -54,28 +54,69 @@ class ToolsTestCase( api.ApiTestCase, TestsDatasets ):
         self.assertEquals( result_content, table )
 
     def test_run_cat1( self ):
+        # Run simple non-upload tool with an input data parameter.
         history_id = self._new_history()
-        new_dataset = self._new_dataset( history_id )
-        dataset_id = new_dataset[ 'id' ]
+        new_dataset = self._new_dataset( history_id, content='Cat1Test' )
+        inputs = dict(
+            input1=dataset_to_param( new_dataset ),
+        )
+        outputs = self._cat1_outputs( history_id, inputs=inputs )
+        self.assertEquals( len( outputs ), 1 )
+        self._wait_for_history( history_id, assert_ok=True )
+        output1 = outputs[ 0 ]
+        output1_content = self._get_content( history_id, dataset=output1 )
+        self.assertEqual( output1_content.strip(), "Cat1Test" )
+
+    def test_run_cat1_with_two_inputs( self ):
+        # Run tool with an multiple data parameter and grouping (repeat)
+        history_id = self._new_history()
+        new_dataset1 = self._new_dataset( history_id, content='Cat1Test' )
+        new_dataset2 = self._new_dataset( history_id, content='Cat2Test' )
+        inputs = {
+            'input1': dataset_to_param( new_dataset1 ),
+            'queries_0|input2': dataset_to_param( new_dataset2 )
+        }
+        outputs = self._cat1_outputs( history_id, inputs=inputs )
+        self.assertEquals( len( outputs ), 1 )
+        self._wait_for_history( history_id, assert_ok=True )
+        output1 = outputs[ 0 ]
+        output1_content = self._get_content( history_id, dataset=output1 )
+        self.assertEqual( output1_content.strip(), "Cat1Test\nCat2Test" )
+
+    def _cat1_outputs( self, history_id, inputs ):
+        create_response = self._run_cat1( history_id, inputs )
+        self._assert_status_code_is( create_response, 200 )
+        create = create_response.json()
+        self._assert_has_keys( create, 'outputs' )
+        return create[ 'outputs' ]
+
+    def _run_cat1( self, history_id, inputs ):
         payload = self._run_tool_payload(
             tool_id='cat1',
-            inputs=dict(
-                input1=dict(
-                    src='hda',
-                    id=dataset_id
-                ),
-            ),
+            inputs=inputs,
             history_id=history_id,
         )
         create_response = self._post( "tools", data=payload )
-        self._assert_status_code_is( create_response, 200 )
-        self._assert_has_keys( create_response.json(), 'outputs' )
-        self._wait_for_history( history_id, assert_ok=True )
+        return create_response
 
     def _upload_and_get_content( self, content, **upload_kwds ):
         history_id = self._new_history()
         new_dataset = self._new_dataset( history_id, content=content, **upload_kwds )
         self._wait_for_history( history_id, assert_ok=True )
-        display_response = self._get( "histories/%s/contents/%s/display" % ( history_id, new_dataset[ "id" ] ) )
+        return self._get_content( history_id, dataset=new_dataset )
+
+    def _get_content( self, history_id, **kwds ):
+        if "dataset_id" in kwds:
+            dataset_id = kwds[ "dataset_id" ]
+        else:
+            dataset_id = kwds[ "dataset" ][ "id" ]
+        display_response = self._get( "histories/%s/contents/%s/display" % ( history_id, dataset_id ) )
         self._assert_status_code_is( display_response, 200 )
         return display_response.content
+
+
+def dataset_to_param( dataset ):
+    return dict(
+        src='hda',
+        id=dataset[ 'id' ]
+    )
