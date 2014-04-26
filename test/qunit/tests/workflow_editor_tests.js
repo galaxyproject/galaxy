@@ -60,20 +60,27 @@ define([
     };
 
     module( "Input terminal model test", {
-        setup: function() {
-            this.node = {  };
-            this.element = $( "<div>" );
-            var input = { extensions: [ "txt" ], multiple: false };
-            this.input_terminal = new InputTerminal( { element: this.element, input: input } );
+        setup: function( ) {
+            this.node = new Node( {  } );
+            this.input = { extensions: [ "txt" ], multiple: false };
+            this.input_terminal = new InputTerminal( { input: this.input } );
             this.input_terminal.node = this.node;
         },
-        test_connector: function( attr ) {
-            var connector = attr || {};
-            this.input_terminal.connectors.push( connector );
+        multiple: function( ) {
+            this.input.multiple = true;
+            this.input_terminal.update( this.input );
+        },
+        test_connector: function( ) {
+            var outputTerminal = new OutputTerminal( { datatypes: [ 'input' ] } );
+            var inputTerminal = this.input_terminal;
+            var connector;
+            with_workflow_global( function() {
+                connector = new Connector( outputTerminal, inputTerminal );
+            } );
             return connector;
         },
-        with_test_connector: function( attr, f ) {
-            this.test_connector( attr );
+        with_test_connector: function( f ) {
+            this.test_connector( );
             f();
             this.reset_connectors();
         },
@@ -116,7 +123,7 @@ define([
     test( "test disconnect", function() {
         this.node.markChanged = sinon.spy();
 
-        var connector = this.test_connector( {} );
+        var connector = this.test_connector( );
         this.input_terminal.disconnect( connector );
 
         // Assert node markChanged called
@@ -126,17 +133,19 @@ define([
     } );
 
     test( "test redraw", function() {
-        var connector = this.test_connector( { redraw: sinon.spy() } );
+        var connector = this.test_connector(  );
+        connector.redraw = sinon.spy();
         this.input_terminal.redraw();
         // Assert connectors were redrawn
         ok( connector.redraw.called );
     } );
 
     test( "test destroy", function() {
-        var connector = this.test_connector( { destroy: sinon.spy() } );
+        var connector = this.test_connector();
+        connector.destroy = sinon.spy();
 
         this.input_terminal.destroy();
-        // Assert connectors were redrawn
+        // Assert connectors were destroyed
         ok( connector.destroy.called );
     } );
 
@@ -189,8 +198,26 @@ define([
     test( "cannot accept when already connected", function() {
         var self = this;
         // If other is subtype but already connected, cannot accept
-        this.with_test_connector( {}, function() {
+        this.with_test_connector( function() {
             ok( ! self.test_accept() );
+        } );
+    } );
+
+    test( "can accept already connected inputs if input is multiple", function() {
+        var self = this;
+        this.multiple();
+        this.with_test_connector( function() {
+            ok( self.test_accept() );
+        } );
+    } );
+
+    test( "cannot accept already connected inputs if input is multiple but datatypes don't match", function() {
+        var other = { node: {}, datatypes: [ "binary" ] }; // binary is not txt
+
+        var self = this;
+        this.multiple();
+        this.with_test_connector( function() {
+            ok( ! self.test_accept( other ) );
         } );
     } );
 
