@@ -3,10 +3,14 @@ from itertools import chain
 
 from base import api
 from operator import itemgetter
-from .helpers import TestsDatasets
+from .helpers import DatasetPopulator
 
 
-class ToolsTestCase( api.ApiTestCase, TestsDatasets ):
+class ToolsTestCase( api.ApiTestCase ):
+
+    def setUp( self ):
+        super( ToolsTestCase, self ).setUp( )
+        self.dataset_populator = DatasetPopulator( self.galaxy_interactor )
 
     def test_index( self ):
         index = self._get( "tools" )
@@ -27,8 +31,8 @@ class ToolsTestCase( api.ApiTestCase, TestsDatasets ):
         assert "cat1" in tool_ids
 
     def test_upload1_paste( self ):
-        history_id = self._new_history()
-        payload = self._upload_payload( history_id, 'Hello World' )
+        history_id = self.dataset_populator.new_history()
+        payload = self.dataset_populator.upload_payload( history_id, 'Hello World' )
         create_response = self._post( "tools", data=payload )
         self._assert_has_keys( create_response.json(), 'outputs' )
 
@@ -55,30 +59,30 @@ class ToolsTestCase( api.ApiTestCase, TestsDatasets ):
 
     def test_run_cat1( self ):
         # Run simple non-upload tool with an input data parameter.
-        history_id = self._new_history()
-        new_dataset = self._new_dataset( history_id, content='Cat1Test' )
+        history_id = self.dataset_populator.new_history()
+        new_dataset = self.dataset_populator.new_dataset( history_id, content='Cat1Test' )
         inputs = dict(
             input1=dataset_to_param( new_dataset ),
         )
         outputs = self._cat1_outputs( history_id, inputs=inputs )
         self.assertEquals( len( outputs ), 1 )
-        self._wait_for_history( history_id, assert_ok=True )
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
         output1 = outputs[ 0 ]
         output1_content = self._get_content( history_id, dataset=output1 )
         self.assertEqual( output1_content.strip(), "Cat1Test" )
 
     def test_run_cat1_with_two_inputs( self ):
         # Run tool with an multiple data parameter and grouping (repeat)
-        history_id = self._new_history()
-        new_dataset1 = self._new_dataset( history_id, content='Cat1Test' )
-        new_dataset2 = self._new_dataset( history_id, content='Cat2Test' )
+        history_id = self.dataset_populator.new_history()
+        new_dataset1 = self.dataset_populator.new_dataset( history_id, content='Cat1Test' )
+        new_dataset2 = self.dataset_populator.new_dataset( history_id, content='Cat2Test' )
         inputs = {
             'input1': dataset_to_param( new_dataset1 ),
             'queries_0|input2': dataset_to_param( new_dataset2 )
         }
         outputs = self._cat1_outputs( history_id, inputs=inputs )
         self.assertEquals( len( outputs ), 1 )
-        self._wait_for_history( history_id, assert_ok=True )
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
         output1 = outputs[ 0 ]
         output1_content = self._get_content( history_id, dataset=output1 )
         self.assertEqual( output1_content.strip(), "Cat1Test\nCat2Test" )
@@ -91,7 +95,7 @@ class ToolsTestCase( api.ApiTestCase, TestsDatasets ):
         return create[ 'outputs' ]
 
     def _run_cat1( self, history_id, inputs ):
-        payload = self._run_tool_payload(
+        payload = self.dataset_populator.run_tool_payload(
             tool_id='cat1',
             inputs=inputs,
             history_id=history_id,
@@ -100,9 +104,9 @@ class ToolsTestCase( api.ApiTestCase, TestsDatasets ):
         return create_response
 
     def _upload_and_get_content( self, content, **upload_kwds ):
-        history_id = self._new_history()
-        new_dataset = self._new_dataset( history_id, content=content, **upload_kwds )
-        self._wait_for_history( history_id, assert_ok=True )
+        history_id = self.dataset_populator.new_history()
+        new_dataset = self.dataset_populator.new_dataset( history_id, content=content, **upload_kwds )
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
         return self._get_content( history_id, dataset=new_dataset )
 
     def _get_content( self, history_id, **kwds ):

@@ -9,6 +9,8 @@ workflow_str = resource_string( __name__, "test_workflow_1.ga" )
 # row - first grabbing 8 lines at random and then 6.
 workflow_random_x2_str = resource_string( __name__, "test_workflow_2.ga" )
 
+DEFAULT_HISTORY_TIMEOUT = 5  # Secs to wait on history to turn ok
+
 
 # Deprecated mixin, use dataset populator instead.
 # TODO: Rework existing tests to target DatasetPopulator in a setup method instead.
@@ -40,8 +42,8 @@ class DatasetPopulator( object ):
         run_response = self.galaxy_interactor.post( "tools", data=payload )
         return run_response.json()["outputs"][0]
 
-    def wait_for_history( self, history_id, assert_ok=False ):
-        wait_on_state( lambda: self.galaxy_interactor.get( "histories/%s" % history_id ), assert_ok=assert_ok )
+    def wait_for_history( self, history_id, assert_ok=False, timeout=DEFAULT_HISTORY_TIMEOUT ):
+        wait_on_state( lambda: self.galaxy_interactor.get( "histories/%s" % history_id ), assert_ok=assert_ok, timeout=timeout )
 
     def new_history( self, **kwds ):
         name = kwds.get( "name", "API Test History" )
