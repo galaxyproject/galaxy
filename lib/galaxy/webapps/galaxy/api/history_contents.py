@@ -7,7 +7,6 @@ from galaxy import util
 
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
-from galaxy.web import _future_expose_api_raw as expose_api_raw
 
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.base.controller import UsesHistoryDatasetAssociationMixin
@@ -18,7 +17,8 @@ from galaxy.web.base.controller import UsesTagsMixin
 
 from galaxy.web.base.controller import url_for
 
-from galaxy.webapps.galaxy.api import histories
+from galaxy.managers import histories
+from galaxy.managers import hdas
 
 import logging
 log = logging.getLogger( __name__ )
@@ -30,8 +30,8 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
     def __init__( self, app ):
         super( HistoryContentsController, self ).__init__( app )
         self.mgrs = util.bunch.Bunch(
-            histories = histories.HistoryManager(),
-            hdas = HDAManager()
+            histories=histories.HistoryManager(),
+            hdas=hdas.HDAManager()
         )
 
     def _decode_id( self, trans, id ):
@@ -434,67 +434,3 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
 
     def __handle_unknown_contents_type( self, trans, contents_type ):
         raise exceptions.UnknownContentsType('Unknown contents type: %s' % type)
-
-class HDAManager( object ):
-
-    def __init__( self ):
-        self.histories_mgr = histories.HistoryManager()
-
-    def get( self, trans, unencoded_id, check_ownership=True, check_accessible=True ):
-        """
-        """
-        # this is a replacement for UsesHistoryDatasetAssociationMixin because mixins are a bad soln/structure
-        hda = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( unencoded_id )
-        if hda is None:
-            raise exceptions.ObjectNotFound()
-        hda = self.secure( trans, hda, check_ownership, check_accessible )
-        return hda
-
-    def secure( self, trans, hda, check_ownership=True, check_accessible=True ):
-        """
-        checks if (a) user owns item or (b) item is accessible to user.
-        """
-        # all items are accessible to an admin
-        if trans.user and trans.user_is_admin():
-            return hda
-        if check_ownership:
-            hda = self.check_ownership( trans, hda )
-        if check_accessible:
-            hda = self.check_accessible( trans, hda )
-        return hda
-
-    def can_access_dataset( self, trans, hda ):
-        current_user_roles = trans.get_current_user_roles()
-        return trans.app.security_agent.can_access_dataset( current_user_roles, hda.dataset )
-
-    #TODO: is_owner, is_accessible
-
-    def check_ownership( self, trans, hda ):
-        if not trans.user:
-            #if hda.history == trans.history:
-            #    return hda
-            raise exceptions.AuthenticationRequired( "Must be logged in to manage Galaxy datasets", type='error' )
-        if trans.user_is_admin():
-            return hda
-        # check for ownership of the containing history and accessibility of the underlying dataset
-        if( self.histories_mgr.is_owner( trans, hda.history )
-        and self.can_access_dataset( trans, hda ) ):
-            return hda
-        raise exceptions.ItemOwnershipException(
-            "HistoryDatasetAssociation is not owned by the current user", type='error' )
-
-    def check_accessible( self, trans, hda ):
-        if trans.user and trans.user_is_admin():
-            return hda
-        # check for access of the containing history...
-        self.histories_mgr.check_accessible( trans, hda.history )
-        # ...then the underlying dataset
-        if self.can_access_dataset( trans, hda ):
-            return hda
-        raise exceptions.ItemAccessibilityException(
-            "HistoryDatasetAssociation is not accessible to the current user", type='error' )
-
-    def err_if_uploading( self, trans, hda ):
-        if hda.state == trans.model.Dataset.states.UPLOAD:
-            raise exceptions.Conflict( "Please wait until this dataset finishes uploading" )
-        return hda
