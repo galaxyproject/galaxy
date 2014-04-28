@@ -1139,7 +1139,22 @@ class SetupVirtualEnv( RecipeStep ):
         # POSIXLY_CORRECT forces shell commands . and source to have the same
         # and well defined behavior in bash/zsh.
         activate_command = "POSIXLY_CORRECT=1; . %s" % os.path.join( venv_directory, "bin", "activate" )
-        install_command = "python '%s' install -r '%s'" % ( os.path.join( venv_directory, "bin", "pip" ), requirements_path )
+        if action_dict[ 'use_requirements_file' ]:
+            install_command = "python '%s' install -r '%s' --log '%s'" % ( os.path.join( venv_directory, "bin", "pip" ), requirements_path, os.path.join( install_dir, 'pip_install.log' ) )
+        else:
+            install_command = ''
+            with open( requirements_path, "rb" ) as f:
+                while True:
+                    line = f.readline()
+                    if not line:
+                        break
+                    line = line.strip()
+                    if line:
+                        line_install_command = "python '%s' install %s --log '%s'" % ( os.path.join( venv_directory, "bin", "pip" ), line, os.path.join( install_dir, 'pip_install_%s.log' % ( line ) ) )
+                        if not install_command:
+                            install_command = line_install_command
+                        else:
+                            install_command = "%s && %s" % ( install_command, line_install_command )
         full_setup_command = "%s; %s; %s" % ( setup_command, activate_command, install_command )
         return_code = install_environment.handle_command( app, tool_dependency, install_dir, full_setup_command )
         if return_code:
@@ -1183,6 +1198,7 @@ class SetupVirtualEnv( RecipeStep ):
         # <action type="setup_virtualenv">pyyaml==3.2.0
         # lxml==2.3.0</action>
         ## Manually specify contents of requirements.txt file to create dynamically.
+        action_dict[ 'use_requirements_file' ] = asbool( action_elem.get( 'use_requirements_file', True ) )
         action_dict[ 'requirements' ] = td_common_util.evaluate_template( action_elem.text or 'requirements.txt', install_dir )
         action_dict[ 'python' ] = action_elem.get( 'python', 'python' )
         return action_dict
