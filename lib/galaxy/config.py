@@ -4,8 +4,12 @@ Universe configuration builder.
 # absolute_import needed for tool_shed package.
 from __future__ import absolute_import
 
-import sys, os, tempfile, re
-import logging, logging.config
+import os
+import re
+import sys
+import tempfile
+import logging
+import logging.config
 import ConfigParser
 from datetime import timedelta
 from galaxy.web.formatting import expand_pretty_datetime_format
@@ -23,11 +27,14 @@ def resolve_path( path, root ):
         path = os.path.join( root, path )
     return path
 
+
 class ConfigurationError( Exception ):
     pass
 
+
 class Configuration( object ):
     deprecated_options = ( 'database_file', )
+
     def __init__( self, **kwargs ):
         self.config_dict = kwargs
         self.root = kwargs.get( 'root_dir', '.' )
@@ -87,6 +94,9 @@ class Configuration( object ):
         self.user_section_filters = listify( kwargs.get( "user_tool_section_filters", [] ), do_strip=True )
 
         self.tool_configs = [ resolve_path( p, self.root ) for p in listify( tcf ) ]
+        # Check for tools defined in the above non-shed tool configs (i.e., tool_conf.xml) tht have
+        # been migrated from the Galaxy code distribution to the Tool Shed.
+        self.check_migrate_tools = string_as_bool( kwargs.get( 'check_migrate_tools', True ) )
         self.shed_tool_data_path = kwargs.get( "shed_tool_data_path", None )
         if self.shed_tool_data_path:
             self.shed_tool_data_path = resolve_path( self.shed_tool_data_path, self.root )
@@ -397,13 +407,16 @@ class Configuration( object ):
             return rval
         except ConfigParser.NoSectionError:
             return {}
+
     def get( self, key, default ):
         return self.config_dict.get( key, default )
+
     def get_bool( self, key, default ):
         if key in self.config_dict:
             return string_as_bool( self.config_dict[key] )
         else:
             return default
+
     def check( self ):
         paths_to_check = [ self.root, self.tool_path, self.tool_data_path, self.template_path ]
         # Check that required directories exist
@@ -487,7 +500,6 @@ def get_database_engine_options( kwargs, model_prefix='' ):
                 value = conversions[key](value)
             rval[ key  ] = value
     return rval
-
 
 def configure_logging( config ):
     """
