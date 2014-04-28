@@ -1133,8 +1133,9 @@ class SetupVirtualEnv( RecipeStep ):
             with open( requirements_path, "w" ) as f:
                 f.write( requirements )
         venv_directory = os.path.join( install_dir, "venv" )
+        python_cmd = action_dict[ 'python' ]
         # TODO: Consider making --no-site-packages optional.
-        setup_command = "python %s/virtualenv.py --no-site-packages '%s'" % (venv_src_directory, venv_directory)
+        setup_command = "%s %s/virtualenv.py --no-site-packages '%s'" % ( python_cmd, venv_src_directory, venv_directory )
         # POSIXLY_CORRECT forces shell commands . and source to have the same
         # and well defined behavior in bash/zsh.
         activate_command = "POSIXLY_CORRECT=1; . %s" % os.path.join( venv_directory, "bin", "activate" )
@@ -1183,6 +1184,7 @@ class SetupVirtualEnv( RecipeStep ):
         # lxml==2.3.0</action>
         ## Manually specify contents of requirements.txt file to create dynamically.
         action_dict[ 'requirements' ] = td_common_util.evaluate_template( action_elem.text or 'requirements.txt', install_dir )
+        action_dict[ 'python' ] = action_elem.get( 'python', 'python' )
         return action_dict
 
 class ShellCommand( RecipeStep ):
