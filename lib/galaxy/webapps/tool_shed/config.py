@@ -1,15 +1,13 @@
 """
 Universe configuration builder.
 """
-
-import sys, os
-import logging, logging.config
+import os
+import sys
+import logging
+import logging.config
 from optparse import OptionParser
 import ConfigParser
 from galaxy.util import string_as_bool, listify
-
-from galaxy import eggs
-import pkg_resources
 
 log = logging.getLogger( __name__ )
 
@@ -19,10 +17,13 @@ def resolve_path( path, root ):
         path = os.path.join( root, path )
     return path
 
+
 class ConfigurationError( Exception ):
     pass
 
+
 class Configuration( object ):
+
     def __init__( self, **kwargs ):
         self.config_dict = kwargs
         self.root = kwargs.get( 'root_dir', '.' )
@@ -125,13 +126,16 @@ class Configuration( object ):
         if global_conf and "__file__" in global_conf:
             global_conf_parser.read(global_conf['__file__'])
         self.running_functional_tests = string_as_bool( kwargs.get( 'running_functional_tests', False ) )
+
     def get( self, key, default ):
         return self.config_dict.get( key, default )
+
     def get_bool( self, key, default ):
         if key in self.config_dict:
             return string_as_bool( self.config_dict[key] )
         else:
             return default
+
     def check( self ):
         # Check that required directories exist.
         paths_to_check = [ self.root, self.file_path, self.hgweb_config_dir, self.tool_data_path, self.template_path ]
@@ -153,6 +157,7 @@ class Configuration( object ):
         # Check that required files exist.
         if not os.path.isfile( self.datatypes_config ):
             raise ConfigurationError( "File not found: %s" % self.datatypes_config )
+
     def is_admin_user( self, user ):
         """
         Determine if the provided user is listed in `admin_users`.
