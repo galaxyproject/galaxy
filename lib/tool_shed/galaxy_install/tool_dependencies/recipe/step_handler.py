@@ -36,6 +36,39 @@ class RecipeStep( object ):
         raise "Unimplemented Method"
 
 
+class AssertDirectoryExecutable( RecipeStep ):
+
+    def __init__( self ):
+        self.type = 'assert_directory_executable'
+
+    def execute_step( self, app, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
+                      install_environment, work_dir, install_dir, current_dir=None, initial_download=False ):
+        """
+        Make sure a symbolic link or directory on disk exists and is executable, but is not a file.
+        Since this class is not used in the initial download stage, no recipe step filtering is
+        performed here, and None values are always returned for filtered_actions and dir.
+        """
+        if os.path.isabs( action_dict[ 'full_path' ] ):
+            full_path = action_dict[ 'full_path' ]
+        else:
+            full_path = os.path.join( current_dir, action_dict[ 'full_path' ] )
+        if not td_common_util.assert_directory_executable( full_path=full_path ):
+            status = app.install_model.ToolDependency.installation_status.ERROR
+            error_message = 'The path %s is not a directory or is not executable by the owner.' % str( full_path )
+            tool_dependency = tool_dependency_util.set_tool_dependency_attributes( app,
+                                                                                   tool_dependency,
+                                                                                   status=status,
+                                                                                   error_message=error_message,
+                                                                                   remove_from_disk=False )
+        return tool_dependency, None, None
+
+    def prepare_step( self, app, tool_dependency, action_elem, action_dict, install_dir, is_binary_download ):
+        # <action type="assert_executable">$INSTALL_DIR/mira/my_file</action>
+        if action_elem.text:
+            action_dict[ 'full_path' ] = td_common_util.evaluate_template( action_elem.text, install_dir )
+        return action_dict
+
+
 class AssertDirectoryExists( RecipeStep ):
 
     def __init__( self ):
@@ -44,9 +77,9 @@ class AssertDirectoryExists( RecipeStep ):
     def execute_step( self, app, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
                       install_environment, work_dir, install_dir, current_dir=None, initial_download=False ):
         """
-        Make sure a directory on disk exists.  Since this class is not used in the initial download stage,
-        no recipe step filtering is performed here, and None values are always returned for filtered_actions
-        and dir.
+        Make sure a a symbolic link or directory on disk exists, but is not a file.  Since this
+        class is not used in the initial download stage, no recipe step filtering is performed
+        here, and None values are always returned for filtered_actions and dir.
         """
         if os.path.isabs( action_dict[ 'full_path' ] ):
             full_path = action_dict[ 'full_path' ]
@@ -54,7 +87,7 @@ class AssertDirectoryExists( RecipeStep ):
             full_path = os.path.join( current_dir, action_dict[ 'full_path' ] )
         if not td_common_util.assert_directory_exists( full_path=full_path ):
             status = app.install_model.ToolDependency.installation_status.ERROR
-            error_message = 'The required directory %s does not exist.' % str( full_path )
+            error_message = 'The path %s is not a directory or does not exist.' % str( full_path )
             tool_dependency = tool_dependency_util.set_tool_dependency_attributes( app,
                                                                                    tool_dependency,
                                                                                    status=status,
@@ -77,9 +110,9 @@ class AssertFileExecutable( RecipeStep ):
     def execute_step( self, app, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
                       install_environment, work_dir, install_dir, current_dir=None, initial_download=False ):
         """
-        Make sure a file on disk exists and is executable.  Since this class is not used in the initial
-        download stage, no recipe step filtering is performed here, and None values are always returned
-        for filtered_actions and dir.
+        Make sure a symbolic link or file on disk exists and is executable, but is not a directory.
+        Since this class is not used in the initial download stage, no recipe step filtering is
+        performed here, and None values are always returned for filtered_actions and dir.
         """
         if os.path.isabs( action_dict[ 'full_path' ] ):
             full_path = action_dict[ 'full_path' ]
@@ -87,7 +120,7 @@ class AssertFileExecutable( RecipeStep ):
             full_path = os.path.join( current_dir, action_dict[ 'full_path' ] )
         if not td_common_util.assert_file_executable( full_path=full_path ):
             status = app.install_model.ToolDependency.installation_status.ERROR
-            error_message = 'The file %s is not executable by the owner.' % str( full_path )
+            error_message = 'The path %s is not a file or is not executable by the owner.' % str( full_path )
             tool_dependency = tool_dependency_util.set_tool_dependency_attributes( app,
                                                                                    tool_dependency,
                                                                                    status=status,
@@ -110,9 +143,9 @@ class AssertFileExists( RecipeStep ):
     def execute_step( self, app, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
                       install_environment, work_dir, install_dir, current_dir=None, initial_download=False ):
         """
-        Make sure a file on disk exists.  Since this class is not used in the initial download stage,
-        no recipe step filtering is performed here, and None values are always returned for
-        filtered_actions and dir.
+        Make sure a symbolic link or file on disk exists, but is not a directory.  Since this
+        class is not used in the initial download stage, no recipe step filtering is performed
+        here, and None values are always returned for filtered_actions and dir.
         """
         if os.path.isabs( action_dict[ 'full_path' ] ):
             full_path = action_dict[ 'full_path' ]
@@ -120,7 +153,7 @@ class AssertFileExists( RecipeStep ):
             full_path = os.path.join( current_dir, action_dict[ 'full_path' ] )
         if not td_common_util.assert_file_exists( full_path=full_path ):
             status = app.install_model.ToolDependency.installation_status.ERROR
-            error_message = 'The required file %s does not exist.' % str( full_path )
+            error_message = 'The path %s is not a file or does not exist.' % str( full_path )
             tool_dependency = tool_dependency_util.set_tool_dependency_attributes( app,
                                                                                    tool_dependency,
                                                                                    status=status,

@@ -414,7 +414,8 @@ class RecipeManager( object ):
         return tool_dependency, filtered_actions, dir
 
     def load_step_handlers( self ):
-        step_handlers_by_type = dict( assert_directory_exists=step_handler.AssertDirectoryExists(),
+        step_handlers_by_type = dict( assert_directory_executable=step_handler.AssertDirectoryExecutable(),
+                                      assert_directory_exists=step_handler.AssertDirectoryExists(),
                                       assert_file_executable=step_handler.AssertFileExecutable(),
                                       assert_file_exists=step_handler.AssertFileExists(),
                                       autoconf=step_handler.Autoconf(),

@@ -111,29 +111,61 @@ class CompressedFile( object ):
     def open_zip( self, filepath, mode ):
         return zipfile.ZipFile( filepath, mode )
 
-def assert_directory_exists( full_path ):
-    """Return True if a directory exists and is not a symbolic link."""
-    if os.path.islink( full_path ):
+def assert_directory_executable( full_path ):
+    """
+    Return True if a symbolic link or directory exists and is executable, but if
+    full_path is a file, return False.
+    """
+    if full_path is None:
         return False
-    if os.path.is_dir( full_path ):
-        return True
+    if os.path.isfile( full_path ):
+        return False
+    if os.path.isdir( full_path ):
+        # Make sure the owner has execute permission on the directory.
+        # See http://docs.python.org/2/library/stat.html
+        if stat.S_IXUSR & os.stat( full_path )[ stat.ST_MODE ] == 64:
+            return True
     return False
 
-def assert_file_exists( full_path ):
-    """Return True if a file exists.  This will work for both symbolic linke and files."""
-    if os.path.exists( full_path ):
+def assert_directory_exists( full_path ):
+    """
+    Return True if a symbolic link or directory exists, but if full_path is a file,
+    return False.    """
+    if full_path is None:
+        return False
+    if os.path.isfile( full_path ):
+        return False
+    if os.path.isdir( full_path ):
         return True
     return False
 
 def assert_file_executable( full_path ):
-    """Return True if a file exists and is executable."""
-    if os.path.islink( full_path ):
+    """
+    Return True if a symbolic link or file exists and is executable, but if full_path
+    is a directory, return False.
+    """
+    if full_path is None:
         return False
-    if os.path.is_file( full_path ):
+    if os.path.isdir( full_path ):
+        return False
+    if os.path.exists( full_path ):
         # Make sure the owner has execute permission on the file.
         # See http://docs.python.org/2/library/stat.html
         if stat.S_IXUSR & os.stat( full_path )[ stat.ST_MODE ] == 64:
             return True
+    return False
+
+def assert_file_exists( full_path ):
+    """
+    Return True if a symbolic link or file exists, but if full_path is a directory,
+    return False.
+    """
+    if full_path is None:
+        return False
+    if os.path.isdir( full_path ):
+        return False
+    if os.path.exists( full_path ):
+        return True
     return False
 
 def create_env_var_dict( elem, tool_dependency_install_dir=None, tool_shed_repository_install_dir=None ):
