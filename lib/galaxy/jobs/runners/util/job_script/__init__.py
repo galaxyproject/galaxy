@@ -16,7 +16,7 @@ REQUIRED_TEMPLATE_PARAMS = ['working_directory', 'command', 'exit_code_path']
 OPTIONAL_TEMPLATE_PARAMS = {
     'galaxy_lib': None,
     'headers': '',
-    'env_setup_commands': '',
+    'env_setup_commands': [],
     'slots_statement': SLOTS_STATEMENT_CLUSTER_DEFAULT,
     'instrument_pre_commands': '',
     'instrument_post_commands': '',
@@ -51,13 +51,15 @@ def job_script(template=DEFAULT_JOB_FILE_TEMPLATE, **kwds):
         raise Exception("Failed to create job_script, a required parameter is missing.")
     job_instrumenter = kwds.get("job_instrumenter", None)
     if job_instrumenter:
-        del kwds[ "job_instrumenter" ]
+        del kwds["job_instrumenter"]
         working_directory = kwds["working_directory"]
         kwds["instrument_pre_commands"] = job_instrumenter.pre_execute_commands(working_directory) or ''
         kwds["instrument_post_commands"] = job_instrumenter.post_execute_commands(working_directory) or ''
 
     template_params = OPTIONAL_TEMPLATE_PARAMS.copy()
     template_params.update(**kwds)
+    env_setup_commands_str = "\n".join(template_params["env_setup_commands"])
+    template_params["env_setup_commands"] = env_setup_commands_str
     if not isinstance(template, Template):
         template = Template(template)
     return template.safe_substitute(template_params)
