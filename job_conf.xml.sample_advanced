@@ -78,7 +78,7 @@
           <!-- set arbitrary environment variables at runtime - like metrics
                doesn't yet work with local or CLI runners. But should work with
                DRMAA/SLURM, PBS, Condor, and LWR. General dependencies for tools
-               should be configured via tool_depednency_dir and package options
+               should be configured via tool_dependency_dir and package options
                and these options should be reserved for defining cluster specific
                options.
           -->
