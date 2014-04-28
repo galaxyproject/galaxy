@@ -13,9 +13,10 @@ from tool_shed.galaxy_install.tool_dependencies import td_common_util
 
 # TODO: eliminate the use of fabric here.
 from galaxy import eggs
-eggs.require( 'Fabric' )
-eggs.require( 'ssh' )
+
 eggs.require( 'paramiko' )
+eggs.require( 'ssh' )
+eggs.require( 'Fabric' )
 
 from fabric.api import settings
 from fabric.api import lcd

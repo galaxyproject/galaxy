@@ -12,9 +12,10 @@ from contextlib import contextmanager
 
 # TODO: eliminate the use of fabric here.
 from galaxy import eggs
-eggs.require( 'Fabric' )
-eggs.require( 'ssh' )
+
 eggs.require( 'paramiko' )
+eggs.require( 'ssh' )
+eggs.require( 'Fabric' )
 
 from fabric.operations import _AttributeString
 from fabric import state
