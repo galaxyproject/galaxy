@@ -217,16 +217,19 @@ def main():
         # Exclude all files except test_toolbox.py.
         ignore_files = ( re.compile( r'^test_[adghlmsu]*' ), re.compile( r'^test_ta*' ) )
     else:
+        framework_tool_dir = os.path.join('test', 'functional', 'tools')
         framework_test = __check_arg( '-framework' )  # Run through suite of tests testing framework.
         if framework_test:
-            framework_tool_dir = os.path.join('test', 'functional', 'tools')
             tool_conf = os.path.join( framework_tool_dir, 'samples_tool_conf.xml' )
             datatypes_conf_override = os.path.join( framework_tool_dir, 'sample_datatypes_conf.xml' )
-            test_dir = os.path.join( framework_tool_dir, 'test-data')
         else:
             # Use tool_conf.xml toolbox.
             tool_conf = 'tool_conf.xml'
-            test_dir = default_galaxy_test_file_dir
+            if __check_arg( '-with_framework_test_tools' ):
+                # Some of these tools will not work without swapping
+                # default interactor to point to test.
+                tool_conf = "%s,%s" % ( tool_conf, os.path.join( framework_tool_dir, 'samples_tool_conf.xml' ) )
+        test_dir = default_galaxy_test_file_dir
         tool_config_file = os.environ.get( 'GALAXY_TEST_TOOL_CONF', tool_conf )
         galaxy_test_file_dir = os.environ.get( 'GALAXY_TEST_FILE_DIR', test_dir )
         if not os.path.isabs( galaxy_test_file_dir ):

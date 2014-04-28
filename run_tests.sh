@@ -32,6 +32,7 @@ show_list() {
 
 test_script="./scripts/functional_tests.py"
 report_file="run_functional_tests.html"
+with_framework_test_tools_arg=""
 
 driver="python"
 
@@ -74,6 +75,10 @@ do
               toolshed_script="./test/tool_shed/functional"
               shift 1
           fi
+          ;;
+      -with_framework_test_tools|--with_framework_test_tools)
+          with_framework_test_tools_arg="-with_framework_test_tools"
+          shift
           ;;
       -w|-workflow|--workflow)
           if [ $# -gt 1 ]; then
@@ -191,7 +196,7 @@ else
 fi
 
 if [ "$driver" = "python" ]; then
-    python $test_script $coverage_arg -v --with-nosehtml --html-report-file $report_file $extra_args
+    python $test_script $coverage_arg -v --with-nosehtml --html-report-file $report_file $with_framework_test_tools_arg $extra_args
 else
     if [ -n "$watch" ]; then
         grunt_task="watch"
