@@ -1,6 +1,4 @@
 # Test tools API.
-from itertools import chain
-
 from base import api
 from operator import itemgetter
 from .helpers import DatasetPopulator
@@ -13,22 +11,16 @@ class ToolsTestCase( api.ApiTestCase ):
         self.dataset_populator = DatasetPopulator( self.galaxy_interactor )
 
     def test_index( self ):
-        index = self._get( "tools" )
-        tools_index = index.json()
-        # In panels by default, so flatten out sections...
-        tools = list( chain( *map( itemgetter( "elems" ), tools_index ) ) )
-        tool_ids = map( itemgetter( "id" ), tools )
+        tool_ids = self.__tool_ids()
         assert "upload1" in tool_ids
-        assert "cat1" in tool_ids
 
     def test_no_panel_index( self ):
-        index = self._get( "tools", data=dict(in_panel="false") )
+        index = self._get( "tools", data=dict( in_panel="false" ) )
         tools_index = index.json()
         # No need to flatten out sections, with in_panel=False, only tools are
         # returned.
         tool_ids = map( itemgetter( "id" ), tools_index )
         assert "upload1" in tool_ids
-        assert "cat1" in tool_ids
 
     def test_upload1_paste( self ):
         history_id = self.dataset_populator.new_history()
@@ -58,6 +50,7 @@ class ToolsTestCase( api.ApiTestCase ):
         self.assertEquals( result_content, table )
 
     def test_run_cat1( self ):
+        self.__skip_without_tool( "cat1" )
         # Run simple non-upload tool with an input data parameter.
         history_id = self.dataset_populator.new_history()
         new_dataset = self.dataset_populator.new_dataset( history_id, content='Cat1Test' )
@@ -72,6 +65,7 @@ class ToolsTestCase( api.ApiTestCase ):
         self.assertEqual( output1_content.strip(), "Cat1Test" )
 
     def test_run_cat1_with_two_inputs( self ):
+        self.__skip_without_tool( "cat1" )
         # Run tool with an multiple data parameter and grouping (repeat)
         history_id = self.dataset_populator.new_history()
         new_dataset1 = self.dataset_populator.new_dataset( history_id, content='Cat1Test' )
@@ -117,6 +111,25 @@ class ToolsTestCase( api.ApiTestCase ):
         display_response = self._get( "histories/%s/contents/%s/display" % ( history_id, dataset_id ) )
         self._assert_status_code_is( display_response, 200 )
         return display_response.content
+
+    def __tool_ids( self ):
+        index = self._get( "tools" )
+        tools_index = index.json()
+        # In panels by default, so flatten out sections...
+        tools = []
+        for tool_or_section in tools_index:
+            if "elems" in tool_or_section:
+                tools.extend( tool_or_section[ "elems" ] )
+            else:
+                tools.append( tool_or_section )
+
+        tool_ids = map( itemgetter( "id" ), tools )
+        return tool_ids
+
+    def __skip_without_tool( self, tool_id ):
+        from nose.plugins.skip import SkipTest
+        if tool_id not in self.__tool_ids( ):
+            raise SkipTest( )
 
 
 def dataset_to_param( dataset ):
