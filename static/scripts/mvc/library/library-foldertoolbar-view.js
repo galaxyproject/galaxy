@@ -12,9 +12,10 @@ var FolderToolbarView = Backbone.View.extend({
   el: '#center',
 
   events: {
-    'click #toolbtn_create_folder'  : 'createFolderFromModal',
-    'click #toolbtn_bulk_import'    : 'modalBulkImport',
-    'click .toolbtn_add_files'      : 'addFilesToFolderModal'
+    'click #toolbtn_create_folder'        : 'createFolderFromModal',
+    'click #toolbtn_bulk_import'          : 'modalBulkImport',
+    'click .toolbtn_add_files'            : 'addFilesToFolderModal',
+    'click #include_deleted_datasets_chk' : 'check_include_deleted'
   },
 
   defaults: {
@@ -387,6 +388,21 @@ var FolderToolbarView = Backbone.View.extend({
               self.updateProgress();
               self.chainCallAddingHdas(hdas_set);
             });
+  },
+
+  /**
+   * Handles the click on 'show deleted' checkbox
+   */
+  check_include_deleted: function(event){
+    if (event.target.checked){
+      Galaxy.libraries.folderListView.collection = new mod_library_model.Folder();
+      Galaxy.libraries.folderListView.listenTo(Galaxy.libraries.folderListView.collection, 'add', Galaxy.libraries.folderListView.renderOne);
+      Galaxy.libraries.folderListView.fetchFolder({include_deleted: true});
+    } else{
+      Galaxy.libraries.folderListView.collection = new mod_library_model.Folder();
+      Galaxy.libraries.folderListView.listenTo(Galaxy.libraries.folderListView.collection, 'add', Galaxy.libraries.folderListView.renderOne);
+      Galaxy.libraries.folderListView.fetchFolder({include_deleted: false});
+    }
   },
 
   templateToolBar: function(){

@@ -221,7 +221,11 @@ var LibraryRowView = Backbone.View.extend({
 
     tmpl_array.push('           <tr class="<% if(library.get("deleted") === true) { print("active") } %>" style="display:none;" data-id="<%- library.get("id") %>">');
     tmpl_array.push('               <% if(!edit_mode) { %>');
-    tmpl_array.push('                 <td><a href="#folders/<%- library.get("root_folder_id") %>"><%- library.get("name") %></a></td>');
+    tmpl_array.push('                 <% if(library.get("deleted")) { %>');
+    tmpl_array.push('                   <td style="color:grey;"><%- library.get("name") %></td>');
+    tmpl_array.push('                 <% } else { %>');
+    tmpl_array.push('                   <td><a href="#folders/<%- library.get("root_folder_id") %>"><%- library.get("name") %></a></td>');
+    tmpl_array.push('                 <% } %>');
     tmpl_array.push('                 <td><%= _.escape(library.get("description")) %></td>');
     tmpl_array.push('                 <td><%= _.escape(library.get("synopsis")) %></td>');
     tmpl_array.push('               <% } else if(edit_mode){ %>');
@@ -230,9 +234,9 @@ var LibraryRowView = Backbone.View.extend({
     tmpl_array.push('                 <td><input type="text" class="form-control input_library_synopsis" placeholder="synopsis" value="<%- library.get("synopsis") %>"></td>');
     tmpl_array.push('               <% } %>');
     tmpl_array.push('               <td class="right-center">');
-    tmpl_array.push('                   <% if(library.get("deleted") === true) { %>');
+    tmpl_array.push('                   <% if(library.get("deleted")) { %>');
     tmpl_array.push('                       <span data-toggle="tooltip" data-placement="top" title="Marked deleted" style="color:grey;" class="fa fa-ban fa-lg deleted_lib_ico"> </span>');
-    tmpl_array.push('                   <% } else if(library.get("public") === true) { %>');
+    tmpl_array.push('                   <% } else if(library.get("public")) { %>');
     tmpl_array.push('                     <span data-toggle="tooltip" data-placement="top" title="Public" style="color:grey;" class="fa fa-globe fa-lg public_lib_ico"> </span>');
     tmpl_array.push('                   <% }%>');
     // tmpl_array.push('                   <button data-toggle="tooltip" data-placement="top" title="Upload to library" class="primary-button btn-xs upload_library_btn" type="button" style="<% if(button_config.upload_library_btn === false) { print("display:none;") } %>"><span class="fa fa-upload"></span></button>');
