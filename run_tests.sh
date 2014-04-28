@@ -16,6 +16,8 @@ cat <<EOF
 '${0##*/} -framework'               for running through example tool tests testing framework features in test/functional/tools"   
 '${0##*/} -framework -id toolid'    for testing one framework tool (in test/functional/tools/) with id 'toolid'
 '${0##*/} -data_managers -id data_manager_id'    for testing one Data Manager with id 'data_manager_id'
+'${0##*/} -unit'                    for running all unit tests (doctests in lib and tests in test/unit)
+'${0##*/} -unit testscriptath'      running particular tests scripts
 EOF
 }
 
@@ -104,6 +106,24 @@ do
               exit 1
           fi
           ;;
+      -c|--coverage)
+          # Must have coverage installed (try `which coverage`) - only valid with --unit
+          # for now. Would be great to get this to work with functional tests though.
+          coverage_arg="--with-coverage"
+          NOSE_WITH_COVERAGE=true
+          shift
+          ;;
+      -u|-unit|--unit)
+          report_file="run_unit_tests.html"
+          test_script="./scripts/nosetests.py"
+          if [ $# -gt 1 ]; then
+              unit_extra=$2
+              shift 2
+          else 
+              unit_extra='--exclude=functional --exclude="^get" --exclude=controllers --exclude=runners lib test/unit'
+              shift 1
+          fi
+          ;;
       --) 
           shift
           break
@@ -140,6 +160,8 @@ elif [ -n "$section_id" ]; then
 elif [ -n "$test_id" ]; then
     class=":TestForTool_$test_id"
     extra_args="functional.test_toolbox$class"
+elif [ -n "$unit_extra" ]; then
+    extra_args="--with-doctest $unit_extra"
 elif [ -n "$1" ] ; then
     extra_args="$1"
 else
