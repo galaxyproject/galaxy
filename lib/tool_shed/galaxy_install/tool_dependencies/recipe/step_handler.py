@@ -1124,7 +1124,7 @@ class SetupVirtualEnv( RecipeStep ):
             log.debug( 'Unable to install virtualenv' )
             return tool_dependency, None, None
         requirements = action_dict[ 'requirements' ]
-        if os.path.exists( os.path.join( dir, requirements ) ):
+        if os.path.exists( os.path.join( install_dir, requirements ) ):
             # requirements specified as path to a file
             requirements_path = requirements
         else:
