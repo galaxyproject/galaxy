@@ -215,3 +215,5 @@ class DatasetListWrapper( list ):
             return DatasetFilenameWrapper( dataset, **wrapper_kwds )
 
         list.__init__( self, map( to_wrapper, datasets ) )
+    def __str__( self ):
+        return ','.join( map( str, self ) )
