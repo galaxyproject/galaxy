@@ -230,8 +230,18 @@ class ToolShedRepositoriesController( BaseAPIController ):
                 ( str( tool_shed_url ), str( changeset_revision ), str( name ), str( owner ), str( e ) )
             log.debug( message )
             return dict( status='error', error=message )
-        repo_info_dicts = [ repo_info_dict ]
         # Make sure the tool shed returned everything we need for installing the repository.
+        if not repository_revision_dict or not repo_info_dict:
+            key = kwd.get( 'key', None )
+            invalid_parameter_message = "No information is available for the requested repository revision.\n"
+            invalid_parameter_message += "One or more of the following parameter values is likely invalid:\n"
+            invalid_parameter_message += "key: %s\n" % str( key )
+            invalid_parameter_message += "tool_shed_url: %s\n" % str( tool_shed_url )
+            invalid_parameter_message += "name: %s\n" % str( name )
+            invalid_parameter_message += "owner: %s\n" % str( owner )
+            invalid_parameter_message += "changeset_revision: %s\n" % str( changeset_revision )
+            raise HTTPBadRequest( detail=invalid_parameter_message )
+        repo_info_dicts = [ repo_info_dict ]
         try:
             has_repository_dependencies = repository_revision_dict[ 'has_repository_dependencies' ]
         except:
