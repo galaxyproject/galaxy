@@ -36,7 +36,11 @@ var FolderRowView = Backbone.View.extend({
       template = this.templateRowFolder();
     } else {
       this.options.type = 'file';
-      template = this.templateRowFile();
+      if (folder_item.get('deleted')){
+        template = this.templateRowDeletedFile();
+      } else {
+        template = this.templateRowFile();
+      }
     }
     this.setElement(template({content_item:folder_item}));
     this.$el.show();
@@ -221,6 +225,23 @@ var FolderRowView = Backbone.View.extend({
     tmpl_array.push('  </td>');
     tmpl_array.push('  <td style="text-align: center; "><input style="margin: 0;" type="checkbox"></td>');
     tmpl_array.push('  <td><a href="#" class="library-dataset"><%- content_item.get("name") %><a></td>'); // dataset
+    tmpl_array.push('  <td><%= _.escape(content_item.get("data_type")) %></td>'); // data type
+    tmpl_array.push('  <td><%= _.escape(content_item.get("readable_size")) %></td>'); // size
+    tmpl_array.push('  <td><%= _.escape(content_item.get("update_time")) %></td>'); // time updated
+    tmpl_array.push('</tr>');
+
+    return _.template(tmpl_array.join(''));
+  },  
+
+  templateRowDeletedFile: function(){
+    tmpl_array = [];
+
+    tmpl_array.push('<tr class="active" id="<%- content_item.id %>">');
+    tmpl_array.push('  <td>');
+    tmpl_array.push('    <span title="Dataset" class="fa fa-file-o"></span>');
+    tmpl_array.push('  </td>');
+    tmpl_array.push('  <td><span data-toggle="tooltip" data-placement="top" title="Marked deleted" style="color:grey;" class="fa fa-ban fa-lg"> </span></td>');
+    tmpl_array.push('  <td style="color:grey;"><%- content_item.get("name") %></td>'); // dataset
     tmpl_array.push('  <td><%= _.escape(content_item.get("data_type")) %></td>'); // data type
     tmpl_array.push('  <td><%= _.escape(content_item.get("readable_size")) %></td>'); // size
     tmpl_array.push('  <td><%= _.escape(content_item.get("update_time")) %></td>'); // time updated

@@ -43,7 +43,7 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
         :raises: MalformedId, InconsistentDatabase, ObjectNotFound,
              InternalServerError
         """
-        deleted = kwd.get( 'deleted', 'missing' )
+        deleted = kwd.get( 'include_deleted', 'missing' )
         try:
             deleted = util.asbool( deleted )
         except ValueError:

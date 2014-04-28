@@ -13,6 +13,9 @@ function(mod_masthead,
 
 var FolderListView = Backbone.View.extend({
   el : '#folder_items_element',
+  defaults: {
+    'include_deleted' : false
+  },
   // progress percentage
   progress: 0,
   // progress rate per one item
@@ -38,15 +41,21 @@ var FolderListView = Backbone.View.extend({
     this.fetchFolder();
   },
 
-  fetchFolder: function(){
+  fetchFolder: function(options){
+    // this.options = _.defaults(this.options, options);
+    var options = options || {};
+    this.options.include_deleted = options.include_deleted;
     var that = this;
     this.folderContainer = new mod_library_model.FolderContainer({id: this.options.id});
     this.folderContainer.url = this.folderContainer.attributes.urlRoot + this.options.id + '/contents';
+    if (this.options.include_deleted){
+      this.folderContainer.url = this.folderContainer.url + '?include_deleted=true';
+    }
     this.folderContainer.fetch({
         success: function(folder_container) {
           that.folder_container = folder_container;
           that.render();
-          that.addAll(folder_container.get('folder').models)
+          that.addAll(folder_container.get('folder').models);
         },
         error: function(model, response){
           if (typeof response.responseJSON !== "undefined"){
@@ -59,7 +68,7 @@ var FolderListView = Backbone.View.extend({
   },
 
   render: function (options) {
-    this.options = _.defaults(this.options || {}, options);
+    this.options = _.defaults(this.options, options);
     var template = this.templateFolder();
 
     // TODO move to server
@@ -93,6 +102,7 @@ var FolderListView = Backbone.View.extend({
     _.each(models.reverse(), function(model) {
       Galaxy.libraries.folderListView.collection.add(model);
     });
+    $("#center [data-toggle]").tooltip();
     this.checkEmptiness();
   },
 
