@@ -164,6 +164,8 @@ class HistoryAllPublishedGrid( grids.Grid ):
     model_class = model.History
     default_sort_key = "update_time"
     default_filter = dict( public_url="All", username="All", tags="All" )
+    use_paging = True
+    num_rows_per_page = 50
     use_async = True
     columns = [
         NameURLColumn( "Name", key="name", filterable="advanced" ),
