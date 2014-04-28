@@ -208,12 +208,14 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
 
     @web.expose
     def list_published( self, trans, **kwargs ):
-        grid = self.published_list_grid( trans, **kwargs )
         if 'async' in kwargs:
-            return grid
-        else:
-            # Render grid wrapped in panels
-            return trans.fill_template( "history/list_published.mako", grid=grid )
+            kwargs[ 'embedded' ] = True
+            return self.published_list_grid( trans, **kwargs )
+
+        kwargs[ 'embedded' ] = True
+        grid = self.published_list_grid( trans, **kwargs )
+        return trans.fill_template( "history/list_published.mako", embedded_grid=grid )
+
 
     @web.expose
     @web.require_login( "work with multiple histories" )

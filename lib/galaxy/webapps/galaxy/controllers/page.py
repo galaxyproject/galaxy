@@ -302,6 +302,8 @@ class PageController( BaseUIController, SharableMixin, UsesHistoryMixin,
                     return self.sharing( trans, **kwargs )
             session.flush()
 
+        #HACK: to prevent the insertion of an entire html document inside another
+        kwargs[ 'embedded' ] = True
         # Build grid HTML.
         grid = self._page_list( trans, *args, **kwargs )
 
@@ -315,16 +317,17 @@ class PageController( BaseUIController, SharableMixin, UsesHistoryMixin,
             .all()
 
         # Render grid wrapped in panels
-        return trans.fill_template( "page/index.mako", grid=grid, shared_by_others=shared_by_others )
+        return trans.fill_template( "page/index.mako", embedded_grid=grid, shared_by_others=shared_by_others )
 
     @web.expose
     def list_published( self, trans, *args, **kwargs ):
+        kwargs[ 'embedded' ] = True
         grid = self._all_published_list( trans, *args, **kwargs )
         if 'async' in kwargs:
             return grid
-        else:
-            # Render grid wrapped in panels
-            return trans.fill_template( "page/list_published.mako", grid=grid )
+
+        # Render grid wrapped in panels
+        return trans.fill_template( "page/list_published.mako", embedded_grid=grid )
 
 
     @web.expose

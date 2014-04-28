@@ -1295,6 +1295,7 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin, UsesLibraryMix
         else:
             decoded_id = trans.security.decode_id( id )
             vis = session.query( trans.model.Visualization ).get( decoded_id )
+            #TODO: security check?
 
         # Create new VisualizationRevision that will be attached to the viz
         vis_rev = trans.model.VisualizationRevision()

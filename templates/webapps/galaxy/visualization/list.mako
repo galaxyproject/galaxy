@@ -26,7 +26,8 @@
                 </div>
             %endif
 
-            ${h.to_unicode( grid )}
+            <!-- embedded grid -->
+            ${h.to_unicode( embedded_grid )}
 
             <br><br>
             <h2>Visualizations shared with you by others</h2>

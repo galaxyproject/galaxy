@@ -216,12 +216,13 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
 
     @web.expose
     def list_published( self, trans, **kwargs ):
+        kwargs[ 'embedded' ] = True
         grid = self.published_list_grid( trans, **kwargs )
         if 'async' in kwargs:
             return grid
-        else:
-            # Render grid wrapped in panels
-            return trans.fill_template( "workflow/list_published.mako", grid=grid )
+
+        # Render grid wrapped in panels
+        return trans.fill_template( "workflow/list_published.mako", embedded_grid=grid )
 
     @web.expose
     def display_by_username_and_slug( self, trans, username, slug, format='html' ):

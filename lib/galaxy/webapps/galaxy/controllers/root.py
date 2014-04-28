@@ -541,3 +541,8 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
             raise HTTPBadGateway()
         trans.response.status = code
         return { 'error': 'Fake error!' }
+
+    @web.expose
+    def test( self, trans, **kwargs ):
+        #trans.response.headers[ 'Content-Type' ] = 'text/plain'
+        return trans.fill_template( 'test/test.mako', **kwargs )

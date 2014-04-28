@@ -17,6 +17,9 @@
 <%def name="javascripts()">
     ${parent.javascripts()}
     ${tool_menu_javascripts()}
+    ${h.js(
+        "utils/LazyDataLoader"
+    )}
 </%def>
 
 <%def name="late_javascripts()">

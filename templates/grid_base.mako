@@ -1,6 +1,12 @@
 <%!
     from galaxy.web.framework.helpers.grids import TextColumn
+
     def inherit(context):
+        kwargs = context.get( 'kwargs', {} )
+        if kwargs.get( 'embedded', False ):
+            # No inheritance - using only embeddable content (self.body)
+            return None
+
         if context.get('use_panels'):
             if context.get('webapp'):
                 webapp = context.get('webapp')
@@ -10,17 +16,39 @@
         else:
             return '/base.mako'
 %>
-
-## import/inherit makos
 <%inherit file="${inherit(context)}"/>
 <%namespace file="/display_common.mako" import="get_class_plural" />
 
-## creates grid
-<%def name="load(embedded=False, insert=None)">
+##
+## Override methods from base.mako and base_panels.mako
+##
 
-    ## create dictionary
-    ${self.init(embedded, insert)}
-    
+<%def name="init( embedded=False, insert=None )">
+<%
+    self.has_left_panel         = False
+    self.has_right_panel        = False
+    self.message_box_visible    = False
+    self.overlay_visible        = False
+    self.active_view            = 'user'
+%>
+</%def>
+
+## render title
+<%def name="title()">${grid.title}</%def>
+
+## render in center panel
+<%def name="center_panel()">
+    ${self.load()}
+</%def>
+
+## render in body
+<%def name="body()">
+    ${self.load()}
+</%def>
+
+## creates grid
+<%def name="load( embedded=False, insert=None )">
+    <!-- grid_base.mako -->
     ## imports
     ${h.css( "autocomplete_tagging", "jquery.rating" )}
     ${h.js("libs/jquery/jquery.autocomplete", "galaxy.autocom_tagging", "libs/jquery/jquery.rating" )}
@@ -31,37 +59,29 @@
     ## load javascript
     <script type="text/javascript">
         var gridView = null;
-        function add_tag_to_grid_filter (tag_name, tag_value)
-        {
-            ## Put tag name and value together.
-            var tag = tag_name + (tag_value !== undefined && tag_value !== "" ? ":" + tag_value : "");
-            var advanced_search = $('#advanced-search').is(":visible");
-            if (!advanced_search)
-            {
+        function add_tag_to_grid_filter( tag_name, tag_value ){
+            // Put tag name and value together.
+            var tag = tag_name + ( tag_value !== undefined && tag_value !== "" ? ":" + tag_value : "" );
+            var advanced_search = $( '#advanced-search').is(":visible" );
+            if( !advanced_search ){
                 $('#standard-search').slideToggle('fast');
                 $('#advanced-search').slideToggle('fast');
             }
-            gridView.add_filter_condition("tags", tag);
+            gridView.add_filter_condition( "tags", tag );
         };
 
-        ## load grid viewer
-        $(function() {
-            require(['mvc/grid/grid-view'], function(GridView) {
-                gridView = new GridView(${h.to_json_string(self.grid_config)});
+        // load grid viewer
+        require(['mvc/grid/grid-view'], function(GridView) {
+            $(function() {
+                gridView = new GridView( ${ h.to_json_string( self.grid_config() ) } );
             });
         });
     </script>
 </%def>
 
+<%def name="grid_config( embedded=False, insert=None )">
 ## generates dictionary
-<%def name="init(embedded=False, insert=None)">
 <%
-    self.has_left_panel         = False
-    self.has_right_panel        = False
-    self.message_box_visible    = False
-    self.overlay_visible        = False
-    self.active_view            = 'user'
-
     self.grid_config = {
         'title'                         : grid.title,
         'url_base'                      : trans.request.path_url,
@@ -108,7 +128,7 @@
 
     ## column
     for column in grid.columns:
-        
+
         ## add column sort links
         href = None
         extra = ''
@@ -138,7 +158,7 @@
             'extra'             : extra
         })
     endfor
-    
+
     ## operations
     for operation in grid.operations:
         self.grid_config['operations'].append({
@@ -152,7 +172,7 @@
         })
         if operation.allow_multiple:
             self.grid_config['show_item_checkboxes'] = True
-            
+
         if operation.global_operation:
             self.grid_config['global_operation'] = url( ** (operation.global_operation()) )
     endfor
@@ -177,7 +197,7 @@
             self.grid_config['categorical_filters'][column.key] = dict([ (filter.label, filter.args) for filter in column.get_accepted_filters() ])
         endif
     endfor
-    
+
     # items
     for i, item in enumerate( query ):
         item_dict = {
@@ -230,22 +250,8 @@
         ## add item to list
         self.grid_config['items'].append(item_dict)
     endfor
+
+    return self.grid_config
 %>
 </%def>
 
-##
-## Override methods from base.mako and base_panels.mako
-##
-
-## render title
-<%def name="title()">${self.grid_config['title']}</%def>
-
-## render in center panel
-<%def name="center_panel()">
-    ${self.load()}
-</%def>
-
-## render in body
-<%def name="body()">
-    ${self.load()}
-</%def>

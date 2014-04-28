@@ -340,7 +340,6 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
     @web.require_login( "see all available datasets" )
     def list_datasets( self, trans, **kwargs ):
         """List all datasets that can be added as tracks"""
-
         # Render the list view
         return self._data_grid( trans, **kwargs )
 
@@ -350,12 +349,13 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
 
     @web.expose
     def list_published( self, trans, *args, **kwargs ):
+        kwargs[ 'embedded' ] = True
         grid = self._published_list_grid( trans, **kwargs )
         if 'async' in kwargs:
             return grid
-        else:
-            # Render grid wrapped in panels
-            return trans.fill_template( "visualization/list_published.mako", grid=grid )
+
+        # Render grid wrapped in panels
+        return trans.fill_template( "visualization/list_published.mako", embedded_grid=grid )
 
     @web.expose
     @web.require_login( "use Galaxy visualizations", use_panels=True )
@@ -385,7 +385,9 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
             .order_by( desc( model.Visualization.update_time ) ) \
             .all()
 
-        return trans.fill_template( "visualization/list.mako", grid=self._user_list_grid( trans, *args, **kwargs ), shared_by_others=shared_by_others )
+        kwargs[ 'embedded' ] = True
+        grid = self._user_list_grid( trans, *args, **kwargs )
+        return trans.fill_template( "visualization/list.mako", embedded_grid=grid, shared_by_others=shared_by_others )
     
     #
     # -- Functions for operating on visualizations. --
@@ -571,7 +573,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
             raise web.httpexceptions.HTTPNotFound()
 
         # Security check raises error if user cannot access visualization.
-        self.security_check( trans, visualization, False, True)
+        self.security_check( trans, visualization, check_ownership=False, check_accessible=True )
 
         # Get rating data.
         user_item_rating = 0
@@ -747,8 +749,15 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
             if isinstance( config, basestring ):
                 config = from_json_string( config )
             title = title or DEFAULT_VISUALIZATION_NAME
+
             #TODO: allow saving to (updating) a specific revision - should be part of UsesVisualization
             #TODO: would be easier if this returned the visualization directly
+            # check security if posting to existing visualization
+            if id is not None:
+                visualization = self.get_visualization( trans, id, check_ownership=True, check_accessible=False )
+                #??: on not owner: error raised, but not returned (status = 200)
+
+            #TODO: there's no security check in save visualization (if passed an id)
             returned = self.save_visualization( trans, config, type, id, title )
 
             # redirect to GET to prevent annoying 'Do you want to post again?' dialog on page reload
@@ -760,7 +769,8 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
 
         # render the saved visualization by passing to render, sending latest revision config
         #TODO: allow loading a specific revision - should be part of UsesVisualization
-        visualization = self.get_visualization( trans, id, check_ownership=True, check_accessible=False )
+        #visualization = self.get_visualization( trans, id, check_ownership=True, check_accessible=False )
+        visualization = self.get_visualization( trans, id, check_ownership=False, check_accessible=True )
         config = copy.copy( visualization.latest_revision.config )
 
         # re-add title to kwargs for passing to render
