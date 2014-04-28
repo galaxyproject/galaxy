@@ -1106,7 +1106,7 @@ class SetupRubyEnvironment( RecipeStep ):
 class SetupVirtualEnv( RecipeStep ):
 
     def __init__( self ):
-        self.type = 'setup_virtual_env'
+        self.type = 'setup_virtualenv'
 
     def execute_step( self, app, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
                       install_environment, work_dir, install_dir, current_dir=None, initial_download=False ):

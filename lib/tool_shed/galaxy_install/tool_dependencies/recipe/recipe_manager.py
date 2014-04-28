@@ -434,7 +434,7 @@ class RecipeManager( object ):
                                       setup_perl_environment=step_handler.SetupPerlEnvironment(),
                                       setup_r_environment=step_handler.SetupREnvironment(),
                                       setup_ruby_environment=step_handler.SetupRubyEnvironment(),
-                                      setup_virtual_env=step_handler.SetupVirtualEnv(),
+                                      setup_virtualenv=step_handler.SetupVirtualEnv(),
                                       shell_command=step_handler.ShellCommand(),
                                       template_command=step_handler.TemplateCommand() )
         return step_handlers_by_type
@@ -453,4 +453,4 @@ class RecipeManager( object ):
                                                      install_dir=install_dir,
                                                      is_binary_download=is_binary_download )
         return action_dict
-        
+
