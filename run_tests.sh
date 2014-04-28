@@ -18,6 +18,8 @@ cat <<EOF
 '${0##*/} -data_managers -id data_manager_id'    for testing one Data Manager with id 'data_manager_id'
 '${0##*/} -unit'                    for running all unit tests (doctests in lib and tests in test/unit)
 '${0##*/} -unit testscriptath'      running particular tests scripts
+'${0##*/} -qunit'                   for running qunit JavaScript tests
+'${0##*/} -qunit testname'          for running single JavaScript test with given name
 EOF
 }
 
@@ -30,6 +32,8 @@ show_list() {
 
 test_script="./scripts/functional_tests.py"
 report_file="run_functional_tests.html"
+
+driver="python"
 
 while :
 do
@@ -124,6 +128,24 @@ do
               shift 1
           fi
           ;;
+      -q|-qunit|--qunit)
+          # Requires grunt installed and dependencies configured see 
+          # test/qunit/README.txt for more information.
+          driver="grunt"
+          gruntfile="./test/qunit/Gruntfile.js"
+          if [ $# -gt 1 ]; then
+              qunit_name=$2
+              shift 2
+          else
+              shift 1
+          fi
+          ;;
+      -watch|--watch)
+          # Have grunt watch test or directory for changes, only
+          # valid for javascript testing.
+          watch=1
+          shift
+          ;;
       --) 
           shift
           break
@@ -168,4 +190,21 @@ else
     extra_args='--exclude="^get" functional'
 fi
 
-python $test_script $coverage_arg -v --with-nosehtml --html-report-file $report_file $extra_args
+if [ "$driver" = "python" ]; then
+    python $test_script $coverage_arg -v --with-nosehtml --html-report-file $report_file $extra_args
+else
+    if [ -n "$watch" ]; then
+        grunt_task="watch"
+    else
+        grunt_task=""
+    fi
+    if [ -n "$qunit_name" ]; then
+        grunt_args="--test=$qunit_name"
+    else
+        grunt_args=""
+    fi
+    # TODO: Exapnd javascript helpers to include setting up
+    # grunt deps in npm, "watch"ing directory, and running casper
+    # functional tests.
+    grunt --gruntfile=$gruntfile $grunt_task $grunt_args
+fi
