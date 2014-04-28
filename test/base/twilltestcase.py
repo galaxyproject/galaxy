@@ -1769,10 +1769,11 @@ class TwillTestCase( unittest.TestCase ):
         tc.submit( "edit_external_service_button" )
         for check_str in strings_displayed_after_submit:
             self.check_page_for_string( check_str )
+
     # Sample tracking stuff
     def check_request_grid( self, cntrller, state, deleted=False, strings_displayed=[] ):
-        self.visit_url( '%s/%s/browse_requests?sort=create_time&f-state=%s&f-deleted=%s' % \
-                        ( self.url, cntrller, state.replace( ' ', '+' ), str( deleted ) ) )
+        params = { 'f-state': state, 'f-deleted': deleted, 'sort': 'create_time' }
+        self.visit_url( '/%s/browse_requests' % cntrller )
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
     def create_request_type( self, name, desc, request_form_id, sample_form_id, states, strings_displayed=[], strings_displayed_after_submit=[] ):
@@ -1967,8 +1968,8 @@ class TwillTestCase( unittest.TestCase ):
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
         for sample_id in sample_ids:
-            tc.fv( "1", "select_sample_%i" % sample_id, True )
-        tc.fv( "1", "sample_operation", 'Select data library and folder' )
+            tc.fv( "edit_samples", "select_sample_%i" % sample_id, True )
+        tc.fv( "edit_samples", "sample_operation", 'Select data library and folder' )
         # refresh on change to show the data libraries selectfield
         self.refresh_form( "sample_operation", 'Select data library and folder' )
         self.check_page_for_string( "Select data library:" )
