@@ -40,7 +40,8 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
 
         # Setup the database engine and ORM
         config_file = kwargs.get( 'global_conf', {} ).get( '__file__', None )
-        self._configure_models( check_migrate_databases=True, check_migrate_tools=True, config_file=config_file )
+        check_migrate_tools = self.config.check_migrate_tools
+        self._configure_models( check_migrate_databases=True, check_migrate_tools=check_migrate_tools, config_file=config_file )
 
         # Manage installed tool shed repositories.
         from tool_shed.galaxy_install import installed_repository_manager
