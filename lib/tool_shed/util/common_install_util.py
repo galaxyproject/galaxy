@@ -464,7 +464,15 @@ def get_required_repo_info_dicts( trans, tool_shed_url, repo_info_dicts ):
                                     all_required_repo_info_dict[ k ] = v
                         if required_repo_info_dicts:
                             for required_repo_info_dict in required_repo_info_dicts:
-                                if required_repo_info_dict not in all_repo_info_dicts:
+                                # Each required_repo_info_dict has a single entry, and all_repo_info_dicts is a list
+                                # of dictionaries, each of which has a single entry.  We'll check keys here rather than
+                                # the entire dictionary because a dictionary entry in all_repo_info_dicts will include
+                                # lists of discovered repository dependencies, but these lists will be empty in the
+                                # required_repo_info_dict since dependency discovery has not yet been performed for these
+                                # dictionaries.
+                                required_repo_infor_dict_key = required_repo_info_dict.keys()[ 0 ]
+                                all_repo_info_dicts_keys = [ d.keys()[ 0 ] for d in all_repo_info_dicts ]
+                                if required_repo_infor_dict_key not in all_repo_info_dicts_keys:
                                     all_repo_info_dicts.append( required_repo_info_dict )
                     all_required_repo_info_dict[ 'all_repo_info_dicts' ] = all_repo_info_dicts
     return all_required_repo_info_dict
