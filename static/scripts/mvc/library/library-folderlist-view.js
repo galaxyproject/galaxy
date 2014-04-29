@@ -104,6 +104,11 @@ var FolderListView = Backbone.View.extend({
     });
     $("#center [data-toggle]").tooltip();
     this.checkEmptiness();
+        $('.deleted_dataset').hover(function() {
+            $(this).find('.show_on_hover').show();
+    }, function () {
+            $(this).find('.show_on_hover').hide();
+    });
   },
 
   /**
@@ -113,6 +118,11 @@ var FolderListView = Backbone.View.extend({
     var that = this;
     _.each(this.collection.models.reverse(), function(model) {
       that.renderOne(model);
+    });
+    $('.deleted_dataset').hover(function() {
+            $(this).find('.show_on_hover').show();
+    }, function () {
+            $(this).find('.show_on_hover').hide();
     });
   },
 
@@ -127,17 +137,15 @@ var FolderListView = Backbone.View.extend({
       }
     var rowView = new mod_library_folderrow_view.FolderRowView(model);
     this.$el.find('#first_folder_item').after(rowView.el);
-    this.checkEmptiness();
+    // this.checkEmptiness();
   },
 
   /** Checks whether the list is empty and adds/removes the message */
-  // TODO needs refactor
   checkEmptiness : function(){
     if ((this.$el.find('.dataset_row').length === 0) && (this.$el.find('.folder_row').length === 0)){
-      var empty_folder_tmpl = this.templateEmptyFolder();
-      this.$el.find('#folder_list_body').append(empty_folder_tmpl());
+      this.$el.find('.empty-folder-message').show();
     } else {
-      this.$el.find('#empty_folder_message').remove();
+      this.$el.find('.empty-folder-message').hide();
     }
   },
 
@@ -192,7 +200,7 @@ var FolderListView = Backbone.View.extend({
        var selected = event.target.checked;
        that = this;
        // Iterate each checkbox
-       $(':checkbox').each(function() {
+       $(':checkbox', '#folder_list_body').each(function() {
           this.checked = selected;
           $row = $(this.parentElement.parentElement);
           // Change color of selected/unselected
@@ -280,10 +288,11 @@ var FolderListView = Backbone.View.extend({
       tmpl_array.push('   <thead>');
       tmpl_array.push('       <th class="button_heading"></th>');
       tmpl_array.push('       <th style="text-align: center; width: 20px; " title="Check to select all datasets"><input id="select-all-checkboxes" style="margin: 0;" type="checkbox"></th>');
-      tmpl_array.push('       <th><a class="sort-folder-link" title="Click to reverse order" href="#">name</a> <span title="Sorted alphabetically" class="fa fa-sort-alpha-<%- order %>"></span></th>');
+      tmpl_array.push('       <th style="width:30%;"><a class="sort-folder-link" title="Click to reverse order" href="#">name</a> <span title="Sorted alphabetically" class="fa fa-sort-alpha-<%- order %>"></span></th>');
       tmpl_array.push('       <th>data type</th>');
       tmpl_array.push('       <th>size</th>');
       tmpl_array.push('       <th>time updated (UTC)</th>');
+      tmpl_array.push('       <th style="width:15%;"></th> ');
       tmpl_array.push('   </thead>');
       tmpl_array.push('   <tbody id="folder_list_body">');
       tmpl_array.push('       <tr id="first_folder_item">');
@@ -293,27 +302,17 @@ var FolderListView = Backbone.View.extend({
       tmpl_array.push('           <td></td>');
       tmpl_array.push('           <td></td>');
       tmpl_array.push('           <td></td>');
+      tmpl_array.push('           <td></td>');
       tmpl_array.push('       </tr>');
 
       tmpl_array.push('   </tbody>');
       tmpl_array.push('</table>');
+      tmpl_array.push('<div class="empty-folder-message" style="display:none;">This folder is either empty or you do not have proper access permissions to see the contents.</div>');
 
       return _.template(tmpl_array.join(''));
-  },
-
-  templateEmptyFolder: function(){
-    var tmpl_array = [];
-
-    tmpl_array.push('<tr id="empty_folder_message">');
-    tmpl_array.push('<td colspan="6" style="text-align:center">');
-    tmpl_array.push('This folder is either empty or you do not have proper access permissions to see the contents.');
-    tmpl_array.push('</td>');
-    tmpl_array.push('</tr>');
-
-    return _.template(tmpl_array.join(''));
   }
-
-  });
+  
+});
 
 return {
     FolderListView: FolderListView

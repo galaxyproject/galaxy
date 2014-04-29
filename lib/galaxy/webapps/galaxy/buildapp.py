@@ -218,6 +218,12 @@ def app_factory( global_conf, **kwargs ):
                            action='show',
                            conditions=dict( method=[ "GET" ] ) )
 
+    webapp.mapper.connect( 'delete_lda_item',
+                           '/api/libraries/datasets/:encoded_dataset_id',
+                           controller='lda_datasets',
+                           action='delete',
+                           conditions=dict( method=[ "DELETE" ] ) )
+
     webapp.mapper.connect( 'download_lda_items',
                            '/api/libraries/datasets/download/:format',
                            controller='lda_datasets',

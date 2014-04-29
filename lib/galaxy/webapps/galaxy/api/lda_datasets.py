@@ -46,11 +46,47 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         except Exception, e:
             raise exceptions.ObjectNotFound( 'Requested dataset was not found.' )
         rval = dataset.to_dict()
-
-        rval['id'] = trans.security.encode_id(rval['id']);
-        rval['ldda_id'] = trans.security.encode_id(rval['ldda_id']);
+        rval['deleted'] = dataset.deleted
+        rval['id'] = trans.security.encode_id(rval['id'])
+        rval['ldda_id'] = trans.security.encode_id(rval['ldda_id'])
+        rval['parent_library_id'] = trans.security.encode_id(rval['parent_library_id'])
         rval['folder_id'] = 'F' + trans.security.encode_id(rval['folder_id'])
         return rval
+
+
+    @expose_api
+    def delete( self, trans, encoded_dataset_id, **kwd ):
+        """
+        delete( self, trans, encoded_dataset_id, **kwd ):
+        * DELETE /api/libraries/datasets/{encoded_dataset_id}
+            Marks the dataset deleted.
+        """
+        undelete = util.string_as_bool( kwd.get( 'undelete', False ) )
+        try:
+            dataset = self.get_library_dataset( trans, id = encoded_dataset_id, check_ownership=False, check_accessible=False )
+        except Exception, e:
+            raise exceptions.ObjectNotFound( 'Requested dataset was not found.' + str(e) )
+        current_user_roles = trans.get_current_user_roles()
+        allowed = trans.app.security_agent.can_modify_library_item( current_user_roles, dataset )
+        if ( not allowed ) and ( not trans.user_is_admin() ):
+            raise exceptions.InsufficientPermissionsException( 'You do not have proper permissions to delete this dataset.')
+
+        if undelete:
+            dataset.deleted = False
+        else:
+            dataset.deleted = True
+
+        trans.sa_session.add( dataset )
+        trans.sa_session.flush()
+
+        rval = dataset.to_dict()
+        rval['deleted'] = dataset.deleted
+        rval['id'] = trans.security.encode_id(rval['id'])
+        rval['ldda_id'] = trans.security.encode_id(rval['ldda_id'])
+        rval['parent_library_id'] = trans.security.encode_id(rval['parent_library_id'])
+        rval['folder_id'] = 'F' + trans.security.encode_id(rval['folder_id'])
+        return rval
+
 
     @web.expose
     def download( self, trans, format, **kwd ):

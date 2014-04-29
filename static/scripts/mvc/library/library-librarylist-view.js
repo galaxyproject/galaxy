@@ -78,11 +78,12 @@ var LibraryListView = Backbone.View.extend({
         }
         // initialize the library tooltips
         $("#center [data-toggle]").tooltip();
-        // modification of upper DOM element to show scrollbars due to the #center element inheritance
+        // modification of upper DOM element to show scrollbars due 
+        // to the #center element inheritance
         $("#center").css('overflow','auto');
     },
 
-    /** Render all given models as rows in the library list */
+    /** Renders all given models as rows in the library list */
     renderRows: function(libraries_to_render){
         for (var i = 0; i < libraries_to_render.length; i++) {
           var library = libraries_to_render[i];
@@ -91,12 +92,26 @@ var LibraryListView = Backbone.View.extend({
             cachedView.delegateEvents();
             this.$el.find('#library_list_body').append(cachedView.el);
           } else {
-            var rowView = new mod_library_libraryrow_view.LibraryRowView(library);
-            this.$el.find('#library_list_body').append(rowView.el);
-            // save new rowView to cache
-            this.rowViews[library.get('id')] = rowView;
+            this.renderOne({library:library})
           }
         }
+    },
+
+    /**
+     * Creates a view for the given model and adds it to the libraries view.
+     * @param {Library} model of the view that will be rendered
+     */
+    renderOne: function(options){
+        var library = options.library;
+        var rowView = new mod_library_libraryrow_view.LibraryRowView(library);
+        // we want to prepend new item
+        if (options.prepend){ 
+            this.$el.find('#library_list_body').prepend(rowView.el);
+        } else {
+            this.$el.find('#library_list_body').append(rowView.el);
+        }
+        // save new rowView to cache
+        this.rowViews[library.get('id')] = rowView;
     },
 
     /** Table heading was clicked, update sorting preferences and re-render */
@@ -148,20 +163,7 @@ var LibraryListView = Backbone.View.extend({
 
         return _.template(tmpl_array.join(''));
     },
-    
-    templateNewLibraryInModal: function(){
-        tmpl_array = [];
 
-        tmpl_array.push('<div id="new_library_modal">');
-        tmpl_array.push('   <form>');
-        tmpl_array.push('       <input type="text" name="Name" value="" placeholder="Name">');
-        tmpl_array.push('       <input type="text" name="Description" value="" placeholder="Description">');
-        tmpl_array.push('       <input type="text" name="Synopsis" value="" placeholder="Synopsis">');
-        tmpl_array.push('   </form>');
-        tmpl_array.push('</div>');
-
-        return tmpl_array.join('');
-    },
 
     redirectToHome: function(){
         window.location = '../';
@@ -170,69 +172,6 @@ var LibraryListView = Backbone.View.extend({
         window.location = '/user/login';
     },
 
-    // show/hide create library modal
-    show_library_modal : function (event){
-        event.preventDefault();
-        event.stopPropagation();
-
-        // create modal
-        var self = this;
-        this.modal = Galaxy.modal;
-        this.modal.show({
-            closing_events  : true,
-            title           : 'Create New Library',
-            body            : this.templateNewLibraryInModal(),
-            buttons         : {
-                'Create'    : function() {self.create_new_library_event();},
-                'Close'     : function() {self.modal.hide();}
-            }
-        });
-    },
-
-    // create the new library from modal
-    create_new_library_event: function(){
-        var libraryDetails = this.serialize_new_library();
-        if (this.validate_new_library(libraryDetails)){
-            var library = new mod_library_model.Library();
-            var self = this;
-            library.save(libraryDetails, {
-              success: function (library) {
-                self.collection.add(library);
-                self.modal.hide();
-                self.clear_library_modal();
-                self.render();
-                mod_toastr.success('Library created');
-              },
-              error: function(){
-                mod_toastr.error('An error occured :(');
-              }
-            });
-        } else {
-            mod_toastr.error('Library\'s name is missing');
-        }
-        return false;
-    },
-
-    // clear the library modal once saved
-    clear_library_modal : function(){
-        $("input[name='Name']").val('');
-        $("input[name='Description']").val('');
-        $("input[name='Synopsis']").val('');
-    },
-
-    // serialize data from the new library form
-    serialize_new_library : function(){
-        return {
-            name: $("input[name='Name']").val(),
-            description: $("input[name='Description']").val(),
-            synopsis: $("input[name='Synopsis']").val()
-        };
-    },
-
-    // validate new library info
-    validate_new_library: function(libraryDetails){
-        return libraryDetails.name !== '';
-    }
 });
 
 return {

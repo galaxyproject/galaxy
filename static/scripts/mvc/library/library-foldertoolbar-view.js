@@ -15,7 +15,8 @@ var FolderToolbarView = Backbone.View.extend({
     'click #toolbtn_create_folder'        : 'createFolderFromModal',
     'click #toolbtn_bulk_import'          : 'modalBulkImport',
     'click .toolbtn_add_files'            : 'addFilesToFolderModal',
-    'click #include_deleted_datasets_chk' : 'check_include_deleted'
+    'click #include_deleted_datasets_chk' : 'checkIncludeDeleted',
+    'click #toolbtn_bulk_delete'          : 'deleteSelectedDatasets'
   },
 
   defaults: {
@@ -164,7 +165,9 @@ var FolderToolbarView = Backbone.View.extend({
     });
   },
 
-  // import all selected datasets into history
+  /**
+   * import all selected datasets into history
+   */
   importAllIntoHistory : function (){
       // disable the button to prevent multiple submission
       this.modal.disableButton('Import');
@@ -393,7 +396,7 @@ var FolderToolbarView = Backbone.View.extend({
   /**
    * Handles the click on 'show deleted' checkbox
    */
-  check_include_deleted: function(event){
+  checkIncludeDeleted: function(event){
     if (event.target.checked){
       Galaxy.libraries.folderListView.collection = new mod_library_model.Folder();
       Galaxy.libraries.folderListView.listenTo(Galaxy.libraries.folderListView.collection, 'add', Galaxy.libraries.folderListView.renderOne);
@@ -403,6 +406,83 @@ var FolderToolbarView = Backbone.View.extend({
       Galaxy.libraries.folderListView.listenTo(Galaxy.libraries.folderListView.collection, 'add', Galaxy.libraries.folderListView.renderOne);
       Galaxy.libraries.folderListView.fetchFolder({include_deleted: false});
     }
+  },
+
+  /**
+   * Deletes the selected datasets. Atomic. One by one.
+   */
+  deleteSelectedDatasets: function(){
+    var checkedValues = $('#folder_table').find(':checked');
+    if(checkedValues.length === 0){
+        mod_toastr.info('You have to select some datasets first');
+    } else {
+      var template = this.templateDeletingDatasetsProgressBar();
+      this.modal = Galaxy.modal;
+      this.modal.show({
+          closing_events  : true,
+          title           : 'Deleting selected datasets',
+          body            : template({}),
+          buttons         : {
+              'Close'     : function() {Galaxy.modal.hide();}
+          }
+      });
+      // init the control counters
+      this.options.chain_call_control.total_number = 0;
+      this.options.chain_call_control.failed_number = 0;
+
+      var dataset_ids = [];
+      checkedValues.each(function(){
+          if (this.parentElement.parentElement.id !== '') {
+              dataset_ids.push(this.parentElement.parentElement.id);
+          }
+      });
+      // init the progress bar
+      this.progressStep = 100 / dataset_ids.length;
+      this.progress = 0;
+      
+      // prepare the dataset items to be added
+      var lddas_to_delete = [];
+      for (var i = dataset_ids.length - 1; i >= 0; i--) {
+          var dataset = new mod_library_model.Item({id:dataset_ids[i]});
+          lddas_to_delete.push(dataset);
+      }
+
+      this.options.chain_call_control.total_number = dataset_ids.length;
+      // call the recursive function to call ajax one after each other (request FIFO queue)
+      this.chainCallDeletingHdas(lddas_to_delete);
+    }
+  },
+
+  chainCallDeletingHdas: function(lddas_set){
+  var self = this;
+  this.deleted_lddas = new mod_library_model.Folder();
+  var popped_item = lddas_set.pop();
+  if (typeof popped_item === "undefined") {
+    if (this.options.chain_call_control.failed_number === 0){
+      mod_toastr.success('Selected datasets deleted');
+    } else if (this.options.chain_call_control.failed_number === this.options.chain_call_control.total_number){
+      mod_toastr.error('There was an error and no datasets were deleted.');
+    } else if (this.options.chain_call_control.failed_number < this.options.chain_call_control.total_number){
+      mod_toastr.warning('Some of the datasets could not be deleted');
+    }
+    Galaxy.modal.hide();
+    return this.deleted_lddas;
+  }
+  var promise = $.when(popped_item.destroy({undelete: false}));
+
+  promise.done(function(dataset){
+            // we are fine
+            self.$el.find('#' + popped_item.id).remove();
+            self.updateProgress();
+            Galaxy.libraries.folderListView.collection.add(dataset);
+            self.chainCallDeletingHdas(lddas_set);
+          })
+          .fail(function(){
+            // we have a problem
+            self.options.chain_call_control.failed_number += 1;
+            self.updateProgress();
+            self.chainCallDeletingHdas(lddas_set);
+          });
   },
 
   templateToolBar: function(){
@@ -492,6 +572,21 @@ var FolderToolbarView = Backbone.View.extend({
     tmpl_array.push('</div>');
     tmpl_array.push('<div class="progress">');
     tmpl_array.push('   <div class="progress-bar progress-bar-import" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 00%;">');
+    tmpl_array.push('       <span class="completion_span">0% Complete</span>');
+    tmpl_array.push('   </div>');
+    tmpl_array.push('</div>');
+    tmpl_array.push('');
+
+    return _.template(tmpl_array.join(''));
+  },
+
+  templateDeletingDatasetsProgressBar : function (){
+    var tmpl_array = [];
+
+    tmpl_array.push('<div class="import_text">');
+    tmpl_array.push('</div>');
+    tmpl_array.push('<div class="progress">');
+    tmpl_array.push('   <div class="progress-bar progress-bar-delete" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 00%;">');
     tmpl_array.push('       <span class="completion_span">0% Complete</span>');
     tmpl_array.push('   </div>');
     tmpl_array.push('</div>');

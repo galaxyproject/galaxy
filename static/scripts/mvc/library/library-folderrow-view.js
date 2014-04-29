@@ -15,7 +15,8 @@ var FolderRowView = Backbone.View.extend({
   lastSelectedHistory: '',
 
   events: {
-    'click .library-dataset' : 'showDatasetDetails'
+    'click .library-dataset'      : 'showDatasetDetails',
+    'click .undelete_dataset_btn' : 'undelete_dataset'
   },
 
   options: {
@@ -69,14 +70,22 @@ var FolderRowView = Backbone.View.extend({
                 success: function (histories){
                     self.renderModalAfterFetch(item, histories);
                 },
-                  error: function(){
-                    mod_toastr.error('An error occured during fetching histories:(');
+                  error: function(model, response){
+                    if (typeof response.responseJSON !== "undefined"){
+                      mod_toastr.error(response.responseJSON.err_msg);
+                    } else {
+                      mod_toastr.error('An error occured during fetching histories:(');
+                    }
                     self.renderModalAfterFetch(item);
                 }
             });
         },
-          error: function(){
-            mod_toastr.error('An error occured during loading dataset details :(');
+          error: function(model, response){
+            if (typeof response.responseJSON !== "undefined"){
+              mod_toastr.error(response.responseJSON.err_msg);
+            } else {
+              mod_toastr.error('An error occured during loading dataset details :(');
+            }
           }
     });
 },
@@ -163,34 +172,38 @@ var FolderRowView = Backbone.View.extend({
     }
   },
 
-    // import dataset shown currently in modal into selected history
-    importCurrentIntoHistory : function(){
-        //disable the buttons
-        this.modal.disableButton('Import');
-        this.modal.disableButton('Download');
+  // import dataset shown currently in modal into selected history
+  importCurrentIntoHistory : function(){
+      //disable the buttons
+      this.modal.disableButton('Import');
+      this.modal.disableButton('Download');
 
-        var history_id = $(this.modal.elMain).find('select[name=dataset_import_single] option:selected').val();
-        this.lastSelectedHistory = history_id; //save selected history for further use
+      var history_id = $(this.modal.elMain).find('select[name=dataset_import_single] option:selected').val();
+      this.lastSelectedHistory = history_id; //save selected history for further use
 
-        var library_dataset_id = $('#id_row').attr('data-id');
-        var historyItem = new mod_library_model.HistoryItem();
-        var self = this;
-        historyItem.url = historyItem.urlRoot + history_id + '/contents';
+      var library_dataset_id = $('#id_row').attr('data-id');
+      var historyItem = new mod_library_model.HistoryItem();
+      var self = this;
+      historyItem.url = historyItem.urlRoot + history_id + '/contents';
 
-        // save the dataset into selected history
-        historyItem.save({ content : library_dataset_id, source : 'library' }, { success : function(){
-            mod_toastr.success('Dataset imported');
-            //enable the buttons
-            self.modal.enableButton('Import');
-            self.modal.enableButton('Download');
-        }, error : function(){
-            mod_toastr.error('An error occured! Dataset not imported. Please try again.');
-            //enable the buttons
-            self.modal.enableButton('Import');
-            self.modal.enableButton('Download');
-        }
-    });
-    },
+      // save the dataset into selected history
+      historyItem.save({ content : library_dataset_id, source : 'library' }, { success : function(){
+          mod_toastr.success('Dataset imported');
+          //enable the buttons
+          self.modal.enableButton('Import');
+          self.modal.enableButton('Download');
+      }, error : function(){
+          mod_toastr.error('An error occured! Dataset not imported. Please try again.');
+          //enable the buttons
+          self.modal.enableButton('Import');
+          self.modal.enableButton('Download');
+      }
+  });
+  },
+
+  undelete_dataset : function(event){
+    alert('undelete dataset');
+  },
 
   templateRowFolder: function() {
     tmpl_array = [];
@@ -211,6 +224,7 @@ var FolderRowView = Backbone.View.extend({
     //  print item count only if it is given
     // tmpl_array.push('  <td><% if (typeof content_item.get("item_count") !== "undefined") { _.escape(content_item.get("item_count")); print("item(s)") } %> </td>');
     tmpl_array.push('  <td><%= _.escape(content_item.get("update_time")) %></td>'); // time updated
+    tmpl_array.push('  <td></td>');
     tmpl_array.push('</tr>');
 
     return _.template(tmpl_array.join(''));
@@ -228,6 +242,7 @@ var FolderRowView = Backbone.View.extend({
     tmpl_array.push('  <td><%= _.escape(content_item.get("data_type")) %></td>'); // data type
     tmpl_array.push('  <td><%= _.escape(content_item.get("readable_size")) %></td>'); // size
     tmpl_array.push('  <td><%= _.escape(content_item.get("update_time")) %></td>'); // time updated
+    tmpl_array.push('  <td></td>');
     tmpl_array.push('</tr>');
 
     return _.template(tmpl_array.join(''));
@@ -236,7 +251,7 @@ var FolderRowView = Backbone.View.extend({
   templateRowDeletedFile: function(){
     tmpl_array = [];
 
-    tmpl_array.push('<tr class="active" id="<%- content_item.id %>">');
+    tmpl_array.push('<tr class="active deleted_dataset" id="<%- content_item.id %>">');
     tmpl_array.push('  <td>');
     tmpl_array.push('    <span title="Dataset" class="fa fa-file-o"></span>');
     tmpl_array.push('  </td>');
@@ -245,6 +260,7 @@ var FolderRowView = Backbone.View.extend({
     tmpl_array.push('  <td><%= _.escape(content_item.get("data_type")) %></td>'); // data type
     tmpl_array.push('  <td><%= _.escape(content_item.get("readable_size")) %></td>'); // size
     tmpl_array.push('  <td><%= _.escape(content_item.get("update_time")) %></td>'); // time updated
+    tmpl_array.push('  <td class="right-center"><button data-toggle="tooltip" data-placement="top" title="Undelete <%- content_item.get("name") %>" class="primary-button btn-xs undelete_dataset_btn show_on_hover" type="button" style="display:none;"><span class="fa fa-unlock"> Undelete</span></button></td>');
     tmpl_array.push('</tr>');
 
     return _.template(tmpl_array.join(''));
