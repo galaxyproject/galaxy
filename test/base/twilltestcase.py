@@ -1633,7 +1633,7 @@ class TwillTestCase( unittest.TestCase ):
         tc.submit( "create_form_button" )
         if form_type == "Sequencing Sample Form":
             tc.submit( "add_layout_grid" )
-            tc.fv( "create_form_definition", "grid_layout0", form_layout_name )
+            tc.fv( "edit_form_definition", "grid_layout0", form_layout_name )
         # if not adding any fields at this time, remove the default empty field
         if num_fields == 0:
             tc.submit( "remove_button" )
@@ -1677,9 +1677,9 @@ class TwillTestCase( unittest.TestCase ):
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
         if new_form_name:
-            tc.fv( "1", "name", new_form_name )
+            tc.fv( "edit_form_definition", "name", new_form_name )
         if new_form_desc:
-            tc.fv( "1", "description", new_form_desc )
+            tc.fv( "edit_form_definition", "description", new_form_desc )
         for i, field_dict in enumerate( field_dicts ):
             index = i + field_index
             tc.submit( "add_field_button" )
@@ -1693,18 +1693,18 @@ class TwillTestCase( unittest.TestCase ):
             field_required_value = field_dict[ 'required' ]
             field_name = "field_name_%i" % index
             field_name_value = field_dict.get( 'name', '%i_field_name' % index )
-            tc.fv( "1", field_label, field_label_value )
-            tc.fv( "1", field_help, field_help_value )
-            tc.fv( "1", field_required, field_required_value )
-            tc.fv( "1", field_name, field_name_value )
+            tc.fv( "edit_form_definition", field_label, field_label_value )
+            tc.fv( "edit_form_definition", field_help, field_help_value )
+            tc.fv( "edit_form_definition", field_required, field_required_value )
+            tc.fv( "edit_form_definition", field_name, field_name_value )
             if field_type_value.lower() == 'selectfield':
                 # SelectFields require a refresh_on_change
                 self.refresh_form( field_type, field_type_value )
                 for option_index, option in enumerate( field_dict[ 'selectlist' ] ):
                     tc.submit( "addoption_%i" % index )
-                    tc.fv( "1", "field_%i_option_%i" % ( index, option_index ), option )
+                    tc.fv( "edit_form_definition", "field_%i_option_%i" % ( index, option_index ), option )
             else:
-                tc.fv( "1", field_type, field_type_value )
+                tc.fv( "edit_form_definition", field_type, field_type_value )
         tc.submit( "save_changes_button" )
         for check_str in strings_displayed_after_submit:
             self.check_page_for_string( check_str )
@@ -1892,20 +1892,22 @@ class TwillTestCase( unittest.TestCase ):
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
         for sample_index, ( sample_name, target_library_info, sample_field_values ) in enumerate( sample_value_tuples ):
-            tc.fv( "1", "sample_%i_name" % sample_index, sample_name )
-            tc.fv( "1", "sample_%i_library_id" % sample_index, target_library_info[ 'library' ] )
-            self.refresh_form( "sample_%i_library_id" % sample_index, target_library_info[ 'library' ] )
+            tc.fv( "add_samples", "sample_%i_name" % sample_index, sample_name )
+            if target_library_info[ 'library' ] is not None:
+                tc.fv( "add_samples", "sample_%i_library_id" % sample_index, target_library_info[ 'library' ] )
+                self.refresh_form( "sample_%i_library_id" % sample_index, target_library_info[ 'library' ] )
             # check if the folder selectfield has been correctly populated
             for check_str in folder_options:
                 self.check_page_for_string( check_str )
-            tc.fv( "1", "sample_%i_folder_id" % sample_index, target_library_info[ 'folder' ] )
+            if target_library_info[ 'folder' ] is not None:
+                tc.fv( "add_samples", "sample_%i_folder_id" % sample_index, target_library_info[ 'folder' ] )
             for field_index, field_value in enumerate( sample_field_values ):
-                tc.fv( "1", "sample_%i_field_%i" % ( sample_index, field_index ), field_value )
+                tc.fv( "add_samples", "sample_%i_field_%i" % ( sample_index, field_index ), field_value )
             # Do not click on Add sample button when all the sample have been added 
             if sample_index < len( sample_value_tuples ) - 1:
                 tc.submit( "add_sample_button" )
         # select the correct form before submitting it
-        tc.fv( "1", "copy_sample_index", "-1" )
+        tc.fv( "add_samples", "copy_sample_index", "-1" )
         tc.submit( "save_samples_button" )
         for check_str in strings_displayed_after_submit:
             self.check_page_for_string( check_str )

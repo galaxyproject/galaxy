@@ -722,7 +722,7 @@ class TestFormsAndSampleTracking( TwillTestCase ):
             % ( request2.name, request2.states.NEW )
 
     def test_0100_add_samples_to_request( self ):
-        target_library_info = dict( library='none', folder='none' )
+        target_library_info = dict( library=None, folder=None )
         # Sample fields - the tuple represents a sample name and a list of sample form field values
         sample_value_tuples = \
         [ ( 'Sample1', target_library_info, [ 'option1', 'sample1 field2 value', 'sample1 field3 value' ] ),
@@ -741,12 +741,10 @@ class TestFormsAndSampleTracking( TwillTestCase ):
                                               '<input type="text" name="sample_0_name" value="Sample_1" size="10"/>' ], # sample name input field
                           strings_displayed_after_submit=strings_displayed_after_submit )
         # Submit the request
-        select_target_library_message = "Select a target data library and folder for a sample before selecting its datasets to transfer from the external service"
         self.submit_request( cntrller='requests_admin',
                              request_id=self.security.encode_id( request2.id ),
                              request_name=request2.name,
-                             strings_displayed_after_submit=[ select_target_library_message,
-                                                              'The sequencing request has been submitted.' ] )
+                             strings_displayed_after_submit=[ 'The sequencing request has been submitted.' ] )
         refresh( request2 )
         # Make sure the request is showing in the 'submitted' filter
         self.check_request_grid( cntrller='requests_admin',
@@ -776,7 +774,8 @@ class TestFormsAndSampleTracking( TwillTestCase ):
         strings_displayed_count = []
         strings_displayed_count.append( ( library2.name, len( request1.samples ) ) )
         strings_displayed_count.append( ( library2_folder1.name, len( request1.samples ) ) )
-        strings_displayed = [ 'Sequencing request "%s"' % name, regular_user1.email, request2.states.SUBMITTED ]
+        strings_displayed = [ 'Sequencing request "%s"' % request2.name, regular_user1.email, request2.states.SUBMITTED ]
+        select_target_library_message = "Select a target data library and folder for a sample before selecting its datasets to transfer from the external service"
         self.view_request( cntrller='requests',
                            request_id=self.security.encode_id( request2.id ),
                            strings_displayed=strings_displayed,
