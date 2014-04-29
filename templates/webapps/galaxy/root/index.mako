@@ -17,9 +17,6 @@
 <%def name="javascripts()">
     ${parent.javascripts()}
     ${tool_menu_javascripts()}
-    ${h.js(
-        "utils/LazyDataLoader"
-    )}
 </%def>
 
 <%def name="late_javascripts()">
@@ -95,6 +92,10 @@
             "${_("Purge Deleted Datasets")}": function() {
                 if ( confirm( "Really delete all deleted datasets permanently? This cannot be undone." ) ) {
                     galaxy_main.location = "${h.url_for( controller='history', action='purge_deleted_datasets' )}";
+                    // update the user disk size when the purge page loads
+                    $( '#galaxy_main' ).load( function(){
+                        Galaxy.user.fetch();
+                    })
                 }
             },
             "${_("Show Structure")}": function() {
