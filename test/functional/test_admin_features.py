@@ -209,7 +209,7 @@ class TestDataSecurity( TwillTestCase ):
         self.create_group( name=name,
                            in_user_ids=in_user_ids,
                            in_role_ids=in_role_ids,
-                           create_role_for_group='yes',
+                           create_role_for_group=True,
                            strings_displayed=[ "Group '%s' has been created with %d associated users and %d associated roles." % ( name, len( in_user_ids ), num_gras ),
                                                "One of the roles associated with this group is the newly created role with the same name." ] )
         # Get the group object for later tests

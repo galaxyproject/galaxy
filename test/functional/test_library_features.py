@@ -69,7 +69,7 @@ class TestLibraryFeatures( TwillTestCase ):
         self.library_info( 'library_admin',
                             self.security.encode_id( library1.id ),
                             library1.name,
-                            new_name=name,
+                            new_name='library1',
                             new_description='library1 description',
                             new_synopsis='library1 synopsis' )
         refresh( library1 )

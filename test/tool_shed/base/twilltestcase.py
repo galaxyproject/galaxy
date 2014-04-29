@@ -1053,10 +1053,19 @@ class ShedTwillTestCase( TwillTestCase ):
         # form doesn't get parsed correctly. 
         encoded_repository_id = self.security.encode_id( installed_repository.id )
         params = dict( id=encoded_repository_id, no_changes=no_changes, new_tool_panel_section_label=new_tool_panel_section_label )
-        checkbox_params = dict( install_repository_dependencies=install_repository_dependencies, 
-                                install_tool_dependencies=install_tool_dependencies )
+        doseq = False
+        if install_repository_dependencies:
+            params[ 'install_repository_dependencies' ] = [ 'True', 'True' ]
+            doseq = True
+        else:
+            params[ 'install_repository_dependencies' ] = False
+        if install_tool_dependencies:
+            params[ 'install_tool_dependencies' ] = [ 'True', 'True' ]
+            doseq = True
+        else:
+            params[ 'install_tool_dependencies' ] = False
         url = '/admin_toolshed/reinstall_repository'
-        self.visit_galaxy_url( url, params=params, checkbox_params=checkbox_params )
+        self.visit_galaxy_url( url, params=params, doseq=doseq )
         # Manually initiate the install process, as with installing a repository. See comments in the 
         # initiate_installation_process method for details.
         repository_ids = self.initiate_installation_process( install_tool_dependencies, 
@@ -1435,9 +1444,9 @@ class ShedTwillTestCase( TwillTestCase ):
         self.visit_galaxy_url( url )
         self.check_for_strings( strings, strings_not_displayed )
         
-    def visit_galaxy_url( self, url, params=None, checkbox_params=None ):
+    def visit_galaxy_url( self, url, params=None, doseq=False ):
         url = '%s%s' % ( self.galaxy_url, url )
-        self.visit_url( url, params=params, checkbox_params=checkbox_params )
+        self.visit_url( url, params=params, doseq=doseq )
         
     def wait_for_repository_installation( self, repository_ids ):
         final_states = [ galaxy_model.ToolShedRepository.installation_status.ERROR,

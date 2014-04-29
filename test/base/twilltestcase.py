@@ -1312,7 +1312,7 @@ class TwillTestCase( unittest.TestCase ):
             # Submit for refresh
             tc.submit( '___refresh_grouping___' )
 
-    def visit_url( self, url, params=None, checkbox_params=None, allowed_codes=[ 200 ] ):
+    def visit_url( self, url, params=None, doseq=False, allowed_codes=[ 200 ] ):
         if params is None:
             params = dict()
         parsed_url = urlparse( url )
@@ -1325,26 +1325,7 @@ class TwillTestCase( unittest.TestCase ):
                 key, value = query_parameter.split( '=' )
                 params[ key ] = value
         if params:
-            url += '?%s' % urllib.urlencode( params )
-        checked_boxes = dict()
-        unchecked_boxes = dict()
-        if checkbox_params is not None:
-            for checkbox_field in checkbox_params:
-                if checkbox_field in checked_boxes or checkbox_field in unchecked_boxes:
-                    continue
-                if asbool( checkbox_params[ checkbox_field ] ):
-                    checked_boxes[ checkbox_field ] = True
-                else:
-                    unchecked_boxes[ checkbox_field ] = False
-            # Any checkbox field that is found twice in the controller's incoming parameters is considered checked,
-            # while any field that only appears once is considered unchecked.
-            checkbox_params = '&'.join( [ urllib.urlencode( checked_boxes ), 
-                                          urllib.urlencode( checked_boxes ), 
-                                          urllib.urlencode( unchecked_boxes ) ] )
-            if params or parsed_url.query:
-                url += '&%s' % checkbox_params
-            else:
-                url += '?%s' % checkbox_params
+            url += '?%s' % urllib.urlencode( params, doseq=doseq )
         new_url = tc.go( url )
         return_code = tc.browser.get_code()
         assert return_code in allowed_codes, 'Invalid HTTP return code %s, allowed codes: %s' % \
@@ -1506,10 +1487,11 @@ class TwillTestCase( unittest.TestCase ):
         if in_group_ids:
             url_params[ 'in_groups' ] = ','.join( in_group_ids )
         if create_group_for_role == 'yes':
-            checkbox_params = dict( create_group_for_role='yes' )
+            url_params[ 'create_group_for_role' ] = [ 'yes', 'yes' ]
+            doseq = True
         else:
-            checkbox_params = None
-        self.visit_url( url, url_params, checkbox_params=checkbox_params )
+            doseq=False
+        self.visit_url( url, params=url_params, doseq=doseq )
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
         if private_role:
@@ -1561,7 +1543,7 @@ class TwillTestCase( unittest.TestCase ):
         self.check_page_for_string( check_str )
 
     # Tests associated with groups
-    def create_group( self, name='Group One', in_user_ids=[], in_role_ids=[], create_role_for_group='', strings_displayed=[] ):
+    def create_group( self, name='Group One', in_user_ids=[], in_role_ids=[], create_role_for_group=False, strings_displayed=[] ):
         """Create a new group"""
         url = "/admin/groups"
         params = dict( operation='create', create_group_button='Save', name=name )
@@ -1569,11 +1551,13 @@ class TwillTestCase( unittest.TestCase ):
             params [ 'in_users' ] = ','.join( in_user_ids )
         if in_role_ids:
             params[ 'in_roles' ] = ','.join( in_role_ids )
-        if create_role_for_group == 'yes':
-            checkbox_params = dict( create_role_for_group='yes' )
+        if create_role_for_group:
+            params[ 'create_role_for_group' ] = [ 'yes', 'yes' ]
+            doseq = True
         else:
-            checkbox_params = None
-        self.visit_url( url, params=params, checkbox_params=checkbox_params )
+            params[ 'create_role_for_group' ] = 'no'
+            doseq = False
+        self.visit_url( url, params=params, doseq=doseq )
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
         self.visit_url( "/admin/groups" )
@@ -2398,11 +2382,9 @@ class TwillTestCase( unittest.TestCase ):
         #tc.fv( "1", "do_action", format )
         #tc.submit( "action_on_datasets_button" )
         # Here's the new approach...
-        url = "%s/library_common/act_on_multiple_datasets?cntrller=%s&library_id=%s&do_action=%s" \
-            % ( self.url, cntrller, library_id, format )
-        for ldda_id in ldda_ids:
-            url += "&ldda_ids=%s" % ldda_id
-        self.visit_url( url )
+        params = dict( cntrller=cntrller, library_id=library_id, do_action=format, ldda_ids=ldda_ids )
+        url = "/library_common/act_on_multiple_datasets"
+        self.visit_url( url, params, doseq=True )
         tc.code( 200 )
         archive = self.write_temp_file( self.last_page(), suffix='.' + format )
         return archive
