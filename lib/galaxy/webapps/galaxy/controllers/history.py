@@ -456,7 +456,10 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                 eagerload_all( 'active_datasets.children' )
             ).get( id )
         assert history
-        assert history.user and ( history.user.id == trans.user.id ) or ( history.id == trans.history.id )
+        #TODO: formalize to trans.show_error
+        assert ( history.user and ( history.user.id == trans.user.id )
+            or ( history.id == trans.history.id )
+            or ( trans.user_is_admin() ) )
         # Resolve jobs and workflow invocations for the datasets in the history
         # items is filled with items (hdas, jobs, or workflows) that go at the
         # top level
