@@ -73,13 +73,13 @@
         // load grid viewer
         require(['mvc/grid/grid-view'], function(GridView) {
             $(function() {
-                gridView = new GridView( ${ h.to_json_string( self.grid_config() ) } );
+                gridView = new GridView( ${ h.to_json_string( self.get_grid_config() ) } );
             });
         });
     </script>
 </%def>
 
-<%def name="grid_config( embedded=False, insert=None )">
+<%def name="get_grid_config( embedded=False, insert=None )">
 ## generates dictionary
 <%
     self.grid_config = {
