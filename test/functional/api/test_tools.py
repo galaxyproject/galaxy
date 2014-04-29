@@ -82,15 +82,23 @@ class ToolsTestCase( api.ApiTestCase ):
         self.assertEqual( output1_content.strip(), "Cat1Test\nCat2Test" )
 
     def _cat1_outputs( self, history_id, inputs ):
-        create_response = self._run_cat1( history_id, inputs )
+        return self._run_outputs( self._run_cat1( history_id, inputs ) )
+
+    def _run_and_get_outputs( self, tool_id, history_id, inputs ):
+        return self._run_outputs( self._run( tool_id, history_id, inputs ) )
+
+    def _run_outputs( self, create_response ):
         self._assert_status_code_is( create_response, 200 )
         create = create_response.json()
         self._assert_has_keys( create, 'outputs' )
         return create[ 'outputs' ]
 
     def _run_cat1( self, history_id, inputs ):
+        return self._run( 'cat1', history_id, inputs )
+
+    def _run( self, tool_id, history_id, inputs ):
         payload = self.dataset_populator.run_tool_payload(
-            tool_id='cat1',
+            tool_id=tool_id,
             inputs=inputs,
             history_id=history_id,
         )
