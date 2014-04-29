@@ -9,7 +9,7 @@
         body {
             padding: 5px;
         }
-        body > .workflow, body > .toolForm {
+        body > .workflow, body > .toolForm, body > .copied-from {
             /*width           : 80%;*/
             margin-bottom   : 8px;
             /*margin-left     : auto;*/
@@ -95,6 +95,18 @@
             float: right;
         }
 
+        .copied-from {
+            border: 1px solid lightgrey;
+            border-width: 1px 1px 0px 1px;
+        }
+        .copied-from .header {
+            border-bottom: 1px solid lightgrey;
+            padding: 5px;
+        }
+        .copied-from .header .bold, .copied-from .header a {
+            color: #888;
+        }
+
         .dataset.hda {
             min-height  : 37px;
             border-width: 0px 0px 1px 0px;
@@ -113,6 +125,7 @@
     </style>
 </%def>
 
+## ----------------------------------------------------------------------------
 <%def name="javascripts()">
 <%
     self.js_app = 'display-structured'
@@ -174,12 +187,72 @@ elif entity_name == "WorkflowInvocation":
 %>
 </%def>
 
-<%def name="render_item_hda( hda, children  )">
+## ---------------------------------------------------------------------------- hda
+<%def name="render_item_hda( hda, children )">
 ## render hdas as a id'd stub for js to fill later
+
+    %if hda.copied_from_history_dataset_association:
+    ${ render_hda_copied_from_history( hda, children ) }
+
+    %elif hda.copied_from_library_dataset_dataset_association:
+    ${ render_hda_copied_from_library( hda, children ) }
+
+    %else:
     <% id = trans.security.encode_id( hda.id ) %>
     <div id="hda-${id}" class="dataset hda state-${hda.state}"></div>
+    %endif
 </%def>
 
+<%def name="render_hda_copied_from_history( hda, children )">
+## wrap an hda in info about the history from where it was copied
+    <% id = trans.security.encode_id( hda.id ) %>
+    <% history_id = trans.security.encode_id( hda.copied_from_history_dataset_association.history_id ) %>
+    <div class="copied-from copied-from-history">
+        <div class="header">
+            <div class="copied-from-dataset">
+                <span class="light">${ _( 'Copied from history dataset' ) + ':' }</span>
+                <span class="bold">${ hda.copied_from_history_dataset_association.name }</span>
+            </div>
+            <div class="copied-from-source">
+                <span class="light">${ _( 'History' ) + ':' }</span>
+                <span class="bold">
+                    <a href="${ h.url_for( controller='history', action='view', id=history_id ) }">
+                        ${ hda.copied_from_history_dataset_association.history.name }
+                    </a>
+                </span>
+            </div>
+        </div>
+        <div id="hda-${id}" class="dataset hda state-${hda.state}"></div>
+    </div>
+</%def>
+
+<%def name="render_hda_copied_from_library( hda, children )">
+## wrap an hda in info about the library from where it was copied
+    <% id = trans.security.encode_id( hda.id ) %>
+    <%
+        folder = hda.copied_from_library_dataset_dataset_association.library_dataset.folder
+        folder_id = 'F' + trans.security.encode_id( folder.id )
+    %>
+    <div class="copied-from copied-from-library">
+        <div class="header">
+            <div class="copied-from-dataset">
+                <span class="light">${ _( 'Copied from library dataset' ) + ':' }</span>
+                <span class="bold">${ hda.copied_from_library_dataset_dataset_association.name }</span>
+            </div>
+            <div class="copied-from-source">
+                <span class="light">${ _( 'Library' ) + ':' }</span>
+                <span class="bold">
+                    <a href="${ h.url_for( controller='library', action='list' ) + '#folders/F' + folder_id }">
+                        ${ library.name }
+                    </a>
+                </span>
+            </div>
+        </div>
+        <div id="hda-${id}" class="dataset hda state-${hda.state}"></div>
+    </div>
+</%def>
+
+## ---------------------------------------------------------------------------- job (and output hdas)
 <%def name="render_item_job( job, children  )">
 ## render a job (as a toolForm) and its children (hdas)
     <div class="tool toolForm">
@@ -220,6 +293,7 @@ elif entity_name == "WorkflowInvocation":
     </div>
 </%def>
 
+## ---------------------------------------------------------------------------- workflow (w/ jobs, hdas)
 <%def name="render_item_wf( wf, children )">
 ## render a workflow and its children (jobs/toolForms)
     <div class="workflow">
@@ -235,7 +309,7 @@ elif entity_name == "WorkflowInvocation":
     </div>
 </%def>
 
-## ----------------------------------------------------------------------------
+## ---------------------------------------------------------------------------- body
 ## render all items from a dictionary prov. by history/display_structured
 %for entity, children in items:
     ${render_item( entity, children )}
