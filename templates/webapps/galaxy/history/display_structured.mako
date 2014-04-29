@@ -243,7 +243,7 @@ elif entity_name == "WorkflowInvocation":
                 <span class="light">${ _( 'Library' ) + ':' }</span>
                 <span class="bold">
                     <a href="${ h.url_for( controller='library', action='list' ) + '#folders/F' + folder_id }">
-                        ${ library.name }
+                        ${ folder.name }
                     </a>
                 </span>
             </div>
