@@ -1158,20 +1158,15 @@ class SetupVirtualEnv( RecipeStep ):
         full_setup_command = "%s; %s; %s" % ( setup_command, activate_command, install_command )
         return_code = install_environment.handle_command( app, tool_dependency, install_dir, full_setup_command )
         if return_code:
+            log.error( "Failed to do setup_virtualenv install, exit code='%s'", return_code )
+            # would it be better to try to set env variables anway, instead of returning here?
             return tool_dependency, None, None
-        # Use raw strings so that python won't automatically unescape the quotes before passing the command
-        # to subprocess.Popen.
-        site_packages_command = \
-            r"""%s -c 'import os, sys; print os.path.join(sys.prefix, "lib", "python" + sys.version[:3], "site-packages")'""" % \
-            os.path.join( venv_directory, "bin", "python" )
-        output = install_environment.handle_command( app, tool_dependency, install_dir, site_packages_command, return_output=True )
-        if output.return_code:
-            return tool_dependency, None, None
-        if not os.path.exists( output.stdout ):
-            log.debug( "virtualenv's site-packages directory '%s' does not exist", output.stdout )
-            return tool_dependency, None, None
-        env_file_builder.append_line( name="PYTHONPATH", action="prepend_to", value=output.stdout )
+        site_packages_directory, site_packages_directory_list = self.__get_site_packages_directory( install_environment, app, tool_dependency, install_dir, python_cmd, venv_directory )
         env_file_builder.append_line( name="PATH", action="prepend_to", value=os.path.join( venv_directory, "bin" ) )
+        if site_packages_directory is None:
+            log.error( "virtualenv's site-packages directory '%s' does not exist", site_packages_directory_list )
+        else:
+            env_file_builder.append_line( name="PYTHONPATH", action="prepend_to", value=site_packages_directory )
         # The caller should check the status of the returned tool_dependency since this function does nothing
         # with the return_code.
         return_code = env_file_builder.return_code
@@ -1202,6 +1197,34 @@ class SetupVirtualEnv( RecipeStep ):
         action_dict[ 'requirements' ] = td_common_util.evaluate_template( action_elem.text or 'requirements.txt', install_dir )
         action_dict[ 'python' ] = action_elem.get( 'python', 'python' )
         return action_dict
+
+    def __get_site_packages_directory( self, install_environment, app, tool_dependency, install_dir, python_cmd, venv_directory ):
+        lib_dir = os.path.join( venv_directory, "lib" )
+        rval = os.path.join( lib_dir, python_cmd, 'site-packages' )
+        site_packages_directory_list = [ rval ]
+        if os.path.exists( rval ):
+            return ( rval, site_packages_directory_list )
+        for ( dirpath, dirnames, filenames ) in os.walk( lib_dir ):
+            for dirname in dirnames:
+                rval = os.path.join( lib_dir, dirname, 'site-packages' )
+                site_packages_directory_list.append( rval )
+                if os.path.exists( rval ):
+                    return ( rval, site_packages_directory_list )
+            break
+        # fall back to python call to get site packages
+        # FIXME: This is probably more robust?, but there is currently an issue with handling the output.stdout
+        # preventing the entire path from being included (it gets truncated)
+        # Use raw strings so that python won't automatically unescape the quotes before passing the command
+        # to subprocess.Popen.
+        for site_packages_command in [ r"""%s -c 'import site; site.getsitepackages()[0]'""" % \
+                                        os.path.join( venv_directory, "bin", "python" ), 
+                                      r"""%s -c 'import os, sys; print os.path.join( sys.prefix, "lib", "python" + sys.version[:3], "site-packages" )'""" % \
+                                        os.path.join( venv_directory, "bin", "python" ) ]:
+            output = install_environment.handle_command( app, tool_dependency, install_dir, site_packages_command, return_output=True )
+            site_packages_directory_list.append( output.stdout )
+            if not output.return_code and os.path.exists( output.stdout ):
+                return ( output.stdout, site_packages_directory_list )
+        return ( None, site_packages_directory_list )
 
 class ShellCommand( RecipeStep ):
 
