@@ -30,10 +30,10 @@ class RecipeStep( object ):
     """Abstract class that defines a standard format for handling recipe steps when installing packages."""
 
     def execute_step( self, app, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
-                      install_environment, work_dir, install_dir, current_dir=None, initial_download=False ):
+                      install_environment, work_dir, current_dir=None, initial_download=False ):
         raise "Unimplemented Method"
 
-    def prepare_step( self, app, tool_dependency, action_elem, action_dict, install_dir, is_binary_download ):
+    def prepare_step( self, app, tool_dependency, action_elem, action_dict, install_environment, is_binary_download ):
         raise "Unimplemented Method"
 
 
@@ -43,7 +43,7 @@ class AssertDirectoryExecutable( RecipeStep ):
         self.type = 'assert_directory_executable'
 
     def execute_step( self, app, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
-                      install_environment, work_dir, install_dir, current_dir=None, initial_download=False ):
+                      install_environment, work_dir, current_dir=None, initial_download=False ):
         """
         Make sure a symbolic link or directory on disk exists and is executable, but is not a file.
         Since this class is not used in the initial download stage, no recipe step filtering is
@@ -63,10 +63,10 @@ class AssertDirectoryExecutable( RecipeStep ):
                                                                                    remove_from_disk=False )
         return tool_dependency, None, None
 
-    def prepare_step( self, app, tool_dependency, action_elem, action_dict, install_dir, is_binary_download ):
+    def prepare_step( self, app, tool_dependency, action_elem, action_dict, install_environment, is_binary_download ):
         # <action type="assert_executable">$INSTALL_DIR/mira/my_file</action>
         if action_elem.text:
-            action_dict[ 'full_path' ] = td_common_util.evaluate_template( action_elem.text, install_dir )
+            action_dict[ 'full_path' ] = td_common_util.evaluate_template( action_elem.text, install_environment )
         return action_dict
 
 
@@ -76,7 +76,7 @@ class AssertDirectoryExists( RecipeStep ):
         self.type = 'assert_directory_exists'
 
     def execute_step( self, app, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
-                      install_environment, work_dir, install_dir, current_dir=None, initial_download=False ):
+                      install_environment, work_dir, current_dir=None, initial_download=False ):
         """
         Make sure a a symbolic link or directory on disk exists, but is not a file.  Since this
         class is not used in the initial download stage, no recipe step filtering is performed
@@ -96,10 +96,10 @@ class AssertDirectoryExists( RecipeStep ):
                                                                                    remove_from_disk=False )
         return tool_dependency, None, None
 
-    def prepare_step( self, app, tool_dependency, action_elem, action_dict, install_dir, is_binary_download ):
+    def prepare_step( self, app, tool_dependency, action_elem, action_dict, install_environment, is_binary_download ):
         # <action type="make_directory">$INSTALL_DIR/mira</action>
         if action_elem.text:
-            action_dict[ 'full_path' ] = td_common_util.evaluate_template( action_elem.text, install_dir )
+            action_dict[ 'full_path' ] = td_common_util.evaluate_template( action_elem.text, install_environment )
         return action_dict
 
 
@@ -109,7 +109,7 @@ class AssertFileExecutable( RecipeStep ):
         self.type = 'assert_file_executable'
 
     def execute_step( self, app, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
-                      install_environment, work_dir, install_dir, current_dir=None, initial_download=False ):
+                      install_environment, work_dir, current_dir=None, initial_download=False ):
         """
         Make sure a symbolic link or file on disk exists and is executable, but is not a directory.
         Since this class is not used in the initial download stage, no recipe step filtering is
@@ -129,10 +129,10 @@ class AssertFileExecutable( RecipeStep ):
                                                                                    remove_from_disk=False )
         return tool_dependency, None, None
 
-    def prepare_step( self, app, tool_dependency, action_elem, action_dict, install_dir, is_binary_download ):
+    def prepare_step( self, app, tool_dependency, action_elem, action_dict, install_environment, is_binary_download ):
         # <action type="assert_executable">$INSTALL_DIR/mira/my_file</action>
         if action_elem.text:
-            action_dict[ 'full_path' ] = td_common_util.evaluate_template( action_elem.text, install_dir )
+            action_dict[ 'full_path' ] = td_common_util.evaluate_template( action_elem.text, install_environment )
         return action_dict
 
 
@@ -142,7 +142,7 @@ class AssertFileExists( RecipeStep ):
         self.type = 'assert_file_exists'
 
     def execute_step( self, app, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
-                      install_environment, work_dir, install_dir, current_dir=None, initial_download=False ):
+                      install_environment, work_dir, current_dir=None, initial_download=False ):
         """
         Make sure a symbolic link or file on disk exists, but is not a directory.  Since this
         class is not used in the initial download stage, no recipe step filtering is performed
@@ -162,10 +162,10 @@ class AssertFileExists( RecipeStep ):
                                                                                    remove_from_disk=False )
         return tool_dependency, None, None
 
-    def prepare_step( self, app, tool_dependency, action_elem, action_dict, install_dir, is_binary_download ):
+    def prepare_step( self, app, tool_dependency, action_elem, action_dict, install_environment, is_binary_download ):
         # <action type="assert_on_path">$INSTALL_DIR/mira/my_file</action>
         if action_elem.text:
-            action_dict[ 'full_path' ] = td_common_util.evaluate_template( action_elem.text, install_dir )
+            action_dict[ 'full_path' ] = td_common_util.evaluate_template( action_elem.text, install_environment )
         return action_dict
 
 
@@ -175,7 +175,7 @@ class Autoconf( RecipeStep ):
         self.type = 'autoconf'
 
     def execute_step( self, app, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
-                      install_environment, work_dir, install_dir, current_dir=None, initial_download=False ):
+                      install_environment, work_dir, current_dir=None, initial_download=False ):
         """
         Handle configure, make and make install in a shell, allowing for configuration options.  Since this
         class is not used in the initial download stage, no recipe step filtering is performed here, and None
@@ -187,16 +187,19 @@ class Autoconf( RecipeStep ):
                 pre_cmd = './configure %s && make && make install' % configure_opts
             else:
                 pre_cmd = './configure --prefix=$INSTALL_DIR %s && make && make install' % configure_opts
-            cmd = install_environment.build_command( td_common_util.evaluate_template( pre_cmd, install_dir ) )
-            return_code = install_environment.handle_command( app, tool_dependency, install_dir, cmd )
+            cmd = install_environment.build_command( td_common_util.evaluate_template( pre_cmd, install_environment ) )
+            return_code = install_environment.handle_command( app=app,
+                                                              tool_dependency=tool_dependency,
+                                                              cmd=cmd,
+                                                              return_output=False )
             # The caller should check the status of the returned tool_dependency since this function
             # does nothing with the return_code.
             return tool_dependency, None, None
 
-    def prepare_step( self, app, tool_dependency, action_elem, action_dict, install_dir, is_binary_download ):
+    def prepare_step( self, app, tool_dependency, action_elem, action_dict, install_environment, is_binary_download ):
         # Handle configure, make and make install allow providing configuration options
         if action_elem.text:
-            configure_opts = td_common_util.evaluate_template( action_elem.text, install_dir )
+            configure_opts = td_common_util.evaluate_template( action_elem.text, install_environment )
             action_dict[ 'configure_opts' ] = configure_opts
         return action_dict
 
@@ -207,7 +210,7 @@ class ChangeDirectory( RecipeStep ):
         self.type = 'change_directory'
 
     def execute_step( self, app, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
-                      install_environment, work_dir, install_dir, current_dir=None, initial_download=False ):
+                      install_environment, work_dir, current_dir=None, initial_download=False ):
         """
         Change the working directory in a shell.  Since this class is not used in the initial download stage,
         no recipe step filtering is performed here and a None value is return for filtered_actions.  However,
@@ -225,7 +228,7 @@ class ChangeDirectory( RecipeStep ):
             dir = current_dir
         return tool_dependency, None, dir
 
-    def prepare_step( self, app, tool_dependency, action_elem, action_dict, install_dir, is_binary_download ):
+    def prepare_step( self, app, tool_dependency, action_elem, action_dict, install_environment, is_binary_download ):
         # <action type="change_directory">PHYLIP-3.6b</action>
         if action_elem.text:
             action_dict[ 'directory' ] = action_elem.text
@@ -238,7 +241,7 @@ class Chmod( RecipeStep ):
         self.type = 'chmod'
 
     def execute_step( self, app, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
-                      install_environment, work_dir, install_dir, current_dir=None, initial_download=False ):
+                      install_environment, work_dir, current_dir=None, initial_download=False ):
         """
         Change the mode setting for certain files in the installation environment.  Since this class is not
         used in the initial download stage, no recipe step filtering is performed here, and None values are
@@ -251,7 +254,7 @@ class Chmod( RecipeStep ):
                 log.debug( 'Invalid file %s specified, ignoring %s action.', target_file, action_type )
         return tool_dependency, None, None
 
-    def prepare_step( self, app, tool_dependency, action_elem, action_dict, install_dir, is_binary_download ):
+    def prepare_step( self, app, tool_dependency, action_elem, action_dict, install_environment, is_binary_download ):
         # Change the read, write, and execute bits on a file.
         # <action type="chmod">
         #   <file mode="750">$INSTALL_DIR/bin/faToTwoBit</file>
@@ -271,7 +274,7 @@ class Chmod( RecipeStep ):
             received_mode = int( file_elem.get( 'mode', 600 ), base=8 )
             # For added security, ensure that the setuid and setgid bits are not set.
             mode = received_mode & ~( stat.S_ISUID | stat.S_ISGID )
-            file = td_common_util.evaluate_template( file_elem.text, install_dir )
+            file = td_common_util.evaluate_template( file_elem.text, install_environment )
             chmod_tuple = ( file, mode )
             chmod_actions.append( chmod_tuple )
         if chmod_actions:
@@ -294,7 +297,7 @@ class DownloadBinary( RecipeStep ):
         return filtered_actions
 
     def execute_step( self, app, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
-                      install_environment, work_dir, install_dir, current_dir=None, initial_download=False ):
+                      install_environment, work_dir, current_dir=None, initial_download=False ):
         """
         Download a binary file.  If the value of initial_download is True, the recipe steps will be
         filtered and returned and the installation directory (i.e., dir) will be defined and returned.
@@ -326,14 +329,15 @@ class DownloadBinary( RecipeStep ):
         # any errors in the move step are correctly sent to the tool dependency error handler.
         if downloaded_filename and os.path.exists( os.path.join( work_dir, downloaded_filename ) ):
             if target_directory:
-                target_directory = os.path.realpath( os.path.normpath( os.path.join( install_dir, target_directory ) ) )
+                target_directory = os.path.realpath( os.path.normpath( os.path.join( install_environment.install_dir,
+                                                                                     target_directory ) ) )
                 # Make sure the target directory is not outside of $INSTALL_DIR.
-                if target_directory.startswith( os.path.realpath( install_dir ) ):
-                    full_path_to_dir = os.path.abspath( os.path.join( install_dir, target_directory ) )
+                if target_directory.startswith( os.path.realpath( install_environment.install_dir ) ):
+                    full_path_to_dir = os.path.abspath( os.path.join( install_environment.install_dir, target_directory ) )
                 else:
-                    full_path_to_dir = os.path.abspath( install_dir )
+                    full_path_to_dir = os.path.abspath( install_environment.install_dir )
             else:
-                full_path_to_dir = os.path.abspath( install_dir )
+                full_path_to_dir = os.path.abspath( install_environment.install_dir )
             td_common_util.move_file( current_dir=work_dir,
                                       source=downloaded_filename,
                                       destination=full_path_to_dir )
@@ -343,7 +347,7 @@ class DownloadBinary( RecipeStep ):
             return tool_dependency, filtered_actions, dir
         return tool_dependency, None, None
 
-    def prepare_step( self, app, tool_dependency, action_elem, action_dict, install_dir, is_binary_download ):
+    def prepare_step( self, app, tool_dependency, action_elem, action_dict, install_environment, is_binary_download ):
         platform_info_dict = tool_dependency_util.get_platform_info_dict()
         platform_info_dict[ 'name' ] = str( tool_dependency.name )
         platform_info_dict[ 'version' ] = str( tool_dependency.version )
@@ -370,7 +374,7 @@ class DownloadByUrl( RecipeStep ):
         self.type = 'download_by_url'
     
     def execute_step( self, app, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
-                      install_environment, work_dir, install_dir, current_dir=None, initial_download=False ):
+                      install_environment, work_dir, current_dir=None, initial_download=False ):
         """
         Download a file via HTTP.  If the value of initial_download is True, the recipe steps will be
         filtered and returned and the installation directory (i.e., dir) will be defined and returned.
@@ -392,7 +396,7 @@ class DownloadByUrl( RecipeStep ):
             downloaded_filename = os.path.split( url )[ -1 ]
         dir = td_common_util.url_download( work_dir, downloaded_filename, url, extract=True )
         if is_binary:
-            log_file = os.path.join( install_dir, td_common_util.INSTALLATION_LOG )
+            log_file = os.path.join( install_environment.install_dir, td_common_util.INSTALLATION_LOG )
             if os.path.exists( log_file ):
                 logfile = open( log_file, 'ab' )
             else:
@@ -404,7 +408,7 @@ class DownloadByUrl( RecipeStep ):
             return tool_dependency, filtered_actions, dir
         return tool_dependency, None, None
 
-    def prepare_step( self, app, tool_dependency, action_elem, action_dict, install_dir, is_binary_download ):
+    def prepare_step( self, app, tool_dependency, action_elem, action_dict, install_environment, is_binary_download ):
         # <action type="download_by_url">
         #     http://sourceforge.net/projects/samtools/files/samtools/0.1.18/samtools-0.1.18.tar.bz2
         # </action>
@@ -424,7 +428,7 @@ class DownloadFile( RecipeStep ):
         self.type = 'download_file'
 
     def execute_step( self, app, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
-                      install_environment, work_dir, install_dir, current_dir=None, initial_download=False ):
+                      install_environment, work_dir, current_dir=None, initial_download=False ):
         """
         Download a file.  If the value of initial_download is True, the recipe steps will be
         filtered and returned and the installation directory (i.e., dir) will be defined and returned.
@@ -449,7 +453,7 @@ class DownloadFile( RecipeStep ):
             return tool_dependency, filtered_actions, dir
         return tool_dependency, None, None
 
-    def prepare_step( self, app, tool_dependency, action_elem, action_dict, install_dir, is_binary_download ):
+    def prepare_step( self, app, tool_dependency, action_elem, action_dict, install_environment, is_binary_download ):
         # <action type="download_file">http://effectors.org/download/version/TTSS_GUI-1.0.1.jar</action>
         if action_elem.text:
             action_dict[ 'url' ] = action_elem.text
@@ -466,7 +470,7 @@ class MakeDirectory( RecipeStep ):
         self.type = 'make_directory'
 
     def execute_step( self, app, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
-                      install_environment, work_dir, install_dir, current_dir=None, initial_download=False ):
+                      install_environment, work_dir, current_dir=None, initial_download=False ):
         """
         Make a directory on disk.  Since this class is not used in the initial download stage, no recipe step
         filtering is performed here, and None values are always returned for filtered_actions and dir.
@@ -478,10 +482,10 @@ class MakeDirectory( RecipeStep ):
         td_common_util.make_directory( full_path=full_path )
         return tool_dependency, None, None
 
-    def prepare_step( self, app, tool_dependency, action_elem, action_dict, install_dir, is_binary_download ):
+    def prepare_step( self, app, tool_dependency, action_elem, action_dict, install_environment, is_binary_download ):
         # <action type="make_directory">$INSTALL_DIR/lib/python</action>
         if action_elem.text:
-            action_dict[ 'full_path' ] = td_common_util.evaluate_template( action_elem.text, install_dir )
+            action_dict[ 'full_path' ] = td_common_util.evaluate_template( action_elem.text, install_environment )
         return action_dict
 
 
@@ -491,7 +495,7 @@ class MakeInstall( RecipeStep ):
         self.type = 'make_install'
 
     def execute_step( self, app, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
-                      install_environment, work_dir, install_dir, current_dir=None, initial_download=False ):
+                      install_environment, work_dir, current_dir=None, initial_download=False ):
         """
         Execute a make_install command in a shell.  Since this class is not used in the initial download stage,
         no recipe step filtering is performed here, and None values are always returned for filtered_actions and dir.
@@ -500,15 +504,18 @@ class MakeInstall( RecipeStep ):
         with settings( warn_only=True ):
             make_opts = action_dict.get( 'make_opts', '' )
             cmd = install_environment.build_command( 'make %s && make install' % make_opts )
-            return_code = install_environment.handle_command( app, tool_dependency, install_dir, cmd )
+            return_code = install_environment.handle_command( app=app,
+                                                              tool_dependency=tool_dependency,
+                                                              cmd=cmd,
+                                                              return_output=False )
             # The caller should check the status of the returned tool_dependency since this function
             # does nothing with the return_code.
             return tool_dependency, None, None
 
-    def prepare_step( self, app, tool_dependency, action_elem, action_dict, install_dir, is_binary_download ):
+    def prepare_step( self, app, tool_dependency, action_elem, action_dict, install_environment, is_binary_download ):
         # make; make install; allow providing make options
         if action_elem.text:
-            make_opts = td_common_util.evaluate_template( action_elem.text, install_dir )
+            make_opts = td_common_util.evaluate_template( action_elem.text, install_environment )
             action_dict[ 'make_opts' ] = make_opts
         return action_dict
 
@@ -519,7 +526,7 @@ class MoveDirectoryFiles( RecipeStep ):
         self.type = 'move_directory_files'
 
     def execute_step( self, app, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
-                      install_environment, work_dir, install_dir, current_dir=None, initial_download=False ):
+                      install_environment, work_dir, current_dir=None, initial_download=False ):
         """
         Move a directory of files.  Since this class is not used in the initial download stage, no recipe step
         filtering is performed here, and None values are always returned for filtered_actions and dir.
@@ -529,13 +536,13 @@ class MoveDirectoryFiles( RecipeStep ):
                                              destination_dir=os.path.join( action_dict[ 'destination_directory' ] ) )
         return tool_dependency, None, None
 
-    def prepare_step( self, app, tool_dependency, action_elem, action_dict, install_dir, is_binary_download ):
+    def prepare_step( self, app, tool_dependency, action_elem, action_dict, install_environment, is_binary_download ):
         # <action type="move_directory_files">
         #     <source_directory>bin</source_directory>
         #     <destination_directory>$INSTALL_DIR/bin</destination_directory>
         # </action>
         for move_elem in action_elem:
-            move_elem_text = td_common_util.evaluate_template( move_elem.text, install_dir )
+            move_elem_text = td_common_util.evaluate_template( move_elem.text, install_environment )
             if move_elem_text:
                 action_dict[ move_elem.tag ] = move_elem_text
         return action_dict
@@ -547,7 +554,7 @@ class MoveFile( RecipeStep ):
         self.type = 'move_file'
 
     def execute_step( self, app, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
-                      install_environment, work_dir, install_dir, current_dir=None, initial_download=False ):
+                      install_environment, work_dir, current_dir=None, initial_download=False ):
         """
         Move a file on disk.  Since this class is not used in the initial download stage, no recipe step
         filtering is performed here, and None values are always returned for filtered_actions and dir.
@@ -558,13 +565,13 @@ class MoveFile( RecipeStep ):
                                   rename_to=action_dict[ 'rename_to' ] )
         return tool_dependency, None, None
 
-    def prepare_step( self, app, tool_dependency, action_elem, action_dict, install_dir, is_binary_download ):
+    def prepare_step( self, app, tool_dependency, action_elem, action_dict, install_environment, is_binary_download ):
         # <action type="move_file" rename_to="new_file_name">
         #     <source>misc/some_file</source>
         #     <destination>$INSTALL_DIR/bin</destination>
         # </action>
-        action_dict[ 'source' ] = td_common_util.evaluate_template( action_elem.find( 'source' ).text, install_dir )
-        action_dict[ 'destination' ] = td_common_util.evaluate_template( action_elem.find( 'destination' ).text, install_dir )
+        action_dict[ 'source' ] = td_common_util.evaluate_template( action_elem.find( 'source' ).text, install_environment )
+        action_dict[ 'destination' ] = td_common_util.evaluate_template( action_elem.find( 'destination' ).text, install_environment )
         action_dict[ 'rename_to' ] = action_elem.get( 'rename_to' )
         return action_dict
 
@@ -575,7 +582,7 @@ class SetEnvironment( RecipeStep ):
         self.type = 'set_environment'
 
     def execute_step( self, app, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
-                      install_environment, work_dir, install_dir, current_dir=None, initial_download=False ):
+                      install_environment, work_dir, current_dir=None, initial_download=False ):
         """
         Configure an install environment.  Since this class is not used in the initial download stage,
         no recipe step filtering is performed here, and None values are always returned for filtered_actions
@@ -583,13 +590,12 @@ class SetEnvironment( RecipeStep ):
         """
         # Currently the only action supported in this category is "environment_variable".
         cmds = install_environment.environment_commands( 'set_environment' )
-        env_var_dicts = action_dict[ 'environment_variable' ]
+        env_var_dicts = action_dict.get( 'environment_variable', [] )
         for env_var_dict in env_var_dicts:
             # Check for the presence of the $ENV[] key string and populate it if possible.
             env_var_dict = self.handle_environment_variables( app=app,
                                                               install_environment=install_environment,
                                                               tool_dependency=tool_dependency,
-                                                              install_dir=install_dir,
                                                               env_var_dict=env_var_dict,
                                                               set_prior_environment_commands=cmds )
             env_file_builder.append_line( **env_var_dict )
@@ -598,7 +604,7 @@ class SetEnvironment( RecipeStep ):
         return_code = env_file_builder.return_code
         return tool_dependency, None, None
 
-    def handle_environment_variables( self, app, install_environment, tool_dependency, install_dir, env_var_dict,
+    def handle_environment_variables( self, app, install_environment, tool_dependency, env_var_dict,
                                       set_prior_environment_commands ):
         """
         This method works with with a combination of three tool dependency definition tag sets, which are defined
@@ -681,7 +687,10 @@ class SetEnvironment( RecipeStep ):
             set_prior_environment_commands.append( 'echo %s: $%s' % ( inherited_env_var_name, inherited_env_var_name ) )
             command = ' ; '.join( set_prior_environment_commands )
             # Run the command and capture the output.
-            command_return = install_environment.handle_command( app, tool_dependency, install_dir, command, return_output=True )
+            command_return = install_environment.handle_command( app=app,
+                                                                 tool_dependency=tool_dependency,
+                                                                 cmd=command,
+                                                                 return_output=True )
             # And extract anything labeled with the name of the environment variable we're populating here.
             if '%s: ' % inherited_env_var_name in command_return:
                 environment_variable_value = command_return.split( '\n' )
@@ -697,7 +706,7 @@ class SetEnvironment( RecipeStep ):
             env_var_dict[ 'value' ] = env_var_value
         return env_var_dict
 
-    def prepare_step( self, app, tool_dependency, action_elem, action_dict, install_dir, is_binary_download ):
+    def prepare_step( self, app, tool_dependency, action_elem, action_dict, install_environment, is_binary_download ):
         # <action type="set_environment">
         #     <environment_variable name="PYTHONPATH" action="append_to">$INSTALL_DIR/lib/python</environment_variable>
         #     <environment_variable name="PATH" action="prepend_to">$INSTALL_DIR/bin</environment_variable>
@@ -705,7 +714,10 @@ class SetEnvironment( RecipeStep ):
         env_var_dicts = []
         for env_elem in action_elem:
             if env_elem.tag == 'environment_variable':
-                env_var_dict = td_common_util.create_env_var_dict( env_elem, tool_dependency_install_dir=install_dir )
+                env_var_dict = \
+                    td_common_util.create_env_var_dict( elem=env_elem,
+                                                        tool_dependency_install_dir=install_environment.install_dir,
+                                                        tool_shed_repository_install_dir=install_environment.tool_shed_repository_install_dir )
                 if env_var_dict:
                     env_var_dicts.append( env_var_dict )
         if env_var_dicts:
@@ -720,7 +732,7 @@ class SetEnvironmentForInstall( RecipeStep ):
         self.type = 'set_environment_for_install'
 
     def execute_step( self, app, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
-                      install_environment, work_dir, install_dir, current_dir=None, initial_download=False ):
+                      install_environment, work_dir, current_dir=None, initial_download=False ):
         """
         Configure an environment for compiling a package.  Since this class is not used in the initial
         download stage, no recipe step filtering is performed here, and None values are always returned
@@ -730,10 +742,11 @@ class SetEnvironmentForInstall( RecipeStep ):
         # dependency env.sh files, the environment setting in each of which will be injected into the
         # environment for all <action type="shell_command"> tags that follow this
         # <action type="set_environment_for_install"> tag set in the tool_dependencies.xml file.
-        install_environment.add_env_shell_file_paths( action_dict[ 'env_shell_file_paths' ] )
+        env_shell_file_paths = action_dict.get( 'env_shell_file_paths', [] )
+        install_environment.add_env_shell_file_paths( env_shell_file_paths )
         return tool_dependency, None, None
 
-    def prepare_step( self, app, tool_dependency, action_elem, action_dict, install_dir, is_binary_download ):
+    def prepare_step( self, app, tool_dependency, action_elem, action_dict, install_environment, is_binary_download ):
         # <action type="set_environment_for_install">
         #    <repository toolshed="http://localhost:9009/" name="package_numpy_1_7" owner="test" changeset_revision="c84c6a8be056">
         #        <package name="numpy" version="1.7.1" />
@@ -751,8 +764,7 @@ class SetEnvironmentForInstall( RecipeStep ):
                 env_shell_file_paths = td_common_util.get_env_shell_file_paths( app, env_elem )
                 if env_shell_file_paths:
                     all_env_shell_file_paths.extend( env_shell_file_paths )
-        if all_env_shell_file_paths:
-            action_dict[ 'env_shell_file_paths' ] = all_env_shell_file_paths
+        action_dict[ 'env_shell_file_paths' ] = all_env_shell_file_paths
         return action_dict
 
 
@@ -762,7 +774,7 @@ class SetupPerlEnvironment( RecipeStep ):
         self.type = 'setup_purl_environment'
 
     def execute_step( self, app, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
-                      install_environment, work_dir, install_dir, current_dir=None, initial_download=False ):
+                      install_environment, work_dir, current_dir=None, initial_download=False ):
         """
         Initialize the environment for installing Perl packages.  The class is called during the initial
         download stage when installing packages, so the value of initial_download will generally be True.
@@ -819,8 +831,11 @@ class SetupPerlEnvironment( RecipeStep ):
                                 return tool_dependency, filtered_actions, dir
                             return tool_dependency, None, None
                         with lcd( tmp_work_dir ):
-                            cmd = install_environment.build_command( td_common_util.evaluate_template( cmd, install_dir ) )
-                            return_code = install_environment.handle_command( app, tool_dependency, install_dir, cmd )
+                            cmd = install_environment.build_command( td_common_util.evaluate_template( cmd, install_environment ) )
+                            return_code = install_environment.handle_command( app=app,
+                                                                              tool_dependency=tool_dependency,
+                                                                              cmd=cmd,
+                                                                              return_output=False )
                             if return_code:
                                 if initial_download:
                                     return tool_dependency, filtered_actions, dir
@@ -829,8 +844,11 @@ class SetupPerlEnvironment( RecipeStep ):
                         # perl package from CPAN without version number.
                         # cpanm should be installed with the parent perl distribution, otherwise this will not work.
                         cmd += '''cpanm --local-lib=$INSTALL_DIR %s''' % ( perl_package )
-                        cmd = install_environment.build_command( td_common_util.evaluate_template( cmd, install_dir ) )
-                        return_code = install_environment.handle_command( app, tool_dependency, install_dir, cmd )
+                        cmd = install_environment.build_command( td_common_util.evaluate_template( cmd, install_environment ) )
+                        return_code = install_environment.handle_command( app=app,
+                                                                          tool_dependency=tool_dependency,
+                                                                          cmd=cmd,
+                                                                          return_output=False )
                         if return_code:
                             if initial_download:
                                 return tool_dependency, filtered_actions, dir
@@ -838,8 +856,12 @@ class SetupPerlEnvironment( RecipeStep ):
                 # Pull in perl dependencies (runtime).
                 env_file_builder.handle_action_shell_file_paths( env_file_builder, action_dict )
                 # Recursively add dependent PERL5LIB and PATH to env.sh & anything else needed.
-                env_file_builder.append_line( name="PERL5LIB", action="prepend_to", value=os.path.join( install_dir, 'lib', 'perl5' ) )
-                env_file_builder.append_line( name="PATH", action="prepend_to", value=os.path.join( install_dir, 'bin' ) )
+                env_file_builder.append_line( name="PERL5LIB",
+                                              action="prepend_to",
+                                              value=os.path.join( install_environment.install_dir, 'lib', 'perl5' ) )
+                env_file_builder.append_line( name="PATH",
+                                              action="prepend_to",
+                                              value=os.path.join( install_environment.install_dir, 'bin' ) )
                 return_code = env_file_builder.return_code
                 if return_code:
                     if initial_download:
@@ -849,7 +871,7 @@ class SetupPerlEnvironment( RecipeStep ):
             return tool_dependency, filtered_actions, dir
         return tool_dependency, None, None
 
-    def prepare_step( self, app, tool_dependency, action_elem, action_dict, install_dir, is_binary_download ):
+    def prepare_step( self, app, tool_dependency, action_elem, action_dict, install_environment, is_binary_download ):
         # setup a Perl environment.
         # <action type="setup_perl_environment">
         #       <repository name="package_perl_5_18" owner="bgruening">
@@ -887,7 +909,7 @@ class SetupREnvironment( RecipeStep ):
         self.type = 'setup_r_environment'
 
     def execute_step( self, app, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
-                      install_environment, work_dir, install_dir, current_dir=None, initial_download=False ):
+                      install_environment, work_dir, current_dir=None, initial_download=False ):
         """
         Initialize the environment for installing R packages.  The class is called during the initial
         download stage when installing packages, so the value of initial_download will generally be True.
@@ -931,8 +953,11 @@ class SetupREnvironment( RecipeStep ):
                     cmd = r'''PATH=$PATH:$R_HOME/bin; export PATH; R_LIBS=$INSTALL_DIR; export R_LIBS;
                         Rscript -e "install.packages(c('%s'),lib='$INSTALL_DIR', repos=NULL, dependencies=FALSE)"''' % \
                         ( str( tarball_name ) )
-                    cmd = install_environment.build_command( td_common_util.evaluate_template( cmd, install_dir ) )
-                    return_code = install_environment.handle_command( app, tool_dependency, install_dir, cmd )
+                    cmd = install_environment.build_command( td_common_util.evaluate_template( cmd, install_environment ) )
+                    return_code = install_environment.handle_command( app=app,
+                                                                      tool_dependency=tool_dependency,
+                                                                      cmd=cmd,
+                                                                      return_output=False )
                     if return_code:
                         if initial_download:
                             return tool_dependency, filtered_actions, dir
@@ -940,7 +965,7 @@ class SetupREnvironment( RecipeStep ):
                 # R libraries are installed to $INSTALL_DIR (install_dir), we now set the R_LIBS path to that directory
                 # Pull in R environment (runtime).
                 env_file_builder.handle_action_shell_file_paths( action_dict )
-                env_file_builder.append_line( name="R_LIBS", action="prepend_to", value=install_dir )
+                env_file_builder.append_line( name="R_LIBS", action="prepend_to", value=install_environment.install_dir )
                 return_code = env_file_builder.return_code
                 if return_code:
                     if initial_download:
@@ -950,7 +975,7 @@ class SetupREnvironment( RecipeStep ):
             return tool_dependency, filtered_actions, dir
         return tool_dependency, None, None
 
-    def prepare_step( self, app, tool_dependency, action_elem, action_dict, install_dir, is_binary_download ):
+    def prepare_step( self, app, tool_dependency, action_elem, action_dict, install_environment, is_binary_download ):
         # setup an R environment.
         # <action type="setup_r_environment">
         #       <repository name="package_r_3_0_1" owner="bgruening">
@@ -982,7 +1007,7 @@ class SetupRubyEnvironment( RecipeStep ):
         self.type = 'setup_ruby_environment'
 
     def execute_step( self, app, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
-                      install_environment, work_dir, install_dir, current_dir=None, initial_download=False ):
+                      install_environment, work_dir, current_dir=None, initial_download=False ):
         """
         Initialize the environment for installing Ruby packages.  The class is called during the initial
         download stage when installing packages, so the value of initial_download will generally be True.
@@ -1043,16 +1068,23 @@ class SetupRubyEnvironment( RecipeStep ):
                             # no version number given
                             cmd = '''PATH=$PATH:$RUBY_HOME/bin; export PATH; GEM_HOME=$INSTALL_DIR; export GEM_HOME;
                                 gem install %s''' % ( gem )
-                    cmd = install_environment.build_command( td_common_util.evaluate_template( cmd, install_dir ) )
-                    return_code = install_environment.handle_command( app, tool_dependency, install_dir, cmd )
+                    cmd = install_environment.build_command( td_common_util.evaluate_template( cmd, install_environment ) )
+                    return_code = install_environment.handle_command( app=app,
+                                                                      tool_dependency=tool_dependency,
+                                                                      cmd=cmd,
+                                                                      return_output=False )
                     if return_code:
                         if initial_download:
                             return tool_dependency, filtered_actions, dir
                         return tool_dependency, None, None
                 # Pull in ruby dependencies (runtime).
                 env_file_builder.handle_action_shell_file_paths( env_file_builder, action_dict )
-                env_file_builder.append_line( name="GEM_PATH", action="prepend_to", value=install_dir )
-                env_file_builder.append_line( name="PATH", action="prepend_to", value=os.path.join(install_dir, 'bin') )
+                env_file_builder.append_line( name="GEM_PATH",
+                                              action="prepend_to",
+                                              value=install_environment.install_dir )
+                env_file_builder.append_line( name="PATH",
+                                              action="prepend_to",
+                                              value=os.path.join( install_environment.install_dir, 'bin' ) )
                 return_code = env_file_builder.return_code
                 if return_code:
                     if initial_download:
@@ -1062,7 +1094,7 @@ class SetupRubyEnvironment( RecipeStep ):
             return tool_dependency, filtered_actions, dir
         return tool_dependency, None, None
 
-    def prepare_step( self, app, tool_dependency, action_elem, action_dict, install_dir, is_binary_download ):
+    def prepare_step( self, app, tool_dependency, action_elem, action_dict, install_environment, is_binary_download ):
         # setup a Ruby environment.
         # <action type="setup_ruby_environment">
         #       <repository name="package_ruby_2_0" owner="bgruening">
@@ -1109,7 +1141,7 @@ class SetupVirtualEnv( RecipeStep ):
         self.type = 'setup_virtualenv'
 
     def execute_step( self, app, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
-                      install_environment, work_dir, install_dir, current_dir=None, initial_download=False ):
+                      install_environment, work_dir, current_dir=None, initial_download=False ):
         """
         Initialize a virtual environment for installing packages.  If initial_download is True, the recipe
         steps will be filtered and returned and the installation directory (i.e., dir) will be defined and
@@ -1124,15 +1156,15 @@ class SetupVirtualEnv( RecipeStep ):
             log.debug( 'Unable to install virtualenv' )
             return tool_dependency, None, None
         requirements = action_dict[ 'requirements' ]
-        if os.path.exists( os.path.join( install_dir, requirements ) ):
+        if os.path.exists( os.path.join( install_environment.install_dir, requirements ) ):
             # requirements specified as path to a file
             requirements_path = requirements
         else:
             # requirements specified directly in XML, create a file with these for pip.
-            requirements_path = os.path.join( install_dir, "requirements.txt" )
+            requirements_path = os.path.join( install_environment.install_dir, "requirements.txt" )
             with open( requirements_path, "w" ) as f:
                 f.write( requirements )
-        venv_directory = os.path.join( install_dir, "venv" )
+        venv_directory = os.path.join( install_environment.install_dir, "venv" )
         python_cmd = action_dict[ 'python' ]
         # TODO: Consider making --no-site-packages optional.
         setup_command = "%s %s/virtualenv.py --no-site-packages '%s'" % ( python_cmd, venv_src_directory, venv_directory )
@@ -1140,7 +1172,10 @@ class SetupVirtualEnv( RecipeStep ):
         # and well defined behavior in bash/zsh.
         activate_command = "POSIXLY_CORRECT=1; . %s" % os.path.join( venv_directory, "bin", "activate" )
         if action_dict[ 'use_requirements_file' ]:
-            install_command = "python '%s' install -r '%s' --log '%s'" % ( os.path.join( venv_directory, "bin", "pip" ), requirements_path, os.path.join( install_dir, 'pip_install.log' ) )
+            install_command = "python '%s' install -r '%s' --log '%s'" % \
+                ( os.path.join( venv_directory, "bin", "pip" ),
+                  requirements_path,
+                  os.path.join( install_environment.install_dir, 'pip_install.log' ) )
         else:
             install_command = ''
             with open( requirements_path, "rb" ) as f:
@@ -1150,18 +1185,29 @@ class SetupVirtualEnv( RecipeStep ):
                         break
                     line = line.strip()
                     if line:
-                        line_install_command = "python '%s' install %s --log '%s'" % ( os.path.join( venv_directory, "bin", "pip" ), line, os.path.join( install_dir, 'pip_install_%s.log' % ( line ) ) )
+                        line_install_command = "python '%s' install %s --log '%s'" % \
+                            ( os.path.join( venv_directory, "bin", "pip" ),
+                              line,
+                              os.path.join( install_environment.install_dir, 'pip_install_%s.log' % ( line ) ) )
                         if not install_command:
                             install_command = line_install_command
                         else:
                             install_command = "%s && %s" % ( install_command, line_install_command )
         full_setup_command = "%s; %s; %s" % ( setup_command, activate_command, install_command )
-        return_code = install_environment.handle_command( app, tool_dependency, install_dir, full_setup_command )
+        return_code = install_environment.handle_command( app=app,
+                                                          tool_dependency=tool_dependency,
+                                                          cmd=full_setup_command,
+                                                          return_output=False )
         if return_code:
             log.error( "Failed to do setup_virtualenv install, exit code='%s'", return_code )
             # would it be better to try to set env variables anway, instead of returning here?
             return tool_dependency, None, None
-        site_packages_directory, site_packages_directory_list = self.__get_site_packages_directory( install_environment, app, tool_dependency, install_dir, python_cmd, venv_directory )
+        site_packages_directory, site_packages_directory_list = \
+            self.__get_site_packages_directory( install_environment,
+                                                app,
+                                                tool_dependency,
+                                                python_cmd,
+                                                venv_directory )
         env_file_builder.append_line( name="PATH", action="prepend_to", value=os.path.join( venv_directory, "bin" ) )
         if site_packages_directory is None:
             log.error( "virtualenv's site-packages directory '%s' does not exist", site_packages_directory_list )
@@ -1185,7 +1231,7 @@ class SetupVirtualEnv( RecipeStep ):
                 shutil.move( full_path_to_dir, venv_dir )
         return True
 
-    def prepare_step( self, app, tool_dependency, action_elem, action_dict, install_dir, is_binary_download ):
+    def prepare_step( self, app, tool_dependency, action_elem, action_dict, install_environment, is_binary_download ):
         # <action type="setup_virtualenv" />
         ## Install requirements from file requirements.txt of downloaded bundle - or -
         # <action type="setup_virtualenv">tools/requirements.txt</action>
@@ -1194,11 +1240,11 @@ class SetupVirtualEnv( RecipeStep ):
         # lxml==2.3.0</action>
         ## Manually specify contents of requirements.txt file to create dynamically.
         action_dict[ 'use_requirements_file' ] = asbool( action_elem.get( 'use_requirements_file', True ) )
-        action_dict[ 'requirements' ] = td_common_util.evaluate_template( action_elem.text or 'requirements.txt', install_dir )
+        action_dict[ 'requirements' ] = td_common_util.evaluate_template( action_elem.text or 'requirements.txt', install_environment )
         action_dict[ 'python' ] = action_elem.get( 'python', 'python' )
         return action_dict
 
-    def __get_site_packages_directory( self, install_environment, app, tool_dependency, install_dir, python_cmd, venv_directory ):
+    def __get_site_packages_directory( self, install_environment, app, tool_dependency, python_cmd, venv_directory ):
         lib_dir = os.path.join( venv_directory, "lib" )
         rval = os.path.join( lib_dir, python_cmd, 'site-packages' )
         site_packages_directory_list = [ rval ]
@@ -1220,7 +1266,10 @@ class SetupVirtualEnv( RecipeStep ):
                                         os.path.join( venv_directory, "bin", "python" ), 
                                       r"""%s -c 'import os, sys; print os.path.join( sys.prefix, "lib", "python" + sys.version[:3], "site-packages" )'""" % \
                                         os.path.join( venv_directory, "bin", "python" ) ]:
-            output = install_environment.handle_command( app, tool_dependency, install_dir, site_packages_command, return_output=True )
+            output = install_environment.handle_command( app=app,
+                                                         tool_dependency=tool_dependency,
+                                                         cmd=site_packages_command,
+                                                         return_output=True )
             site_packages_directory_list.append( output.stdout )
             if not output.return_code and os.path.exists( output.stdout ):
                 return ( output.stdout, site_packages_directory_list )
@@ -1232,7 +1281,7 @@ class ShellCommand( RecipeStep ):
         self.type = 'shell_command'
 
     def execute_step( self, app, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
-                      install_environment, work_dir, install_dir, current_dir=None, initial_download=False ):
+                      install_environment, work_dir, current_dir=None, initial_download=False ):
         """
         Execute a command in a shell.  If the value of initial_download is True, the recipe steps will
         be filtered and returned and the installation directory (i.e., dir) will be defined and returned.
@@ -1252,14 +1301,17 @@ class ShellCommand( RecipeStep ):
         with settings( warn_only=True ):
             # The caller should check the status of the returned tool_dependency since this function
             # does nothing with return_code.
-            return_code = install_environment.handle_command( app, tool_dependency, install_dir, cmd )
+            return_code = install_environment.handle_command( app=app,
+                                                              tool_dependency=tool_dependency,
+                                                              cmd=cmd,
+                                                              return_output=False )
             if initial_download:
                 return tool_dependency, filtered_actions, dir
             return tool_dependency, None, None
 
-    def prepare_step( self, app, tool_dependency, action_elem, action_dict, install_dir, is_binary_download ):
+    def prepare_step( self, app, tool_dependency, action_elem, action_dict, install_environment, is_binary_download ):
         # <action type="shell_command">make</action>
-        action_elem_text = td_common_util.evaluate_template( action_elem.text, install_dir )
+        action_elem_text = td_common_util.evaluate_template( action_elem.text, install_environment )
         if action_elem_text:
             action_dict[ 'command' ] = action_elem_text
         return action_dict
@@ -1271,7 +1323,7 @@ class TemplateCommand( RecipeStep ):
         self.type = 'template_command'
 
     def execute_step( self, app, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
-                      install_environment, work_dir, install_dir, current_dir=None, initial_download=False ):
+                      install_environment, work_dir, current_dir=None, initial_download=False ):
         """
         Execute a template command in a shell.  If the value of initial_download is True, the recipe steps
         will be filtered and returned and the installation directory (i.e., dir) will be defined and returned.
@@ -1280,7 +1332,8 @@ class TemplateCommand( RecipeStep ):
         """
         env_vars = dict()
         env_vars = install_environment.environment_dict()
-        env_vars.update( td_common_util.get_env_var_values( install_dir ) )
+        tool_shed_repository = tool_depenedncy.tool_shed_repository
+        env_vars.update( td_common_util.get_env_var_values( install_environment ) )
         language = action_dict[ 'language' ]
         with settings( warn_only=True, **env_vars ):
             if language == 'cheetah':
@@ -1288,10 +1341,13 @@ class TemplateCommand( RecipeStep ):
                 cmd = fill_template( '#from fabric.api import env\n%s' % action_dict[ 'command' ], context=env_vars )
                 # The caller should check the status of the returned tool_dependency since this function
                 # does nothing with return_code.
-                return_code = install_environment.handle_command( app, tool_dependency, install_dir, cmd )
+                return_code = install_environment.handle_command( app=app,
+                                                                  tool_dependency=tool_dependency,
+                                                                  cmd=cmd,
+                                                                  return_output=False )
             return tool_dependency, None, None
 
-    def prepare_step( self, app, tool_dependency, action_elem, action_dict, install_dir, is_binary_download ):
+    def prepare_step( self, app, tool_dependency, action_elem, action_dict, install_environment, is_binary_download ):
         # Default to Cheetah as it's the first template language supported.
         language = action_elem.get( 'language', 'cheetah' ).lower()
         if language == 'cheetah':

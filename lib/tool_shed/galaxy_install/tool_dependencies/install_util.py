@@ -8,6 +8,7 @@ import tempfile
 import fabric_util
 import td_common_util
 from tool_shed.galaxy_install.tool_dependencies.recipe.recipe_manager import EnvFileBuilder
+from tool_shed.galaxy_install.tool_dependencies.recipe.recipe_manager import InstallEnvironment
 from tool_shed.galaxy_install.tool_dependencies.recipe.recipe_manager import RecipeManager
 import tool_shed.util.shed_util_common as suc
 from tool_shed.util import common_util
@@ -161,9 +162,6 @@ def get_tool_shed_repository_by_tool_shed_name_owner_changeset_revision( app, to
                 return tool_shed_repository
     return None
 
-def get_tool_shed_repository_install_dir( app, tool_shed_repository ):
-    return os.path.abspath( tool_shed_repository.repo_files_directory( app ) )
-
 def get_updated_changeset_revisions_from_tool_shed( app, tool_shed_url, name, owner, changeset_revision ):
     """
     Get all appropriate newer changeset revisions for the repository defined by
@@ -291,11 +289,11 @@ def handle_complex_repository_dependency_for_package( app, elem, package_name, p
         raise Exception( message )
     return handled_tool_dependencies
 
-def install_and_build_package_via_fabric( app, tool_dependency, actions_dict ):
+def install_and_build_package_via_fabric( app, tool_shed_repository, tool_dependency, actions_dict ):
     sa_session = app.install_model.context
     try:
         # There is currently only one fabric method.
-        tool_dependency = fabric_util.install_and_build_package( app, tool_dependency, actions_dict )
+        tool_dependency = fabric_util.install_and_build_package( app, tool_shed_repository, tool_dependency, actions_dict )
     except Exception, e:
         log.exception( 'Error installing tool dependency %s version %s.', str( tool_dependency.name ), str( tool_dependency.version ) )
         # Since there was an installation error, update the tool dependency status to Error. The remove_installation_path option must
@@ -369,13 +367,14 @@ def install_package( app, elem, tool_shed_repository, tool_dependencies=None, fr
                     can_install_tool_dependency = True
                 if can_install_tool_dependency:
                     package_install_version = package_elem.get( 'version', '1.0' )
+                    status = app.install_model.ToolDependency.installation_status.INSTALLING
                     tool_dependency = \
                         tool_dependency_util.create_or_update_tool_dependency( app=app,
                                                                                tool_shed_repository=tool_shed_repository,
                                                                                name=package_name,
                                                                                version=package_version,
                                                                                type='package',
-                                                                               status=app.install_model.ToolDependency.installation_status.INSTALLING,
+                                                                               status=status,
                                                                                set_status=True )
                     # Get the information about the current platform in case the tool dependency definition includes tag sets
                     # for installing compiled binaries.
@@ -412,11 +411,12 @@ def install_package( app, elem, tool_shed_repository, tool_dependencies=None, fr
                                             if binary_installed:
                                                 continue
                                             # No platform-specific <actions> recipe has yet resulted in a successful installation.
-                                            tool_dependency = install_via_fabric( app, 
-                                                                                  tool_dependency, 
-                                                                                  install_dir, 
-                                                                                  package_name=package_name, 
-                                                                                  actions_elem=actions_elem, 
+                                            tool_dependency = install_via_fabric( app,
+                                                                                  tool_shed_repository,
+                                                                                  tool_dependency,
+                                                                                  install_dir,
+                                                                                  package_name=package_name,
+                                                                                  actions_elem=actions_elem,
                                                                                   action_elem=None )
                                             if tool_dependency.status == app.install_model.ToolDependency.installation_status.INSTALLED:
                                                 # If an <actions> tag was found that matches the current platform, and the
@@ -453,31 +453,34 @@ def install_package( app, elem, tool_shed_repository, tool_dependencies=None, fr
                                                     # tag set that defines the recipe to install and compile from source.
                                                     log.debug( 'Proceeding with install and compile recipe for tool dependency %s.' % \
                                                                str( tool_dependency.name ) )
-                                                    tool_dependency = install_via_fabric( app, 
-                                                                                          tool_dependency, 
-                                                                                          install_dir, 
-                                                                                          package_name=package_name, 
-                                                                                          actions_elem=actions_elem, 
+                                                    tool_dependency = install_via_fabric( app,
+                                                                                          tool_shed_repository,
+                                                                                          tool_dependency,
+                                                                                          install_dir,
+                                                                                          package_name=package_name,
+                                                                                          actions_elem=actions_elem,
                                                                                           action_elem=None )
                                         if actions_elem.tag == 'action' and tool_dependency.status != app.install_model.ToolDependency.installation_status.ERROR:
                                             # If the tool dependency is not in an error state, perform any final actions that have been
                                             # defined within the actions_group tag set, but outside of an <actions> tag, which defines
                                             # the recipe for installing and compiling from source.
-                                            tool_dependency = install_via_fabric( app, 
-                                                                                  tool_dependency, 
-                                                                                  install_dir, 
-                                                                                  package_name=package_name, 
-                                                                                  actions_elem=None, 
+                                            tool_dependency = install_via_fabric( app,
+                                                                                  tool_shed_repository,
+                                                                                  tool_dependency,
+                                                                                  install_dir,
+                                                                                  package_name=package_name,
+                                                                                  actions_elem=None,
                                                                                   action_elem=actions_elem )
                                 else:
                                     # Checks for "os" and "architecture" attributes  are not made for any <actions> tag sets outside of
                                     # an <actions_group> tag set.  If the attributes are defined, they will be ignored. All <actions> tags
                                     # outside of an <actions_group> tag set will always be processed.
-                                    tool_dependency = install_via_fabric( app, 
-                                                                          tool_dependency, 
-                                                                          install_dir, 
-                                                                          package_name=package_name, 
-                                                                          actions_elem=actions_elems, 
+                                    tool_dependency = install_via_fabric( app,
+                                                                          tool_shed_repository,
+                                                                          tool_dependency,
+                                                                          install_dir,
+                                                                          package_name=package_name,
+                                                                          actions_elem=actions_elems,
                                                                           action_elem=None )
                                     if tool_dependency.status != app.install_model.ToolDependency.installation_status.ERROR:
                                         log.debug( 'Tool dependency %s version %s has been installed in %s.' % \
@@ -509,7 +512,7 @@ def install_package( app, elem, tool_shed_repository, tool_dependencies=None, fr
             #    print 'Installing tool dependencies via fabric script ', custom_fabfile_path
     return tool_dependency
 
-def install_via_fabric( app, tool_dependency, install_dir, package_name=None, custom_fabfile_path=None,
+def install_via_fabric( app, tool_shed_repository, tool_dependency, install_dir, package_name=None, custom_fabfile_path=None,
                         actions_elem=None, action_elem=None, **kwd ):
     """
     Parse a tool_dependency.xml file's <actions> tag set to gather information for installation using the
@@ -534,25 +537,28 @@ def install_via_fabric( app, tool_dependency, install_dir, package_name=None, cu
     else:
         elems = []
     recipe_manager = RecipeManager()
+    tool_shed_repository_install_dir = fabric_util.get_tool_shed_repository_install_dir( app, tool_shed_repository )
+    install_environment = InstallEnvironment( tool_shed_repository_install_dir, install_dir )
     for action_elem in elems:
         # Make sure to skip all comments, since they are now included in the XML tree.
         if action_elem.tag != 'action':
             continue
         action_dict = {}
-        action_type = action_elem.get( 'type', 'shell_command' )
-        action_dict = recipe_manager.prepare_step( app=app,
-                                                   tool_dependency=tool_dependency,
-                                                   action_type=action_type,
-                                                   action_elem=action_elem,
-                                                   action_dict=action_dict,
-                                                   install_dir=install_dir,
-                                                   is_binary_download=is_binary_download )
-        action_tuple = ( action_type, action_dict )
-        if action_type == 'set_environment':
-            if action_tuple not in actions:
+        action_type = action_elem.get( 'type', None )
+        if action_type is not None:
+            action_dict = recipe_manager.prepare_step( app=app,
+                                                       tool_dependency=tool_dependency,
+                                                       action_type=action_type,
+                                                       action_elem=action_elem,
+                                                       action_dict=action_dict,
+                                                       install_environment=install_environment,
+                                                       is_binary_download=is_binary_download )
+            action_tuple = ( action_type, action_dict )
+            if action_type == 'set_environment':
+                if action_tuple not in actions:
+                    actions.append( action_tuple )
+            else:
                 actions.append( action_tuple )
-        else:
-            actions.append( action_tuple )
     if actions:
         actions_dict[ 'actions' ] = actions
     if custom_fabfile_path is not None:
@@ -560,7 +566,7 @@ def install_via_fabric( app, tool_dependency, install_dir, package_name=None, cu
         # execute_custom_fabric_script( app, elem, custom_fabfile_path, install_dir, package_name=package_name )
         raise Exception( 'Tool dependency installation using proprietary fabric scripts is not yet supported.' )
     else:
-        tool_dependency = install_and_build_package_via_fabric( app, tool_dependency, actions_dict )
+        tool_dependency = install_and_build_package_via_fabric( app, tool_shed_repository, tool_dependency, actions_dict )
     return tool_dependency
 
 def execute_custom_fabric_script( app, elem, custom_fabfile_path, install_dir, package_name=None, **kwd ):
@@ -622,8 +628,9 @@ def run_subprocess( app, cmd ):
 
 def set_environment( app, elem, tool_shed_repository, attr_tups_of_dependencies_for_install ):
     """
-    Create a ToolDependency to set an environment variable.  This is different from the process used to set an environment variable that is associated
-    with a package.  An example entry in a tool_dependencies.xml file is::
+    Create a ToolDependency to set an environment variable.  This is different from the process used to
+    set an environment variable that is associated with a package.  An example entry in a tool_dependencies.xml
+    file is::
 
         <set_environment version="1.0">
             <environment_variable name="R_SCRIPT_PATH" action="set_to">$REPOSITORY_INSTALL_DIR</environment_variable>
@@ -655,8 +662,10 @@ def set_environment( app, elem, tool_shed_repository, attr_tups_of_dependencies_
                                                                           tool_dependency_type='set_environment',
                                                                           tool_dependency_name=env_var_name,
                                                                           tool_dependency_version=None )
-                tool_shed_repository_install_dir = get_tool_shed_repository_install_dir( app, tool_shed_repository )
-                env_var_dict = td_common_util.create_env_var_dict( env_var_elem, tool_shed_repository_install_dir=tool_shed_repository_install_dir )
+                tool_shed_repository_install_dir = fabric_util.get_tool_shed_repository_install_dir( app, tool_shed_repository )
+                env_var_dict = td_common_util.create_env_var_dict( elem=env_var_elem,
+                                                                   tool_dependency_install_dir=install_dir,
+                                                                   tool_shed_repository_install_dir=tool_shed_repository_install_dir )
                 if env_var_dict:
                     if not os.path.exists( install_dir ):
                         os.makedirs( install_dir )

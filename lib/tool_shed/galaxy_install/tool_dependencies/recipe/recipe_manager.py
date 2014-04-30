@@ -153,11 +153,18 @@ class InstallEnvironment( object ):
     """Object describing the environment built up as part of the process of building and installing a package."""
 
 
-    def __init__( self ):
+    def __init__( self, tool_shed_repository_install_dir, install_dir  ):
+        """
+        The value of the received tool_shed_repository_install_dir is the root installation directory
+        of the repository containing the tool dependency, and the value of the received install_dir is
+        the root installation directory of the tool dependency.
+        """
         self.env_shell_file_paths = []
+        self.install_dir = install_dir
+        self.tool_shed_repository_install_dir = tool_shed_repository_install_dir
 
-    def __call__( self, install_dir ):
-        with settings( warn_only=True, **td_common_util.get_env_var_values( install_dir ) ):
+    def __call__( self ):
+        with settings( warn_only=True, **td_common_util.get_env_var_values( self ) ):
             with prefix( self.__setup_environment() ):
                 yield
 
@@ -233,12 +240,12 @@ class InstallEnvironment( object ):
                 log.debug( 'Invalid file %s specified, ignoring template_command action.' % str( env_shell_file_path ) )
         return env_vars
 
-    def handle_command( self, app, tool_dependency, install_dir, cmd, return_output=False ):
+    def handle_command( self, app, tool_dependency, cmd, return_output=False ):
         """Handle a command and log the results."""
         context = app.install_model.context
         command = str( cmd )
         output = self.handle_complex_command( command )
-        self.log_results( cmd, output, os.path.join( install_dir, td_common_util.INSTALLATION_LOG ) )
+        self.log_results( cmd, output, os.path.join( self.install_dir, td_common_util.INSTALLATION_LOG ) )
         stdout = output.stdout
         stderr = output.stderr
         if len( stdout ) > DATABASE_MAX_STRING_SIZE:
@@ -395,7 +402,7 @@ class RecipeManager( object ):
         return self.step_handlers_by_type.get( type, None )
 
     def execute_step( self, app, tool_dependency, package_name, actions, action_type, action_dict, filtered_actions,
-                      env_file_builder, install_environment, work_dir, install_dir, current_dir=None, initial_download=False ):
+                      env_file_builder, install_environment, work_dir, current_dir=None, initial_download=False ):
         if actions:
             step_handler = self.get_step_handler_by_type( action_type )
             tool_dependency, filtered_actions, dir = step_handler.execute_step( app=app,
@@ -407,7 +414,6 @@ class RecipeManager( object ):
                                                                                 env_file_builder=env_file_builder,
                                                                                 install_environment=install_environment,
                                                                                 work_dir=work_dir,
-                                                                                install_dir=install_dir,
                                                                                 current_dir=current_dir,
                                                                                 initial_download=initial_download )
         else:
@@ -439,7 +445,7 @@ class RecipeManager( object ):
                                       template_command=step_handler.TemplateCommand() )
         return step_handlers_by_type
 
-    def prepare_step( self, app, tool_dependency, action_type, action_elem, action_dict, install_dir, is_binary_download ):
+    def prepare_step( self, app, tool_dependency, action_type, action_elem, action_dict, install_environment, is_binary_download ):
         """
         Prepare the recipe step for later execution.  This generally alters the received action_dict
         with new information needed during this step's execution.
@@ -450,7 +456,7 @@ class RecipeManager( object ):
                                                      tool_dependency=tool_dependency,
                                                      action_elem=action_elem,
                                                      action_dict=action_dict,
-                                                     install_dir=install_dir,
+                                                     install_environment=install_environment,
                                                      is_binary_download=is_binary_download )
         return action_dict
 

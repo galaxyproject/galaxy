@@ -187,9 +187,10 @@ def create_env_var_dict( elem, tool_dependency_install_dir=None, tool_shed_repos
             env_var_text = elem.text.replace( '$INSTALL_DIR', tool_shed_repository_install_dir )
             return dict( name=env_var_name, action=env_var_action, value=env_var_text )
     if elem.text:
-        # Allow for environment variables that contain neither REPOSITORY_INSTALL_DIR nor INSTALL_DIR since there may be command line
-        # parameters that are tuned for a Galaxy instance.  Allowing them to be set in one location rather than being hard coded into
-        # each tool config is the best approach.  For example:
+        # Allow for environment variables that contain neither REPOSITORY_INSTALL_DIR nor INSTALL_DIR
+        # since there may be command line parameters that are tuned for a Galaxy instance.  Allowing them
+        # to be set in one location rather than being hard coded into each tool config is the best approach.
+        # For example:
         # <environment_variable name="GATK2_SITE_OPTIONS" action="set_to">
         #    "--num_threads 4 --num_cpu_threads_per_data_thread 3 --phone_home STANDARD"
         # </environment_variable>
@@ -213,9 +214,14 @@ def egrep_escape( text ):
     regex = regex.replace( r"\'", "'" )
     return regex
 
-def evaluate_template( text, install_dir ):
-    """ Substitute variables defined in XML blocks from dependencies file."""
-    return Template( text ).safe_substitute( get_env_var_values( install_dir ) )
+def evaluate_template( text, install_environment ):
+    """
+    Substitute variables defined in XML blocks from dependencies file.  The value of the received
+    repository_install_dir is the root installation directory of the repository that contains the
+    tool dependency.  The value of the received install_dir is the root installation directory of
+    the tool_dependency.
+    """
+    return Template( text ).safe_substitute( get_env_var_values( install_environment ) )
 
 def format_traceback():
     ex_type, ex, tb = sys.exc_info()
@@ -320,10 +326,18 @@ def get_env_shell_file_paths_from_setup_environment_elem( app, all_env_shell_fil
         action_dict[ 'action_shell_file_paths' ] = env_shell_file_paths
     return action_dict
 
-def get_env_var_values( install_dir ):
+def get_env_var_values( install_environment ):
+    """
+    Return a dictionary of values, some of which enable substitution of reserved words for the values.
+    The received install_enviroment object has 2 important attributes for reserved word substitution:
+    install_environment.tool_shed_repository_install_dir is the root installation directory of the repository
+    that contains the tool dependency being installed, and install_environment.install_dir is the root
+    installation directory of the tool dependency.
+    """
     env_var_dict = {}
-    env_var_dict[ 'INSTALL_DIR' ] = install_dir
-    env_var_dict[ 'system_install' ] = install_dir
+    env_var_dict[ 'REPOSITORY_INSTALL_DIR' ] = install_environment.tool_shed_repository_install_dir
+    env_var_dict[ 'INSTALL_DIR' ] = install_environment.install_dir
+    env_var_dict[ 'system_install' ] = install_environment.install_dir
     # If the Python interpreter is 64bit then we can safely assume that the underlying system is also 64bit.
     env_var_dict[ '__is64bit__' ] = sys.maxsize > 2**32
     return env_var_dict

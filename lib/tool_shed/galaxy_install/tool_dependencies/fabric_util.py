@@ -24,14 +24,19 @@ def check_fabric_version():
     if int( version.split( "." )[ 0 ] ) < 1:
         raise NotImplementedError( "Install Fabric version 1.0 or later." )
 
-def install_and_build_package( app, tool_dependency, actions_dict ):
+def get_tool_shed_repository_install_dir( app, tool_shed_repository ):
+    return os.path.abspath( tool_shed_repository.repo_files_directory( app ) )
+
+def install_and_build_package( app, tool_shed_repository, tool_dependency, actions_dict ):
     """Install a Galaxy tool dependency package either via a url or a mercurial or git clone command."""
+    tool_shed_repository_install_dir = get_tool_shed_repository_install_dir( app, tool_shed_repository )
     install_dir = actions_dict[ 'install_dir' ]
     package_name = actions_dict[ 'package_name' ]
     actions = actions_dict.get( 'actions', None )
     filtered_actions = []
     env_file_builder = EnvFileBuilder( install_dir )
-    install_environment = InstallEnvironment()
+    install_environment = InstallEnvironment( tool_shed_repository_install_dir=tool_shed_repository_install_dir,
+                                              install_dir=install_dir )
     recipe_manager = RecipeManager()
     if actions:
         with install_environment.make_tmp_dir() as work_dir:
@@ -58,7 +63,6 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                                                      env_file_builder=env_file_builder,
                                                      install_environment=install_environment,
                                                      work_dir=work_dir,
-                                                     install_dir=install_dir,
                                                      current_dir=None,
                                                      initial_download=True )
                 else:
@@ -85,7 +89,6 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                                                          env_file_builder=env_file_builder,
                                                          install_environment=install_environment,
                                                          work_dir=work_dir,
-                                                         install_dir=install_dir,
                                                          current_dir=current_dir,
                                                          initial_download=False )
                         if tool_dependency.status in [ app.install_model.ToolDependency.installation_status.ERROR ]:
