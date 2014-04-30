@@ -184,10 +184,10 @@ def handle_directory_changes( trans, repository, full_path, filenames_in_archive
                 commands.remove( repo.ui, repo, repo_file, force=True )
             except Exception, e:
                 log.debug( "Error removing files using the mercurial API, so trying a different approach, the error was: %s" % str( e ))
-                relative_selected_file = selected_file.split( 'repo_%d' % repository.id )[1].lstrip( '/' )
+                relative_selected_file = repo_file.split( 'repo_%d' % repository.id )[1].lstrip( '/' )
                 repo.dirstate.remove( relative_selected_file )
                 repo.dirstate.write()
-                absolute_selected_file = os.path.abspath( selected_file )
+                absolute_selected_file = os.path.abspath( repo_file )
                 if os.path.isdir( absolute_selected_file ):
                     try:
                         os.rmdir( absolute_selected_file )
@@ -451,7 +451,7 @@ def handle_tool_dependencies_definition( trans, tool_dependencies_config, unpopu
                                                 if last_actions_package_altered:
                                                     last_actions_elem[ last_actions_elem_package_index ] = last_actions_elem_package_elem
                                                     actions_group_elem[ last_actions_index ] = last_actions_elem
-                                            else:        
+                                            else:
                                                 # Inspect the sub elements of last_actions_elem to locate all <repository> tags and
                                                 # populate them with toolshed and changeset_revision attributes if necessary.
                                                 last_actions_package_altered, altered, last_actions_elem, message = \
