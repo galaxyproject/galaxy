@@ -35,9 +35,7 @@ var FolderListView = Backbone.View.extend({
   
   initialize : function(options){
     this.options = _.defaults(this.options || {}, options);
-    this.collection = new mod_library_model.Folder();
-    // start to listen if someone adds a model to the collection
-    this.listenTo(this.collection, 'add', this.renderOne);
+
     this.fetchFolder();
   },
 
@@ -46,6 +44,14 @@ var FolderListView = Backbone.View.extend({
     var options = options || {};
     this.options.include_deleted = options.include_deleted;
     var that = this;
+
+    this.collection = new mod_library_model.Folder();
+
+    // start to listen if someone adds a model to the collection
+    this.listenTo(this.collection, 'add', this.renderOne);
+
+    this.listenTo(this.collection, 'remove', this.removeOne);
+
     this.folderContainer = new mod_library_model.FolderContainer({id: this.options.id});
     this.folderContainer.url = this.folderContainer.attributes.urlRoot + this.options.id + '/contents';
     if (this.options.include_deleted){
@@ -137,7 +143,16 @@ var FolderListView = Backbone.View.extend({
       }
     var rowView = new mod_library_folderrow_view.FolderRowView(model);
     this.$el.find('#first_folder_item').after(rowView.el);
-    // this.checkEmptiness();
+
+    $('.deleted_dataset').hover(function() {
+            $(this).find('.show_on_hover').show();
+    }, function () {
+            $(this).find('.show_on_hover').hide();
+    });
+  },
+
+  removeOne: function(model){
+    this.$el.find('#' + model.id).remove();
   },
 
   /** Checks whether the list is empty and adds/removes the message */

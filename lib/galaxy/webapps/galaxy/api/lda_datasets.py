@@ -80,6 +80,7 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         trans.sa_session.flush()
 
         rval = dataset.to_dict()
+        rval['update_time'] = dataset.update_time.strftime( "%Y-%m-%d %I:%M %p" )
         rval['deleted'] = dataset.deleted
         rval['id'] = trans.security.encode_id(rval['id'])
         rval['ldda_id'] = trans.security.encode_id(rval['ldda_id'])

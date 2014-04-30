@@ -39,8 +39,12 @@ var LibraryListView = Backbone.View.extend({
           success: function(){
             viewContext.render();
           },
-          error: function(){
-            mod_toastr.error('An error occured. Please try again.');
+          error: function(model, response){
+              if (typeof response.responseJSON !== "undefined"){
+                mod_toastr.error(response.responseJSON.err_msg);
+              } else {
+                mod_toastr.error('An error ocurred :(');
+              }
           }
         });
     },

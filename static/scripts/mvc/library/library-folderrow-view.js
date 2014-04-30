@@ -187,22 +187,54 @@ var FolderRowView = Backbone.View.extend({
       historyItem.url = historyItem.urlRoot + history_id + '/contents';
 
       // save the dataset into selected history
-      historyItem.save({ content : library_dataset_id, source : 'library' }, { success : function(){
+      historyItem.save({ content : library_dataset_id, source : 'library' }, { 
+        success : function(){
           mod_toastr.success('Dataset imported');
           //enable the buttons
           self.modal.enableButton('Import');
           self.modal.enableButton('Download');
-      }, error : function(){
-          mod_toastr.error('An error occured! Dataset not imported. Please try again.');
+        }, 
+        error : function(model, response){
+          if (typeof response.responseJSON !== "undefined"){
+            mod_toastr.error('Dataset not imported. ' + response.responseJSON.err_msg);
+          } else {
+            mod_toastr.error('An error occured! Dataset not imported. Please try again.');
+          }
           //enable the buttons
           self.modal.enableButton('Import');
           self.modal.enableButton('Download');
-      }
+        }
   });
   },
 
+  /**
+   * Undeletes the dataset on server and renders it again.
+   */
   undelete_dataset : function(event){
-    alert('undelete dataset');
+    /**
+     * need to hide manually because of the element removal
+     * bug in tooltip
+     */
+    $(".tooltip").hide();
+
+    var dataset_id = $(event.target).closest('tr')[0].id;
+    var dataset = Galaxy.libraries.folderListView.collection.get(dataset_id);
+    dataset.url = dataset.urlRoot + dataset.id + '?undelete=true';
+    dataset.destroy({ 
+        success : function(model, response){
+          Galaxy.libraries.folderListView.collection.remove(dataset_id);
+          var updated_dataset = new mod_library_model.Item(response);
+          Galaxy.libraries.folderListView.collection.add(updated_dataset)
+          mod_toastr.success('Dataset undeleted');
+        }, 
+        error : function(model, response){
+          if (typeof response.responseJSON !== "undefined"){
+            mod_toastr.error('Dataset was not undeleted. ' + response.responseJSON.err_msg);
+          } else {
+            mod_toastr.error('An error occured! Dataset was not undeleted. Please try again.');
+          }
+        }
+  });
   },
 
   templateRowFolder: function() {

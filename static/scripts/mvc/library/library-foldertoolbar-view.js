@@ -379,9 +379,9 @@ var FolderToolbarView = Backbone.View.extend({
     }
     var promise = $.when(popped_item.save({from_hda_id: popped_item.get('from_hda_id')}));
 
-    promise.done(function(a1){
+    promise.done(function(model){
               // we are fine
-              Galaxy.libraries.folderListView.collection.add(a1);
+              Galaxy.libraries.folderListView.collection.add(model);
               self.updateProgress();
               self.chainCallAddingHdas(hdas_set);
             })
@@ -398,12 +398,8 @@ var FolderToolbarView = Backbone.View.extend({
    */
   checkIncludeDeleted: function(event){
     if (event.target.checked){
-      Galaxy.libraries.folderListView.collection = new mod_library_model.Folder();
-      Galaxy.libraries.folderListView.listenTo(Galaxy.libraries.folderListView.collection, 'add', Galaxy.libraries.folderListView.renderOne);
       Galaxy.libraries.folderListView.fetchFolder({include_deleted: true});
     } else{
-      Galaxy.libraries.folderListView.collection = new mod_library_model.Folder();
-      Galaxy.libraries.folderListView.listenTo(Galaxy.libraries.folderListView.collection, 'add', Galaxy.libraries.folderListView.renderOne);
       Galaxy.libraries.folderListView.fetchFolder({include_deleted: false});
     }
   },
@@ -468,19 +464,26 @@ var FolderToolbarView = Backbone.View.extend({
     Galaxy.modal.hide();
     return this.deleted_lddas;
   }
-  var promise = $.when(popped_item.destroy({undelete: false}));
+  var promise = $.when(popped_item.destroy());
 
   promise.done(function(dataset){
             // we are fine
-            self.$el.find('#' + popped_item.id).remove();
+            // self.$el.find('#' + popped_item.id).remove();
+            Galaxy.libraries.folderListView.collection.remove(popped_item.id);
             self.updateProgress();
-            Galaxy.libraries.folderListView.collection.add(dataset);
+            // add the deleted dataset to collection, triggers rendering
+            if (Galaxy.libraries.folderListView.options.include_deleted){
+              var updated_dataset = new mod_library_model.Item(dataset);
+              Galaxy.libraries.folderListView.collection.add(updated_dataset);
+            }
+            // execute next request
             self.chainCallDeletingHdas(lddas_set);
           })
           .fail(function(){
             // we have a problem
             self.options.chain_call_control.failed_number += 1;
             self.updateProgress();
+            // execute next request
             self.chainCallDeletingHdas(lddas_set);
           });
   },
@@ -490,7 +493,6 @@ var FolderToolbarView = Backbone.View.extend({
 
     // CONTAINER
     tmpl_array.push('<div class="library_style_container">');
-    tmpl_array.push('<h3>Data Libraries Beta Test. This is work in progress. Please report problems & ideas via <a href="mailto:galaxy-bugs@bx.psu.edu?Subject=DataLibrariesBeta_Feedback" target="_blank">email</a> and <a href="https://trello.com/c/nwYQNFPK/56-data-library-ui-progressive-display-of-folders" target="_blank">Trello</a>.</h3>');
     // TOOLBAR
     tmpl_array.push('<div id="library_folder_toolbar">');
     tmpl_array.push('<span data-toggle="tooltip" data-placement="top" title="Include deleted datasets"><input id="include_deleted_datasets_chk" style="margin: 0;" type="checkbox"> <span class="fa fa-trash-o fa-lg"></span></input></span>');
@@ -509,7 +511,7 @@ var FolderToolbarView = Backbone.View.extend({
     tmpl_array.push('          <li id="download_archive"><a href="#/folders/<%= id %>/download/zip">.zip</a></li>');
     tmpl_array.push('       </ul>');
     tmpl_array.push('   </div>');
-    tmpl_array.push('   <button data-toggle="tooltip" data-placement="top" title="Mark selected datasets deleted" id="toolbtn_bulk_delete" class="primary-button" style="margin-left: 0.5em; " type="button"><span class="fa fa-trash-o"></span> delete</button>');
+    tmpl_array.push('   <button data-toggle="tooltip" data-placement="top" title="Mark selected datasets deleted" id="toolbtn_bulk_delete" class="primary-button" style="margin-left: 0.5em; " type="button"><span class="fa fa-times"></span> delete</button>');
     tmpl_array.push('   </div>');
     tmpl_array.push('   <div id="folder_items_element">');
     // library items will append here

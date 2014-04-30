@@ -84,7 +84,7 @@ define([], function() {
 // FOLDER RELATED MODELS
 
     var Item = Backbone.Model.extend({
-        urlRoot : '/api/libraries/datasets'
+        urlRoot : '/api/libraries/datasets/'
     });
 
     var FolderAsModel = Backbone.Model.extend({

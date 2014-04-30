@@ -66,8 +66,12 @@ var LibraryToolbarView = Backbone.View.extend({
               Galaxy.libraries.libraryListView.render();
               mod_toastr.success('Library created');
             },
-            error: function(){
-              mod_toastr.error('An error occured :(');
+            error: function(model, response){
+              if (typeof response.responseJSON !== "undefined"){
+                mod_toastr.error(response.responseJSON.err_msg);
+              } else {
+                mod_toastr.error('An error occured :(');
+              }
             }
           });
       } else {
