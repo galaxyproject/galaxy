@@ -84,7 +84,6 @@ return Backbone.View.extend(
         // make table header
         this.table.addHeader('No.');
         this.table.addHeader('Type');
-        this.table.addHeader('Library');
         this.table.addHeader('Processing*');
         this.table.appendHeader();
         
@@ -95,7 +94,6 @@ return Backbone.View.extend(
             var chart_type = types[id];
             this.table.add (++types_n + '.');
             this.table.add(chart_type.title);
-            this.table.add(chart_type.library, '10%');
             if (chart_type.execute) {
                 this.table.add(new Ui.Icon({icon: 'fa-check'}).$el, '10%', 'center');
             } else {
@@ -134,7 +132,7 @@ return Backbone.View.extend(
         $main.append(Utils.wrap((new Ui.Label({ title : 'Select a chart type:'})).$el));
         $main.append(Utils.wrap(this.table.$el));
         $main.append(new Ui.Text({
-            title: '*Certain chart types pre-process data before rendering the visualization. The pre-processing is done using the chartskit available in the Toolshed.',
+            title: '*Certain chart types pre-process data before rendering the visualization. The pre-processing is done using the charts tool available in the Toolshed.',
             cls: 'toolParamHelp'
         }).$el);
         

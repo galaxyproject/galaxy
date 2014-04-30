@@ -26,7 +26,7 @@ return Backbone.View.extend({
         this._fullscreen(this.$el, 80);
         
         // create canvas element
-        this._create_canvas('div');
+        this._createCanvas('div');
         
         // events
         var self = this;
@@ -86,7 +86,7 @@ return Backbone.View.extend({
     },
     
     // creates n canvas elements
-    _create_canvas: function(tag, n) {
+    _createCanvas: function(tag, n) {
         // check size of requested canvas elements
         n = n || 1;
     
@@ -99,7 +99,7 @@ return Backbone.View.extend({
         // create requested canvas elements
         for (var i = 0; i < n; i++) {
             // create element
-            var canvas_el = $(this._template_canvas(tag, parseInt(100 / n)));
+            var canvas_el = $(this._templateCanvas(tag, parseInt(100 / n)));
             
             // add to view
             this.$el.append(canvas_el);
@@ -137,7 +137,7 @@ return Backbone.View.extend({
         }
         
         // create canvas element and add to canvas list
-        this._create_canvas(this.chart_settings.tag, n_panels);
+        this._createCanvas(this.chart_settings.tag, n_panels);
             
         // set chart state
         chart.state('wait', 'Please wait...');
@@ -269,7 +269,7 @@ return Backbone.View.extend({
     },
     
     // template svg/div element
-    _template_canvas: function(tag, width) {
+    _templateCanvas: function(tag, width) {
         return '<' + tag + ' class="canvas" style="float: left; display: block; width:' + width + '%; height: 100%;"/>';
     }
     

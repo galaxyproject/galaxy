@@ -3,7 +3,7 @@ define([], function() {
 return {
     title   : 'Box plot',
     library : 'highcharts.js',
-    element : 'div',
+    tag     : 'div',
     execute : 'boxplot',
     columns : {
         y : {
