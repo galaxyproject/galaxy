@@ -1074,7 +1074,7 @@ class TwillTestCase( unittest.TestCase ):
             # HACK: don't use panels because late_javascripts() messes up the twill browser and it
             # can't find form fields (and hence user can't be logged in).
             self.visit_url( "/user/login?use_panels=False" )
-            self.submit_form( 1, 'login_button', email=email, redirect=redirect, password=password )
+            self.submit_form( 'login', 'login_button', email=email, redirect=redirect, password=password )
 
     def logout( self ):
         self.visit_url( "%s/user/logout" % self.url )
@@ -1142,6 +1142,9 @@ class TwillTestCase( unittest.TestCase ):
 
     def last_page( self ):
         return tc.browser.get_html()
+
+    def last_url( self ):
+        return tc.browser.get_url()
 
     def load_cookies( self, file, shed_tool_id=None ):
         filename = self.get_filename( file, shed_tool_id=shed_tool_id )
@@ -1350,13 +1353,25 @@ class TwillTestCase( unittest.TestCase ):
     def run_ucsc_main( self, track_params, output_params ):
         """Gets Data From UCSC"""
         tool_id = "ucsc_table_direct1"
-        galaxy_url = urllib.quote_plus( "%s/tool_runner/index?" % self.url )
+        galaxy_url = "%s/tool_runner/index?" % self.url
         track_params.update( dict( GALAXY_URL=galaxy_url, hgta_compressType='none', tool_id=tool_id ) )
         self.visit_url( "http://genome.ucsc.edu/cgi-bin/hgTables", params=track_params )
-        tc.fv( "mainForm", "hgta_doTopSubmit", "get output" )
-        self.submit_form( button="get output" )
-        tc.fv( 2, "hgta_doGalaxyQuery", "Send query to Galaxy" )
-        self.submit_form( button="Send query to Galaxy" )
+        log.debug( 'Last URL: %s', self.last_url() )
+        tc.fv( 'mainForm', 'checkboxGalaxy', 'on' )
+        tc.submit( 'hgta_doTopSubmit' )
+        log.debug( 'Last URL: %s', self.last_url() )
+        tc.fv( 2, "hgta_geneSeqType", "genomic" )
+        tc.submit( 'hgta_doGenePredSequence' )
+        log.debug( 'Last URL: %s', self.last_url() )
+#         log.debug( self.last_page() )
+        for index, form in enumerate( self.showforms() ):
+            log.debug( 'Form #%s: %s', index, form.name )
+            log.debug( 'Form target: %s', form.action )
+            for control_num, control in enumerate( form.controls ):
+                log.debug( '%s: %s', control.name, control.value )
+        tc.fv( 2, 'hgSeq.casing', 'upper' )
+        log.debug( tc.submit( 'hgta_doGalaxyQuery' ) )
+        log.debug( 'Last URL: %s', self.last_url() )
 
     def get_running_datasets( self ):
         self.visit_url( '/api/histories' )

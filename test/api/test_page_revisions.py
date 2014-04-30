@@ -1,5 +1,5 @@
 from galaxy.exceptions import error_codes
-from functional.api.test_pages import BasePageApiTestCase
+from api.test_pages import BasePageApiTestCase
 
 
 class PageRevisionsApiTestCase( BasePageApiTestCase ):
