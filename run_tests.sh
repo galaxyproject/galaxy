@@ -10,6 +10,7 @@ cat <<EOF
 '${0##*/} -id bbb'                  for testing one tool with id 'bbb' ('bbb' is the tool id)
 '${0##*/} -sid ccc'                 for testing one section with sid 'ccc' ('ccc' is the string after 'section::')
 '${0##*/} -list'                    for listing all the tool ids
+'${0##*/} -api'                     for running all the test scripts in the ./test/api directory
 '${0##*/} -toolshed'                for running all the test scripts in the ./test/tool_shed/functional directory
 '${0##*/} -toolshed testscriptname' for running one test script named testscriptname in the .test/tool_shed/functional directory
 '${0##*/} -workflow test.xml'       for running a workflow test case as defined by supplied workflow xml test file (experimental)
@@ -65,6 +66,17 @@ do
               exit 1
           fi 
           ;;
+    -a|-api|--api)
+          test_script="./scripts/functional_tests.py"
+          report_file="./run_api_tests.html"
+          if [ $# -gt 1 ]; then
+        	  api_script=$2
+              shift 2
+          else
+              api_script="./test/api"
+              shift 1
+          fi
+          ;;
       -t|-toolshed|--toolshed)
           test_script="./test/tool_shed/functional_tests.py"
           report_file="./test/tool_shed/run_functional_tests.html"
@@ -76,7 +88,7 @@ do
               shift 1
           fi
           ;;
-      -with_framework_test_tools|--with_framework_test_tools)
+          -with_framework_test_tools|--with_framework_test_tools)
           with_framework_test_tools_arg="-with_framework_test_tools"
           shift
           ;;
@@ -182,6 +194,8 @@ elif [ -n "$workflow_test" ]; then
     extra_args="functional.workflow:WorkflowTestCase $workflow_file"
 elif [ -n "$toolshed_script" ]; then
     extra_args="$toolshed_script"
+elif [ -n "$api_script" ]; then
+    extra_args="$api_script"
 elif [ -n "$section_id" ]; then
     extra_args=`python tool_list.py $section_id` 
 elif [ -n "$test_id" ]; then
