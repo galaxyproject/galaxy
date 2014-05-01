@@ -89,14 +89,26 @@ var FolderListView = Backbone.View.extend({
 
     this.$el.html(template({ path: this.folderContainer.attributes.metadata.full_path, id: this.options.id, upper_folder_id: upper_folder_id, order: this.sort}));
 
-    var fetched_metadata = this.folderContainer.attributes.metadata;
-    fetched_metadata.contains_file = this.options.contains_file;
-    Galaxy.libraries.folderToolbarView.configureElements(fetched_metadata);
-
     // initialize the library tooltips
     $("#center [data-toggle]").tooltip();
     //hack to show scrollbars
     $("#center").css('overflow','auto');
+  },
+
+  /**
+   * Call this after all models are added to the collection
+   * to ensure that the folder toolbar will show proper options
+   * and that event will be bound on all subviews.
+   */
+  postRender: function(){
+    var fetched_metadata = this.folderContainer.attributes.metadata;
+    fetched_metadata.contains_file = typeof this.collection.findWhere({type: 'file'}) !== 'undefined';
+    Galaxy.libraries.folderToolbarView.configureElements(fetched_metadata);
+    $('.deleted_dataset').hover(function() {
+      $(this).find('.show_on_hover').show();
+    }, function () {
+      $(this).find('.show_on_hover').hide();
+    });
   },
 
   /**
@@ -108,28 +120,23 @@ var FolderListView = Backbone.View.extend({
     _.each(models.reverse(), function(model) {
       Galaxy.libraries.folderListView.collection.add(model);
     });
+
     $("#center [data-toggle]").tooltip();
     this.checkEmptiness();
-        $('.deleted_dataset').hover(function() {
-            $(this).find('.show_on_hover').show();
-    }, function () {
-            $(this).find('.show_on_hover').hide();
-    });
+
+    this.postRender();
   },
 
   /**
-   * Renders whole collection of models as views
+   * Iterates this view's collection and calls the render
+   * function for each. Also binds the hover behavior.
    */
   renderAll: function(){
     var that = this;
     _.each(this.collection.models.reverse(), function(model) {
       that.renderOne(model);
     });
-    $('.deleted_dataset').hover(function() {
-            $(this).find('.show_on_hover').show();
-    }, function () {
-            $(this).find('.show_on_hover').hide();
-    });
+    this.postRender();
   },
 
   /**
@@ -145,12 +152,16 @@ var FolderListView = Backbone.View.extend({
     this.$el.find('#first_folder_item').after(rowView.el);
 
     $('.deleted_dataset').hover(function() {
-            $(this).find('.show_on_hover').show();
+      $(this).find('.show_on_hover').show();
     }, function () {
-            $(this).find('.show_on_hover').hide();
+      $(this).find('.show_on_hover').hide();
     });
   },
 
+  /**
+   * removes the view of the given model from the DOM
+   * @param {Item or FolderAsModel} model of the view that will be removed
+   */
   removeOne: function(model){
     this.$el.find('#' + model.id).remove();
   },

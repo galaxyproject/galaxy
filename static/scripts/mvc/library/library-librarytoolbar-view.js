@@ -22,12 +22,10 @@ var LibraryToolbarView = Backbone.View.extend({
   render: function(){
     var toolbar_template = this.templateToolBar();
     var is_admin = false;
-    var is_anonym = false;
+    var is_anonym = true;
     if (Galaxy.currUser){
       is_admin = Galaxy.currUser.isAdmin();
       is_anonym = Galaxy.currUser.isAnonymous();
-    } else {
-      is_anonym = true;
     }
     this.$el.html(toolbar_template({admin_user: is_admin, anon_user: is_anonym}));
     if (is_admin){

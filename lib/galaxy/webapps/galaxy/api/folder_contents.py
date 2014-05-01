@@ -212,7 +212,7 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
                     dataset.api_type = 'file'
                     content_items.append( dataset )
                 else:
-                    can_access, folder_ids = trans.app.security_agent.can_access_dataset( current_user_roles, dataset.library_dataset_dataset_association.dataset )
+                    can_access = trans.app.security_agent.can_access_dataset( current_user_roles, dataset.library_dataset_dataset_association.dataset )
                     if can_access:
                         dataset.api_type = 'file'
                         content_items.append( dataset )
