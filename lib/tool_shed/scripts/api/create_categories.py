@@ -9,10 +9,10 @@ will not be affected.
 
 This script is very useful for populating a new development Tool Shed with the set of categories that
 currently exist in either the test or main public Galaxy Tool Sheds.  This will streamline building
-new repository hierarchies in the development Tool Shed and exportin gthem into a capsule that can be
+new repository hierarchies in the development Tool Shed and exporting them into a capsule that can be
 imported into one of the public Tool Sheds.
 
-Here is a working example of how to use this script to retrieve the current set of repositories that are
+Here is a working example of how to use this script to retrieve the current set of categories that are
 available in the test public Tool Shed and create each of them in a local development Tool Shed.
 
 ./create_categories.py -a <api key> -f http://testtoolshed.g2.bx.psu.edu -t http://localhost:9009

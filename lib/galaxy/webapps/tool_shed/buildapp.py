@@ -107,6 +107,13 @@ def app_factory( global_conf, **kwargs ):
                             name_prefix='repository_revision_',
                             path_prefix='/api',
                             parent_resources=dict( member_name='repository_revision', collection_name='repository_revisions' ) )
+    webapp.mapper.resource( 'user',
+                            'users',
+                            controller='users',
+                            name_prefix='user_',
+                            path_prefix='/api',
+                            new={ 'create_user' : 'POST' },
+                            parent_resources=dict( member_name='user', collection_name='users' ) )
     webapp.finalize_config()
     # Wrap the webapp in some useful middleware
     if kwargs.get( 'middleware', True ):
