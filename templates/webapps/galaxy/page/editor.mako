@@ -19,7 +19,6 @@
             set_accessible_url = "${h.url_for( controller='ITEM_CONTROLLER', action='set_accessible_async' )}",
             get_name_and_link_url = "${h.url_for( controller='ITEM_CONTROLLER', action='get_name_and_link_async' )}?id=",
             list_histories_for_selection_url = "${h.url_for(controller='page', action='list_histories_for_selection' )}",
-            get_history_annotation_table_url = "${h.url_for(controller='page', action='get_history_annotation_table' )}",
             editor_base_path = "${h.url_for('/static/wymeditor')}/",
             iframe_base_path = "${h.url_for('/static/wymeditor/iframe/galaxy')}/",
             save_url = "${h.url_for(controller='page', action='save' )}";

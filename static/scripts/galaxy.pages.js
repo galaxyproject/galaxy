@@ -20,10 +20,7 @@ var Galaxy =
     DIALOG_EMBED_DATASET : "embed_dataset",
     DIALOG_EMBED_WORKFLOW : "embed_workflow",
     DIALOG_EMBED_PAGE : "embed_page",
-    DIALOG_EMBED_VISUALIZATION : "embed_visualization",
-    
-    // Annotation dialogs.
-    DIALOG_HISTORY_ANNOTATE : "history_annotate",
+    DIALOG_EMBED_VISUALIZATION : "embed_visualization"
 };
 
 // Initialize Galaxy elements.
@@ -464,75 +461,9 @@ WYMeditor.editor.prototype.dialog = function( dialogType, dialogFeatures, bodyHt
                                     "</div>" ].join( '' );
                                 
                                 // Insert embedded item into document.
-                                //wym.insert("&nbsp;"); // Needed to prevent insertion from occurring in child element in webkit browsers.
                                 wym.insert(item_embed_html);
                                 
-                                // TODO: can we fix this?
-                                // Due to oddities of wym.insert() [likely due to inserting a <div> and/or a complete paragraph], an
-                                // empty paragraph (or two!) may be included either before an embedded item. Remove these paragraphs.
-                                //$("#" + item_elt_id, wym._doc.body).each( function() {
-                                //    // Remove previous empty paragraphs.
-                                //    var removing = true;
-                                //    while (removing)
-                                //    {
-                                //        var prev_elt = $(this).prev();
-                                //        if ( prev_elt.length != 0 && jQuery.trim(prev_elt.text()) == "" )
-                                //            prev_elt.remove();
-                                //        else
-                                //            removing = false;
-                                //    }
-                                //});
-                                
                             });
-                            hide_modal();
-                        },
-                        "Cancel": function() 
-                        {
-                            hide_modal();
-                        }
-                    }
-                );
-            }
-        });
-    }
-    
-    // ANNOTATE HISTORY DIALOG
-    if ( dialogType == Galaxy.DIALOG_ANNOTATE_HISTORY ) {
-        $.ajax(
-        {
-            url: list_histories_for_selection_url,
-            data: {},
-            error: function() { alert( "Grid refresh failed" ) },
-            success: function(table_html) 
-            {
-                show_modal(
-                    "Insert Link to History",
-                    table_html,
-                    {
-                        "Annotate": function() 
-                        {
-                            // Insert links to history for each checked item.
-                            var item_ids = new Array();
-                            $('input[name=id]:checked').each(function() {
-                                var item_id = $(this).val();
-                                
-                                // Get annotation table for history.
-                                $.ajax(
-                                {
-                                    url: get_history_annotation_table_url,
-                                    data: { id : item_id },
-                                    error: function() { alert( "Grid refresh failed" ) },
-                                    success: function(result) 
-                                    {
-                                        // Insert into document.
-                                        wym.insert(result);
-                                        
-                                        init_galaxy_elts(wym);
-
-                                    }
-                                });                                    
-                            });
-                            
                             hide_modal();
                         },
                         "Cancel": function() 

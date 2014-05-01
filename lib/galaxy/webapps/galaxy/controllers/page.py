@@ -697,16 +697,6 @@ class PageController( BaseUIController, SharableMixin, UsesHistoryMixin,
         return self._datasets_selection_grid( trans, **kwargs )
 
     @web.expose
-    @web.require_login("get annotation table for history")
-    def get_history_annotation_table( self, trans, id ):
-        """ Returns HTML for an annotation table for a history. """
-        history = self.get_history( trans, id, False, True )
-
-        if history:
-            datasets = self.get_history_datasets( trans, history )
-            return trans.fill_template( "page/history_annotation_table.mako", history=history, datasets=datasets, show_deleted=False )
-
-    @web.expose
     def get_editor_iframe( self, trans ):
         """ Returns the document for the page editor's iframe. """
         return trans.fill_template( "page/wymiframe.mako" )
