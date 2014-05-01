@@ -1,5 +1,5 @@
 // dependencies
-define(['utils/utils', 'plugin/charts/heatmap/heatmap-plugin'], function(Utils, Plugin) {
+define(['utils/utils', 'plugin/charts/heatmap/heatmap-plugin'], function(Utils, HeatmapPlugin) {
 
 // widget
 return Backbone.View.extend(
@@ -17,13 +17,17 @@ return Backbone.View.extend(
         var self = this;
         this.app.datasets.request(request_dictionary, function() {
             
-            console.log(request_dictionary.groups);
+            // loop through data groups
+            for (var group_index in request_dictionary.groups) {
+                // get group
+                var group = request_dictionary.groups[group_index];
             
-            // draw plot
-            new Plugin({
-                'data'  : request_dictionary.groups[0].values,
-                'div'   : self.options.canvas[0]
-            });
+                // draw plot
+                var heatmap = new HeatmapPlugin({
+                    'data'  : group.values,
+                    'div'   : self.options.canvas[group_index]
+                });
+            }
             
             // set chart state
             chart.state('ok', 'Heat map drawn.');

@@ -4,6 +4,7 @@ return {
     title   : 'Heatmap',
     library : '',
     tag     : 'div',
+    use_panels  : true,
     columns : {
         col_label : {
             title       : 'Columns',
