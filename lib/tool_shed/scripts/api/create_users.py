@@ -42,7 +42,7 @@ def main( options ):
             data = dict( email=email,
                          password=password,
                          username=username )
-            url = '%s/api/users/new/create_user' % to_tool_shed
+            url = '%s/api/users' % to_tool_shed
             try:
                 response = submit( url, data, api_key )
             except Exception, e:

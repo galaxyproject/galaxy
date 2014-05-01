@@ -16,9 +16,9 @@ class UsersController( BaseAPIController ):
     """RESTful controller for interactions with users in the Tool Shed."""
 
     @web.expose_api
-    def create_user( self, trans, payload, **kwd ):
+    def create( self, trans, payload, **kwd ):
         """
-        POST /api/users/create_user
+        POST /api/users
         Returns a dictionary of information about the created user.
 
 :       param key: the current Galaxy admin user's API key

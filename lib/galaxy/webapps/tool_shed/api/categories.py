@@ -17,9 +17,9 @@ class CategoriesController( BaseAPIController ):
         return value_mapper
 
     @web.expose_api
-    def create_category( self, trans, payload, **kwd ):
+    def create( self, trans, payload, **kwd ):
         """
-        POST /api/categories/create_category
+        POST /api/categories
         Returns a dictionary of information about the created category.
 
 :       param key: the current Galaxy admin user's API key

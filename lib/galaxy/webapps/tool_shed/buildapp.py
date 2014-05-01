@@ -85,7 +85,6 @@ def app_factory( global_conf, **kwargs ):
                             controller='categories',
                             name_prefix='category_',
                             path_prefix='/api',
-                            new={ 'create_category' : 'POST' },
                             parent_resources=dict( member_name='category', collection_name='categories' ) )
     webapp.mapper.resource( 'repository',
                             'repositories',
@@ -112,7 +111,6 @@ def app_factory( global_conf, **kwargs ):
                             controller='users',
                             name_prefix='user_',
                             path_prefix='/api',
-                            new={ 'create_user' : 'POST' },
                             parent_resources=dict( member_name='user', collection_name='users' ) )
     webapp.finalize_config()
     # Wrap the webapp in some useful middleware

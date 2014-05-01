@@ -39,7 +39,7 @@ def main( options ):
         if name is not None and description is not None:
             data = dict( name=name,
                          description=description )
-            url = '%s/api/categories/new/create_category' % to_tool_shed
+            url = '%s/api/categories' % to_tool_shed
             try:
                 response = submit( url, data, api_key )
             except Exception, e:
