@@ -1,5 +1,6 @@
 // dependencies
-define(['utils/utils', 'plugin/charts/heatmap/heatmap-plugin'], function(Utils, HeatmapPlugin) {
+define(['utils/utils', 'plugin/charts/heatmap/heatmap-plugin', 'plugin/charts/heatmap/heatmap-parameters'],
+function(Utils, HeatmapPlugin, HeatmapParameters) {
 
 // widget
 return Backbone.View.extend(
@@ -24,8 +25,9 @@ return Backbone.View.extend(
             
                 // draw plot
                 var heatmap = new HeatmapPlugin({
-                    'data'  : group.values,
-                    'div'   : self.options.canvas[group_index]
+                    'colors' : HeatmapParameters.colorSets[chart.settings.get('color_set')],
+                    'data'   : group.values,
+                    'div'    : self.options.canvas[group_index]
                 });
             }
             

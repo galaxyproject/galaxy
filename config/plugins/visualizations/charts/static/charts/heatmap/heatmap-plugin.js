@@ -1,5 +1,6 @@
 // dependencies
-define(['utils/utils'], function(Utils) {
+define(['utils/utils'],
+function(Utils) {
 
 // widget
 return Backbone.View.extend(
@@ -30,8 +31,7 @@ return Backbone.View.extend(
             right       : 10,
             bottom      : 50,
             left        : 100
-        },
-        colors  : ['#005824','#1A693B','#347B53','#4F8D6B','#699F83','#83B09B','#9EC2B3','#B8D4CB','#D2E6E3','#EDF8FB','#FFFFFF','#F1EEF6','#E6D3E1','#DBB9CD','#D19EB9','#C684A4','#BB6990','#B14F7C','#A63467','#9B1A53','#91003F']
+        }
     },
 
     // initialize
@@ -43,8 +43,8 @@ return Backbone.View.extend(
         this.options = Utils.merge(options, this.optionsDefault)
         
         // check requirements
-        if (!this.options.data || !this.options.div) {
-            console.debug('FAILED - HeatMapPlugin::initialize() - Parameters (container and/or data) missing.');
+        if (!this.options.data || !this.options.div || !this.options.colors) {
+            console.debug('FAILED - HeatMapPlugin::initialize() - Parameters (container and/or data and/or colors) missing.');
             return;
         }
         
@@ -221,10 +221,10 @@ return Backbone.View.extend(
         
         // add main group and translate
         this.svg = d3.select(this.$el[0]).append('svg')
-            .attr("width", width + margin.left + margin.right)
-            .attr("height", height + margin.top + margin.bottom)
-            .append("g")
-            .attr("transform", "translate(" + (container_width - width) / 2 + "," + (container_height - height) / 2 + ")")
+            .attr('width', width + margin.left + margin.right)
+            .attr('height', height + margin.top + margin.bottom)
+            .append('g')
+            .attr('transform', 'translate(' + (container_width - width) / 2 + ',' + (container_height - height) / 2 + ')')
       
         // reset sorting
         this.rowSortOrder   = false;
@@ -264,35 +264,35 @@ return Backbone.View.extend(
         dataRange[dataRangeMax] = this.max;
         
         // create legend
-        var legend = this.svg.selectAll(".legend")
+        var legend = this.svg.selectAll('.legend')
             .data(dataRange)
-            .enter().append("g")
-            .attr("class", "legend");
+            .enter().append('g')
+            .attr('class', 'legend');
 
         // add boxes
-        legend.append("rect")
-            .attr("x", function(d, i) {
+        legend.append('rect')
+            .attr('x', function(d, i) {
                 return legendCellWidth * i;
             })
-            .attr("y", height + cellSize)
-            .attr("width", legendCellWidth)
-            .attr("height", cellSize)
-            .style("fill", function(d, i) {
+            .attr('y', height + cellSize)
+            .attr('width', legendCellWidth)
+            .attr('height', cellSize)
+            .style('fill', function(d, i) {
                 return self.options.colors[i];
             });
 
         // add text
-        legend.append("text")
-            .attr("class", "mono")
+        legend.append('text')
+            .attr('class', 'mono')
             .text(function(d) {
                 return d;
             })
-            .attr("width", legendCellWidth)
-            .attr("x", function(d, i) {
+            .attr('width', legendCellWidth)
+            .attr('x', function(d, i) {
                 return legendCellWidth * i;
             })
-            .attr("y", height + cellSize)
-            .style("font-size", cellSize + "px");
+            .attr('y', height + cellSize)
+            .style('font-size', cellSize + 'px');
     },
     
     // build column labels
@@ -306,36 +306,36 @@ return Backbone.View.extend(
         var colLabel = this.colLabel;
         
         // column labels
-        var colLabels = this.svg.append("g")
-            .selectAll(".colLabelg")
+        var colLabels = this.svg.append('g')
+            .selectAll('.colLabelg')
             .data(colLabel)
             .enter()
-            .append("text")
+            .append('text')
             .text(function (d) {
                 return d;
             })
-            .attr("x", 0)
-            .attr("y", function (d, i) {
+            .attr('x', 0)
+            .attr('y', function (d, i) {
                 return colIndex.indexOf(i) * cellSize;
             })
-            .style("font-size", cellSize + "px")
-            .style("text-anchor", "left")
-            .attr("transform", "translate(" + cellSize / 2 + ", -17) rotate (-90)")
-            .attr("class",  function (d, i) {
-                return "colLabel mono c" + i;
+            .style('font-size', cellSize + 'px')
+            .style('text-anchor', 'left')
+            .attr('transform', 'translate(' + cellSize / 2 + ', -17) rotate (-90)')
+            .attr('class',  function (d, i) {
+                return 'colLabel mono c' + i;
             })
-            .on("mouseover", function(d) {
-                d3.select(this).classed("text-hover",true);
-                d3.select(this).style("font-size", parseInt(cellSize * 1.3) + "px");
+            .on('mouseover', function(d) {
+                d3.select(this).classed('text-hover',true);
+                d3.select(this).style('font-size', parseInt(cellSize * 1.3) + 'px');
             })
-            .on("mouseout" , function(d) {
-                d3.select(this).classed("text-hover",false);
-                d3.select(this).style("font-size", parseInt(cellSize) + "px");
+            .on('mouseout' , function(d) {
+                d3.select(this).classed('text-hover',false);
+                d3.select(this).style('font-size', parseInt(cellSize) + 'px');
             })
-            .on("click", function(d, i) {
+            .on('click', function(d, i) {
                 self.colSortOrder=!self.colSortOrder;
-                self._sortByLabel("c", i, self.colSortOrder);
-                d3.select("#order").property("selectedIndex", 4).node().focus();
+                self._sortByLabel('c', i, self.colSortOrder);
+                d3.select('#order').property('selectedIndex', 4).node().focus();
             });
     },
     
@@ -350,36 +350,36 @@ return Backbone.View.extend(
         var rowLabel = this.rowLabel;
         
         // draw labels
-        var rowLabels = this.svg.append("g")
-            .selectAll(".rowLabelg")
+        var rowLabels = this.svg.append('g')
+            .selectAll('.rowLabelg')
             .data(rowLabel)
             .enter()
-            .append("text")
+            .append('text')
             .text(function (d) {
                 return d;
             })
-            .attr("x", 0)
-            .attr("y", function (d, i) {
+            .attr('x', 0)
+            .attr('y', function (d, i) {
                 return rowIndex.indexOf(i) * cellSize;
             })
-            .style("font-size", cellSize + "px")
-            .style("text-anchor", "end")
-            .attr("transform", "translate(-10," + cellSize / 1.5 + ")")
-            .attr("class", function (d, i) {
-                return "rowLabel mono r" + i;
+            .style('font-size', cellSize + 'px')
+            .style('text-anchor', 'end')
+            .attr('transform', 'translate(-10,' + cellSize / 1.5 + ')')
+            .attr('class', function (d, i) {
+                return 'rowLabel mono r' + i;
             } )
-            .on("mouseover", function(d) {
-                d3.select(this).classed("text-hover",true);
-                d3.select(this).style("font-size", parseInt(cellSize * 1.3) + "px");
+            .on('mouseover', function(d) {
+                d3.select(this).classed('text-hover',true);
+                d3.select(this).style('font-size', parseInt(cellSize * 1.3) + 'px');
             })
-            .on("mouseout" , function(d) {
-                d3.select(this).classed("text-hover",false);
-                d3.select(this).style("font-size", parseInt(cellSize) + "px");
+            .on('mouseout' , function(d) {
+                d3.select(this).classed('text-hover',false);
+                d3.select(this).style('font-size', parseInt(cellSize) + 'px');
             })
-            .on("click", function(d, i) {
+            .on('click', function(d, i) {
                 self.rowSortOrder=!self.rowSortOrder;
-                self._sortByLabel("r", i, self.rowSortOrder);
-                d3.select("#order").property("selectedIndex", 4).node().focus();
+                self._sortByLabel('r', i, self.rowSortOrder);
+                d3.select('#order').property('selectedIndex', 4).node().focus();
             });
     },
     
@@ -396,47 +396,47 @@ return Backbone.View.extend(
         var colLabel = this.colLabel;
         
         // heat map
-        var heatMap = this.svg.append("g").attr("class","g3")
-            .selectAll(".cellg")
+        var heatMap = this.svg.append('g').attr('class','g3')
+            .selectAll('.cellg')
             .data(self.data, function(d) {
-                return d.row_rank + ":" + d.col_rank;
+                return d.row_rank + ':' + d.col_rank;
             })
             .enter()
-            .append("rect")
-            .attr("x", function(d) {
+            .append('rect')
+            .attr('x', function(d) {
                 return colIndex.indexOf(d.col_rank) * cellSize;
             })
-            .attr("y", function(d) {
+            .attr('y', function(d) {
                 return rowIndex.indexOf(d.row_rank) * cellSize;
             })
-            .attr("class", function(d){
-                return "cell cell-border cr" + d.row_rank + " cc" + d.col_rank;
+            .attr('class', function(d){
+                return 'cell cell-border cr' + d.row_rank + ' cc' + d.col_rank;
             })
-            .attr("width", cellSize)
-            .attr("height", cellSize)
-            .style("fill", function(d) {
+            .attr('width', cellSize)
+            .attr('height', cellSize)
+            .style('fill', function(d) {
                 return self.colorScale(d.value);
             })
-            .on("mouseover", function(d){
+            .on('mouseover', function(d){
                 // highlight text
-                d3.select(this).classed("cell-hover",true);
-                d3.selectAll(".rowLabel").classed("text-highlight",function(r,ri){ return ri==(d.row_rank);});
-                d3.selectAll(".colLabel").classed("text-highlight",function(c,ci){ return ci==(d.col_rank);});
+                d3.select(this).classed('cell-hover',true);
+                d3.selectAll('.rowLabel').classed('text-highlight',function(r,ri){ return ri==(d.row_rank);});
+                d3.selectAll('.colLabel').classed('text-highlight',function(c,ci){ return ci==(d.col_rank);});
                 
                 // update the tooltip position and value
-                d3.select("#heatmap-tooltip")
-                    .style("left", (d3.event.pageX+10) + "px")
-                    .style("top", (d3.event.pageY-10) + "px")
-                    .select("#value")
-                    .text("Label: " + rowLabel[d.row_rank] + " | " + colLabel[d.col_rank] + ", Value: " + d.value);
+                d3.select('#heatmap-tooltip')
+                    .style('left', (d3.event.pageX+10) + 'px')
+                    .style('top', (d3.event.pageY-10) + 'px')
+                    .select('#value')
+                    .text('Label: ' + rowLabel[d.row_rank] + ' | ' + colLabel[d.col_rank] + ', Value: ' + d.value);
                 // show the tooltip
-                d3.select("#heatmap-tooltip").classed("hidden", false);
+                d3.select('#heatmap-tooltip').classed('hidden', false);
             })
-            .on("mouseout", function(){
-                d3.select(this).classed("cell-hover",false);
-                d3.selectAll(".rowLabel").classed("text-highlight",false);
-                d3.selectAll(".colLabel").classed("text-highlight",false);
-                d3.select("#heatmap-tooltip").classed("hidden", true);
+            .on('mouseout', function(){
+                d3.select(this).classed('cell-hover',false);
+                d3.selectAll('.rowLabel').classed('text-highlight',false);
+                d3.selectAll('.colLabel').classed('text-highlight',false);
+                d3.select('#heatmap-tooltip').classed('hidden', true);
             });
     },
     
@@ -450,7 +450,7 @@ return Backbone.View.extend(
         
         // collect cells
         var cells=[];
-        t.selectAll(".c" + rORc + i)
+        t.selectAll('.c' + rORc + i)
             .filter(function(ce){
             cells.push(ce);
         });
@@ -465,7 +465,7 @@ return Backbone.View.extend(
         });
             
         // rows or columns
-        if(rORc == "r") {
+        if(rORc == 'r') {
             // get sorted key list
             var sorted = [];
             for (var i in cells) {
@@ -473,14 +473,14 @@ return Backbone.View.extend(
             }
             
             // sort cells
-            t.selectAll(".cell")
-                .attr("x", function(d) {
+            t.selectAll('.cell')
+                .attr('x', function(d) {
                     return sorted.indexOf(d.col_rank) * cellSize;
                 });
                 
             // sort labels
-            t.selectAll(".colLabel")
-                .attr("y", function (d, i) {
+            t.selectAll('.colLabel')
+                .attr('y', function (d, i) {
                     return sorted.indexOf(i) * cellSize;
                 });
         } else {
@@ -491,14 +491,14 @@ return Backbone.View.extend(
             }
             
             // sort cells
-            t.selectAll(".cell")
-                .attr("y", function(d) {
+            t.selectAll('.cell')
+                .attr('y', function(d) {
                     return sorted.indexOf(d.row_rank) * cellSize;
             });
             
             // sort labels
-            t.selectAll(".rowLabel")
-                .attr("y", function (d, i) {
+            t.selectAll('.rowLabel')
+                .attr('y', function (d, i) {
                     return sorted.indexOf(i) * cellSize;
             });
         }
@@ -518,60 +518,60 @@ return Backbone.View.extend(
         
         // set duration / select element
         var t = this.svg.transition().duration(this.options.pace);
-        if(value=="hclust"){
-            t.selectAll(".cell")
-                .attr("x", function(d) {
+        if(value=='hclust'){
+            t.selectAll('.cell')
+                .attr('x', function(d) {
                     return colIndex.indexOf(d.col_rank) * cellSize;
                 })
-                .attr("y", function(d) {
+                .attr('y', function(d) {
                     return rowIndex.indexOf(d.row_rank) * cellSize;
                 });
 
-            t.selectAll(".rowLabel")
-                .attr("y", function(d, i) {
+            t.selectAll('.rowLabel')
+                .attr('y', function(d, i) {
                     return rowIndex.indexOf(i) * cellSize;
                 });
 
-            t.selectAll(".colLabel")
-                .attr("y", function(d, i) {
+            t.selectAll('.colLabel')
+                .attr('y', function(d, i) {
                     return colIndex.indexOf(i) * cellSize;
                 });
 
-        } else if (value=="byboth") {
-            t.selectAll(".cell")
-                .attr("x", function(d) {
+        } else if (value=='byboth') {
+            t.selectAll('.cell')
+                .attr('x', function(d) {
                     return d.col_rank * cellSize;
                 })
-                .attr("y", function(d) {
+                .attr('y', function(d) {
                     return d.row_rank * cellSize;
                 });
 
-            t.selectAll(".rowLabel")
-                .attr("y", function (d, i) {
+            t.selectAll('.rowLabel')
+                .attr('y', function (d, i) {
                     return i * cellSize;
                 });
 
-            t.selectAll(".colLabel")
-                .attr("y", function (d, i) {
+            t.selectAll('.colLabel')
+                .attr('y', function (d, i) {
                     return i * cellSize;
                 });
-        } else if (value=="byrow") {
-            t.selectAll(".cell")
-                .attr("y", function(d) {
+        } else if (value=='byrow') {
+            t.selectAll('.cell')
+                .attr('y', function(d) {
                     return d.row_rank * cellSize;
                 });
 
-            t.selectAll(".rowLabel")
-                .attr("y", function (d, i) {
+            t.selectAll('.rowLabel')
+                .attr('y', function (d, i) {
                     return i * cellSize;
                 });
-        } else if (value=="bycol"){
-            t.selectAll(".cell")
-                .attr("x", function(d) {
+        } else if (value=='bycol'){
+            t.selectAll('.cell')
+                .attr('x', function(d) {
                     return d.col_rank * cellSize;
                 });
-            t.selectAll(".colLabel")
-                .attr("y", function (d, i) {
+            t.selectAll('.colLabel')
+                .attr('y', function (d, i) {
                     return i * cellSize;
                 });
         }
@@ -582,35 +582,35 @@ return Backbone.View.extend(
         //
         // selection
         //
-        var sa=d3.select(".g3")
-        .on("mousedown", function() {
+        var sa=d3.select('.g3')
+        .on('mousedown', function() {
             if( !d3.event.altKey) {
-                d3.selectAll(".cell-selected").classed("cell-selected", false);
-                d3.selectAll(".rowLabel").classed("text-selected", false);
-                d3.selectAll(".colLabel").classed("text-selected", false);
+                d3.selectAll('.cell-selected').classed('cell-selected', false);
+                d3.selectAll('.rowLabel').classed('text-selected', false);
+                d3.selectAll('.colLabel').classed('text-selected', false);
             }
             var p = d3.mouse(this);
-            sa.append("rect")
+            sa.append('rect')
             .attr({
                 rx      : 0,
                 ry      : 0,
-                class   : "selection",
+                class   : 'selection',
                 x       : p[0],
                 y       : p[1],
                 width   : 1,
                 height  : 1
             })
         })
-        .on("mousemove", function() {
-            var s = sa.select("rect.selection");
+        .on('mousemove', function() {
+            var s = sa.select('rect.selection');
       
             if(!s.empty()) {
                 var p = d3.mouse(this),
                 d = {
-                    x       : parseInt(s.attr("x"), 10),
-                    y       : parseInt(s.attr("y"), 10),
-                    width   : parseInt(s.attr("width"), 10),
-                    height  : parseInt(s.attr("height"), 10)
+                    x       : parseInt(s.attr('x'), 10),
+                    y       : parseInt(s.attr('y'), 10),
+                    width   : parseInt(s.attr('width'), 10),
+                    height  : parseInt(s.attr('height'), 10)
                 },
                 move = {
                     x : p[0] - d.x,
@@ -633,46 +633,46 @@ return Backbone.View.extend(
                 s.attr(d);
       
                 // deselect all temporary selected state objects
-                d3.selectAll(".cell-selection.cell-selected").classed("cell-selected", false);
-                d3.selectAll(".text-selection.text-selected").classed("text-selected",false);
-                d3.selectAll(".cell").filter(function(cell_d, i) {
-                    if(!d3.select(this).classed("cell-selected") &&
+                d3.selectAll('.cell-selection.cell-selected').classed('cell-selected', false);
+                d3.selectAll('.text-selection.text-selected').classed('text-selected',false);
+                d3.selectAll('.cell').filter(function(cell_d, i) {
+                    if(!d3.select(this).classed('cell-selected') &&
                         // inner circle inside selection frame
                         (this.x.baseVal.value)+cellSize >= d.x && (this.x.baseVal.value)<=d.x+d.width &&
                         (this.y.baseVal.value)+cellSize >= d.y && (this.y.baseVal.value)<=d.y+d.height)
                         {
                             d3.select(this)
-                                .classed("cell-selection", true)
-                                .classed("cell-selected", true);
+                                .classed('cell-selection', true)
+                                .classed('cell-selected', true);
 
-                            d3.select(".r"+(cell_d.row_rank))
-                                .classed("text-selection",true)
-                                .classed("text-selected",true);
+                            d3.select('.r'+(cell_d.row_rank))
+                                .classed('text-selection',true)
+                                .classed('text-selected',true);
 
-                            d3.select(".c"+(cell_d.col_rank))
-                                .classed("text-selection",true)
-                                .classed("text-selected",true);
+                            d3.select('.c'+(cell_d.col_rank))
+                                .classed('text-selection',true)
+                                .classed('text-selected',true);
                         }
                 });
             }
         })
-        .on("mouseup", function() {
+        .on('mouseup', function() {
             // remove selection frame
-            sa.selectAll("rect.selection").remove();
+            sa.selectAll('rect.selection').remove();
 
             // remove temporary selection marker class
-            d3.selectAll(".cell-selection").classed("cell-selection", false);
-            d3.selectAll(".text-selection").classed("text-selection",false);
+            d3.selectAll('.cell-selection').classed('cell-selection', false);
+            d3.selectAll('.text-selection').classed('text-selection', false);
         })
-        .on("mouseout", function() {
+        .on('mouseout', function() {
             if(d3.event.relatedTarget.tagName=='html') {
                 // remove selection frame
-                sa.selectAll("rect.selection").remove();
+                sa.selectAll('rect.selection').remove();
             
                 // remove temporary selection marker class
-                d3.selectAll(".cell-selection").classed("cell-selection", false);
-                d3.selectAll(".rowLabel").classed("text-selected",false);
-                d3.selectAll(".colLabel").classed("text-selected",false);
+                d3.selectAll('.cell-selection').classed('cell-selection', false);
+                d3.selectAll('.rowLabel').classed('text-selected',false);
+                d3.selectAll('.colLabel').classed('text-selected',false);
             }
         });
     },
