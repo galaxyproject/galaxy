@@ -707,17 +707,22 @@ class SetEnvironment( RecipeStep ):
         return env_var_dict
 
     def prepare_step( self, app, tool_dependency, action_elem, action_dict, install_environment, is_binary_download ):
+        # This function is only called for set environment actions as defined above, not within a <set_environment> tool
+        # dependency type. Here is an example of the tag set this function does handle:
         # <action type="set_environment">
         #     <environment_variable name="PYTHONPATH" action="append_to">$INSTALL_DIR/lib/python</environment_variable>
         #     <environment_variable name="PATH" action="prepend_to">$INSTALL_DIR/bin</environment_variable>
+        # </action>
+        # Here is an example of the tag set this function does not handle:
+        # <action type="set_environment">
+        #     <environment_variable name="PATH" action="prepend_to">$INSTALL_DIR</environment_variable>
         # </action>
         env_var_dicts = []
         for env_elem in action_elem:
             if env_elem.tag == 'environment_variable':
                 env_var_dict = \
                     td_common_util.create_env_var_dict( elem=env_elem,
-                                                        tool_dependency_install_dir=install_environment.install_dir,
-                                                        tool_shed_repository_install_dir=install_environment.tool_shed_repository_install_dir )
+                                                        install_environment=install_environment )
                 if env_var_dict:
                     env_var_dicts.append( env_var_dict )
         if env_var_dicts:

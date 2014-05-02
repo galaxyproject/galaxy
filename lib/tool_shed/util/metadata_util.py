@@ -23,6 +23,7 @@ from tool_shed.util import xml_util
 from tool_shed.galaxy_install.tool_dependencies import install_util
 from tool_shed.galaxy_install.tool_dependencies import td_common_util
 import tool_shed.repository_types.util as rt_util
+from xml.etree import ElementTree as XmlET
 
 eggs.require( 'mercurial' )
 
@@ -921,7 +922,28 @@ def generate_tool_dependency_metadata( app, repository, changeset_revision, repo
     invalid_tool_dependencies_dict = {}
     valid_repository_dependency_tups = []
     invalid_repository_dependency_tups = []
+    needs_set_environment_tool_dependency_for_path = False
+    tools_metadata = metadata_dict.get( 'tools', None )
+    if tools_metadata is not None:
+        for tools_dict in tools_metadata:
+            requirements = tools_dict.get( 'requirements', None )
+            if requirements is not None:
+                for requirements_dict in requirements:
+                    if requirements_dict[ 'type' ] == 'set_environment' and requirements_dict[ 'name' ] == 'PATH':
+                        needs_set_environment_tool_dependency_for_path = True
+                        break
     description = root.get( 'description' )
+    if needs_set_environment_tool_dependency_for_path:
+        # Add this to the in-memory XML tree that is parsed to determine the database tool dependency records. This will not 
+        # modify the on-disk tool dependency definitions, but is needed in order for the tool to correctly source the env.sh
+        # file that was generated for the PATH variable.
+        # <set_environment version="1.0">
+        #     <environment_variable action="prepend_to" name="PATH">$REPOSITORY_INSTALL_DIR</environment_variable>
+        # </set_environment>
+        env_var_elem_attributes = dict( name='PATH', action='prepend_to' )
+        set_environment_elem = xml_util.create_element( 'set_environment', attributes=dict( version='1.0' ) )
+        XmlET.SubElement( set_environment_elem, 'environment_variable', attrib=env_var_elem_attributes )
+        root.append( set_environment_elem )
     for elem in root:
         if elem.tag == 'package':
             valid_tool_dependencies_dict, invalid_tool_dependencies_dict, repository_dependency_tup, repository_dependency_is_valid, message = \

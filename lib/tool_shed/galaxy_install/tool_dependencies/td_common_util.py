@@ -168,10 +168,12 @@ def assert_file_exists( full_path ):
         return True
     return False
 
-def create_env_var_dict( elem, tool_dependency_install_dir=None, tool_shed_repository_install_dir=None ):
+def create_env_var_dict( elem, install_environment ):
     env_var_name = elem.get( 'name', 'PATH' )
     env_var_action = elem.get( 'action', 'prepend_to' )
     env_var_text = None
+    tool_dependency_install_dir = install_environment.install_dir
+    tool_shed_repository_install_dir = install_environment.tool_shed_repository_install_dir
     if elem.text and elem.text.find( 'REPOSITORY_INSTALL_DIR' ) >= 0:
         if tool_shed_repository_install_dir and elem.text.find( '$REPOSITORY_INSTALL_DIR' ) != -1:
             env_var_text = elem.text.replace( '$REPOSITORY_INSTALL_DIR', tool_shed_repository_install_dir )

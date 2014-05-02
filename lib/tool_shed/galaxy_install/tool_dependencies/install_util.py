@@ -289,6 +289,55 @@ def handle_complex_repository_dependency_for_package( app, elem, package_name, p
         raise Exception( message )
     return handled_tool_dependencies
 
+def handle_env_vars_for_set_environment_tool_dependency( app, tool_shed_repository, tool_shed_repository_install_dir ):
+    env_var_name = 'PATH'
+    install_dir = \
+        tool_dependency_util.get_tool_dependency_install_dir( app=app,
+                                                              repository_name=tool_shed_repository.name,
+                                                              repository_owner=tool_shed_repository.owner,
+                                                              repository_changeset_revision=tool_shed_repository.installed_changeset_revision,
+                                                              tool_dependency_type='set_environment',
+                                                              tool_dependency_name=env_var_name,
+                                                              tool_dependency_version=None )
+    env_var_dict = dict( name=env_var_name, action='prepend_to', value=tool_shed_repository_install_dir )
+    if not os.path.exists( install_dir ):
+        os.makedirs( install_dir )
+    status = app.install_model.ToolDependency.installation_status.INSTALLING
+    tool_dependency = \
+        tool_dependency_util.create_or_update_tool_dependency( app=app,
+                                          tool_shed_repository=tool_shed_repository,
+                                          name=env_var_name,
+                                          version=None,
+                                          type='set_environment',
+                                          status=status,
+                                          set_status=True )
+    env_file_builder = EnvFileBuilder( install_dir )
+    return_code = env_file_builder.append_line( make_executable=True, **env_var_dict )
+    if return_code:
+        error_message = 'Error creating env.sh file for tool dependency %s, return_code: %s' % \
+            ( str( tool_dependency.name ), str( return_code ) )
+        log.debug( error_message )
+        status = app.install_model.ToolDependency.installation_status.ERROR
+        tool_dependency = \
+            tool_dependency_util.set_tool_dependency_attributes( app,
+                                            tool_dependency=tool_dependency,
+                                            status=status,
+                                            error_message=error_message,
+                                            remove_from_disk=False )
+    else:
+        if tool_dependency.status not in [ app.install_model.ToolDependency.installation_status.ERROR,
+                                          app.install_model.ToolDependency.installation_status.INSTALLED ]:
+            status = app.install_model.ToolDependency.installation_status.INSTALLED
+            tool_dependency = \
+                tool_dependency_util.set_tool_dependency_attributes( app,
+                                                tool_dependency=tool_dependency,
+                                                status=status,
+                                                error_message=None,
+                                                remove_from_disk=False )
+            log.debug( 'Environment variable %s set in %s for tool dependency %s.' % \
+                ( str( env_var_name ), str( install_dir ), str( tool_dependency.name ) ) )
+    return tool_dependency
+
 def install_and_build_package_via_fabric( app, tool_shed_repository, tool_dependency, actions_dict ):
     sa_session = app.install_model.context
     try:
@@ -638,12 +687,20 @@ def set_environment( app, elem, tool_shed_repository, attr_tups_of_dependencies_
     """
     # TODO: Add support for a repository dependency definition within this tool dependency type's tag set.  This should look something like
     # the following.  See the implementation of support for this in the tool dependency package type's method above.
+    # This function is only called for set environment actions as defined below, not within an <install version="1.0"> tool
+    # dependency type. Here is an example of the tag set this function does handle:
+    # <action type="set_environment">
+    #     <environment_variable name="PATH" action="prepend_to">$INSTALL_DIR</environment_variable>
+    # </action>
+    # Here is an example of the tag set this function does not handle:
     # <set_environment version="1.0">
     #    <repository toolshed="<tool shed>" name="<repository name>" owner="<repository owner>" changeset_revision="<changeset revision>" />
     # </set_environment>
     sa_session = app.install_model.context
-    tool_dependency = None
+    tool_dependencies = []
     env_var_version = elem.get( 'version', '1.0' )
+    tool_shed_repository_install_dir = fabric_util.get_tool_shed_repository_install_dir( app, tool_shed_repository )
+    tool_shed_repository_install_dir_added_to_path = False
     for env_var_elem in elem:
         # Althoug we're in a loop here, this method will always return only a single ToolDependency or None.
         env_var_name = env_var_elem.get( 'name', None )
@@ -662,10 +719,10 @@ def set_environment( app, elem, tool_shed_repository, attr_tups_of_dependencies_
                                                                           tool_dependency_type='set_environment',
                                                                           tool_dependency_name=env_var_name,
                                                                           tool_dependency_version=None )
-                tool_shed_repository_install_dir = fabric_util.get_tool_shed_repository_install_dir( app, tool_shed_repository )
+                install_environment = InstallEnvironment( tool_shed_repository_install_dir=tool_shed_repository_install_dir,
+                                                          install_dir=install_dir )
                 env_var_dict = td_common_util.create_env_var_dict( elem=env_var_elem,
-                                                                   tool_dependency_install_dir=install_dir,
-                                                                   tool_shed_repository_install_dir=tool_shed_repository_install_dir )
+                                                                   install_environment=install_environment )
                 if env_var_dict:
                     if not os.path.exists( install_dir ):
                         os.makedirs( install_dir )
@@ -714,7 +771,18 @@ def set_environment( app, elem, tool_shed_repository, attr_tups_of_dependencies_
                                                                                  status=status,
                                                                                  error_message=error_message,
                                                                                  remove_from_disk=False )
-    return tool_dependency
+            if tool_dependency.status != app.install_model.ToolDependency.installation_status.ERROR:
+                if env_var_dict[ 'name' ] == 'PATH' and \
+                        env_var_dict[ 'action' ] in [ 'prepend_to', 'set_to', 'append_to' ] and \
+                        env_var_dict[ 'value' ] == install_environment.tool_shed_repository_install_dir:
+                    tool_shed_repository_install_dir_added_to_path = True
+        tool_dependencies.append( tool_dependency )
+    if not tool_shed_repository_install_dir_added_to_path:
+        tool_dependency = handle_env_vars_for_set_environment_tool_dependency( app,
+                                                                               tool_shed_repository, 
+                                                                               tool_shed_repository_install_dir )
+        tool_dependencies.append( tool_dependency )
+    return tool_dependencies
 
 def strip_path( fpath ):
     if not fpath:
