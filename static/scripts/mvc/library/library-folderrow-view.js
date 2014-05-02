@@ -15,7 +15,7 @@ var FolderRowView = Backbone.View.extend({
   lastSelectedHistory: '',
 
   events: {
-    'click .library-dataset'      : 'showDatasetDetails',
+    // 'click .library-dataset'      : 'showDatasetDetails',
     'click .undelete_dataset_btn' : 'undelete_dataset'
   },
 
@@ -49,9 +49,10 @@ var FolderRowView = Backbone.View.extend({
   },
 
   //show modal with current dataset info
-  showDatasetDetails : function(event){
+  // showDatasetDetails : function(event){
+  showDatasetDetails : function(){
     // prevent default
-    event.preventDefault();
+    // event.preventDefault();
 
     var id = this.id;
 
@@ -270,7 +271,7 @@ var FolderRowView = Backbone.View.extend({
     tmpl_array.push('    <span title="Dataset" class="fa fa-file-o"></span>');
     tmpl_array.push('  </td>');
     tmpl_array.push('  <td style="text-align: center; "><input style="margin: 0;" type="checkbox"></td>');
-    tmpl_array.push('  <td><a href="#" class="library-dataset"><%- content_item.get("name") %><a></td>'); // dataset
+    tmpl_array.push('  <td><a href="#folders/<%- content_item.get("folder_id") %>/datasets/<%- content_item.id %>" class="library-dataset"><%- content_item.get("name") %><a></td>'); // dataset
     tmpl_array.push('  <td><%= _.escape(content_item.get("data_type")) %></td>'); // data type
     tmpl_array.push('  <td><%= _.escape(content_item.get("readable_size")) %></td>'); // size
     tmpl_array.push('  <td><%= _.escape(content_item.get("update_time")) %></td>'); // time updated

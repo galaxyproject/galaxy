@@ -30,6 +30,7 @@ var LibraryRouter = Backbone.Router.extend({
     routes: {
         ""                                      : "libraries",
         "folders/:id"                           : "folder_content",
+        "folders/:folder_id/datasets/:dataset_id"      : "dataset_detail",
         "folders/:folder_id/download/:format"   : "download"
     }
 });
@@ -87,6 +88,15 @@ var GalaxyLibrary = Backbone.View.extend({
             Galaxy.libraries.library_router.navigate('folders/' + folder_id, {trigger: false, replace: true});
           }
         });
+
+       this.library_router.on('route:dataset_detail', function(folder_id, dataset_id){
+        if (Galaxy.libraries.folderToolbarView){ 
+          Galaxy.libraries.folderToolbarView.$el.unbind('click');
+        }
+        Galaxy.libraries.folderToolbarView = new mod_foldertoolbar_view.FolderToolbarView({id: folder_id});
+        Galaxy.libraries.folderListView = new mod_folderlist_view.FolderListView({id: folder_id, dataset_id: dataset_id});
+        // Galaxy.libraries.folderListView.rowViews.get(dataset_id).showDatasetDetails();
+       });
 
     Backbone.history.start({pushState: false});
     }

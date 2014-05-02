@@ -32,10 +32,12 @@ var FolderListView = Backbone.View.extend({
     'click .dataset_row'            : 'selectClickedRow',
     'click .sort-folder-link'       : 'sort_clicked'
   },
+
+  // cache of rendered views
+  rowViews: {},
   
   initialize : function(options){
     this.options = _.defaults(this.options || {}, options);
-
     this.fetchFolder();
   },
 
@@ -62,6 +64,9 @@ var FolderListView = Backbone.View.extend({
           that.folder_container = folder_container;
           that.render();
           that.addAll(folder_container.get('folder').models);
+          if (that.options.dataset_id){
+            _.findWhere(that.rowViews, {id: that.options.dataset_id}).showDatasetDetails();
+          }
         },
         error: function(model, response){
           if (typeof response.responseJSON !== "undefined"){
@@ -148,7 +153,12 @@ var FolderListView = Backbone.View.extend({
         this.options.contains_file = true;
         model.set('readable_size', this.size_to_string(model.get('file_size')));
       }
+    model.set('folder_id', this.id);
     var rowView = new mod_library_folderrow_view.FolderRowView(model);
+
+    // save new rowView to cache
+    this.rowViews[model.get('id')] = rowView;
+
     this.$el.find('#first_folder_item').after(rowView.el);
 
     $('.deleted_dataset').hover(function() {
