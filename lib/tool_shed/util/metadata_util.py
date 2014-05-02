@@ -563,14 +563,11 @@ def generate_environment_dependency_metadata( elem, valid_tool_dependencies_dict
     # <set_environment version="1.0">
     #    <environment_variable name="JAVA_JAR_PATH" action="set_to">$INSTALL_DIR</environment_variable>
     # </set_environment>
-    requirements_dict = {}
     for env_elem in elem:
         # <environment_variable name="JAVA_JAR_PATH" action="set_to">$INSTALL_DIR</environment_variable>
         env_name = env_elem.get( 'name', None )
         if env_name:
-            requirements_dict[ 'name' ] = env_name
-            requirements_dict[ 'type' ] = 'set_environment'
-        if requirements_dict:
+            requirements_dict = dict( name=env_name, type='set_environment' )
             if 'set_environment' in valid_tool_dependencies_dict:
                 valid_tool_dependencies_dict[ 'set_environment' ].append( requirements_dict )
             else:
