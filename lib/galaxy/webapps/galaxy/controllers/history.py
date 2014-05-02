@@ -549,6 +549,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                 count += 1
         return trans.show_ok_message( "%d datasets have been deleted permanently" % count, refresh_frames=['history'] )
 
+    #TODO: use api instead
     @web.expose
     def delete_current( self, trans, purge=False ):
         """Delete just the active history -- this does not require a logged in user."""
@@ -604,6 +605,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             trans.sa_session.add( history )
         trans.sa_session.flush()
         return trans.show_ok_message( "Your datasets have been unhidden.", refresh_frames=refresh_frames )
+        #TODO: used in index.mako
 
     @web.expose
     def resume_paused_jobs( self, trans, current=False, ids=None ):
@@ -618,6 +620,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             trans.sa_session.add( history )
         trans.sa_session.flush()
         return trans.show_ok_message( "Your jobs have been resumed.", refresh_frames=refresh_frames )
+        #TODO: used in index.mako
 
     @web.expose
     @web.require_login( "rate items" )
@@ -630,34 +633,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         # Rate history.
         history_rating = self.rate_item( trans.sa_session, trans.get_user(), history, rating )
         return self.get_ave_item_rating_data( trans.sa_session, history )
-
-    @web.expose
-    def rename_async( self, trans, id=None, new_name=None ):
-        history = self.get_history( trans, id )
-        # Check that the history exists, and is either owned by the current
-        # user (if logged in) or the current history
-        assert history is not None
-        if history.user is None:
-            assert history == trans.get_history()
-        else:
-            assert history.user == trans.user
-        # Rename
-        new_name = sanitize_html( new_name )
-        history.name = new_name
-        trans.sa_session.add( history )
-        trans.sa_session.flush()
-        return new_name
-
-    @web.expose
-    @web.require_login( "use Galaxy histories" )
-    def annotate_async( self, trans, id, new_annotation=None, **kwargs ):
-        history = self.get_history( trans, id )
-        if new_annotation:
-            # Sanitize annotation before adding it.
-            new_annotation = sanitize_html( new_annotation, 'utf-8', 'text/html' )
-            self.add_item_annotation( trans.sa_session, trans.get_user(), history, new_annotation )
-            trans.sa_session.flush()
-            return new_annotation
+        #TODO: used in display_base.mako
 
     @web.expose
     # TODO: Remove require_login when users are warned that, if they are not
@@ -686,6 +662,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         self.queue_history_import( trans, archive_type=archive_type, archive_source=archive_source )
         return trans.show_message( "Importing history from '%s'. \
                                     This history will be visible when the import is complete" % archive_source )
+        #TODO: used in this file and index.mako
 
     @web.expose
     def export_archive( self, trans, id=None, gzip=True, include_hidden=False, include_deleted=False ):
@@ -719,6 +696,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         return trans.show_message( "Exporting History '%(n)s'. Use this link to download \
                                     the archive or import it to another Galaxy server: \
                                     <a href='%(u)s'>%(u)s</a>" % ( { 'n' : history.name, 'u' : url } ) )
+        #TODO: used in this file and index.mako
 
     @web.expose
     @web.json
@@ -733,6 +711,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             "link" : url_for(controller='history', action="display_by_username_and_slug",
                 username=history.user.username, slug=history.slug ) }
         return return_dict
+        #TODO: used in page/editor.mako
 
     @web.expose
     @web.require_login( "set history's accessible flag" )
@@ -748,6 +727,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                 history.importable = importable
             trans.sa_session.flush()
         return
+        #TODO: used in page/editor.mako
 
     @web.expose
     def get_item_content_async( self, trans, id ):
@@ -764,6 +744,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         for dataset in datasets:
             dataset.annotation = self.get_item_annotation_str( trans.sa_session, history.user, dataset )
         return trans.stream_template_mako( "/history/item_content.mako", item = history, item_data = datasets )
+        #TODO: used in embed_base.mako
 
     @web.expose
     def name_autocomplete_data( self, trans, q=None, limit=None, timestamp=None ):
@@ -773,9 +754,12 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             return
 
         ac_data = ""
-        for history in trans.sa_session.query( model.History ).filter_by( user=user ).filter( func.lower( model.History.name ) .like(q.lower() + "%") ):
+        for history in ( trans.sa_session.query( model.History )
+                .filter_by( user=user )
+                .filter( func.lower( model.History.name ).like(q.lower() + "%") ) ):
             ac_data = ac_data + history.name + "\n"
         return ac_data
+        #TODO: used in grid_base.mako
 
     @web.expose
     def imp( self, trans, id=None, confirm=False, **kwd ):
@@ -852,6 +836,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             Warning! If you import this history, you will lose your current
             history. <br>You can <a href="%s">continue and import this history</a> or %s.
             """ % ( web.url_for(controller='history', action='imp',  id=id, confirm=True, referer=trans.request.referer ), referer_message ), use_panels=True )
+        #TODO: used in history/view, display, embed
 
     @web.expose
     def view( self, trans, id=None, show_deleted=False, show_hidden=False, use_panels=True ):
@@ -1390,51 +1375,4 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
 
     def get_item( self, trans, id ):
         return self.get_history( trans, id )
-
-    @web.json
-    def get_display_application_links( self, trans, hda_ids=None ):
-        """
-        Returns external display application JSON data for all/given
-        HDAs within the current history.
-        """
-        #TODO: fold into API and remove
-        try:
-            history = trans.get_history()
-            #TODO: allow id for more flexibility? (the following doesn't work if anonymous...)
-            #history = self.get_history( trans, id, check_ownership=True, check_accessible=True, deleted=None )
-            if hda_ids:
-                unencoded_hda_ids = [ trans.security.decode_id( hda_id ) for hda_id in galaxy.util.listify( hda_ids ) ]
-            #TODO: this gets all - should narrow query by using hda_ids here - no way with this current method
-            hdas = self.get_history_datasets( trans, history, show_deleted=False, show_hidden=True, show_purged=False )
-
-        except Exception, exc:
-            log.error( 'Failed loading data for ids (%s): %s', hda_ids, str( exc ), exc_info=True )
-            trans.response.status = 500
-            return str( exc )
-
-        hda_display_links = []
-        for hda in hdas:
-            # only get requested hdas
-            if hda_ids and hda.id not in unencoded_hda_ids:
-                continue
-
-            hda_link_data = { 'id': trans.security.encode_id( hda.id ) }
-            # don't bail on entire list if one hda has an error; record and move on
-            try:
-                # 'old style': must be enabled in config (see universe_wsgi.ini)
-                if trans.app.config.enable_old_display_applications:
-                    hda_link_data[ 'display_types' ] = self.get_old_display_applications( trans, hda )
-
-                # 'new style'
-                hda_link_data[ 'display_apps' ] = self.get_display_apps( trans, hda )
-
-            except Exception, exc:
-                log.error( 'Failed getting links, hda (%s): %s', hda_link_data[ 'id' ], str( exc ), exc_info=True )
-                hda_link_data[ 'error' ] = str( exc )
-
-            hda_display_links.append( hda_link_data )
-
-        # send 'do not cache' headers to handle IE's caching of ajax get responses
-        trans.response.headers[ 'Cache-Control' ] = "max-age=0,no-cache,no-store"
-        trans.response.set_content_type( 'application/json' )
-        return hda_display_links
+        #TODO: override of base ui controller?
