@@ -50,6 +50,7 @@ class DefaultToolAction( object ):
                         if converted_dataset:
                             data = converted_dataset
                         else:
+                            # FIXME: merge with hda.get_converted_dataset() mode as it's nearly identical.
                             #run converter here
                             new_data = data.datatype.convert_dataset( trans, data, target_ext, return_output=True, visible=False ).values()[0]
                             new_data.hid = data.hid
