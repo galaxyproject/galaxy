@@ -251,7 +251,10 @@ class ToolEvaluator( object ):
             if real_path in output_dataset_paths:
                 dataset_path = output_dataset_paths[ real_path ]
                 param_dict[name] = DatasetFilenameWrapper( hda, dataset_path=dataset_path )
-                open( dataset_path.false_path, 'w' ).close()
+                try:
+                    open( dataset_path.false_path, 'w' ).close()
+                except EnvironmentError:
+                    pass  # May well not exist - e.g. LWR.
             else:
                 param_dict[name] = DatasetFilenameWrapper( hda )
             # Provide access to a path to store additional files
