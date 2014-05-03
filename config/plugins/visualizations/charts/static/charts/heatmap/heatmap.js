@@ -22,12 +22,14 @@ return Backbone.View.extend(
             for (var group_index in request_dictionary.groups) {
                 // get group
                 var group = request_dictionary.groups[group_index];
-            
+                var div = self.options.canvas[group_index];
+
                 // draw plot
                 var heatmap = new HeatmapPlugin({
-                    'colors' : HeatmapParameters.colorSets[chart.settings.get('color_set')],
-                    'data'   : group.values,
-                    'div'    : self.options.canvas[group_index]
+                    'title'     : group.key,
+                    'colors'    : HeatmapParameters.colorSets[chart.settings.get('color_set')],
+                    'data'      : group.values,
+                    'div'       : div
                 });
             }
             

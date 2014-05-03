@@ -25,6 +25,7 @@ return Backbone.View.extend(
         
     // default settings
     optionsDefault: {
+        title   : '',
         pace    : 1000,
         margin  : {
             top         : 50,
@@ -231,12 +232,32 @@ return Backbone.View.extend(
         this.colSortOrder   = false;
         
         // build
-        this.rowLabels      = this._buildRowLabels();
-        this.colLabels      = this._buildColLabels();
-        this.heatMap        = this._buildHeatMap();
-        this.legend         = this._buildLegend();
+        this._buildRowLabels();
+        this._buildColLabels();
+        this._buildHeatMap();
+        this._buildLegend();
+        this._buildTitle();
     },
         
+    // build title
+    _buildTitle: function() {
+        // link this
+        var self = this;
+        
+        // gather data
+        var height  = this.height;
+        var width   = this.width;
+        var title   = this.options.title;
+        
+        // add title
+        this.svg.append('g')
+            .append('text')
+            .attr('x', width / 2)
+            .attr('y', height - 10)
+            .attr('text-anchor', 'middle')
+            .text(title);
+    },
+    
     // build legend
     _buildLegend: function() {
         // link this
