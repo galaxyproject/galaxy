@@ -20,19 +20,24 @@ return Backbone.View.extend(
     // cell size
     cellSize: 0,
     
+    // font size
+    fontSize: 0,
+    
     // color buckets
     nColors: 0,
-        
+
+    // margins as cells
+    margin  : {
+        top         : 5,
+        right       : 5,
+        bottom      : 5,
+        left        : 5
+    },
+
     // default settings
     optionsDefault: {
         title   : '',
         pace    : 1000,
-        margin  : {
-            top         : 50,
-            right       : 10,
-            bottom      : 50,
-            left        : 100
-        }
     },
 
     // initialize
@@ -107,20 +112,19 @@ return Backbone.View.extend(
         // generate sorted key list for rows
         for (var i in this.rowLabel) {
             var row_label = this.rowLabel[i];
-            var row_rank = parseInt(i);
-            this.rowRank[row_label] = row_rank;
+            var row = parseInt(i);
+            this.rowRank[row_label] = row;
         }
         
         // generate sorted key list for columns
         for (var i in this.colLabel) {
             var col_label = this.colLabel[i];
-            var col_rank = parseInt(i);
-            this.colRank[col_label] = col_rank;
+            var col = parseInt(i);
+            this.colRank[col_label] = col;
         }
         
         //
         // parse indexing from rank dictionary to cells
-        // identify data range
         //
         
         // min/max
@@ -133,8 +137,8 @@ return Backbone.View.extend(
             var cell = this.data[i];
             
             // add rank
-            cell.col_rank = this.colRank[cell.col_label];
-            cell.row_rank = this.rowRank[cell.row_label];
+            cell.col = this.colRank[cell.col_label];
+            cell.row = this.rowRank[cell.row_label];
             
             // identify max/min values
             if (this.min == undefined || this.min > cell.value) {
@@ -199,17 +203,20 @@ return Backbone.View.extend(
         // link this
         var self = this;
         
-        // container
-        var container_width = this.$el.width();
-        var container_height = this.$el.height();
+        // container (full draw area)
+        this.widthContainer  = this.$el.width();
+        this.heightContainer = this.$el.height();
         
-        // get height
-        this.width = this.$el.width() - this.options.margin.left - this.options.margin.right;
-        this.height = this.$el.height() - this.options.margin.top - this.options.margin.bottom;
+        // get grid dimensions
+        this.width  = this.widthContainer;
+        this.height = this.heightContainer;
         
         // calculate cell size
-        this.cellSize = Math.min(parseInt(this.height / this.rowNumber),
-                                 parseInt(this.width / this.colNumber));
+        this.cellSize = Math.min(((this.height - 50) / (this.rowNumber + this.margin.top + this.margin.bottom)),
+                                 (this.width / (this.colNumber + this.margin.left + this.margin.right)));
+        
+        // set font size
+        this.fontSize = Math.min(this.cellSize, 16);
         
         // set width/height for plugin
         this.width  = this.cellSize * this.colNumber;
@@ -222,10 +229,9 @@ return Backbone.View.extend(
         
         // add main group and translate
         this.svg = d3.select(this.$el[0]).append('svg')
-            .attr('width', width + margin.left + margin.right)
-            .attr('height', height + margin.top + margin.bottom)
             .append('g')
-            .attr('transform', 'translate(' + (container_width - width) / 2 + ',' + (container_height - height) / 2 + ')')
+            .attr('transform', 'translate(' + (this.widthContainer - width) / 2 + ',' +
+                                              (this.heightContainer - height) / 2 + ')')
       
         // reset sorting
         this.rowSortOrder   = false;
@@ -245,15 +251,17 @@ return Backbone.View.extend(
         var self = this;
         
         // gather data
-        var height  = this.height;
-        var width   = this.width;
-        var title   = this.options.title;
+        var height      = this.height;
+        var width       = this.width;
+        var cellSize    = this.cellSize;
+        var fontSize    = this.fontSize;
+        var title       = this.options.title;
         
         // add title
         this.svg.append('g')
             .append('text')
             .attr('x', width / 2)
-            .attr('y', height - 10)
+            .attr('y', height + 3 * cellSize + fontSize + 3)
             .attr('text-anchor', 'middle')
             .text(title);
     },
@@ -265,6 +273,7 @@ return Backbone.View.extend(
         
         // gather data
         var cellSize        = this.cellSize;
+        var fontSize        = this.fontSize;
         var height          = this.height;
         var legendCellWidth = this.width / this.nColors;
         
@@ -312,8 +321,8 @@ return Backbone.View.extend(
             .attr('x', function(d, i) {
                 return legendCellWidth * i;
             })
-            .attr('y', height + cellSize)
-            .style('font-size', cellSize + 'px');
+            .attr('y', height + cellSize - 3)
+            .style('font-size', fontSize + 'px');
     },
     
     // build column labels
@@ -323,6 +332,7 @@ return Backbone.View.extend(
         
         // gather data
         var cellSize = this.cellSize;
+        var fontSize = this.fontSize;
         var colIndex = this.colIndex;
         var colLabel = this.colLabel;
         
@@ -339,7 +349,7 @@ return Backbone.View.extend(
             .attr('y', function (d, i) {
                 return colIndex.indexOf(i) * cellSize;
             })
-            .style('font-size', cellSize + 'px')
+            .style('font-size', fontSize + 'px')
             .style('text-anchor', 'left')
             .attr('transform', 'translate(' + cellSize / 2 + ', -17) rotate (-90)')
             .attr('class',  function (d, i) {
@@ -347,15 +357,13 @@ return Backbone.View.extend(
             })
             .on('mouseover', function(d) {
                 d3.select(this).classed('text-hover',true);
-                d3.select(this).style('font-size', parseInt(cellSize * 1.3) + 'px');
             })
             .on('mouseout' , function(d) {
                 d3.select(this).classed('text-hover',false);
-                d3.select(this).style('font-size', parseInt(cellSize) + 'px');
             })
             .on('click', function(d, i) {
                 self.colSortOrder=!self.colSortOrder;
-                self._sortByLabel('c', i, self.colSortOrder);
+                self._sortByLabel('c', 'row', self.rowNumber, i, self.colSortOrder);
                 d3.select('#order').property('selectedIndex', 4).node().focus();
             });
     },
@@ -367,6 +375,7 @@ return Backbone.View.extend(
         
         // gather data
         var cellSize = this.cellSize;
+        var fontSize = this.fontSize;
         var rowIndex = this.rowIndex;
         var rowLabel = this.rowLabel;
         
@@ -383,7 +392,7 @@ return Backbone.View.extend(
             .attr('y', function (d, i) {
                 return rowIndex.indexOf(i) * cellSize;
             })
-            .style('font-size', cellSize + 'px')
+            .style('font-size',  fontSize + 'px')
             .style('text-anchor', 'end')
             .attr('transform', 'translate(-10,' + cellSize / 1.5 + ')')
             .attr('class', function (d, i) {
@@ -391,15 +400,13 @@ return Backbone.View.extend(
             } )
             .on('mouseover', function(d) {
                 d3.select(this).classed('text-hover',true);
-                d3.select(this).style('font-size', parseInt(cellSize * 1.3) + 'px');
             })
             .on('mouseout' , function(d) {
                 d3.select(this).classed('text-hover',false);
-                d3.select(this).style('font-size', parseInt(cellSize) + 'px');
             })
             .on('click', function(d, i) {
                 self.rowSortOrder=!self.rowSortOrder;
-                self._sortByLabel('r', i, self.rowSortOrder);
+                self._sortByLabel('r', 'col', self.colNumber, i, self.rowSortOrder);
                 d3.select('#order').property('selectedIndex', 4).node().focus();
             });
     },
@@ -420,18 +427,18 @@ return Backbone.View.extend(
         var heatMap = this.svg.append('g').attr('class','g3')
             .selectAll('.cellg')
             .data(self.data, function(d) {
-                return d.row_rank + ':' + d.col_rank;
+                return d.row + ':' + d.col;
             })
             .enter()
             .append('rect')
             .attr('x', function(d) {
-                return colIndex.indexOf(d.col_rank) * cellSize;
+                return colIndex.indexOf(d.col) * cellSize;
             })
             .attr('y', function(d) {
-                return rowIndex.indexOf(d.row_rank) * cellSize;
+                return rowIndex.indexOf(d.row) * cellSize;
             })
             .attr('class', function(d){
-                return 'cell cell-border cr' + d.row_rank + ' cc' + d.col_rank;
+                return 'cell cell-border cr' + d.row + ' cc' + d.col;
             })
             .attr('width', cellSize)
             .attr('height', cellSize)
@@ -441,15 +448,15 @@ return Backbone.View.extend(
             .on('mouseover', function(d){
                 // highlight text
                 d3.select(this).classed('cell-hover',true);
-                d3.selectAll('.rowLabel').classed('text-highlight',function(r,ri){ return ri==(d.row_rank);});
-                d3.selectAll('.colLabel').classed('text-highlight',function(c,ci){ return ci==(d.col_rank);});
+                d3.selectAll('.rowLabel').classed('text-highlight',function(r,ri){ return ri==(d.row);});
+                d3.selectAll('.colLabel').classed('text-highlight',function(c,ci){ return ci==(d.col);});
                 
                 // update the tooltip position and value
                 d3.select('#heatmap-tooltip')
                     .style('left', (d3.event.pageX+10) + 'px')
                     .style('top', (d3.event.pageY-10) + 'px')
                     .select('#value')
-                    .text('Label: ' + rowLabel[d.row_rank] + ' | ' + colLabel[d.col_rank] + ', Value: ' + d.value);
+                    .text('Label: ' + rowLabel[d.row] + ' | ' + colLabel[d.col] + ', Value: ' + d.value);
                 // show the tooltip
                 d3.select('#heatmap-tooltip').classed('hidden', false);
             })
@@ -462,18 +469,25 @@ return Backbone.View.extend(
     },
     
     // change ordering of cells
-    _sortByLabel: function(rORc, i, sortOrder) {
+    _sortByLabel: function(rORc, rowORcol, n, index, sortOrder) {
         // get cell size
         var cellSize = this.cellSize;
         
         // define transition / prepare element
         var t = this.svg.transition().duration(this.options.pace);
         
-        // collect cells
+        // create cells
         var cells=[];
-        t.selectAll('.c' + rORc + i)
-            .filter(function(ce){
-            cells.push(ce);
+        for (var i = 0; i < n; i++) {
+            cells[i] = {
+                value: this.min - 1
+            }
+            cells[i][rowORcol] = i;
+        }
+        
+        // collect cells
+        t.selectAll('.c' + rORc + index).filter(function(ce) {
+            cells[ce[rowORcol]].value = ce.value;
         });
         
         // sort cells
@@ -484,19 +498,19 @@ return Backbone.View.extend(
                 return a.value - b.value;
             }
         });
-            
+        
+        // get sorted key list
+        var sorted = [];
+        for (var i in cells) {
+            sorted.push(cells[i][rowORcol]);
+        }
+        
         // rows or columns
         if(rORc == 'r') {
-            // get sorted key list
-            var sorted = [];
-            for (var i in cells) {
-                sorted.push(cells[i].col_rank);
-            }
-            
             // sort cells
             t.selectAll('.cell')
                 .attr('x', function(d) {
-                    return sorted.indexOf(d.col_rank) * cellSize;
+                    return sorted.indexOf(d.col) * cellSize;
                 });
                 
             // sort labels
@@ -505,23 +519,17 @@ return Backbone.View.extend(
                     return sorted.indexOf(i) * cellSize;
                 });
         } else {
-            // get sorted key list
-            sorted = [];
-            for (var i in cells) {
-                sorted.push(cells[i].row_rank);
-            }
-            
             // sort cells
             t.selectAll('.cell')
                 .attr('y', function(d) {
-                    return sorted.indexOf(d.row_rank) * cellSize;
-            });
-            
+                    return sorted.indexOf(d.row) * cellSize;
+                });
+                
             // sort labels
             t.selectAll('.rowLabel')
                 .attr('y', function (d, i) {
                     return sorted.indexOf(i) * cellSize;
-            });
+                });
         }
     },
 
@@ -542,10 +550,10 @@ return Backbone.View.extend(
         if(value=='hclust'){
             t.selectAll('.cell')
                 .attr('x', function(d) {
-                    return colIndex.indexOf(d.col_rank) * cellSize;
+                    return colIndex.indexOf(d.col) * cellSize;
                 })
                 .attr('y', function(d) {
-                    return rowIndex.indexOf(d.row_rank) * cellSize;
+                    return rowIndex.indexOf(d.row) * cellSize;
                 });
 
             t.selectAll('.rowLabel')
@@ -561,10 +569,10 @@ return Backbone.View.extend(
         } else if (value=='byboth') {
             t.selectAll('.cell')
                 .attr('x', function(d) {
-                    return d.col_rank * cellSize;
+                    return d.col * cellSize;
                 })
                 .attr('y', function(d) {
-                    return d.row_rank * cellSize;
+                    return d.row * cellSize;
                 });
 
             t.selectAll('.rowLabel')
@@ -579,7 +587,7 @@ return Backbone.View.extend(
         } else if (value=='byrow') {
             t.selectAll('.cell')
                 .attr('y', function(d) {
-                    return d.row_rank * cellSize;
+                    return d.row * cellSize;
                 });
 
             t.selectAll('.rowLabel')
@@ -589,7 +597,7 @@ return Backbone.View.extend(
         } else if (value=='bycol'){
             t.selectAll('.cell')
                 .attr('x', function(d) {
-                    return d.col_rank * cellSize;
+                    return d.col * cellSize;
                 });
             t.selectAll('.colLabel')
                 .attr('y', function (d, i) {
@@ -666,11 +674,11 @@ return Backbone.View.extend(
                                 .classed('cell-selection', true)
                                 .classed('cell-selected', true);
 
-                            d3.select('.r'+(cell_d.row_rank))
+                            d3.select('.r' + cell_d.row)
                                 .classed('text-selection',true)
                                 .classed('text-selected',true);
 
-                            d3.select('.c'+(cell_d.col_rank))
+                            d3.select('.c' + cell_d.col)
                                 .classed('text-selection',true)
                                 .classed('text-selected',true);
                         }
