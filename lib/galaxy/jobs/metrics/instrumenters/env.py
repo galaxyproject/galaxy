@@ -42,6 +42,13 @@ class EnvPlugin( InstrumentPlugin ):
 
         properties = {}
         for line in open( self.__env_file( job_directory ) ).readlines():
+            if "=" not in line:
+                # Previous line may have had a multiline property value, just
+                # keep it simple here and only record the first part of
+                # property. A more robust solution might be to record env -O
+                # so properties are terminated by null characters instead of
+                # newlines.
+                continue
             var, value = line.split( "=", 1 )
             if not variables or var in variables:
                 properties[ var ] = value
