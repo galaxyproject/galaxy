@@ -18,6 +18,8 @@ log = logging.getLogger( __name__ )
 
 __all__ = [ 'LocalJobRunner' ]
 
+DEFAULT_POOL_SLEEP_TIME = 1
+
 
 class LocalJobRunner( BaseJobRunner ):
     """
@@ -85,20 +87,11 @@ class LocalJobRunner( BaseJobRunner ):
                                      preexec_fn=os.setpgrp )
             job_wrapper.set_job_destination(job_wrapper.job_destination, proc.pid)
             job_wrapper.change_state( model.Job.states.RUNNING )
-            job_start = datetime.datetime.now()
-            i = 0
-            # Iterate until the process exits, periodically checking its limits
-            while proc.poll() is None:
-                i += 1
-                if (i % 20) == 0:
-                    msg = job_wrapper.check_limits(runtime=datetime.datetime.now() - job_start)
-                    if msg is not None:
-                        job_wrapper.fail(msg)
-                        log.debug('(%s) Terminating process group' % job_id)
-                        self._terminate(proc)
-                        return
-                else:
-                    sleep(1)
+
+            terminated = self.__poll( proc, job_wrapper, job_id )
+            if terminated:
+                return
+
             # Reap the process and get the exit code.
             exit_code = proc.wait()
             stdout_file.seek( 0 )
@@ -168,3 +161,19 @@ class LocalJobRunner( BaseJobRunner ):
         if proc.poll() is None:
             os.killpg( proc.pid, 9 )
         return proc.wait()  # reap
+
+    def __poll( self, proc, job_wrapper, job_id ):
+        job_start = datetime.datetime.now()
+        i = 0
+        # Iterate until the process exits, periodically checking its limits
+        while proc.poll() is None:
+            i += 1
+            if (i % 20) == 0:
+                msg = job_wrapper.check_limits(runtime=datetime.datetime.now() - job_start)
+                if msg is not None:
+                    job_wrapper.fail(msg)
+                    log.debug('(%s) Terminating process group' % job_id)
+                    self._terminate(proc)
+                    return True
+            else:
+                sleep( DEFAULT_POOL_SLEEP_TIME )
