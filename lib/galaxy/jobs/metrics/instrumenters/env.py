@@ -1,3 +1,5 @@
+import re
+
 from ..instrumenters import InstrumentPlugin
 from ...metrics import formatting
 
@@ -41,17 +43,19 @@ class EnvPlugin( InstrumentPlugin ):
         variables = self.variables
 
         properties = {}
-        for line in open( self.__env_file( job_directory ) ).readlines():
-            if "=" not in line:
-                # Previous line may have had a multiline property value, just
-                # keep it simple here and only record the first part of
-                # property. A more robust solution might be to record env -O
-                # so properties are terminated by null characters instead of
-                # newlines.
-                continue
-            var, value = line.split( "=", 1 )
+        env_string = ''.join( open( self.__env_file( job_directory ) ).readlines() )
+        while env_string:
+            # Check if the next lines contain a shell function.
+            # We use '\n\}\n' as regex termination because shell
+            # functions can be nested.
+            # We use the non-greedy '.+?' because of re.DOTALL .
+            m = re.match( '([^=]+)=(\(\) \{.+?\n\})\n', env_string, re.DOTALL )
+            if m is None:
+                m = re.match( '([^=]+)=(.*)\n', env_string )
+            (var, value) = m.groups()
             if not variables or var in variables:
                 properties[ var ] = value
+            env_string = env_string[m.end():]
 
         return properties
 
