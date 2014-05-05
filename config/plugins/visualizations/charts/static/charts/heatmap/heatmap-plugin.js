@@ -180,26 +180,22 @@ return Backbone.View.extend(
         //
         // add ui elements
         //
-        // create ui elements
+        // create tooltip
         this.$tooltip = $(this._templateTooltip());
-        this.$select  = $(this._templateSelect());
-        
-        // append
         this.$el.append(this.$tooltip);
-        this.$el.append(this.$select);
-        
-        // add event to select field
-        this.$select.on('change', function(){
-            self._sortByOrder(this.value);
-        });
         
         //
         // finally draw the heatmap
         //
-        this._draw();
+        this._build();
+        
+        // catch window resize event
+        $(window).resize(function () {
+            self._build();
+        });
     },
     
-    _draw: function() {
+    _build: function() {
         // link this
         var self = this;
         
@@ -212,7 +208,7 @@ return Backbone.View.extend(
         this.height = this.heightContainer;
         
         // calculate cell size
-        this.cellSize = Math.min(((this.height - 50) / (this.rowNumber + this.margin.top + this.margin.bottom)),
+        this.cellSize = Math.min(((this.height) / (this.rowNumber + this.margin.top + this.margin.bottom)),
                                  (this.width / (this.colNumber + this.margin.left + this.margin.right)));
         
         // set font size
@@ -227,22 +223,27 @@ return Backbone.View.extend(
         var width               = this.width;
         var height              = this.height;
         
+        // reset svg
+        if (this.svg !== undefined) {
+            this.$el.find('svg').remove();
+        }
+        
         // add main group and translate
         this.svg = d3.select(this.$el[0]).append('svg')
             .append('g')
             .attr('transform', 'translate(' + (this.widthContainer - width) / 2 + ',' +
-                                              (this.heightContainer - height) / 2 + ')')
-      
+                                              (this.heightContainer - height) / 2 + ')');
+                            
         // reset sorting
         this.rowSortOrder   = false;
         this.colSortOrder   = false;
         
         // build
-        this._buildRowLabels();
-        this._buildColLabels();
-        this._buildHeatMap();
-        this._buildLegend();
-        this._buildTitle();
+        this.d3RowLabels = this._buildRowLabels();
+        this.d3ColLabels = this._buildColLabels();
+        this.d3HeatMap = this._buildHeatMap();
+        this.d3Legend = this._buildLegend();
+        this.d3Title = this._buildTitle();
     },
         
     // build title
@@ -258,7 +259,7 @@ return Backbone.View.extend(
         var title       = this.options.title;
         
         // add title
-        this.svg.append('g')
+        return this.svg.append('g')
             .append('text')
             .attr('x', width / 2)
             .attr('y', height + 3 * cellSize + fontSize + 3)
@@ -323,6 +324,9 @@ return Backbone.View.extend(
             })
             .attr('y', height + cellSize - 3)
             .style('font-size', fontSize + 'px');
+            
+        // return
+        return legend;
     },
     
     // build column labels
@@ -366,6 +370,9 @@ return Backbone.View.extend(
                 self._sortByLabel('c', 'row', self.rowNumber, i, self.colSortOrder);
                 d3.select('#order').property('selectedIndex', 4).node().focus();
             });
+            
+        // return
+        return colLabels;
     },
     
     // build row labels
@@ -409,6 +416,9 @@ return Backbone.View.extend(
                 self._sortByLabel('r', 'col', self.colNumber, i, self.rowSortOrder);
                 d3.select('#order').property('selectedIndex', 4).node().focus();
             });
+            
+        // return
+        return rowLabels;
     },
     
     // build heat map
@@ -424,7 +434,7 @@ return Backbone.View.extend(
         var colLabel = this.colLabel;
         
         // heat map
-        var heatMap = this.svg.append('g').attr('class','g3')
+        var heatmap = this.svg.append('g').attr('class','g3')
             .selectAll('.cellg')
             .data(self.data, function(d) {
                 return d.row + ':' + d.col;
@@ -466,6 +476,9 @@ return Backbone.View.extend(
                 d3.selectAll('.colLabel').classed('text-highlight',false);
                 d3.select('#heatmap-tooltip').classed('hidden', true);
             });
+            
+        // return
+        return heatmap;
     },
     
     // change ordering of cells
