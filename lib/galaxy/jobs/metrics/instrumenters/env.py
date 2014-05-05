@@ -52,6 +52,12 @@ class EnvPlugin( InstrumentPlugin ):
             m = re.match( '([^=]+)=(\(\) \{.+?\n\})\n', env_string, re.DOTALL )
             if m is None:
                 m = re.match( '([^=]+)=(.*)\n', env_string )
+            if m is None:
+                # Some problem recording or reading back env output.
+                message_template = "Problem parsing env metric output for job %s - properties will be incomplete"
+                message = message_template % job_id
+                log.debug( message )
+                break
             (var, value) = m.groups()
             if not variables or var in variables:
                 properties[ var ] = value
