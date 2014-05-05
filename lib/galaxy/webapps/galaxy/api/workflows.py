@@ -1,8 +1,8 @@
-from __future__ import absolute_import
-
 """
 API operations for Workflows
 """
+
+from __future__ import absolute_import
 
 import logging
 from sqlalchemy import desc, or_
@@ -12,7 +12,6 @@ from galaxy import web
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web.base.controller import BaseAPIController, url_for, UsesStoredWorkflowMixin
 from galaxy.web.base.controller import UsesHistoryMixin
-from galaxy.workflow.modules import module_factory
 from galaxy.workflow.run import invoke
 from galaxy.workflow.run import WorkflowRunConfig
 from galaxy.workflow.extract import extract_workflow
@@ -120,76 +119,79 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
         workflow will be created for this user. Otherwise, workflow_id must be
         specified and this API method will cause a workflow to execute.
 
-        :param  installed_repository_file    The path of a workflow to import. Either workflow_id or installed_repository_file must be specified
+        :param  installed_repository_file    The path of a workflow to import. Either workflow_id, installed_repository_file or from_history_id must be specified
         :type   installed_repository_file    str
 
-        :param  workflow_id:                 an existing workflow id. Either workflow_id or installed_repository_file must be specified
+        :param  workflow_id:                 An existing workflow id. Either workflow_id, installed_repository_file or from_history_id must be specified
         :type   workflow_id:                 str
 
-        :param  parameters:                  See _update_step_parameters()
+        :param  parameters:                  If workflow_id is set - see _update_step_parameters()
         :type   parameters:                  dict
 
-        :param  ds_map:                      A dictionary mapping each input step id to a dictionary with 2 keys: 'src' (which can be 'ldda', 'ld' or 'hda') and 'id' (which should be the id of a LibraryDatasetDatasetAssociation, LibraryDataset or HistoryDatasetAssociation respectively)
+        :param  ds_map:                      If workflow_id is set - a dictionary mapping each input step id to a dictionary with 2 keys: 'src' (which can be 'ldda', 'ld' or 'hda') and 'id' (which should be the id of a LibraryDatasetDatasetAssociation, LibraryDataset or HistoryDatasetAssociation respectively)
         :type   ds_map:                      dict
 
-        :param  no_add_to_history:           if present in the payload with any value, the input datasets will not be added to the selected history
+        :param  no_add_to_history:           If workflow_id is set - if present in the payload with any value, the input datasets will not be added to the selected history
         :type   no_add_to_history:           str
 
-        :param  history:                     Either the name of a new history or "hist_id=HIST_ID" where HIST_ID is the id of an existing history
+        :param  history:                     If workflow_id is set - optional history where to run the workflow, either the name of a new history or "hist_id=HIST_ID" where HIST_ID is the id of an existing history. If not specified, the workflow will be run a new unnamed history
         :type   history:                     str
 
-        :param  replacement_params:          A dictionary used when renaming datasets
+        :param  replacement_params:          If workflow_id is set - an optional dictionary used when renaming datasets
         :type   replacement_params:          dict
 
-        :param  from_history_id:             Id of history to extract a workflow from. Should not be used with worfklow_id or installed_repository_file.
+        :param  from_history_id:             Id of history to extract a workflow from. Either workflow_id, installed_repository_file or from_history_id must be specified
         :type   from_history_id:             str
 
-        :param  job_ids:                     If from_history_id is set - this should be a list of jobs to include when extracting workflow from history.
+        :param  job_ids:                     If from_history_id is set - optional list of jobs to include when extracting workflow from history.
         :type   job_ids:                     str
 
-        :param  dataset_ids:                 If from_history_id is set - this should be a list of HDA ids corresponding to workflow inputs when extracting workflow from history.
+        :param  dataset_ids:                 If from_history_id is set - optional list of HDA ids corresponding to workflow inputs when extracting workflow from history.
         :type   dataset_ids:                 str
+
+        :param  workflow_name:               If from_history_id is set - name of the workflow to create
+        :type   workflow_name:               str
         """
 
-        # Pull parameters out of payload.
-        workflow_id = payload.get('workflow_id', None)
-        param_map = payload.get('parameters', {})
-        ds_map = payload.get('ds_map', {})
-        add_to_history = 'no_add_to_history' not in payload
-        history_param = payload.get('history', '')
-
-        # Get/create workflow.
-        if not workflow_id:
-            # create new
-            if 'installed_repository_file' in payload:
-                workflow_controller = trans.webapp.controllers[ 'workflow' ]
-                result = workflow_controller.import_workflow( trans=trans,
-                                                              cntrller='api',
-                                                              **payload)
-                return result
-            if 'from_history_id' in payload:
-                from_history_id = payload.get( 'from_history_id' )
-                history = self.get_history( trans, from_history_id, check_ownership=False, check_accessible=True )
-                job_ids = map( trans.security.decode_id, payload.get( "job_ids", [] ) )
-                dataset_ids = map( trans.security.decode_id, payload.get( "dataset_ids", [] ) )
-                workflow_name = payload[ "workflow_name" ]
-                stored_workflow = extract_workflow(
-                    trans=trans,
-                    user=trans.get_user(),
-                    history=history,
-                    job_ids=job_ids,
-                    dataset_ids=dataset_ids,
-                    workflow_name=workflow_name,
-                )
-                item = stored_workflow.to_dict( value_mapper={ "id": trans.security.encode_id } )
-                item[ 'url' ] = url_for( 'workflow', id=item[ "id" ] )
-                return item
-
+        if len( set( ['workflow_id', 'installed_repository_file', 'from_history_id'] ).intersection( payload ) ) > 1:
             trans.response.status = 403
-            return "Either workflow_id or installed_repository_file must be specified"
+            return "Only one among 'workflow_id', 'installed_repository_file', 'from_history_id' must be specified"
+
         if 'installed_repository_file' in payload:
+            workflow_controller = trans.webapp.controllers[ 'workflow' ]
+            result = workflow_controller.import_workflow( trans=trans,
+                                                          cntrller='api',
+                                                          **payload)
+            return result
+
+        if 'from_history_id' in payload:
+            from_history_id = payload.get( 'from_history_id' )
+            history = self.get_history( trans, from_history_id, check_ownership=False, check_accessible=True )
+            job_ids = map( trans.security.decode_id, payload.get( 'job_ids', [] ) )
+            dataset_ids = map( trans.security.decode_id, payload.get( 'dataset_ids', [] ) )
+            workflow_name = payload[ 'workflow_name' ]
+            stored_workflow = extract_workflow(
+                trans=trans,
+                user=trans.get_user(),
+                history=history,
+                job_ids=job_ids,
+                dataset_ids=dataset_ids,
+                workflow_name=workflow_name,
+            )
+            item = stored_workflow.to_dict( value_mapper={ 'id': trans.security.encode_id } )
+            item[ 'url' ] = url_for( 'workflow', id=item[ 'id' ] )
+            return item
+
+        workflow_id = payload.get( 'workflow_id', None )
+        if not workflow_id:
             trans.response.status = 403
-            return "installed_repository_file may not be specified with workflow_id"
+            return "Either workflow_id, installed_repository_file or from_history_id must be specified"
+
+        # Pull other parameters out of payload.
+        param_map = payload.get( 'parameters', {} )
+        ds_map = payload.get( 'ds_map', {} )
+        add_to_history = 'no_add_to_history' not in payload
+        history_param = payload.get( 'history', '' )
 
         # Get workflow + accessibility check.
         stored_workflow = trans.sa_session.query(self.app.model.StoredWorkflow).get(
