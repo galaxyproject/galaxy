@@ -15,7 +15,7 @@ from galaxy import web
 from galaxy.web.base.controller import BaseUIController
 from galaxy.util.json import to_json_string
 
-eggs.require('pyyaml')
+eggs.require('PyYAML')
 eggs.require('boto')
 eggs.require('bioblend')
 
