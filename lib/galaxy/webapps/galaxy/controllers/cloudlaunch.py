@@ -15,9 +15,9 @@ from galaxy import web
 from galaxy.web.base.controller import BaseUIController
 from galaxy.util.json import to_json_string
 
+eggs.require('pyyaml')
 eggs.require('boto')
 eggs.require('bioblend')
-eggs.require('pyyaml')
 
 from boto.exception import EC2ResponseError
 
@@ -73,7 +73,7 @@ class CloudController(BaseUIController):
         result = cml.launch(cluster_name, ami, instance_type, password,
                             cfg.kernel_id, cfg.ramdisk_id, cfg.key_name,
                             cfg.security_groups, cfg.placement)
-        #result is a dict with sg_names, kp_name, kp_material, rs, and instance_id
+        # result is a dict with sg_names, kp_name, kp_material, rs, and instance_id
         if not result['rs']:
             trans.response.status = 400
             return "Instance failure, but no specific error was detected.  Please check your AWS Console."
@@ -86,7 +86,7 @@ class CloudController(BaseUIController):
                 pass
             time.sleep(1)
         if result['kp_material']:
-            #We have created a keypair.  Save to tempfile for one time retrieval.
+            # We have created a keypair.  Save to tempfile for one time retrieval.
             (fd, fname) = tempfile.mkstemp(prefix=PKEY_PREFIX, dir=trans.app.config.new_file_path)
             f = os.fdopen(fd, 'wt')
             f.write(result['kp_material'])
