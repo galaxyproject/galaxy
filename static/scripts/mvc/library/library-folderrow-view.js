@@ -183,10 +183,18 @@ var FolderRowView = Backbone.View.extend({
       var self = this;
       historyItem.url = historyItem.urlRoot + history_id + '/contents';
 
+      // set the used history as current so user will see the last one 
+      // that he imported into in the history panel on the 'analysis' page
+      var set_current_url =  '/api/histories/' + history_id + '/set_as_current';
+      $.ajax({
+        url: set_current_url,
+        type: 'PUT'
+      });
+
       // save the dataset into selected history
       historyItem.save({ content : library_dataset_id, source : 'library' }, { 
         success : function(){
-          mod_toastr.success('Dataset imported');
+          mod_toastr.success('Dataset imported. Click this to start analysing it.', '', {onclick: function() {window.location='/'}});
           //enable the buttons
           self.modal.enableButton('Import');
           self.modal.enableButton('Download');
