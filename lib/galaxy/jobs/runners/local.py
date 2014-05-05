@@ -88,7 +88,7 @@ class LocalJobRunner( BaseJobRunner ):
             job_wrapper.set_job_destination(job_wrapper.job_destination, proc.pid)
             job_wrapper.change_state( model.Job.states.RUNNING )
 
-            terminated = self.__poll( proc, job_wrapper, job_id )
+            terminated = self.__poll_if_needed( proc, job_wrapper, job_id )
             if terminated:
                 return
 
@@ -162,7 +162,11 @@ class LocalJobRunner( BaseJobRunner ):
             os.killpg( proc.pid, 9 )
         return proc.wait()  # reap
 
-    def __poll( self, proc, job_wrapper, job_id ):
+    def __poll_if_needed( self, proc, job_wrapper, job_id ):
+        # Only poll if needed (i.e. job limits are set)
+        if not job_wrapper.has_limits():
+            return
+
         job_start = datetime.datetime.now()
         i = 0
         # Iterate until the process exits, periodically checking its limits
