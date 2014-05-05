@@ -11,7 +11,8 @@ import subprocess
 from time import sleep
 
 from galaxy import model
-from galaxy.jobs.runners import BaseJobRunner
+from ..runners import BaseJobRunner
+from ..runners import JobState
 from galaxy.util import DATABASE_MAX_STRING_SIZE, shrink_stream_by_size
 from galaxy.util import asbool
 
@@ -37,12 +38,6 @@ class LocalJobRunner( BaseJobRunner ):
         #create a local copy of os.environ to use as env for subprocess.Popen
         self._environ = os.environ.copy()
 
-        # put lib into the PYTHONPATH for subprocesses
-        if 'PYTHONPATH' in self._environ:
-            self._environ['PYTHONPATH'] = '%s:%s' % ( self._environ['PYTHONPATH'], os.path.abspath( 'lib' ) )
-        else:
-            self._environ['PYTHONPATH'] = os.path.abspath( 'lib' )
-
         #Set TEMP if a valid temp value is not already set
         if not ( 'TMPDIR' in self._environ or 'TEMP' in self._environ or 'TMP' in self._environ ):
             self._environ[ 'TEMP' ] = tempfile.gettempdir()
@@ -58,12 +53,24 @@ class LocalJobRunner( BaseJobRunner ):
         ## slots would be cleaner name, but don't want deployers to see examples and think it
         ## is going to work with other job runners.
         slots = job_wrapper.job_destination.params.get( "local_slots", None )
-        command_line = command_line.lstrip( " ;" )
         if slots:
-            command_line = 'GALAXY_SLOTS="%d"; export GALAXY_SLOTS; GALAXY_SLOTS_CONFIGURED="1"; export GALAXY_SLOTS_CONFIGURED; %s' % ( int( slots ), command_line )
+            slots_statement = 'GALAXY_SLOTS="%d"; export GALAXY_SLOTS; GALAXY_SLOTS_CONFIGURED="1"; export GALAXY_SLOTS_CONFIGURED;' % ( int( slots ) )
         else:
-            command_line = 'GALAXY_SLOTS="1"; export GALAXY_SLOTS; %s' % command_line
-        return command_line
+            slots_statement = 'GALAXY_SLOTS="1"; export GALAXY_SLOTS;'
+
+        job_id = job_wrapper.get_id_tag()
+        job_file = JobState.default_job_file( job_wrapper.working_directory, job_id )
+        exit_code_path = JobState.default_exit_code_file( job_wrapper.working_directory, job_id )
+        job_script_props = {
+            'slots_statement': slots_statement,
+            'command': command_line,
+            'exit_code_path': exit_code_path,
+            'working_directory': job_wrapper.working_directory,
+        }
+        job_file_contents = self.get_job_file( job_wrapper, **job_script_props )
+        open( job_file, 'w' ).write( job_file_contents )
+        os.chmod( job_file, 0755 )
+        return job_file, exit_code_path
 
     def queue_job( self, job_wrapper ):
         # prepare the job
@@ -75,8 +82,7 @@ class LocalJobRunner( BaseJobRunner ):
         exit_code = 0
 
         # command line has been added to the wrapper by prepare_job()
-        command_line = self.__command_line( job_wrapper )
-
+        command_line, exit_code_path = self.__command_line( job_wrapper )
         job_id = job_wrapper.get_id_tag()
 
         try:
@@ -99,6 +105,11 @@ class LocalJobRunner( BaseJobRunner ):
 
             # Reap the process and get the exit code.
             exit_code = proc.wait()
+            try:
+                exit_code = int( open( exit_code_path, 'r' ).read() )
+            except Exception:
+                log.warn( "Failed to read exit code from path %s" % exit_code_path )
+                pass
             stdout_file.seek( 0 )
             stderr_file.seek( 0 )
             stdout = shrink_stream_by_size( stdout_file, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
