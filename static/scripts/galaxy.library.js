@@ -27,12 +27,29 @@ function(mod_masthead,
 // ============================================================================
 // ROUTER
 var LibraryRouter = Backbone.Router.extend({
-    routes: {
-        ""                                      : "libraries",
-        "folders/:id"                           : "folder_content",
-        "folders/:folder_id/datasets/:dataset_id"      : "dataset_detail",
-        "folders/:folder_id/download/:format"   : "download"
+  initialize: function() {
+    this.routesHit = 0;
+    //keep count of number of routes handled by the application
+    Backbone.history.on('route', function() { this.routesHit++; }, this);
+  },
+
+  routes: {
+    ""                                        : "libraries",
+    "folders/:id"                             : "folder_content",
+    "folders/:folder_id/datasets/:dataset_id" : "dataset_detail",
+    "folders/:folder_id/download/:format"     : "download"
+  },
+
+  back: function() {
+    if(this.routesHit > 1) {
+      //more than one route hit -> user did not land to current page directly
+      window.history.back();
+    } else {
+      //otherwise go to the home page. Use replaceState if available so
+      //the navigation doesn't create an extra history entry
+      this.navigate('#', {trigger:true, replace:true});
     }
+  }
 });
 
 // ============================================================================
@@ -70,7 +87,7 @@ var GalaxyLibrary = Backbone.View.extend({
         });
 
         this.library_router.on('route:folder_content', function(id) {
-            // TODO place caching here, sessionstorage/localstorage?
+            // TODO maybe caching somewhere here, sessionstorage/localstorage?
             if (Galaxy.libraries.folderToolbarView){ 
               Galaxy.libraries.folderToolbarView.$el.unbind('click');
             }
@@ -80,7 +97,6 @@ var GalaxyLibrary = Backbone.View.extend({
 
        this.library_router.on('route:download', function(folder_id, format) {
           if ($('#folder_list_body').find(':checked').length === 0) {
-            //TODO make URL sharable
             mod_toastr.info('You have to select some datasets to download');
             Galaxy.libraries.library_router.navigate('folders/' + folder_id, {trigger: true, replace: true});
           } else {
@@ -91,11 +107,11 @@ var GalaxyLibrary = Backbone.View.extend({
 
        this.library_router.on('route:dataset_detail', function(folder_id, dataset_id){
         if (Galaxy.libraries.folderToolbarView){ 
-          Galaxy.libraries.folderToolbarView.$el.unbind('click');
+          Galaxy.libraries.folderListView = new mod_folderlist_view.FolderListView({id: folder_id, dataset_id: dataset_id});
+        } else {
+          Galaxy.libraries.folderToolbarView = new mod_foldertoolbar_view.FolderToolbarView({id: folder_id});
+          Galaxy.libraries.folderListView = new mod_folderlist_view.FolderListView({id: folder_id, dataset_id: dataset_id});
         }
-        Galaxy.libraries.folderToolbarView = new mod_foldertoolbar_view.FolderToolbarView({id: folder_id});
-        Galaxy.libraries.folderListView = new mod_folderlist_view.FolderListView({id: folder_id, dataset_id: dataset_id});
-        // Galaxy.libraries.folderListView.rowViews.get(dataset_id).showDatasetDetails();
        });
 
     Backbone.history.start({pushState: false});

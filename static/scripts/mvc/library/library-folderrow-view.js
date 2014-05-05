@@ -49,11 +49,7 @@ var FolderRowView = Backbone.View.extend({
   },
 
   //show modal with current dataset info
-  // showDatasetDetails : function(event){
   showDatasetDetails : function(){
-    // prevent default
-    // event.preventDefault();
-
     var id = this.id;
 
     //create new item
@@ -100,7 +96,7 @@ var FolderRowView = Backbone.View.extend({
         this.modal = Galaxy.modal;
         this.modal.show({
             closing_events  : true,
-            title           : 'Dataset Details',
+            title           : item.get('name'),
             body            : template,
             buttons         : {
                 'Import'    : function() { self.importCurrentIntoHistory(); },
