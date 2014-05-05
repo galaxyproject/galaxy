@@ -196,7 +196,7 @@ class BaseJobRunner( object ):
         output_pairs = []
         # Walk job's output associations to find and use from_work_dir attributes.
         job = job_wrapper.get_job()
-        job_tool = self.app.toolbox.tools_by_id.get( job.tool_id, None )
+        job_tool = job_wrapper.tool
         for dataset_assoc in job.output_datasets + job.output_library_datasets:
             for dataset in dataset_assoc.dataset.dataset.history_associations + dataset_assoc.dataset.dataset.library_associations:
                 if isinstance( dataset, self.app.model.HistoryDatasetAssociation ):
