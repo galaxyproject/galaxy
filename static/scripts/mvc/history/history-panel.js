@@ -330,9 +330,8 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
             hdaView.remove();
             delete panel.hdaViews[ hdaView.model.id ];
             if( _.isEmpty( panel.hdaViews ) ){
-                panel.$emptyMessage().fadeIn( panel.fxSpeed, function(){
-                    panel.trigger( 'empty-history', panel );
-                });
+                panel.trigger( 'empty-history', panel );
+                panel._renderEmptyMsg();
             }
         });
     },
