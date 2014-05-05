@@ -27,7 +27,6 @@ var View = Backbone.View.extend({
     
     // adds and displays a new frame/window
     show: function(options) {
-        console.debug( this );
         // create
         this.initialize(options);
         
