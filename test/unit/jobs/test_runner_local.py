@@ -63,6 +63,17 @@ class TestLocalJobRunner( TestCase, UsesApp, UsesTools ):
         runner.queue_job( self.job_wrapper )
         assert os.path.exists( self.job_wrapper.mock_metadata_path )
 
+    def test_metadata_gets_set_if_embedded( self ):
+        self.job_wrapper.job_destination.params[ "embed_metadata_in_job" ] = "True"
+
+        # Kill off cruft for _handle_metadata_externally and make sure job stil works...
+        self.job_wrapper.external_output_metadata = None
+        self.app.datatypes_registry.set_external_metadata_tool = None
+
+        runner = local.LocalJobRunner( self.app, 1 )
+        runner.queue_job( self.job_wrapper )
+        assert os.path.exists( self.job_wrapper.mock_metadata_path )
+
     def test_stopping_job( self ):
         self.job_wrapper.command_line = '''python -c "import time; time.sleep(15)"'''
         runner = local.LocalJobRunner( self.app, 1 )

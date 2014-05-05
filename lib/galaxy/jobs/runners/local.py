@@ -13,12 +13,16 @@ from time import sleep
 from galaxy import model
 from galaxy.jobs.runners import BaseJobRunner
 from galaxy.util import DATABASE_MAX_STRING_SIZE, shrink_stream_by_size
+from galaxy.util import asbool
 
 log = logging.getLogger( __name__ )
 
 __all__ = [ 'LocalJobRunner' ]
 
 DEFAULT_POOL_SLEEP_TIME = 1
+# TODO: Set to false and just get rid of this option. It would simplify this
+# class nicely. -John
+DEFAULT_EMBED_METADATA_IN_JOB = False
 
 
 class LocalJobRunner( BaseJobRunner ):
@@ -63,7 +67,8 @@ class LocalJobRunner( BaseJobRunner ):
 
     def queue_job( self, job_wrapper ):
         # prepare the job
-        if not self.prepare_job( job_wrapper ):
+        include_metadata = asbool( job_wrapper.job_destination.params.get( "embed_metadata_in_job", DEFAULT_EMBED_METADATA_IN_JOB ) )
+        if not self.prepare_job( job_wrapper, include_metadata=include_metadata ):
             return
 
         stderr = stdout = ''
@@ -105,7 +110,9 @@ class LocalJobRunner( BaseJobRunner ):
             log.exception("failure running job %d" % job_wrapper.job_id)
             job_wrapper.fail( "failure running job", exception=True )
             return
-        self._handle_metadata_externally( job_wrapper, resolve_requirements=True )
+        external_metadata = not asbool( job_wrapper.job_destination.params.get( "embed_metadata_in_job", DEFAULT_EMBED_METADATA_IN_JOB ) )
+        if external_metadata:
+            self._handle_metadata_externally( job_wrapper, resolve_requirements=True )
         # Finish the job!
         try:
             job_wrapper.finish( stdout, stderr, exit_code )
