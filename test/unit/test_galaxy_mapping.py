@@ -237,7 +237,12 @@ class MappingTests( unittest.TestCase ):
         task = model.Task( job=job, working_directory="/tmp", prepare_files_cmd="split.sh" )
         task.add_metric( "gx", "galaxy_slots", 5 )
         task.add_metric( "system", "system_name", "localhost" )
+
+        big_value = ":".join( [ "%d" % i for i in range( 2000 ) ] )
+        task.add_metric( "env", "BIG_PATH", big_value )
         self.persist( task )
+        # Ensure big values truncated
+        assert len( task.text_metrics[ 1 ].metric_value ) <= 1023
 
     def test_tasks( self ):
         model = self.model

@@ -107,6 +107,10 @@ class HasJobMetrics:
         else:
             if isinstance( metric_value, str ):
                 metric_value = unicode( metric_value, 'utf-8' )
+            if len( metric_value ) > 1022:
+                # Truncate these values - not needed with sqlite
+                # but other backends must need it.
+                metric_value = metric_value[ :1022 ]
             metric = self._text_metric( plugin, metric_name, metric_value )
             self.text_metrics.append( metric )
 
