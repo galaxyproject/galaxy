@@ -239,6 +239,31 @@ class ToolExecutionTestCase( TestCase, tools_support.UsesApp, tools_support.Uses
         assert len( state.inputs[ "repeat1" ] ) == 1
         self.__assert_state_serializable( state )
 
+    def test_collection_multirun_with_state_updates( self ):
+        hda1, hda2 = self.__setup_multirun_job()
+        collection = self.__history_dataset_collection_for( [ hda1, hda2 ] )
+        collection_id = self.app.security.encode_id( collection.id )
+        template, template_vars = self.__handle_with_incoming( **{
+            "param1|__collection_multirun__": collection_id,
+            "runtool_btn": "dummy",
+        } )
+        self.__assert_exeuted( template, template_vars )
+
+    def __history_dataset_collection_for( self, hdas, id=1234 ):
+        collection = galaxy.model.DatasetCollection()
+        to_element = lambda hda: galaxy.model.DatasetCollectionElement(
+            collection=collection,
+            element=hda,
+        )
+        collection.datasets = map(to_element, hdas)
+        history_dataset_collection_association = galaxy.model.HistoryDatasetCollectionAssociation(
+            id=id,
+            collection=collection,
+        )
+        hdcas = self.trans.sa_session.model_objects[ galaxy.model.HistoryDatasetCollectionAssociation ]
+        hdcas[ id ] = history_dataset_collection_association
+        return history_dataset_collection_association
+
     def __assert_state_serializable( self, state ):
         self.__state_to_string( state )  # Will thrown exception if there is a problem...
 

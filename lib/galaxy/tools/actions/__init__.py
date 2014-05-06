@@ -112,7 +112,7 @@ class DefaultToolAction( object ):
                         #allow explicit conversion to be stored in job_parameter table
                         target_dict[ conversion_name ] = conversion_data.id  # a more robust way to determine JSONable value is desired
             elif isinstance( input, DataCollectionToolParameter ):
-                for i, v in enumerate( value.collection.datasets ):
+                for i, v in enumerate( value.collection.dataset_instances ):
                     data = v
                     current_user_roles = trans.get_current_user_roles()
                     if not trans.app.security_agent.can_access_dataset( current_user_roles, data.dataset ):

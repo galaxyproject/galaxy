@@ -35,6 +35,7 @@ from sqlalchemy import and_
 from galaxy import jobs, model
 from galaxy.jobs.error_level import StdioErrorLevel
 from galaxy.datatypes.metadata import JobExternalOutputMetadataWrapper
+from galaxy import exceptions
 from galaxy.jobs import ParallelismInfo
 from galaxy.tools.actions import DefaultToolAction
 from galaxy.tools.actions.data_source import DataSourceToolAction
@@ -1914,6 +1915,9 @@ class Tool( object, Dictifiable ):
         # executions).
         expanded_incomings = expand_meta_parameters( trans, incoming, self.inputs )
 
+        if not expanded_incomings:
+            raise exceptions.MessageException( "Tool execution failed, trying to run a tool over an empty collection." )
+
         # Remapping a single job to many jobs doesn't make sense, so disable
         # remap if multi-runs of tools are being used.
         if rerun_remap_job_id and len( expanded_incomings ) > 1:
@@ -2444,6 +2448,7 @@ class Tool( object, Dictifiable ):
         result = incoming.copy()
         meta_property_suffixes = [
             "__multirun__",
+            "__collection_multirun__",
         ]
         for key, value in incoming.iteritems():
             if any( map( lambda s: key.endswith(s), meta_property_suffixes ) ):

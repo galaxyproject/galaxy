@@ -135,6 +135,13 @@ class DatasetCollectionMatcher( object ):
         # Simplify things for now and assume these are hdas and not implicit
         # converts. One could imagine handling both of those cases down the
         # road.
+        if element.ldda:
+            return False
+
+        child_collection = element.child_collection
+        if child_collection:
+            return self.dataset_collection_match( child_collection )
+
         hda = element.hda
         if not hda:
             return False
@@ -142,12 +149,14 @@ class DatasetCollectionMatcher( object ):
         return hda_match and not hda_match.implicit_conversion
 
     def hdca_match( self, history_dataset_collection_association ):
+        return self.dataset_collection_match( history_dataset_collection_association.collection )
+
+    def dataset_collection_match( self, dataset_collection ):
         valid = True
-        for element in history_dataset_collection_association.collection.datasets:
+        for element in dataset_collection.elements:
             if not self.__valid_element( element ):
                 valid = False
                 break
         return valid
-
 
 __all__ = [ DatasetMatcher, DatasetCollectionMatcher ]

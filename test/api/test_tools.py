@@ -2,6 +2,7 @@
 from base import api
 from operator import itemgetter
 from .helpers import DatasetPopulator
+from .test_dataset_collections import DatasetCollectionPopulator
 
 
 class ToolsTestCase( api.ApiTestCase ):
@@ -9,6 +10,7 @@ class ToolsTestCase( api.ApiTestCase ):
     def setUp( self ):
         super( ToolsTestCase, self ).setUp( )
         self.dataset_populator = DatasetPopulator( self.galaxy_interactor )
+        self.dataset_collection_populator = DatasetCollectionPopulator( self.galaxy_interactor )
 
     def test_index( self ):
         tool_ids = self.__tool_ids()
@@ -151,6 +153,55 @@ class ToolsTestCase( api.ApiTestCase ):
         assert "123\n0ab" in outputs_contents
         assert "456\n0ab" in outputs_contents
 
+    def test_map_over_collection( self ):
+        self.__skip_without_tool( "cat1" )
+        history_id = self.dataset_populator.new_history()
+        hdca_id = self.__build_pair( history_id, [ "123", "456" ] )
+        inputs = {
+            "input1|__collection_multirun__": hdca_id,
+        }
+        outputs = self._cat1_outputs( history_id, inputs=inputs )
+        self.assertEquals( len( outputs ), 2 )
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+        output1 = outputs[ 0 ]
+        output2 = outputs[ 1 ]
+        output1_content = self._get_content( history_id, dataset=output1 )
+        output2_content = self._get_content( history_id, dataset=output2 )
+        self.assertEquals( output1_content.strip(), "123" )
+        self.assertEquals( output2_content.strip(), "456" )
+
+    def test_map_over_two_collections( self ):
+        history_id = self.dataset_populator.new_history()
+        hdca1_id = self.__build_pair( history_id, [ "123", "456" ] )
+        hdca2_id = self.__build_pair( history_id, [ "789", "0ab" ] )
+        inputs = {
+            "input1|__collection_multirun__": hdca1_id,
+            "queries_0|input2|__collection_multirun__": hdca2_id,
+        }
+        outputs = self._cat1_outputs( history_id, inputs=inputs )
+        self.assertEquals( len( outputs ), 2 )
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+        output1 = outputs[ 0 ]
+        output2 = outputs[ 1 ]
+        output1_content = self._get_content( history_id, dataset=output1 )
+        output2_content = self._get_content( history_id, dataset=output2 )
+        self.assertEquals( output1_content.strip(), "123\n789" )
+        self.assertEquals( output2_content.strip(), "456\n0ab" )
+
+    def test_cannot_map_over_incompatible_collections( self ):
+        self.__skip_without_tool( "cat1" )
+        history_id = self.dataset_populator.new_history()
+        hdca1_id = self.__build_pair( history_id, [ "123", "456" ] )
+        hdca2_id = self.dataset_collection_populator.create_list_in_history( history_id  ).json()[ "id" ]
+        inputs = {
+            "input1|__collection_multirun__": hdca1_id,
+            "queries_0|input2|__collection_multirun__": hdca2_id,
+        }
+        run_response = self._run_cat1( history_id, inputs )
+        # TODO: Fix this error checking once switch over to new API decorator
+        # on server.
+        assert run_response.status_code >= 400
+
     def _cat1_outputs( self, history_id, inputs ):
         return self._run_outputs( self._run_cat1( history_id, inputs ) )
 
@@ -208,6 +259,11 @@ class ToolsTestCase( api.ApiTestCase ):
         from nose.plugins.skip import SkipTest
         if tool_id not in self.__tool_ids( ):
             raise SkipTest( )
+
+    def __build_pair( self, history_id, contents ):
+        create_response = self.dataset_collection_populator.create_pair_in_history( history_id, contents=contents )
+        hdca_id = create_response.json()[ "id" ]
+        return hdca_id
 
 
 def dataset_to_param( dataset ):
