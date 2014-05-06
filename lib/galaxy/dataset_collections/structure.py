@@ -18,13 +18,17 @@ leaf = Leaf()
 
 class Tree( object ):
 
-    def __init__( self, dataset_collection ):
+    def __init__( self, dataset_collection, subcollection_type ):
         self.collection_type = dataset_collection.collection_type
+        self.subcollection_type = subcollection_type
         children = []
         for element in dataset_collection.elements:
             child_collection = element.child_collection
             if child_collection:
-                children.append( ( element.element_identifier, Tree( child_collection )  ) )
+                if child_collection.collection_type == subcollection_type:
+                    children.append( ( element.element_identifier, leaf  ) )
+                else:
+                    children.append( ( element.element_identifier, Tree( child_collection, subcollection_type=subcollection_type )  ) )
             elif element.hda:
                 children.append( ( element.element_identifier, leaf ) )
 
@@ -77,5 +81,5 @@ class Tree( object ):
         )
 
 
-def get_structure( dataset_collection_instance ):
-    return Tree( dataset_collection_instance.collection )
+def get_structure( dataset_collection_instance, subcollection_type=None ):
+    return Tree( dataset_collection_instance.collection, subcollection_type=subcollection_type )

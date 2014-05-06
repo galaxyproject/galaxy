@@ -10,6 +10,23 @@ class DatasetCollectionPopulator( object ):
         self.galaxy_interactor = galaxy_interactor
         self.dataset_populator = DatasetPopulator( galaxy_interactor )
 
+    def create_list_from_pairs( self, history_id, pairs ):
+        element_identifiers = []
+        for i, pair in enumerate( pairs ):
+            element_identifiers.append( dict(
+                name="test%d" % i,
+                src="hdca",
+                id=pair
+            ) )
+
+        payload = dict(
+            instance_type="history",
+            history_id=history_id,
+            element_identifiers=json.dumps(element_identifiers),
+            collection_type="list:paired",
+        )
+        return self.__create( payload )
+
     def create_pair_in_history( self, history_id, **kwds ):
         payload = self.create_pair_payload(
             history_id,

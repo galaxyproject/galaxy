@@ -13,9 +13,10 @@ class CollectionsToMatch( object ):
     def __init__( self ):
         self.collections = {}
 
-    def add( self, input_name, hdca ):
+    def add( self, input_name, hdca, subcollection_type=None ):
         self.collections[ input_name ] = bunch.Bunch(
             hdca=hdca,
+            subcollection_type=subcollection_type,
         )
 
     def has_collections( self ):
@@ -39,8 +40,8 @@ class MatchingCollections( object ):
         self.structure = None
         self.collections = {}
 
-    def __attempt_add_to_match( self, input_name, hdca ):
-        structure = get_structure( hdca )
+    def __attempt_add_to_match( self, input_name, hdca, subcollection_type ):
+        structure = get_structure( hdca, subcollection_type=subcollection_type )
         if not self.structure:
             self.structure = structure
             self.collections[ input_name ] = hdca
@@ -57,6 +58,7 @@ class MatchingCollections( object ):
         matching_collections = MatchingCollections()
         for input_key, to_match in collections_to_match.iteritems():
             hdca = to_match.hdca
-            matching_collections.__attempt_add_to_match( input_key, hdca )
+            subcollection_type = to_match = to_match.subcollection_type
+            matching_collections.__attempt_add_to_match( input_key, hdca, subcollection_type=subcollection_type )
 
         return matching_collections

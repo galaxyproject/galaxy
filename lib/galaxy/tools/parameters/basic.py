@@ -1984,11 +1984,13 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
 
     def get_html_field( self, trans=None, value=None, other_values={} ):
         # dropped refresh values, may be needed..
-        default_field = "single_collection"
-        fields = {}
+        default_field = "select_single_collection"
+        fields = odict()
 
         history = self._get_history( trans )
-        fields[ "single_collection" ] = self._get_single_collection_field( trans, history=history, value=value, other_values=other_values )
+        fields[ "select_single_collection" ] = self._get_single_collection_field( trans=trans, history=history, value=value, other_values=other_values )
+        fields[ "select_map_over_collections" ] = self._get_select_dataset_collection_field( trans=trans, history=history, value=value, other_values=other_values )
+
         return self._switch_fields( fields, default_field=default_field )
 
     def _get_single_collection_field( self, trans, history, value, other_values ):
@@ -2011,6 +2013,29 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
         self._ensure_selection( field )
         return field
 
+    def _get_select_dataset_collection_field( self, trans, history, multiple=False, suffix="|__subcollection_multirun__", value=None, other_values=None ):
+        field_name = "%s%s" % ( self.name, suffix )
+        field = form_builder.SelectField( field_name, multiple, None, self.refresh_on_change, refresh_on_change_values=self.refresh_on_change_values )
+        dataset_matcher = DatasetMatcher( trans, self, value, other_values )
+        dataset_collection_matcher = DatasetCollectionMatcher( dataset_matcher )
+
+        for history_dataset_collection in history.dataset_collections:
+            if not self.history_query.can_map_over( history_dataset_collection ):
+                continue
+
+            datasets_match = dataset_collection_matcher.hdca_match( history_dataset_collection )
+            if datasets_match:
+                name = history_dataset_collection.name
+                hid = str( history_dataset_collection.hid )
+                hidden_text = ""  # TODO
+                subcollection_type = self.history_query.collection_type
+                id = "%s|%s" % ( dataset_matcher.trans.security.encode_id( history_dataset_collection.id ), subcollection_type )
+                text = "%s:%s %s" % ( hid, hidden_text, name )
+
+                field.add_option( text, id, False )
+
+        return field
+
     def from_html( self, value, trans, other_values={} ):
         if not value and not self.optional:
             raise ValueError( "History does not include a dataset of the required format / build" )
@@ -2020,12 +2045,20 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
             value = [ int( value_part ) for value_part in value.split( "," ) ]
         elif isinstance( value, trans.app.model.HistoryDatasetCollectionAssociation ):
             rval = value
+        elif isinstance( value, trans.app.model.DatasetCollectionElement ):
+            # When mapping over nested collection - this paramter will recieve
+            # a DatasetCollectionElement instead of a
+            # HistoryDatasetCollectionAssociation.
+            rval = value
         elif isinstance( value, dict ) and 'src' in value and 'id' in value:
             if value['src'] == 'hdca':
                 rval = trans.sa_session.query( trans.app.model.HistoryDatasetCollectionAssociation ).get( trans.app.security.decode_id(value['id']) )
-        else:
-            rval = trans.sa_session.query( trans.app.model.HistoryDatasetCollectionAssociation ).get( value )
-        if rval:
+        elif isinstance( value, basestring ):
+            if value.startswith( "dce:" ):
+                rval = trans.sa_session.query( trans.app.model.DatasetCollectionElement ).get( value[ len( "dce:"): ] )
+            else:
+                rval = trans.sa_session.query( trans.app.model.HistoryDatasetCollectionAssociation ).get( value )
+        if rval and isinstance( rval, trans.app.model.HistoryDatasetCollectionAssociation ):
             if rval.deleted:
                 raise ValueError( "The previously selected dataset collection has been deleted" )
             # TODO: Handle error states, implement error states ...
@@ -2034,11 +2067,13 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
     def to_string( self, value, app ):
         if value is None or isinstance( value, basestring ):
             return value
-        elif isinstance( value, int ):
-            return str( value )
         try:
-            return value.id
-        except:
+            if isinstance( value, galaxy.model.DatasetCollectionElement ):
+                return "dce:%s" % value.id
+            else:
+                return "hdca:%s" % value.id
+        except Exception:
+            # This is not good...
             return str( value )
 
     def to_python( self, value, app ):
@@ -2046,11 +2081,25 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
         # indicates that the dataset is optional, while '' indicates that it is not.
         if value is None or value == '' or value == 'None':
             return value
-        return app.model.context.query( app.model.HistoryDatasetCollectionAssociation ).get( int( value ) )
+
+        if not isinstance( value, basestring ):
+            raise ValueError( "Can not convert data collection parameter value to python object - %s" % value )
+
+        if value.startswith( "dce:" ):
+            dce = app.model.context.query( app.model.DatasetCollectionElement ).get( int( value[ len( "dce:" ): ] ) )
+            return dce
+        elif value.startswith( "hdca:" ):
+            hdca = app.model.context.query( app.model.HistoryDatasetCollectionAssociation ).get( int( value[ len( "hdca:" ): ] ) )
+            return hdca
+        else:
+            raise ValueError( "Can not convert data collection parameter value to python object - %s" % value )
 
     def value_to_display_text( self, value, app ):
         try:
-            display_text = "%s: %s" % ( value.hid, value.name )
+            if isinstance( value, galaxy.model.HistoryDatasetCollectionAssociation ):
+                display_text = "%s: %s" % ( value.hid, value.name )
+            else:
+                display_text = "Element %d:%s" % ( value.identifier_index, value.identifier_name )
         except AttributeError:
             display_text = "No dataset collection."
         return display_text

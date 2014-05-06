@@ -221,6 +221,31 @@ class ToolsTestCase( api.ApiTestCase ):
         assert output1_content.strip() == "123\n456"
         assert len( output2_content.strip().split("\n") ) == 3, output2_content
 
+    def test_subcollection_mapping( self ):
+        self.__skip_without_tool( "collection_paired_test" )
+        history_id = self.dataset_populator.new_history()
+        hdca1_id = self.__build_pair( history_id, [ "123", "456" ] )
+        hdca2_id = self.__build_pair( history_id, [ "789", "0ab" ] )
+
+        response = self.dataset_collection_populator.create_list_from_pairs( history_id, [ hdca1_id, hdca2_id ] )
+        self._assert_status_code_is( response, 200 )
+        hdca_list_id = response.json()[ "id" ]
+        inputs = {
+            "f1|__subcollection_multirun__": "%s|paired" % hdca_list_id
+        }
+        # Following wait not really needed - just getting so many database
+        # locked errors with sqlite.
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+        outputs = self._run_and_get_outputs( "collection_paired_test", history_id, inputs )
+        assert len( outputs ), 2
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+        output1 = outputs[ 0 ]
+        output2 = outputs[ 1 ]
+        output1_content = self._get_content( history_id, dataset=output1 )
+        output2_content = self._get_content( history_id, dataset=output2 )
+        assert output1_content.strip() == "123\n456", output1_content
+        assert output2_content.strip() == "789\n0ab", output2_content
+
     def _cat1_outputs( self, history_id, inputs ):
         return self._run_outputs( self._run_cat1( history_id, inputs ) )
 

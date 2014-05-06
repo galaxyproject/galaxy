@@ -44,6 +44,16 @@ define([ "libs/underscore", "mvc/tools" ], function( _, Tools ) {
             'icon_class': 'fa-folder-o',
             'select_by': 'Run tool over dataset collection',
             'allow_remap': false,
+        },
+        'select_single_collection': {
+            'icon_class': 'fa-file-o',
+            'select_by': 'Run tool on single collection',
+            'allow_remap': true
+        },
+        'select_map_over_collections': {
+            'icon_class': 'fa-folder-o',
+            'select_by': 'Map tool over compontents of nested collection',
+            'allow_remap': false,            
         }
     };
 
