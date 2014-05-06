@@ -1932,6 +1932,7 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations, 
                      purged = hda.purged,
                      visible = hda.visible,
                      state = hda.state,
+                     history_content_type=hda.history_content_type,
                      file_size = int( hda.get_size() ),
                      update_time = hda.update_time.isoformat(),
                      data_type = hda.ext,
@@ -2000,6 +2001,10 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations, 
             changed[ key ] = new_val
 
         return changed
+
+    @property
+    def history_content_type( self ):
+        return "dataset"
 
 
 class HistoryDatasetAssociationDisplayAtAuthorization( object ):

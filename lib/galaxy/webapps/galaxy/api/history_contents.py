@@ -138,6 +138,7 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             'visible': hda.visible,
             'purged': hda.purged,
             'hid'   : hda.hid,
+            'history_content_type' : hda.history_content_type,
             'url'   : url_for( 'history_content', history_id=encoded_history_id, id=encoded_id, ),
         }
 
