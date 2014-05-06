@@ -177,6 +177,7 @@ class WorkflowSummary( object ):
         implicit_outputs = []
         for content in self.history.active_contents:
             if content.history_content_type == "dataset_collection":
+                content = self.__original_hdca( content )
                 if not content.implicit_output_name:
                     job = DatasetCollectionCreationJob( content )
                     self.jobs[ job ] = [ ( None, content ) ]
@@ -224,6 +225,11 @@ class WorkflowSummary( object ):
                 self.jobs[ job ].append( ( assoc.name, dataset ) )
             else:
                 self.jobs[ job ] = [ ( assoc.name, dataset ) ]
+
+    def __original_hdca( self, hdca ):
+        while hdca.copied_from_history_dataset_collection_association:
+            hdca = hdca.copied_from_history_dataset_collection_association
+        return hdca
 
     def __original_hda( self, hda ):
         #if this hda was copied from another, we need to find the job that created the origial hda
