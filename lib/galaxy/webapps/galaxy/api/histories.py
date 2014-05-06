@@ -121,7 +121,7 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin,
     def set_as_current( self, trans, id, **kwd ):
         """
         set_as_current( trans, id, **kwd )
-        * POST /api/histories/{id}/set_as_current:
+        * PUT /api/histories/{id}/set_as_current:
             set the history with ``id`` to the user's current history and return details
 
         :type   id:      an encoded id string

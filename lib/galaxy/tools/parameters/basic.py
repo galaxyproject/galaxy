@@ -13,10 +13,14 @@ from galaxy import config, datatypes, util
 from galaxy.web import form_builder
 from galaxy.util.bunch import Bunch
 from galaxy.util import string_as_bool, sanitize_param, unicodify
+from galaxy.util import listify
+from galaxy.util.odict import odict
 from sanitize import ToolParameterSanitizer
 import validation
 import dynamic_options
+from ..parameters import history_query
 from .dataset_matcher import DatasetMatcher
+from .dataset_matcher import DatasetCollectionMatcher
 # For BaseURLToolParameter
 from galaxy.web import url_for
 from galaxy.model.item_attrs import Dictifiable
@@ -1548,25 +1552,33 @@ class DummyDataset( object ):
     pass
 
 
-class DataToolParameter( ToolParameter ):
-    # TODO, Nate: Make sure the following unit tests appropriately test the dataset security
-    # components.  Add as many additional tests as necessary.
-    """
-    Parameter that takes on one (or many) or a specific set of values.
+class BaseDataToolParameter( ToolParameter ):
 
-    TODO: There should be an alternate display that allows single selects to be
-          displayed as radio buttons and multiple selects as a set of checkboxes
+    def __init__( self, tool, elem, trans ):
+        super(BaseDataToolParameter, self).__init__( tool, elem )
 
-    TODO: The following must be fixed to test correctly for the new security_check tag in
-    the DataToolParameter ( the last test below is broken ) Nate's next pass at the dataset
-    security stuff will dramatically alter this anyway.
-    """
+    def _get_history( self, trans, history=None ):
+        class_name = self.__class__.__name__
+        assert trans is not None, "%s requires a trans" % class_name
+        if history is None:
+            history = trans.get_history()
+        assert history is not None, "%s requires a history" % class_name
+        return history
 
-    def __init__( self, tool, elem, trans=None):
-        ToolParameter.__init__( self, tool, elem )
-        # Add metadata validator
-        if not string_as_bool( elem.get( 'no_validation', False ) ):
-            self.validators.append( validation.MetadataValidator() )
+    def _ensure_selection( self, field ):
+        set_selected = field.get_selected( return_label=True, return_value=True, multi=False ) is not None
+        # Ensure than an item is always selected
+        if self.optional:
+            if set_selected:
+                field.add_option( "Selection is Optional", 'None', False )
+            else:
+                field.add_option( "Selection is Optional", 'None', True )
+        elif not set_selected and bool( field.options ):
+            # Select the last item
+            a, b, c = field.options[-1]
+            field.options[-1] = a, b, True
+
+    def _datatypes_registery( self, trans, tool ):
         # Find datatypes_registry
         if tool is None:
             if trans:
@@ -1580,6 +1592,11 @@ class DataToolParameter( ToolParameter ):
                 datatypes_registry.load_datatypes()
         else:
             datatypes_registry = tool.app.datatypes_registry
+        return datatypes_registry
+
+    def _parse_formats( self, trans, tool, elem ):
+        datatypes_registry = self._datatypes_registery( trans, tool )
+
         # Build tuple of classes for supported data formats
         formats = []
         self.extensions = elem.get( 'format', 'data' ).split( "," )
@@ -1587,7 +1604,8 @@ class DataToolParameter( ToolParameter ):
         for extension in normalized_extensions:
             formats.append( datatypes_registry.get_datatype_by_extension( extension ) )
         self.formats = formats
-        self.multiple = string_as_bool( elem.get( 'multiple', False ) )
+
+    def _parse_options( self, elem ):
         # TODO: Enhance dynamic options for DataToolParameters. Currently,
         #       only the special case key='build' of type='data_meta' is
         #       a valid filter
@@ -1603,6 +1621,37 @@ class DataToolParameter( ToolParameter ):
             #this behavior needs to be entirely reworked (in a backwards compatible manner)
             self.options_filter_attribute = options.get(  'options_filter_attribute', None )
         self.is_dynamic = self.options is not None
+
+    def _switch_fields( self, fields, default_field ):
+        if len(fields) > 1:
+            field = form_builder.SwitchingSelectField( fields, default_field=default_field )
+        else:
+            field = fields.values()[0]
+        return field
+
+
+class DataToolParameter( BaseDataToolParameter ):
+    # TODO, Nate: Make sure the following unit tests appropriately test the dataset security
+    # components.  Add as many additional tests as necessary.
+    """
+    Parameter that takes on one (or many) or a specific set of values.
+
+    TODO: There should be an alternate display that allows single selects to be
+          displayed as radio buttons and multiple selects as a set of checkboxes
+
+    TODO: The following must be fixed to test correctly for the new security_check tag in
+    the DataToolParameter ( the last test below is broken ) Nate's next pass at the dataset
+    security stuff will dramatically alter this anyway.
+    """
+
+    def __init__( self, tool, elem, trans=None):
+        super(DataToolParameter, self).__init__( tool, elem, trans )
+        # Add metadata validator
+        if not string_as_bool( elem.get( 'no_validation', False ) ):
+            self.validators.append( validation.MetadataValidator() )
+        self._parse_formats( trans, tool, elem )
+        self.multiple = string_as_bool( elem.get( 'multiple', False ) )
+        self._parse_options( elem )
         # Load conversions required for the dataset input
         self.conversions = []
         for conv_elem in elem.findall( "conversion" ):
@@ -1614,12 +1663,79 @@ class DataToolParameter( ToolParameter ):
             self.conversions.append( ( name, conv_extensions, conv_types ) )
 
     def get_html_field( self, trans=None, value=None, other_values={} ):
-        history = self._get_history( trans )
         if value is not None:
             if type( value ) != list:
                 value = [ value ]
+
+        history = self._get_history( trans )
         dataset_matcher = DatasetMatcher( trans, self, value, other_values )
-        field = form_builder.SelectField( self.name, self.multiple, None, self.refresh_on_change, refresh_on_change_values=self.refresh_on_change_values )
+        multiple = self.multiple
+        fields = odict()
+        if multiple:
+            # Select one dataset, run one job.
+            default_field = "multiselect_single"
+            multi_select = self._get_select_dataset_field( history, dataset_matcher, multiple=True )
+            fields[ "multiselect_single" ] = multi_select
+
+            if self.__display_multirun_option():
+                collection_select = self._get_select_dataset_collection_fields( history, dataset_matcher, suffix="", reduction=True )
+                if collection_select.get_selected(return_value=True):
+                    default_field = "multiselect_collection"
+                fields[ "multiselect_collection" ] = collection_select
+                self._ensure_selection( collection_select )
+
+        else:
+            # Select one dataset, run one job.
+            default_field = "select_single"
+            single_select = self._get_select_dataset_field( history, dataset_matcher, multiple=False )
+            fields[ "select_single" ] = single_select
+
+            if self.__display_multirun_option():
+                # Select multiple datasets, run multiple jobs.
+                multirun_key = "%s|__multirun__" % self.name
+                if multirun_key in (other_values or {}):
+                    multirun_value = listify( other_values[ multirun_key ] )
+                    if multirun_value and len( multirun_value ) > 1:
+                        default_field = "select_multiple"
+                else:
+                    multirun_value = value
+                multi_dataset_matcher = DatasetMatcher( trans, self, multirun_value, other_values )
+                multi_select = self._get_select_dataset_field( history, multi_dataset_matcher, multiple=True, suffix="|__multirun__" )
+                fields[ "select_multiple" ] = multi_select
+                collection_field = self._get_select_dataset_collection_fields( history, dataset_matcher, multiple=False, reduction=False )
+                fields[ "select_collection" ] = collection_field
+
+        return self._switch_fields( fields, default_field=default_field )
+
+    def _get_select_dataset_collection_fields( self, history, dataset_matcher, multiple=False, suffix="|__collection_multirun__", reduction=False ):
+        if not reduction:
+            value_modifier = lambda x: x
+        else:
+            value_modifier = lambda value: "__collection_reduce__|%s" % value
+
+        value = dataset_matcher.value
+        if value is not None:
+            if type( value ) != list:
+                value = [ value ]
+
+        field_name = "%s%s" % ( self.name, suffix )
+        field = form_builder.SelectField( field_name, multiple, None, self.refresh_on_change, refresh_on_change_values=self.refresh_on_change_values )
+    
+        dataset_collection_matcher = DatasetCollectionMatcher( dataset_matcher )
+
+        for history_dataset_collection in history.dataset_collections:
+            if dataset_collection_matcher.hdca_match( history_dataset_collection, reduction=reduction ):
+                name = history_dataset_collection.name
+                hid = str( history_dataset_collection.hid )
+                hidden_text = ""  # TODO
+                id = value_modifier( dataset_matcher.trans.security.encode_id( history_dataset_collection.id ) )
+                selected = value and history_dataset_collection in value
+                text = "%s:%s %s" % ( hid, hidden_text, name )
+                field.add_option( text, id, selected )
+
+        return field
+
+    def _get_select_dataset_field( self, history, dataset_matcher, multiple=False, suffix="" ):
 
         # CRUCIAL: the dataset_collector function needs to be local to DataToolParameter.get_html_field()
         def dataset_collector( hdas, parent_hid ):
@@ -1646,6 +1762,10 @@ class DataToolParameter( ToolParameter ):
                     field.add_option( "%s: (as %s) %s" % ( hid, target_ext, hda_name ), hda.id, selected )
                 # Also collect children via association object
                 dataset_collector( hda.children, hid )
+
+        field_name = "%s%s" % ( self.name, suffix )
+        field = form_builder.SelectField( field_name, multiple, None, self.refresh_on_change, refresh_on_change_values=self.refresh_on_change_values )
+
         dataset_collector( history.active_datasets_children_and_roles, None )
         self._ensure_selection( field )
         return field
@@ -1712,6 +1832,10 @@ class DataToolParameter( ToolParameter ):
         elif isinstance( value, dict ) and 'src' in value and 'id' in value:
             if value['src'] == 'hda':
                 rval = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( trans.app.security.decode_id(value['id']) )
+        elif str( value ).startswith( "__collection_reduce__|" ):
+            encoded_id = str( value )[ len( "__collection_reduce__|" ): ]
+            decoded_id = trans.app.security.decode_id( encoded_id )
+            rval = trans.sa_session.query( trans.app.model.HistoryDatasetCollectionAssociation ).get( decoded_id )
         else:
             rval = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( value )
         if isinstance( rval, list ):
@@ -1722,7 +1846,7 @@ class DataToolParameter( ToolParameter ):
             if v:
                 if v.deleted:
                     raise ValueError( "The previously selected dataset has been previously deleted" )
-                if v.dataset.state in [ galaxy.model.Dataset.states.ERROR, galaxy.model.Dataset.states.DISCARDED ]:
+                if hasattr( v, "dataset" ) and v.dataset.state in [ galaxy.model.Dataset.states.ERROR, galaxy.model.Dataset.states.DISCARDED ]:
                     raise ValueError( "The previously selected dataset has entered an unusable state" )
         return rval
 
@@ -1737,6 +1861,8 @@ class DataToolParameter( ToolParameter ):
             return None
         elif isinstance( value, list ):
             return ",".join( [ str( self.to_string( val, app ) ) for val in value ] )
+        elif isinstance( value, app.model.HistoryDatasetCollectionAssociation ):
+            return "__collection_reduce__|%s" % app.security.encode_id( value.id )
         try:
             return value.id
         except:
@@ -1752,6 +1878,12 @@ class DataToolParameter( ToolParameter ):
             values = value.split(",")
             # TODO: Optimize. -John
             return [ app.model.context.query( app.model.HistoryDatasetAssociation ).get( int( val ) ) for val in values if val not in none_values ]
+        # Not sure if following case is needed, if yes deduplicate with above code.
+        elif str( value ).startswith( "__collection_reduce__|" ):
+            # When coming from HTML this id would be encoded, in database it
+            # really should be decoded however.
+            decoded_id = str( value )[ len( "__collection_reduce__|" ): ]
+            return app.model.context.query( app.model.HistoryDatasetCollectionAssociation ).get( decoded_id )
         return app.model.context.query( app.model.HistoryDatasetAssociation ).get( int( value ) )
 
     def to_param_dict_string( self, value, other_values={} ):
@@ -1771,9 +1903,13 @@ class DataToolParameter( ToolParameter ):
 
     def validate( self, value, history=None ):
         for validator in self.validators:
-            if value and self.multiple and isinstance(value, list):
-                for v in value:
-                    validator.validate( v, history )
+            if value and self.multiple:
+                if isinstance(value, list):
+                    for v in value:
+                        validator.validate( v, history )
+                elif isinstance(value, galaxy.model.HistoryDatasetCollectionAssociation):
+                    for v in value.collection.dataset_instances:
+                        validator.validate( v, history )
             else:
                 validator.validate( value, history )
 
@@ -1805,6 +1941,16 @@ class DataToolParameter( ToolParameter ):
         self.tool.visit_inputs( other_values, visitor )
         return False not in converter_safe
 
+    def __display_multirun_option( self ):
+        """ Certain parameters may not make sense to allow multi-run variants
+        of for instance if other parameters are filtered or contrained based on
+        this one. TODO: Figure out if these exist and how to detect them (
+        for instance should I just be checking dynamic options).
+        """
+        allow = True
+        # TODO: allow should be false in some in cases...
+        return allow
+
     def _options_filter_attribute( self, value ):
         #HACK to get around current hardcoded limitation of when a set of dynamic options is defined for a DataToolParameter
         #it always causes available datasets to be filtered by dbkey
@@ -1824,26 +1970,150 @@ class DataToolParameter( ToolParameter ):
             ref = ref()
         return ref
 
-    def _get_history( self, trans, history=None ):
-        class_name = self.__class__.__name__
-        assert trans is not None, "%s requires a trans" % class_name
-        if history is None:
-            history = trans.get_history()
-        assert history is not None, "%s requires a history" % class_name
-        return history
 
-    def _ensure_selection( self, field ):
-        set_selected = field.get_selected( return_label=True, return_value=True, multi=False ) is not None
-        # Ensure than an item is always selected
-        if self.optional:
-            if set_selected:
-                field.add_option( "Selection is Optional", 'None', False )
+class DataCollectionToolParameter( BaseDataToolParameter ):
+    """
+    """
+
+    def __init__( self, tool, elem, trans=None ):
+        super(DataCollectionToolParameter, self).__init__( tool, elem, trans )
+        self.elem = elem
+        self._parse_formats( trans, tool, elem )
+        self.multiple = False  # Accessed on DataToolParameter a lot, may want in future
+        self._parse_options( elem )  # TODO: Review and test.
+
+    @property
+    def collection_type( self ):
+        return self.elem.get( "collection_type", None )
+
+    def _history_query( self, trans ):
+        dataset_collection_type_descriptions = trans.app.dataset_collections_service.collection_type_descriptions
+        return history_query.HistoryQuery.from_parameter_elem( self.elem, dataset_collection_type_descriptions )
+
+    def get_html_field( self, trans=None, value=None, other_values={} ):
+        # dropped refresh values, may be needed..
+        default_field = "select_single_collection"
+        fields = odict()
+
+        history = self._get_history( trans )
+        fields[ "select_single_collection" ] = self._get_single_collection_field( trans=trans, history=history, value=value, other_values=other_values )
+        fields[ "select_map_over_collections" ] = self._get_select_dataset_collection_field( trans=trans, history=history, value=value, other_values=other_values )
+
+        return self._switch_fields( fields, default_field=default_field )
+
+    def _get_single_collection_field( self, trans, history, value, other_values ):
+        field = form_builder.SelectField( self.name, self.multiple, None, self.refresh_on_change, refresh_on_change_values=self.refresh_on_change_values )
+        dataset_collections = trans.app.dataset_collections_service.history_dataset_collections( history, self._history_query( trans ) )
+        dataset_matcher = DatasetMatcher( trans, self, value, other_values )
+        dataset_collection_matcher = DatasetCollectionMatcher( dataset_matcher )
+
+        for dataset_collection_instance in dataset_collections:
+            if not dataset_collection_matcher.hdca_match( dataset_collection_instance ):
+                continue
+            instance_id = dataset_collection_instance.hid
+            instance_name = dataset_collection_instance.name
+            selected = ( value and ( dataset_collection_instance == value ) )
+            if dataset_collection_instance.visible:
+                hidden_text = ""
             else:
-                field.add_option( "Selection is Optional", 'None', True )
-        elif not set_selected and bool( field.options ):
-            # Select the last item
-            a, b, c = field.options[-1]
-            field.options[-1] = a, b, True
+                hidden_text = " (hidden)"
+            field.add_option( "%s:%s %s" % ( instance_id, hidden_text, instance_name ), dataset_collection_instance.id, selected )
+        self._ensure_selection( field )
+        return field
+
+    def _get_select_dataset_collection_field( self, trans, history, multiple=False, suffix="|__subcollection_multirun__", value=None, other_values=None ):
+        field_name = "%s%s" % ( self.name, suffix )
+        field = form_builder.SelectField( field_name, multiple, None, self.refresh_on_change, refresh_on_change_values=self.refresh_on_change_values )
+        dataset_matcher = DatasetMatcher( trans, self, value, other_values )
+        dataset_collection_matcher = DatasetCollectionMatcher( dataset_matcher )
+
+        for history_dataset_collection in history.dataset_collections:
+            if not self._history_query( trans ).can_map_over( history_dataset_collection ):
+                continue
+
+            datasets_match = dataset_collection_matcher.hdca_match( history_dataset_collection )
+            if datasets_match:
+                name = history_dataset_collection.name
+                hid = str( history_dataset_collection.hid )
+                hidden_text = ""  # TODO
+                subcollection_type = self._history_query( trans ).collection_type_description.collection_type
+                id = "%s|%s" % ( dataset_matcher.trans.security.encode_id( history_dataset_collection.id ), subcollection_type )
+                text = "%s:%s %s" % ( hid, hidden_text, name )
+
+                field.add_option( text, id, False )
+
+        return field
+
+    def from_html( self, value, trans, other_values={} ):
+        if not value and not self.optional:
+            raise ValueError( "History does not include a dataset of the required format / build" )
+        if value in [None, "None"]:
+            return None
+        if isinstance( value, str ) and value.find( "," ) > 0:
+            value = [ int( value_part ) for value_part in value.split( "," ) ]
+        elif isinstance( value, trans.app.model.HistoryDatasetCollectionAssociation ):
+            rval = value
+        elif isinstance( value, trans.app.model.DatasetCollectionElement ):
+            # When mapping over nested collection - this paramter will recieve
+            # a DatasetCollectionElement instead of a
+            # HistoryDatasetCollectionAssociation.
+            rval = value
+        elif isinstance( value, dict ) and 'src' in value and 'id' in value:
+            if value['src'] == 'hdca':
+                rval = trans.sa_session.query( trans.app.model.HistoryDatasetCollectionAssociation ).get( trans.app.security.decode_id(value['id']) )
+        elif isinstance( value, basestring ):
+            if value.startswith( "dce:" ):
+                rval = trans.sa_session.query( trans.app.model.DatasetCollectionElement ).get( value[ len( "dce:"): ] )
+            else:
+                rval = trans.sa_session.query( trans.app.model.HistoryDatasetCollectionAssociation ).get( value )
+        if rval and isinstance( rval, trans.app.model.HistoryDatasetCollectionAssociation ):
+            if rval.deleted:
+                raise ValueError( "The previously selected dataset collection has been deleted" )
+            # TODO: Handle error states, implement error states ...
+        return rval
+
+    def to_string( self, value, app ):
+        if value is None or isinstance( value, basestring ):
+            return value
+        try:
+            if isinstance( value, galaxy.model.DatasetCollectionElement ):
+                return "dce:%s" % value.id
+            else:
+                return "hdca:%s" % value.id
+        except Exception:
+            # This is not good...
+            return str( value )
+
+    def to_python( self, value, app ):
+        # Both of these values indicate that no dataset is selected.  However, 'None'
+        # indicates that the dataset is optional, while '' indicates that it is not.
+        if value is None or value == '' or value == 'None':
+            return value
+
+        if not isinstance( value, basestring ):
+            raise ValueError( "Can not convert data collection parameter value to python object - %s" % value )
+
+        if value.startswith( "dce:" ):
+            dce = app.model.context.query( app.model.DatasetCollectionElement ).get( int( value[ len( "dce:" ): ] ) )
+            return dce
+        elif value.startswith( "hdca:" ):
+            hdca = app.model.context.query( app.model.HistoryDatasetCollectionAssociation ).get( int( value[ len( "hdca:" ): ] ) )
+            return hdca
+        else:
+            raise ValueError( "Can not convert data collection parameter value to python object - %s" % value )
+
+    def value_to_display_text( self, value, app ):
+        try:
+            if isinstance( value, galaxy.model.HistoryDatasetCollectionAssociation ):
+                display_text = "%s: %s" % ( value.hid, value.name )
+            else:
+                display_text = "Element %d:%s" % ( value.identifier_index, value.identifier_name )
+        except AttributeError:
+            display_text = "No dataset collection."
+        return display_text
+
+    def validate( self, value, history=None ):
+        return True  # TODO
 
 
 class HiddenDataToolParameter( HiddenToolParameter, DataToolParameter ):
@@ -1963,6 +2233,7 @@ parameter_types = dict(
     file=FileToolParameter,
     ftpfile=FTPFileToolParameter,
     data=DataToolParameter,
+    data_collection=DataCollectionToolParameter,
     library_data=LibraryDatasetToolParameter,
     drill_down=DrillDownSelectToolParameter
 )

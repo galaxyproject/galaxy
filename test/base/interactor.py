@@ -1,6 +1,7 @@
 import os
 from StringIO import StringIO
 from galaxy.tools.parameters import grouping
+from galaxy.tools import test
 from galaxy import eggs
 eggs.require( "requests" )
 from galaxy import util
@@ -44,16 +45,44 @@ class GalaxyInteractorApi( object ):
         self.api_key = self.__get_user_key( twill_test_case.user_api_key, twill_test_case.master_api_key, test_user=test_user )
         self.uploads = {}
 
-    def verify_output( self, history_id, output_data, outfile, attributes, shed_tool_id, maxseconds ):
+    def verify_output( self, history_id, output_data, output_testdef, shed_tool_id, maxseconds ):
+        outfile = output_testdef.outfile
+        attributes = output_testdef.attributes
+        name = output_testdef.name
         self.wait_for_history( history_id, maxseconds )
         hid = self.__output_id( output_data )
         fetcher = self.__dataset_fetcher( history_id )
         ## TODO: Twill version verifys dataset is 'ok' in here.
         self.twill_test_case.verify_hid( outfile, hda_id=hid, attributes=attributes, dataset_fetcher=fetcher, shed_tool_id=shed_tool_id )
+
+        primary_datasets = attributes.get( 'primary_datasets', {} )
+        if primary_datasets:
+            job_id = self._dataset_provenance( history_id, hid )[ "job_id" ]
+            outputs = self._get( "jobs/%s/outputs" % ( job_id ) ).json()
+
+        for designation, ( primary_outfile, primary_attributes ) in primary_datasets.iteritems():
+            primary_output = None
+            for output in outputs:
+                if output[ "name" ] == '__new_primary_file_%s|%s__' % ( name, designation ):
+                    primary_output = output
+                    break
+
+            if not primary_output:
+                msg_template = "Failed to find primary dataset with designation [%s] for output with name [%s]"
+                msg_args = ( designation, name )
+                raise Exception( msg_template % msg_args )
+
+            primary_hda_id = primary_output[ "dataset" ][ "id" ]
+            self.twill_test_case.verify_hid( primary_outfile, hda_id=primary_hda_id, attributes=primary_attributes, dataset_fetcher=fetcher, shed_tool_id=shed_tool_id )
+            self._verify_metadata( history_id, primary_hda_id, primary_attributes )
+
+        self._verify_metadata( history_id, hid, attributes )
+
+    def _verify_metadata( self, history_id, hid, attributes ):
         metadata = attributes.get( 'metadata', {} ).copy()
         for key, value in metadata.copy().iteritems():
             new_key = "metadata_%s" % key
-            metadata[ new_key ] = metadata[ key ] 
+            metadata[ new_key ] = metadata[ key ]
             del metadata[ key ]
         expected_file_type = attributes.get( 'ftype', None )
         if expected_file_type:
@@ -149,7 +178,10 @@ class GalaxyInteractorApi( object ):
             values = [value] if not isinstance(value, list) else value
             new_values = []
             for value in values:
-                if value in self.uploads:
+                if isinstance( value, test.TestCollectionDef ):
+                    hdca_id = self._create_collection( history_id, value )
+                    new_values = [ dict( src="hdca", id=hdca_id ) ]
+                elif value in self.uploads:
                     new_values.append( self.uploads[ value ] )
                 else:
                     new_values.append( value )
@@ -166,6 +198,33 @@ class GalaxyInteractorApi( object ):
             return self.__dictify_outputs( datasets_object )
         except KeyError:
             raise Exception( datasets_object[ 'message' ] )
+
+    def _create_collection( self, history_id, collection_def ):
+        create_payload = dict(
+            name=collection_def.name,
+            element_identifiers=dumps( self._element_identifiers( collection_def ) ),
+            collection_type=collection_def.collection_type,
+            history_id=history_id,
+        )
+        return self._post( "dataset_collections", data=create_payload ).json()[ "id" ]
+
+    def _element_identifiers( self, collection_def ):
+        element_identifiers = []
+        for ( element_identifier, element ) in collection_def.elements:
+            if isinstance( element, test.TestCollectionDef ):
+                subelement_identifiers = self._element_identifiers( element )
+                element = dict(
+                    name=element_identifier,
+                    src="new_collection",
+                    collection_type=element.collection_type,
+                    element_identifiers=subelement_identifiers
+                )
+            else:
+                element_name = element[ 0 ]
+                element = self.uploads[ element[ 1 ] ].copy()
+                element[ "name" ] = element_name
+            element_identifiers.append( element )
+        return element_identifiers
 
     def __dictify_outputs( self, datasets_object ):
         ## Convert outputs list to a dictionary that can be accessed by
@@ -319,7 +378,10 @@ class GalaxyInteractorTwill( object ):
     def __init__( self, twill_test_case ):
         self.twill_test_case = twill_test_case
 
-    def verify_output( self, history, output_data, outfile, attributes, shed_tool_id, maxseconds ):
+    def verify_output( self, history, output_data, output_testdef, shed_tool_id, maxseconds ):
+        outfile = output_testdef.outfile
+        attributes = output_testdef.attributes
+
         hid = output_data.get( 'hid' )
         self.twill_test_case.verify_dataset_correctness( outfile, hid=hid, attributes=attributes, shed_tool_id=shed_tool_id, maxseconds=maxseconds )
 

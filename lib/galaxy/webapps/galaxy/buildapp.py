@@ -78,6 +78,7 @@ def app_factory( global_conf, **kwargs ):
 
     valid_history_contents_types = [
         'dataset',
+        'dataset_collection',
     ]
     # This must come before history contents below.
     # Accesss HDA details via histories/:history_id/contents/datasets/:hda_id
@@ -135,6 +136,7 @@ def app_factory( global_conf, **kwargs ):
                                path_prefix='/api/histories/:history_id/contents/:history_content_id' )
 
     webapp.mapper.resource( 'dataset', 'datasets', path_prefix='/api' )
+    webapp.mapper.resource( 'dataset_collection', 'dataset_collections', path_prefix='/api/')
     webapp.mapper.resource( 'sample', 'samples', path_prefix='/api' )
     webapp.mapper.resource( 'request', 'requests', path_prefix='/api' )
     webapp.mapper.resource( 'form', 'forms', path_prefix='/api' )
@@ -165,7 +167,6 @@ def app_factory( global_conf, **kwargs ):
                                 parent_resources=dict( member_name='page', collection_name='pages' ) )
 
     # add as a non-ATOM API call to support the notion of a 'current/working' history unique to the history resource
-    #webapp.mapper.connect( "set_as_current", "/api/histories/set_as_current/{id}",
     webapp.mapper.connect( "set_as_current", "/api/histories/{id}/set_as_current",
         controller="histories", action="set_as_current", conditions=dict( method=["PUT"] ) )
 
@@ -282,6 +283,8 @@ def app_factory( global_conf, **kwargs ):
                             'jobs',
                             path_prefix='/api' )
     webapp.mapper.connect( 'job_search', '/api/jobs/search', controller='jobs', action='search', conditions=dict( method=['POST'] ) )
+    webapp.mapper.connect( 'job_inputs', '/api/jobs/{id}/inputs', controller='jobs', action='inputs', conditions=dict( method=['GET'] ) )
+    webapp.mapper.connect( 'job_outputs', '/api/jobs/{id}/outputs', controller='jobs', action='outputs', conditions=dict( method=['GET'] ) )
 
     # Job files controllers. Only for consumption by remote job runners.
     webapp.mapper.resource( 'file',

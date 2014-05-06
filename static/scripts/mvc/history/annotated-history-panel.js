@@ -88,7 +88,7 @@ var AnnotatedHistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
     /** attach an hdaView to the panel
      *  In this override, wrap the hdaView in a table row and cell, adding a 2nd cell for the hda annotation
      */
-    attachHdaView : function( hdaView, $whereTo ){
+    attachContentView : function( hdaView, $whereTo ){
         $whereTo = $whereTo || this.$el;
         // build a row around the dataset with the std hdaView in the first cell and the annotation in the next
         var stateClass = _.find( hdaView.el.classList, function( c ){ return ( /^state\-/ ).test( c ); }),

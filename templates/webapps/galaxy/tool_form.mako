@@ -16,6 +16,7 @@
     ${h.js( "galaxy.panels", "libs/jquery/jstorage" )}
     <script type="text/javascript">
         require( [ "galaxy.tools" ] );
+        window.enhanced_galaxy_tools = true;
     </script>
     <script type="text/javascript">
     $(function() {

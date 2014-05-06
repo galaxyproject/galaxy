@@ -1324,7 +1324,7 @@ class FormInput( object ):
     """
     Simple class describing a form input element
     """
-    def __init__( self, type, name, label, value=None, error=None, help=None, use_label=True ):
+    def __init__( self, type, name, label, value=None, error=None, help=None, use_label=True, extra_attributes={}, **kwargs ):
         self.type = type
         self.name = name
         self.label = label
@@ -1332,6 +1332,22 @@ class FormInput( object ):
         self.error = error
         self.help = help
         self.use_label = use_label
+        self.extra_attributes = extra_attributes
+
+
+class DatalistInput( FormInput ):
+    """ Data list input """
+
+    def __init__( self, name, *args, **kwargs ):
+        if 'extra_attributes' not in kwargs:
+            kwargs[ 'extra_attributes' ] = {}
+        kwargs[ 'extra_attributes' ][ 'list' ] = name
+        FormInput.__init__( self, None, name, *args, **kwargs )
+        self.options = kwargs.get( 'options', {} )
+
+    def body_html( self ):
+        options = "".join( [ "<option value='%s'>%s</option>" % ( key, value ) for key, value in self.options.iteritems() ] )
+        return """<datalist id="%s">%s</datalist>""" % ( self.name, options )
 
 
 class SelectInput( FormInput ):

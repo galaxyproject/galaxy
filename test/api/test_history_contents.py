@@ -3,6 +3,7 @@ import json
 
 from .helpers import TestsDatasets
 from .helpers import LibraryPopulator
+from .test_dataset_collections import DatasetCollectionPopulator
 from base.interactor import (
     put_request,
     delete_request,
@@ -15,6 +16,7 @@ class HistoryContentsApiTestCase( api.ApiTestCase, TestsDatasets ):
     def setUp( self ):
         super( HistoryContentsApiTestCase, self ).setUp()
         self.history_id = self._new_history()
+        self.dataset_collection_populator = DatasetCollectionPopulator( self.galaxy_interactor )
 
     def test_index_hda_summary( self ):
         hda1 = self._new_dataset( self.history_id )
@@ -83,6 +85,48 @@ class HistoryContentsApiTestCase( api.ApiTestCase, TestsDatasets ):
         delete_response = delete_request( url )
         assert delete_response.status_code < 300  # Something in the 200s :).
         assert str( self.__show( hda1 ).json()[ "deleted" ] ).lower() == "true"
+
+    def test_dataset_collections( self ):
+        payload = self.dataset_collection_populator.create_pair_payload(
+            self.history_id,
+            type="dataset_collection"
+        )
+        pre_collection_count = self.__count_contents( type="dataset_collection" )
+        pre_dataset_count = self.__count_contents( type="dataset" )
+        pre_combined_count = self.__count_contents( type="dataset,dataset_collection" )
+
+        dataset_collection_response = self._post( "histories/%s/contents" % self.history_id, payload )
+
+        self._assert_status_code_is( dataset_collection_response, 200 )
+        dataset_collection = dataset_collection_response.json()
+        self._assert_has_keys( dataset_collection, "url", "name", "deleted" )
+
+        post_collection_count = self.__count_contents( type="dataset_collection" )
+        post_dataset_count = self.__count_contents( type="dataset" )
+        post_combined_count = self.__count_contents( type="dataset,dataset_collection" )
+
+        # Test filtering types with index.
+        assert pre_collection_count == 0
+        assert post_collection_count == 1
+        assert post_combined_count == pre_dataset_count + 1
+        assert post_combined_count == pre_combined_count + 1
+        assert pre_dataset_count == post_dataset_count
+
+        # Test show dataset colleciton.
+        collection_url = "histories/%s/contents/dataset_collections/%s" % ( self.history_id, dataset_collection[ "id" ] )
+        show_response = self._get( collection_url )
+        self._assert_status_code_is( show_response, 200 )
+        dataset_collection = show_response.json()
+        self._assert_has_keys( dataset_collection, "url", "name", "deleted" )
+
+        assert not dataset_collection[ "deleted" ]
+
+        delete_response = delete_request( self._api_url( collection_url, use_key=True ) )
+        self._assert_status_code_is( delete_response, 200 )
+
+        show_response = self._get( collection_url )
+        dataset_collection = show_response.json()
+        assert dataset_collection[ "deleted" ]
 
     def __show( self, hda ):
         show_response = self._get( "histories/%s/contents/%s" % ( self.history_id, hda[ "id" ] ) )

@@ -290,6 +290,7 @@
 
 <%
 from galaxy.tools.parameters import DataToolParameter, RuntimeValue
+from galaxy.tools.parameters import DataCollectionToolParameter
 from galaxy.jobs.actions.post import ActionBox
 import re
 import colorsys
@@ -361,7 +362,7 @@ if wf_parms:
     <div class="${cls}">
         <label>${param.get_label()}</label>
         <div>
-            %if isinstance( param, DataToolParameter ):
+            %if isinstance( param, DataToolParameter ) or isinstance( param, DataCollectionToolParameter ):
                 %if ( prefix + param.name ) in step.input_connections_by_name:
                     <%
                         conns = step.input_connections_by_name[ prefix + param.name ]
@@ -378,7 +379,7 @@ if wf_parms:
                         if not enable_unique_defaults:
                             del already_used[:]
                     %>
-                    %if step.type == 'data_input':
+                    %if step.type in [ 'data_input', 'data_collection_input' ]:
                     ##Input Dataset Step, wrap for multiinput.
                         <span class="runtime-form-row">
                             <span class='multiinput_wrap'>

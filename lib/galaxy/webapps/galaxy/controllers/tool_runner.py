@@ -11,6 +11,7 @@ from galaxy.tools.actions import upload_common
 from galaxy.tools.parameters import params_to_incoming
 from galaxy.tools.parameters import visit_input_values
 from galaxy.tools.parameters.basic import DataToolParameter
+from galaxy.tools.parameters.basic import DataCollectionToolParameter
 from galaxy.tools.parameters.basic import UnvalidatedValue
 from galaxy.util.bunch import Bunch
 from galaxy.util.hash_util import is_hashable
@@ -186,6 +187,15 @@ class ToolRunner( BaseUIController ):
                 if source_hda not in hda_source_dict or source_hda.hid == hda.hid:
                     hda_source_dict[ source_hda ] = hda
                 source_hda = source_hda.copied_from_history_dataset_association
+        # Ditto for dataset collections.
+        hdca_source_dict = {}
+        for hdca in history.dataset_collections:
+            source_hdca = hdca.copied_from_history_dataset_collection_association
+            while source_hdca:
+                if source_hdca not in hdca_source_dict or source_hdca.hid == hdca.hid:
+                    hdca_source_dict[ source_hdca ] = hdca
+                source_hdca = source_hdca.copied_from_history_dataset_collection_association
+
         # Unpack unvalidated values to strings, they'll be validated when the
         # form is submitted (this happens when re-running a job that was
         # initially run by a workflow)
@@ -210,6 +220,10 @@ class ToolRunner( BaseUIController ):
                     return values
                 if is_hashable( value ) and value not in history.datasets and value in hda_source_dict:
                     return hda_source_dict[ value ]
+            elif isinstance( input, DataCollectionToolParameter ):
+                if is_hashable( value ) and value not in history.dataset_collections and value in hdca_source_dict:
+                    return hdca_source_dict[ value ]
+
         visit_input_values( tool.inputs, params_objects, rerun_callback )
         # Create a fake tool_state for the tool, with the parameters values
         state = tool.new_state( trans )

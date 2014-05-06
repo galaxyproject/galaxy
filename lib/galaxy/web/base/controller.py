@@ -40,9 +40,11 @@ from galaxy.model import ExtendedMetadata, ExtendedMetadataIndex, LibraryDataset
 from galaxy.datatypes.metadata import FileParameter
 from galaxy.tools.parameters import RuntimeValue, visit_input_values
 from galaxy.tools.parameters.basic import DataToolParameter
+from galaxy.tools.parameters.basic import DataCollectionToolParameter
 from galaxy.util.json import to_json_string
 from galaxy.workflow.modules import ToolModule
 from galaxy.workflow.steps import attach_ordered_steps
+from galaxy.util import validation
 
 
 log = logging.getLogger( __name__ )
@@ -159,54 +161,19 @@ class BaseController( object ):
 
         It might be useful to turn this in to a decorator
         """
-        if type( rval ) != dict:
-            return rval
-        for k, v in rval.items():
-            if (k == 'id' or k.endswith( '_id' )) and v is not None and k not in ['tool_id']:
-                try:
-                    rval[k] = trans.security.encode_id( v )
-                except:
-                    pass # probably already encoded
-            if (k.endswith("_ids") and type(v) == list):
-                try:
-                    o = []
-                    for i in v:
-                        o.append(trans.security.encode_id( i ))
-                    rval[k] = o
-                except:
-                    pass
-            else:
-                if recursive and type(v) == dict:
-                    rval[k] = self.encode_all_ids(trans, v, recursive)
-        return rval
+        return trans.security.encode_all_ids( rval, recursive=recursive )
 
     # incoming param validation
     # should probably be in sep. serializer class/object _used_ by controller
     def validate_and_sanitize_basestring( self, key, val ):
-        if not isinstance( val, basestring ):
-            raise exceptions.RequestParameterInvalidException( '%s must be a string or unicode: %s'
-                                                               %( key, str( type( val ) ) ) )
-        return unicode( sanitize_html( val, 'utf-8', 'text/html' ), 'utf-8' )
+        return validation.validate_and_sanitize_basestring( key, val )
 
     def validate_and_sanitize_basestring_list( self, key, val ):
-        try:
-            assert isinstance( val, list )
-            return [ unicode( sanitize_html( t, 'utf-8', 'text/html' ), 'utf-8' ) for t in val ]
-        except ( AssertionError, TypeError ), err:
-            raise exceptions.RequestParameterInvalidException( '%s must be a list of strings: %s'
-                                                               %( key, str( type( val ) ) ) )
+        return validation.validate_and_sanitize_basestring_list( key, val )
 
     def validate_boolean( self, key, val ):
-        if not isinstance( val, bool ):
-            raise exceptions.RequestParameterInvalidException( '%s must be a boolean: %s'
-                                                               %( key, str( type( val ) ) ) )
-        return val
+        return validation.validate_boolean( key, val )
 
-    #TODO:
-    #def validate_integer( self, key, val, min, max ):
-    #def validate_float( self, key, val, min, max ):
-    #def validate_number( self, key, val, min, max ):
-    #def validate_genome_build( self, key, val ):
 
 Root = BaseController
 
@@ -997,6 +964,27 @@ class UsesLibraryMixinItems( SharableItemSecurityMixin ):
         if not trans.user: return False
         return (  ( trans.user_is_admin() )
                or ( trans.app.security_agent.can_add_library_item( trans.get_current_user_roles(), item ) ) )
+
+    def check_user_can_add_to_library_item( self, trans, item, check_accessible=True ):
+        """
+        Raise exception if user cannot add to the specified library item (i.e.
+        Folder). Can set check_accessible to False if folder was loaded with
+        this check.
+        """
+        if not trans.user:
+            return False
+
+        current_user_roles = trans.get_current_user_roles()
+        if trans.user_is_admin():
+            return True
+
+        if check_accessible:
+            if not trans.app.security_agent.can_access_library_item( current_user_roles, item, trans.user ):
+                raise ItemAccessibilityException( )
+
+        if not trans.app.security_agent.can_add_library_item( trans.get_current_user_roles(), item ):
+            # Slight misuse of ItemOwnershipException?
+            raise ItemOwnershipException( "User cannot add to library item." )
 
     def copy_hda_to_library_folder( self, trans, hda, library_folder, roles=None, ldda_message='' ):
         #PRECONDITION: permissions for this action on hda and library_folder have been checked
@@ -1828,6 +1816,9 @@ class UsesStoredWorkflowMixin( SharableItemSecurityMixin, UsesAnnotations ):
                 # Get input dataset name; default to 'Input Dataset'
                 name = module.state.get( 'name', 'Input Dataset')
                 step_dict['inputs'].append( { "name" : name, "description" : annotation_str } )
+            elif module.type == "data_collection_input":
+                name = module.state.get( 'name', 'Input Dataset Collection' )
+                step_dict['inputs'].append( { "name" : name, "description" : annotation_str } )
             else:
                 # Step is a tool and may have runtime inputs.
                 for name, val in module.state.inputs.items():
@@ -1864,10 +1855,10 @@ class UsesStoredWorkflowMixin( SharableItemSecurityMixin, UsesAnnotations ):
             if step.type is None or step.type == 'tool':
                 # Determine full (prefixed) names of valid input datasets
                 data_input_names = {}
-                def callback( input, value, prefixed_name, prefixed_label ):
-                    if isinstance( input, DataToolParameter ):
-                        data_input_names[ prefixed_name ] = True
 
+                def callback( input, value, prefixed_name, prefixed_label ):
+                    if isinstance( input, DataToolParameter ) or isinstance( input, DataCollectionToolParameter ):
+                        data_input_names[ prefixed_name ] = True
                 # FIXME: this updates modules silently right now; messages from updates should be provided.
                 module.check_and_update_state()
                 visit_input_values( module.tool.inputs, module.state.inputs, callback )

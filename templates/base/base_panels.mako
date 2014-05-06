@@ -208,7 +208,7 @@
                             } );
 
                             // show the dataset we created above in the history panel
-                            Galaxy && Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.refreshHdas();
+                            Galaxy && Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.refreshContents();
 
                             if (upload_error == true) {
                                 return false;

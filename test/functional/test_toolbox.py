@@ -3,6 +3,7 @@ import sys
 from base.twilltestcase import TwillTestCase
 from base.interactor import build_interactor, stage_data_in_history
 from galaxy.tools import DataManagerTool
+from galaxy.util import bunch
 import logging
 log = logging.getLogger( __name__ )
 
@@ -52,6 +53,7 @@ class ToolTestCase( TwillTestCase ):
         for output_index, output_tuple in enumerate(testdef.outputs):
             # Get the correct hid
             name, outfile, attributes = output_tuple
+            output_testdef = bunch.Bunch( name=name, outfile=outfile, attributes=attributes )
             try:
                 output_data = data_list[ name ]
             except (TypeError, KeyError):
@@ -64,7 +66,7 @@ class ToolTestCase( TwillTestCase ):
                     output_data = data_list[ len(data_list) - len(testdef.outputs) + output_index ]
             self.assertTrue( output_data is not None )
             try:
-                galaxy_interactor.verify_output( history, output_data, outfile, attributes=attributes, shed_tool_id=shed_tool_id, maxseconds=maxseconds )
+                galaxy_interactor.verify_output( history, output_data, output_testdef=output_testdef, shed_tool_id=shed_tool_id, maxseconds=maxseconds )
             except Exception:
                 for stream in ['stdout', 'stderr']:
                     stream_output = galaxy_interactor.get_job_stream( history, output_data, stream=stream )

@@ -1,0 +1,27 @@
+<tool id="collection_paired_test" name="paired_test" version="0.1.0">
+  <command>
+    cat #for $f in $f1# ${f} #end for# >> $out1;
+  </command>
+  <inputs>
+    <param name="f1" type="data_collection" collection_type="paired" />
+  </inputs>
+  <outputs>
+    <data format="txt" name="out1" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="f1">
+        <collection type="paired">
+          <element name="left" value="simple_line.txt" />
+          <element name="right" value="simple_line_alternative.txt" />
+        </collection>
+      </param>
+      <output name="out1">
+        <assert_contents>
+          <has_line line="This is a line of text." />
+          <has_line line="This is a different line of text." />
+        </assert_contents>
+      </output>
+    </test>
+  </tests>
+</tool>

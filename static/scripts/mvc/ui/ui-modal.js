@@ -1,5 +1,4 @@
-// dependencies
-define(['utils/utils'], function(Utils) {
+define([], function() {
 
 var View = Backbone.View.extend({
 

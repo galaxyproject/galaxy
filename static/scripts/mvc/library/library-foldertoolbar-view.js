@@ -222,6 +222,14 @@ var FolderToolbarView = Backbone.View.extend({
           datasets_to_import.push(historyItem);
       }
       this.options.chain_call_control.total_number = datasets_to_import.length;
+
+      // set the used history as current so user will see the last one 
+      // that he imported into in the history panel on the 'analysis' page
+      var set_current_url =  '/api/histories/' + history_id + '/set_as_current';
+      $.ajax({
+        url: set_current_url,
+        type: 'PUT'
+      });
       // call the recursive function to call ajax one after each other (request FIFO queue)
       this.chainCall(datasets_to_import, history_name);
   },
@@ -231,11 +239,11 @@ var FolderToolbarView = Backbone.View.extend({
     var popped_item = history_item_set.pop();
     if (typeof popped_item === "undefined") {
       if (this.options.chain_call_control.failed_number === 0){
-        mod_toastr.success('Selected datasets imported into history');
+        mod_toastr.success('Selected datasets imported into history. Click this to start analysing it.', '', {onclick: function() {window.location='/'}});
       } else if (this.options.chain_call_control.failed_number === this.options.chain_call_control.total_number){
         mod_toastr.error('There was an error and no datasets were imported into history.');
       } else if (this.options.chain_call_control.failed_number < this.options.chain_call_control.total_number){
-        mod_toastr.warning('Some of the datasets could not be imported into history');
+        mod_toastr.warning('Some of the datasets could not be imported into history. Click this to see what was imported.', '', {onclick: function() {window.location='/'}});
       }
       Galaxy.modal.hide();
       return;

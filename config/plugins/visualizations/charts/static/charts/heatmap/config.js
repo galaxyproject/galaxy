@@ -1,10 +1,12 @@
 define([], function() {
 
 return {
-    title   : 'Heatmap',
-    library : '',
-    tag     : 'div',
+    title       : 'Heatmap',
+    library     : '',
+    tag         : 'div',
     use_panels  : true,
+    
+    // columns
     columns : {
         col_label : {
             title       : 'Columns',
@@ -19,6 +21,7 @@ return {
         },
     },
     
+    // settings
     settings: {
         color_set : {
             title       : 'Color scheme',
@@ -107,6 +110,38 @@ return {
                     value   : 'wysiwyg'
                 }
             ]
+        },
+       
+        sorting : {
+            title       : 'Sorting',
+            info        : 'How should the columns be clustered?',
+            type        : 'select',
+            init        : 'hclust',
+            data        : [
+                {
+                    label   : 'Read from dataset',
+                    value   : 'hclust'
+                },
+                {
+                    label   : 'Sort column and row labels',
+                    value   : 'byboth'
+                },
+                {
+                    label   : 'Sort column labels',
+                    value   : 'bycolumns'
+                },
+                {
+                    label   : 'Sort by rows',
+                    value   : 'byrow'
+                }
+            ]
+        }
+    },
+    
+    // menu definition
+    menu : function() {
+        return {
+            color_set : this.settings.color_set
         }
     }
 };

@@ -122,6 +122,7 @@ class MockApp( object ):
         self.job_queue = NoopQueue()
         self.security_agent = GalaxyRBACAgent( self.model )
         self.tool_data_tables = {}
+        self.dataset_collections_service = None
 
 
 class MockContext(object):

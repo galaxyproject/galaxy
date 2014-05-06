@@ -6,7 +6,8 @@ define(['mvc/ui/ui-portlet', 'plugin/library/ui', 'utils/utils'],
 return Backbone.View.extend({
 
     // list of canvas elements
-    canvas: [],
+    container_list: [],
+    canvas_list: [],
     
     // initialize
     initialize: function(app, options) {
@@ -26,7 +27,7 @@ return Backbone.View.extend({
         this._fullscreen(this.$el, 80);
         
         // create canvas element
-        this._createCanvas('div');
+        this._createContainer('div');
         
         // events
         var self = this;
@@ -38,6 +39,7 @@ return Backbone.View.extend({
         this.chart.on('set:state', function() {
             // get info element
             var $info = self.$el.find('#info');
+            var $container = self.$el.find('container');
             
             // get icon
             var $icon = $info.find('#icon');
@@ -49,11 +51,15 @@ return Backbone.View.extend({
             $info.show();
             $info.find('#text').html(self.chart.get('state_info'));
 
+            // hide containers
+            $container.hide();
+
             // check status
             var state = self.chart.get('state');
             switch (state) {
                 case 'ok':
                     $info.hide();
+                    $container.show()
                     break;
                 case 'failed':
                     $icon.addClass('fa fa-warning');
@@ -86,29 +92,35 @@ return Backbone.View.extend({
     },
     
     // creates n canvas elements
-    _createCanvas: function(tag, n) {
+    _createContainer: function(tag, n) {
         // check size of requested canvas elements
         n = n || 1;
     
         // clear previous canvas elements
-        for (var i in this.canvas) {
-            this.canvas[i].remove();
-            this.canvas.slice(i, 0);
+        for (var i in this.container_list) {
+            this.container_list[i].remove();
         }
+        
+        // reset lists
+        this.container_list = [];
+        this.canvas_list = [];
         
         // create requested canvas elements
         for (var i = 0; i < n; i++) {
             // create element
-            var canvas_el = $(this._templateCanvas(tag, parseInt(100 / n)));
+            var canvas_el = $(this._templateContainer(tag, parseInt(100 / n)));
             
             // add to view
             this.$el.append(canvas_el);
             
-            // find canvas element
+            // add to list
+            this.container_list[i] = canvas_el;
+            
+            // add a separate list for canvas elements
             if (tag == 'svg') {
-                this.canvas[i] = d3.select(canvas_el[0]);
+                this.canvas_list[i] = d3.select(canvas_el.find('#canvas')[0]);
             } else {
-                this.canvas[i] = canvas_el;
+                this.canvas_list[i] = canvas_el.find('#canvas');
             }
         }
     },
@@ -137,7 +149,7 @@ return Backbone.View.extend({
         }
         
         // create canvas element and add to canvas list
-        this._createCanvas(this.chart_settings.tag, n_panels);
+        this._createContainer(this.chart_settings.tag, n_panels);
             
         // set chart state
         chart.state('wait', 'Please wait...');
@@ -145,6 +157,7 @@ return Backbone.View.extend({
         // clean up data if there is any from previous jobs
         if (!this.chart_settings.execute ||
             (this.chart_settings.execute && chart.get('modified'))) {
+            
             // reset jobs
             this.app.jobs.cleanup(chart);
             
@@ -156,7 +169,7 @@ return Backbone.View.extend({
         var self = this;
         require(['plugin/charts/' + chart_type + '/' + chart_type], function(ChartView) {
             // create chart
-            var view = new ChartView(self.app, {canvas : self.canvas});
+            var view = new ChartView(self.app, {canvas : self.canvas_list});
             
             // request data
             if (self.chart_settings.execute) {
@@ -269,8 +282,11 @@ return Backbone.View.extend({
     },
     
     // template svg/div element
-    _templateCanvas: function(tag, width) {
-        return '<' + tag + ' class="canvas" style="float: left; display: block; width:' + width + '%; height: 100%;"/>';
+    _templateContainer: function(tag, width) {
+        return  '<div class="container" style="float: left; display: block; width:' + width + '%; height: 100%;">' +
+                    '<div id="menu"/>' +
+                    '<' + tag + ' id="canvas" class="canvas" style="display: block; width:100%; height: inherit;">' +
+                '</div>';
     }
     
 });

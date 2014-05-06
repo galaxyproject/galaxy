@@ -563,6 +563,8 @@ class GalaxyRBACAgent( RBACAgent ):
             return self.can_access_library( roles, item.folder.parent_library ) and self.can_access_dataset( roles, item.library_dataset_dataset_association.dataset )
         elif type( item ) == self.model.LibraryDatasetDatasetAssociation:
             return self.can_access_library( roles, item.library_dataset.folder.parent_library ) and self.can_access_dataset( roles, item.dataset )
+        elif type( item ) == self.model.LibraryDatasetCollectionAssociation:
+            return self.can_access_library( roles, item.folder.parent_library )
         else:
             log.warning( 'Unknown library item type: %s' % type( item ) )
             return False

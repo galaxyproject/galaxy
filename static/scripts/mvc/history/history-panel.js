@@ -1,11 +1,12 @@
 define([
     "mvc/dataset/hda-model",
     "mvc/dataset/hda-edit",
+    "mvc/collection/dataset-collection-edit",
     "mvc/history/readonly-history-panel",
     "mvc/tags",
     "mvc/annotations",
     "utils/localization"
-], function( hdaModel, hdaEdit, readonlyPanel, tagsMod, annotationsMod, _l ){
+], function( hdaModel, hdaEdit, datasetCollectionEdit, readonlyPanel, tagsMod, annotationsMod, _l ){
 /* =============================================================================
 TODO:
 
@@ -221,8 +222,7 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
                         var action = hdaModel.HistoryDatasetAssociation.prototype.undelete;
                         panel.getSelectedHdaCollection().ajaxQueue( action );
                     }
-                }
-            ];
+                }            ];
         if( panel.purgeAllowed ){
             actions.push({
                 html: _l( 'Permanently delete datasets' ), func: function(){
@@ -233,6 +233,17 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
                 }
             });
         }
+        actions.push( {
+            html: _l( 'Build Dataset List (Experimental)' ), func: function() {
+                panel.getSelectedHdaCollection().promoteToHistoryDatasetCollection( panel.model, "list" );
+            }
+        } );
+        actions.push( {
+            // TODO: Only show quick pair if two things selected.
+            html: _l( 'Build Dataset Pair (Experimental)' ), func: function() {
+                panel.getSelectedHdaCollection().promoteToHistoryDatasetCollection( panel.model, "paired" );
+            }
+        } );
         return new PopupMenu( $where.find( '.history-dataset-action-popup-btn' ), actions );
     },
 
@@ -256,11 +267,15 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
         } // otherwise, the hdaView rendering should handle it
     },
 
-    /** Create an HDA view for the given HDA (but leave attachment for addHdaView above)
+    /** Create an HDA view for the given HDA (but leave attachment for addContentView above)
      *  @param {HistoryDatasetAssociation} hda
      */
-    _createHdaView : function( hda ){
+    _createContentView : function( hda ){
         var hdaId = hda.get( 'id' ),
+            historyContentType = hda.get( 'history_content_type' ),
+            hdaView = null;
+
+        if( historyContentType == "dataset" ) { 
             hdaView = new this.HDAViewClass({
                 model           : hda,
                 linkTarget      : this.linkTarget,
@@ -273,6 +288,16 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
                 tagsEditorShown       : ( this.tagsEditor && !this.tagsEditor.hidden ),
                 annotationEditorShown : ( this.annotationEditor && !this.annotationEditor.hidden )
             });
+        } else if ( historyContentType == "dataset_collection" ) {
+            hdaView = new datasetCollectionEdit.DatasetCollectionEditView({
+                model           : hda,
+                linkTarget      : this.linkTarget,
+                expanded        : this.storage.get( 'expandedHdas' )[ hdaId ],
+                //draggable       : true,
+                hasUser         : this.model.ownedByCurrUser(),
+                logger          : this.logger
+            });
+        }
         this._setUpHdaListeners( hdaView );
         return hdaView;
     },
@@ -330,9 +355,8 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
             hdaView.remove();
             delete panel.hdaViews[ hdaView.model.id ];
             if( _.isEmpty( panel.hdaViews ) ){
-                panel.$emptyMessage().fadeIn( panel.fxSpeed, function(){
-                    panel.trigger( 'empty-history', panel );
-                });
+                panel.trigger( 'empty-history', panel );
+                panel._renderEmptyMsg();
             }
         });
     },
