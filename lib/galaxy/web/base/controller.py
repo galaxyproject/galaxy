@@ -983,6 +983,27 @@ class UsesLibraryMixinItems( SharableItemSecurityMixin ):
         return (  ( trans.user_is_admin() )
                or ( trans.app.security_agent.can_add_library_item( trans.get_current_user_roles(), item ) ) )
 
+    def check_user_can_add_to_library_item( self, trans, item, check_accessible=True ):
+        """
+        Raise exception if user cannot add to the specified library item (i.e.
+        Folder). Can set check_accessible to False if folder was loaded with
+        this check.
+        """
+        if not trans.user:
+            return False
+
+        current_user_roles = trans.get_current_user_roles()
+        if trans.user_is_admin():
+            return True
+
+        if check_accessible:
+            if not trans.app.security_agent.can_access_library_item( current_user_roles, item, trans.user ):
+                raise ItemAccessibilityException( )
+
+        if not trans.app.security_agent.can_add_library_item( trans.get_current_user_roles(), item ):
+            # Slight misuse of ItemOwnershipException?
+            raise ItemOwnershipException( "User cannot add to library item." )
+
     def copy_hda_to_library_folder( self, trans, hda, library_folder, roles=None, ldda_message='' ):
         #PRECONDITION: permissions for this action on hda and library_folder have been checked
         roles = roles or []

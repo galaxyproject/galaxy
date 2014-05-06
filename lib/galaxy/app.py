@@ -5,6 +5,7 @@ import os
 from galaxy import config, jobs
 import galaxy.model
 import galaxy.security
+from galaxy import dataset_collections
 import galaxy.quota
 from galaxy.tags.tag_handler import GalaxyTagHandler
 from galaxy.visualization.genomes import Genomes
@@ -54,6 +55,8 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
         self._configure_security()
         # Tag handler
         self.tag_handler = GalaxyTagHandler()
+        # Dataset Collection Plugins
+        self.dataset_collections_service = dataset_collections.DatasetCollectionsService(self)
         # Genomes
         self.genomes = Genomes( self )
         # Data providers registry.
