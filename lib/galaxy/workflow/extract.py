@@ -21,8 +21,8 @@ from .steps import (
 WARNING_SOME_DATASETS_NOT_READY = "Some datasets still queued or running were ignored"
 
 
-def extract_workflow( trans, user, history=None, job_ids=None, dataset_ids=None, workflow_name=None ):
-    steps = extract_steps( trans, history=history, job_ids=job_ids, dataset_ids=dataset_ids )
+def extract_workflow( trans, user, history=None, job_ids=None, dataset_ids=None, dataset_collection_ids=None, workflow_name=None ):
+    steps = extract_steps( trans, history=history, job_ids=job_ids, dataset_ids=dataset_ids, dataset_collection_ids=dataset_collection_ids )
     # Workflow to populate
     workflow = model.Workflow()
     workflow.name = workflow_name
@@ -48,7 +48,7 @@ def extract_workflow( trans, user, history=None, job_ids=None, dataset_ids=None,
     return stored
 
 
-def extract_steps( trans, history=None, job_ids=None, dataset_ids=None ):
+def extract_steps( trans, history=None, job_ids=None, dataset_ids=None, dataset_collection_ids=None ):
     # Ensure job_ids and dataset_ids are lists (possibly empty)
     if job_ids is None:
         job_ids = []
@@ -58,9 +58,14 @@ def extract_steps( trans, history=None, job_ids=None, dataset_ids=None ):
         dataset_ids = []
     elif type( dataset_ids ) is not list:
         dataset_ids = [ dataset_ids ]
+    if dataset_collection_ids is None:
+        dataset_collection_ids = []
+    elif type( dataset_collection_ids) is not list:
+        dataset_collection_ids = [  dataset_collection_ids ]
     # Convert both sets of ids to integers
     job_ids = [ int( id ) for id in job_ids ]
     dataset_ids = [ int( id ) for id in dataset_ids ]
+    dataset_collection_ids = [ int( id ) for id in dataset_collection_ids ]
     # Find each job, for security we (implicately) check that they are
     # associated witha job in the current history.
     jobs, warnings = summarize( trans, history=history )
@@ -73,6 +78,12 @@ def extract_steps( trans, history=None, job_ids=None, dataset_ids=None ):
         step = model.WorkflowStep()
         step.type = 'data_input'
         step.tool_inputs = dict( name="Input Dataset" )
+        hid_to_output_pair[ hid ] = ( step, 'output' )
+        steps.append( step )
+    for hid in dataset_collection_ids:
+        step = model.WorkflowStep()
+        step.type = 'data_collection_input'
+        step.tool_inputs = dict( name="Input Dataset Collection" )
         hid_to_output_pair[ hid ] = ( step, 'output' )
         steps.append( step )
     # Tool steps
@@ -114,6 +125,20 @@ class FakeJob( object ):
         self.id = "fake_%s" % dataset.id
 
 
+class DatasetCollectionCreationJob( object ):
+
+    def __init__( self, dataset_collection ):
+        self.is_fake = True
+        self.id = "fake_%s" % dataset_collection.id
+        self.from_jobs = None
+        self.name = "Dataset Collection Creation"
+        self.disabled_why = "Dataset collection created in a way not compatible with workflows"
+
+    def set_jobs( self, jobs ):
+        assert jobs is not None
+        self.from_jobs = jobs
+
+
 def summarize( trans, history=None ):
     """ Return mapping of job description to datasets for active items in
     supplied history - needed for building workflow from a history.
@@ -126,11 +151,12 @@ def summarize( trans, history=None ):
     # Get the jobs that created the datasets
     warnings = set()
     jobs = odict()
-    for dataset in history.active_datasets:
+
+    def append_dataset( dataset ):
         # FIXME: Create "Dataset.is_finished"
         if dataset.state in ( 'new', 'running', 'queued' ):
             warnings.add( WARNING_SOME_DATASETS_NOT_READY )
-            continue
+            return
 
         #if this hda was copied from another, we need to find the job that created the origial hda
         job_hda = dataset
@@ -147,6 +173,13 @@ def summarize( trans, history=None ):
             else:
                 jobs[ job ] = [ ( assoc.name, dataset ) ]
 
+    for content in history.active_contents:
+        if content.history_content_type == "dataset_collection":
+            job = DatasetCollectionCreationJob( content )
+            jobs[ job ] = [ ( None, content ) ]
+            collection_jobs[ content ] = job
+        else:
+            append_dataset( content )
     return jobs, warnings
 
 

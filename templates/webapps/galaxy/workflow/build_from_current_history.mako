@@ -60,7 +60,7 @@
         </table>
         %if disabled:
             <hr>
-            <div><input type="checkbox" name="dataset_ids" value="${data.hid}" checked="true" />${_('Treat as input dataset')}</div>
+            <div><input type="checkbox" name="${data.history_content_type}_ids" value="${data.hid}" checked="true" />${_('Treat as input dataset')}</div>
         %endif
     </div>
 </%def>
@@ -103,6 +103,7 @@ into a workflow will be shown in gray.</p>
     if hasattr( job, 'is_fake' ) and job.is_fake:
         cls += " toolFormDisabled"
         disabled = True
+        tool_name = getattr( job, 'name', tool_name )
     else:    
         tool = app.toolbox.get_tool( job.tool_id )
         if tool:
@@ -116,6 +117,8 @@ into a workflow will be shown in gray.</p>
             tool_version_warning = 'Dataset was created with tool version "%s", but workflow extraction will use version "%s".' % ( job.tool_version, tool.version )
         else:
             tool_version_warning = ''
+    if disabled:
+        disabled_why = getattr( job, 'disabled_why', "This tool cannot be used in workflows" )
     %>
     
     <tr>
@@ -125,7 +128,7 @@ into a workflow will be shown in gray.</p>
                 <div class="toolFormTitle">${tool_name}</div>
                 <div class="toolFormBody">
                     %if disabled:
-                        <div style="font-style: italic; color: gray">This tool cannot be used in workflows</div>
+                        <div style="font-style: italic; color: gray">${disabled_why}</div>
                     %else:
                         <div><input type="checkbox" name="job_ids" value="${job.id}" checked="true" />Include "${tool_name}" in workflow</div>
                         %if tool_version_warning:

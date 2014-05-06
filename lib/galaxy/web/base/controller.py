@@ -40,6 +40,7 @@ from galaxy.model import ExtendedMetadata, ExtendedMetadataIndex, LibraryDataset
 from galaxy.datatypes.metadata import FileParameter
 from galaxy.tools.parameters import RuntimeValue, visit_input_values
 from galaxy.tools.parameters.basic import DataToolParameter
+from galaxy.tools.parameters.basic import DataCollectionToolParameter
 from galaxy.util.json import to_json_string
 from galaxy.workflow.modules import ToolModule
 from galaxy.workflow.steps import attach_ordered_steps
@@ -1834,6 +1835,9 @@ class UsesStoredWorkflowMixin( SharableItemSecurityMixin, UsesAnnotations ):
                 # Get input dataset name; default to 'Input Dataset'
                 name = module.state.get( 'name', 'Input Dataset')
                 step_dict['inputs'].append( { "name" : name, "description" : annotation_str } )
+            elif module.type == "data_collection_input":
+                name = module.state.get( 'name', 'Input Dataset Collection' )
+                step_dict['inputs'].append( { "name" : name, "description" : annotation_str } )
             else:
                 # Step is a tool and may have runtime inputs.
                 for name, val in module.state.inputs.items():
@@ -1870,10 +1874,10 @@ class UsesStoredWorkflowMixin( SharableItemSecurityMixin, UsesAnnotations ):
             if step.type is None or step.type == 'tool':
                 # Determine full (prefixed) names of valid input datasets
                 data_input_names = {}
-                def callback( input, value, prefixed_name, prefixed_label ):
-                    if isinstance( input, DataToolParameter ):
-                        data_input_names[ prefixed_name ] = True
 
+                def callback( input, value, prefixed_name, prefixed_label ):
+                    if isinstance( input, DataToolParameter ) or isinstance( input, DataCollectionToolParameter ):
+                        data_input_names[ prefixed_name ] = True
                 # FIXME: this updates modules silently right now; messages from updates should be provided.
                 module.check_and_update_state()
                 visit_input_values( module.tool.inputs, module.state.inputs, callback )

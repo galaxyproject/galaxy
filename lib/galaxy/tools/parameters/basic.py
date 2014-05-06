@@ -1982,6 +1982,10 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
         self.multiple = False  # Accessed on DataToolParameter a lot, may want in future
         self._parse_options( elem )  # TODO: Review and test.
 
+    @property
+    def collection_type( self ):
+        return self.elem.get( "collection_type", None )
+
     def get_html_field( self, trans=None, value=None, other_values={} ):
         # dropped refresh values, may be needed..
         default_field = "select_single_collection"

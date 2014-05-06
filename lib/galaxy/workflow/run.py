@@ -4,6 +4,7 @@ from galaxy import exceptions
 from galaxy.jobs.actions.post import ActionBox
 
 from galaxy.tools.parameters.basic import DataToolParameter
+from galaxy.tools.parameters.basic import DataCollectionToolParameter
 from galaxy.tools.parameters import visit_input_values
 from galaxy.util.odict import odict
 from galaxy.workflow import modules
@@ -107,7 +108,7 @@ class WorkflowInvoker( object ):
         # Connect up
         def callback( input, value, prefixed_name, prefixed_label ):
             replacement = None
-            if isinstance( input, DataToolParameter ):
+            if isinstance( input, DataToolParameter ) or isinstance( input, DataCollectionToolParameter ):
                 replacement = self._replacement_for_input( input, prefixed_name, step )
             return replacement
         try:

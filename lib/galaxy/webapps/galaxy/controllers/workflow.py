@@ -20,6 +20,7 @@ from galaxy.datatypes.data import Data
 from galaxy.model.item_attrs import UsesItemRatings
 from galaxy.model.mapping import desc
 from galaxy.tools.parameters.basic import DataToolParameter
+from galaxy.tools.parameters.basic import DataCollectionToolParameter
 from galaxy.tools.parameters import visit_input_values
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import error, url_for
@@ -757,15 +758,20 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             }
             # Connections
             input_connections = step.input_connections
+            input_connections_type = {}
             multiple_input = {}  # Boolean value indicating if this can be mutliple
             if step.type is None or step.type == 'tool':
                 # Determine full (prefixed) names of valid input datasets
                 data_input_names = {}
 
                 def callback( input, value, prefixed_name, prefixed_label ):
-                    if isinstance( input, DataToolParameter ):
+                    if isinstance( input, DataToolParameter ) or isinstance( input, DataCollectionToolParameter ):
                         data_input_names[ prefixed_name ] = True
                         multiple_input[ prefixed_name ] = input.multiple
+                        if isinstance( input, DataToolParameter ):
+                            input_connections_type[ input.name ] = "dataset"
+                        if isinstance( input, DataCollectionToolParameter ):
+                            input_connections_type[ input.name ] = "dataset_collection"
                 visit_input_values( module.tool.inputs, module.state.inputs, callback )
                 # Filter
                 # FIXME: this removes connection without displaying a message currently!
@@ -787,7 +793,10 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             # Encode input connections as dictionary
             input_conn_dict = {}
             for conn in input_connections:
-                conn_dict = dict( id=conn.output_step.order_index, output_name=conn.output_name )
+                input_type = "dataset"
+                if conn.input_name in input_connections_type:
+                    input_type = input_connections_type[ conn.input_name ]
+                conn_dict = dict( id=conn.output_step.order_index, output_name=conn.output_name, input_type=input_type )
                 if conn.input_name in multiple_input:
                     if conn.input_name in input_conn_dict:
                         input_conn_dict[ conn.input_name ].append( conn_dict )
@@ -826,7 +835,8 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         steps_by_external_id = {}
         errors = []
         for key, step_dict in data['steps'].iteritems():
-            if step_dict['type'] != 'data_input' and step_dict['tool_id'] not in trans.app.toolbox.tools_by_id:
+            is_input = step_dict[ 'type' ] in [ 'data_input', 'data_collection_input' ]
+            if not is_input and step_dict['tool_id'] not in trans.app.toolbox.tools_by_id:
                 errors.append("Step %s requires tool '%s'." % (step_dict['id'], step_dict['tool_id']))
         if errors:
             return dict( name=workflow.name,
@@ -1188,7 +1198,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         return dict( ext_to_class_name=ext_to_class_name, class_to_classes=class_to_classes )
 
     @web.expose
-    def build_from_current_history( self, trans, job_ids=None, dataset_ids=None, workflow_name=None ):
+    def build_from_current_history( self, trans, job_ids=None, dataset_ids=None, dataset_collection_ids=None, workflow_name=None ):
         user = trans.get_user()
         history = trans.get_history()
         if not user:
@@ -1208,6 +1218,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                 user=user,
                 job_ids=job_ids,
                 dataset_ids=dataset_ids,
+                dataset_collection_ids=dataset_collection_ids,
                 workflow_name=workflow_name
             )
             # Index page with message
@@ -1633,7 +1644,6 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         return canvas
 
 
-## ---- Utility methods -------------------------------------------------------
 def _build_workflow_on_str(instance_ds_names):
     # Returns suffix for new histories based on multi input iteration
     num_multi_inputs = len(instance_ds_names)
