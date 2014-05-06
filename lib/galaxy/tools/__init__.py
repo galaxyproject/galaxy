@@ -1965,7 +1965,7 @@ class Tool( object, Dictifiable ):
             message = 'Error executing tool: %s' % str(e)
             return False, message
         if isinstance( out_data, odict ):
-            return True, out_data
+            return True, out_data.items()
         else:
             if isinstance( out_data, str ):
                 message = out_data

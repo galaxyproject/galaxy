@@ -48,7 +48,7 @@
 
 <p>The following job has been successfully added to the queue:</p>
 
-%for data in out_data.values():
+%for _, data in out_data:
    <div style="padding: 10px"><b> ${data.hid}: ${data.name}</b></div>
 %endfor
 

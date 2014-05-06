@@ -133,7 +133,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMix
             return { "message": { "type": "error", "data" : vars[ 'errors' ] } }
 
         # TODO: check for errors and ensure that output dataset(s) are available.
-        output_datasets = vars.get( 'out_data', {} ).iteritems()
+        output_datasets = vars.get( 'out_data', [] )
         rval = {
             "outputs": []
         }
