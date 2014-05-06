@@ -75,6 +75,7 @@ from .wrappers import (
     SelectToolParameterWrapper,
     DatasetFilenameWrapper,
     DatasetListWrapper,
+    DatasetCollectionWrapper,
 )
 
 

@@ -16,7 +16,9 @@ from galaxy.util import string_as_bool, sanitize_param, unicodify
 from sanitize import ToolParameterSanitizer
 import validation
 import dynamic_options
+from ..parameters import history_query
 from .dataset_matcher import DatasetMatcher
+from .dataset_matcher import DatasetCollectionMatcher
 # For BaseURLToolParameter
 from galaxy.web import url_for
 from galaxy.model.item_attrs import Dictifiable
@@ -1863,6 +1865,88 @@ class DataToolParameter( BaseDataToolParameter ):
         return ref
 
 
+class DataCollectionToolParameter( BaseDataToolParameter ):
+    """
+    """
+
+    def __init__( self, tool, elem, trans=None ):
+        super(DataCollectionToolParameter, self).__init__( tool, elem, trans )
+        self.history_query = history_query.HistoryQuery.from_parameter_elem( elem )
+        self._parse_formats( trans, tool, elem )
+        self.multiple = False  # Accessed on DataToolParameter a lot, may want in future
+        self._parse_options( elem )  # TODO: Review and test.
+
+    def get_html_field( self, trans=None, value=None, other_values={} ):
+        # dropped refresh values, may be needed..
+        field = form_builder.SelectField( self.name, self.multiple, None, self.refresh_on_change, refresh_on_change_values=self.refresh_on_change_values )
+        history = self._get_history( trans )
+        dataset_collections = trans.app.dataset_collections_service.history_dataset_collections( history, self.history_query )
+        dataset_matcher = DatasetMatcher( trans, self, value, other_values )
+        dataset_collection_matcher = DatasetCollectionMatcher( dataset_matcher )
+
+        for dataset_collection_instance in dataset_collections:
+            log.info("Processing dataset collection instance....")
+            if not dataset_collection_matcher.hdca_match( dataset_collection_instance ):
+                continue
+            instance_id = dataset_collection_instance.hid
+            instance_name = dataset_collection_instance.name
+            selected = ( value and ( dataset_collection_instance == value ) )
+            if dataset_collection_instance.visible:
+                hidden_text = ""
+            else:
+                hidden_text = " (hidden)"
+            field.add_option( "%s:%s %s" % ( instance_id, hidden_text, instance_name ), dataset_collection_instance.id, selected )
+        self._ensure_selection( field )
+        return field
+
+    def from_html( self, value, trans, other_values={} ):
+        if not value and not self.optional:
+            raise ValueError( "History does not include a dataset of the required format / build" )
+        if value in [None, "None"]:
+            return None
+        if isinstance( value, str ) and value.find( "," ) > 0:
+            value = [ int( value_part ) for value_part in value.split( "," ) ]
+        elif isinstance( value, trans.app.model.HistoryDatasetCollectionAssociation ):
+            rval = value
+        elif isinstance( value, dict ) and 'src' in value and 'id' in value:
+            if value['src'] == 'hdca':
+                rval = trans.sa_session.query( trans.app.model.HistoryDatasetCollectionAssociation ).get( trans.app.security.decode_id(value['id']) )
+        else:
+            rval = trans.sa_session.query( trans.app.model.HistoryDatasetCollectionAssociation ).get( value )
+        if rval:
+            if rval.deleted:
+                raise ValueError( "The previously selected dataset collection has been deleted" )
+            # TODO: Handle error states, implement error states ...
+        return rval
+
+    def to_string( self, value, app ):
+        if value is None or isinstance( value, basestring ):
+            return value
+        elif isinstance( value, int ):
+            return str( value )
+        try:
+            return value.id
+        except:
+            return str( value )
+
+    def to_python( self, value, app ):
+        # Both of these values indicate that no dataset is selected.  However, 'None'
+        # indicates that the dataset is optional, while '' indicates that it is not.
+        if value is None or value == '' or value == 'None':
+            return value
+        return app.model.context.query( app.model.HistoryDatasetCollectionAssociation ).get( int( value ) )
+
+    def value_to_display_text( self, value, app ):
+        try:
+            display_text = "%s: %s" % ( value.hid, value.name )
+        except AttributeError:
+            display_text = "No dataset collection."
+        return display_text
+
+    def validate( self, value, history=None ):
+        return True  # TODO
+
+
 class HiddenDataToolParameter( HiddenToolParameter, DataToolParameter ):
     """
     Hidden parameter that behaves as a DataToolParameter. As with all hidden
@@ -1980,6 +2064,7 @@ parameter_types = dict(
     file=FileToolParameter,
     ftpfile=FTPFileToolParameter,
     data=DataToolParameter,
+    data_collection=DataCollectionToolParameter,
     library_data=LibraryDatasetToolParameter,
     drill_down=DrillDownSelectToolParameter
 )

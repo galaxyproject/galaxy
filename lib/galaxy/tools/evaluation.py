@@ -8,6 +8,7 @@ from galaxy.util.template import fill_template
 from galaxy.tools.wrappers import (
     DatasetFilenameWrapper,
     DatasetListWrapper,
+    DatasetCollectionWrapper,
     LibraryDatasetValueWrapper,
     SelectToolParameterWrapper,
     InputValueWrapper,
@@ -15,6 +16,7 @@ from galaxy.tools.wrappers import (
 )
 from galaxy.tools.parameters.basic import (
     DataToolParameter,
+    DataCollectionToolParameter,
     LibraryDatasetToolParameter,
     SelectToolParameter,
 )
@@ -188,10 +190,22 @@ class ToolEvaluator( object ):
                         wrapper_kwds[ "dataset_path" ] = input_dataset_paths[ real_path ]
                 input_values[ input.name ] = \
                     DatasetFilenameWrapper( dataset, **wrapper_kwds )
+            elif isinstance( input, DataCollectionToolParameter ):
+                dataset_collection = input_values[ input.name ]
+                wrapper_kwds = dict(
+                    datatypes_registry=self.app.datatypes_registry,
+                    dataset_paths=input_dataset_paths,
+                    tool=self,
+                    name=input.name
+                )
+                wrapper = DatasetCollectionWrapper(
+                    dataset_collection,
+                    **wrapper_kwds
+                )
+                input_values[ input.name ] = wrapper
             elif isinstance( input, SelectToolParameter ):
                 input_values[ input.name ] = SelectToolParameterWrapper(
                     input, input_values[ input.name ], self.app, other_values=param_dict, path_rewriter=self.unstructured_path_rewriter )
-
             elif isinstance( input, LibraryDatasetToolParameter ):
                 # TODO: Handle input rewrites in here? How to test LibraryDatasetToolParameters?
                 input_values[ input.name ] = LibraryDatasetValueWrapper(
@@ -207,6 +221,8 @@ class ToolEvaluator( object ):
             self.__walk_inputs( self.tool.inputs, param_dict, wrap_input )
 
     def __populate_input_dataset_wrappers(self, param_dict, input_datasets, input_dataset_paths):
+        # TODO: Update this method for dataset collections? Need to test. -John.
+
         ## FIXME: when self.check_values==True, input datasets are being wrapped
         ##        twice (above and below, creating 2 separate
         ##        DatasetFilenameWrapper objects - first is overwritten by

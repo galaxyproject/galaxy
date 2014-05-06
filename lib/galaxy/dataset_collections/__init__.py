@@ -158,9 +158,7 @@ class DatasetCollectionsService(
 
     def history_dataset_collections(self, history, query):
         collections = history.dataset_collections
-        collection_type = query.get( "collection_type", None )
-        if collection_type:
-            collections = filter( lambda c: c.collection.collection_type == collection_type, collections )
+        collections = filter( query.direct_match, collections )
         return collections
 
     def __persist( self, dataset_collection_instance ):

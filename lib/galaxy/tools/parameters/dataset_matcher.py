@@ -60,13 +60,13 @@ class DatasetMatcher( object ):
             return HdaImplicitMatch( hda, target_ext )
         return False
 
-    def hda_match( self, hda, check_implicit_conversions=True ):
+    def hda_match( self, hda, check_implicit_conversions=True, ensure_visible=True ):
         """ If HDA is accessible, return information about whether it could
         match this parameter and if so how. See valid_hda_match for more
         information.
         """
         accessible = self.hda_accessible( hda )
-        if accessible and ( hda.visible or ( self.selected( hda ) and not hda.implicitly_converted_parent_datasets ) ):
+        if accessible and ( not ensure_visible or hda.visible or ( self.selected( hda ) and not hda.implicitly_converted_parent_datasets ) ):
             # If we are sending data to an external application, then we need to make sure there are no roles
             # associated with the dataset that restrict its access from "public".
             require_public = self.tool and self.tool.tool_type == 'data_destination'
@@ -123,4 +123,28 @@ class HdaImplicitMatch( object ):
         return True
 
 
-__all__ = [ DatasetMatcher ]
+class DatasetCollectionMatcher( object ):
+
+    def __init__( self, dataset_matcher ):
+        self.dataset_matcher = dataset_matcher
+
+    def __valid_element( self, element ):
+        # Simplify things for now and assume these are hdas and not implicit
+        # converts. One could imagine handling both of those cases down the
+        # road.
+        hda = element.hda
+        if not hda:
+            return False
+        hda_match = self.dataset_matcher.hda_match( hda, ensure_visible=False )
+        return hda_match and not hda_match.implicit_conversion
+
+    def hdca_match( self, history_dataset_collection_association ):
+        valid = True
+        for element in history_dataset_collection_association.collection.datasets:
+            if not self.__valid_element( element ):
+                valid = False
+                break
+        return valid
+
+
+__all__ = [ DatasetMatcher, DatasetCollectionMatcher ]
