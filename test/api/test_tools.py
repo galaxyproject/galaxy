@@ -167,7 +167,6 @@ class ToolsTestCase( api.ApiTestCase ):
         self.assertEquals( len( jobs ), 2 )
         self.assertEquals( len( outputs ), 2 )
         self.assertEquals( len( implicit_collections ), 1 )
-        
         self.dataset_populator.wait_for_history( history_id, assert_ok=True )
         output1 = outputs[ 0 ]
         output2 = outputs[ 1 ]
@@ -285,7 +284,8 @@ class ToolsTestCase( api.ApiTestCase ):
         return self._run_outputs( self._run( tool_id, history_id, inputs ) )
 
     def _run_outputs( self, create_response ):
-        self._assert_status_code_is( create_response, 200, assert_ok=True )[ 'outputs' ]
+        self._assert_status_code_is( create_response, 200 )
+        return create_response.json()[ 'outputs' ]
 
     def _run_cat1( self, history_id, inputs, assert_ok=False ):
         return self._run( 'cat1', history_id, inputs, assert_ok=assert_ok )
