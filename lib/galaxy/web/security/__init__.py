@@ -64,6 +64,33 @@ class SecurityHelper( object ):
 
         return a_dict
 
+    def encode_all_ids( self, rval, recursive=False ):
+        """
+        Encodes all integer values in the dict rval whose keys are 'id' or end
+        with '_id' excluding `tool_id` which are consumed and produced as is
+        via the API.
+        """
+        if not isinstance( rval, dict ):
+            return rval
+        for k, v in rval.items():
+            if ( k == 'id' or k.endswith( '_id' ) ) and v is not None and k not in [ 'tool_id' ]:
+                try:
+                    rval[ k ] = self.encode_id( v )
+                except Exception:
+                    pass  # probably already encoded
+            if ( k.endswith( "_ids" ) and isinstance( v, list ) ):
+                try:
+                    o = []
+                    for i in v:
+                        o.append( self.encode_id( i ) )
+                    rval[ k ] = o
+                except Exception:
+                    pass
+            else:
+                if recursive and isinstance( v, dict ):
+                    rval[ k ] = self.encode_all_ids( v, recursive )
+        return rval
+
     def decode_id( self, obj_id, kind=None ):
         id_cipher = self.__id_cipher( kind )
         return int( id_cipher.decrypt( obj_id.decode( 'hex' ) ).lstrip( "!" ) )

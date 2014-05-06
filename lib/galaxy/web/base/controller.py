@@ -161,26 +161,7 @@ class BaseController( object ):
 
         It might be useful to turn this in to a decorator
         """
-        if type( rval ) != dict:
-            return rval
-        for k, v in rval.items():
-            if (k == 'id' or k.endswith( '_id' )) and v is not None and k not in ['tool_id']:
-                try:
-                    rval[k] = trans.security.encode_id( v )
-                except:
-                    pass # probably already encoded
-            if (k.endswith("_ids") and type(v) == list):
-                try:
-                    o = []
-                    for i in v:
-                        o.append(trans.security.encode_id( i ))
-                    rval[k] = o
-                except:
-                    pass
-            else:
-                if recursive and type(v) == dict:
-                    rval[k] = self.encode_all_ids(trans, v, recursive)
-        return rval
+        return trans.security.encode_all_ids( rval, recursive=recursive )
 
     # incoming param validation
     # should probably be in sep. serializer class/object _used_ by controller
