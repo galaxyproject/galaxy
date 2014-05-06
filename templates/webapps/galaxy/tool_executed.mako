@@ -10,7 +10,7 @@
 
   // refresh the history panel to include any new datasets created by the tool
   if( top.Galaxy && top.Galaxy.currHistoryPanel ){
-        top.Galaxy.currHistoryPanel.refreshHdas();
+        top.Galaxy.currHistoryPanel.refreshContents();
   }
 
   %if trans.user:  
