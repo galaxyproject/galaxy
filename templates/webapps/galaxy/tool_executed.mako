@@ -46,8 +46,20 @@
 
 <div class="donemessagelarge">
 
-<p>The following job has been successfully added to the queue:</p>
+%if num_jobs > 1:
+  <% jobs_str = "%d jobs have" % num_jobs %>
+%else:
+  <% jobs_str = "A job has" %>
+%endif
+%if len(out_data) == 1:
+  <% datasets_str = "dataset" %>
+%else:
+  <% datasets_str = "datasets" %>
+%endif
 
+<p>
+  ${jobs_str} been successfully added to the queue - resulting in the following ${datasets_str}:
+</p>
 %for _, data in out_data:
    <div style="padding: 10px"><b> ${data.hid}: ${data.name}</b></div>
 %endfor
@@ -64,6 +76,18 @@ successfully or 'error' if problems were encountered.
 %endif
 
 </div>
+
+%if job_errors:
+<div class="errormessagelarge">
+  There were errors setting up ${len(job_errors)} submitted job(s):
+  <ul>
+  <!-- Styling on this list is a little flat. Consider identing these error messages. -->
+  %for job_error in job_errors:
+    <li><b>${job_error}</b></li>
+  %endfor
+  </ul>
+</div>
+%endif
 
 </body>
 

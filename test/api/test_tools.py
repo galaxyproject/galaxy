@@ -81,6 +81,76 @@ class ToolsTestCase( api.ApiTestCase ):
         output1_content = self._get_content( history_id, dataset=output1 )
         self.assertEqual( output1_content.strip(), "Cat1Test\nCat2Test" )
 
+    def test_multirun_cat1( self ):
+        self.__skip_without_tool( "cat1" )
+        history_id = self.dataset_populator.new_history()
+        new_dataset1 = self.dataset_populator.new_dataset( history_id, content='123' )
+        new_dataset2 = self.dataset_populator.new_dataset( history_id, content='456' )
+        inputs = {
+            "input1|__multirun__": [
+                dataset_to_param( new_dataset1 ),
+                dataset_to_param( new_dataset2 ),
+            ],
+        }
+        outputs = self._cat1_outputs( history_id, inputs=inputs )
+        self.assertEquals( len( outputs ), 2 )
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+        output1 = outputs[ 0 ]
+        output2 = outputs[ 1 ]
+        output1_content = self._get_content( history_id, dataset=output1 )
+        output2_content = self._get_content( history_id, dataset=output2 )
+        self.assertEquals( output1_content.strip(), "123" )
+        self.assertEquals( output2_content.strip(), "456" )
+
+    def test_multirun_in_repeat( self ):
+        self.__skip_without_tool( "cat1" )
+        history_id = self.dataset_populator.new_history()
+        new_dataset1 = self.dataset_populator.new_dataset( history_id, content='123' )
+        new_dataset2 = self.dataset_populator.new_dataset( history_id, content='456' )
+        common_dataset = self.dataset_populator.new_dataset( history_id, content='Common' )
+        inputs = {
+            "input1": dataset_to_param( common_dataset ),
+            'queries_0|input2|__multirun__': [
+                dataset_to_param( new_dataset1 ),
+                dataset_to_param( new_dataset2 ),
+            ],
+        }
+        outputs = self._cat1_outputs( history_id, inputs=inputs )
+        self.assertEquals( len( outputs ), 2 )
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True, timeout=10 )
+        output1 = outputs[ 0 ]
+        output2 = outputs[ 1 ]
+        output1_content = self._get_content( history_id, dataset=output1 )
+        output2_content = self._get_content( history_id, dataset=output2 )
+        self.assertEquals( output1_content.strip(), "Common\n123" )
+        self.assertEquals( output2_content.strip(), "Common\n456" )
+
+    def test_multirun_on_multiple_inputs( self ):
+        self.__skip_without_tool( "cat1" )
+        history_id = self.dataset_populator.new_history()
+        new_dataset1 = self.dataset_populator.new_dataset( history_id, content='123' )
+        new_dataset2 = self.dataset_populator.new_dataset( history_id, content='456' )
+        new_dataset3 = self.dataset_populator.new_dataset( history_id, content='789' )
+        new_dataset4 = self.dataset_populator.new_dataset( history_id, content='0ab' )
+        inputs = {
+            "input1|__multirun__": [
+                dataset_to_param( new_dataset1 ),
+                dataset_to_param( new_dataset2 ),
+            ],
+            'queries_0|input2|__multirun__': [
+                dataset_to_param( new_dataset3 ),
+                dataset_to_param( new_dataset4 ),
+            ],
+        }
+        outputs = self._cat1_outputs( history_id, inputs=inputs )
+        self.assertEquals( len( outputs ), 4 )
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+        outputs_contents = [ self._get_content( history_id, dataset=o ).strip() for o in outputs ]
+        assert "123\n789" in outputs_contents
+        assert "456\n789" in outputs_contents
+        assert "123\n0ab" in outputs_contents
+        assert "456\n0ab" in outputs_contents
+
     def _cat1_outputs( self, history_id, inputs ):
         return self._run_outputs( self._run_cat1( history_id, inputs ) )
 

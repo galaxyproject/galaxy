@@ -23,6 +23,9 @@ from galaxy.tools.parameters.basic import (
 from galaxy.tools.parameters.grouping import Conditional, Repeat
 from galaxy.jobs.datasets import dataset_path_rewrites
 
+import logging
+log = logging.getLogger( __name__ )
+
 
 class ToolEvaluator( object ):
     """ An abstraction linking together a tool and a job runtime to evaluate

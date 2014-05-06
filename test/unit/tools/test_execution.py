@@ -171,6 +171,82 @@ class ToolExecutionTestCase( TestCase, tools_support.UsesApp, tools_support.Uses
         state = self.__assert_rerenders_tool_without_errors( template, template_vars )
         assert hda == state.inputs[ "param1" ]
 
+    def test_simple_multirun_state_update( self ):
+        hda1, hda2 = self.__setup_multirun_job()
+        template, template_vars = self.__handle_with_incoming( **{
+            "param1|__multirun__": [ 1, 2 ],
+        } )
+        state = self.__assert_rerenders_tool_without_errors( template, template_vars )
+        self.__assert_state_serializable( state )
+        self.assertEquals( state.inputs[ "param1|__multirun__" ], [ 1, 2 ] )
+
+    def test_simple_multirun_execution( self ):
+        hda1, hda2 = self.__setup_multirun_job()
+        template, template_vars = self.__handle_with_incoming( **{
+            "param1|__multirun__": [ 1, 2 ],
+            "runtool_btn": "dummy",
+        } )
+        self.__assert_exeuted( template, template_vars )
+        # Tool 'executed' twice, with param1 as hda1 and hda2 respectively.
+        assert len( self.tool_action.execution_call_args ) == 2
+        self.assertEquals( self.tool_action.execution_call_args[ 0 ][ "incoming" ][ "param1" ], hda1 )
+        self.assertEquals( self.tool_action.execution_call_args[ 1 ][ "incoming" ][ "param1" ], hda2 )
+
+    def test_cannot_multirun_and_remap( self ):
+        hda1, hda2 = self.__setup_multirun_job()
+        template, template_vars = self.__handle_with_incoming( **{
+            "param1|__multirun__": [ 1, 2 ],
+            "rerun_remap_job_id": self.app.security.encode_id(123),  # Not encoded
+            "runtool_btn": "dummy",
+        } )
+        self.assertEquals( template, "message.mako" )
+        assert template_vars[ "status" ] == "error"
+        assert "multiple jobs" in template_vars[ "message" ]
+
+    def test_multirun_with_state_updates( self ):
+        hda1, hda2 = self.__setup_multirun_job()
+
+        # Fresh state contains no repeat elements
+        template, template_vars = self.__handle_with_incoming()
+        state = self.__assert_rerenders_tool_without_errors( template, template_vars )
+        assert len( state.inputs[ "repeat1" ] ) == 0
+        self.__assert_state_serializable( state )
+
+        # Hitting add button adds repeat element
+        template, template_vars = self.__handle_with_incoming( **{
+            "param1|__multirun__": [ 1, 2 ],
+            "repeat1_add": "dummy",
+        } )
+        state = self.__assert_rerenders_tool_without_errors( template, template_vars )
+        assert len( state.inputs[ "repeat1" ] ) == 1
+        self.assertEquals( state.inputs[ "param1|__multirun__" ], [ 1, 2 ] )
+        self.__assert_state_serializable( state )
+
+        # Hitting add button again adds another repeat element
+        template, template_vars = self.__handle_with_incoming( state, **{
+            "repeat1_add": "dummy",
+            "repeat1_0|param2": 1,
+        } )
+        state = self.__assert_rerenders_tool_without_errors( template, template_vars )
+        self.assertEquals( state.inputs[ "param1|__multirun__" ], [ 1, 2 ] )
+        assert len( state.inputs[ "repeat1" ] ) == 2
+        assert state.inputs[ "repeat1" ][ 0 ][ "param2" ] == hda1
+        self.__assert_state_serializable( state )
+
+        # Hitting remove drops a repeat element
+        template, template_vars = self.__handle_with_incoming( state, repeat1_1_remove="dummy" )
+        state = self.__assert_rerenders_tool_without_errors( template, template_vars )
+        assert len( state.inputs[ "repeat1" ] ) == 1
+        self.__assert_state_serializable( state )
+
+    def __assert_state_serializable( self, state ):
+        self.__state_to_string( state )  # Will thrown exception if there is a problem...
+
+    def __setup_multirun_job( self ):
+        self._init_tool( tools_support.SIMPLE_CAT_TOOL_CONTENTS )
+        hda1, hda2 = self.__add_dataset( 1 ), self.__add_dataset( 2 )
+        return hda1, hda2
+
     def __handle_with_incoming( self, previous_state=None, **kwds ):
         """ Execute tool.handle_input with incoming specified by kwds
         (optionally extending a previous state).
@@ -187,6 +263,10 @@ class ToolExecutionTestCase( TestCase, tools_support.UsesApp, tools_support.Uses
     def __to_incoming( self, state, **kwds ):
         new_incoming = {}
         params_to_incoming( new_incoming, self.tool.inputs, state.inputs, self.app )
+        # Copy meta parameters over lost by params_to_incoming...
+        for key, value in state.inputs.iteritems():
+            if key.endswith( "|__multirun__" ):
+                new_incoming[ key ] = value
         new_incoming[ "tool_state" ] = self.__state_to_string( state )
         new_incoming.update( kwds )
         return new_incoming
