@@ -1,8 +1,10 @@
 from base import api
 from json import dumps
+from json import loads
 import time
 from .helpers import WorkflowPopulator
 from .helpers import DatasetPopulator
+from .helpers import DatasetCollectionPopulator
 
 from base.interactor import delete_request  # requests like delete
 
@@ -18,6 +20,7 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
         super( WorkflowsApiTestCase, self ).setUp()
         self.workflow_populator = WorkflowPopulator( self.galaxy_interactor )
         self.dataset_populator = DatasetPopulator( self.galaxy_interactor )
+        self.dataset_collection_populator = DatasetCollectionPopulator( self.galaxy_interactor )
 
     def test_delete( self ):
         workflow_id = self.workflow_populator.simple_workflow( "test_delete" )
@@ -91,15 +94,52 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
             job_ids=dumps( [ cat1_job_id ] ),
             workflow_name="test import from history",
         )
-        run_workflow_response = self._post( "workflows", data=create_from_data )
-        self._assert_status_code_is( run_workflow_response, 200 )
+        create_workflow_response = self._post( "workflows", data=create_from_data )
+        self._assert_status_code_is( create_workflow_response, 200 )
 
-        new_workflow_id = run_workflow_response.json()[ "id" ]
+        new_workflow_id = create_workflow_response.json()[ "id" ]
         download_response = self._get( "workflows/%s/download" % new_workflow_id )
         self._assert_status_code_is( download_response, 200 )
         downloaded_workflow = download_response.json()
         self.assertEquals( downloaded_workflow[ "name" ], "test import from history" )
         assert len( downloaded_workflow[ "steps" ] ) == 3
+
+    def test_extract_workflows_with_dataset_collections( self ):
+        history_id = self.dataset_populator.new_history()
+        hdca = self.dataset_collection_populator.create_pair_in_history( history_id ).json()
+        hdca_id = hdca[ "id" ]
+        inputs = {
+            "f1": dict( src="hdca", id=hdca_id )
+        }
+        payload = self.dataset_populator.run_tool_payload(
+            tool_id="collection_paired_test",
+            inputs=inputs,
+            history_id=history_id,
+        )
+        tool_response = self._post( "tools", data=payload )
+        self._assert_status_code_is( tool_response, 200 )
+        job_id = tool_response.json()[ "jobs" ][ 0 ][ "id" ]
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+        create_from_data = dict(
+            from_history_id=history_id,
+            dataset_collection_ids=dumps( [ hdca[ "hid" ] ] ),
+            job_ids=dumps( [ job_id ] ),
+            workflow_name="test import from history",
+        )
+        create_workflow_response = self._post( "workflows", data=create_from_data )
+        self._assert_status_code_is( create_workflow_response, 200 )
+        create_workflow_response.json()[ "id" ]
+
+        new_workflow_id = create_workflow_response.json()[ "id" ]
+        download_response = self._get( "workflows/%s/download" % new_workflow_id )
+        self._assert_status_code_is( download_response, 200 )
+        downloaded_workflow = download_response.json()
+        assert len( downloaded_workflow[ "steps" ] ) == 2
+        collection_steps = [ s for s in downloaded_workflow[ "steps" ].values() if s[ "type" ] == "data_collection_input" ]
+        assert len( collection_steps ) == 1
+        collection_step = collection_steps[ 0 ]
+        collection_step_state = loads( collection_step[ "tool_state" ] )
+        self.assertEquals( collection_step_state[ "collection_type" ], u"paired" )
 
     def test_run_replace_params_by_tool( self ):
         workflow_request, history_id = self._setup_random_x2_workflow( "test_for_replace_tool_params" )
