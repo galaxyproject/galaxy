@@ -2,7 +2,7 @@
 from base import api
 from operator import itemgetter
 from .helpers import DatasetPopulator
-from .test_dataset_collections import DatasetCollectionPopulator
+from .helpers import DatasetCollectionPopulator
 
 
 class ToolsTestCase( api.ApiTestCase ):

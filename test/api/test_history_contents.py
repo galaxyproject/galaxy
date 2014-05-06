@@ -3,7 +3,7 @@ import json
 
 from .helpers import TestsDatasets
 from .helpers import LibraryPopulator
-from .test_dataset_collections import DatasetCollectionPopulator
+from .helpers import DatasetCollectionPopulator
 from base.interactor import (
     put_request,
     delete_request,
