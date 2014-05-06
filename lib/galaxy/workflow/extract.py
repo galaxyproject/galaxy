@@ -18,6 +18,9 @@ from .steps import (
     order_workflow_steps_with_levels
 )
 
+import logging
+log = logging.getLogger( __name__ )
+
 WARNING_SOME_DATASETS_NOT_READY = "Some datasets still queued or running were ignored"
 
 
@@ -68,7 +71,8 @@ def extract_steps( trans, history=None, job_ids=None, dataset_ids=None, dataset_
     dataset_collection_ids = [ int( id ) for id in dataset_collection_ids ]
     # Find each job, for security we (implicately) check that they are
     # associated witha job in the current history.
-    jobs, warnings = summarize( trans, history=history )
+    summary = WorkflowSummary( trans, history )
+    jobs = summary.jobs
     jobs_by_id = dict( ( job.id, job ) for job in jobs.keys() )
     steps = []
     steps_by_job_id = {}
@@ -99,6 +103,11 @@ def extract_steps( trans, history=None, job_ids=None, dataset_ids=None, dataset_
         #       an earlier job can be used as an input to a later
         #       job.
         for other_hid, input_name in associations:
+            if job in summary.implicit_map_jobs:
+                an_implicit_output_collection = jobs[ job ][ 0 ][ 1 ]
+                input_collection = an_implicit_output_collection.find_implicit_input_collection( input_name )
+                if input_collection:
+                    other_hid = input_collection.hid
             if other_hid in hid_to_output_pair:
                 other_step, other_name = hid_to_output_pair[ other_hid ]
                 conn = model.WorkflowStepConnection()
@@ -145,42 +154,90 @@ def summarize( trans, history=None ):
 
     Formerly call get_job_dict in workflow web controller.
     """
-    if not history:
-        history = trans.get_history()
+    summary = WorkflowSummary( trans, history )
+    return summary.jobs, summary.warnings
 
-    # Get the jobs that created the datasets
-    warnings = set()
-    jobs = odict()
 
-    def append_dataset( dataset ):
-        # FIXME: Create "Dataset.is_finished"
-        if dataset.state in ( 'new', 'running', 'queued' ):
-            warnings.add( WARNING_SOME_DATASETS_NOT_READY )
+class WorkflowSummary( object ):
+
+    def __init__( self, trans, history ):
+        if not history:
+            history = trans.get_history()
+        self.history = history
+        self.warnings = set()
+        self.jobs = odict()
+        self.implicit_map_jobs = []
+        self.__summarize()
+
+    def __summarize( self ):
+        # Make a first pass handle all singleton jobs, input dataset and dataset collections
+        # just grab the implicitly mapped jobs and handle in second pass. Second pass is
+        # needed because cannot allow selection of individual datasets from an implicit
+        # mapping during extraction - you get the collection or nothing.
+        implicit_outputs = []
+        for content in self.history.active_contents:
+            if content.history_content_type == "dataset_collection":
+                if not content.implicit_output_name:
+                    job = DatasetCollectionCreationJob( content )
+                    self.jobs[ job ] = [ ( None, content ) ]
+                else:
+                    implicit_outputs.append( content )
+            else:
+                self.__append_dataset( content )
+
+        for dataset_collection in implicit_outputs:
+            # TODO: Optimize db call
+            # TODO: Ensure this is deterministic, must get same job
+            # for each dataset collection.
+            dataset_instance = dataset_collection.collection.dataset_instances[ 0 ]
+            if not self.__check_state( dataset_instance ):
+                # Just checking the state of one instance, don't need more but
+                # makes me wonder if even need this check at all?
+                continue
+
+            job_hda = self.__original_hda( dataset_instance )
+            if not job_hda.creating_job_associations:
+                log.warn( "An implicitly create output dataset collection doesn't have a creating_job_association, should not happen!" )
+                job = DatasetCollectionCreationJob( dataset_collection )
+                self.jobs[ job ] = [ ( None, dataset_collection ) ]
+
+            for assoc in job_hda.creating_job_associations:
+                job = assoc.job
+                if job not in self.jobs or self.jobs[ job ][ 0 ][ 1 ].history_content_type == "dataset":
+                    self.jobs[ job ] = [ ( assoc.name, dataset_collection ) ]
+                    self.implicit_map_jobs.append( job )
+                else:
+                    self.jobs[ job ].append( ( assoc.name, dataset_collection ) )
+
+    def __append_dataset( self, dataset ):
+        if not self.__check_state( dataset ):
             return
 
-        #if this hda was copied from another, we need to find the job that created the origial hda
-        job_hda = dataset
-        while job_hda.copied_from_history_dataset_association:
-            job_hda = job_hda.copied_from_history_dataset_association
+        job_hda = self.__original_hda( dataset )
 
         if not job_hda.creating_job_associations:
-            jobs[ FakeJob( dataset ) ] = [ ( None, dataset ) ]
+            self.jobs[ FakeJob( dataset ) ] = [ ( None, dataset ) ]
 
         for assoc in job_hda.creating_job_associations:
             job = assoc.job
-            if job in jobs:
-                jobs[ job ].append( ( assoc.name, dataset ) )
+            if job in self.jobs:
+                self.jobs[ job ].append( ( assoc.name, dataset ) )
             else:
-                jobs[ job ] = [ ( assoc.name, dataset ) ]
+                self.jobs[ job ] = [ ( assoc.name, dataset ) ]
 
-    for content in history.active_contents:
-        if content.history_content_type == "dataset_collection":
-            job = DatasetCollectionCreationJob( content )
-            jobs[ job ] = [ ( None, content ) ]
-            collection_jobs[ content ] = job
-        else:
-            append_dataset( content )
-    return jobs, warnings
+    def __original_hda( self, hda ):
+        #if this hda was copied from another, we need to find the job that created the origial hda
+        job_hda = hda
+        while job_hda.copied_from_history_dataset_association:
+            job_hda = job_hda.copied_from_history_dataset_association
+        return job_hda
+
+    def __check_state( self, hda ):
+        # FIXME: Create "Dataset.is_finished"
+        if hda.state in ( 'new', 'running', 'queued' ):
+            self.warnings.add( WARNING_SOME_DATASETS_NOT_READY )
+            return
+        return hda
 
 
 def step_inputs( trans, job ):
