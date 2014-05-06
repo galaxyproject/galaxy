@@ -315,6 +315,8 @@ class Job( object, HasJobMetrics, Dictifiable ):
         self.parameters = []
         self.input_datasets = []
         self.output_datasets = []
+        self.input_dataset_collections = []
+        self.output_dataset_collections = []
         self.input_library_datasets = []
         self.output_library_datasets = []
         self.state = Job.states.NEW
@@ -454,6 +456,10 @@ class Job( object, HasJobMetrics, Dictifiable ):
         self.input_datasets.append( JobToInputDatasetAssociation( name, dataset ) )
     def add_output_dataset( self, name, dataset ):
         self.output_datasets.append( JobToOutputDatasetAssociation( name, dataset ) )
+    def add_input_dataset_collection( self, name, dataset ):
+        self.input_dataset_collections.append( JobToInputDatasetCollectionAssociation( name, dataset ) )
+    def add_output_dataset_collection( self, name, dataset ):
+        self.output_dataset_collections.append( JobToOutputDatasetCollectionAssociation( name, dataset ) )
     def add_input_library_dataset( self, name, dataset ):
         self.input_library_datasets.append( JobToInputLibraryDatasetAssociation( name, dataset ) )
     def add_output_library_dataset( self, name, dataset ):
@@ -696,6 +702,19 @@ class JobToOutputDatasetAssociation( object ):
         self.name = name
         self.dataset = dataset
 
+
+class JobToInputDatasetCollectionAssociation( object ):
+    def __init__( self, name, dataset ):
+        self.name = name
+        self.dataset = dataset
+
+
+class JobToOutputDatasetCollectionAssociation( object ):
+    def __init__( self, name, dataset_collection ):
+        self.name = name
+        self.dataset_collection = dataset_collection
+
+
 class JobToInputLibraryDatasetAssociation( object ):
     def __init__( self, name, dataset ):
         self.name = name
@@ -705,6 +724,13 @@ class JobToOutputLibraryDatasetAssociation( object ):
     def __init__( self, name, dataset ):
         self.name = name
         self.dataset = dataset
+
+
+class ImplicitlyCreatedDatasetCollectionInput( object ):
+    def __init__( self, name, input_dataset_collection ):
+        self.name = name
+        self.input_dataset_collection = input_dataset_collection
+
 
 class PostJobAction( object ):
     def __init__( self, action_type, workflow_step, output_name = None, action_arguments = None):
@@ -906,6 +932,14 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
             self.genome_build = genome_build
         self.datasets.append( dataset )
         return dataset
+
+    def add_dataset_collection( self, history_dataset_collection, set_hid=True ):
+        if set_hid:
+            history_dataset_collection.hid = self._next_hid()
+        history_dataset_collection.history = self
+        # TODO: quota?
+        self.dataset_collections.append( history_dataset_collection )
+        return history_dataset_collection
 
     def copy( self, name=None, target_user=None, activatable=False, all_datasets=False ):
         """
@@ -2521,6 +2555,276 @@ class ImplicitlyConvertedDatasetAssociation( object ):
             try: os.unlink( self.file_name )
             except Exception, e: print "Failed to purge associated file (%s) from disk: %s" % ( self.file_name, e )
 
+
+DEFAULT_COLLECTION_NAME = "Unnamed Collection"
+
+
+class DatasetCollection( object, Dictifiable, UsesAnnotations ):
+    """
+    """
+    dict_collection_visible_keys = ( 'id', 'name', 'collection_type' )
+    dict_element_visible_keys = ( 'id', 'name', 'collection_type' )
+
+    def __init__(
+        self,
+        id=None,
+        collection_type=None,
+    ):
+        self.id = id
+        self.collection_type = collection_type
+
+    @property
+    def dataset_instances( self ):
+        instances = []
+        for element in self.elements:
+            if element.is_collection:
+                instances.extend( element.child_collection.dataset_instances )
+            else:
+                instance = element.dataset_instance
+                instances.append( instance )
+        return instances
+
+    @property
+    def state( self ):
+        # TODO: DatasetCollection state handling...
+        return 'ok'
+
+    def validate( self ):
+        if self.collection_type is None:
+            raise Exception("Each dataset collection must define a collection type.")
+
+    def __getitem__( self, key ):
+        get_by_attribute = "element_index" if isinstance( key, int ) else "element_identifier"
+        for element in self.elements:
+            if getattr( element, get_by_attribute ) == key:
+                return element
+        error_message = "Dataset collection has no %s with key %s." % ( get_by_attribute, key )
+        raise KeyError( error_message )
+
+    def set_from_dict( self, new_data ):
+        editable_keys = ( 'name' )
+        changed = {}
+
+        # unknown keys are ignored here
+        for key in [ k for k in new_data.keys() if k in editable_keys ]:
+            new_val = new_data[ key ]
+            old_val = self.__getattribute__( key )
+            if new_val == old_val:
+                continue
+
+            self.__setattr__( key, new_val )
+            changed[ key ] = new_val
+
+        return changed
+
+
+class DatasetCollectionInstance( object, HasName ):
+    """
+    """
+    def __init__(
+        self,
+        collection=None,
+        deleted=False,
+    ):
+        # Relationships
+        self.collection = collection
+        # Since deleted property is shared between history and dataset collections,
+        # it could be on either table - some places in the code however it is convient
+        # it is on instance instead of collection.
+        self.deleted = deleted
+
+    @property
+    def state( self ):
+        return self.collection.state
+
+    def display_name( self ):
+        return self.get_display_name()
+
+    def _base_to_dict( self, view ):
+        return dict(
+            id=self.id,
+            name=self.name,
+            collection_type=self.collection.collection_type,
+            type="collection",  # contents type (distinguished from file or folder (in case of library))
+        )
+
+    def set_from_dict( self, new_data ):
+        """
+        Set object attributes to the values in dictionary new_data limiting
+        to only those keys in dict_element_visible_keys.
+
+        Returns a dictionary of the keys, values that have been changed.
+        """
+        # precondition: keys are proper, values are parsed and validated
+        changed = self.collection.set_from_dict( new_data )
+
+        # unknown keys are ignored here
+        for key in [ k for k in new_data.keys() if k in self.editable_keys ]:
+            new_val = new_data[ key ]
+            old_val = self.__getattribute__( key )
+            if new_val == old_val:
+                continue
+
+            self.__setattr__( key, new_val )
+            changed[ key ] = new_val
+
+        return changed
+
+
+class HistoryDatasetCollectionAssociation( DatasetCollectionInstance, Dictifiable ):
+    """ Associates a DatasetCollection with a History. """
+    editable_keys = ( 'name', 'deleted', 'visible' )
+
+    def __init__(
+        self,
+        id=None,
+        hid=None,
+        collection=None,
+        history=None,
+        name=None,
+        deleted=False,
+        visible=True,
+        copied_from_history_dataset_collection_association=None,
+        implicit_output_name=None,
+        implicit_input_collections=[],
+    ):
+        super( HistoryDatasetCollectionAssociation, self ).__init__(
+            collection=collection,
+            deleted=deleted,
+        )
+        self.id = id
+        self.hid = hid
+        self.history = history
+        self.name = name
+        self.visible = visible
+        self.copied_from_history_dataset_collection_association = copied_from_history_dataset_collection_association
+        self.implicit_output_name = implicit_output_name
+        self.implicit_input_collections = implicit_input_collections
+
+    @property
+    def history_content_type( self ):
+        return "dataset_collection"
+
+    def to_dict( self, view='collection' ):
+        dict_value = dict(
+            hid=self.hid,
+            history_id=self.history.id,
+            history_content_type=self.history_content_type,
+            visible=self.visible,
+            deleted=self.deleted,
+            **self._base_to_dict(view=view)
+        )
+        return dict_value
+
+    def add_implicit_input_collection( self, name, history_dataset_collection ):
+        self.implicit_input_collections.append( ImplicitlyCreatedDatasetCollectionInput( name, history_dataset_collection)  )
+
+    def find_implicit_input_collection( self, name ):
+        matching_collection = None
+        for implicit_input_collection in self.implicit_input_collections:
+            if implicit_input_collection.name == name:
+                matching_collection = implicit_input_collection.input_dataset_collection
+                break
+        return matching_collection
+
+
+class LibraryDatasetCollectionAssociation( DatasetCollectionInstance, Dictifiable ):
+    """ Associates a DatasetCollection with a library folder. """
+    editable_keys = ( 'name', 'deleted' )
+
+    def __init__(
+        self,
+        id=None,
+        collection=None,
+        name=None,
+        deleted=False,
+        folder=None,
+    ):
+        super(LibraryDatasetCollectionAssociation, self).__init__(
+            collection=collection,
+            deleted=deleted,
+        )
+        self.id = id
+        self.folder = folder
+        self.name = name
+
+    def to_dict( self, view='collection' ):
+        dict_value = dict(
+            folder_id=self.folder.id,
+            **self._base_to_dict(view=view)
+        )
+        return dict_value
+
+
+class DatasetCollectionElement( object, Dictifiable ):
+    """ Associates a DatasetInstance (hda or ldda) with a DatasetCollection. """
+    # actionable dataset id needs to be available via API...
+    dict_collection_visible_keys = ( 'id', 'element_type', 'element_index', 'element_identifier' )
+    dict_element_visible_keys = ( 'id', 'element_type', 'element_index', 'element_identifier' )
+
+    def __init__(
+        self,
+        id=None,
+        collection=None,
+        element=None,
+        element_index=None,
+        element_identifier=None,
+    ):
+        if isinstance(element, HistoryDatasetAssociation):
+            self.hda = element
+            #self.instance_type = 'hda'
+        elif isinstance(element, LibraryDatasetDatasetAssociation):
+            self.ldda = element
+            #self.instance_type = 'ldda'
+        elif isinstance( element, DatasetCollection ):
+            self.child_collection = element
+        else:
+            raise AttributeError( 'Unknown element type provided: %s' % type( element ) )
+
+        self.id = id
+        self.collection = collection
+        self.element_index = element_index
+        self.element_identifier = element_identifier or str(element_index)
+
+    @property
+    def element_type( self ):
+        if self.hda:
+            return "hda"
+        elif self.ldda:
+            return "ldda"
+        elif self.child_collection:
+            #TOOD: Rename element_type to element_type.
+            return "dataset_collection"
+        else:
+            raise Exception( "Unknown element instance type" )
+
+    @property
+    def is_collection( self ):
+        return self.element_type == "dataset_collection"
+
+    @property
+    def element_object( self ):
+        if self.hda:
+            return self.hda
+        elif self.ldda:
+            return self.ldda
+        elif self.child_collection:
+            return self.child_collection
+        else:
+            raise Exception( "Unknown element instance type" )
+
+    @property
+    def dataset_instance( self ):
+        element_object = self.element_object
+        if isinstance( element_object, DatasetCollection ):
+            raise AttributeError( "Nested collection has no associated dataset_instance." )
+        return element_object
+
+    @property
+    def dataset( self ):
+        return self.dataset_instance.dataset
+
+
 class Event( object ):
     def __init__( self, message=None, history=None, user=None, galaxy_session=None ):
         self.history = history
@@ -3525,6 +3829,15 @@ class StoredWorkflowTagAssociation ( ItemTagAssociation ):
 class VisualizationTagAssociation ( ItemTagAssociation ):
     pass
 
+
+class HistoryDatasetCollectionTagAssociation( ItemTagAssociation ):
+    pass
+
+
+class LibraryDatasetCollectionTagAssociation( ItemTagAssociation ):
+    pass
+
+
 class ToolTagAssociation( ItemTagAssociation ):
     def __init__( self, id=None, user=None, tool_id=None, tag_id=None, user_tname=None, value=None ):
         self.id = id
@@ -3554,6 +3867,15 @@ class PageAnnotationAssociation( object ):
 
 class VisualizationAnnotationAssociation( object ):
     pass
+
+
+class HistoryDatasetCollectionAnnotationAssociation( object ):
+    pass
+
+
+class LibraryDatasetCollectionAnnotationAssociation( object ):
+    pass
+
 
 # Item rating classes.
 
@@ -3587,6 +3909,17 @@ class PageRatingAssociation( ItemRatingAssociation ):
 class VisualizationRatingAssociation( ItemRatingAssociation ):
     def set_item( self, visualization ):
         self.visualization = visualization
+
+
+class HistoryDatasetCollectionRatingAssociation( ItemRatingAssociation ):
+    def set_item( self, dataset_collection ):
+        self.dataset_collection = dataset_collection
+
+
+class LibraryDatasetCollectionRatingAssociation( ItemRatingAssociation ):
+    def set_item( self, dataset_collection ):
+        self.dataset_collection = dataset_collection
+
 
 #Data Manager Classes
 class DataManagerHistoryAssociation( object ):
