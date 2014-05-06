@@ -290,7 +290,11 @@ class ToolExecutionTestCase( TestCase, tools_support.UsesApp, tools_support.Uses
     def __assert_exeuted( self, template, template_vars ):
         if template == "tool_form.mako":
             self.__assert_no_errors( template_vars )
-        self.assertEquals(template, "tool_executed.mako")
+        self.assertEquals(
+            template,
+            "tool_executed.mako",
+            "Expected tools_execute template - got template %s with vars %s" % ( template, template_vars)
+        )
 
     def __assert_no_errors( self, template_vars ):
         assert "errors" in template_vars, "tool_form.mako rendered without errors defintion."
@@ -338,7 +342,7 @@ class MockAction( object ):
             if num_calls > self.error_message_after_excution:
                 return None, "Test Error Message"
 
-        return None, odict(dict(out1="1"))
+        return galaxy.model.Job(), odict(dict(out1="1"))
 
     def raise_exception( self, after_execution=0 ):
         self.exception_after_exection = after_execution
