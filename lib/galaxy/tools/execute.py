@@ -87,7 +87,8 @@ class ToolExecutionTracker( object ):
 
             implicit_collection_info = dict(
                 implicit_inputs=implicit_inputs,
-                implicit_output_name=output_name
+                implicit_output_name=output_name,
+                outputs_datasets=outputs_datasets
             )
             try:
                 output_collection_name = self.tool_action.get_output_name(
@@ -112,6 +113,7 @@ class ToolExecutionTracker( object ):
                 implicit_collection_info=implicit_collection_info,
             )
             collections[ output_name ] = collection
+
         self.created_collections = collections
 
 __all__ = [ execute ]
