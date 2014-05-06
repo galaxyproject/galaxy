@@ -43,6 +43,7 @@ from galaxy.tools.parameters.basic import DataToolParameter
 from galaxy.util.json import to_json_string
 from galaxy.workflow.modules import ToolModule
 from galaxy.workflow.steps import attach_ordered_steps
+from galaxy.util import validation
 
 
 log = logging.getLogger( __name__ )
@@ -183,30 +184,14 @@ class BaseController( object ):
     # incoming param validation
     # should probably be in sep. serializer class/object _used_ by controller
     def validate_and_sanitize_basestring( self, key, val ):
-        if not isinstance( val, basestring ):
-            raise exceptions.RequestParameterInvalidException( '%s must be a string or unicode: %s'
-                                                               %( key, str( type( val ) ) ) )
-        return unicode( sanitize_html( val, 'utf-8', 'text/html' ), 'utf-8' )
+        return validation.validate_and_sanitize_basestring( key, val )
 
     def validate_and_sanitize_basestring_list( self, key, val ):
-        try:
-            assert isinstance( val, list )
-            return [ unicode( sanitize_html( t, 'utf-8', 'text/html' ), 'utf-8' ) for t in val ]
-        except ( AssertionError, TypeError ), err:
-            raise exceptions.RequestParameterInvalidException( '%s must be a list of strings: %s'
-                                                               %( key, str( type( val ) ) ) )
+        return validation.validate_and_sanitize_basestring_list( key, val )
 
     def validate_boolean( self, key, val ):
-        if not isinstance( val, bool ):
-            raise exceptions.RequestParameterInvalidException( '%s must be a boolean: %s'
-                                                               %( key, str( type( val ) ) ) )
-        return val
+        return validation.validate_boolean( key, val )
 
-    #TODO:
-    #def validate_integer( self, key, val, min, max ):
-    #def validate_float( self, key, val, min, max ):
-    #def validate_number( self, key, val, min, max ):
-    #def validate_genome_build( self, key, val ):
 
 Root = BaseController
 
