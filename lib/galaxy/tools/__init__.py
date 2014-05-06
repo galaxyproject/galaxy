@@ -1976,7 +1976,13 @@ class Tool( object, Dictifiable ):
                 execution_tracker = execute_job( trans, self, all_params, history=history, rerun_remap_job_id=rerun_remap_job_id, collection_info=collection_info )
                 if execution_tracker.successful_jobs:
                     template = 'tool_executed.mako'
-                    template_vars = dict( out_data=execution_tracker.output_datasets, num_jobs=len( execution_tracker.successful_jobs ), job_errors=execution_tracker.execution_errors )
+                    template_vars = dict(
+                        out_data=execution_tracker.output_datasets,
+                        num_jobs=len( execution_tracker.successful_jobs ),
+                        job_errors=execution_tracker.execution_errors,
+                        jobs=execution_tracker.successful_jobs,
+                        implicit_collections=execution_tracker.created_collections,
+                    )
                 else:
                     template = 'message.mako'
                     template_vars = dict( status='error', message=execution_tracker.execution_errors[0], refresh_frames=[] )

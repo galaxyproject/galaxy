@@ -160,8 +160,14 @@ class ToolsTestCase( api.ApiTestCase ):
         inputs = {
             "input1|__collection_multirun__": hdca_id,
         }
-        outputs = self._cat1_outputs( history_id, inputs=inputs )
+        create = self._run_cat1( history_id, inputs=inputs, assert_ok=True )
+        outputs = create[ 'outputs' ]
+        jobs = create[ 'jobs' ]
+        implicit_collections = create[ 'implicit_collections' ]
+        self.assertEquals( len( jobs ), 2 )
         self.assertEquals( len( outputs ), 2 )
+        self.assertEquals( len( implicit_collections ), 1 )
+        
         self.dataset_populator.wait_for_history( history_id, assert_ok=True )
         output1 = outputs[ 0 ]
         output2 = outputs[ 1 ]
@@ -169,6 +175,34 @@ class ToolsTestCase( api.ApiTestCase ):
         output2_content = self._get_content( history_id, dataset=output2 )
         self.assertEquals( output1_content.strip(), "123" )
         self.assertEquals( output2_content.strip(), "456" )
+
+    def test_map_over_nested_collections( self ):
+        self.__skip_without_tool( "cat1" )
+        history_id = self.dataset_populator.new_history()
+        hdca_id = self.__build_nested_list( history_id )
+        inputs = {
+            "input1|__collection_multirun__": hdca_id,
+        }
+        create = self._run_cat1( history_id, inputs=inputs, assert_ok=True )
+        outputs = create[ 'outputs' ]
+        jobs = create[ 'jobs' ]
+        implicit_collections = create[ 'implicit_collections' ]
+        self.assertEquals( len( jobs ), 4 )
+        self.assertEquals( len( outputs ), 4 )
+        self.assertEquals( len( implicit_collections ), 1 )
+        implicit_collection = implicit_collections[ 0 ]
+        self._assert_has_keys( implicit_collection, "collection_type", "elements" )
+        assert implicit_collection[ "collection_type" ] == "list:paired"
+        assert len( implicit_collection[ "elements" ] ) == 2
+        first_element, second_element = implicit_collection[ "elements" ]
+        assert first_element[ "element_identifier" ] == "test0"
+        assert second_element[ "element_identifier" ] == "test1"
+
+        first_object = first_element[ "object" ]
+        assert first_object[ "collection_type" ] == "paired"
+        assert len( first_object[ "elements" ] ) == 2
+        first_object_left_element = first_object[ "elements" ][ 0 ]
+        self.assertEquals( outputs[ 0 ][ "id" ], first_object_left_element[ "object" ][ "id" ] )
 
     def test_map_over_two_collections( self ):
         history_id = self.dataset_populator.new_history()
@@ -211,7 +245,10 @@ class ToolsTestCase( api.ApiTestCase ):
             "f1": "__collection_reduce__|%s" % hdca1_id,
             "f2": "__collection_reduce__|%s" % hdca2_id,
         }
-        outputs = self._run_and_get_outputs( "multi_data_param", history_id, inputs )
+        create = self._run( "multi_data_param", history_id, inputs, assert_ok=True )
+        outputs = create[ 'outputs' ]
+        jobs = create[ 'jobs' ]
+        assert len( jobs ) == 1
         assert len( outputs ) == 2
         self.dataset_populator.wait_for_history( history_id, assert_ok=True )
         output1 = outputs[ 0 ]
@@ -224,12 +261,7 @@ class ToolsTestCase( api.ApiTestCase ):
     def test_subcollection_mapping( self ):
         self.__skip_without_tool( "collection_paired_test" )
         history_id = self.dataset_populator.new_history()
-        hdca1_id = self.__build_pair( history_id, [ "123", "456" ] )
-        hdca2_id = self.__build_pair( history_id, [ "789", "0ab" ] )
-
-        response = self.dataset_collection_populator.create_list_from_pairs( history_id, [ hdca1_id, hdca2_id ] )
-        self._assert_status_code_is( response, 200 )
-        hdca_list_id = response.json()[ "id" ]
+        hdca_list_id = self.__build_nested_list( history_id )
         inputs = {
             "f1|__subcollection_multirun__": "%s|paired" % hdca_list_id
         }
@@ -253,22 +285,25 @@ class ToolsTestCase( api.ApiTestCase ):
         return self._run_outputs( self._run( tool_id, history_id, inputs ) )
 
     def _run_outputs( self, create_response ):
-        self._assert_status_code_is( create_response, 200 )
-        create = create_response.json()
-        self._assert_has_keys( create, 'outputs' )
-        return create[ 'outputs' ]
+        self._assert_status_code_is( create_response, 200, assert_ok=True )[ 'outputs' ]
 
-    def _run_cat1( self, history_id, inputs ):
-        return self._run( 'cat1', history_id, inputs )
+    def _run_cat1( self, history_id, inputs, assert_ok=False ):
+        return self._run( 'cat1', history_id, inputs, assert_ok=assert_ok )
 
-    def _run( self, tool_id, history_id, inputs ):
+    def _run( self, tool_id, history_id, inputs, assert_ok=False ):
         payload = self.dataset_populator.run_tool_payload(
             tool_id=tool_id,
             inputs=inputs,
             history_id=history_id,
         )
         create_response = self._post( "tools", data=payload )
-        return create_response
+        if assert_ok:
+            self._assert_status_code_is( create_response, 200 )
+            create = create_response.json()
+            self._assert_has_keys( create, 'outputs' )
+            return create
+        else:
+            return create_response
 
     def _upload_and_get_content( self, content, **upload_kwds ):
         history_id = self.dataset_populator.new_history()
@@ -303,6 +338,15 @@ class ToolsTestCase( api.ApiTestCase ):
         from nose.plugins.skip import SkipTest
         if tool_id not in self.__tool_ids( ):
             raise SkipTest( )
+
+    def __build_nested_list( self, history_id ):
+        hdca1_id = self.__build_pair( history_id, [ "123", "456" ] )
+        hdca2_id = self.__build_pair( history_id, [ "789", "0ab" ] )
+
+        response = self.dataset_collection_populator.create_list_from_pairs( history_id, [ hdca1_id, hdca2_id ] )
+        self._assert_status_code_is( response, 200 )
+        hdca_list_id = response.json()[ "id" ]
+        return hdca_list_id
 
     def __build_pair( self, history_id, contents ):
         create_response = self.dataset_collection_populator.create_pair_in_history( history_id, contents=contents )

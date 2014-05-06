@@ -191,6 +191,7 @@ class ToolExecutionTestCase( TestCase, tools_support.UsesApp, tools_support.Uses
         assert len( self.tool_action.execution_call_args ) == 2
         self.assertEquals( self.tool_action.execution_call_args[ 0 ][ "incoming" ][ "param1" ], hda1 )
         self.assertEquals( self.tool_action.execution_call_args[ 1 ][ "incoming" ][ "param1" ], hda2 )
+        self.assertEquals( len( template_vars[ "jobs" ] ), 2 )
 
     def test_cannot_multirun_and_remap( self ):
         hda1, hda2 = self.__setup_multirun_job()
