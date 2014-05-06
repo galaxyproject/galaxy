@@ -111,21 +111,19 @@ class WorkflowModule( object ):
         raise TypeError( "Abstract method" )
 
 
-class InputDataModule( WorkflowModule ):
-    type = "data_input"
-    name = "Input dataset"
+class InputModule( WorkflowModule ):
 
     @classmethod
     def new( Class, trans, tool_id=None ):
         module = Class( trans )
-        module.state = dict( name="Input Dataset" )
+        module.state = dict( name=Class.default_name )
         return module
 
     @classmethod
     def from_dict( Class, trans, d, secure=True ):
         module = Class( trans )
         state = from_json_string( d["tool_state"] )
-        module.state = dict( name=state.get( "name", "Input Dataset" ) )
+        module.state = dict( name=state.get( "name", Class.default_name ) )
         return module
 
     @classmethod
@@ -189,6 +187,12 @@ class InputDataModule( WorkflowModule ):
 
     def execute( self, trans, state ):
         return None, dict( output=state.inputs['input'])
+
+
+class InputDataModule( InputModule ):
+    type = "data_input"
+    name = "Input dataset"
+    default_name = "Input Dataset"
 
 
 class ToolModule( WorkflowModule ):
