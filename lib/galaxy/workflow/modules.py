@@ -233,7 +233,8 @@ class InputDataCollectionModule( InputModule ):
 
     def get_runtime_inputs( self, filter_set=['data'] ):
         label = self.state.get( "name", self.default_name )
-        input_element = Element( "param", name="input", label=label, type="data_collection")
+        collection_type = self.state.get( "collection_type", self.default_collection_type )
+        input_element = Element( "param", name="input", label=label, type="data_collection", collection_type=collection_type )
         return dict( input=DataCollectionToolParameter( None, input_element, self.trans ) )
 
     def get_config_form( self ):
@@ -242,6 +243,7 @@ class InputDataCollectionModule( InputModule ):
         ).add_text(
             "name", "Name", value=self.state['name']
         ).add_text(
+            #  TODO: clean this up...
             "collection_type", "Collection Type", value=self.state[ "collection_type" ]
         )
         return self.trans.fill_template( "workflow/editor_generic_form.mako",

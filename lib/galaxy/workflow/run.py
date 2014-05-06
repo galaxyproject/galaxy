@@ -136,9 +136,13 @@ class WorkflowInvoker( object ):
             def callback( input, value, prefixed_name, prefixed_label ):
                 replacement = None
                 if isinstance( input, DataToolParameter ) or isinstance( input, DataCollectionToolParameter ):
-                    # TODO: Handle multiple differently...
-                    if iteration_elements and isinstance( input, DataToolParameter ) and prefixed_name in iteration_elements:
-                        replacement = iteration_elements[ prefixed_name ].dataset_instance
+                    if iteration_elements and prefixed_name in iteration_elements:
+                        if isinstance( input, DataToolParameter ):
+                            # Pull out dataset instance from element.
+                            replacement = iteration_elements[ prefixed_name ].dataset_instance
+                        else:
+                            # If collection - just use element model object.
+                            replacement = iteration_elements[ prefixed_name ]
                     else:
                         replacement = self._replacement_for_input( input, prefixed_name, step )
                 return replacement
@@ -159,7 +163,7 @@ class WorkflowInvoker( object ):
             collection_info=collection_info,
         )
         if collection_info:
-            outputs[ step.id ] = execution_tracker.created_collections
+            outputs[ step.id ] = dict( execution_tracker.created_collections )
         else:
             outputs[ step.id ] = dict( execution_tracker.output_datasets )
 
@@ -177,6 +181,13 @@ class WorkflowInvoker( object ):
                 data = self._replacement_for_input( input, prefixed_name, step )
                 if isinstance( data, model.HistoryDatasetCollectionAssociation ):
                     collections_to_match.add( prefixed_name, data )
+
+            is_data_collection_param = isinstance( input, DataCollectionToolParameter )
+            if is_data_collection_param and not input.multiple:
+                data = self._replacement_for_input( input, prefixed_name, step )
+                history_query = input._history_query( self.trans )
+                if history_query.can_map_over( data ):
+                    collections_to_match.add( prefixed_name, data, subcollection_type=input.collection_type )
 
         visit_input_values( tool.inputs, step.state.inputs, callback )
         return collections_to_match
