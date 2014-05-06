@@ -35,7 +35,7 @@ def dictify_dataset_collection_instance( dataset_colleciton_instance, parent, se
         dict_value[ 'url' ] = web.url_for( 'library_content', library_id=encoded_library_id, id=encoded_id, folder_id=encoded_folder_id )
     if view == "element":
         dict_value[ 'elements' ] = map( dictify_element, dataset_colleciton_instance.collection.elements )
-    security.encode_dict_ids( dict_value )  # TODO: Use Kyle's recusrive formulation of this.
+    security.encode_all_ids( dict_value, recursive=True )  # TODO: Use Kyle's recusrive formulation of this.
     return dict_value
 
 

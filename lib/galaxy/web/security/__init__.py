@@ -89,6 +89,8 @@ class SecurityHelper( object ):
             else:
                 if recursive and isinstance( v, dict ):
                     rval[ k ] = self.encode_all_ids( v, recursive )
+                elif recursive and isinstance( v, list ):
+                    rval[ k ] = map( lambda el: self.encode_all_ids( el, True), v )
         return rval
 
     def decode_id( self, obj_id, kind=None ):
