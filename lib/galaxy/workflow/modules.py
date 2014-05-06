@@ -14,6 +14,7 @@ from galaxy.model import PostJobAction
 from galaxy.tools.parameters import check_param, DataToolParameter, DummyDataset, RuntimeValue, visit_input_values
 from galaxy.tools.parameters import DataCollectionToolParameter
 from galaxy.util.bunch import Bunch
+from galaxy.util import odict
 from galaxy.util.json import from_json_string, to_json_string
 
 log = logging.getLogger( __name__ )
@@ -238,14 +239,24 @@ class InputDataCollectionModule( InputModule ):
         return dict( input=DataCollectionToolParameter( None, input_element, self.trans ) )
 
     def get_config_form( self ):
+        type_hints = odict.odict()
+        type_hints[ "list" ] = "List of Datasets"
+        type_hints[ "paired" ] = "Dataset Pair"
+        type_hints[ "list:paired" ] = "List of Dataset Pairs"
+        
+        type_input = web.framework.DatalistInput(
+            name="collection_type",
+            label="Collection Type",
+            value=self.state[ "collection_type" ],
+            extra_attributes=dict(refresh_on_change='true'),
+            options=type_hints
+        )
         form = web.FormBuilder(
             title=self.name
         ).add_text(
             "name", "Name", value=self.state['name']
-        ).add_text(
-            #  TODO: clean this up...
-            "collection_type", "Collection Type", value=self.state[ "collection_type" ]
         )
+        form.inputs.append( type_input )
         return self.trans.fill_template( "workflow/editor_generic_form.mako",
                                          module=self, form=form )
 
@@ -395,6 +406,7 @@ class ToolModule( WorkflowModule ):
                     multiple=input.multiple,
                     input_type="dataset_collection",
                     collection_type=input.collection_type,
+                    extensions=input.extensions,
                     ) )
 
         visit_input_values( self.tool.inputs, self.state.inputs, callback )

@@ -964,7 +964,7 @@ class JobWrapper( object ):
                         trynum += 1
                         log.warning( 'Error accessing %s, will retry: %s', dataset.dataset.file_name, e )
                         time.sleep( 2 )
-                if dataset.hidden_beneath_collection_instance:
+                if getattr( dataset, "hidden_beneath_collection_instance", None ):
                     dataset.visible = False
                 dataset.blurb = 'done'
                 dataset.peek = 'no peek'

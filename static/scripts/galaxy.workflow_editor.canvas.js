@@ -1,3 +1,161 @@
+function CollectionTypeDescription( collectionType ) {
+    this.collectionType = collectionType;
+    this.isCollection = true;
+    this.rank = collectionType.split(":").length;
+}
+
+$.extend( CollectionTypeDescription.prototype, {
+    append: function( otherCollectionTypeDescription ) {
+        if( otherCollectionTypeDescription === NULL_COLLECTION_TYPE_DESCRIPTION ) {
+            return this;
+        }
+        if( otherCollectionTypeDescription === ANY_COLLECTION_TYPE_DESCRIPTION ) {
+            return otherCollectionType;
+        }
+        return new CollectionTypeDescription( this.collectionType + ":" + otherCollectionTypeDescription.collectionType );
+    },
+    canMatch: function( otherCollectionTypeDescription ) {
+        if( otherCollectionTypeDescription === NULL_COLLECTION_TYPE_DESCRIPTION ) {
+            return false;
+        }
+        if( otherCollectionTypeDescription === ANY_COLLECTION_TYPE_DESCRIPTION ) {
+            return true;
+        }
+        return otherCollectionTypeDescription.collectionType == this.collectionType;
+    },
+    canMapOver: function( otherCollectionTypeDescription ) {
+        if( otherCollectionTypeDescription === NULL_COLLECTION_TYPE_DESCRIPTION ) {
+            return false;
+        }
+        if( otherCollectionTypeDescription === ANY_COLLECTION_TYPE_DESCRIPTION ) {
+            return false;
+        }
+        if( this.rank <= otherCollectionTypeDescription.rank ) {
+            // Cannot map over self...
+            return false;
+        }
+        var requiredSuffix = otherCollectionTypeDescription.collectionType
+        return this._endsWith( this.collectionType, requiredSuffix );
+    },
+    effectiveMapOver: function( otherCollectionTypeDescription ) {
+        var otherCollectionType = otherCollectionTypeDescription.collectionType;
+        var effectiveCollectionType = this.collectionType.substring( 0, this.collectionType.length - otherCollectionType.length - 1 );
+        return new CollectionTypeDescription( effectiveCollectionType );
+    },
+    equal: function( otherCollectionTypeDescription ) {
+        return otherCollectionTypeDescription.collectionType == this.collectionType;
+    },
+    toString: function() {
+        return "CollectionType[" + this.collectionType + "]";
+    },
+    _endsWith: function( str, suffix ) {
+        return str.indexOf(suffix, str.length - suffix.length) !== -1;
+    }
+} );
+
+NULL_COLLECTION_TYPE_DESCRIPTION = {
+    isCollection: false,
+    canMatch: function( other ) { return false; },
+    canMapOver: function( other ) {
+        return false;
+    },
+    toString: function() {
+        return "NullCollectionType[]";
+    },
+    append: function( otherCollectionType ) {
+        return otherCollectionType;
+    },
+    equal: function( other ) {
+        return other === this;
+    }
+};
+
+ANY_COLLECTION_TYPE_DESCRIPTION = {
+    isCollection: true,
+    canMatch: function( other ) { return NULL_COLLECTION_TYPE_DESCRIPTION !== other; },
+    canMapOver: function( other ) {
+        return false;
+    },
+    toString: function() {
+        return "AnyCollectionType[]";
+    },
+    append: function( otherCollectionType ) {
+        throw "Cannot append to ANY_COLLECTION_TYPE_DESCRIPTION";
+    },
+    equal: function( other ) {
+        return other === this;
+    }
+};
+
+var TerminalMapping = Backbone.Model.extend( {
+    initialize: function( attr ) {
+        this.mapOver = attr.mapOver || NULL_COLLECTION_TYPE_DESCRIPTION;
+        this.terminal = attr.terminal;
+        this.terminal.terminalMapping = this;
+    },
+    disableMapOver: function() {
+        this.setMapOver( NULL_COLLECTION_TYPE_DESCRIPTION );
+    },
+    setMapOver: function( collectionTypeDescription ) {
+        // TODO: Can I use "attributes" or something to auto trigger "change"
+        // event?
+        this.mapOver = collectionTypeDescription;
+        this.trigger("change");
+    }
+} );
+
+var TerminalMappingView = Backbone.View.extend( {
+    tagName: "div",
+    className: "fa-icon-button fa fa-folder-o",
+
+    initialize: function( options ) {
+        var mapText = "Run tool in parallel over collection";
+        this.$el.tooltip( {delay: 500, title: mapText } );
+        this.model.bind( "change", _.bind( this.render, this ) );
+    },
+
+    render: function() {
+        if( this.model.mapOver.isCollection ) {
+            this.$el.show();
+        } else {
+            this.$el.hide();
+        }
+    },
+
+} );
+
+var InputTerminalMappingView = TerminalMappingView.extend( {
+    events: {
+        "click": "onClick",
+        "mouseenter": "onMouseEnter",
+        "mouseleave": "onMouseLeave",
+    },
+    onMouseEnter: function( e ) {
+        var model = this.model;
+        if( ! model.terminal.connected() && model.mapOver.isCollection ) {
+            this.$el.color( "red" );
+        }
+    },
+    onMouseLeave: function( e ) {
+        this.$el.color( "blue" );
+    },
+    onClick: function( e ) {
+        var model = this.model;
+        if( ! model.terminal.connected() && model.mapOver.isCollection ) {
+            // TODO: Consider prompting...
+            model.terminal.resetMapping();
+        }
+    },
+} );
+
+var InputTerminalMapping = TerminalMapping;
+var InputCollectionTerminalMapping = TerminalMapping;
+var OutputTerminalMapping = TerminalMapping;
+var OutputTerminalMappingView = TerminalMappingView;
+var InputCollectionTerminalMappingView = InputTerminalMappingView;
+var OutputCollectionTerminalMapping = TerminalMapping;
+var OutputCollectionTerminalMappingView = TerminalMappingView;
+
 var Terminal = Backbone.Model.extend( {
     initialize: function( attr ) {
         this.element = attr.element;
@@ -13,6 +171,7 @@ var Terminal = Backbone.Model.extend( {
         this.connectors.splice( $.inArray( connector, this.connectors ), 1 );
         if ( this.node ) {
             this.node.markChanged();
+            this.resetMappingIfNeeded();
         }
     },
     redraw: function () {
@@ -26,31 +185,73 @@ var Terminal = Backbone.Model.extend( {
         });
     },
     destroyInvalidConnections: function( ) {
-        var terminal = this;
-        _.each( terminal.connectors, function( connector ) {
-            if( connector.handle1 && ! terminal.attachable( connector.handle1 ) ) {
-                connector.destroy();
-            }
+        _.each( this.connectors, function( connector ) {
+            connector.destroyIfInvalid();
         } );
-    }
+    },
+    setMapOver : function( val ) {
+        if( this.multiple ) {
+            return; // Cannot set this to be multirun...
+        }
+
+        if( ! this.mapOver().equal( val ) ) {
+            this.terminalMapping.setMapOver( val );
+            _.each( this.node.output_terminals, function( outputTerminal ) {
+                outputTerminal.setMapOver( val );
+            } );
+        }
+    },
+    mapOver: function( ) {
+        if ( ! this.terminalMapping ) {
+            return NULL_COLLECTION_TYPE_DESCRIPTION;
+        } else {
+            return this.terminalMapping.mapOver;
+        }
+    },
+    isMappedOver: function( ) {
+        return this.terminalMapping && this.terminalMapping.mapOver.isCollection;
+    },
+    resetMapping: function() {
+        this.terminalMapping.disableMapOver();
+    },
+
+    resetMappingIfNeeded: function( ) {}, // Subclasses should override this...
+
 } );
 
 var OutputTerminal = Terminal.extend( {
     initialize: function( attr ) {
         Terminal.prototype.initialize.call( this, attr );
         this.datatypes = attr.datatypes;
+    },
+
+    resetMappingIfNeeded: function( ) {
+        if( ! this.node.hasMappedOverInputTerminals() ) {
+            this.resetMapping();
+        }
+    },
+
+    resetMapping: function() {
+        this.terminalMapping.disableMapOver();
+        _.each( this.connectors, function( connector ) {
+            var connectedInput = connector.handle2;
+            if( connectedInput ) {
+                // Not exactly right because this is still connected.
+                // Either rewrite resetMappingIfNeeded or disconnect
+                // and reconnect if valid.
+                connectedInput.resetMappingIfNeeded();
+                connector.destroyIfInvalid();
+            }
+        } );
     }
+
 } );
 
 
-var InputTerminal = Terminal.extend( {
+var BaseInputTerminal = Terminal.extend( {
     initialize: function( attr ) {
         Terminal.prototype.initialize.call( this, attr );
-        this.update( attr.input );
-    },
-    update: function( input ) {
-        this.datatypes = input.extensions;
-        this.multiple = input.multiple;
+        this.update( attr.input ); // subclasses should implement this...
     },
     canAccept: function ( other ) {
         if( this._inputFilled() ) {
@@ -59,10 +260,83 @@ var InputTerminal = Terminal.extend( {
             return this.attachable( other );
         }
     },
-    _inputFilled: function( ) {
-        return ! ( this.connectors.length < 1 || this.multiple );
+    resetMappingIfNeeded: function( ) {
+        var mapOver = this.mapOver();
+        if( ! mapOver.isCollection ) {
+            return;
+        }
+        // No output terminals are counting on this being mapped
+        // over if connected inputs are still mapped over or if none
+        // of the outputs are connected...
+        var reset = this.node.hasConnectedMappedInputTerminals() ||
+                        ( ! this.node.hasConnectedOutputTerminals() );
+        if( reset ) {
+            this.resetMapping();
+        }
     },
-    attachable: function( other ) {
+    resetMapping: function() {
+        this.terminalMapping.disableMapOver();
+        if( ! this.node.hasMappedOverInputTerminals() ) {
+            _.each( this.node.output_terminals, function( terminal) {
+                // This shouldn't be called if there are mapped over
+                // outputs.
+                terminal.resetMapping();
+            } );
+        }
+    },
+    connected: function() {
+        return this.connectors.length !== 0;
+    },
+    _inputFilled: function() {
+        var inputFilled;
+        if( ! this.connected() ) {
+            inputFilled = false;
+        } else {
+            if( this.multiple ) {
+                if( ! this.connected() ) {
+                    inputFilled = false;
+                } else {
+                    var firstOutput = this.connectors[ 0 ].handle1;
+                    if( firstOutput === null ){
+                        inputFilled = false;
+                    } else {
+                        if( firstOutput.isDataCollectionInput || firstOutput.isMappedOver() || firstOutput.datatypes.indexOf( "input_collection" ) > 0 ) {
+                            inputFilled = true;
+                        } else {
+                            inputFilled = false;
+                        }
+                    }
+                }
+            } else {
+                inputFilled = true;
+            }
+        }
+        return inputFilled;
+    },
+    _mappingConstraints: function( ) {
+        // If this is a connected terminal, return list of collection types
+        // other terminals connected to node are constraining mapping to.
+        if( ! this.node ) {
+            return [];  // No node - completely unconstrained
+        }
+        var mapOver = this.mapOver();
+        if( mapOver.isCollection ) {
+            return [ mapOver ];
+        }
+
+        var constraints = [];
+        if( ! this.node.hasConnectedOutputTerminals() ) {
+            _.each( this.node.connectedMappedInputTerminals(), function( inputTerminal ) {
+                constraints.push( inputTerminal.mapOver() );
+            } );
+        } else {
+            // All outputs should have same mapOver status - least specific.
+            constraints.push( _.first( _.values( this.node.output_terminals ) ).mapOver() );
+        }
+        return constraints;
+    },
+    _producesAcceptableDatatype: function( other ) {
+        // other is a non-collection output...
         for ( var t in this.datatypes ) {
             var cat_outputs = new Array();
             cat_outputs = cat_outputs.concat(other.datatypes);
@@ -76,8 +350,131 @@ var InputTerminal = Terminal.extend( {
             }
             // FIXME: No idea what to do about case when datatype is 'input'
             for ( var other_datatype_i in cat_outputs ) {
-                if ( cat_outputs[other_datatype_i] == "input" || issubtype( cat_outputs[other_datatype_i], this.datatypes[t] ) ) {
+                var other_datatype = cat_outputs[other_datatype_i];
+                if ( other_datatype == "input" || other_datatype == "input_collection" || issubtype( cat_outputs[other_datatype_i], this.datatypes[t] ) ) {
                     return true;
+                }
+            }
+        }
+        return false;
+    },
+    _otherCollectionType: function( other ) {
+        var otherCollectionType = NULL_COLLECTION_TYPE_DESCRIPTION;
+        if( other.isDataCollectionInput ) {
+            otherCollectionType = other.collectionType;
+        } else {
+            var otherMapOver = other.mapOver();
+            if( otherMapOver.isCollection ) {
+                otherCollectionType = otherMapOver;
+            }
+        }
+        return otherCollectionType;
+    },
+} );
+
+
+
+
+
+var InputTerminal = BaseInputTerminal.extend( {
+    update: function( input ) {
+        this.datatypes = input.extensions;
+        this.multiple = input.multiple;
+        this.collection = false;    	
+    },
+    connect: function( connector ) {
+        BaseInputTerminal.prototype.connect.call( this, connector );
+        var other_output = connector.handle1;
+        if( ! other_output ) {
+            return;
+        }
+        var otherCollectionType = this._otherCollectionType( other_output );
+        if( otherCollectionType.isCollection ) {
+            this.setMapOver( otherCollectionType );
+        }
+    },
+    attachable: function( other ) {
+        var otherCollectionType = this._otherCollectionType( other );
+        var thisMapOver = this.mapOver();
+        if( otherCollectionType.isCollection ) {
+            // TODO: Handle if this multiple....
+            if( thisMapOver.isCollection && thisMapOver.canMatch( otherCollectionType ) ) {
+                return this._producesAcceptableDatatype( other );
+            } else {
+                //  Need to check if this would break constraints...
+                var mappingConstraints = this._mappingConstraints();
+                if( mappingConstraints.every( _.bind( otherCollectionType.canMatch, otherCollectionType ) ) ) {
+                    return this._producesAcceptableDatatype( other );
+                } else {
+                    return false;
+                }
+            }
+        } else if( thisMapOver.isCollection ) {
+            // Attempting to match a non-collection output to an
+            // explicitly collection input.
+            return false;
+        }
+        return this._producesAcceptableDatatype( other );
+    }
+
+});
+
+var InputCollectionTerminal = BaseInputTerminal.extend( {
+    update: function( input ) {
+        this.multiple = false;
+        this.collection = true;
+        this.datatypes = input.extensions;
+        if( input.collection_type ) {
+            this.collectionType = new CollectionTypeDescription( input.collection_type );
+        } else {
+            this.collectionType = ANY_COLLECTION_TYPE_DESCRIPTION;
+        }
+    },
+    connect: function( connector ) {
+        BaseInputTerminal.prototype.connect.call( this, connector );
+        var other = connector.handle1;
+        if( ! other ) {
+            return;
+        }
+
+        var effectiveMapOver = this._effectiveMapOver( other );
+        this.setMapOver( effectiveMapOver );
+    },
+    _effectiveMapOver: function( other ) {
+        var collectionType = this.collectionType;
+        var otherCollectionType = this._otherCollectionType( other );
+        if( ! collectionType.canMatch( otherCollectionType ) ) {
+            return otherCollectionType.effectiveMapOver( collectionType );
+        } else {
+            return NULL_COLLECTION_TYPE_DESCRIPTION;
+        }
+    },
+    _effectiveCollectionType: function( ) {
+        var collectionType = this.collectionType;
+        var thisMapOver = this.mapOver();
+        return thisMapOver.append( collectionType );
+    },
+    attachable: function ( other ) {
+        var otherCollectionType = this._otherCollectionType( other );
+        if( otherCollectionType.isCollection ) {
+            var effectiveCollectionType = this._effectiveCollectionType( );
+            var thisMapOver = this.mapOver();
+            if( effectiveCollectionType.canMatch( otherCollectionType ) ) {
+                // Only way a direct match...
+                return this._producesAcceptableDatatype( other );
+                // Otherwise we need to mapOver
+            } else if( thisMapOver.isCollection ) {
+                // In this case, mapOver already set and we didn't match skipping...
+                return false;
+            } else if( otherCollectionType.canMapOver( this.collectionType ) ) {
+                var effectiveMapOver = this._effectiveMapOver( other );
+                if( ! effectiveMapOver.isCollection ) {
+                    return false;
+                }
+                //  Need to check if this would break constraints...
+                var mappingConstraints = this._mappingConstraints();
+                if( mappingConstraints.every( effectiveMapOver.canMatch ) ) {
+                    return this._producesAcceptableDatatype( other );
                 }
             }
         }
@@ -85,7 +482,24 @@ var InputTerminal = Terminal.extend( {
     }
 });
 
-
+var OutputCollectionTerminal = Terminal.extend( {
+    initialize: function( attr ) {
+        Terminal.prototype.initialize.call( this, attr );
+        this.datatypes = attr.datatypes;
+        this.collectionType = new CollectionTypeDescription( attr.collection_type );
+        this.isDataCollectionInput = true;
+    },
+    update: function( output ) {
+        var newCollectionType = new CollectionTypeDescription( output.collection_type );
+        if( newCollectionType.collectionType != this.collectionType.collectionType ) {
+            _.each( this.connectors, function( connector ) {
+                // TODO: consider checking if connection valid before removing...
+                connector.destroy();
+            } );
+        }
+        this.collectionType = newCollectionType;
+    }
+} );
 
 function Connector( handle1, handle2 ) {
     this.canvas = null;
@@ -115,6 +529,11 @@ $.extend( Connector.prototype, {
             this.handle2.disconnect( this );
         }
         $(this.canvas).remove();
+    },
+    destroyIfInvalid: function() {
+        if( this.handle1 && this.handle2 && ! this.handle2.attachable( this.handle1 ) ) {
+            this.destroy();
+        }        
     },
     redraw : function () {
         var canvas_container = $("#canvas-container");
@@ -165,20 +584,52 @@ $.extend( Connector.prototype, {
         end_x -= canvas_left;
         end_y -= canvas_top;
         // Draw the line
+
+        var c = this.canvas.getContext("2d"),
+            start_offsets = null,
+            end_offsets = null;
+        var num_offsets = 1;
+        if ( this.handle1 && this.handle1.isMappedOver() ) {
+            var start_offsets = [ -6, -3, 0, 3, 6 ];
+            num_offsets = 5;
+        } else {
+            var start_offsets = [ 0 ];
+        }
+        if ( this.handle2 && this.handle2.isMappedOver() ) {
+            var end_offsets = [ -6, -3, 0, 3, 6 ];
+            num_offsets = 5;
+        } else {
+            var end_offsets = [ 0 ];
+        }
+        var connector = this;
+        for( var i = 0; i < num_offsets; i++ ) {
+            var inner_width = 5,
+                outer_width = 7;
+            if( start_offsets.length > 1 || end_offsets.length > 1 ) {
+                // We have a multi-run, using many lines, make them small.
+                inner_width = 1;
+                outer_width = 3;
+            }
+            connector.draw_outlined_curve( start_x, start_y, end_x, end_y, cp_shift, inner_width, outer_width, start_offsets[ i % start_offsets.length ], end_offsets[ i % end_offsets.length ] ); 
+        }
+    },
+    draw_outlined_curve : function( start_x, start_y, end_x, end_y, cp_shift, inner_width, outer_width, offset_start, offset_end ) {
+        var offset_start = offset_start || 0;
+        var offset_end = offset_end || 0;
         var c = this.canvas.getContext("2d");
         c.lineCap = "round";
         c.strokeStyle = this.outer_color;
-        c.lineWidth = 7;
+        c.lineWidth = outer_width;
         c.beginPath();
-        c.moveTo( start_x, start_y );
-        c.bezierCurveTo( start_x + cp_shift, start_y, end_x - cp_shift, end_y, end_x, end_y );
+        c.moveTo( start_x, start_y + offset_start );
+        c.bezierCurveTo( start_x + cp_shift, start_y + offset_start, end_x - cp_shift, end_y + offset_end, end_x, end_y + offset_end);
         c.stroke();
         // Inner line
         c.strokeStyle = this.inner_color;
-        c.lineWidth = 5;
+        c.lineWidth = inner_width;
         c.beginPath();
-        c.moveTo( start_x, start_y );
-        c.bezierCurveTo( start_x + cp_shift, start_y, end_x - cp_shift, end_y, end_x, end_y );
+        c.moveTo( start_x, start_y + offset_start );
+        c.bezierCurveTo( start_x + cp_shift, start_y + offset_start, end_x - cp_shift, end_y + offset_end, end_x, end_y + offset_end );
         c.stroke();
     }
 } );
@@ -190,6 +641,66 @@ var Node = Backbone.Model.extend({
         this.input_terminals = {};
         this.output_terminals = {};
         this.tool_errors = {};
+    },
+    connectedOutputTerminals: function() {
+        var connected_outputs = [];
+        $.each( this.output_terminals, function( _, t ) {
+            if( t.connectors.length > 0 ) {
+                connected_outputs.push( t );
+            }
+        } );
+        return connected_outputs;
+    },
+    hasConnectedOutputTerminals: function() {
+        // return this.connectedOutputTerminals().length > 0; <- optimized this
+        var outputTerminals = this.output_terminals;
+        for( var outputName in outputTerminals ) {
+            if( outputTerminals[ outputName ].connectors.length > 0 ) {
+                return true;
+            }
+        }
+        return false;
+    },
+    connectedMappedInputTerminals: function() {
+        return this._connectedMappedTerminals( this.input_terminals );
+    },
+    hasConnectedMappedInputTerminals: function() {
+        // return this.connectedMappedInputTerminals().length > 0; <- optimized this
+        var inputTerminals = this.input_terminals;
+        for( var inputName in inputTerminals ) {
+            var inputTerminal = inputTerminals[ inputName ];
+            if( inputTerminal.connectors.length > 0 && inputTerminal.isMappedOver() ) {
+                return true;
+            }
+        }
+        return false;
+    },
+    _connectedMappedTerminals: function( all_terminals ) {
+        var mapped_outputs = [];
+        $.each( all_terminals, function( _, t ) {
+            var mapOver = t.mapOver();
+            if( mapOver.isCollection ) {
+                if( t.connectors.length > 0 ) {
+                    mapped_outputs.push( t );
+                }
+            }
+        });
+        return mapped_outputs;
+    },
+    hasMappedOverInputTerminals: function() {
+        var found = false;
+        _.each( this.input_terminals, function( t ) {
+            var mapOver = t.mapOver();
+            if( mapOver.isCollection ) {
+                found = true;
+            }
+        } );
+        return found;
+    },
+    forceDisconnectOutputs: function() {
+        _.each( this.output_terminals, function( terminal ) {
+            terminal.disconnectAll();
+        } );
     },
     redraw : function () {
         $.each( this.input_terminals, function( _, t ) {
@@ -259,8 +770,11 @@ var Node = Backbone.Model.extend({
         this.form_html = data.form_html;
         this.tool_errors = data.tool_errors;
         this.annotation = data['annotation'];
-        var pja_in = $.parseJSON(data.post_job_actions);
-        this.post_job_actions = pja_in ? pja_in : {};
+        if( "post_job_actions" in data ) {
+            // Won't be present in response for data inputs
+            var pja_in = $.parseJSON(data.post_job_actions);
+            this.post_job_actions = pja_in ? pja_in : {};
+        }
         node.nodeView.renderToolErrors();
         // Update input rows
         var old_body = nodeView.$( "div.inputs" );
@@ -275,6 +789,14 @@ var Node = Backbone.Model.extend({
             unusedView.el.terminal.destroy();
         } );
         nodeView.terminalViews = newTerminalViews;
+        // In general workflow editor assumes tool outputs don't change in # or
+        // type (not really valid right?) but adding special logic here for
+        // data collection input parameters that can have their collection
+        // change.
+        if( data.data_outputs.length == 1 && "collection_type" in data.data_outputs[ 0 ] ) {
+            nodeView.updateDataOutput( data.data_outputs[ 0 ] );
+        }
+
         old_body.replaceWith( new_body );
         // If active, reactivate with new form_html
         this.markChanged();
@@ -766,6 +1288,7 @@ var NodeView = Backbone.View.extend( {
         this.tool_body.find( "div" ).remove();
         this.newInputsDiv().appendTo( this.tool_body );
         this.terminalViews = {};
+        this.outputTerminlViews = {};
     },
 
     render : function() {
@@ -803,7 +1326,8 @@ var NodeView = Backbone.View.extend( {
         }
         var terminalView = this.terminalViews[ input.name ];
         if( ! terminalView ) {
-            terminalView = new InputTerminalView( {
+	        var terminalViewClass = ( input.input_type == "dataset_collection" ) ? InputCollectionTerminalView : InputTerminalView;
+            terminalView = new terminalViewClass( {
                 node: this.node,
                 input: input
             } );             
@@ -822,13 +1346,14 @@ var NodeView = Backbone.View.extend( {
         } );
         var ib = inputView.$el;
 
-        var terminalElement = inputView.terminalElement;
-        body.append( ib.prepend( terminalElement ) );
+        // Append to new body
+        body.append( ib.prepend( terminalView.terminalElements() ) );
         return terminalView;
     },
 
     addDataOutput: function( output ) {
-        var terminalView = new OutputTerminalView( {
+        var terminalViewClass = ( output.collection_type ) ? OutputCollectionTerminalView : OutputTerminalView;
+        var terminalView = new terminalViewClass( {
             node: this.node,
             output: output
         } );
@@ -837,7 +1362,12 @@ var NodeView = Backbone.View.extend( {
             "terminalElement": terminalView.el,
             "nodeView": this,
         } );
-        this.tool_body.append( outputView.$el.append( outputView.terminalElement ) );
+        this.tool_body.append( outputView.$el.append( terminalView.terminalElements() ) );
+    },
+
+    updateDataOutput: function( output ) {
+        var outputTerminal = this.node.output_terminals[ output.name ];
+        outputTerminal.update( output );
     }
 
 } );
@@ -938,7 +1468,9 @@ var DataOutputView = Backbone.View.extend( {
         var output = this.output;
         var label = output.name;
         var node = this.nodeView.node;
-        if ( output.extensions.indexOf( 'input' ) < 0 ) {
+
+        var isInput = output.extensions.indexOf( 'input' ) >= 0 || output.extensions.indexOf( 'input_collection' ) >= 0;
+        if ( ! isInput ) {
             label = label + " (" + output.extensions.join(", ") + ")";
         }
         this.$el.html( label )
@@ -968,16 +1500,39 @@ var DataOutputView = Backbone.View.extend( {
 } );
 
 
+var TerminalView = Backbone.View.extend( {
 
-var InputTerminalView = Backbone.View.extend( {
+    setupMappingView: function( terminal ) {
+        var terminalMapping = new this.terminalMappingClass( { terminal: terminal } );
+        var terminalMappingView = new this.terminalMappingViewClass( { model: terminalMapping } );
+        terminalMappingView.render();
+        terminal.terminalMappingView = terminalMappingView;
+        this.terminalMappingView = terminalMappingView;
+    },
+
+    terminalElements: function() {
+        if( this.terminalMappingView ) {
+            return [ this.terminalMappingView.el, this.el ];
+        } else{
+            return [ this.el ];
+        }
+    }
+
+} );
+
+
+var BaseInputTerminalView = TerminalView.extend( {
     className: "terminal input-terminal",
 
     initialize: function( options ) {
         var node = options.node;
         var input = options.input;
-        
         var name = input.name;
-        var terminal = this.el.terminal = new InputTerminal( { element: this.el, input: input } );
+        var terminal = this.terminalForInput( input );
+        if( ! terminal.multiple ) {
+            this.setupMappingView( terminal );
+        }
+        this.el.terminal = terminal;
         terminal.node = node;
         terminal.name = name;
         node.input_terminals[name] = terminal;
@@ -1049,20 +1604,37 @@ var InputTerminalView = Backbone.View.extend( {
 
 } );
 
+var InputTerminalView = BaseInputTerminalView.extend( {
+    terminalMappingClass: InputTerminalMapping,
+    terminalMappingViewClass: InputTerminalMappingView,
 
+    terminalForInput: function( input ) {
+        return new InputTerminal( { element: this.el, input: input } );
+    },
 
-var OutputTerminalView = Backbone.View.extend( {
+} );
+
+var InputCollectionTerminalView = BaseInputTerminalView.extend( {
+    terminalMappingClass: InputCollectionTerminalMapping,
+    terminalMappingViewClass: InputCollectionTerminalMappingView,
+
+    terminalForInput: function( input ) {
+        return new InputCollectionTerminal( { element: this.el, input: input } );
+    },
+
+} );
+
+var BaseOutputTerminalView = TerminalView.extend( {
     className: "terminal output-terminal",
 
     initialize: function( options ) {
         var node = options.node;
         var output = options.output;
-        var name = output.name;
-        var type = output.extensions;
 
-        var element = this.el;
-        var terminal_element = element;
-        var terminal = element.terminal = new OutputTerminal( {element: element, datatypes: type } );
+        var name = output.name;
+        var terminal = this.terminalForOutput( output );
+        this.setupMappingView( terminal );
+        this.el.terminal = terminal;
         terminal.node = node;
         terminal.name = name;
         node.output_terminals[name] = terminal;
@@ -1112,6 +1684,29 @@ var OutputTerminalView = Backbone.View.extend( {
 
 } );
 
+var OutputTerminalView = BaseOutputTerminalView.extend( {
+    terminalMappingClass: OutputTerminalMapping,
+    terminalMappingViewClass: OutputTerminalMappingView,
+
+    terminalForOutput: function( output ) {
+        var type = output.extensions;
+        var terminal = new OutputTerminal( { element: this.el, datatypes: type } );
+        return terminal;
+    },
+
+} );
+
+var OutputCollectionTerminalView = BaseOutputTerminalView.extend( {
+    terminalMappingClass: OutputCollectionTerminalMapping,
+    terminalMappingViewClass: OutputCollectionTerminalMappingView,
+
+    terminalForOutput: function( output ) {
+        var collection_type = output.collection_type;
+        var terminal = new OutputCollectionTerminal( { element: this.el, collection_type: collection_type, datatypes: output.extensions } );
+        return terminal;
+    },
+
+} );
 
 
 ////////////

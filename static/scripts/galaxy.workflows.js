@@ -496,6 +496,9 @@ function show_form_for_tool( text, node ) {
         $(this).find( "select[refresh_on_change='true']").change( function() {
             $(form).submit();
         });
+        $(this).find( "input[refresh_on_change='true']").change( function() {
+            $(form).submit();
+        });
         $(this).find( ".popupmenu" ).each( function() {
             var id = $(this).parents( "div.form-row" ).attr( 'id' );
             var b = $('<a class="popup-arrow" id="popup-arrow-for-' + id + '">&#9660;</a>');
