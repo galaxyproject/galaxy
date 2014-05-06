@@ -84,8 +84,8 @@ class DatasetPopulator( object ):
 class WorkflowPopulator( object ):
     # Impulse is to make this a Mixin, but probably better as an object.
 
-    def __init__( self, api_test_case ):
-        self.api_test_case = api_test_case
+    def __init__( self, galaxy_interactor ):
+        self.galaxy_interactor = galaxy_interactor
 
     def load_workflow( self, name, content=workflow_str, add_pja=False ):
         workflow = json.loads( content )
@@ -111,7 +111,7 @@ class WorkflowPopulator( object ):
             workflow=json.dumps( workflow ),
             **create_kwds
         )
-        upload_response = self.api_test_case._post( "workflows/upload", data=data )
+        upload_response = self.galaxy_interactor.post( "workflows/upload", data=data )
         uploaded_workflow_id = upload_response.json()[ "id" ]
         return uploaded_workflow_id
 

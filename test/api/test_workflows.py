@@ -1,8 +1,8 @@
 from base import api
 from json import dumps
 import time
-from .helpers import TestsDatasets
 from .helpers import WorkflowPopulator
+from .helpers import DatasetPopulator
 
 from base.interactor import delete_request  # requests like delete
 
@@ -12,11 +12,12 @@ from base.interactor import delete_request  # requests like delete
 # - Allow post to workflows/<workflow_id>/run in addition to posting to
 #    /workflows with id in payload.
 # - Much more testing obviously, always more testing.
-class WorkflowsApiTestCase( api.ApiTestCase, TestsDatasets ):
+class WorkflowsApiTestCase( api.ApiTestCase ):
 
     def setUp( self ):
         super( WorkflowsApiTestCase, self ).setUp()
-        self.workflow_populator = WorkflowPopulator( self )
+        self.workflow_populator = WorkflowPopulator( self.galaxy_interactor )
+        self.dataset_populator = DatasetPopulator( self.galaxy_interactor )
 
     def test_delete( self ):
         workflow_id = self.workflow_populator.simple_workflow( "test_delete" )
@@ -65,7 +66,7 @@ class WorkflowsApiTestCase( api.ApiTestCase, TestsDatasets ):
         # something like that.
         run_workflow_response = self._post( "workflows", data=workflow_request )
         self._assert_status_code_is( run_workflow_response, 200 )
-        self._wait_for_history( history_id, assert_ok=True )
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
 
     def test_extract_from_history( self ):
         workflow = self.workflow_populator.load_workflow( name="test_for_extract" )
@@ -77,7 +78,7 @@ class WorkflowsApiTestCase( api.ApiTestCase, TestsDatasets ):
         run_workflow_response = self._post( "workflows", data=workflow_request )
         self._assert_status_code_is( run_workflow_response, 200 )
 
-        self._wait_for_history( history_id, assert_ok=True )
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
         data = dict( history_id=history_id, tool_id="cat1" )
         jobs_response = self._get( "jobs", data=data )
         self._assert_status_code_is( jobs_response, 200 )
@@ -105,7 +106,7 @@ class WorkflowsApiTestCase( api.ApiTestCase, TestsDatasets ):
         workflow_request[ "parameters" ] = dumps( dict( random_lines1=dict( num_lines=5 ) ) )
         run_workflow_response = self._post( "workflows", data=workflow_request )
         self._assert_status_code_is( run_workflow_response, 200 )
-        self._wait_for_history( history_id, assert_ok=True )
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
         # Would be 8 and 6 without modification
         self.__assert_lines_hid_line_count_is( history_id, 2, 5 )
         self.__assert_lines_hid_line_count_is( history_id, 3, 5 )
@@ -120,7 +121,7 @@ class WorkflowsApiTestCase( api.ApiTestCase, TestsDatasets ):
         workflow_request[ "parameters" ] = params
         run_workflow_response = self._post( "workflows", data=workflow_request )
         self._assert_status_code_is( run_workflow_response, 200 )
-        self._wait_for_history( history_id, assert_ok=True )
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
         # Would be 8 and 6 without modification
         self.__assert_lines_hid_line_count_is( history_id, 2, 8 )
         self.__assert_lines_hid_line_count_is( history_id, 3, 5 )
@@ -166,7 +167,7 @@ class WorkflowsApiTestCase( api.ApiTestCase, TestsDatasets ):
         workflow_request, history_id = self._setup_workflow_run( workflow )
         run_workflow_response = self._post( "workflows", data=workflow_request )
         self._assert_status_code_is( run_workflow_response, 200 )
-        self._wait_for_history( history_id, assert_ok=True )
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
         time.sleep(.1)  # Give another little bit of time for rename (needed?)
         contents = self._get( "histories/%s/contents" % history_id ).json()
         # loading workflow with add_pja=True causes workflow output to be
@@ -183,9 +184,9 @@ class WorkflowsApiTestCase( api.ApiTestCase, TestsDatasets ):
                 step_1 = key
             if label == "WorkflowInput2":
                 step_2 = key
-        history_id = self._new_history()
-        hda1 = self._new_dataset( history_id, content="1 2 3" )
-        hda2 = self._new_dataset( history_id, content="4 5 6" )
+        history_id = self.dataset_populator.new_history()
+        hda1 = self.dataset_populator.new_dataset( history_id, content="1 2 3" )
+        hda2 = self.dataset_populator.new_dataset( history_id, content="4 5 6" )
         workflow_request = dict(
             history="hist_id=%s" % history_id,
             workflow_id=uploaded_workflow_id,
@@ -201,9 +202,9 @@ class WorkflowsApiTestCase( api.ApiTestCase, TestsDatasets ):
         uploaded_workflow_id = self.workflow_populator.create_workflow( workflow )
         workflow_inputs = self._workflow_inputs( uploaded_workflow_id )
         key = workflow_inputs.keys()[ 0 ]
-        history_id = self._new_history()
+        history_id = self.dataset_populator.new_history()
         ten_lines = "\n".join( map( str, range( 10 ) ) )
-        hda1 = self._new_dataset( history_id, content=ten_lines )
+        hda1 = self.dataset_populator.new_dataset( history_id, content=ten_lines )
         workflow_request = dict(
             history="hist_id=%s" % history_id,
             workflow_id=uploaded_workflow_id,
