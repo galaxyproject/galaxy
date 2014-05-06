@@ -220,6 +220,12 @@ class WorkflowInvoker( object ):
             connection = step.input_connections_by_name[ prefixed_name ]
             if input.multiple:
                 replacement = [ outputs[ c.output_step.id ][ c.output_name ] for c in connection ]
+                # If replacement is just one dataset collection, replace tool
+                # input with dataset collection - tool framework will extract
+                # datasets properly.
+                if len( replacement ) == 1:
+                    if isinstance( replacement[ 0 ], model.HistoryDatasetCollectionAssociation ):
+                        replacement = replacement[ 0 ]
             else:
                 replacement = outputs[ connection[ 0 ].output_step.id ][ connection[ 0 ].output_name ]
         return replacement
