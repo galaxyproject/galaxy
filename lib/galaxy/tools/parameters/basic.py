@@ -1694,8 +1694,29 @@ class DataToolParameter( BaseDataToolParameter ):
                 multi_dataset_matcher = DatasetMatcher( trans, self, multirun_value, other_values )
                 multi_select = self._get_select_dataset_field( history, multi_dataset_matcher, multiple=True, suffix="|__multirun__" )
                 fields[ "select_multiple" ] = multi_select
+                collection_field = self._get_select_dataset_collection_fields( dataset_matcher, multiple=False )
+                fields[ "select_collection" ] = collection_field
 
         return self._switch_fields( fields, default_field=default_field )
+
+    def _get_select_dataset_collection_fields( self, history, dataset_matcher, multiple=False ):
+        value = dataset_matcher.value
+        if value is not None:
+            if type( value ) != list:
+                value = [ value ]
+
+        field_name = "%s|__collection_multirun__" % self.name
+        field = form_builder.SelectField( field_name, multiple, None, self.refresh_on_change, refresh_on_change_values=self.refresh_on_change_values )
+    
+        dataset_collection_matcher = DatasetCollectionMatcher( dataset_matcher )
+
+        for history_dataset_collection in history.dataset_collections:
+            if dataset_collection_matcher.hdca_match( history_dataset_collection ):
+                name = history_dataset_collection.name
+                id = dataset_matcher.trans.security.encode_id( history_dataset_collection.id )
+                field.add_option( name, id, False )
+
+        return field
 
     def _get_select_dataset_field( self, history, dataset_matcher, multiple=False, suffix="" ):
 
