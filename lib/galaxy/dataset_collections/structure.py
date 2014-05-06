@@ -34,6 +34,21 @@ class Tree( object ):
 
         self.children = children
 
+    def walk_collections( self, hdca_dict ):
+        return self._walk_collections( dict_map( lambda hdca: hdca.collection, hdca_dict ) )
+
+    def _walk_collections( self, collection_dict ):
+        for ( identifier, substructure ) in self.children:
+            def element( collection ):
+                return collection[ identifier ]
+
+            if substructure.is_leaf:
+                yield dict_map( element, collection_dict )
+            else:
+                sub_collections = dict_map( lambda collection: element( collection ).child_collection )
+                for element in substructure._walk_collections( sub_collections ):
+                    yield element
+
     @property
     def is_leaf( self ):
         return False
@@ -79,6 +94,10 @@ class Tree( object ):
             collection_type=self.collection_type,
             element_identifiers=element_identifiers,
         )
+
+
+def dict_map( func, input_dict ):
+    return dict( [ ( k, func(v) ) for k, v in input_dict.iteritems() ] )
 
 
 def get_structure( dataset_collection_instance, subcollection_type=None ):

@@ -50,6 +50,9 @@ class MatchingCollections( object ):
                 raise exceptions.MessageException( CANNOT_MATCH_ERROR_MESSAGE )
             self.collections[ input_name ] = hdca
 
+    def slice_collections( self ):
+        return self.structure.walk_collections( self.collections )
+
     @staticmethod
     def for_collections( collections_to_match ):
         if not collections_to_match.has_collections():

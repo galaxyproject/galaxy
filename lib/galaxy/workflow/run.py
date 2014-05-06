@@ -1,13 +1,21 @@
 from galaxy import model
 from galaxy import exceptions
+from galaxy import util
+
+from galaxy.dataset_collections import matching
 
 from galaxy.jobs.actions.post import ActionBox
 
 from galaxy.tools.parameters.basic import DataToolParameter
 from galaxy.tools.parameters.basic import DataCollectionToolParameter
 from galaxy.tools.parameters import visit_input_values
+from galaxy.tools.parameters.wrapped import make_dict_copy
+from galaxy.tools.execute import execute
 from galaxy.util.odict import odict
 from galaxy.workflow import modules
+
+import logging
+log = logging.getLogger( __name__ )
 
 
 class WorkflowRunConfig( object ):
@@ -76,13 +84,13 @@ class WorkflowInvoker( object ):
             self._populate_state( )
 
         for step in self.workflow.steps:
-            job = None
-            job = self._invoke_step( step )
-            # Record invocation
-            workflow_invocation_step = model.WorkflowInvocationStep()
-            workflow_invocation_step.workflow_invocation = workflow_invocation
-            workflow_invocation_step.workflow_step = step
-            workflow_invocation_step.job = job
+            jobs = self._invoke_step( step )
+            for job in util.listify( jobs ):
+                # Record invocation
+                workflow_invocation_step = model.WorkflowInvocationStep()
+                workflow_invocation_step.workflow_invocation = workflow_invocation
+                workflow_invocation_step.workflow_step = step
+                workflow_invocation_step.job = job
 
         # All jobs ran successfully, so we can save now
         self.trans.sa_session.add( workflow_invocation )
@@ -93,35 +101,85 @@ class WorkflowInvoker( object ):
 
     def _invoke_step( self, step ):
         if step.type == 'tool' or step.type is None:
-            job = self._execute_tool_step( step )
+            jobs = self._execute_tool_step( step )
         else:
-            job = self._execute_input_step( step )
+            jobs = self._execute_input_step( step )
 
-        return job
+        return jobs
 
     def _execute_tool_step( self, step ):
         trans = self.trans
         outputs = self.outputs
 
         tool = trans.app.toolbox.get_tool( step.tool_id )
+        tool_state = step.state
 
-        # Connect up
+        collections_to_match = self._find_collections_to_match( tool, step )
+        # Have implicit collections...
+        if collections_to_match.has_collections():
+            collection_info = self.trans.app.dataset_collections_service.match_collections( collections_to_match )
+        else:
+            collection_info = None
+
+        param_combinations = []
+        if collection_info:
+            iteration_elements_iter = collection_info.slice_collections()
+        else:
+            iteration_elements_iter = [ None ]
+
+        for iteration_elements in iteration_elements_iter:
+            execution_state = tool_state.copy()
+            # TODO: Move next step into copy()
+            execution_state.inputs = make_dict_copy( execution_state.inputs )
+
+            # Connect up
+            def callback( input, value, prefixed_name, prefixed_label ):
+                replacement = None
+                if isinstance( input, DataToolParameter ) or isinstance( input, DataCollectionToolParameter ):
+                    # TODO: Handle multiple differently...
+                    if iteration_elements and isinstance( input, DataToolParameter ) and prefixed_name in iteration_elements:
+                        replacement = iteration_elements[ prefixed_name ].dataset_instance
+                    else:
+                        replacement = self._replacement_for_input( input, prefixed_name, step )
+                return replacement
+            try:
+                # Replace DummyDatasets with historydatasetassociations
+                visit_input_values( tool.inputs, execution_state.inputs, callback )
+            except KeyError, k:
+                message_template = "Error due to input mapping of '%s' in '%s'.  A common cause of this is conditional outputs that cannot be determined until runtime, please review your workflow."
+                message = message_template % (tool.name, k.message)
+                raise exceptions.MessageException( message )
+            param_combinations.append( execution_state.inputs )
+
+        execution_tracker = execute(
+            trans=self.trans,
+            tool=tool,
+            param_combinations=param_combinations,
+            history=self.target_history,
+            collection_info=collection_info,
+        )
+        if collection_info:
+            outputs[ step.id ] = execution_tracker.created_collections
+        else:
+            outputs[ step.id ] = dict( execution_tracker.output_datasets )
+
+        jobs = execution_tracker.successful_jobs
+        for job in jobs:
+            self._handle_post_job_actions( step, job )
+        return jobs
+
+    def _find_collections_to_match( self, tool, step ):
+        collections_to_match = matching.CollectionsToMatch()
+
         def callback( input, value, prefixed_name, prefixed_label ):
-            replacement = None
-            if isinstance( input, DataToolParameter ) or isinstance( input, DataCollectionToolParameter ):
-                replacement = self._replacement_for_input( input, prefixed_name, step )
-            return replacement
-        try:
-            # Replace DummyDatasets with historydatasetassociations
-            visit_input_values( tool.inputs, step.state.inputs, callback )
-        except KeyError, k:
-            raise exceptions.MessageException( "Error due to input mapping of '%s' in '%s'.  A common cause of this is conditional outputs that cannot be determined until runtime, please review your workflow." % (tool.name, k.message))
-        # Execute it
-        job, out_data = tool.execute( trans, step.state.inputs, history=self.target_history )
-        outputs[ step.id ] = out_data
+            is_data_param = isinstance( input, DataToolParameter )
+            if is_data_param and not input.multiple:
+                data = self._replacement_for_input( input, prefixed_name, step )
+                if isinstance( data, model.HistoryDatasetCollectionAssociation ):
+                    collections_to_match.add( prefixed_name, data )
 
-        self._handle_post_job_actions( step, job )
-        return job
+        visit_input_values( tool.inputs, step.state.inputs, callback )
+        return collections_to_match
 
     def _execute_input_step( self, step ):
         trans = self.trans

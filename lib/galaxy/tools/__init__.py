@@ -957,6 +957,18 @@ class DefaultToolState( object ):
             self.rerun_remap_job_id = None
         self.inputs = params_from_strings( tool.inputs, values, app, ignore_errors=True )
 
+    def copy( self ):
+        """
+        WARNING! Makes a shallow copy, *SHOULD* rework to have it make a deep
+        copy.
+        """
+        new_state = DefaultToolState()
+        new_state.page = self.page
+        new_state.rerun_remap_job_id = self.rerun_remap_job_id
+        # This need to be copied.
+        new_state.inputs = self.inputs
+        return new_state
+
 
 class ToolOutput( object, Dictifiable ):
     """
