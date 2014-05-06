@@ -121,6 +121,10 @@ ImplicitlyCreatedDatasetCollectionInput_table = Table( "implicitly_created_datas
     Column( "input_dataset_collection_id", Integer, ForeignKey( "history_dataset_collection_association.id" ), index=True ),
     Column( "name", Unicode(255) ) )
 
+# TODO: Find a better name for this column...
+HiddenBeneathCollection_column = Column( "hidden_beneath_collection_instance_id", Integer, ForeignKey( "history_dataset_collection_association.id" ), nullable=True )
+
+
 TABLES = [
     DatasetCollection_table,
     HistoryDatasetCollectionAssociation_table,
@@ -146,6 +150,13 @@ def upgrade(migrate_engine):
     for table in TABLES:
         __create(table)
 
+    try:
+        hda_table = Table( "history_dataset_association", metadata, autoload=True )
+        HiddenBeneathCollection_column.create( hda_table )
+    except Exception as e:
+        print str(e)
+        log.exception( "Creating HDA column failed." )
+
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
@@ -153,6 +164,14 @@ def downgrade(migrate_engine):
 
     for table in TABLES:
         __drop(table)
+
+    try:
+        hda_table = Table( "history_dataset_association", metadata, autoload=True )
+        hidden_beneath_collection_instance_id_col = hda_table.c.hidden_beneath_collection_instance_id
+        hidden_beneath_collection_instance_id_col.drop()
+    except Exception as e:
+        print str(e)
+        log.exception( "Dropping HDA column failed." )
 
 
 def __create(table):

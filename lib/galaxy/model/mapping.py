@@ -111,6 +111,7 @@ model.HistoryDatasetAssociation.table = Table( "history_dataset_association", me
     Column( "deleted", Boolean, index=True, default=False ),
     Column( "purged", Boolean, index=True, default=False ),
     Column( "visible", Boolean ),
+    Column( "hidden_beneath_collection_instance_id", ForeignKey( "history_dataset_collection_association.id" ), nullable=True ),
     Column( "extended_metadata_id", Integer,
         ForeignKey( "extended_metadata.id" ), index=True )
     )
@@ -1391,7 +1392,13 @@ simple_mapping( model.HistoryDatasetAssociation,
     extended_metadata=relation(
             model.ExtendedMetadata,
             primaryjoin=( ( model.HistoryDatasetAssociation.table.c.extended_metadata_id == model.ExtendedMetadata.table.c.id ) )
-        )
+        ),
+    hidden_beneath_collection_instance=relation(
+        model.HistoryDatasetCollectionAssociation,
+        primaryjoin=( ( model.HistoryDatasetAssociation.table.c.hidden_beneath_collection_instance_id == model.HistoryDatasetCollectionAssociation.table.c.id ) ),
+        uselist=False,
+        backref="hidden_dataset_instances",
+    )
 )
 
 simple_mapping( model.Dataset,
