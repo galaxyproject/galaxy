@@ -4,6 +4,7 @@ from base.twilltestcase import TwillTestCase
 from base.interactor import GalaxyInteractorApi, stage_data_in_history
 
 from galaxy.util import parse_xml
+from galaxy.util import bunch
 from galaxy.tools.test import parse_param_elem, require_file, test_data_iter, parse_output_elems
 from json import load, dumps
 
@@ -66,10 +67,11 @@ class WorkflowTestCase( TwillTestCase ):
         for expected_output_def in workflow_test.outputs:
             # Get the correct hid
             name, outfile, attributes = expected_output_def
+            output_testdef = bunch.Bunch( name=name, outfile=outfile, attributes=attributes )
 
             output_data = outputs[ int( name ) ]
             try:
-                galaxy_interactor.verify_output( test_history, output_data, outfile, attributes=attributes, shed_tool_id=None, maxseconds=maxseconds )
+                galaxy_interactor.verify_output( test_history, output_data, output_testdef=output_testdef, shed_tool_id=None, maxseconds=maxseconds )
             except Exception:
                 for stream in ['stdout', 'stderr']:
                     stream_output = galaxy_interactor.get_job_stream( test_history, output_data, stream=stream )

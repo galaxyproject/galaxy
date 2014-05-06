@@ -281,6 +281,8 @@ def app_factory( global_conf, **kwargs ):
                             'jobs',
                             path_prefix='/api' )
     webapp.mapper.connect( 'job_search', '/api/jobs/search', controller='jobs', action='search', conditions=dict( method=['POST'] ) )
+    webapp.mapper.connect( 'job_inputs', '/api/jobs/{id}/inputs', controller='jobs', action='inputs', conditions=dict( method=['GET'] ) )
+    webapp.mapper.connect( 'job_outputs', '/api/jobs/{id}/outputs', controller='jobs', action='outputs', conditions=dict( method=['GET'] ) )
 
     # Job files controllers. Only for consumption by remote job runners.
     webapp.mapper.resource( 'file',

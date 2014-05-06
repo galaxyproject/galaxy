@@ -297,6 +297,19 @@ def __parse_output_elem( output_elem ):
     if name is None:
         raise Exception( "Test output does not have a 'name'" )
 
+    file, attributes = __parse_test_attributes( output_elem, attrib )
+    primary_datasets = {}
+    for primary_elem in ( output_elem.findall( "discovered_dataset" ) or [] ):
+        primary_attrib = dict( primary_elem.attrib )
+        designation = primary_attrib.pop( 'designation', None )
+        if designation is None:
+            raise Exception( "Test primary dataset does not have a 'designation'" )
+        primary_datasets[ designation ] = __parse_test_attributes( primary_elem, primary_attrib )
+    attributes[ "primary_datasets" ] = primary_datasets
+    return name, file, attributes
+
+
+def __parse_test_attributes( output_elem, attrib ):
     assert_list = __parse_assert_list( output_elem )
     file = attrib.pop( 'file', None )
     # File no longer required if an list of assertions was present.
@@ -321,7 +334,7 @@ def __parse_output_elem( output_elem ):
     attributes['assert_list'] = assert_list
     attributes['extra_files'] = extra_files
     attributes['metadata'] = metadata
-    return name, file, attributes
+    return file, attributes
 
 
 def __parse_assert_list( output_elem ):
