@@ -1,6 +1,7 @@
 import os
 from StringIO import StringIO
 from galaxy.tools.parameters import grouping
+from galaxy.tools import test
 from galaxy import eggs
 eggs.require( "requests" )
 from galaxy import util
@@ -177,7 +178,10 @@ class GalaxyInteractorApi( object ):
             values = [value] if not isinstance(value, list) else value
             new_values = []
             for value in values:
-                if value in self.uploads:
+                if isinstance( value, test.TestCollectionDef ):
+                    hdca_id = self._create_collection( history_id, value )
+                    new_values = [ dict( src="hdca", id=hdca_id ) ]
+                elif value in self.uploads:
                     new_values.append( self.uploads[ value ] )
                 else:
                     new_values.append( value )
@@ -194,6 +198,33 @@ class GalaxyInteractorApi( object ):
             return self.__dictify_outputs( datasets_object )
         except KeyError:
             raise Exception( datasets_object[ 'message' ] )
+
+    def _create_collection( self, history_id, collection_def ):
+        create_payload = dict(
+            name=collection_def.name,
+            element_identifiers=dumps( self._element_identifiers( collection_def ) ),
+            collection_type=collection_def.collection_type,
+            history_id=history_id,
+        )
+        return self._post( "dataset_collections", data=create_payload ).json()[ "id" ]
+
+    def _element_identifiers( self, collection_def ):
+        element_identifiers = []
+        for ( element_identifier, element ) in collection_def.elements:
+            if isinstance( element, test.TestCollectionDef ):
+                subelement_identifiers = self._element_identifiers( element )
+                element = dict(
+                    name=element_identifier,
+                    src="new_collection",
+                    collection_type=element.collection_type,
+                    element_identifiers=subelement_identifiers
+                )
+            else:
+                element_name = element[ 0 ]
+                element = self.uploads[ element[ 1 ] ].copy()
+                element[ "name" ] = element_name
+            element_identifiers.append( element )
+        return element_identifiers
 
     def __dictify_outputs( self, datasets_object ):
         ## Convert outputs list to a dictionary that can be accessed by

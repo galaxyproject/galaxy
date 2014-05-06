@@ -189,6 +189,12 @@ class ToolTestBuilder( object ):
                         if not isinstance(param_value, list):
                             param_value = [ param_value ]
                         processed_value = [ self.__add_uploaded_dataset( context.for_state(), v, param_extra, value ) for v in param_value ]
+                    if isinstance( value, basic.DataCollectionToolParameter ):
+                        assert 'collection' in param_extra
+                        collection_def = param_extra[ 'collection' ]
+                        for ( name, value, extra ) in collection_def.collect_inputs():
+                            require_file( name, value, extra, self.required_files )
+                        processed_value = collection_def
                     else:
                         processed_value = param_value
                     expanded_inputs[ context.for_state() ] = processed_value
@@ -274,6 +280,8 @@ def parse_param_elem( param_elem, i=0 ):
                 attrib['metadata'].append( child )
             elif child.tag == 'edit_attributes':
                 attrib['edit_attributes'].append( child )
+            elif child.tag == 'collection':
+                attrib[ 'collection' ] = TestCollectionDef( child )
         if composite_data_name:
             # Composite datasets need implicit renaming;
             # inserted at front of list so explicit declarations
@@ -440,6 +448,33 @@ class RootParamContext(object):
 
     def get_index( self ):
         return 0
+
+
+class TestCollectionDef( object ):
+
+    def __init__( self, elem ):
+        self.elements = []
+        attrib = dict( elem.attrib )
+        self.collection_type = attrib[ "type" ]
+        self.name = attrib.get( "name", "Unnamed Collection" )
+        for element in elem.findall( "element" ):
+            element_attrib = dict( element.attrib )
+            element_identifier = element_attrib[ "name" ]
+            nested_collection_elem = element.find( "collection" )
+            if nested_collection_elem:
+                self.elements.append( ( element_identifier, TestCollectionDef( nested_collection_elem ) ) )
+            else:
+                self.elements.append( ( element_identifier, parse_param_elem( element ) ) )
+
+    def collect_inputs( self ):
+        inputs = []
+        for element in self.elements:
+            value = element[ 1 ]
+            if isinstance( value, TestCollectionDef ):
+                inputs.extend( value.collect_inputs() )
+            else:
+                inputs.append( value )
+        return inputs
 
 
 def expand_input_elems( root_elem, prefix="" ):
