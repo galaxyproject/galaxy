@@ -1930,14 +1930,20 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
 
     def get_html_field( self, trans=None, value=None, other_values={} ):
         # dropped refresh values, may be needed..
-        field = form_builder.SelectField( self.name, self.multiple, None, self.refresh_on_change, refresh_on_change_values=self.refresh_on_change_values )
+        default_field = "single_collection"
+        fields = {}
+
         history = self._get_history( trans )
+        fields[ "single_collection" ] = self._get_single_collection_field( trans, history=history, value=value, other_values=other_values )
+        return self._switch_fields( fields, default_field=default_field )
+
+    def _get_single_collection_field( self, trans, history, value, other_values ):
+        field = form_builder.SelectField( self.name, self.multiple, None, self.refresh_on_change, refresh_on_change_values=self.refresh_on_change_values )
         dataset_collections = trans.app.dataset_collections_service.history_dataset_collections( history, self.history_query )
         dataset_matcher = DatasetMatcher( trans, self, value, other_values )
         dataset_collection_matcher = DatasetCollectionMatcher( dataset_matcher )
 
         for dataset_collection_instance in dataset_collections:
-            log.info("Processing dataset collection instance....")
             if not dataset_collection_matcher.hdca_match( dataset_collection_instance ):
                 continue
             instance_id = dataset_collection_instance.hid
