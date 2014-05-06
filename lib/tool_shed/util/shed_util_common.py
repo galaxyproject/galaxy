@@ -182,7 +182,7 @@ def create_or_update_tool_shed_repository( app, name, description, installed_cha
     If a record defined by the received tool shed, repository name and owner does not exist, create
     a new record with the received information.
     """
-    # The received value for dist_to_shed will be True if the InstallManager is installing a repository
+    # The received value for dist_to_shed will be True if the ToolMigrationManager is installing a repository
     # that contains tools or datatypes that used to be in the Galaxy distribution, but have been moved
     # to the main Galaxy tool shed.
     if current_changeset_revision is None:

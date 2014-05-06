@@ -163,7 +163,7 @@ def get_repository_dependencies( app, tool_shed_url, repository_name, repository
 def get_tool_dependencies( app, tool_shed_url, repository_name, repository_owner, changeset_revision ):
     tool_dependencies = []
     tool_shed_accessible = True
-    url = '%s/repository/get_tool_dependencies?name=%s&owner=%s&changeset_revision=%s&from_install_manager=True' % \
+    url = '%s/repository/get_tool_dependencies?name=%s&owner=%s&changeset_revision=%s' % \
     ( tool_shed_url, repository_name, repository_owner, changeset_revision )
     try:
         text = tool_shed_get( app, tool_shed_url, url )

@@ -46,17 +46,19 @@ class MigrateToolsApplication( object, galaxy.config.ConfiguresGalaxyMixin ):
 
         # Get the latest tool migration script number to send to the Install manager.
         latest_migration_script_number = int( tools_migration_config.split( '_' )[ 0 ] )
-        # The value of migrated_tools_config is migrated_tools_conf.xml, and is reserved for containing only those tools that have been
-        # eliminated from the distribution and moved to the tool shed.  A side-effect of instantiating the InstallManager is the automatic
+        # The value of migrated_tools_config is migrated_tools_conf.xml, and is reserved for
+        # containing only those tools that have been eliminated from the distribution and moved
+        # to the tool shed.  A side-effect of instantiating the ToolMigrationlManager is the automatic
         # installation of all appropriate tool shed repositories.
-        self.install_manager = install_manager.InstallManager( app=self,
-                                                               latest_migration_script_number=latest_migration_script_number,
-                                                               tool_shed_install_config=os.path.join( self.config.root,
-                                                                                                      'scripts',
-                                                                                                      'migrate_tools',
-                                                                                                      tools_migration_config ),
-                                                               migrated_tools_config=self.config.migrated_tools_config,
-                                                               install_dependencies=install_dependencies )
+        self.tool_migration_manager = \
+            tool_migration_manager.ToolMigrationManager( app=self,
+                                                         latest_migration_script_number=latest_migration_script_number,
+                                                         tool_shed_install_config=os.path.join( self.config.root,
+                                                                                                'scripts',
+                                                                                                'migrate_tools',
+                                                                                                tools_migration_config ),
+                                                         migrated_tools_config=self.config.migrated_tools_config,
+                                                         install_dependencies=install_dependencies )
 
     @property
     def sa_session( self ):

@@ -175,7 +175,7 @@ def get_updated_changeset_revisions_from_tool_shed( app, tool_shed_url, name, ow
     return text
 
 
-def handle_complex_repository_dependency_for_package( app, elem, package_name, package_version, tool_shed_repository, from_install_manager=False ):
+def handle_complex_repository_dependency_for_package( app, elem, package_name, package_version, tool_shed_repository, from_tool_migration_manager=False ):
     """
     Inspect the repository defined by a complex repository dependency definition and take certain steps to enable installation
     of the received package name and version to proceed.  The received elem is the <repository> tag set which defines the complex
@@ -224,7 +224,7 @@ def handle_complex_repository_dependency_for_package( app, elem, package_name, p
             # framework which installs repositories in 2 stages, those of type tool_dependency_definition
             # followed by those containing valid tools and tool functional test components.  Neither of these
             # scenarios apply when the install manager is running.
-            if from_install_manager:
+            if from_tool_migration_manager:
                 can_install_tool_dependency = True
             else:
                 # Notice that we'll throw away the following tool_dependency if it can be installed.
@@ -306,7 +306,7 @@ def install_and_build_package_via_fabric( app, tool_shed_repository, tool_depend
     tool_dependency = tool_dependency_util.mark_tool_dependency_installed( app, tool_dependency )
     return tool_dependency
 
-def install_package( app, elem, tool_shed_repository, tool_dependencies=None, from_install_manager=False ):
+def install_package( app, elem, tool_shed_repository, tool_dependencies=None, from_tool_migration_manager=False ):
     """
     Install a tool dependency package defined by the XML element elem.  The value of tool_dependencies is
     a partial or full list of ToolDependency records associated with the tool_shed_repository.
@@ -325,7 +325,7 @@ def install_package( app, elem, tool_shed_repository, tool_dependencies=None, fr
                                                                                          package_name,
                                                                                          package_version,
                                                                                          tool_shed_repository,
-                                                                                         from_install_manager=from_install_manager )
+                                                                                         from_tool_migration_manager=from_tool_migration_manager )
                 for rd_tool_dependency in rd_tool_dependencies:
                     if rd_tool_dependency.status == app.install_model.ToolDependency.installation_status.ERROR:
                         # We'll log the error here, but continue installing packages since some may not require this dependency.
@@ -348,7 +348,7 @@ def install_package( app, elem, tool_shed_repository, tool_dependencies=None, fr
                     # framework which installs repositories in 2 stages, those of type tool_dependency_definition
                     # followed by those containing valid tools and tool functional test components.  Neither of these
                     # scenarios apply when the install manager is running.
-                    if from_install_manager:
+                    if from_tool_migration_manager:
                         can_install_tool_dependency = True
                     else:
                         # Notice that we'll throw away the following tool_dependency if it can be installed.
