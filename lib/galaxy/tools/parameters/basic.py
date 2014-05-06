@@ -1676,6 +1676,14 @@ class DataToolParameter( BaseDataToolParameter ):
             default_field = "multiselect_single"
             multi_select = self._get_select_dataset_field( history, dataset_matcher, multiple=True )
             fields[ "multiselect_single" ] = multi_select
+
+            if self.__display_multirun_option():
+                collection_select = self._get_select_dataset_collection_fields( history, dataset_matcher, suffix="", reduction=True )
+                if collection_select.get_selected(return_value=True):
+                    default_field = "multiselect_collection"
+                fields[ "multiselect_collection" ] = collection_select
+                self._ensure_selection( collection_select )
+
         else:
             # Select one dataset, run one job.
             default_field = "select_single"
@@ -1694,27 +1702,36 @@ class DataToolParameter( BaseDataToolParameter ):
                 multi_dataset_matcher = DatasetMatcher( trans, self, multirun_value, other_values )
                 multi_select = self._get_select_dataset_field( history, multi_dataset_matcher, multiple=True, suffix="|__multirun__" )
                 fields[ "select_multiple" ] = multi_select
-                collection_field = self._get_select_dataset_collection_fields( history, dataset_matcher, multiple=False )
+                collection_field = self._get_select_dataset_collection_fields( history, dataset_matcher, multiple=False, reduction=False )
                 fields[ "select_collection" ] = collection_field
 
         return self._switch_fields( fields, default_field=default_field )
 
-    def _get_select_dataset_collection_fields( self, history, dataset_matcher, multiple=False ):
+    def _get_select_dataset_collection_fields( self, history, dataset_matcher, multiple=False, suffix="|__collection_multirun__", reduction=False ):
+        if not reduction:
+            value_modifier = lambda x: x
+        else:
+            value_modifier = lambda value: "__collection_reduce__|%s" % value
+
         value = dataset_matcher.value
         if value is not None:
             if type( value ) != list:
                 value = [ value ]
 
-        field_name = "%s|__collection_multirun__" % self.name
+        field_name = "%s%s" % ( self.name, suffix )
         field = form_builder.SelectField( field_name, multiple, None, self.refresh_on_change, refresh_on_change_values=self.refresh_on_change_values )
     
         dataset_collection_matcher = DatasetCollectionMatcher( dataset_matcher )
 
         for history_dataset_collection in history.dataset_collections:
-            if dataset_collection_matcher.hdca_match( history_dataset_collection ):
+            if dataset_collection_matcher.hdca_match( history_dataset_collection, reduction=reduction ):
                 name = history_dataset_collection.name
-                id = dataset_matcher.trans.security.encode_id( history_dataset_collection.id )
-                field.add_option( name, id, False )
+                hid = str( history_dataset_collection.hid )
+                hidden_text = ""  # TODO
+                id = value_modifier( dataset_matcher.trans.security.encode_id( history_dataset_collection.id ) )
+                selected = value and history_dataset_collection in value
+                text = "%s:%s %s" % ( hid, hidden_text, name )
+                field.add_option( text, id, selected )
 
         return field
 
@@ -1815,6 +1832,10 @@ class DataToolParameter( BaseDataToolParameter ):
         elif isinstance( value, dict ) and 'src' in value and 'id' in value:
             if value['src'] == 'hda':
                 rval = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( trans.app.security.decode_id(value['id']) )
+        elif str( value ).startswith( "__collection_reduce__|" ):
+            encoded_id = str( value )[ len( "__collection_reduce__|" ): ]
+            decoded_id = trans.app.security.decode_id( encoded_id )
+            rval = trans.sa_session.query( trans.app.model.HistoryDatasetCollectionAssociation ).get( decoded_id )
         else:
             rval = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( value )
         if isinstance( rval, list ):
@@ -1825,7 +1846,7 @@ class DataToolParameter( BaseDataToolParameter ):
             if v:
                 if v.deleted:
                     raise ValueError( "The previously selected dataset has been previously deleted" )
-                if v.dataset.state in [ galaxy.model.Dataset.states.ERROR, galaxy.model.Dataset.states.DISCARDED ]:
+                if hasattr( v, "dataset" ) and v.dataset.state in [ galaxy.model.Dataset.states.ERROR, galaxy.model.Dataset.states.DISCARDED ]:
                     raise ValueError( "The previously selected dataset has entered an unusable state" )
         return rval
 
@@ -1840,6 +1861,8 @@ class DataToolParameter( BaseDataToolParameter ):
             return None
         elif isinstance( value, list ):
             return ",".join( [ str( self.to_string( val, app ) ) for val in value ] )
+        elif isinstance( value, app.model.HistoryDatasetCollectionAssociation ):
+            return "__collection_reduce__|%s" % app.security.encode_id( value.id )
         try:
             return value.id
         except:
@@ -1855,6 +1878,12 @@ class DataToolParameter( BaseDataToolParameter ):
             values = value.split(",")
             # TODO: Optimize. -John
             return [ app.model.context.query( app.model.HistoryDatasetAssociation ).get( int( val ) ) for val in values if val not in none_values ]
+        # Not sure if following case is needed, if yes deduplicate with above code.
+        elif str( value ).startswith( "__collection_reduce__|" ):
+            # When coming from HTML this id would be encoded, in database it
+            # really should be decoded however.
+            decoded_id = str( value )[ len( "__collection_reduce__|" ): ]
+            return app.model.context.query( app.model.HistoryDatasetCollectionAssociation ).get( decoded_id )
         return app.model.context.query( app.model.HistoryDatasetAssociation ).get( int( value ) )
 
     def to_param_dict_string( self, value, other_values={} ):
@@ -1874,9 +1903,13 @@ class DataToolParameter( BaseDataToolParameter ):
 
     def validate( self, value, history=None ):
         for validator in self.validators:
-            if value and self.multiple and isinstance(value, list):
-                for v in value:
-                    validator.validate( v, history )
+            if value and self.multiple:
+                if isinstance(value, list):
+                    for v in value:
+                        validator.validate( v, history )
+                elif isinstance(value, galaxy.model.HistoryDatasetCollectionAssociation):
+                    for v in value.collection.dataset_instances:
+                        validator.validate( v, history )
             else:
                 validator.validate( value, history )
 

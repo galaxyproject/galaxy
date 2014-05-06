@@ -148,8 +148,12 @@ class DatasetCollectionMatcher( object ):
         hda_match = self.dataset_matcher.hda_match( hda, ensure_visible=False )
         return hda_match and not hda_match.implicit_conversion
 
-    def hdca_match( self, history_dataset_collection_association ):
-        return self.dataset_collection_match( history_dataset_collection_association.collection )
+    def hdca_match( self, history_dataset_collection_association, reduction=False ):
+        dataset_collection = history_dataset_collection_association.collection
+        if reduction and dataset_collection.collection_type.find( ":" ) > 0:
+            return False
+        else:
+            return self.dataset_collection_match( dataset_collection )
 
     def dataset_collection_match( self, dataset_collection ):
         valid = True

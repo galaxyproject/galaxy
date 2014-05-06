@@ -39,6 +39,11 @@ define([ "libs/underscore", "mvc/tools" ], function( _, Tools ) {
             'icon_class': 'fa-list-alt',
             'select_by': 'Run tool over multiple datasets',
             'allow_remap': true
+        },
+        'multiselect_collection': {
+            'icon_class': 'fa-folder-o',
+            'select_by': 'Run tool over dataset collection',
+            'allow_remap': false,
         }
     };
 

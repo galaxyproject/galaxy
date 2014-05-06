@@ -3,7 +3,7 @@
     cat #for $f in $f1# ${f} #end for# >> $out1;
   </command>
   <inputs>
-    <param name="f1" type="data_collection" />
+    <param name="f1" type="data_collection" collection_type="paired" />
   </inputs>
   <outputs>
     <data format="txt" name="out1" />

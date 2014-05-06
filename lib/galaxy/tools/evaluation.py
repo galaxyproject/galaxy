@@ -142,8 +142,11 @@ class ToolEvaluator( object ):
 
         def wrap_input( input_values, input ):
             if isinstance( input, DataToolParameter ) and input.multiple:
+                dataset_instances = input_values[ input.name ]
+                if isinstance( dataset_instances, model.HistoryDatasetCollectionAssociation ):
+                    dataset_instances = dataset_instances.collection.dataset_instances[:]
                 input_values[ input.name ] = \
-                    DatasetListWrapper( input_values[ input.name ],
+                    DatasetListWrapper( dataset_instances,
                                         dataset_paths=input_dataset_paths,
                                         datatypes_registry=self.app.datatypes_registry,
                                         tool=self.tool,
