@@ -8,26 +8,31 @@ class HistoryQuery( object ):
     """
 
     def __init__( self, **kwargs ):
-        self.collection_type = kwargs.get( "collection_type", None )
+        self.collection_type_description = kwargs.get( "collection_type_description", None )
 
     @staticmethod
-    def from_parameter_elem( elem ):
+    def from_parameter_elem( elem, collection_type_descriptions ):
         """ Take in a tool parameter element.
         """
-        kwargs = dict( collection_type=elem.get( "collection_type", None ) )
+        collection_type = elem.get( "collection_type", None )
+        if collection_type:
+            collection_type_description = collection_type_descriptions.for_collection_type( collection_type )
+        else:
+            collection_type_description = None
+        kwargs = dict( collection_type_description=collection_type_description )
         return HistoryQuery( **kwargs )
 
     def direct_match( self, hdca ):
-        if self.collection_type and hdca.collection.collection_type != self.collection_type:
+        collection_type_description = self.collection_type_description
+        if collection_type_description and not collection_type_description.can_match_type( hdca.collection.collection_type ):
             return False
 
         return True
 
     def can_map_over( self, hdca ):
-        if not self.collection_type:
+        collection_type_description = self.collection_type_description
+        if not collection_type_description:
             return False
 
-        # Can map a list:pair repeatedly over a pair parameter
         hdca_collection_type = hdca.collection.collection_type
-        can = hdca_collection_type.endswith( self.collection_type ) and hdca_collection_type != self.collection_type
-        return can
+        return collection_type_description.is_subcollection_of_type( hdca_collection_type )

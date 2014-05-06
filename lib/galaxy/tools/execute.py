@@ -108,7 +108,7 @@ class ToolExecutionTracker( object ):
                 parent=history,
                 name=output_collection_name,
                 element_identifiers=element_identifiers_for_datasets[ "element_identifiers" ],
-                collection_type=structure.collection_type,
+                collection_type=structure.collection_type_description.collection_type,
                 implicit_collection_info=implicit_collection_info,
             )
             collections[ output_name ] = collection

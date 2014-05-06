@@ -18,17 +18,18 @@ leaf = Leaf()
 
 class Tree( object ):
 
-    def __init__( self, dataset_collection, subcollection_type ):
-        self.collection_type = dataset_collection.collection_type
-        self.subcollection_type = subcollection_type
+    def __init__( self, dataset_collection, collection_type_description, leaf_subcollection_type ):
+        self.collection_type_description = collection_type_description
+        self.leaf_subcollection_type = leaf_subcollection_type  # collection_type to trim tree at...
         children = []
         for element in dataset_collection.elements:
             child_collection = element.child_collection
             if child_collection:
-                if child_collection.collection_type == subcollection_type:
+                subcollection_type_description = collection_type_description.subcollection_type_description()  # Type description of children
+                if subcollection_type_description.can_match_type( leaf_subcollection_type ):
                     children.append( ( element.element_identifier, leaf  ) )
                 else:
-                    children.append( ( element.element_identifier, Tree( child_collection, subcollection_type=subcollection_type )  ) )
+                    children.append( ( element.element_identifier, Tree( child_collection, collection_type_description=subcollection_type_description, leaf_subcollection_type=leaf_subcollection_type )  ) )
             elif element.hda:
                 children.append( ( element.element_identifier, leaf ) )
 
@@ -54,7 +55,7 @@ class Tree( object ):
         return False
 
     def can_match( self, other_structure ):
-        if self.collection_type != other_structure.collection_type:
+        if not self.collection_type_description.can_match_type( other_structure.collection_type_description ):
             # TODO: generalize
             return False
 
@@ -91,7 +92,7 @@ class Tree( object ):
 
         return dict(
             src="new_collection",
-            collection_type=self.collection_type,
+            collection_type=self.collection_type_description.collection_type,
             element_identifiers=element_identifiers,
         )
 
@@ -100,5 +101,5 @@ def dict_map( func, input_dict ):
     return dict( [ ( k, func(v) ) for k, v in input_dict.iteritems() ] )
 
 
-def get_structure( dataset_collection_instance, subcollection_type=None ):
-    return Tree( dataset_collection_instance.collection, subcollection_type=subcollection_type )
+def get_structure( dataset_collection_instance, collection_type_description, leaf_subcollection_type=None ):
+    return Tree( dataset_collection_instance.collection, collection_type_description, leaf_subcollection_type=leaf_subcollection_type )

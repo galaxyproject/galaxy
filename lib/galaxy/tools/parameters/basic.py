@@ -1977,7 +1977,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
 
     def __init__( self, tool, elem, trans=None ):
         super(DataCollectionToolParameter, self).__init__( tool, elem, trans )
-        self.history_query = history_query.HistoryQuery.from_parameter_elem( elem )
+        self.elem = elem
         self._parse_formats( trans, tool, elem )
         self.multiple = False  # Accessed on DataToolParameter a lot, may want in future
         self._parse_options( elem )  # TODO: Review and test.
@@ -1985,6 +1985,10 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
     @property
     def collection_type( self ):
         return self.elem.get( "collection_type", None )
+
+    def _history_query( self, trans ):
+        dataset_collection_type_descriptions = trans.app.dataset_collections_service.collection_type_descriptions
+        return history_query.HistoryQuery.from_parameter_elem( self.elem, dataset_collection_type_descriptions )
 
     def get_html_field( self, trans=None, value=None, other_values={} ):
         # dropped refresh values, may be needed..
@@ -1999,7 +2003,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
 
     def _get_single_collection_field( self, trans, history, value, other_values ):
         field = form_builder.SelectField( self.name, self.multiple, None, self.refresh_on_change, refresh_on_change_values=self.refresh_on_change_values )
-        dataset_collections = trans.app.dataset_collections_service.history_dataset_collections( history, self.history_query )
+        dataset_collections = trans.app.dataset_collections_service.history_dataset_collections( history, self._history_query( trans ) )
         dataset_matcher = DatasetMatcher( trans, self, value, other_values )
         dataset_collection_matcher = DatasetCollectionMatcher( dataset_matcher )
 
@@ -2024,7 +2028,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
         dataset_collection_matcher = DatasetCollectionMatcher( dataset_matcher )
 
         for history_dataset_collection in history.dataset_collections:
-            if not self.history_query.can_map_over( history_dataset_collection ):
+            if not self._history_query( trans ).can_map_over( history_dataset_collection ):
                 continue
 
             datasets_match = dataset_collection_matcher.hdca_match( history_dataset_collection )
@@ -2032,7 +2036,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
                 name = history_dataset_collection.name
                 hid = str( history_dataset_collection.hid )
                 hidden_text = ""  # TODO
-                subcollection_type = self.history_query.collection_type
+                subcollection_type = self._history_query( trans ).collection_type_description.collection_type
                 id = "%s|%s" % ( dataset_matcher.trans.security.encode_id( history_dataset_collection.id ), subcollection_type )
                 text = "%s:%s %s" % ( hid, hidden_text, name )
 

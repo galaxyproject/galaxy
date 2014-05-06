@@ -7,7 +7,7 @@ PLUGIN_CLASSES = [list.ListDatasetCollectionType, paired.PairedDatasetCollection
 
 class DatasetCollectionTypesRegistry(object):
 
-    def __init__(self, app):
+    def __init__( self, app ):
         self.__plugins = dict( [ ( p.collection_type, p() ) for p in PLUGIN_CLASSES ] )
 
     def get( self, plugin_type ):

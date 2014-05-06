@@ -1,5 +1,6 @@
 from .registry import DatasetCollectionTypesRegistry
 from .matching import MatchingCollections
+from .type_description import CollectionTypeDescriptionFactory
 
 from galaxy import model
 from galaxy.exceptions import MessageException
@@ -35,6 +36,7 @@ class DatasetCollectionsService(
 
     def __init__( self, app ):
         self.type_registry = DatasetCollectionTypesRegistry( app )
+        self.collection_type_descriptions = CollectionTypeDescriptionFactory( self.type_registry )
         self.model = app.model
         self.security = app.security
         self.hda_manager = hdas.HDAManager()
@@ -92,15 +94,15 @@ class DatasetCollectionsService(
             raise RequestParameterInvalidException( ERROR_INVALID_ELEMENTS_SPECIFICATION )
         if not collection_type:
             raise RequestParameterInvalidException( ERROR_NO_COLLECTION_TYPE )
-        rank_collection_type = collection_type.split( ":" )[ 0 ]
+        collection_type_description = self.collection_type_descriptions.for_collection_type( collection_type )
         if elements is None:
-            if rank_collection_type != collection_type:
+            if collection_type_description.has_subcollections( ):
                 # Nested collection - recursively create collections and update identifiers.
                 self.__recursively_create_collections( trans, element_identifiers )
             elements = self.__load_elements( trans, element_identifiers )
         # else if elements is set, it better be an ordered dict!
 
-        type_plugin = self.__type_plugin( rank_collection_type )
+        type_plugin = collection_type_description.rank_type_plugin()
         dataset_collection = type_plugin.build_collection( elements )
         dataset_collection.collection_type = collection_type
         return dataset_collection
@@ -231,15 +233,12 @@ class DatasetCollectionsService(
             raise RequestParameterInvalidException( "Unknown src_type parameter supplied '%s'." % src_type )
         return element
 
-    def __type_plugin( self, collection_type ):
-        return self.type_registry.get( collection_type )
-
     def match_collections( self, collections_to_match ):
         """
         May seem odd to place it here, but planning to grow sophistication and
         get plugin types involved so it will likely make sense in the future.
         """
-        return MatchingCollections.for_collections( collections_to_match )
+        return MatchingCollections.for_collections( collections_to_match, self.collection_type_descriptions )
 
     def get_dataset_collection_instance( self, trans, instance_type, id, **kwds ):
         """

@@ -40,8 +40,8 @@ class MatchingCollections( object ):
         self.structure = None
         self.collections = {}
 
-    def __attempt_add_to_match( self, input_name, hdca, subcollection_type ):
-        structure = get_structure( hdca, subcollection_type=subcollection_type )
+    def __attempt_add_to_match( self, input_name, hdca, collection_type_description, subcollection_type ):
+        structure = get_structure( hdca, collection_type_description, leaf_subcollection_type=subcollection_type )
         if not self.structure:
             self.structure = structure
             self.collections[ input_name ] = hdca
@@ -54,7 +54,7 @@ class MatchingCollections( object ):
         return self.structure.walk_collections( self.collections )
 
     @staticmethod
-    def for_collections( collections_to_match ):
+    def for_collections( collections_to_match, collection_type_descriptions ):
         if not collections_to_match.has_collections():
             return None
 
@@ -62,6 +62,7 @@ class MatchingCollections( object ):
         for input_key, to_match in collections_to_match.iteritems():
             hdca = to_match.hdca
             subcollection_type = to_match = to_match.subcollection_type
-            matching_collections.__attempt_add_to_match( input_key, hdca, subcollection_type=subcollection_type )
+            collection_type_description = collection_type_descriptions.for_collection_type( hdca.collection.collection_type )
+            matching_collections.__attempt_add_to_match( input_key, hdca, collection_type_description, subcollection_type )
 
         return matching_collections
