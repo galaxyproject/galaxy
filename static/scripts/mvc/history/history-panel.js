@@ -221,8 +221,7 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
                         var action = hdaModel.HistoryDatasetAssociation.prototype.undelete;
                         panel.getSelectedHdaCollection().ajaxQueue( action );
                     }
-                }
-            ];
+                }            ];
         if( panel.purgeAllowed ){
             actions.push({
                 html: _l( 'Permanently delete datasets' ), func: function(){
@@ -233,6 +232,17 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
                 }
             });
         }
+        actions.push( {
+            html: _l( 'Build Dataset List (Experimental)' ), func: function() {
+                panel.getSelectedHdaCollection().promoteToHistoryDatasetCollection( panel.model, "list" );
+            }
+        } );
+        actions.push( {
+            // TODO: Only show quick pair if two things selected.
+            html: _l( 'Build Dataset Pair (Experimental)' ), func: function() {
+                panel.getSelectedHdaCollection().promoteToHistoryDatasetCollection( panel.model, "paired" );
+            }
+        } );
         return new PopupMenu( $where.find( '.history-dataset-action-popup-btn' ), actions );
     },
 

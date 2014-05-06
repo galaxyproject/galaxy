@@ -624,6 +624,73 @@ var HDACollection = Backbone.Collection.extend( baseMVC.LoggableMixin ).extend(
         Backbone.Collection.prototype.set.call( this, models, options );
     },
 
+    /** Convert this ad-hoc collection of HDAs to a formal collection tracked
+        by the server.
+    **/
+    promoteToHistoryDatasetCollection : function _promote( history, collection_type, options ){
+        options = options || {};
+        options.url = this.url();
+        options.type = "POST";
+        var full_collection_type = collection_type;
+        var element_identifiers = [],
+            name = null;
+
+        // This mechanism is rough - no error handling, allows invalid selections, no way
+        // for user to pick/override element identifiers. This is only really meant 
+        if( collection_type == "list" ) {
+            this.chain().each( function( hda ) {
+                // TODO: Handle duplicate names.
+                var name = hda.attributes.name;
+                var id = hda.id;
+                var content_type = hda.attributes.history_content_type;
+                if( content_type == "dataset" ) {
+                    if( full_collection_type != "list" ) {
+                        console.log( "Invalid collection type" );
+                    }
+                    element_identifiers.push( { name: name, src: "hda", id: id } );
+                } else {
+                    if( full_collection_type == "list" ) {
+                        full_collection_type = "list:" + hda.attributes.collection_type;
+                    } else {
+                        if( full_collection_type != "list:" + hda.attributes.collection_type ) {
+                            console.log( "Invalid collection type" );
+                        }                        
+                    }
+                    element_identifiers.push( { name: name, src: "hdca", id: id } );
+                }
+            });
+            name = "New Dataset List";
+        } else if( collection_type == "paired" ) {
+            var ids = this.ids();
+            if( ids.length != 2 ){
+                // TODO: Do something...
+            }
+            element_identifiers.push( { name: "left", src: "hda", id: ids[ 0 ] } );
+            element_identifiers.push( { name: "right", src: "hda", id: ids[ 1 ] } );
+            name = "New Dataset Pair";
+        }
+        options.data = {type: "dataset_collection",
+                        name: name,
+                        collection_type: full_collection_type,
+                        element_identifiers: JSON.stringify(element_identifiers),
+                       };
+
+        var xhr = jQuery.ajax( options );
+        xhr.done( function( message, status, responseObj ){
+            history.refresh( );
+        });
+        xhr.fail( function( xhr, status, message ){
+            if( xhr.responseJSON && xhr.responseJSON.error ){
+                error = xhr.responseJSON.error;
+            } else {
+                error = xhr.responseJSON;
+            }
+            xhr.responseText = error;
+            // Do something?
+        });
+        return xhr;
+    },
+
     /** String representation. */
     toString : function(){
          return ([ 'HDACollection(', [ this.historyId, this.length ].join(), ')' ].join( '' ));
