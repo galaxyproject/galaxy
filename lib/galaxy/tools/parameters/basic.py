@@ -1548,25 +1548,33 @@ class DummyDataset( object ):
     pass
 
 
-class DataToolParameter( ToolParameter ):
-    # TODO, Nate: Make sure the following unit tests appropriately test the dataset security
-    # components.  Add as many additional tests as necessary.
-    """
-    Parameter that takes on one (or many) or a specific set of values.
+class BaseDataToolParameter( ToolParameter ):
 
-    TODO: There should be an alternate display that allows single selects to be
-          displayed as radio buttons and multiple selects as a set of checkboxes
+    def __init__( self, tool, elem, trans ):
+        super(BaseDataToolParameter, self).__init__( tool, elem )
 
-    TODO: The following must be fixed to test correctly for the new security_check tag in
-    the DataToolParameter ( the last test below is broken ) Nate's next pass at the dataset
-    security stuff will dramatically alter this anyway.
-    """
+    def _get_history( self, trans, history=None ):
+        class_name = self.__class__.__name__
+        assert trans is not None, "%s requires a trans" % class_name
+        if history is None:
+            history = trans.get_history()
+        assert history is not None, "%s requires a history" % class_name
+        return history
 
-    def __init__( self, tool, elem, trans=None):
-        ToolParameter.__init__( self, tool, elem )
-        # Add metadata validator
-        if not string_as_bool( elem.get( 'no_validation', False ) ):
-            self.validators.append( validation.MetadataValidator() )
+    def _ensure_selection( self, field ):
+        set_selected = field.get_selected( return_label=True, return_value=True, multi=False ) is not None
+        # Ensure than an item is always selected
+        if self.optional:
+            if set_selected:
+                field.add_option( "Selection is Optional", 'None', False )
+            else:
+                field.add_option( "Selection is Optional", 'None', True )
+        elif not set_selected and bool( field.options ):
+            # Select the last item
+            a, b, c = field.options[-1]
+            field.options[-1] = a, b, True
+
+    def _datatypes_registery( self, trans, tool ):
         # Find datatypes_registry
         if tool is None:
             if trans:
@@ -1580,6 +1588,11 @@ class DataToolParameter( ToolParameter ):
                 datatypes_registry.load_datatypes()
         else:
             datatypes_registry = tool.app.datatypes_registry
+        return datatypes_registry
+
+    def _parse_formats( self, trans, tool, elem ):
+        datatypes_registry = self._datatypes_registery( trans, tool )
+
         # Build tuple of classes for supported data formats
         formats = []
         self.extensions = elem.get( 'format', 'data' ).split( "," )
@@ -1587,7 +1600,8 @@ class DataToolParameter( ToolParameter ):
         for extension in normalized_extensions:
             formats.append( datatypes_registry.get_datatype_by_extension( extension ) )
         self.formats = formats
-        self.multiple = string_as_bool( elem.get( 'multiple', False ) )
+
+    def _parse_options( self, elem ):
         # TODO: Enhance dynamic options for DataToolParameters. Currently,
         #       only the special case key='build' of type='data_meta' is
         #       a valid filter
@@ -1603,6 +1617,30 @@ class DataToolParameter( ToolParameter ):
             #this behavior needs to be entirely reworked (in a backwards compatible manner)
             self.options_filter_attribute = options.get(  'options_filter_attribute', None )
         self.is_dynamic = self.options is not None
+
+
+class DataToolParameter( BaseDataToolParameter ):
+    # TODO, Nate: Make sure the following unit tests appropriately test the dataset security
+    # components.  Add as many additional tests as necessary.
+    """
+    Parameter that takes on one (or many) or a specific set of values.
+
+    TODO: There should be an alternate display that allows single selects to be
+          displayed as radio buttons and multiple selects as a set of checkboxes
+
+    TODO: The following must be fixed to test correctly for the new security_check tag in
+    the DataToolParameter ( the last test below is broken ) Nate's next pass at the dataset
+    security stuff will dramatically alter this anyway.
+    """
+
+    def __init__( self, tool, elem, trans=None):
+        super(DataToolParameter, self).__init__( tool, elem, trans )
+        # Add metadata validator
+        if not string_as_bool( elem.get( 'no_validation', False ) ):
+            self.validators.append( validation.MetadataValidator() )
+        self._parse_formats( trans, tool, elem )
+        self.multiple = string_as_bool( elem.get( 'multiple', False ) )
+        self._parse_options( elem )
         # Load conversions required for the dataset input
         self.conversions = []
         for conv_elem in elem.findall( "conversion" ):
@@ -1823,27 +1861,6 @@ class DataToolParameter( ToolParameter ):
         if call_attribute:
             ref = ref()
         return ref
-
-    def _get_history( self, trans, history=None ):
-        class_name = self.__class__.__name__
-        assert trans is not None, "%s requires a trans" % class_name
-        if history is None:
-            history = trans.get_history()
-        assert history is not None, "%s requires a history" % class_name
-        return history
-
-    def _ensure_selection( self, field ):
-        set_selected = field.get_selected( return_label=True, return_value=True, multi=False ) is not None
-        # Ensure than an item is always selected
-        if self.optional:
-            if set_selected:
-                field.add_option( "Selection is Optional", 'None', False )
-            else:
-                field.add_option( "Selection is Optional", 'None', True )
-        elif not set_selected and bool( field.options ):
-            # Select the last item
-            a, b, c = field.options[-1]
-            field.options[-1] = a, b, True
 
 
 class HiddenDataToolParameter( HiddenToolParameter, DataToolParameter ):
