@@ -2,7 +2,7 @@ import ConfigParser
 import os
 import sys
 import galaxy.config
-from tool_shed.galaxy_install import install_manager, installed_repository_manager
+from tool_shed.galaxy_install import tool_migration_manager, installed_repository_manager
 
 
 class MigrateToolsApplication( object, galaxy.config.ConfiguresGalaxyMixin ):
