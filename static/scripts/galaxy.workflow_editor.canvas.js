@@ -24,6 +24,14 @@ var Terminal = Backbone.Model.extend( {
         $.each( this.connectors.slice(), function( _, c ) {
             c.destroy();
         });
+    },
+    destroyInvalidConnections: function( ) {
+        var terminal = this;
+        _.each( terminal.connectors, function( connector ) {
+            if( connector.handle1 && ! terminal.attachable( connector.handle1 ) ) {
+                connector.destroy();
+            }
+        } );
     }
 } );
 
@@ -802,11 +810,7 @@ var NodeView = Backbone.View.extend( {
         } else {
             var terminal = terminalView.el.terminal;
             terminal.update( input );
-            _.each( terminal.connectors, function( connector ) {
-                if( connector.handle1 && ! terminal.attachable( connector.handle1 ) ) {
-                    connector.destroy();
-                }
-            } );
+            terminal.destroyInvalidConnections();
         }
         this.terminalViews[ input.name ] = terminalView;
         var terminalElement = terminalView.el;
