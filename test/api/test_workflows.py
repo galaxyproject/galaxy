@@ -73,7 +73,7 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
         workflow_request, history_id = self._setup_workflow_run( workflow )
         contents_response = self._get( "histories/%s/contents" % history_id )
         self._assert_status_code_is( contents_response, 200 )
-        hda_ids = map( lambda c: c[ "id" ], contents_response.json() )
+        hda_ids = map( lambda c: c[ "hid" ], contents_response.json() )
 
         run_workflow_response = self._post( "workflows", data=workflow_request )
         self._assert_status_code_is( run_workflow_response, 200 )
