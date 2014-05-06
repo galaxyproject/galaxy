@@ -610,6 +610,9 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( baseMVC.LoggableMixin ).extend(
      */
     _createContentView : function( hda ){
         var hdaId = hda.get( 'id' ),
+            historyContentType = hda.get( "history_content_type" ),
+            hdaView = null;
+        if( historyContentType == "dataset" ) {
             hdaView = new this.HDAViewClass({
                 model           : hda,
                 linkTarget      : this.linkTarget,
@@ -618,6 +621,7 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( baseMVC.LoggableMixin ).extend(
                 hasUser         : this.model.ownedByCurrUser(),
                 logger          : this.logger
             });
+        }
         this._setUpHdaListeners( hdaView );
         return hdaView;
     },
