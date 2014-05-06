@@ -80,7 +80,10 @@ class DatasetMatcher( object ):
         """ Given value for DataToolParameter, is this HDA "selected".
         """
         value = self.value
-        return value and hda in value
+        if value and str( value[ 0 ] ).isdigit():
+            return hda.id in map(int, value)
+        else:
+            return value and hda in value
 
     def filter( self, hda ):
         """ Filter out this value based on other values for job (if
