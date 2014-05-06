@@ -1079,6 +1079,12 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
             self._active_datasets_children_and_roles = query.all()
         return self._active_datasets_children_and_roles
 
+    @property
+    def active_contents( self ):
+        """ Return all active contents ordered by hid.
+        """
+        return self.contents_iter( types=[ "dataset", "dataset_collection" ], deleted=False, visible=True )
+
     def contents_iter( self, **kwds ):
         """
         Fetch filtered list of contents of history.
