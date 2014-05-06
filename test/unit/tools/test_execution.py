@@ -243,6 +243,9 @@ class ToolExecutionTestCase( TestCase, tools_support.UsesApp, tools_support.Uses
         hda1, hda2 = self.__setup_multirun_job()
         collection = self.__history_dataset_collection_for( [ hda1, hda2 ] )
         collection_id = self.app.security.encode_id( collection.id )
+        self.app.dataset_collections_service = Bunch(
+            match_collections=lambda collections: None
+        )
         template, template_vars = self.__handle_with_incoming( **{
             "param1|__collection_multirun__": collection_id,
             "runtool_btn": "dummy",

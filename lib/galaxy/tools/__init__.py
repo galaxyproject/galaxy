@@ -1913,7 +1913,7 @@ class Tool( object, Dictifiable ):
         # Fixed set of input parameters may correspond to any number of jobs.
         # Expand these out to individual parameters for given jobs (tool
         # executions).
-        expanded_incomings = expand_meta_parameters( trans, incoming, self.inputs )
+        expanded_incomings, collection_info = expand_meta_parameters( trans, incoming, self.inputs )
 
         if not expanded_incomings:
             raise exceptions.MessageException( "Tool execution failed, trying to run a tool over an empty collection." )
@@ -1961,7 +1961,7 @@ class Tool( object, Dictifiable ):
                 template_vars = dict( errors=errors, tool_state=state, incoming=incoming, error_message=error_message )
             # If we've completed the last page we can execute the tool
             elif all_pages or state.page == self.last_page:
-                execution_tracker = execute_job( trans, self, all_params, history=history, rerun_remap_job_id=rerun_remap_job_id )
+                execution_tracker = execute_job( trans, self, all_params, history=history, rerun_remap_job_id=rerun_remap_job_id, collection_info=collection_info )
                 if execution_tracker.successful_jobs:
                     template = 'tool_executed.mako'
                     template_vars = dict( out_data=execution_tracker.output_datasets, num_jobs=len( execution_tracker.successful_jobs ), job_errors=execution_tracker.execution_errors )

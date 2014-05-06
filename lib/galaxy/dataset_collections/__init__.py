@@ -1,5 +1,5 @@
 from .registry import DatasetCollectionTypesRegistry
-from .structure import get_structure
+from .matching import MatchingCollections
 
 from galaxy import model
 from galaxy.exceptions import MessageException
@@ -233,6 +233,13 @@ class DatasetCollectionsService(
 
     def __type_plugin( self, collection_type ):
         return self.type_registry.get( collection_type )
+
+    def match_collections( self, collections_to_match ):
+        """
+        May seem odd to place it here, but planning to grow sophistication and
+        get plugin types involved so it will likely make sense in the future.
+        """
+        return MatchingCollections.for_collections( collections_to_match )
 
     def get_dataset_collection_instance( self, trans, instance_type, id, **kwds ):
         """

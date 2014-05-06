@@ -1694,7 +1694,7 @@ class DataToolParameter( BaseDataToolParameter ):
                 multi_dataset_matcher = DatasetMatcher( trans, self, multirun_value, other_values )
                 multi_select = self._get_select_dataset_field( history, multi_dataset_matcher, multiple=True, suffix="|__multirun__" )
                 fields[ "select_multiple" ] = multi_select
-                collection_field = self._get_select_dataset_collection_fields( dataset_matcher, multiple=False )
+                collection_field = self._get_select_dataset_collection_fields( history, dataset_matcher, multiple=False )
                 fields[ "select_collection" ] = collection_field
 
         return self._switch_fields( fields, default_field=default_field )
