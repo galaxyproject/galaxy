@@ -192,7 +192,6 @@ def app_factory( global_conf, **kwargs ):
     webapp.mapper.connect( 'workflow_usage', '/api/workflows/{workflow_id}/usage', controller='workflows', action='workflow_usage', conditions=dict(method=['GET']))
     webapp.mapper.connect( 'workflow_usage_contents', '/api/workflows/{workflow_id}/usage/{usage_id}', controller='workflows', action='workflow_usage_contents', conditions=dict(method=['GET']))
 
-
     # ============================
     # ===== AUTHENTICATE API =====
     # ============================
@@ -248,8 +247,8 @@ def app_factory( global_conf, **kwargs ):
                             parent_resources=dict( member_name='library', collection_name='libraries' ) )
 
     _add_item_extended_metadata_controller( webapp,
-                               name_prefix="library_dataset_",
-                               path_prefix='/api/libraries/:library_id/contents/:library_content_id' )
+                                            name_prefix="library_dataset_",
+                                            path_prefix='/api/libraries/:library_id/contents/:library_content_id' )
 
     # =======================
     # ===== FOLDERS API =====
