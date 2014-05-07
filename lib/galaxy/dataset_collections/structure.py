@@ -63,9 +63,6 @@ class Tree( object ):
             return False
 
         for my_child, other_child in zip( self.children, other_structure.children ):
-            if my_child[ 0 ] != other_child[ 0 ]:  # Different identifiers, TODO: generalize
-                return False
-
             # At least one is nested collection...
             if my_child[ 1 ].is_leaf != other_child[ 1 ].is_leaf:
                 return False
