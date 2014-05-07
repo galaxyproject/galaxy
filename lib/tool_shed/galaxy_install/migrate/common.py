@@ -48,7 +48,7 @@ class MigrateToolsApplication( object, galaxy.config.ConfiguresGalaxyMixin ):
         latest_migration_script_number = int( tools_migration_config.split( '_' )[ 0 ] )
         # The value of migrated_tools_config is migrated_tools_conf.xml, and is reserved for
         # containing only those tools that have been eliminated from the distribution and moved
-        # to the tool shed.  A side-effect of instantiating the ToolMigrationlManager is the automatic
+        # to the tool shed.  A side-effect of instantiating the ToolMigrationManager is the automatic
         # installation of all appropriate tool shed repositories.
         self.tool_migration_manager = \
             tool_migration_manager.ToolMigrationManager( app=self,

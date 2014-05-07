@@ -24,7 +24,7 @@ from galaxy.util.odict import odict
 log = logging.getLogger( __name__ )
 
 
-class ToolMigrationlManager( object ):
+class ToolMigrationManager( object ):
 
     def __init__( self, app, latest_migration_script_number, tool_shed_install_config, migrated_tools_config, install_dependencies ):
         """
@@ -446,7 +446,7 @@ class ToolMigrationlManager( object ):
                                                                                         from_tool_migration_manager=True )
             for installed_tool_dependency in installed_tool_dependencies:
                 if installed_tool_dependency.status == self.app.install_model.ToolDependency.installation_status.ERROR:
-                    print '\nThe following error occurred from the InstallManager while installing tool dependency ', installed_tool_dependency.name, ':'
+                    print '\nThe ToolMigrationManager returned the following error while installing tool dependency ', installed_tool_dependency.name, ':'
                     print installed_tool_dependency.error_message, '\n\n'
         if 'datatypes' in metadata_dict:
             tool_shed_repository.status = self.app.install_model.ToolShedRepository.installation_status.LOADING_PROPRIETARY_DATATYPES
