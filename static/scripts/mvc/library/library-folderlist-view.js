@@ -283,21 +283,15 @@ var FolderListView = Backbone.View.extend({
   },
 
   makeDarkRow: function($row){
-    $row.removeClass('light');
-    $row.find('a').removeClass('light');
-    $row.addClass('dark');
-    $row.find('a').addClass('dark');
-    $row.find('span').removeClass('fa-file-o');
-    $row.find('span').addClass('fa-file');
+    $row.removeClass('light').addClass('dark');
+    $row.find('a').removeClass('light').addClass('dark');
+    $row.find('.fa-file-o').removeClass('fa-file-o').addClass('fa-file');
   },
 
   makeWhiteRow: function($row){
-    $row.removeClass('dark');
-    $row.find('a').removeClass('dark');
-    $row.addClass('light');
-    $row.find('a').addClass('light');
-    $row.find('span').addClass('fa-file-o');
-    $row.find('span').removeClass('fa-file');
+    $row.removeClass('dark').addClass('light');
+    $row.find('a').removeClass('dark').addClass('light');
+    $row.find('.fa-file').removeClass('fa-file').addClass('fa-file-o');
   },
 
 // MMMMMMMMMMMMMMMMMM
@@ -324,11 +318,11 @@ var FolderListView = Backbone.View.extend({
       tmpl_array.push('   <thead>');
       tmpl_array.push('       <th class="button_heading"></th>');
       tmpl_array.push('       <th style="text-align: center; width: 20px; " title="Check to select all datasets"><input id="select-all-checkboxes" style="margin: 0;" type="checkbox"></th>');
-      tmpl_array.push('       <th style="width:30%;"><a class="sort-folder-link" title="Click to reverse order" href="#">name</a> <span title="Sorted alphabetically" class="fa fa-sort-alpha-<%- order %>"></span></th>');
-      tmpl_array.push('       <th>data type</th>');
-      tmpl_array.push('       <th>size</th>');
-      tmpl_array.push('       <th>time updated (UTC)</th>');
-      tmpl_array.push('       <th style="width:15%;"></th> ');
+      tmpl_array.push('       <th><a class="sort-folder-link" title="Click to reverse order" href="#">name</a> <span title="Sorted alphabetically" class="fa fa-sort-alpha-<%- order %>"></span></th>');
+      tmpl_array.push('       <th style="width:5%;">data type</th>');
+      tmpl_array.push('       <th style="width:5%;">size</th>');
+      tmpl_array.push('       <th style="width:160px;">time updated (UTC)</th>');
+      tmpl_array.push('       <th style="width:10%;"></th> ');
       tmpl_array.push('   </thead>');
       tmpl_array.push('   <tbody id="folder_list_body">');
       tmpl_array.push('       <tr id="first_folder_item">');
@@ -343,7 +337,7 @@ var FolderListView = Backbone.View.extend({
 
       tmpl_array.push('   </tbody>');
       tmpl_array.push('</table>');
-      tmpl_array.push('<div class="empty-folder-message" style="display:none;">This folder is either empty or you do not have proper access permissions to see the contents.</div>');
+      tmpl_array.push('<div class="empty-folder-message" style="display:none;">This folder is either empty or you do not have proper access permissions to see the contents. If you expected something to show up please consult the <a href="https://wiki.galaxyproject.org/Admin/DataLibraries/LibrarySecurity">library security wikipage</a> or visit the <a href="https://biostar.usegalaxy.org/">Galaxy support site</a>.</div>');
 
       return _.template(tmpl_array.join(''));
   }

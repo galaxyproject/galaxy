@@ -969,10 +969,36 @@ class GalaxyRBACAgent( RBACAgent ):
                 self.make_dataset_public( dataset )
 
     def dataset_is_public( self, dataset ):
-        # A dataset is considered public if there are no "access" actions associated with it.  Any
-        # other actions ( 'manage permissions', 'edit metadata' ) are irrelevant.
-        # SM: Accessing dataset.actions will cause a query to be emitted.
+        """
+        A dataset is considered public if there are no "access" actions
+        associated with it.  Any other actions ( 'manage permissions',
+        'edit metadata' ) are irrelevant. Accessing dataset.actions
+        will cause a query to be emitted.
+        """
         return self.permitted_actions.DATASET_ACCESS.action not in [ a.action for a in dataset.actions ]
+
+    def dataset_is_unrestricted( self, trans, dataset):
+        """
+        Different implementation of the method above with signature:
+        def dataset_is_public( self, dataset )
+        """
+        return len( dataset.library_dataset_dataset_association.get_access_roles( trans ) ) == 0
+
+    def dataset_is_private_to_user( self, trans, dataset ):
+        """
+        If the dataset object has exactly one access role and that is the
+        current user's private role then we consider the dataset private.
+        """
+        private_role = self.get_private_user_role( trans.user )
+        access_roles = dataset.library_dataset_dataset_association.get_access_roles( trans )
+
+        if len(access_roles) != 1:
+            return False
+        else:
+            if access_roles[0].id == private_role.id:
+                return True
+            else:
+                return False
 
     def datasets_are_public( self, trans, datasets ):
         '''

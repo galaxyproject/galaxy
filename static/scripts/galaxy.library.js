@@ -106,12 +106,12 @@ var GalaxyLibrary = Backbone.View.extend({
         });
 
        this.library_router.on('route:dataset_detail', function(folder_id, dataset_id){
-        if (Galaxy.libraries.folderToolbarView){ 
-          Galaxy.libraries.folderListView = new mod_folderlist_view.FolderListView({id: folder_id, dataset_id: dataset_id});
-        } else {
+        // if (Galaxy.libraries.folderToolbarView){ 
+          // Galaxy.libraries.folderListView = new mod_folderlist_view.FolderListView({id: folder_id, dataset_id: dataset_id});
+        // } else {
           Galaxy.libraries.folderToolbarView = new mod_foldertoolbar_view.FolderToolbarView({id: folder_id});
           Galaxy.libraries.folderListView = new mod_folderlist_view.FolderListView({id: folder_id, dataset_id: dataset_id});
-        }
+        // }
        });
 
     Backbone.history.start({pushState: false});

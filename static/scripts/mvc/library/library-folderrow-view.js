@@ -15,7 +15,6 @@ var FolderRowView = Backbone.View.extend({
   lastSelectedHistory: '',
 
   events: {
-    // 'click .library-dataset'      : 'showDatasetDetails',
     'click .undelete_dataset_btn' : 'undelete_dataset'
   },
 
@@ -102,6 +101,10 @@ var FolderRowView = Backbone.View.extend({
                 'Import'    : function() { self.importCurrentIntoHistory(); },
                 'Download'  : function() { self.downloadCurrent(); },
                 'Close'     : function() { self.modal.hide(); }
+            },
+            closing_callback : function(){
+              var path_to_folder = Backbone.history.fragment.split('/datasets')[0];
+              Galaxy.libraries.library_router.navigate('#' + path_to_folder, {trigger:true, replace:true});
             }
         });
         
@@ -221,7 +224,7 @@ var FolderRowView = Backbone.View.extend({
      * bug in tooltip
      */
     $(".tooltip").hide();
-
+    var that = this;
     var dataset_id = $(event.target).closest('tr')[0].id;
     var dataset = Galaxy.libraries.folderListView.collection.get(dataset_id);
     dataset.url = dataset.urlRoot + dataset.id + '?undelete=true';
@@ -230,7 +233,7 @@ var FolderRowView = Backbone.View.extend({
           Galaxy.libraries.folderListView.collection.remove(dataset_id);
           var updated_dataset = new mod_library_model.Item(response);
           Galaxy.libraries.folderListView.collection.add(updated_dataset)
-          mod_toastr.success('Dataset undeleted');
+          mod_toastr.success('Dataset undeleted. Click this to see it.', '', {onclick: function() {that.showDatasetDetails()}});
         }, 
         error : function(model, response){
           if (typeof response.responseJSON !== "undefined"){
@@ -252,9 +255,9 @@ var FolderRowView = Backbone.View.extend({
     tmpl_array.push('  <td></td>');
     tmpl_array.push('  <td>');
     tmpl_array.push('    <a href="#folders/<%- content_item.id %>"><%- content_item.get("name") %></a>');
-    tmpl_array.push('    <% if (content_item.get("item_count") === 0) { %>'); // empty folder
-    tmpl_array.push('      <span>(empty folder)</span>');
-    tmpl_array.push('    <% } %>');
+    // tmpl_array.push('    <% if (content_item.get("item_count") === 0) { %>'); // empty folder
+    // tmpl_array.push('      <span>(empty folder)</span>');
+    // tmpl_array.push('    <% } %>');
     tmpl_array.push('  </td>');
     tmpl_array.push('  <td>folder</td>');
     tmpl_array.push('  <td></td>');
@@ -279,7 +282,12 @@ var FolderRowView = Backbone.View.extend({
     tmpl_array.push('  <td><%= _.escape(content_item.get("data_type")) %></td>'); // data type
     tmpl_array.push('  <td><%= _.escape(content_item.get("readable_size")) %></td>'); // size
     tmpl_array.push('  <td><%= _.escape(content_item.get("update_time")) %></td>'); // time updated
-    tmpl_array.push('  <td></td>');
+    tmpl_array.push('  <td>');
+    tmpl_array.push('    <% if (content_item.get("is_unrestricted")) { %><span data-toggle="tooltip" data-placement="top" title="Unrestricted dataset" style="color:grey;" class="fa fa-globe fa-lg"></span><% } %>');
+    tmpl_array.push('    <% if (content_item.get("is_private")) { %><span data-toggle="tooltip" data-placement="top" title="Private dataset" style="color:grey;" class="fa fa-key fa-lg"></span><% } %>');
+    tmpl_array.push('    <% if ((content_item.get("is_unrestricted") === false) && (content_item.get("is_private") === false)) { %><span data-toggle="tooltip" data-placement="top" title="Restricted dataset" style="color:grey;" class="fa fa-group fa-lg"></span>');
+    tmpl_array.push('    <% } %>');
+    tmpl_array.push('  </td>');
     tmpl_array.push('</tr>');
 
     return _.template(tmpl_array.join(''));
@@ -292,12 +300,12 @@ var FolderRowView = Backbone.View.extend({
     tmpl_array.push('  <td>');
     tmpl_array.push('    <span title="Dataset" class="fa fa-file-o"></span>');
     tmpl_array.push('  </td>');
-    tmpl_array.push('  <td><span data-toggle="tooltip" data-placement="top" title="Marked deleted" style="color:grey;" class="fa fa-ban fa-lg"> </span></td>');
+    tmpl_array.push('  <td></td>');
     tmpl_array.push('  <td style="color:grey;"><%- content_item.get("name") %></td>'); // dataset
     tmpl_array.push('  <td><%= _.escape(content_item.get("data_type")) %></td>'); // data type
     tmpl_array.push('  <td><%= _.escape(content_item.get("readable_size")) %></td>'); // size
     tmpl_array.push('  <td><%= _.escape(content_item.get("update_time")) %></td>'); // time updated
-    tmpl_array.push('  <td class="right-center"><button data-toggle="tooltip" data-placement="top" title="Undelete <%- content_item.get("name") %>" class="primary-button btn-xs undelete_dataset_btn show_on_hover" type="button" style="display:none;"><span class="fa fa-unlock"> Undelete</span></button></td>');
+    tmpl_array.push('  <td><span data-toggle="tooltip" data-placement="top" title="Marked deleted" style="color:grey;" class="fa fa-ban fa-lg"> </span><button data-toggle="tooltip" data-placement="top" title="Undelete <%- content_item.get("name") %>" class="primary-button btn-xs undelete_dataset_btn show_on_hover" type="button" style="display:none; margin-left:1em;"><span class="fa fa-unlock"> Undelete</span></button></td>');
     tmpl_array.push('</tr>');
 
     return _.template(tmpl_array.join(''));

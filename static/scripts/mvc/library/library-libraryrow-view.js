@@ -245,7 +245,7 @@ var LibraryRowView = Backbone.View.extend({
     tmpl_array.push('               <% } %>');
     tmpl_array.push('               <td class="right-center">');
     tmpl_array.push('                   <% if( (library.get("public")) && (library.get("deleted") === false) ) { %>');
-    tmpl_array.push('                     <span data-toggle="tooltip" data-placement="top" title="Public" style="color:grey;" class="fa fa-globe fa-lg public_lib_ico"> </span>');
+    tmpl_array.push('                     <span data-toggle="tooltip" data-placement="top" title="Unrestricted library" style="color:grey;" class="fa fa-globe fa-lg public_lib_ico"> </span>');
     tmpl_array.push('                   <% }%>');
     tmpl_array.push('                   <button data-toggle="tooltip" data-placement="top" title="Modify <%- library.get("name") %>" class="primary-button btn-xs edit_library_btn" type="button" style="<% if(button_config.edit_library_btn === false) { print("display:none;") } %>"><span class="fa fa-pencil"></span></button>');
     tmpl_array.push('                   <button data-toggle="tooltip" data-placement="top" title="Modify permissions" class="primary-button btn-xs permission_library_btn" type="button" style="<% if(button_config.permission_library_btn === false) { print("display:none;") } %>"><span class="fa fa-group"></span></button>');

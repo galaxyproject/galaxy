@@ -116,7 +116,6 @@ var LibraryToolbarView = Backbone.View.extend({
     tmpl_array.push('<div class="library_style_container">');
     // TOOLBAR
     tmpl_array.push('  <div id="toolbar_form" margin-top:0.5em; ">');
-    tmpl_array.push('       <h3>Data Libraries Beta Test. This is work in progress. Please report problems & ideas via <a href="mailto:galaxy-bugs@bx.psu.edu?Subject=DataLibrariesBeta_Feedback" target="_blank">email</a> and <a href="https://trello.com/c/nwYQNFPK/56-data-library-ui-progressive-display-of-folders" target="_blank">Trello</a>.</h3>');
     tmpl_array.push('   <% if(admin_user === true) { %>');
     tmpl_array.push('       <div id="library_toolbar">');
     tmpl_array.push('           <span data-toggle="tooltip" data-placement="top" title="Include deleted libraries"><input id="include_deleted_chk" style="margin: 0;" type="checkbox"> <span class="fa fa-trash-o fa-lg"></span></input></span>');
