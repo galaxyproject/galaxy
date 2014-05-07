@@ -2021,7 +2021,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
         self._ensure_selection( field )
         return field
 
-    def _get_select_dataset_collection_field( self, trans, history, multiple=False, suffix="|__subcollection_multirun__", value=None, other_values=None ):
+    def _get_select_dataset_collection_field( self, trans, history, multiple=False, suffix="|__collection_multirun__", value=None, other_values=None ):
         field_name = "%s%s" % ( self.name, suffix )
         field = form_builder.SelectField( field_name, multiple, None, self.refresh_on_change, refresh_on_change_values=self.refresh_on_change_values )
         dataset_matcher = DatasetMatcher( trans, self, value, other_values )

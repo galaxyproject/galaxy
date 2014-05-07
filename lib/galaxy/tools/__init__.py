@@ -1925,7 +1925,7 @@ class Tool( object, Dictifiable ):
         # Fixed set of input parameters may correspond to any number of jobs.
         # Expand these out to individual parameters for given jobs (tool
         # executions).
-        expanded_incomings, collection_info = expand_meta_parameters( trans, incoming, self.inputs )
+        expanded_incomings, collection_info = expand_meta_parameters( trans, self, incoming )
 
         if not expanded_incomings:
             raise exceptions.MessageException( "Tool execution failed, trying to run a tool over an empty collection." )

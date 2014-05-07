@@ -264,7 +264,7 @@ class ToolsTestCase( api.ApiTestCase ):
         history_id = self.dataset_populator.new_history()
         hdca_list_id = self.__build_nested_list( history_id )
         inputs = {
-            "f1|__subcollection_multirun__": "%s|paired" % hdca_list_id
+            "f1|__collection_multirun__": "%s|paired" % hdca_list_id
         }
         # Following wait not really needed - just getting so many database
         # locked errors with sqlite.

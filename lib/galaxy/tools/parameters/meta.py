@@ -9,7 +9,7 @@ import logging
 log = logging.getLogger( __name__ )
 
 
-def expand_meta_parameters( trans, incoming, inputs ):
+def expand_meta_parameters( trans, tool, incoming ):
     """
     Take in a dictionary of raw incoming parameters and expand to a list
     of expanded incoming parameters (one set of parameters per tool
@@ -34,26 +34,23 @@ def expand_meta_parameters( trans, incoming, inputs ):
     def collection_classifier( input_key ):
         multirun_key = "%s|__collection_multirun__" % input_key
         if multirun_key in incoming:
-            encoded_hdc_id = incoming[ multirun_key ]
-            hdc_id = trans.app.security.decode_id( encoded_hdc_id )
-            hdc = trans.sa_session.query( model.HistoryDatasetCollectionAssociation ).get( hdc_id )
-            collections_to_match.add( input_key, hdc )
-            hdas = hdc.collection.dataset_instances
-            return permutations.input_classification.MATCHED, hdas
-        else:
-            return permutations.input_classification.SINGLE, incoming[ input_key ]
-
-    def subcollection_classifier( input_key ):
-        multirun_key = "%s|__subcollection_multirun__" % input_key
-        if multirun_key in incoming:
             incoming_val = incoming[ multirun_key ]
-            # value will be "hdca_id|subcollection_type"
-            encoded_hdc_id, subcollection_type = incoming_val.split( "|", 1 )
+            # If subcollectin multirun of data_collection param - value will
+            # be "hdca_id|subcollection_type" else it will just be hdca_id
+            if "|" in incoming_val:
+                encoded_hdc_id, subcollection_type = incoming_val.split( "|", 1 )
+            else:
+                encoded_hdc_id = incoming_val
+                subcollection_type = None
             hdc_id = trans.app.security.decode_id( encoded_hdc_id )
             hdc = trans.sa_session.query( model.HistoryDatasetCollectionAssociation ).get( hdc_id )
             collections_to_match.add( input_key, hdc, subcollection_type=subcollection_type )
-            subcollection_elements = subcollections.split_dataset_collection_instance( hdc, subcollection_type )
-            return permutations.input_classification.MATCHED, subcollection_elements
+            if subcollection_type is not None:
+                subcollection_elements = subcollections.split_dataset_collection_instance( hdc, subcollection_type )
+                return permutations.input_classification.MATCHED, subcollection_elements
+            else:
+                hdas = hdc.collection.dataset_instances
+                return permutations.input_classification.MATCHED, hdas
         else:
             return permutations.input_classification.SINGLE, incoming[ input_key ]
 
@@ -72,26 +69,17 @@ def expand_meta_parameters( trans, incoming, inputs ):
 
     multirun_found = False
     collection_multirun_found = False
-    subcollection_multirun_found = False
     for key, value in incoming.iteritems():
         multirun_found = try_replace_key( key, "|__multirun__" ) or multirun_found
         collection_multirun_found = try_replace_key( key, "|__collection_multirun__" ) or collection_multirun_found
-        subcollection_multirun_found = try_replace_key( key, "|__subcollection_multirun__" ) or subcollection_multirun_found
 
-    if sum( [ 1 if f else 0 for f in [ multirun_found, collection_multirun_found, subcollection_multirun_found ] ] ) > 1:
+    if sum( [ 1 if f else 0 for f in [ multirun_found, collection_multirun_found ] ] ) > 1:
         # In theory doable, but to complicated for a first pass.
         message = "Cannot specify parallel execution across both multiple datasets and dataset collections."
         raise exceptions.ToolMetaParameterException( message )
 
     if multirun_found:
         return permutations.expand_multi_inputs( incoming_template, classifier ), None
-    elif subcollection_multirun_found:
-        expanded_incomings = permutations.expand_multi_inputs( incoming_template, subcollection_classifier )
-        if collections_to_match.has_collections():
-            collection_info = trans.app.dataset_collections_service.match_collections( collections_to_match )
-        else:
-            collection_info = None
-        return expanded_incomings, collection_info
     else:
         expanded_incomings = permutations.expand_multi_inputs( incoming_template, collection_classifier )
         if collections_to_match.has_collections():
