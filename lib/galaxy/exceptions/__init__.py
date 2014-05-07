@@ -104,16 +104,16 @@ class ObjectNotFound( MessageException ):
 
 class Conflict( MessageException ):
     status_code = 409
-    err_code = error_codes.CONFLICT   
+    err_code = error_codes.CONFLICT
 
 class InconsistentDatabase ( MessageException ):
     status_code = 500
-    err_code = error_codes.INCONSISTENT_DATABASE   
+    err_code = error_codes.INCONSISTENT_DATABASE
 
 class InternalServerError ( MessageException ):
     status_code = 500
-    err_code = error_codes.INTERNAL_SERVER_ERROR    
+    err_code = error_codes.INTERNAL_SERVER_ERROR
 
 class NotImplemented ( MessageException ):
     status_code = 501
-    err_code = error_codes.NOT_IMPLEMENTED    
+    err_code = error_codes.NOT_IMPLEMENTED
