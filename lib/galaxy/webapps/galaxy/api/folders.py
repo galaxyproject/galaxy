@@ -1,17 +1,23 @@
 """
 API operations on library folders
 """
-import os, string, shutil, urllib, re, socket, traceback
-from galaxy import datatypes, jobs, web, security
+# import os
+# import shutil
+# import urllib
+# import re
+# import socket
+# import traceback
+# import string
+from galaxy import web
 from galaxy import exceptions
 from galaxy.web import _future_expose_api as expose_api
-from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
-from galaxy.web.base.controller import BaseAPIController,UsesLibraryMixin,UsesLibraryMixinItems
+from galaxy.web.base.controller import BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems
 from sqlalchemy.orm.exc import MultipleResultsFound
 from sqlalchemy.orm.exc import NoResultFound
 
 import logging
 log = logging.getLogger( __name__ )
+
 
 class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems ):
 
@@ -32,18 +38,19 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
 
         Displays information about a folder.
 
-        :param  encoded_parent_folder_id:      the parent folder's id (required)
-        :type   encoded_parent_folder_id:      an encoded id string (should be prefixed by 'F')  
+        :param  id:      the folder's encoded id (required)
+        :type   id:      an encoded id string (has to be prefixed by 'F')
+
+        :returns:   dictionary including details of the folder
+        :rtype:     dict
         """
-        # Eliminate any 'F' in front of the folder id. Just take the
-        # last 16 characters:
-        if ( len( id ) >= 17 ):
-            id = id[-16:]
-        # Retrieve the folder and return its contents encoded. Note that the
-        # check_ownership=false since we are only displaying it.
-        content = self.get_library_folder( trans, id, check_ownership=False,
-                                           check_accessible=True )
-        return self.encode_all_ids( trans, content.to_dict( view='element' ) )
+        folder_id_without_prefix = self.__cut_the_prefix( id )
+        content = self.get_library_folder( trans, folder_id_without_prefix, check_ownership=False, check_accessible=True )
+        return_dict = self.encode_all_ids( trans, content.to_dict( view='element' ) )
+        return_dict[ 'id' ] = 'F' + return_dict[ 'id' ]
+        if return_dict[ 'parent_id' ] is not None:
+            return_dict[ 'parent_id' ] = 'F' + return_dict[ 'parent_id' ]
+        return return_dict
 
     @expose_api
     def create( self, trans, encoded_parent_folder_id, **kwd ):
@@ -53,13 +60,13 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
         *POST /api/folders/{encoded_parent_folder_id}
 
         Create a new folder object underneath the one specified in the parameters.
-        
+
         :param  encoded_parent_folder_id:      the parent folder's id (required)
-        :type   encoded_parent_folder_id:      an encoded id string (should be prefixed by 'F')      
+        :type   encoded_parent_folder_id:      an encoded id string (should be prefixed by 'F')
 
         :param  name:                          the name of the new folder (required)
-        :type   name:                          str      
-        
+        :type   name:                          str
+
         :param  description:                   the description of the new folder
         :type   description:                   str
 
@@ -70,16 +77,16 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
         """
 
         payload = kwd.get( 'payload', None )
-        if payload == None:
+        if payload is None:
             raise exceptions.RequestParameterMissingException( "Missing required parameters 'encoded_parent_folder_id' and 'name'." )
         name = payload.get( 'name', None )
         description = payload.get( 'description', '' )
-        if encoded_parent_folder_id == None:
+        if encoded_parent_folder_id is None:
             raise exceptions.RequestParameterMissingException( "Missing required parameter 'encoded_parent_folder_id'." )
-        elif name == None:
+        elif name is None:
             raise exceptions.RequestParameterMissingException( "Missing required parameter 'name'." )
 
-        # encoded_parent_folder_id may be prefixed by 'F'
+        # encoded_parent_folder_id should be prefixed by 'F'
         encoded_parent_folder_id = self.__cut_the_prefix( encoded_parent_folder_id )
         try:
             decoded_parent_folder_id = trans.security.decode_id( encoded_parent_folder_id )
@@ -93,7 +100,7 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
         except NoResultFound:
             raise exceptions.RequestParameterInvalidException( 'No folder found with the id provided.' )
         except Exception, e:
-            raise exceptions.InternalServerError( 'Error loading from the database.'  + str(e))
+            raise exceptions.InternalServerError( 'Error loading from the database.' + str( e ) )
 
         library = parent_folder.parent_library
         if library.deleted:
@@ -108,29 +115,28 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
                 try:
                     folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( v.id )
                 except Exception, e:
-                    raise exceptions.InternalServerError( 'Error loading from the database.'  + str( e ))
+                    raise exceptions.InternalServerError( 'Error loading from the database.' + str( e ))
                 if folder:
-                    return_dict = folder.to_dict( view='element' )
-                    return_dict[ 'parent_library_id' ] = trans.security.encode_id( return_dict[ 'parent_library_id' ] )
-                    return_dict[ 'parent_id' ] = 'F' + trans.security.encode_id( return_dict[ 'parent_id' ] )
-                    return_dict[ 'id' ] = 'F' + trans.security.encode_id( return_dict[ 'id' ] )
+                    update_time = folder.update_time.strftime( "%Y-%m-%d %I:%M %p" )
+                    return_dict = self.encode_all_ids( trans, folder.to_dict( view='element' ) )
+                    return_dict[ 'update_time' ] = update_time
+                    return_dict[ 'parent_id' ] = 'F' + return_dict[ 'parent_id' ]
+                    return_dict[ 'id' ] = 'F' + return_dict[ 'id' ]
                     return return_dict
         else:
-            raise exceptions.InternalServerError( 'Error while creating a folder.'  + str(e))
+            raise exceptions.InternalServerError( 'Error while creating a folder.' + str( e ) )
 
     @web.expose_api
     def update( self, trans, id,  library_id, payload, **kwd ):
         """
         PUT /api/folders/{encoded_folder_id}
-        For now this does nothing. There are no semantics for folders that
-        indicates that an update operation is needed; the existing
-        library_contents folder does not allow for update, either.
+
         """
-        pass
+        raise exceptions.NotImplemented( 'Updating folder through this endpoint is not implemented yet.' )
 
     def __cut_the_prefix(self, encoded_id):
-        if ( len( encoded_id ) == 17 and encoded_id.startswith( 'F' ) ):
-            return encoded_id[-16:]
-        else:
-            return encoded_id
 
+        if ( ( len( encoded_id ) % 2 == 1 ) and encoded_id.startswith( 'F' ) ):
+            return encoded_id[ 1: ]
+        else:
+            raise exceptions.MalformedId( 'Malformed folder id ( %s ) specified, unable to decode.' % str( encoded_id ) )

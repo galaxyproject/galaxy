@@ -13,6 +13,7 @@ from galaxy.web.base.controller import BaseAPIController, UsesLibraryMixin, Uses
 import logging
 log = logging.getLogger( __name__ )
 
+
 class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems, UsesHistoryDatasetAssociationMixin ):
     """
     Class controls retrieval, creation and updating of folder contents.
@@ -23,14 +24,14 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
         """
         GET /api/folders/{encoded_folder_id}/contents
 
-        Displays a collection (list) of a folder's contents 
+        Displays a collection (list) of a folder's contents
         (files and folders). Encoded folder ID is prepended
         with 'F' if it is a folder as opposed to a data set
         which does not have it. Full path is provided in
-        response as a separate object providing data for 
+        response as a separate object providing data for
         breadcrumb path building.
 
-        :param  folder_id: encoded ID of the folder which 
+        :param  folder_id: encoded ID of the folder which
             contents should be library_dataset_dict
         :type   folder_id: encoded string
 
@@ -70,7 +71,7 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
         can_add_library_item = trans.user_is_admin() or trans.app.security_agent.can_add_library_item( current_user_roles, folder )
 
         if not ( trans.user_is_admin() or trans.app.security_agent.can_access_library_item( current_user_roles, folder, trans.user ) ):
-            if folder.parent_id == None:
+            if folder.parent_id is None:
                 try:
                     library = trans.sa_session.query( trans.app.model.Library ).filter( trans.app.model.Library.table.c.root_folder_id == decoded_folder_id ).one()
                 except Exception:
@@ -82,14 +83,14 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
                         log.warning( "SECURITY: User (id: %s) without proper access rights is trying to load folder with ID of %s" % ( trans.user.id, decoded_folder_id ) )
                     else:
                         log.warning( "SECURITY: Anonymous user without proper access rights is trying to load folder with ID of %s" % ( decoded_folder_id ) )
-                    raise exceptions.ObjectNotFound( 'Folder with the id provided ( %s ) was not found' % str( folder_id ) ) 
+                    raise exceptions.ObjectNotFound( 'Folder with the id provided ( %s ) was not found' % str( folder_id ) )
             else:
                 if trans.user:
                     log.warning( "SECURITY: User (id: %s) without proper access rights is trying to load folder with ID of %s" % ( trans.user.id, decoded_folder_id ) )
                 else:
                     log.warning( "SECURITY: Anonymous user without proper access rights is trying to load folder with ID of %s" % ( decoded_folder_id ) )
                 raise exceptions.ObjectNotFound( 'Folder with the id provided ( %s ) was not found' % str( folder_id ) )
-        
+
         def build_path( folder ):
             """
             Search the path upwards recursively and load the whole route of
@@ -111,50 +112,45 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
                 upper_folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( folder.parent_id )
                 path_to_root.extend( build_path( upper_folder ) )
             return path_to_root
-            
+
         # Return the reversed path so it starts with the library node.
         full_path = build_path( folder )[::-1]
 
         folder_contents = []
         update_time = ''
         create_time = ''
-        # Go through every accessible item in the folder and include its meta-data.
+        # Go through every accessible item (folders, datasets) in the folder and include its meta-data.
         for content_item in self._load_folder_contents( trans, folder, deleted ):
-            can_access = trans.app.security_agent.can_access_library_item( current_user_roles, content_item, trans.user )
-            if ( can_access or ( content_item.api_type == 'folder' and trans.app.security_agent.folder_is_unrestricted( content_item ) ) ):
-                return_item = {}
-                encoded_id = trans.security.encode_id( content_item.id )
-                update_time = content_item.update_time.strftime( "%Y-%m-%d %I:%M %p" )
-                create_time = content_item.create_time.strftime( "%Y-%m-%d %I:%M %p" )
+            return_item = {}
+            encoded_id = trans.security.encode_id( content_item.id )
+            update_time = content_item.update_time.strftime( "%Y-%m-%d %I:%M %p" )
+            create_time = content_item.create_time.strftime( "%Y-%m-%d %I:%M %p" )
 
-                # For folder return also hierarchy values
-                if content_item.api_type == 'folder':
-                    encoded_id = 'F' + encoded_id
+            if content_item.api_type == 'folder':
+                encoded_id = 'F' + encoded_id
 
-                    # this is commented for now as it includes the items that might not be accessible
-                    # item_count = content_item.item_count if can_access else 0
-                    # return_item.update ( dict ( item_count = item_count ) )
+            if content_item.api_type == 'file':
+                library_dataset_dict = content_item.to_dict()
+                library_dataset_dict[ 'is_unrestricted' ] = trans.app.security_agent.dataset_is_public( content_item.library_dataset_dataset_association.dataset )
+                library_dataset_dict[ 'is_private' ] = trans.app.security_agent.dataset_is_private_to_user( trans, content_item )
 
-                if content_item.api_type == 'file':
-                    library_dataset_dict = content_item.to_dict()
-                    library_dataset_dict['data_type']
-                    library_dataset_dict['file_size']
-                    library_dataset_dict['date_uploaded']
-                    return_item.update ( dict ( data_type = library_dataset_dict['data_type'],
-                                                file_size = library_dataset_dict['file_size'],
-                                                date_uploaded = library_dataset_dict['date_uploaded'] ) )
+                return_item.update( dict( data_type=library_dataset_dict[ 'data_type' ],
+                                          file_size=library_dataset_dict[ 'file_size' ],
+                                          date_uploaded=library_dataset_dict[ 'date_uploaded' ],
+                                          is_unrestricted=library_dataset_dict[ 'is_unrestricted' ],
+                                          is_private=library_dataset_dict[ 'is_private' ] ) )
 
-                # For every item return also the default meta-data
-                return_item.update( dict( id = encoded_id,
-                                   type = content_item.api_type,
-                                   name = content_item.name,
-                                   update_time = update_time,
-                                   create_time = create_time,
-                                   deleted = content_item.deleted
-                                    ) )
-                folder_contents.append( return_item )
+            # For every item include the default meta-data
+            return_item.update( dict( id=encoded_id,
+                                      type=content_item.api_type,
+                                      name=content_item.name,
+                                      update_time=update_time,
+                                      create_time=create_time,
+                                      deleted=content_item.deleted
+                                      ) )
+            folder_contents.append( return_item )
 
-        return { 'metadata' : { 'full_path' : full_path, 'can_add_library_item': can_add_library_item, 'folder_name': folder.name }, 'folder_contents' : folder_contents }
+        return { 'metadata': { 'full_path': full_path, 'can_add_library_item': can_add_library_item, 'folder_name': folder.name }, 'folder_contents': folder_contents }
 
     def _load_folder_contents( self, trans, folder, include_deleted ):
         """
@@ -166,7 +162,7 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
         :type   folder:          Galaxy LibraryFolder
 
         :param  include_deleted: flag, when true the items that are deleted
-            and can be undeleted by current user are shown 
+            and can be undeleted by current user are shown
         :type   include_deleted: boolean
 
         :returns:   a list containing the requested items
@@ -175,34 +171,42 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
         current_user_roles = trans.get_current_user_roles()
         is_admin = trans.user_is_admin()
         content_items = []
-        for subfolder in folder.active_folders:
+        for subfolder in folder.folders:
             if subfolder.deleted:
                 if include_deleted:
                     if is_admin:
+                    # Admins can see all deleted folders.
                         subfolder.api_type = 'folder'
                         content_items.append( subfolder )
                     else:
+                    # Users with MODIFY permissions can see deleted folders.
                         can_modify = trans.app.security_agent.can_modify_library_item( current_user_roles, subfolder )
                         if can_modify:
                             subfolder.api_type = 'folder'
                             content_items.append( subfolder )
             else:
-                if is_admin:
-                    subfolder.api_type = 'folder'
-                    content_items.append( subfolder )
-                else:
-                    can_access, folder_ids = trans.app.security_agent.check_folder_contents( trans.user, current_user_roles, subfolder )
-                    if can_access:
-                        subfolder.api_type = 'folder'
-                        content_items.append( subfolder )
+                # Undeleted folders are non-restricted for now. The contents are not.
+                # TODO decide on restrictions
+                subfolder.api_type = 'folder'
+                content_items.append( subfolder )
+                # if is_admin:
+                #     subfolder.api_type = 'folder'
+                #     content_items.append( subfolder )
+                # else:
+                #     can_access, folder_ids = trans.app.security_agent.check_folder_contents( trans.user, current_user_roles, subfolder )
+                #     if can_access:
+                #         subfolder.api_type = 'folder'
+                #         content_items.append( subfolder )
 
         for dataset in folder.datasets:
             if dataset.deleted:
                 if include_deleted:
                     if is_admin:
+                    # Admins can see all deleted datasets.
                         dataset.api_type = 'file'
                         content_items.append( dataset )
                     else:
+                    # Users with MODIFY permissions on the item can see the deleted item.
                         can_modify = trans.app.security_agent.can_modify_library_item( current_user_roles, dataset )
                         if can_modify:
                             dataset.api_type = 'file'
@@ -230,19 +234,19 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
         :type   payload:    dict
 
             * folder_id:    the parent folder of the new item
-            * from_hda_id:  (optional) the id of an accessible HDA to copy 
+            * from_hda_id:  (optional) the id of an accessible HDA to copy
                 into the library
             * ldda_message: (optional) the new message attribute of the LDDA
                  created
-            * extended_metadata: (optional) dub-dictionary containing any 
+            * extended_metadata: (optional) dub-dictionary containing any
                 extended metadata to associate with the item
 
-        :returns:   a dictionary containing the id, name, 
+        :returns:   a dictionary containing the id, name,
             and 'show' url of the new item
         :rtype:     dict
 
-        :raises:    ObjectAttributeInvalidException, 
-            InsufficientPermissionsException, ItemAccessibilityException, 
+        :raises:    ObjectAttributeInvalidException,
+            InsufficientPermissionsException, ItemAccessibilityException,
             InternalServerError
         """
         encoded_folder_id_16 = self.__decode_library_content_id( trans, encoded_folder_id )
@@ -287,13 +291,13 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
         :param  encoded_folder_id:  encoded id of Galaxy LibraryFolder
         :type   encoded_folder_id:  encoded string
 
-        :returns:   last 16 chars of the encoded id in case it was Folder 
+        :returns:   last 16 chars of the encoded id in case it was Folder
             (had 'F' prepended)
         :type:  string
 
         :raises:    MalformedId
         """
-        if ( len( encoded_folder_id )  == 17 and encoded_folder_id.startswith( 'F' )):
+        if ( len( encoded_folder_id ) == 17 and encoded_folder_id.startswith( 'F' )):
             return encoded_folder_id[1:]
         else:
             raise exceptions.MalformedId( 'Malformed folder id ( %s ) specified, unable to decode.' % str( encoded_folder_id ) )
