@@ -146,10 +146,10 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
         :param  job_ids:                     If from_history_id is set - optional list of jobs to include when extracting a workflow from history
         :type   job_ids:                     str
 
-        :param  dataset_ids:                 If from_history_id is set - optional list of HDA ids corresponding to workflow inputs when extracting a workflow from history
+        :param  dataset_ids:                 If from_history_id is set - optional list of HDA `hid`s corresponding to workflow inputs when extracting a workflow from history
         :type   dataset_ids:                 str
 
-        :param  dataset_collection_ids:      If from_history_id is set - optional list of HDCA ids corresponding to workflow inputs when extracting a workflow from history
+        :param  dataset_collection_ids:      If from_history_id is set - optional list of HDCA `hid`s corresponding to workflow inputs when extracting a workflow from history
         :type   dataset_collection_ids:      str
 
         :param  workflow_name:               If from_history_id is set - name of the workflow to create when extracting a workflow from history
