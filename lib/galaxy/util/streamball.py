@@ -19,6 +19,8 @@ class StreamBall( object ):
         if check_file and len(file)>0:
             if not os.path.isfile(file):
                 raise ObjectNotFound
+            else:
+                self.members[file] = relpath
         else:
             self.members[file] = relpath
     def stream( self, environ, start_response ):
