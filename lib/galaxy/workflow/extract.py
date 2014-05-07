@@ -87,7 +87,8 @@ def extract_steps( trans, history=None, job_ids=None, dataset_ids=None, dataset_
     for hid in dataset_collection_ids:
         step = model.WorkflowStep()
         step.type = 'data_collection_input'
-        step.tool_inputs = dict( name="Input Dataset Collection" )
+        collection_type = summary.collection_types[ hid ]
+        step.tool_inputs = dict( name="Input Dataset Collection", collection_type=collection_type )
         hid_to_output_pair[ hid ] = ( step, 'output' )
         steps.append( step )
     # Tool steps
@@ -167,6 +168,8 @@ class WorkflowSummary( object ):
         self.warnings = set()
         self.jobs = odict()
         self.implicit_map_jobs = []
+        self.collection_types = {}
+
         self.__summarize()
 
     def __summarize( self ):
@@ -177,7 +180,9 @@ class WorkflowSummary( object ):
         implicit_outputs = []
         for content in self.history.active_contents:
             if content.history_content_type == "dataset_collection":
+                hid = content.hid
                 content = self.__original_hdca( content )
+                self.collection_types[ hid ] = content.collection.collection_type
                 if not content.implicit_output_name:
                     job = DatasetCollectionCreationJob( content )
                     self.jobs[ job ] = [ ( None, content ) ]

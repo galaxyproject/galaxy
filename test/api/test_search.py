@@ -7,7 +7,7 @@ from .helpers import WorkflowPopulator
 class SearchApiTestCase( api.ApiTestCase ):
 
     def test_search_workflows( self ):
-        workflow_populator = WorkflowPopulator( self )
+        workflow_populator = WorkflowPopulator( self.galaxy_interactor )
         workflow_id = workflow_populator.simple_workflow( "test_for_search" )
         search_response = self.__search( "select * from workflow" )
         assert self.__has_result_with_name( search_response, "test_for_search (imported from API)" ), search_response.json()
