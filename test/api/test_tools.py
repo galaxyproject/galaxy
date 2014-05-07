@@ -3,6 +3,7 @@ from base import api
 from operator import itemgetter
 from .helpers import DatasetPopulator
 from .helpers import DatasetCollectionPopulator
+from .helpers import skip_without_tool
 
 
 class ToolsTestCase( api.ApiTestCase ):
@@ -51,8 +52,8 @@ class ToolsTestCase( api.ApiTestCase ):
         result_content = self._upload_and_get_content( table )
         self.assertEquals( result_content, table )
 
+    @skip_without_tool( "cat1" )
     def test_run_cat1( self ):
-        self.__skip_without_tool( "cat1" )
         # Run simple non-upload tool with an input data parameter.
         history_id = self.dataset_populator.new_history()
         new_dataset = self.dataset_populator.new_dataset( history_id, content='Cat1Test' )
@@ -66,8 +67,8 @@ class ToolsTestCase( api.ApiTestCase ):
         output1_content = self._get_content( history_id, dataset=output1 )
         self.assertEqual( output1_content.strip(), "Cat1Test" )
 
+    @skip_without_tool( "cat1" )
     def test_run_cat1_with_two_inputs( self ):
-        self.__skip_without_tool( "cat1" )
         # Run tool with an multiple data parameter and grouping (repeat)
         history_id = self.dataset_populator.new_history()
         new_dataset1 = self.dataset_populator.new_dataset( history_id, content='Cat1Test' )
@@ -83,8 +84,8 @@ class ToolsTestCase( api.ApiTestCase ):
         output1_content = self._get_content( history_id, dataset=output1 )
         self.assertEqual( output1_content.strip(), "Cat1Test\nCat2Test" )
 
+    @skip_without_tool( "cat1" )
     def test_multirun_cat1( self ):
-        self.__skip_without_tool( "cat1" )
         history_id = self.dataset_populator.new_history()
         new_dataset1 = self.dataset_populator.new_dataset( history_id, content='123' )
         new_dataset2 = self.dataset_populator.new_dataset( history_id, content='456' )
@@ -104,8 +105,8 @@ class ToolsTestCase( api.ApiTestCase ):
         self.assertEquals( output1_content.strip(), "123" )
         self.assertEquals( output2_content.strip(), "456" )
 
+    @skip_without_tool( "cat1" )
     def test_multirun_in_repeat( self ):
-        self.__skip_without_tool( "cat1" )
         history_id = self.dataset_populator.new_history()
         new_dataset1 = self.dataset_populator.new_dataset( history_id, content='123' )
         new_dataset2 = self.dataset_populator.new_dataset( history_id, content='456' )
@@ -127,8 +128,8 @@ class ToolsTestCase( api.ApiTestCase ):
         self.assertEquals( output1_content.strip(), "Common\n123" )
         self.assertEquals( output2_content.strip(), "Common\n456" )
 
+    @skip_without_tool( "cat1" )
     def test_multirun_on_multiple_inputs( self ):
-        self.__skip_without_tool( "cat1" )
         history_id = self.dataset_populator.new_history()
         new_dataset1 = self.dataset_populator.new_dataset( history_id, content='123' )
         new_dataset2 = self.dataset_populator.new_dataset( history_id, content='456' )
@@ -153,8 +154,8 @@ class ToolsTestCase( api.ApiTestCase ):
         assert "123\n0ab" in outputs_contents
         assert "456\n0ab" in outputs_contents
 
+    @skip_without_tool( "cat1" )
     def test_map_over_collection( self ):
-        self.__skip_without_tool( "cat1" )
         history_id = self.dataset_populator.new_history()
         hdca_id = self.__build_pair( history_id, [ "123", "456" ] )
         inputs = {
@@ -175,8 +176,8 @@ class ToolsTestCase( api.ApiTestCase ):
         self.assertEquals( output1_content.strip(), "123" )
         self.assertEquals( output2_content.strip(), "456" )
 
+    @skip_without_tool( "cat1" )
     def test_map_over_nested_collections( self ):
-        self.__skip_without_tool( "cat1" )
         history_id = self.dataset_populator.new_history()
         hdca_id = self.__build_nested_list( history_id )
         inputs = {
@@ -203,6 +204,7 @@ class ToolsTestCase( api.ApiTestCase ):
         first_object_left_element = first_object[ "elements" ][ 0 ]
         self.assertEquals( outputs[ 0 ][ "id" ], first_object_left_element[ "object" ][ "id" ] )
 
+    @skip_without_tool( "cat1" )
     def test_map_over_two_collections( self ):
         history_id = self.dataset_populator.new_history()
         hdca1_id = self.__build_pair( history_id, [ "123", "456" ] )
@@ -221,8 +223,8 @@ class ToolsTestCase( api.ApiTestCase ):
         self.assertEquals( output1_content.strip(), "123\n789" )
         self.assertEquals( output2_content.strip(), "456\n0ab" )
 
+    @skip_without_tool( "cat1" )
     def test_cannot_map_over_incompatible_collections( self ):
-        self.__skip_without_tool( "cat1" )
         history_id = self.dataset_populator.new_history()
         hdca1_id = self.__build_pair( history_id, [ "123", "456" ] )
         hdca2_id = self.dataset_collection_populator.create_list_in_history( history_id  ).json()[ "id" ]
@@ -235,8 +237,8 @@ class ToolsTestCase( api.ApiTestCase ):
         # on server.
         assert run_response.status_code >= 400
 
+    @skip_without_tool( "multi_data_param" )
     def test_reduce_collections( self ):
-        self.__skip_without_tool( "multi_data_param" )
         history_id = self.dataset_populator.new_history()
         hdca1_id = self.__build_pair( history_id, [ "123", "456" ] )
         hdca2_id = self.dataset_collection_populator.create_list_in_history( history_id  ).json()[ "id" ]
@@ -257,8 +259,8 @@ class ToolsTestCase( api.ApiTestCase ):
         assert output1_content.strip() == "123\n456"
         assert len( output2_content.strip().split("\n") ) == 3, output2_content
 
+    @skip_without_tool( "collection_paired_test" )
     def test_subcollection_mapping( self ):
-        self.__skip_without_tool( "collection_paired_test" )
         history_id = self.dataset_populator.new_history()
         hdca_list_id = self.__build_nested_list( history_id )
         inputs = {
@@ -333,11 +335,6 @@ class ToolsTestCase( api.ApiTestCase ):
 
         tool_ids = map( itemgetter( "id" ), tools )
         return tool_ids
-
-    def __skip_without_tool( self, tool_id ):
-        from nose.plugins.skip import SkipTest
-        if tool_id not in self.__tool_ids( ):
-            raise SkipTest( )
 
     def __build_nested_list( self, history_id ):
         hdca1_id = self.__build_pair( history_id, [ "123", "456" ] )

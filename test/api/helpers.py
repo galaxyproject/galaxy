@@ -1,3 +1,5 @@
+from operator import itemgetter
+
 import time
 import json
 import StringIO
@@ -10,6 +12,35 @@ workflow_str = resource_string( __name__, "test_workflow_1.ga" )
 workflow_random_x2_str = resource_string( __name__, "test_workflow_2.ga" )
 
 DEFAULT_HISTORY_TIMEOUT = 5  # Secs to wait on history to turn ok
+
+
+def skip_without_tool( tool_id ):
+    """ Decorate an API test method as requiring a specific tool,
+    have nose skip the test case is the tool is unavailable.
+    """
+
+    def method_wrapper( method ):
+
+        def get_tool_ids( api_test_case ):
+            index = api_test_case.galaxy_interactor.get( "tools", data=dict(in_panel=False) )
+            tools = index.json()
+            # In panels by default, so flatten out sections...
+            tool_ids = map( itemgetter( "id" ), tools )
+            return tool_ids
+
+        def wrapped_method( api_test_case, *args, **kwargs ):
+            if tool_id not in get_tool_ids( api_test_case ):
+                from nose.plugins.skip import SkipTest
+                raise SkipTest( )
+
+            return method( api_test_case, *args, **kwargs )
+
+        # Must preserve method name so nose can detect and report tests by
+        # name.
+        wrapped_method.__name__ = method.__name__
+        return wrapped_method
+
+    return method_wrapper
 
 
 # Deprecated mixin, use dataset populator instead.

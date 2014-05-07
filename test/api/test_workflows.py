@@ -5,6 +5,7 @@ import time
 from .helpers import WorkflowPopulator
 from .helpers import DatasetPopulator
 from .helpers import DatasetCollectionPopulator
+from .helpers import skip_without_tool
 
 from base.interactor import delete_request  # requests like delete
 
@@ -62,6 +63,7 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
         first_input = downloaded_workflow[ "steps" ][ "0" ][ "inputs" ][ 0 ]
         assert first_input[ "name" ] == "WorkflowInput1"
 
+    @skip_without_tool( "cat1" )
     def test_run_workflow( self ):
         workflow = self.workflow_populator.load_workflow( name="test_for_run" )
         workflow_request, history_id = self._setup_workflow_run( workflow )
@@ -71,6 +73,7 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
         self._assert_status_code_is( run_workflow_response, 200 )
         self.dataset_populator.wait_for_history( history_id, assert_ok=True )
 
+    @skip_without_tool( "cat1" )
     def test_extract_from_history( self ):
         workflow = self.workflow_populator.load_workflow( name="test_for_extract" )
         workflow_request, history_id = self._setup_workflow_run( workflow )
@@ -104,6 +107,7 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
         self.assertEquals( downloaded_workflow[ "name" ], "test import from history" )
         assert len( downloaded_workflow[ "steps" ] ) == 3
 
+    @skip_without_tool( "collection_paired_test" )
     def test_extract_workflows_with_dataset_collections( self ):
         history_id = self.dataset_populator.new_history()
         hdca = self.dataset_collection_populator.create_pair_in_history( history_id ).json()
@@ -141,6 +145,7 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
         collection_step_state = loads( collection_step[ "tool_state" ] )
         self.assertEquals( collection_step_state[ "collection_type" ], u"paired" )
 
+    @skip_without_tool( "random_lines1" )
     def test_run_replace_params_by_tool( self ):
         workflow_request, history_id = self._setup_random_x2_workflow( "test_for_replace_tool_params" )
         workflow_request[ "parameters" ] = dumps( dict( random_lines1=dict( num_lines=5 ) ) )
@@ -151,6 +156,7 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
         self.__assert_lines_hid_line_count_is( history_id, 2, 5 )
         self.__assert_lines_hid_line_count_is( history_id, 3, 5 )
 
+    @skip_without_tool( "random_lines1" )
     def test_run_replace_params_by_steps( self ):
         workflow_request, history_id = self._setup_random_x2_workflow( "test_for_replace_step_params" )
         workflow_summary_response = self._get( "workflows/%s" % workflow_request[ "workflow_id" ] )
@@ -177,6 +183,7 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
         pja = pjas[ 0 ]
         self._assert_has_keys( pja, "action_type", "output_name", "action_arguments" )
 
+    @skip_without_tool( "cat1" )
     def test_invocation_usage( self ):
         workflow = self.workflow_populator.load_workflow( name="test_usage" )
         workflow_request, history_id = self._setup_workflow_run( workflow )
@@ -200,6 +207,7 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
         for step in usage_details[ "steps" ].values():
             self._assert_has_keys( step, "workflow_step_id", "order_index" )
 
+    @skip_without_tool( "cat1" )
     def test_post_job_action( self ):
         """ Tests both import and execution of post job actions.
         """
