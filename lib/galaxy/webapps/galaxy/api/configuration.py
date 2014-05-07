@@ -9,6 +9,7 @@ from galaxy.web.base.controller import BaseAPIController
 import logging
 log = logging.getLogger( __name__ )
 
+
 class ConfigurationController( BaseAPIController ):
     # config attributes viewable by non-admin users
     EXPOSED_USER_OPTIONS = [
@@ -20,6 +21,7 @@ class ConfigurationController( BaseAPIController ):
         'logo_url',
         'terms_url',
         'allow_user_dataset_purge',
+        'use_remote_user'
     ]
     # config attributes viewable by admin users
     EXPOSED_ADMIN_OPTIONS = [
