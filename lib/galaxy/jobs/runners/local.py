@@ -39,7 +39,7 @@ class LocalJobRunner( BaseJobRunner ):
 
         #Set TEMP if a valid temp value is not already set
         if not ( 'TMPDIR' in self._environ or 'TEMP' in self._environ or 'TMP' in self._environ ):
-            self._environ[ 'TEMP' ] = tempfile.gettempdir()
+            self._environ[ 'TEMP' ] = os.path.abspath(tempfile.gettempdir())
 
         super( LocalJobRunner, self ).__init__( app, nworkers )
         self._init_worker_threads()
