@@ -291,12 +291,10 @@ class DatasetCollectionPopulator( object ):
         return element_identifiers
 
     def list_identifiers( self, history_id, contents=None ):
-        hda1, hda2, hda3 = self.__datasets( history_id, count=3, contents=contents )
-        element_identifiers = [
-            dict( name="data1", src="hda", id=hda1[ "id" ] ),
-            dict( name="data2", src="hda", id=hda2[ "id" ] ),
-            dict( name="data3", src="hda", id=hda3[ "id" ] ),
-        ]
+        count = 3 if not contents else len( contents )
+        hdas = self.__datasets( history_id, count=count, contents=contents )
+        hda_to_identifier = lambda ( i, hda ): dict( name="data%d" % ( i + 1 ), src="hda", id=hda[ "id" ] )
+        element_identifiers = map( hda_to_identifier, enumerate( hdas ) )
         return element_identifiers
 
     def __create( self, payload ):

@@ -15,9 +15,9 @@ class CollectionTypeDescription( object ):
     """ Abstraction over dataset collection type that ties together string
     reprentation in database/model with type registry.
 
-
-    >>> nested_type_description = CollectionTypeDescription( "list:paired", None )
-    >>> paired_type_description = CollectionTypeDescription( "paired", None )
+    >>> factory = CollectionTypeDescriptionFactory( None )
+    >>> nested_type_description = factory.for_collection_type( "list:paired" )
+    >>> paired_type_description = factory.for_collection_type( "paired" )
     >>> nested_type_description.has_subcollections_of_type( "list" )
     False
     >>> nested_type_description.has_subcollections_of_type( "list:paired" )
@@ -34,12 +34,29 @@ class CollectionTypeDescription( object ):
     'paired'
     >>> nested_type_description.rank_collection_type()
     'list'
+    >>> nested_type_description.effective_collection_type( paired_type_description )
+    'list'
+    >>> nested_type_description.effective_collection_type_description( paired_type_description ).collection_type
+    'list'
     """
 
     def __init__( self, collection_type, collection_type_description_factory ):
         self.collection_type = collection_type
         self.collection_type_description_factory = collection_type_description_factory
         self.__has_subcollections = self.collection_type.find( ":" ) > 0
+
+    def effective_collection_type_description( self, subcollection_type ):
+        effective_collection_type = self.effective_collection_type( subcollection_type )
+        return self.collection_type_description_factory.for_collection_type( effective_collection_type )
+
+    def effective_collection_type( self, subcollection_type ):
+        if hasattr( subcollection_type, 'collection_type' ):
+            subcollection_type = subcollection_type.collection_type
+
+        if not self.has_subcollections_of_type( subcollection_type ):
+            raise ValueError( "Cannot compute effective subcollection type of %s over %s" % ( subcollection_type, self ) )
+
+        return self.collection_type[ :-( len( subcollection_type ) + 1 ) ]
 
     def has_subcollections_of_type( self, other_collection_type ):
         """ Take in another type (either flat string or another

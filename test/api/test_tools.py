@@ -279,6 +279,27 @@ class ToolsTestCase( api.ApiTestCase ):
         assert output1_content.strip() == "123\n456", output1_content
         assert output2_content.strip() == "789\n0ab", output2_content
 
+    @skip_without_tool( "collection_mixed_param" )
+    def test_combined_mapping_and_subcollection_mapping( self ):
+        history_id = self.dataset_populator.new_history()
+        nested_list_id = self.__build_nested_list( history_id )
+        create_response = self.dataset_collection_populator.create_list_in_history( history_id, contents=["xxx", "yyy"] )
+        list_id = create_response.json()[ "id" ]
+        inputs = {
+            "f1|__collection_multirun__": "%s|paired" % nested_list_id,
+            "f2|__collection_multirun__": list_id,
+        }
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+        outputs = self._run_and_get_outputs( "collection_mixed_param", history_id, inputs )
+        assert len( outputs ), 2
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+        output1 = outputs[ 0 ]
+        output2 = outputs[ 1 ]
+        output1_content = self._get_content( history_id, dataset=output1 )
+        output2_content = self._get_content( history_id, dataset=output2 )
+        assert output1_content.strip() == "123\n456\nxxx", output1_content
+        assert output2_content.strip() == "789\n0ab\nyyy", output2_content
+
     def _cat1_outputs( self, history_id, inputs ):
         return self._run_outputs( self._run_cat1( history_id, inputs ) )
 

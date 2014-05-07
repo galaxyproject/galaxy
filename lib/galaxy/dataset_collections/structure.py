@@ -18,19 +18,15 @@ leaf = Leaf()
 
 class Tree( object ):
 
-    def __init__( self, dataset_collection, collection_type_description, leaf_subcollection_type ):
+    def __init__( self, dataset_collection, collection_type_description ):
         self.collection_type_description = collection_type_description
-        self.leaf_subcollection_type = leaf_subcollection_type  # collection_type to trim tree at...
         children = []
         for element in dataset_collection.elements:
-            child_collection = element.child_collection
-            if child_collection:
+            if collection_type_description.has_subcollections():
+                child_collection = element.child_collection
                 subcollection_type_description = collection_type_description.subcollection_type_description()  # Type description of children
-                if subcollection_type_description.can_match_type( leaf_subcollection_type ):
-                    children.append( ( element.element_identifier, leaf  ) )
-                else:
-                    children.append( ( element.element_identifier, Tree( child_collection, collection_type_description=subcollection_type_description, leaf_subcollection_type=leaf_subcollection_type )  ) )
-            elif element.hda:
+                children.append( ( element.element_identifier, Tree( child_collection, collection_type_description=subcollection_type_description )  ) )
+            else:
                 children.append( ( element.element_identifier, leaf ) )
 
         self.children = children
@@ -56,7 +52,6 @@ class Tree( object ):
 
     def can_match( self, other_structure ):
         if not self.collection_type_description.can_match_type( other_structure.collection_type_description ):
-            # TODO: generalize
             return False
 
         if len( self.children ) != len( other_structure.children ):
@@ -99,4 +94,7 @@ def dict_map( func, input_dict ):
 
 
 def get_structure( dataset_collection_instance, collection_type_description, leaf_subcollection_type=None ):
-    return Tree( dataset_collection_instance.collection, collection_type_description, leaf_subcollection_type=leaf_subcollection_type )
+    if leaf_subcollection_type:
+        collection_type_description = collection_type_description.effective_collection_type_description( leaf_subcollection_type )
+
+    return Tree( dataset_collection_instance.collection, collection_type_description )

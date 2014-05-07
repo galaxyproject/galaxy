@@ -61,7 +61,7 @@ class MatchingCollections( object ):
         matching_collections = MatchingCollections()
         for input_key, to_match in collections_to_match.iteritems():
             hdca = to_match.hdca
-            subcollection_type = to_match = to_match.subcollection_type
+            subcollection_type = to_match.subcollection_type
             collection_type_description = collection_type_descriptions.for_collection_type( hdca.collection.collection_type )
             matching_collections.__attempt_add_to_match( input_key, hdca, collection_type_description, subcollection_type )
 
