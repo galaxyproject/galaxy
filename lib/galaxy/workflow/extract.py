@@ -123,7 +123,18 @@ def extract_steps( trans, history=None, job_ids=None, dataset_ids=None, dataset_
         steps_by_job_id[ job_id ] = step
         # Store created dataset hids
         for assoc in job.output_datasets:
-            hid_to_output_pair[ assoc.dataset.hid ] = ( step, assoc.name )
+            if job in summary.implicit_map_jobs:
+                hid = None
+                for implicit_pair in jobs[ job ]:
+                    query_assoc_name, dataset_collection = implicit_pair
+                    if query_assoc_name == assoc.name:
+                        hid = dataset_collection.hid
+                if hid is None:
+                    log.warn("Failed to find matching implicit job.")
+                    raise Exception( "Failed to extract job." )
+            else:
+                hid = assoc.dataset.hid
+            hid_to_output_pair[ hid ] = ( step, assoc.name )
     return steps
 
 

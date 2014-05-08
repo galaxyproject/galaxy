@@ -173,7 +173,19 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
         collection_step = collection_steps[ 0 ]
         collection_step_state = loads( collection_step[ "tool_state" ] )
         self.assertEquals( collection_step_state[ "collection_type" ], u"paired" )
-        self._get_steps_of_type( downloaded_workflow, "tool", expected_len=2 )
+        collect_step_idx = collection_step[ "id" ]
+        tool_steps = self._get_steps_of_type( downloaded_workflow, "tool", expected_len=2 )
+        tool_step_idxs = []
+        tool_input_step_idxs = []
+        for tool_step in tool_steps:
+            self._assert_has_key( tool_step[ "input_connections" ], "input" )
+            input_step_idx = tool_step[ "input_connections" ][ "input" ][ "id" ]
+            tool_step_idxs.append( tool_step[ "id" ] )
+            tool_input_step_idxs.append( input_step_idx )
+
+        assert collect_step_idx not in tool_step_idxs
+        assert tool_input_step_idxs[ 0 ] == collect_step_idx
+        assert tool_input_step_idxs[ 1 ] == tool_step_idxs[ 0 ]
 
     def _extract_and_download_workflow( self, **extract_payload ):
         create_workflow_response = self._post( "workflows", data=extract_payload )
