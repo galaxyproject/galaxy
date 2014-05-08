@@ -312,7 +312,7 @@ class DatasetCollectionPopulator( object ):
 
 
 def wait_on_state( state_func, assert_ok=False, timeout=5 ):
-    delta = .1
+    delta = .25
     iteration = 0
     while True:
         if (delta * iteration) > timeout:
