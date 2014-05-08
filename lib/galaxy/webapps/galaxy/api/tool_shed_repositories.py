@@ -107,7 +107,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
     @web.expose_api
     def import_workflows( self, trans, **kwd ):
         """
-        POST /api/tool_shed_repositories/import_workflow
+        POST /api/tool_shed_repositories/import_workflows
 
         Import all of the exported workflows contained in the specified installed tool shed repository into Galaxy.
 
