@@ -2,18 +2,19 @@
 API key retrieval through BaseAuth
 """
 
-from galaxy import util, web
-from pprint import pprint
-from galaxy.web.base.controller import BaseAPIController
-from base64 import b64decode, b64encode
-from urllib import quote, unquote
-from galaxy.exceptions import ObjectNotFound
+from base64 import b64decode
 from paste.httpexceptions import HTTPBadRequest
+from urllib import unquote
+
+from galaxy import web
+from galaxy.exceptions import ObjectNotFound
+from galaxy.web.base.controller import BaseAPIController, CreatesApiKeysMixin
 
 import logging
 log = logging.getLogger( __name__ )
 
-class AuthenticationController( BaseAPIController ):
+
+class AuthenticationController( BaseAPIController, CreatesApiKeysMixin ):
 
     @web.expose_api_anonymous
     def get_api_key( self, trans, **kwd ):
@@ -37,15 +38,15 @@ class AuthenticationController( BaseAPIController ):
         else:
             user = user[0]
             is_valid_user = user.check_password( password )
-
         if ( is_valid_user ):
-            user_id = user.id
-            api_key_row = trans.sa_session.query( trans.app.model.APIKeys ).filter( trans.app.model.APIKeys.table.c.user_id == user_id ).first()
+            if user.api_keys:
+                key = user.api_keys[0].key
+            else:
+                key = self.create_api_key( trans, user )
+            return dict( api_key=key )
         else:
             trans.response.status = 500
-            return "invalid password" 
-
-        return dict( api_key= api_key_row.key )
+            return "invalid password"
 
     def _decode_baseauth( self, encoded_str ):
         """
