@@ -93,7 +93,9 @@ def extract_steps( trans, history=None, job_ids=None, dataset_ids=None, dataset_
         steps.append( step )
     # Tool steps
     for job_id in job_ids:
-        assert job_id in jobs_by_id, "Attempt to create workflow with job not connected to current history"
+        if job_id not in jobs_by_id:
+            log.warn( "job_id %s not found in jobs_by_id %s" % ( job_id, jobs_by_id ) )
+            raise AssertionError( "Attempt to create workflow with job not connected to current history" )
         job = jobs_by_id[ job_id ]
         tool_inputs, associations = step_inputs( trans, job )
         step = model.WorkflowStep()

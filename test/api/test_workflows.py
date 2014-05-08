@@ -115,35 +115,81 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
         inputs = {
             "f1": dict( src="hdca", id=hdca_id )
         }
-        payload = self.dataset_populator.run_tool_payload(
+        run_output = self.dataset_populator.run_tool(
             tool_id="collection_paired_test",
             inputs=inputs,
             history_id=history_id,
         )
-        tool_response = self._post( "tools", data=payload )
-        self._assert_status_code_is( tool_response, 200 )
-        job_id = tool_response.json()[ "jobs" ][ 0 ][ "id" ]
+        job_id = run_output[ "jobs" ][ 0 ][ "id" ]
         self.dataset_populator.wait_for_history( history_id, assert_ok=True )
-        create_from_data = dict(
+        downloaded_workflow = self._extract_and_download_workflow(
             from_history_id=history_id,
             dataset_collection_ids=dumps( [ hdca[ "hid" ] ] ),
             job_ids=dumps( [ job_id ] ),
             workflow_name="test import from history",
         )
-        create_workflow_response = self._post( "workflows", data=create_from_data )
+        collection_steps = self._get_steps_of_type( downloaded_workflow, "data_collection_input", expected_len=1 )
+        collection_step = collection_steps[ 0 ]
+        collection_step_state = loads( collection_step[ "tool_state" ] )
+        self.assertEquals( collection_step_state[ "collection_type" ], u"paired" )
+
+    @skip_without_tool( "random_lines1" )
+    def test_extract_mapping_workflow_from_history( self ):
+        history_id = self.dataset_populator.new_history()
+        hdca = self.dataset_collection_populator.create_pair_in_history( history_id, contents=["1 2 3\n4 5 6", "7 8 9\n10 11 10"] ).json()
+        hdca_id = hdca[ "id" ]
+        inputs1 = {
+            "input|__collection_multirun__": hdca_id,
+            "num_lines": 2
+        }
+        run_output1 = self.dataset_populator.run_tool(
+            tool_id="random_lines1",
+            inputs=inputs1,
+            history_id=history_id,
+        )
+        implicit_hdca1 = run_output1[ "implicit_collections" ][ 0 ]
+        job_id1 = run_output1[ "jobs" ][ 0 ][ "id" ]
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True, timeout=20 )
+        inputs2 = {
+            "input|__collection_multirun__": implicit_hdca1[ "id" ],
+            "num_lines": 1
+        }
+        run_output2 = self.dataset_populator.run_tool(
+            tool_id="random_lines1",
+            inputs=inputs2,
+            history_id=history_id,
+        )
+        # implicit_hdca2 = run_output2[ "implicit_collections" ][ 0 ]
+        job_id2 = run_output2[ "jobs" ][ 0 ][ "id" ]
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True, timeout=20 )
+        downloaded_workflow = self._extract_and_download_workflow(
+            from_history_id=history_id,
+            dataset_collection_ids=dumps( [ hdca[ "hid" ] ] ),
+            job_ids=dumps( [ job_id1, job_id2 ] ),
+            workflow_name="test import from mapping history",
+        )
+        assert len( downloaded_workflow[ "steps" ] ) == 3
+        collection_steps = self._get_steps_of_type( downloaded_workflow, "data_collection_input", expected_len=1 )
+        collection_step = collection_steps[ 0 ]
+        collection_step_state = loads( collection_step[ "tool_state" ] )
+        self.assertEquals( collection_step_state[ "collection_type" ], u"paired" )
+        self._get_steps_of_type( downloaded_workflow, "tool", expected_len=2 )
+
+    def _extract_and_download_workflow( self, **extract_payload ):
+        create_workflow_response = self._post( "workflows", data=extract_payload )
         self._assert_status_code_is( create_workflow_response, 200 )
-        create_workflow_response.json()[ "id" ]
 
         new_workflow_id = create_workflow_response.json()[ "id" ]
         download_response = self._get( "workflows/%s/download" % new_workflow_id )
         self._assert_status_code_is( download_response, 200 )
         downloaded_workflow = download_response.json()
-        assert len( downloaded_workflow[ "steps" ] ) == 2
-        collection_steps = [ s for s in downloaded_workflow[ "steps" ].values() if s[ "type" ] == "data_collection_input" ]
-        assert len( collection_steps ) == 1
-        collection_step = collection_steps[ 0 ]
-        collection_step_state = loads( collection_step[ "tool_state" ] )
-        self.assertEquals( collection_step_state[ "collection_type" ], u"paired" )
+        return downloaded_workflow
+
+    def _get_steps_of_type( self, downloaded_workflow, type, expected_len=None ):
+        steps = [ s for s in downloaded_workflow[ "steps" ].values() if s[ "type" ] == type ]
+        if expected_len is not None:
+            assert len( steps ) == expected_len
+        return steps
 
     @skip_without_tool( "random_lines1" )
     def test_run_replace_params_by_tool( self ):

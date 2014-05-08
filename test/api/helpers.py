@@ -1,3 +1,4 @@
+from base import api_asserts
 from operator import itemgetter
 
 import time
@@ -110,6 +111,12 @@ class DatasetPopulator( object ):
             history_id=history_id,
             **kwds
         )
+
+    def run_tool( self, tool_id, inputs, history_id, **kwds ):
+        payload = self.run_tool_payload( tool_id, inputs, history_id, **kwds )
+        tool_response = self.galaxy_interactor.post( "tools", data=payload )
+        api_asserts.assert_status_code_is( tool_response, 200 )
+        return tool_response.json()
 
 
 class WorkflowPopulator( object ):
