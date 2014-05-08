@@ -136,7 +136,7 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
 
     def __cut_the_prefix(self, encoded_id):
 
-        if ( ( len( encoded_id ) % 2 == 1 ) and encoded_id.startswith( 'F' ) ):
+        if ( ( len( encoded_id ) % 16 == 1 ) and encoded_id.startswith( 'F' ) ):
             return encoded_id[ 1: ]
         else:
             raise exceptions.MalformedId( 'Malformed folder id ( %s ) specified, unable to decode.' % str( encoded_id ) )

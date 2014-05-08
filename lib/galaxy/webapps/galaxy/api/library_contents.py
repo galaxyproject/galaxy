@@ -17,6 +17,7 @@ from sqlalchemy.orm.exc import NoResultFound
 import logging
 log = logging.getLogger( __name__ )
 
+
 class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems, UsesHistoryDatasetAssociationMixin ):
 
     @expose_api
@@ -26,7 +27,7 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         * GET /api/libraries/{library_id}/contents:
             Returns a list of library files and folders.
 
-        .. note:: May be slow! Returns all content traversing recursively through all folders. 
+        .. note:: May be slow! Returns all content traversing recursively through all folders.
         .. seealso:: :class:`galaxy.webapps.galaxy.api.FolderContentsController.index` for a non-recursive solution
 
         :param  library_id: encoded id string of the library
@@ -78,7 +79,7 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         except NoResultFound:
             raise exceptions.RequestParameterInvalidException( 'No library found with the id provided.' )
         except Exception, e:
-            raise exceptions.InternalServerError( 'Error loading from the database.'  + str(e))
+            raise exceptions.InternalServerError( 'Error loading from the database.' + str(e))
         if not ( trans.user_is_admin() or trans.app.security_agent.can_access_library( current_user_roles, library ) ):
             raise exceptions.RequestParameterInvalidException( 'No library found with the id provided.' )
         encoded_id = 'F' + trans.security.encode_id( library.root_folder.id )
@@ -122,7 +123,7 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         class_name, content_id = self.__decode_library_content_id( trans, id )
         if class_name == 'LibraryFolder':
             content = self.get_library_folder( trans, content_id, check_ownership=False, check_accessible=True )
-            rval = content.to_dict( view='element', value_mapper={ 'id' : trans.security.encode_id } )
+            rval = content.to_dict( view='element', value_mapper={ 'id': trans.security.encode_id } )
             rval[ 'id' ] = 'F' + str( rval[ 'id' ] )
             rval[ 'parent_id' ] = 'F' + str( trans.security.encode_id( rval[ 'parent_id' ] ) )
             rval[ 'parent_library_id' ] = trans.security.encode_id( rval[ 'parent_library_id' ] )
@@ -236,9 +237,9 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
                 encoded_id = trans.security.encode_id( v.id )
                 if create_type == 'folder':
                     encoded_id = 'F' + encoded_id
-                rval.append( dict( id = encoded_id,
-                                   name = v.name,
-                                   url = url_for( 'library_content', library_id=library_id, id=encoded_id ) ) )
+                rval.append( dict( id=encoded_id,
+                                   name=v.name,
+                                   url=url_for( 'library_content', library_id=library_id, id=encoded_id ) ) )
             return rval
 
     def _scan_json_block(self, meta, prefix=""):
@@ -276,7 +277,7 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         ``library_contents.create`` will branch to this if called with 'from_hda_id'
         in its payload.
         """
-        log.debug( '_copy_hda_to_library_folder: %s' %( str(( from_hda_id, library_id, folder_id, ldda_message )) ) )
+        log.debug( '_copy_hda_to_library_folder: %s' % ( str(( from_hda_id, library_id, folder_id, ldda_message )) ) )
         #PRECONDITION: folder_id has already been altered to remove the folder prefix ('F')
         #TODO: allow name and other, editable ldda attrs?
         if ldda_message:
@@ -287,14 +288,14 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
             # check permissions on (all three?) resources: hda, library, folder
             #TODO: do we really need the library??
             hda = self.get_dataset( trans, from_hda_id, check_ownership=True, check_accessible=True, check_state=True )
-            library = self.get_library( trans, library_id, check_accessible=True )
+            # library = self.get_library( trans, library_id, check_accessible=True )
             folder = self.get_library_folder( trans, folder_id, check_accessible=True )
 
             # TOOD: refactor to use check_user_can_add_to_library_item, eliminate boolean
             # can_current_user_add_to_library_item.
             if not self.can_current_user_add_to_library_item( trans, folder ):
                 trans.response.status = 403
-                return { 'error' : 'user has no permission to add to library folder (%s)' %( folder_id ) }
+                return { 'error': 'user has no permission to add to library folder (%s)' % ( folder_id ) }
 
             ldda = self.copy_hda_to_library_folder( trans, hda, folder, ldda_message=ldda_message )
             ldda_dict = ldda.to_dict()
@@ -304,11 +305,11 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
             #TODO: grrr...
             if 'not accessible to the current user' in str( exc ):
                 trans.response.status = 403
-                return { 'error' : str( exc ) }
+                return { 'error': str( exc ) }
             else:
                 log.exception( exc )
                 trans.response.status = 500
-                return { 'error' : str( exc ) }
+                return { 'error': str( exc ) }
 
         return rval
 
@@ -335,10 +336,10 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
             converted_id = payload.pop( 'converted_dataset_id' )
             content = self.get_library_dataset( trans, id, check_ownership=False, check_accessible=False )
             content_conv = self.get_library_dataset( trans, converted_id, check_ownership=False, check_accessible=False )
-            assoc = trans.app.model.ImplicitlyConvertedDatasetAssociation( parent = content.library_dataset_dataset_association,
-                dataset = content_conv.library_dataset_dataset_association,
-                file_type = content_conv.library_dataset_dataset_association.extension,
-                metadata_safe = True )
+            assoc = trans.app.model.ImplicitlyConvertedDatasetAssociation( parent=content.library_dataset_dataset_association,
+                                                                           dataset=content_conv.library_dataset_dataset_association,
+                                                                           file_type=content_conv.library_dataset_dataset_association.extension,
+                                                                           metadata_safe=True )
             trans.sa_session.add( assoc )
             trans.sa_session.flush()
 
@@ -346,10 +347,9 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         if ( len( content_id ) % 16 == 0 ):
             return 'LibraryDataset', content_id
         elif ( content_id.startswith( 'F' ) ):
-            return 'LibraryFolder', content_id[1:]
+            return 'LibraryFolder', content_id[ 1: ]
         else:
             raise HTTPBadRequest( 'Malformed library content id ( %s ) specified, unable to decode.' % str( content_id ) )
-
 
     @web.expose_api
     def delete( self, trans, library_id, id, **kwd ):
@@ -377,7 +377,7 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         if kwd.get( 'payload', None ):
             purge = util.string_as_bool( kwd['payload'].get( 'purge', False ) )
 
-        rval = { 'id' : id }
+        rval = { 'id': id }
         try:
             ld = self.get_library_dataset( trans, id, check_ownership=False, check_accessible=True )
             user_is_admin = trans.user_is_admin()
@@ -424,5 +424,3 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
             trans.response.status = 500
             rval.update({ 'error': str( exc ) })
         return rval
-
-        
