@@ -1,5 +1,14 @@
 """
 API key retrieval through BaseAuth
+Sample usage:
+
+curl --user zipzap@foo.com:password http://localhost:8080/api/authenticate/baseauth
+
+Returns:
+
+{
+    "api_key": "baa4d6e3a156d3033f05736255f195f9"
+}
 """
 
 from base64 import b64decode
