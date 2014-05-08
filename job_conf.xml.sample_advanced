@@ -28,6 +28,14 @@
                file actions are remote executable. -->
           <!-- <param id="url">amqp://guest:guest@localhost:5672//</param> -->
           <!-- <param id="manager">_default_</param> -->
+          <!-- *Experimental Caching*: Uncomment next parameters to enable
+               caching and specify the number of caching threads to enable on Galaxy
+               side. Likely will not work with newer features such as MQ support.
+               If this is enabled be sure to specify a `file_cache_dir` in the remote
+               LWR's main configuration file.
+          -->
+          <!-- <param id="cache">True</param> -->
+          <!-- <param id="transfer_threads">2</param> -->
         </plugin>
         <plugin id="cli" type="runner" load="galaxy.jobs.runners.cli:ShellJobRunner" />
         <plugin id="condor" type="runner" load="galaxy.jobs.runners.condor:CondorJobRunner" />
