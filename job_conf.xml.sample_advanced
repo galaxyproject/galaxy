@@ -164,6 +164,18 @@
             <param id="shell_hostname">foo.example.org</param>
             <param id="job_Resource_List">walltime=24:00:00,ncpus=4</param>
         </destination>
+
+        <!-- Example CLI Slurm runner. -->
+        <destination id="ssh_slurm" runner="cli">
+            <param id="shell_plugin">SecureShell</param>
+            <param id="job_plugin">Slurm</param>
+            <param id="shell_username">foo</param>
+            <param id="shell_hostname">my_host</param>
+            <param id="job_time">2:00:00</param>
+            <param id="job_ncpus">4</param>
+            <param id="job_partition">my_partition</param>
+        </destination>
+
         <destination id="condor" runner="condor">
             <!-- With no params, jobs are submitted to the 'vanilla' universe with:
                     notification = NEVER
