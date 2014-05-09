@@ -2,6 +2,7 @@ import galaxy.model
 from galaxy.model.orm import *
 from base.test_db_util import sa_session
 from base.twilltestcase import *
+import json
 
 
 class TestHistory( TwillTestCase ):
@@ -783,10 +784,16 @@ class TestHistory( TwillTestCase ):
         self.visit_url( "%s/history/?show_deleted=False" % self.url )
         self.check_page_for_string( '1.bed' )
         self.check_page_for_string( 'hg15' )
-        self.assertEqual( len( self.get_history_as_data_list() ), 1 )
+        current_history = self.get_history_from_api( encoded_history_id=self.security.encode_id( latest_history.id ), 
+                                                     show_deleted=False, 
+                                                     show_details=True )
+        self.assertEqual( len( current_history ), 1 )
         # Delete the history item
         self.delete_history_item( str( latest_hda.id ), strings_displayed=[] )
-        self.assertEqual( len( self.get_history_as_data_list() ), 0 )
+        current_history = self.get_history_from_api( encoded_history_id=self.security.encode_id( latest_history.id ), 
+                                                     show_deleted=False, 
+                                                     show_details=True )
+        self.assertEqual( len( current_history ), 0 )
         # Try deleting an invalid hid
         try:
             self.delete_history_item( 'XXX' )

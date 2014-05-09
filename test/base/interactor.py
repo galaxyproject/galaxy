@@ -474,8 +474,8 @@ class GalaxyInteractorTwill( object ):
                                    .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
                                    .first()
         assert latest_history is not None, "Problem retrieving latest_history from database"
-        if len( self.twill_test_case.get_history_as_data_list() ) > 0:
-            raise AssertionError("ToolTestCase.do_it failed")
+        if len( self.twill_test_case.get_hids_in_history( self.twill_test_case.get_latest_history()[ 'id' ] ) ) > 0:
+            raise AssertionError("ToolTestCase.do_it failed to create a new empty history")
         return latest_history
 
     def delete_history( self, latest_history ):
