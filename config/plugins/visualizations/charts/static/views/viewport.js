@@ -173,19 +173,14 @@ return Backbone.View.extend({
             
             // request data
             if (self.chart_settings.execute) {
-                if (chart.get('dataset_id_job') == '') {
-                    // submit job
-                    self.app.jobs.submit(chart, self._defaultSettingsString(chart), self._defaultRequestString(chart),
-                        function() {
-                            view.draw(process_id, chart, self._defaultRequestDictionary(chart));
-                        },
-                        function() {
-                            chart.deferred.done(process_id);
-                        });
-                } else {
-                    // load data into view
-                    view.draw(process_id, chart, self._defaultRequestDictionary(chart));
-                }
+                self.app.jobs.request(chart, self._defaultSettingsString(chart), self._defaultRequestString(chart),
+                    function() {
+                        view.draw(process_id, chart, self._defaultRequestDictionary(chart));
+                    },
+                    function() {
+                        chart.deferred.done(process_id);
+                    }
+                );
             } else {
                 // load data into view
                 view.draw(process_id, chart, self._defaultRequestDictionary(chart));

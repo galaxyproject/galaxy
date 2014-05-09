@@ -27,8 +27,8 @@ return Backbone.Model.extend(
     // types
     defaults: {
         'nvd3_bardiagram'       : nvd3_bardiagram,
-        'heatmap'               : heatmap,
         'nvd3_horizontal'       : nvd3_horizontal,
+        'heatmap'               : heatmap,
         'nvd3_histogram'        : nvd3_histogram,
         'nvd3_line'             : nvd3_line,
         'nvd3_linewithfocus'    : nvd3_linewithfocus,

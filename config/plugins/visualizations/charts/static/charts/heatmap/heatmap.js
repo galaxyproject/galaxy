@@ -14,12 +14,35 @@ return Backbone.View.extend(
     // render
     draw : function(process_id, chart, request_dictionary)
     {
-        // request data
+        // link this
         var self = this;
-        this.app.datasets.request(request_dictionary, function() {
+        
+        // loop through data groups
+        var index = 0;
+        for (var group_index in request_dictionary.groups) {
             
-            // loop through data groups
-            for (var group_index in request_dictionary.groups) {
+            // configure request
+            for (var i in request_dictionary.groups) {
+                var group = request_dictionary.groups[i];
+                group.columns = null;
+                group.columns = {
+                    row_label: {
+                        index       : index++,
+                        is_label    : true
+                    },
+                    col_label: {
+                        index       : index++,
+                        is_label    : true
+                    },
+                    value: {
+                        index       : index++
+                    }
+                }
+            }
+        
+            // request data
+            this.app.datasets.request(request_dictionary, function() {
+            
                 // get group
                 var group = request_dictionary.groups[group_index];
                 var div = self.options.canvas[group_index];
@@ -31,14 +54,17 @@ return Backbone.View.extend(
                     'data'      : group.values,
                     'div'       : div
                 });
-            }
-            
-            // set chart state
-            chart.state('ok', 'Heat map drawn.');
                 
-            // unregister process
-            chart.deferred.done(process_id);
-        });
+                // check if done
+                if (group_index == request_dictionary.groups.length - 1) {
+                    // set chart state
+                    chart.state('ok', 'Heat map drawn.');
+                
+                    // unregister process
+                    chart.deferred.done(process_id);
+                }
+            });
+        }
     }
 });
 
