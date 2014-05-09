@@ -2244,7 +2244,6 @@ class TwillTestCase( unittest.TestCase ):
         if wait:
             self.wait( maxseconds=maxseconds )  # wait for job to finish
         data_list = self.get_history_from_api( encoded_history_id=None, show_deleted=False, show_details=False )
-        log.debug( data_list )
         self.assertTrue( data_list )
         if hid is None:  # take last hid
             dataset = data_list[-1]
@@ -2254,6 +2253,7 @@ class TwillTestCase( unittest.TestCase ):
             self.assertTrue( len( datasets ) == 1 )
             dataset = datasets[0]
         self.assertTrue( hid )
+        dataset = self.json_from_url( dataset[ 'url' ] )
         self._assert_dataset_state( dataset, 'ok' )
         if filename is not None and self.is_zipped( filename ):
             errmsg = 'History item %s is a zip archive which includes invalid files:\n' % hid
@@ -2466,10 +2466,11 @@ class TwillTestCase( unittest.TestCase ):
         f.close()
         return fname
 
-    def _assert_dataset_state( self, elem, state ):
-        if elem.get( 'state' ) != state:
-            errmsg = "Expecting dataset state '%s', but state is '%s'. Dataset blurb: %s\n\n" % ( state, elem.get('state'), elem.text.strip() )
-            errmsg += self.get_job_stderr( elem.get( 'id' ), format=True )
+    def _assert_dataset_state( self, dataset, state ):
+        if dataset.get( 'state' ) != state:
+            blurb = dataset.get( 'misc_blurb' )
+            errmsg = "Expecting dataset state '%s', but state is '%s'. Dataset blurb: %s\n\n" % ( state, dataset.get('state'), blurb.strip() )
+            errmsg += self.get_job_stderr( dataset.get( 'id' ), format=True )
             raise AssertionError( errmsg )
 
     def _bam_to_sam( self, local_name, temp_name ):
@@ -2504,7 +2505,6 @@ class TwillTestCase( unittest.TestCase ):
                 page_url = "/display?encoded_id=%s" % hda_id
             else:
                 page_url = "/datasets/%s/display/%s" % ( hda_id, filename )
-            log.debug( page_url )
             self.visit_url( page_url )
             data = self.last_page()
             return data
