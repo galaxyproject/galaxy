@@ -170,7 +170,7 @@ return Backbone.Model.extend(
     _refreshHdas: function() {
         // update galaxy history
         if (Galaxy && Galaxy.currHistoryPanel) {
-            Galaxy.currHistoryPanel.refreshHdas();
+            Galaxy.currHistoryPanel.refreshContents();
         }
     }
 });
