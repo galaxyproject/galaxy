@@ -40,7 +40,13 @@ def expand_meta_parameters( trans, tool, incoming ):
             if "|" in incoming_val:
                 encoded_hdc_id, subcollection_type = incoming_val.split( "|", 1 )
             else:
-                encoded_hdc_id = incoming_val
+                try:
+                    src = incoming_val[ "src" ]
+                    if src != "hdca":
+                        raise exceptions.ToolMetaParameterException( "Invalid dataset collection source type %s" % src )
+                    encoded_hdc_id = incoming_val[ "id" ]
+                except TypeError:
+                    encoded_hdc_id = incoming_val
                 subcollection_type = None
             hdc_id = trans.app.security.decode_id( encoded_hdc_id )
             hdc = trans.sa_session.query( model.HistoryDatasetCollectionAssociation ).get( hdc_id )

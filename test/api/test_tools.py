@@ -159,6 +159,9 @@ class ToolsTestCase( api.ApiTestCase ):
         history_id = self.dataset_populator.new_history()
         hdca_id = self.__build_pair( history_id, [ "123", "456" ] )
         inputs = {
+            # Such inputs can be simple hdca ids (for GUI) or
+            # {src: "hdca", id: <hdca_id>} for API. This tests the
+            # first, next test method tests other.
             "input1|__collection_multirun__": hdca_id,
         }
         create = self._run_cat1( history_id, inputs=inputs, assert_ok=True )
@@ -181,7 +184,7 @@ class ToolsTestCase( api.ApiTestCase ):
         history_id = self.dataset_populator.new_history()
         hdca_id = self.__build_nested_list( history_id )
         inputs = {
-            "input1|__collection_multirun__": hdca_id,
+            "input1|__collection_multirun__": dict( src="hdca", id=hdca_id ),
         }
         create = self._run_cat1( history_id, inputs=inputs, assert_ok=True )
         outputs = create[ 'outputs' ]
