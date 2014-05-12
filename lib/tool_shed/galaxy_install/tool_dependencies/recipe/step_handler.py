@@ -1337,7 +1337,7 @@ class TemplateCommand( RecipeStep ):
         """
         env_vars = dict()
         env_vars = install_environment.environment_dict()
-        tool_shed_repository = tool_depenedncy.tool_shed_repository
+        tool_shed_repository = tool_dependency.tool_shed_repository
         env_vars.update( td_common_util.get_env_var_values( install_environment ) )
         language = action_dict[ 'language' ]
         with settings( warn_only=True, **env_vars ):
