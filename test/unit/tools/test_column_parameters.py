@@ -38,6 +38,14 @@ class DataColumnParameterTestCase( TestCase, tools_support.UsesApp ):
         self.other_attributes = "default_value='2'"
         self.assertEqual( '2', self.param.get_initial_value( self.trans, { "input_tsv": self.build_ready_hda() } ) )
 
+    def test_get_initial_value_override_newstyle(self):
+        self.other_attributes = "value='2'"
+        self.assertEqual( '2', self.param.get_initial_value( self.trans, { "input_tsv": self.build_ready_hda() } ) )
+
+    def test_get_initial_value_override_newstyle_strips_c(self):
+        self.other_attributes = "value='c2'"
+        self.assertEqual( '2', self.param.get_initial_value( self.trans, { "input_tsv": self.build_ready_hda() } ) )
+
     def setUp( self ):
         self.setup_app( mock_model=False )
         self.mock_tool = bunch.Bunch(
