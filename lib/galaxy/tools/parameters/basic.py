@@ -1659,7 +1659,7 @@ class DataToolParameter( BaseDataToolParameter ):
             conv_extensions = conv_elem.get( "type" )  # target datatype extension
             # FIXME: conv_extensions should be able to be an ordered list
             assert None not in [ name, type ], 'A name (%s) and type (%s) are required for explicit conversion' % ( name, type )
-            conv_types = tool.app.datatypes_registry.get_datatype_by_extension( conv_extensions.lower() )
+            conv_types = [ tool.app.datatypes_registry.get_datatype_by_extension( conv_extensions.lower() ) ]
             self.conversions.append( ( name, conv_extensions, conv_types ) )
 
     def get_html_field( self, trans=None, value=None, other_values={} ):
