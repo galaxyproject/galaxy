@@ -295,7 +295,7 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         create_params = api_payload_to_create_params( payload )
         service = trans.app.dataset_collections_service
         dataset_collection_instance = service.create( trans, parent=history, **create_params )
-        return self.__collection_dict( trans, dataset_collection_instance )
+        return self.__collection_dict( trans, dataset_collection_instance, view="element" )
 
     @expose_api_anonymous
     def update( self, trans, history_id, id, payload, **kwd ):

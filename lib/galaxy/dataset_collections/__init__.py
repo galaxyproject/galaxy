@@ -202,6 +202,10 @@ class DatasetCollectionsService(
     def __load_elements( self, trans, element_identifiers ):
         elements = odict.odict()
         for element_identifier in element_identifiers:
+            if "name" not in element_identifier:
+                raise RequestParameterInvalidException(
+                    "Cannot load invalid dataset identifier - missing name - %s" % element_identifier
+                )
             elements[ element_identifier[ "name" ] ] = self.__load_element( trans, element_identifier )
         return elements
 
