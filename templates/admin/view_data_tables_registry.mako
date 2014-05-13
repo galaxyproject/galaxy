@@ -26,7 +26,7 @@
                 %else:
                     <tr class="tr">
                 %endif
-                    <td>${data_table.name}</td>
+                    <td><a href="${ h.url_for( controller="data_manager", action="manage_data_table", table_name=data_table.name ) }">${data_table.name}</a></td>
                     %for i, ( filename, file_dict ) in enumerate( data_table.filenames.iteritems() ):
                         %if i > 0:
                             <tr><td></td>
