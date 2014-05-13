@@ -19,7 +19,7 @@
         <li><strong>Run Data Manager Tools</strong>
             <div style="margin-left:1em">
             <ul>
-            %for data_manager_id, data_manager in data_managers.data_managers.iteritems():
+            %for data_manager_id, data_manager in sorted( data_managers.data_managers.iteritems(), key=lambda x:x[1].name ):
                 <li>
                     <a href="${ h.url_for( controller='tool_runner', action='index', tool_id=data_manager.tool.id ) }"><strong>${ data_manager.name | h }</strong></a> - ${ data_manager.description | h }
                 </li>
@@ -32,7 +32,7 @@
         <li><strong>View Data Manager Jobs</strong>
             <div style="margin-left:1em">
             <ul>
-                %for data_manager_id, data_manager in data_managers.data_managers.iteritems():
+                %for data_manager_id, data_manager in sorted( data_managers.data_managers.iteritems(), key=lambda x:x[1].name ):
                     <li>
                         <a href="${h.url_for( controller='data_manager', action='manage_data_manager', id=data_manager_id)}" target="galaxy_main"><strong>${ data_manager.name | h }</strong></a> - ${ data_manager.description | h }</a>
                     </li>
@@ -46,19 +46,18 @@
         <li><strong>View Tool Data Table Entries</strong>
             <div style="margin-left:1em">
             <ul>
-                %for table_name, managers in data_managers.managed_data_tables.iteritems():
+                <% managed_table_names = data_managers.managed_data_tables.keys() %>
+                %for table_name in sorted( tool_data_tables.get_tables().keys() ):
                     <li>
-                        <a href="${h.url_for( controller='data_manager', action='manage_data_table', table_name=table_name)}" target="galaxy_main"><strong>${ table_name | h }</strong></a>
+                        <a href="${h.url_for( controller='data_manager', action='manage_data_table', table_name=table_name)}" target="galaxy_main">
+                            %if table_name in managed_table_names:
+                                <strong>${ table_name | h }</strong>
+                            %else:
+                                ${ table_name | h }
+                            %endif
+                        </a>
                     </li>
                     <p/>
-                %endfor
-                %for table_name in tool_data_tables.get_tables():
-                    %if table_name not in data_managers.managed_data_tables:
-                        <li>
-                            <a href="${h.url_for( controller='data_manager', action='manage_data_table', table_name=table_name)}" target="galaxy_main">${ table_name | h }</a>
-                        </li>
-                        <p/>
-                    %endif
                 %endfor
             </ul>
             </div>
