@@ -210,7 +210,6 @@ class BaseJobRunner( object ):
                             destination = job_wrapper.get_output_destination( output_paths[ dataset.dataset_id ] )
                             if in_directory( source_file, job_working_directory ):
                                 output_pairs.append( ( source_file, destination ) )
-                                log.debug( "Copying %s to %s as directed by from_work_dir" % ( source_file, destination ) )
                             else:
                                 # Security violation.
                                 log.exception( "from_work_dir specified a location not in the working directory: %s, %s" % ( source_file, job_wrapper.working_directory ) )
