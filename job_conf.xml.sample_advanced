@@ -41,6 +41,16 @@
           <!-- If multiple managers configured on the LWR, specify which one
                this plugin targets. -->
           <!-- <param id="manager">_default_</param> -->
+          <!-- The AMQP client can provide an SSL client certificate (e.g. for
+               validation), the following options configure that certificate
+               (see for reference:
+                 http://kombu.readthedocs.org/en/latest/reference/kombu.connection.html
+               ). If you simply want to use SSL but not use/validate a client
+               cert, just use the ?ssl=1 query on the amqp URL instead. -->
+          <!-- <param id="amqp_connect_ssl_ca_certs">/path/to/cacert.pem</param> -->
+          <!-- <param id="amqp_connect_ssl_keyfile">/path/to/key.pem</param> -->
+          <!-- <param id="amqp_connect_ssl_certfile">/path/to/cert.pem</param> -->
+          <!-- <param id="amqp_connect_ssl_cert_reqs">cert_required</param> -->
         </plugin>
         <plugin id="cli" type="runner" load="galaxy.jobs.runners.cli:ShellJobRunner" />
         <plugin id="condor" type="runner" load="galaxy.jobs.runners.condor:CondorJobRunner" />

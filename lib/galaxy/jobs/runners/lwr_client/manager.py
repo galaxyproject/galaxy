@@ -13,6 +13,7 @@ from .interface import LocalLwrInterface
 from .object_client import ObjectStoreClient
 from .transport import get_transport
 from .util import TransferEventManager
+from .util import parse_amqp_connect_ssl_params
 from .destination import url_to_destination_params
 from .amqp_exchange import LwrExchange
 
@@ -76,7 +77,8 @@ class MessageQueueClientManager(object):
     def __init__(self, **kwds):
         self.url = kwds.get('url')
         self.manager_name = kwds.get("manager", "_default_")
-        self.exchange = LwrExchange(self.url, self.manager_name)
+        self.connect_ssl = parse_amqp_connect_ssl_params(kwds.get('amqp_connect_ssl_args', None))
+        self.exchange = LwrExchange(self.url, self.manager_name, self.connect_ssl)
         self.status_cache = {}
         self.callback_lock = threading.Lock()
         self.callback_thread = None

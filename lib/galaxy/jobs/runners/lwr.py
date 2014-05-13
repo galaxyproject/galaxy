@@ -40,13 +40,17 @@ class LwrJobRunner( AsynchronousJobRunner ):
     """
     runner_name = "LWRRunner"
 
-    def __init__( self, app, nworkers, transport=None, cache=None, url=None, galaxy_url=DEFAULT_GALAXY_URL ):
+    def __init__( self, app, nworkers, transport=None, cache=None, url=None, galaxy_url=DEFAULT_GALAXY_URL, **kwds ):
         """Start the job runner """
         super( LwrJobRunner, self ).__init__( app, nworkers )
         self.async_status_updates = dict()
         self._init_monitor_thread()
         self._init_worker_threads()
-        client_manager_kwargs = {'transport_type': transport, 'cache': string_as_bool_or_none(cache), "url": url}
+        amqp_connect_ssl_args = {}
+        for kwd in kwds.keys():
+            if kwd.startswith('amqp_connect_ssl_'):
+                amqp_connect_ssl_args[kwd] = kwds[kwd]
+        client_manager_kwargs = {'transport_type': transport, 'cache': string_as_bool_or_none(cache), "url": url, 'amqp_connect_ssl_args': amqp_connect_ssl_args or None}
         self.galaxy_url = galaxy_url
         self.client_manager = build_client_manager(**client_manager_kwargs)
 
