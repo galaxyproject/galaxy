@@ -285,8 +285,9 @@ class TabularToolDataTable( ToolDataTable ):
                         filename = corrected_filename
                         found = True
 
+            errors = []
             if found:
-                self.data.extend( self.parse_file_fields( open( filename ) ) )
+                self.data.extend( self.parse_file_fields( open( filename ), errors=errors ) )
                 self._update_version()
             else:
                 self.missing_index_file = filename
@@ -294,7 +295,7 @@ class TabularToolDataTable( ToolDataTable ):
 
             if filename not in self.filenames or not self.filenames[ filename ][ 'found' ]:
                 self.filenames[ filename ] = dict( found=found, filename=filename, from_shed_config=from_shed_config, tool_data_path=tool_data_path,
-                                                   config_element=config_element, tool_shed_repository=repo_info )
+                                                   config_element=config_element, tool_shed_repository=repo_info, errors=errors )
             else:
                 log.debug( "Filename '%s' already exists in filenames (%s), not adding", filename, self.filenames.keys() )
 
@@ -353,7 +354,7 @@ class TabularToolDataTable( ToolDataTable ):
         if 'name' not in self.columns:
             self.columns['name'] = self.columns['value']
 
-    def parse_file_fields( self, reader ):
+    def parse_file_fields( self, reader, errors=None ):
         """
         Parse separated lines from file and return a list of tuples.
 
@@ -371,9 +372,10 @@ class TabularToolDataTable( ToolDataTable ):
                 if self.largest_index < len( fields ):
                     rval.append( fields )
                 else:
-                    log.warn( "Line %i in tool data table '%s' is invalid (HINT: "
-                              "'%s' characters must be used to separate fields):\n%s"
-                              % ( ( i + 1 ), self.name, separator_char, line ) )
+                    line_error = "Line %i in tool data table '%s' is invalid (HINT: '%s' characters must be used to separate fields):\n%s" % ( ( i + 1 ), self.name, separator_char, line )
+                    if errors is not None:
+                        errors.append( line_error )
+                    log.warn( line_error )
         return rval
 
     def get_column_name_list( self ):

@@ -18,7 +18,7 @@
                 <th bgcolor="#D8D8D8">Name</th>
                 <th bgcolor="#D8D8D8">Filename</th>
                 <th bgcolor="#D8D8D8">Tool data path</th>
-                <th bgcolor="#D8D8D8">Missing index file</th>
+                <th bgcolor="#D8D8D8">Errors</th>
             </tr>
             %for data_table_elem_name, data_table in sorted_data_tables:
                 %if ctr % 2 == 1:
@@ -35,8 +35,11 @@
                         <td>${ file_dict.get( 'tool_data_path' ) | h }</td>
                         <td>
                             %if not file_dict.get( 'found' ):
-                                missing
+                                file missing
                             %endif
+                            %for error in file_dict.get( 'errors', [] ):
+                                ${ error | h } <br/>
+                            %endfor
                         </td>
                         </tr>
                     %endfor
