@@ -472,6 +472,15 @@ class DefaultToolAction( object ):
 
 
 def on_text_for_names( input_names ):
+    # input_names may contain duplicates... this is because the first value in
+    # multiple input dataset parameters will appear twice once as param_name
+    # and once as param_name1.
+    unique_names = []
+    for name in input_names:
+        if name not in unique_names:
+            unique_names.append( name )
+    input_names = unique_names
+
     # Build name for output datasets based on tool name and input names
     if len( input_names ) == 1:
         on_text = input_names[0]
