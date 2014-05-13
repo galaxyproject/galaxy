@@ -55,13 +55,18 @@ class DataManager( BaseUIController ):
         data_manager = trans.app.data_managers.get_manager( data_manager_id )
         hdas = [ assoc.dataset for assoc in job.get_output_datasets() ]
         data_manager_output = []
+        error_messages = []
         for hda in hdas:
-            data_manager_json = from_json_string( open( hda.get_file_name() ).read() )
+            try:
+                data_manager_json = from_json_string( open( hda.get_file_name() ).read() )
+            except Exception, e:
+                data_manager_json = {}
+                error_messages.append( "Unable to obtain data_table info for hda (%s): %s" % ( hda.id, e ) )
             values = []
             for key, value in data_manager_json.get( 'data_tables', {} ).iteritems():
                 values.append( ( key, value ) )
             data_manager_output.append( values )
-        return trans.fill_template( "data_manager/view_job.mako", data_manager=data_manager, job=job, view_only=not_is_admin, hdas=hdas, data_manager_output=data_manager_output, message=message, status=status )
+        return trans.fill_template( "data_manager/view_job.mako", data_manager=data_manager, job=job, view_only=not_is_admin, hdas=hdas, data_manager_output=data_manager_output, message=message, status=status, error_messages=error_messages )
 
     @web.expose
     def manage_data_table( self, trans, **kwd ):

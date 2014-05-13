@@ -51,11 +51,10 @@
                     <li>
                         <a href="${h.url_for( controller='data_manager', action='manage_data_table', table_name=table_name)}" target="galaxy_main">
                             %if table_name in managed_table_names:
-                                <strong>${ table_name | h }</strong>
+                                </span><strong>${ table_name | h }</strong></a> <span class="fa fa-exchange">
                             %else:
-                                ${ table_name | h }
+                                ${ table_name | h }</a>
                             %endif
-                        </a>
                     </li>
                     <p/>
                 %endfor

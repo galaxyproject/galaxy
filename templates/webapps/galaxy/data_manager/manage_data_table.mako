@@ -1,7 +1,7 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
 
-<%def name="title()">Data Table Manager: ${ data_table.name | h }</%def>
+<%def name="title()">Tool Data Table: ${ data_table.name | h }</%def>
 
 %if message:
     ${render_msg( message, status )}
