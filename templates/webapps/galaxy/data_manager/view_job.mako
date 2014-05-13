@@ -34,7 +34,7 @@
 <table class="tabletip">
     <thead>
         <tr><th colspan="2" style="font-size: 120%;">
-            Data Table: ${ table_name | h }
+            Data Table: <a href="${h.url_for( controller='data_manager', action='manage_data_table', table_name=table_name)}">${ table_name | h }</a>
         </th></tr>
     </thead>
     <% len_json_table = len( json_table ) %>

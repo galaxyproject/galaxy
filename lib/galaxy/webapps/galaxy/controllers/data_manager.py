@@ -19,7 +19,7 @@ class DataManager( BaseUIController ):
             raise paste.httpexceptions.HTTPUnauthorized( "This Galaxy instance is not configured to allow non-admins to view the data manager." )
         message = kwd.get( 'message' )
         status = kwd.get( 'status', 'info' )
-        return trans.fill_template( "data_manager/index.mako", data_managers=trans.app.data_managers, view_only=not_is_admin, message=message, status=status )
+        return trans.fill_template( "data_manager/index.mako", data_managers=trans.app.data_managers, tool_data_tables=trans.app.tool_data_tables, view_only=not_is_admin, message=message, status=status )
 
     @web.expose
     def manage_data_manager( self, trans, **kwd ):
@@ -32,7 +32,7 @@ class DataManager( BaseUIController ):
         data_manager = trans.app.data_managers.get_manager( data_manager_id )
         if data_manager is None:
             return trans.response.send_redirect( web.url_for( controller="data_manager", action="index", message="Invalid Data Manager (%s) was requested" % data_manager_id, status="error" ) )
-        jobs = reversed( [ assoc.job for assoc in trans.sa_session.query( trans.app.model.DataManagerJobAssociation ).filter_by( data_manager_id=data_manager_id ) ] )
+        jobs = list( reversed( [ assoc.job for assoc in trans.sa_session.query( trans.app.model.DataManagerJobAssociation ).filter_by( data_manager_id=data_manager_id ) ] ) )
         return trans.fill_template( "data_manager/manage_data_manager.mako", data_manager=data_manager, jobs=jobs, view_only=not_is_admin, message=message, status=status )
 
     @web.expose
