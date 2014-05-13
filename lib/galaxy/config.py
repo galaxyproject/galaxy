@@ -417,6 +417,16 @@ class Configuration( object ):
         else:
             return default
 
+    def ensure_tempdir( self ):
+        self._ensure_directory( self.new_file_path )
+
+    def _ensure_directory( self, path ):
+        if path not in [ None, False ] and not os.path.isdir( path ):
+            try:
+                os.makedirs( path )
+            except Exception, e:
+                raise ConfigurationError( "Unable to create missing directory: %s\n%s" % ( path, e ) )
+
     def check( self ):
         paths_to_check = [ self.root, self.tool_path, self.tool_data_path, self.template_path ]
         # Check that required directories exist
@@ -440,11 +450,7 @@ class Configuration( object ):
                     self.whoosh_index_dir, \
                     self.object_store_cache_path, \
                     os.path.join( self.tool_data_path, 'shared', 'jars' ):
-            if path not in [ None, False ] and not os.path.isdir( path ):
-                try:
-                    os.makedirs( path )
-                except Exception, e:
-                    raise ConfigurationError( "Unable to create missing directory: %s\n%s" % ( path, e ) )
+            self._ensure_directory( path )
         # Check that required files exist
         tool_configs = self.tool_configs
         if self.migrated_tools_config not in tool_configs:
