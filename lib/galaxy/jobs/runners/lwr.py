@@ -172,7 +172,6 @@ class LwrJobRunner( AsynchronousJobRunner ):
             job_wrapper.prepare( **prepare_kwds )
             self.__prepare_input_files_locally(job_wrapper)
             remote_metadata = LwrJobRunner.__remote_metadata( client )
-            remote_work_dir_copy = LwrJobRunner.__remote_work_dir_copy( client )
             dependency_resolution = LwrJobRunner.__dependency_resolution( client )
             metadata_kwds = self.__build_metadata_configuration(client, job_wrapper, remote_metadata, remote_job_config)
             remote_command_params = dict(
@@ -184,7 +183,7 @@ class LwrJobRunner( AsynchronousJobRunner ):
                 self,
                 job_wrapper=job_wrapper,
                 include_metadata=remote_metadata,
-                include_work_dir_outputs=remote_work_dir_copy,
+                include_work_dir_outputs=False,
                 remote_command_params=remote_command_params,
             )
         except Exception:
@@ -358,13 +357,7 @@ class LwrJobRunner( AsynchronousJobRunner ):
         self.client_manager.shutdown()
 
     def __client_outputs( self, client, job_wrapper ):
-        remote_work_dir_copy = LwrJobRunner.__remote_work_dir_copy( client )
-        if not remote_work_dir_copy:
-            work_dir_outputs = self.get_work_dir_outputs( job_wrapper )
-        else:
-            # They have already been copied over to look like regular outputs remotely,
-            # no need to handle them differently here.
-            work_dir_outputs = []
+        work_dir_outputs = self.get_work_dir_outputs( job_wrapper )
         output_files = self.get_output_files( job_wrapper )
         client_outputs = ClientOutputs(
             working_directory=job_wrapper.working_directory,
@@ -400,16 +393,6 @@ class LwrJobRunner( AsynchronousJobRunner ):
         return remote_metadata
 
     @staticmethod
-    def __remote_work_dir_copy( lwr_client ):
-        # Right now remote metadata handling assumes from_work_dir outputs
-        # have been copied over before it runs. So do that remotely. This is
-        # not the default though because adding it to the command line is not
-        # cross-platform (no cp on Windows) and it's un-needed work outside
-        # the context of metadata settting (just as easy to download from
-        # either place.)
-        return LwrJobRunner.__remote_metadata( lwr_client )
-
-    @staticmethod
     def __use_remote_datatypes_conf( lwr_client ):
         """ When setting remote metadata, use integrated datatypes from this
         Galaxy instance or use the datatypes config configured via the remote
@@ -440,7 +423,21 @@ class LwrJobRunner( AsynchronousJobRunner ):
             outputs_directory = remote_job_config['outputs_directory']
             configs_directory = remote_job_config['configs_directory']
             working_directory = remote_job_config['working_directory']
+            # For metadata calculation, we need to build a list of of output
+            # file objects with real path indicating location on Galaxy server
+            # and false path indicating location on compute server. Since the
+            # LWR disables from_work_dir copying as part of the job command
+            # line we need to take the list of output locations on the LWR
+            # server (produced by self.get_output_files(job_wrapper)) and for
+            # each work_dir output substitute the effective path on the LWR
+            # server relative to the remote working directory as the
+            # false_path to send the metadata command generation module.
+            work_dir_outputs = self.get_work_dir_outputs(job_wrapper, job_working_directory=working_directory)
             outputs = [Bunch(false_path=os.path.join(outputs_directory, os.path.basename(path)), real_path=path) for path in self.get_output_files(job_wrapper)]
+            for output in outputs:
+                for lwr_workdir_path, real_path in work_dir_outputs:
+                    if real_path == output.real_path:
+                        output.false_path = lwr_workdir_path
             metadata_kwds['output_fnames'] = outputs
             metadata_kwds['compute_tmp_dir'] = working_directory
             metadata_kwds['config_root'] = remote_galaxy_home
