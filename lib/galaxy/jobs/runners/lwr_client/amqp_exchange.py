@@ -30,13 +30,14 @@ class LwrExchange(object):
     name _default_.
     """
 
-    def __init__(self, url, manager_name, timeout=DEFAULT_TIMEOUT):
+    def __init__(self, url, manager_name, connect_ssl=None, timeout=DEFAULT_TIMEOUT):
         """
         """
         if not kombu:
             raise Exception(KOMBU_UNAVAILABLE)
         self.__url = url
         self.__manager_name = manager_name
+        self.__connect_ssl = connect_ssl
         self.__exchange = kombu.Exchange(DEFAULT_EXCHANGE_NAME, DEFAULT_EXCHANGE_TYPE)
         self.__timeout = timeout
 
@@ -46,7 +47,7 @@ class LwrExchange(object):
 
     def consume(self, queue_name, callback, check=True, connection_kwargs={}):
         queue = self.__queue(queue_name)
-        with self.connection(self.__url, **connection_kwargs) as connection:
+        with self.connection(self.__url, ssl=self.__connect_ssl, **connection_kwargs) as connection:
             with kombu.Consumer(connection, queues=[queue], callbacks=[callback], accept=['json']):
                 while check:
                     try:
@@ -55,7 +56,7 @@ class LwrExchange(object):
                         pass
 
     def publish(self, name, payload):
-        with self.connection(self.__url) as connection:
+        with self.connection(self.__url, ssl=self.__connect_ssl) as connection:
             with pools.producers[connection].acquire() as producer:
                 key = self.__queue_name(name)
                 producer.publish(
