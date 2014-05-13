@@ -141,6 +141,18 @@ class ToolDataTableManager( object ):
             out.write( '</tables>\n' )
         os.chmod( full_path, 0644 )
 
+    def reload_tables( self, table_names=None ):
+        tables = self.get_tables()
+        if not table_names:
+            table_names = tables.keys()
+        elif not isinstance( table_names, list ):
+            table_names = [ table_names ]
+        for table_name in table_names:
+            tables[ table_name ].reload_from_files()
+            log.debug( "Reloaded tool data table '%s' from files.", table_name )
+        return table_names
+
+
 class ToolDataTable( object ):
 
     @classmethod
@@ -160,9 +172,14 @@ class ToolDataTable( object ):
         # increment this variable any time a new entry is added, or when the table is totally reloaded
         # This value has no external meaning, and does not represent an abstract version of the underlying data
         self._loaded_content_version = 1
+        self._load_info = ( [ config_element, tool_data_path ], { 'from_shed_config':from_shed_config } )
+        self._merged_load_info = []
 
-    def _update_version( self ):
-        self._loaded_content_version += 1
+    def _update_version( self, version=None ):
+        if version is not None:
+            self._loaded_content_version = version
+        else:
+            self._loaded_content_version += 1
         return self._loaded_content_version
 
     def get_empty_field_by_name( self, name ):
@@ -186,6 +203,16 @@ class ToolDataTable( object ):
 
     def merge_tool_data_table( self, other_table, allow_duplicates=True, persist=False, persist_on_error=False, entry_source=None, **kwd ):
         raise NotImplementedError( "Abstract method" )
+
+    def reload_from_files( self ):
+        new_version = self._update_version()
+        merged_info = self._merged_load_info
+        self.__init__( *self._load_info[0], **self._load_info[1] )
+        self._update_version( version=new_version )
+        for ( tool_data_table_class, load_info ) in merged_info:
+            self.merge_tool_data_table( tool_data_table_class( *load_info[0], **load_info[1] ), allow_duplicates=False )
+        return self._update_version()
+
 
 class TabularToolDataTable( ToolDataTable ):
     """
@@ -278,6 +305,8 @@ class TabularToolDataTable( ToolDataTable ):
         for filename, info in other_table.filenames.iteritems():
             if filename not in self.filenames:
                 self.filenames[ filename ] = info
+        #save info about table
+        self._merged_load_info.append( ( other_table.__class__, other_table._load_info ) )
         #add data entries and return current data table version
         return self.add_entries( other_table.data, allow_duplicates=allow_duplicates, persist=persist, persist_on_error=persist_on_error, entry_source=entry_source, **kwd )
 

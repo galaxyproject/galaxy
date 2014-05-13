@@ -15,6 +15,9 @@
     <thead>
         <tr><th colspan="${len (column_name_list) }" style="font-size: 120%;">
             Data Manager: ${ data_table.name | h }
+            <a class="icon-btn" href="${ h.url_for( controller="data_manager", action="reload_tool_data_tables", table_name=data_table.name ) }" title="Reload ${data_table.name} tool data table" data-placement="bottom">
+                <span class="fa fa-refresh"></span>
+            </a>
         </th></tr>
         <tr>
         

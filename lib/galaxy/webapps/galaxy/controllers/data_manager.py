@@ -77,3 +77,33 @@ class DataManager( BaseUIController ):
         if data_table is None:
             return trans.response.send_redirect( web.url_for( controller="data_manager", action="index", message="Invalid Data table (%s) was requested" % data_table_name, status="error" ) )
         return trans.fill_template( "data_manager/manage_data_table.mako", data_table=data_table, view_only=not_is_admin, message=message, status=status )
+
+    @web.expose
+    @web.require_admin
+    def reload_tool_data_tables( self, trans, table_name=None, **kwd ):
+        if table_name and isinstance( table_name, basestring ):
+            table_name = table_name.split( "," )
+        # Reload the tool data tables
+        table_names = self.app.tool_data_tables.reload_tables( table_names=table_name )
+        redirect_url = None
+        if table_names:
+            status = 'done'
+            if len( table_names ) == 1:
+                message = "The data table '%s' has been reloaded." % table_names[0]
+                redirect_url = web.url_for( controller='data_manager',
+                                            action='manage_data_table',
+                                            table_name=table_names[0],
+                                            message=message,
+                                            status=status )
+            else:
+                 message = "The data tables '%s' have been reloaded." % ', '.join( table_names )
+        else:
+            message = "No data tables have been reloaded."
+            status = 'error'
+        if redirect_url is None:
+            redirect_url = web.url_for( controller='admin',
+                                        action='view_tool_data_tables',
+                                        message=message,
+                                        status=status )
+        return trans.response.send_redirect( redirect_url )
+
