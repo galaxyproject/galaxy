@@ -5,6 +5,7 @@ from galaxy.jobs.runners import AsynchronousJobState, AsynchronousJobRunner
 from galaxy.jobs import ComputeEnvironment
 from galaxy.jobs import JobDestination
 from galaxy.jobs.command_factory import build_command
+from galaxy.tools.deps import dependencies
 from galaxy.util import string_as_bool_or_none
 from galaxy.util.bunch import Bunch
 
@@ -118,9 +119,7 @@ class LwrJobRunner( AsynchronousJobRunner ):
             return
 
         try:
-            dependency_resolution = LwrJobRunner.__dependency_resolution( client )
-            remote_dependency_resolution = dependency_resolution == "remote"
-            requirements = job_wrapper.tool.requirements if remote_dependency_resolution else []
+            dependencies_description = LwrJobRunner.__dependencies_description( client, job_wrapper )
             rewrite_paths = not LwrJobRunner.__rewrite_parameters( client )
             unstructured_path_rewrites = {}
             if compute_environment:
@@ -133,7 +132,7 @@ class LwrJobRunner( AsynchronousJobRunner ):
                 working_directory=job_wrapper.working_directory,
                 tool=job_wrapper.tool,
                 config_files=job_wrapper.extra_filenames,
-                requirements=requirements,
+                dependencies_description=dependencies_description,
                 env=client.env,
                 rewrite_paths=rewrite_paths,
                 arbitrary_files=unstructured_path_rewrites,
@@ -374,6 +373,19 @@ class LwrJobRunner( AsynchronousJobRunner ):
             version_file=job_wrapper.get_version_string_path(),
         )
         return client_outputs
+
+    @staticmethod
+    def __dependencies_description( lwr_client, job_wrapper ):
+        dependency_resolution = LwrJobRunner.__dependency_resolution( lwr_client )
+        remote_dependency_resolution = dependency_resolution == "remote"
+        if not remote_dependency_resolution:
+            return None
+        requirements = job_wrapper.tool.requirements or []
+        installed_tool_dependencies = job_wrapper.tool.installed_tool_dependencies or []
+        return dependencies.DependenciesDescription(
+            requirements=requirements,
+            installed_tool_dependencies=installed_tool_dependencies,
+        )
 
     @staticmethod
     def __dependency_resolution( lwr_client ):

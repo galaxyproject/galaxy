@@ -166,8 +166,8 @@ class FileActionMapper(object):
             action_type = mapper.action_type
             file_lister = mapper.file_lister
         if type in ["workdir", "output_workdir"] and action_type == "none":
-            ## We are changing the working_directory relative to what
-            ## Galaxy would use, these need to be copied over.
+            # We are changing the working_directory relative to what
+            # Galaxy would use, these need to be copied over.
             action_type = "copy"
         action_class = actions.get(action_type, None)
         if action_class is None:

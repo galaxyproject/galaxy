@@ -2673,12 +2673,18 @@ class Tool( object, Dictifiable ):
 
     def build_dependency_shell_commands( self ):
         """Return a list of commands to be run to populate the current environment to include this tools requirements."""
+        return self.app.toolbox.dependency_manager.dependency_shell_commands(
+            self.requirements,
+            installed_tool_dependencies=self.installed_tool_dependencies
+        )
+
+    @property
+    def installed_tool_dependencies(self):
         if self.tool_shed_repository:
             installed_tool_dependencies = self.tool_shed_repository.tool_dependencies_installed_or_in_error
         else:
             installed_tool_dependencies = None
-        return self.app.toolbox.dependency_manager.dependency_shell_commands( self.requirements,
-                                                                              installed_tool_dependencies=installed_tool_dependencies )
+        return installed_tool_dependencies
 
     def build_redirect_url_params( self, param_dict ):
         """

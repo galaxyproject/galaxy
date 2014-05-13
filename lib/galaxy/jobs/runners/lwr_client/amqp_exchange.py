@@ -13,8 +13,8 @@ KOMBU_UNAVAILABLE = "Attempting to bind to AMQP message queue, but kombu depende
 
 DEFAULT_EXCHANGE_NAME = "lwr"
 DEFAULT_EXCHANGE_TYPE = "direct"
-DEFAULT_TIMEOUT = 0.2  # Set timeout to periodically give up looking and check
-                       # if polling should end.
+# Set timeout to periodically give up looking and check if polling should end.
+DEFAULT_TIMEOUT = 0.2
 
 
 class LwrExchange(object):
@@ -48,7 +48,6 @@ class LwrExchange(object):
         queue = self.__queue(queue_name)
         with self.connection(self.__url, **connection_kwargs) as connection:
             with kombu.Consumer(connection, queues=[queue], callbacks=[callback], accept=['json']):
-                log.debug("Consuming queue %s" % queue)
                 while check:
                     try:
                         connection.drain_events(timeout=self.__timeout)
@@ -59,7 +58,6 @@ class LwrExchange(object):
         with self.connection(self.__url) as connection:
             with pools.producers[connection].acquire() as producer:
                 key = self.__queue_name(name)
-                log.debug("Publishing with key %s and payload %s" % (key, payload))
                 producer.publish(
                     payload,
                     serializer='json',
