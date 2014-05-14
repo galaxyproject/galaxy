@@ -138,10 +138,10 @@ class DatasetCollectionsService(
         changed = dataset_collection_instance.set_from_dict( new_data )
         # the rest (often involving the trans) - do here
         if 'annotation' in new_data.keys() and trans.get_user():
-            dataset_collection_instance.add_item_annotation( trans.sa_session, trans.get_user(), dataset_collection_instance.collection, new_data[ 'annotation' ] )
+            dataset_collection_instance.add_item_annotation( trans.sa_session, trans.get_user(), dataset_collection_instance, new_data[ 'annotation' ] )
             changed[ 'annotation' ] = new_data[ 'annotation' ]
         if 'tags' in new_data.keys() and trans.get_user():
-            self.set_tags_from_list( trans, dataset_collection_instance.collection, new_data[ 'tags' ], user=trans.user )
+            self.set_tags_from_list( trans, dataset_collection_instance, new_data[ 'tags' ], user=trans.user )
 
         if changed.keys():
             trans.sa_session.flush()
