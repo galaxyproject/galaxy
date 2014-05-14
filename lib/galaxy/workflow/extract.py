@@ -5,6 +5,7 @@ from galaxy.util.odict import odict
 from galaxy import model
 from galaxy.tools.parameters.basic import (
     DataToolParameter,
+    DataCollectionToolParameter,
     DrillDownSelectToolParameter,
     SelectToolParameter,
     UnvalidatedValue
@@ -98,6 +99,8 @@ def extract_steps( trans, history=None, job_ids=None, dataset_ids=None, dataset_
             raise AssertionError( "Attempt to create workflow with job not connected to current history" )
         job = jobs_by_id[ job_id ]
         tool_inputs, associations = step_inputs( trans, job )
+        log.info("job %s has tool_inputs %s" % (job.id, tool_inputs) )
+        log.info("associations are %s" % associations)
         step = model.WorkflowStep()
         step.type = 'tool'
         step.tool_id = job.tool_id
@@ -111,6 +114,7 @@ def extract_steps( trans, history=None, job_ids=None, dataset_ids=None, dataset_
                 input_collection = an_implicit_output_collection.find_implicit_input_collection( input_name )
                 if input_collection:
                     other_hid = input_collection.hid
+            log.info("For input_name %s, have hid %s" % ( input_name, other_hid ) )
             if other_hid in hid_to_output_pair:
                 other_step, other_name = hid_to_output_pair[ other_hid ]
                 conn = model.WorkflowStepConnection()
@@ -190,7 +194,6 @@ class WorkflowSummary( object ):
         # just grab the implicitly mapped jobs and handle in second pass. Second pass is
         # needed because cannot allow selection of individual datasets from an implicit
         # mapping during extraction - you get the collection or nothing.
-        implicit_outputs = []
         for content in self.history.active_contents:
             if content.history_content_type == "dataset_collection":
                 hid = content.hid
@@ -200,33 +203,31 @@ class WorkflowSummary( object ):
                     job = DatasetCollectionCreationJob( content )
                     self.jobs[ job ] = [ ( None, content ) ]
                 else:
-                    implicit_outputs.append( content )
+                    dataset_collection = content
+                    # TODO: Optimize db call
+                    # TODO: Ensure this is deterministic, must get same job
+                    # for each dataset collection.
+                    dataset_instance = dataset_collection.collection.dataset_instances[ 0 ]
+                    if not self.__check_state( dataset_instance ):
+                        # Just checking the state of one instance, don't need more but
+                        # makes me wonder if even need this check at all?
+                        continue
+
+                    job_hda = self.__original_hda( dataset_instance )
+                    if not job_hda.creating_job_associations:
+                        log.warn( "An implicitly create output dataset collection doesn't have a creating_job_association, should not happen!" )
+                        job = DatasetCollectionCreationJob( dataset_collection )
+                        self.jobs[ job ] = [ ( None, dataset_collection ) ]
+
+                    for assoc in job_hda.creating_job_associations:
+                        job = assoc.job
+                        if job not in self.jobs or self.jobs[ job ][ 0 ][ 1 ].history_content_type == "dataset":
+                            self.jobs[ job ] = [ ( assoc.name, dataset_collection ) ]
+                            self.implicit_map_jobs.append( job )
+                        else:
+                            self.jobs[ job ].append( ( assoc.name, dataset_collection ) )
             else:
                 self.__append_dataset( content )
-
-        for dataset_collection in implicit_outputs:
-            # TODO: Optimize db call
-            # TODO: Ensure this is deterministic, must get same job
-            # for each dataset collection.
-            dataset_instance = dataset_collection.collection.dataset_instances[ 0 ]
-            if not self.__check_state( dataset_instance ):
-                # Just checking the state of one instance, don't need more but
-                # makes me wonder if even need this check at all?
-                continue
-
-            job_hda = self.__original_hda( dataset_instance )
-            if not job_hda.creating_job_associations:
-                log.warn( "An implicitly create output dataset collection doesn't have a creating_job_association, should not happen!" )
-                job = DatasetCollectionCreationJob( dataset_collection )
-                self.jobs[ job ] = [ ( None, dataset_collection ) ]
-
-            for assoc in job_hda.creating_job_associations:
-                job = assoc.job
-                if job not in self.jobs or self.jobs[ job ][ 0 ][ 1 ].history_content_type == "dataset":
-                    self.jobs[ job ] = [ ( assoc.name, dataset_collection ) ]
-                    self.implicit_map_jobs.append( job )
-                else:
-                    self.jobs[ job ].append( ( assoc.name, dataset_collection ) )
 
     def __append_dataset( self, dataset ):
         if not self.__check_state( dataset ):
@@ -289,7 +290,7 @@ def __cleanup_param_values( inputs, values ):
             if isinstance( input, ( SelectToolParameter, DrillDownSelectToolParameter ) ):
                 if input.is_dynamic and not isinstance( values[key], UnvalidatedValue ):
                     values[key] = UnvalidatedValue( values[key] )
-            if isinstance( input, DataToolParameter ):
+            if isinstance( input, DataToolParameter ) or isinstance( input, DataCollectionToolParameter ):
                 tmp = values[key]
                 values[key] = None
                 # HACK: Nested associations are not yet working, but we
