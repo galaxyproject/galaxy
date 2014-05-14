@@ -108,6 +108,8 @@ class Configuration( object ):
         self.manage_dependency_relationships = string_as_bool( kwargs.get( 'manage_dependency_relationships', False ) )
         self.running_functional_tests = string_as_bool( kwargs.get( 'running_functional_tests', False ) )
         self.hours_between_check = kwargs.get( 'hours_between_check', 12 )
+        if isinstance( self.hours_between_check, basestring ):
+            self.hours_between_check = float( self.hours_between_check )
         try:
             if isinstance( self.hours_between_check, int ):
                 if self.hours_between_check < 1 or self.hours_between_check > 24:
