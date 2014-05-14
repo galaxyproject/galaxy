@@ -11,10 +11,13 @@ var View = Backbone.View.extend(
 {
     // options
     optionsDefault: {
-        css         : '',
-        placeholder : 'No data available',
-        data        : [],
-        value       : null
+        css                 : '',
+        placeholder         : 'No data available',
+        data                : [],
+        value               : null,
+        multiple            : false,
+        minimumInputLength  : 0,
+        initialData         : ''
     },
     
     // initialize
@@ -40,17 +43,19 @@ var View = Backbone.View.extend(
         // refresh
         this._refresh();
         
-        // initial value
-        if (this.options.value) {
-            this._setValue(this.options.value);
-        }
-        
-        // add change event
-        var self = this;
-        if (this.options.onchange) {
-            this.$el.on('change', function() {
-                self.options.onchange(self.value());
-            });
+        if (!this.options.multiple){
+            // initial value
+            if (this.options.value) {
+                this._setValue(this.options.value);
+            }
+            
+            // add change event
+            var self = this;
+            if (this.options.onchange) {
+                this.$el.on('change', function() {
+                    self.options.onchange(self.value());
+                });
+            }
         }
     },
     
@@ -142,18 +147,33 @@ var View = Backbone.View.extend(
     
     // refresh
     _refresh: function() {
-        // selected
-        var selected = this._getValue();
-        
-        // add select2 data
-        this.$el.select2({
-            data                : this.select_data,
-            containerCssClass   : this.options.css,
-            placeholder         : this.options.placeholder
-        });
-        
-        // select previous value (if exists)
-        this._setValue(selected);
+        // add select2 data based on type of input
+        if (!this.options.multiple){
+            var selected = this._getValue();
+            var select_opt = {
+                data                : this.select_data,
+                containerCssClass   : this.options.css,
+                placeholder         : this.options.placeholder,
+            };
+            this.$el.select2(select_opt);
+            // select previous value (if exists)
+            this._setValue(selected);
+        } else {
+            var select_opt = {
+                multiple            : this.options.multiple,
+                containerCssClass   : this.options.css,
+                placeholder         : this.options.placeholder,
+                minimumInputLength  : this.options.minimumInputLength,
+                ajax                : this.options.ajax,
+                dropdownCssClass    : this.options.dropdownCssClass,
+                escapeMarkup        : this.options.escapeMarkup,
+                formatResult        : this.options.formatResult,
+                formatSelection     : this.options.formatSelection,
+                initSelection       : this.options.initSelection,
+                initialData         : this.options.initialData
+            };
+            this.$el.select2(select_opt);
+        }
     },
     
     // get index
@@ -186,8 +206,8 @@ var View = Backbone.View.extend(
     },
     
     // element
-    _template: function() {
-        return '<input type="hidden"/>';
+    _template: function(options) {
+            return '<input type="hidden" value="' + this.options.initialData + '"/>';
     }
 });
 
