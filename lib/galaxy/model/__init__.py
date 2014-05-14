@@ -2864,6 +2864,13 @@ class DatasetCollectionElement( object, Dictifiable ):
     def dataset( self ):
         return self.dataset_instance.dataset
 
+    def first_dataset_instance( self ):
+        element_object = self.element_object
+        if isinstance( element_object, DatasetCollection ):
+            return element_object.dataset_instances[ 0 ]
+        else:
+            return element_object
+
     def copy_to_collection( self, collection ):
         new_element = DatasetCollectionElement(
             element=self.element_object,
