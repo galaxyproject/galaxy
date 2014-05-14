@@ -20,7 +20,6 @@ from tool_shed.util import readme_util
 from tool_shed.util import tool_dependency_util
 from tool_shed.util import tool_util
 from tool_shed.util import xml_util
-from tool_shed.galaxy_install.tool_dependencies import install_util
 from tool_shed.galaxy_install.tool_dependencies import td_common_util
 import tool_shed.repository_types.util as rt_util
 
@@ -1221,7 +1220,7 @@ def handle_repository_elem( app, repository_elem, only_if_compiling_contained_td
         else:
             # Send a request to the tool shed to retrieve appropriate additional changeset revisions with which the repository
             # may have been installed.
-            text = install_util.get_updated_changeset_revisions_from_tool_shed( app, toolshed, name, owner, changeset_revision )
+            text = suc.get_updated_changeset_revisions_from_tool_shed( app, toolshed, name, owner, changeset_revision )
             if text:
                 updated_changeset_revisions = util.listify( text )
                 for updated_changeset_revision in updated_changeset_revisions:

@@ -596,10 +596,10 @@ def sync_database_with_file_system( app, tool_shed_repository, tool_dependency_n
             ( str( tool_dependency.name ), str( tool_dependency.version ), str( tool_dependency.status ) ) )
     else:
         # We have a pre-existing installation directory on the file system, but our associated database record is
-        # in a state that allowed us to arrive here - see the comment in common_install_util.handle_tool_dependencies().
-        # At this point, we'll inspect the installation directory to see if we have a "proper installation" and
-        # if so, synchronize the database record rather than reinstalling the dependency if we're "running_functional_tests".
-        # If we're not "running_functional_tests, we'll set the tool dependency's installation status to ERROR.
+        # in a state that allowed us to arrive here.  At this point, we'll inspect the installation directory to
+        # see if we have a "proper installation" and if so, synchronize the database record rather than reinstalling
+        # the dependency if we're "running_functional_tests".  If we're not "running_functional_tests, we'll set
+        # the tool dependency's installation status to ERROR.
         tool_dependency_installation_directory_contents = os.listdir( tool_dependency_install_dir )
         if td_common_util.INSTALLATION_LOG in tool_dependency_installation_directory_contents:
             # Since this tool dependency's installation directory contains an installation log, we consider it to be

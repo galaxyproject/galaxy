@@ -17,8 +17,6 @@ from tool_shed.util import datatype_util
 from tool_shed.util import tool_dependency_util
 from tool_shed.util import tool_util
 from tool_shed.util import xml_util
-from tool_shed.galaxy_install.tool_dependencies.install_util import install_package
-from tool_shed.galaxy_install.tool_dependencies.install_util import set_environment
 
 log = logging.getLogger( __name__ )
 
@@ -482,113 +480,6 @@ def get_required_repo_info_dicts( trans, tool_shed_url, repo_info_dicts ):
                                     all_repo_info_dicts.append( required_repo_info_dict )
                     all_required_repo_info_dict[ 'all_repo_info_dicts' ] = all_repo_info_dicts
     return all_required_repo_info_dict
-
-def handle_tool_dependencies( app, tool_shed_repository, tool_dependencies_config, tool_dependencies, from_tool_migration_manager=False ):
-    """
-    Install and build tool dependencies defined in the tool_dependencies_config.  This config's tag sets can currently refer to installation
-    methods in Galaxy's tool_dependencies module.  In the future, proprietary fabric scripts contained in the repository will be supported.
-    Future enhancements to handling tool dependencies may provide installation processes in addition to fabric based processes.  The dependencies
-    will be installed in:
-    ~/<app.config.tool_dependency_dir>/<package_name>/<package_version>/<repo_owner>/<repo_name>/<repo_installed_changeset_revision>
-    """
-    # The received list of tool_dependencies are the database records for those dependencies defined in the received tool_dependencies_config
-    # that should be installed.  This allows for filtering out dependencies that have not been checked for installation on the 'Manage tool
-    # dependencies' page for an installed tool shed repository.
-    attr_tups_of_dependencies_for_install = [ ( td.name, td.version, td.type ) for td in tool_dependencies ]
-    context = app.install_model.context
-    installed_tool_dependencies = []
-    # Parse the tool_dependencies.xml config.
-    tree, error_message = xml_util.parse_xml( tool_dependencies_config )
-    if tree is None:
-        return installed_tool_dependencies
-    root = tree.getroot()
-    fabric_version_checked = False
-    set_environment_handled = False
-    for elem in root:
-        if elem.tag == 'package':
-            # Only install the tool_dependency if it is not already installed and it is associated with a database record in the received
-            # tool_dependencies.
-            package_name = elem.get( 'name', None )
-            package_version = elem.get( 'version', None )
-            if package_name and package_version:
-                attr_tup = ( package_name, package_version, 'package' )
-                try:
-                    index = attr_tups_of_dependencies_for_install.index( attr_tup )
-                except Exception, e:
-                    index = None
-                if index is not None:
-                    tool_dependency = tool_dependencies[ index ]
-                    if tool_dependency.can_install:
-                        # The database record is currently in a state that allows us to install the package on the file system.
-                        log.debug( 'Attempting to install tool dependency package %s version %s.' % ( str( package_name ), str( package_version ) ) )
-                        try:
-                            dependencies_ignored = not app.toolbox.dependency_manager.uses_tool_shed_dependencies()
-                            if dependencies_ignored:
-                                log.debug( "Skipping installation of tool dependency package %s because tool shed dependency resolver not enabled." % \
-                                    str( package_name ) )
-                                # Tool dependency resolves have been configured and they do not include the tool shed. Do not install package.
-                                if app.toolbox.dependency_manager.find_dep( package_name, package_version, type='package') != INDETERMINATE_DEPENDENCY:
-                                    ## TODO: Do something here such as marking it installed or
-                                    ## configured externally.
-                                    pass
-                                tool_dependency = \
-                                    tool_dependency_util.set_tool_dependency_attributes( app,
-                                                                                         tool_dependency=tool_dependency,
-                                                                                         status=app.install_model.ToolDependency.installation_status.ERROR,
-                                                                                         error_message=None,
-                                                                                         remove_from_disk=False )
-                            else:
-                                tool_dependency = install_package( app, 
-                                                                   elem, 
-                                                                   tool_shed_repository, 
-                                                                   tool_dependencies=tool_dependencies, 
-                                                                   from_tool_migration_manager=from_tool_migration_manager )
-                        except Exception, e:
-                            error_message = "Error installing tool dependency package %s version %s: %s" % ( str( package_name ), str( package_version ), str( e ) )
-                            log.exception( error_message )
-                            if tool_dependency:
-                                # Since there was an installation error, update the tool dependency status to Error. The remove_installation_path option must
-                                # be left False here.
-                                tool_dependency = tool_dependency_util.handle_tool_dependency_installation_error( app, 
-                                                                                                                  tool_dependency, 
-                                                                                                                  error_message, 
-                                                                                                                  remove_installation_path=False )
-                        if tool_dependency and tool_dependency.status in [ app.install_model.ToolDependency.installation_status.INSTALLED,
-                                                                           app.install_model.ToolDependency.installation_status.ERROR ]:
-                            installed_tool_dependencies.append( tool_dependency )
-                            if app.config.manage_dependency_relationships:
-                                # Add the tool_dependency to the in-memory dictionaries in the installed_repository_manager.
-                                app.installed_repository_manager.handle_tool_dependency_install( tool_shed_repository, tool_dependency )
-        elif elem.tag == 'set_environment':
-            # <set_environment version="1.0">
-            #    <environment_variable name="R_SCRIPT_PATH"action="set_to">$REPOSITORY_INSTALL_DIR</environment_variable>
-            # </set_environment>
-            set_environment_handled = True
-            try:
-                tool_dependencies = set_environment( app, elem, tool_shed_repository, attr_tups_of_dependencies_for_install )
-            except Exception, e:
-                error_message = "Error setting environment for tool dependency: %s" % str( e )
-                log.debug( error_message )
-                for tool_dependency in tool_dependencies:
-                    if tool_dependency and tool_dependency.status == app.install_model.ToolDependency.installation_status.ERROR:
-                        # Since there was an installation error, update the tool dependency status to Error. The remove_installation_path option must
-                        # be left False here.
-                        tool_dependency = tool_dependency_util.handle_tool_dependency_installation_error( app, 
-                                                                                                          tool_dependency, 
-                                                                                                          error_message, 
-                                                                                                          remove_installation_path=False )
-            for tool_dependency in tool_dependencies:
-                if tool_dependency and tool_dependency.status in [ app.install_model.ToolDependency.installation_status.INSTALLED,
-                                                                   app.install_model.ToolDependency.installation_status.ERROR ]:
-                    installed_tool_dependencies.append( tool_dependency )
-    if not set_environment_handled:
-        element_attributes = dict( name='PATH', action='prepend_to' )
-        generated_elem = xml_util.create_element( 'environment_variable', attributes=element_attributes, sub_elements=None )
-        generated_elem.text = '$REPOSITORY_INSTALL_DIR'
-        generated_attr_tups = [ ( 'PATH', None, 'set_environment' ) ]
-        tool_dependencies = set_environment( app, generated_elem, tool_shed_repository, generated_attr_tups )
-        installed_tool_dependencies.extend( tool_dependencies )
-    return installed_tool_dependencies
 
 def repository_dependency_needed_only_for_compiling_tool_dependency( repository, repository_dependency ):
     for rd_tup in repository.tuples_of_repository_dependencies_needed_for_compiling_td:

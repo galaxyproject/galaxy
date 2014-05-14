@@ -413,7 +413,10 @@ class ToolMigrationManager( object ):
             repository_tools_tups = suc.get_repository_tools_tups( self.app, metadata_dict )
             if repository_tools_tups:
                 # Handle missing data table entries for tool parameters that are dynamically generated select lists.
-                repository_tools_tups = tool_util.handle_missing_data_table_entry( self.app, relative_install_dir, self.tool_path, repository_tools_tups )
+                repository_tools_tups = tool_util.handle_missing_data_table_entry( self.app,
+                                                                                   relative_install_dir,
+                                                                                   self.tool_path,
+                                                                                   repository_tools_tups )
                 # Handle missing index files for tool parameters that are dynamically generated select lists.
                 repository_tools_tups, sample_files_copied = tool_util.handle_missing_index_file( self.app,
                                                                                                   self.tool_path,
@@ -421,7 +424,10 @@ class ToolMigrationManager( object ):
                                                                                                   repository_tools_tups,
                                                                                                   sample_files_copied )
                 # Copy remaining sample files included in the repository to the ~/tool-data directory of the local Galaxy instance.
-                tool_util.copy_sample_files( self.app, sample_files, tool_path=self.tool_path, sample_files_copied=sample_files_copied )
+                tool_util.copy_sample_files( self.app,
+                                             sample_files,
+                                             tool_path=self.tool_path,
+                                             sample_files_copied=sample_files_copied )
                 if not is_repository_dependency:
                     tool_util.add_to_tool_panel( self.app,
                                                  tool_shed_repository.name,
@@ -439,11 +445,64 @@ class ToolMigrationManager( object ):
                                                     self.app.install_model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES )
             # Get the tool_dependencies.xml file from disk.
             tool_dependencies_config = suc.get_config_from_disk( 'tool_dependencies.xml', repo_install_dir )
-            installed_tool_dependencies = common_install_util.handle_tool_dependencies( app=self.app,
-                                                                                        tool_shed_repository=tool_shed_repository,
-                                                                                        tool_dependencies_config=tool_dependencies_config,
-                                                                                        tool_dependencies=tool_dependencies,
-                                                                                        from_tool_migration_manager=True )
+            installed_tool_dependencies = []
+            # Parse the tool_dependencies.xml config.
+            tree, error_message = xml_util.parse_xml( tool_dependencies_config )
+            install_manager = InstallManager()
+            tag_manager = TagManager()
+            root = tree.getroot()
+            for elem in root:
+                package_name = elem.get( 'name', None )
+                package_version = elem.get( 'version', None )
+                if package_name and package_version:
+                    # elem is a package tag set.
+                    tool_dependency = None
+                    for tool_dependency in tool_dependencies:
+                        if package_name == str( tool_dependency.name ) and package_version == str( tool_dependency.version ):
+                            break
+                    if tool_dependency is not None:
+                        attr_tups_of_dependencies_for_install = [ ( td.name, td.version, td.type ) for td in tool_dependencies ]
+                        attr_tup = ( package_name, package_version, 'package' )
+                        try:
+                            index = attr_tups_of_dependencies_for_install.index( attr_tup )
+                        except Exception, e:
+                            index = None
+                        if index is not None:
+                            tool_dependency = tool_dependencies[ index ]
+                            tool_dependency, proceed_with_install, action_elem_tuples = \
+                                tag_manager.process_tag_set( trans.app,
+                                                             tool_shed_repository,
+                                                             tool_dependency,
+                                                             elem,
+                                                             package_name,
+                                                             package_version,
+                                                             from_tool_migration_manager=False,
+                                                             tool_dependency_db_records=tool_dependencies )
+                            if proceed_with_install:
+                                try:
+                                    tool_dependency = install_manager.install_package( trans.app, 
+                                                                                       elem, 
+                                                                                       tool_shed_repository, 
+                                                                                       tool_dependencies=tool_dependencies, 
+                                                                                       from_tool_migration_manager=True )
+                                except Exception, e:
+                                    error_message = "Error installing tool dependency package %s version %s: %s" % \
+                                        ( str( package_name ), str( package_version ), str( e ) )
+                                    log.exception( error_message )
+                                    if tool_dependency:
+                                        # Since there was an installation error, update the tool dependency status to Error. The
+                                        # remove_installation_path option must be left False here.
+                                        tool_dependency = \
+                                            tool_dependency_util.handle_tool_dependency_installation_error( trans.app, 
+                                                                                                            tool_dependency, 
+                                                                                                            error_message, 
+                                                                                                            remove_installation_path=False )
+                                if tool_dependency and tool_dependency.status in [ app.install_model.ToolDependency.installation_status.INSTALLED,
+                                                                                   app.install_model.ToolDependency.installation_status.ERROR ]:
+                                    installed_tool_dependencies.append( tool_dependency )
+                                    if app.config.manage_dependency_relationships:
+                                        # Add the tool_dependency to the in-memory dictionaries in the installed_repository_manager.
+                                        app.installed_repository_manager.handle_tool_dependency_install( tool_shed_repository, tool_dependency )
             for installed_tool_dependency in installed_tool_dependencies:
                 if installed_tool_dependency.status == self.app.install_model.ToolDependency.installation_status.ERROR:
                     print '\nThe ToolMigrationManager returned the following error while installing tool dependency ', installed_tool_dependency.name, ':'

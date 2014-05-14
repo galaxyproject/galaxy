@@ -1350,6 +1350,18 @@ def get_updated_changeset_revisions( trans, name, owner, changeset_revision ):
         return changeset_hashes_str
     return ''
 
+def get_updated_changeset_revisions_from_tool_shed( app, tool_shed_url, name, owner, changeset_revision ):
+    """
+    Get all appropriate newer changeset revisions for the repository defined by
+    the received tool_shed_url / name / owner combination.
+    """
+    tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( app, tool_shed_url )
+    params = '?name=%s&owner=%s&changeset_revision=%s' % ( name, owner, changeset_revision )
+    url = common_util.url_join( tool_shed_url,
+                                'repository/updated_changeset_revisions%s' % params )
+    text = common_util.tool_shed_get( app, tool_shed_url, url )
+    return text
+
 def get_user( trans, id ):
     """Get a user from the database by id."""
     return trans.sa_session.query( trans.model.User ).get( trans.security.decode_id( id ) )
