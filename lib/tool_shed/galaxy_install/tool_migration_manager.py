@@ -19,6 +19,8 @@ from tool_shed.util import metadata_util
 from tool_shed.util import tool_dependency_util
 from tool_shed.util import tool_util
 from tool_shed.util import xml_util
+from tool_shed.galaxy_install.install_manager import InstallManager
+from tool_shed.galaxy_install.tool_dependencies.recipe.recipe_manager import TagManager
 from galaxy.util.odict import odict
 
 log = logging.getLogger( __name__ )
@@ -497,12 +499,12 @@ class ToolMigrationManager( object ):
                                                                                                             tool_dependency, 
                                                                                                             error_message, 
                                                                                                             remove_installation_path=False )
-                                if tool_dependency and tool_dependency.status in [ app.install_model.ToolDependency.installation_status.INSTALLED,
-                                                                                   app.install_model.ToolDependency.installation_status.ERROR ]:
+                                if tool_dependency and tool_dependency.status in [ self.app.install_model.ToolDependency.installation_status.INSTALLED,
+                                                                                   self.app.install_model.ToolDependency.installation_status.ERROR ]:
                                     installed_tool_dependencies.append( tool_dependency )
-                                    if app.config.manage_dependency_relationships:
+                                    if self.app.config.manage_dependency_relationships:
                                         # Add the tool_dependency to the in-memory dictionaries in the installed_repository_manager.
-                                        app.installed_repository_manager.handle_tool_dependency_install( tool_shed_repository, tool_dependency )
+                                        self.app.installed_repository_manager.handle_tool_dependency_install( tool_shed_repository, tool_dependency )
             for installed_tool_dependency in installed_tool_dependencies:
                 if installed_tool_dependency.status == self.app.install_model.ToolDependency.installation_status.ERROR:
                     print '\nThe ToolMigrationManager returned the following error while installing tool dependency ', installed_tool_dependency.name, ':'
