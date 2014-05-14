@@ -31,7 +31,7 @@ do
 		echo "$server not running"
 	fi
 	# Start the server (and background) (should this be nohup'd?)
-	python ./scripts/paster.py serve universe_wsgi.ini --server-name=$server --pid-file=$server.pid --log-file=$server.log $@
+	python ./scripts/paster.py serve universe_wsgi.ini --server-name=$server --pid-file=$server.pid --log-file=$server.log --daemon $@
 	# Wait for the server to start
 	sleep 1
 	# Grab the new pid
