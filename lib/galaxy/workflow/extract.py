@@ -99,8 +99,6 @@ def extract_steps( trans, history=None, job_ids=None, dataset_ids=None, dataset_
             raise AssertionError( "Attempt to create workflow with job not connected to current history" )
         job = jobs_by_id[ job_id ]
         tool_inputs, associations = step_inputs( trans, job )
-        log.info("job %s has tool_inputs %s" % (job.id, tool_inputs) )
-        log.info("associations are %s" % associations)
         step = model.WorkflowStep()
         step.type = 'tool'
         step.tool_id = job.tool_id
@@ -114,7 +112,6 @@ def extract_steps( trans, history=None, job_ids=None, dataset_ids=None, dataset_
                 input_collection = an_implicit_output_collection.find_implicit_input_collection( input_name )
                 if input_collection:
                     other_hid = input_collection.hid
-            log.info("For input_name %s, have hid %s" % ( input_name, other_hid ) )
             if other_hid in hid_to_output_pair:
                 other_step, other_name = hid_to_output_pair[ other_hid ]
                 conn = model.WorkflowStepConnection()
