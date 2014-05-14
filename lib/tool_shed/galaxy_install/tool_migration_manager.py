@@ -470,7 +470,7 @@ class ToolMigrationManager( object ):
                         if index is not None:
                             tool_dependency = tool_dependencies[ index ]
                             tool_dependency, proceed_with_install, action_elem_tuples = \
-                                tag_manager.process_tag_set( trans.app,
+                                tag_manager.process_tag_set( self.app,
                                                              tool_shed_repository,
                                                              tool_dependency,
                                                              elem,
@@ -480,7 +480,7 @@ class ToolMigrationManager( object ):
                                                              tool_dependency_db_records=tool_dependencies )
                             if proceed_with_install:
                                 try:
-                                    tool_dependency = install_manager.install_package( trans.app, 
+                                    tool_dependency = install_manager.install_package( self.app, 
                                                                                        elem, 
                                                                                        tool_shed_repository, 
                                                                                        tool_dependencies=tool_dependencies, 
@@ -493,7 +493,7 @@ class ToolMigrationManager( object ):
                                         # Since there was an installation error, update the tool dependency status to Error. The
                                         # remove_installation_path option must be left False here.
                                         tool_dependency = \
-                                            tool_dependency_util.handle_tool_dependency_installation_error( trans.app, 
+                                            tool_dependency_util.handle_tool_dependency_installation_error( self.app, 
                                                                                                             tool_dependency, 
                                                                                                             error_message, 
                                                                                                             remove_installation_path=False )
