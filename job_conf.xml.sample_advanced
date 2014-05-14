@@ -51,6 +51,12 @@
           <!-- <param id="amqp_connect_ssl_keyfile">/path/to/key.pem</param> -->
           <!-- <param id="amqp_connect_ssl_certfile">/path/to/cert.pem</param> -->
           <!-- <param id="amqp_connect_ssl_cert_reqs">cert_required</param> -->
+          <!-- By default, the AMQP consumer uses a nonblocking connection with
+               a 0.2 second timeout. In testing, this works fine for
+               unencrypted AMQP connections, but with SSL it will cause the
+               client to reconnect to the server after each timeout. Set to a
+               higher value (in seconds) (or `None` to use blocking connections). -->
+          <!-- <param id="amqp_consumer_timeout">None</param> -->
         </plugin>
         <plugin id="cli" type="runner" load="galaxy.jobs.runners.cli:ShellJobRunner" />
         <plugin id="condor" type="runner" load="galaxy.jobs.runners.condor:CondorJobRunner" />

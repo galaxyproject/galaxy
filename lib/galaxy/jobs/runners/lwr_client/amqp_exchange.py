@@ -6,6 +6,7 @@ except ImportError:
 
 import socket
 import logging
+from time import sleep
 log = logging.getLogger(__name__)
 
 
@@ -47,13 +48,18 @@ class LwrExchange(object):
 
     def consume(self, queue_name, callback, check=True, connection_kwargs={}):
         queue = self.__queue(queue_name)
-        with self.connection(self.__url, ssl=self.__connect_ssl, **connection_kwargs) as connection:
-            with kombu.Consumer(connection, queues=[queue], callbacks=[callback], accept=['json']):
-                while check:
-                    try:
-                        connection.drain_events(timeout=self.__timeout)
-                    except socket.timeout:
-                        pass
+        while check:
+            try:
+                with self.connection(self.__url, ssl=self.__connect_ssl, **connection_kwargs) as connection:
+                    with kombu.Consumer(connection, queues=[queue], callbacks=[callback], accept=['json']):
+                        while check and connection.connected:
+                            try:
+                                connection.drain_events(timeout=self.__timeout)
+                            except socket.timeout:
+                                pass
+            except socket.error, exc:
+                log.warning('Got socket.error, will retry: %s', exc)
+                sleep(1)
 
     def publish(self, name, payload):
         with self.connection(self.__url, ssl=self.__connect_ssl) as connection:

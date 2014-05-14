@@ -47,10 +47,16 @@ class LwrJobRunner( AsynchronousJobRunner ):
         self._init_monitor_thread()
         self._init_worker_threads()
         amqp_connect_ssl_args = {}
+        amqp_consumer_timeout = False
         for kwd in kwds.keys():
             if kwd.startswith('amqp_connect_ssl_'):
                 amqp_connect_ssl_args[kwd] = kwds[kwd]
         client_manager_kwargs = {'transport_type': transport, 'cache': string_as_bool_or_none(cache), "url": url, 'amqp_connect_ssl_args': amqp_connect_ssl_args or None}
+        if 'amqp_consumer_timeout' in kwds:
+            if kwds['amqp_consumer_timeout'] == 'None':
+                client_manager_kwargs['amqp_consumer_timeout'] = None
+            else:
+                client_manager_kwargs['amqp_consumer_timeout'] = float(kwds['amqp_consumer_timeout'])
         self.galaxy_url = galaxy_url
         self.client_manager = build_client_manager(**client_manager_kwargs)
 

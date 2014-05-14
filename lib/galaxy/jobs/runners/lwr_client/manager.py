@@ -78,7 +78,11 @@ class MessageQueueClientManager(object):
         self.url = kwds.get('url')
         self.manager_name = kwds.get("manager", "_default_")
         self.connect_ssl = parse_amqp_connect_ssl_params(kwds.get('amqp_connect_ssl_args', None))
-        self.exchange = LwrExchange(self.url, self.manager_name, self.connect_ssl)
+        timeout = kwds.get('amqp_consumer_timeout', False)
+        if timeout is False:
+            self.exchange = LwrExchange(self.url, self.manager_name, self.connect_ssl)
+        else:
+            self.exchange = LwrExchange(self.url, self.manager_name, self.connect_ssl, timeout=timeout)
         self.status_cache = {}
         self.callback_lock = threading.Lock()
         self.callback_thread = None
