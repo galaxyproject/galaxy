@@ -42,7 +42,7 @@ class Tree( object ):
             if substructure.is_leaf:
                 yield dict_map( element, collection_dict )
             else:
-                sub_collections = dict_map( lambda collection: element( collection ).child_collection )
+                sub_collections = dict_map( lambda collection: element( collection ).child_collection, collection_dict )
                 for element in substructure._walk_collections( sub_collections ):
                     yield element
 
