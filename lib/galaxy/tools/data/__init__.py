@@ -56,19 +56,22 @@ class ToolDataTableManager( object ):
         3. When a tool shed repository that includes a tool_data_table_conf.xml.sample file is being installed into a local
            Galaxy instance.  In this case, we have 2 entry types to handle, files whose root tag is <tables>, for example:
         """
-        tree = util.parse_xml( config_filename )
-        root = tree.getroot()
         table_elems = []
-        for table_elem in root.findall( 'table' ):
-            table = ToolDataTable.from_elem( table_elem, tool_data_path, from_shed_config )
-            table_elems.append( table_elem )
-            if table.name not in self.data_tables:
-                self.data_tables[ table.name ] = table
-                log.debug( "Loaded tool data table '%s'", table.name )
-            else:
-                log.debug( "Loading another instance of data table '%s', attempting to merge content.", table.name )
-                self.data_tables[ table.name ].merge_tool_data_table( table, allow_duplicates=False ) #only merge content, do not persist to disk, do not allow duplicate rows when merging
-                # FIXME: This does not account for an entry with the same unique build ID, but a different path.
+        if not isinstance( config_filename, list ):
+            config_filename = [ config_filename ]
+        for filename in config_filename:
+            tree = util.parse_xml( filename )
+            root = tree.getroot()
+            for table_elem in root.findall( 'table' ):
+                table = ToolDataTable.from_elem( table_elem, tool_data_path, from_shed_config )
+                table_elems.append( table_elem )
+                if table.name not in self.data_tables:
+                    self.data_tables[ table.name ] = table
+                    log.debug( "Loaded tool data table '%s'", table.name )
+                else:
+                    log.debug( "Loading another instance of data table '%s', attempting to merge content.", table.name )
+                    self.data_tables[ table.name ].merge_tool_data_table( table, allow_duplicates=False ) #only merge content, do not persist to disk, do not allow duplicate rows when merging
+                    # FIXME: This does not account for an entry with the same unique build ID, but a different path.
         return table_elems
 
     def add_new_entries_from_config_file( self, config_filename, tool_data_path, shed_tool_data_table_config, persist=False ):

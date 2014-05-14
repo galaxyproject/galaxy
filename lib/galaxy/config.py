@@ -102,7 +102,7 @@ class Configuration( object ):
             self.shed_tool_data_path = resolve_path( self.shed_tool_data_path, self.root )
         else:
             self.shed_tool_data_path = self.tool_data_path
-        self.tool_data_table_config_path = resolve_path( kwargs.get( 'tool_data_table_config_path', 'tool_data_table_conf.xml' ), self.root )
+        self.tool_data_table_config_path = [ resolve_path( x, self.root ) for x in kwargs.get( 'tool_data_table_config_path', 'tool_data_table_conf.xml' ).split( ',' ) ]
         self.shed_tool_data_table_config = resolve_path( kwargs.get( 'shed_tool_data_table_config', 'shed_tool_data_table_conf.xml' ), self.root )
         self.enable_tool_shed_check = string_as_bool( kwargs.get( 'enable_tool_shed_check', False ) )
         self.manage_dependency_relationships = string_as_bool( kwargs.get( 'manage_dependency_relationships', False ) )
