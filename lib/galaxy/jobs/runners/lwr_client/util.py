@@ -65,7 +65,9 @@ def directory_files(directory):
 def parse_amqp_connect_ssl_params(params):
     ssl = None
     rval = None
-    ssl_options = filter(lambda x: x.startswith('amqp_connect_ssl_'), params.keys())
+    ssl_options = []
+    if params:
+        ssl_options = filter(lambda x: x.startswith('amqp_connect_ssl_'), params.keys())
     if ssl_options:
         ssl = __import__('ssl')
         rval = {}
