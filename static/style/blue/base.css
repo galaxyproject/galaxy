@@ -1305,18 +1305,21 @@ tr.light:hover td{background-color:#f5e8cc}
 tr.dark td{background-color:#d6b161;color:white}
 tr.dark:hover td{background-color:#ebd4a4;color:white}
 a.dark{color:white}
-.modal_table tr{border-bottom:1px solid #5f6990 !important}
-.modal_table th{border:none !important}
-.modal_table td{border:none !important}
+.dataset_table tr{border-bottom:1px solid #5f6990 !important}
+.dataset_table th{border:none !important}
+.dataset_table td{border:none !important}
 th.button_heading{width:2em}
-#library_folder_toolbar{margin-bottom:1em}#library_folder_toolbar span{margin-right:0.2em}
+.bigdrop.select2-container .select2-results{max-height:300px}
+.bigdrop .select2-results{max-height:300px}
+.select2-container-multi{width:100%}
+.roles-selection{width:66%}
 #library_toolbar{margin-bottom:1em}#library_toolbar span{margin-right:0.2em}
 img.expanderIcon{padding-right:4px}
 input.datasetCheckbox,li,ul{padding:0;margin:0}
 .rowTitle{padding:2px}
 ul{list-style:none}
 .libraryTitle th{text-align:left}
-pre.peek{background:white;color:black;width:100%;overflow:auto}
+pre.peek{background:white;color:black;overflow:auto}
 pre.peek th{color:white;background:#ebd9b2}
 span.expandLink{padding-left:12px;display:inline-block;vertical-align:middle;background:url(../images/silk/resultset_next.png) no-repeat}
 .folderRow.expanded span.expandLink{background:url(../images/silk/resultset_bottom.png) no-repeat}

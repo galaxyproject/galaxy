@@ -218,6 +218,12 @@ def app_factory( global_conf, **kwargs ):
                            action='show',
                            conditions=dict( method=[ "GET" ] ) )
 
+    webapp.mapper.connect( 'show_legitimate_lda_roles',
+                           '/api/libraries/datasets/:encoded_dataset_id/permissions',
+                           controller='lda_datasets',
+                           action='show_roles',
+                           conditions=dict( method=[ "GET" ] ) )
+
     webapp.mapper.connect( 'delete_lda_item',
                            '/api/libraries/datasets/:encoded_dataset_id',
                            controller='lda_datasets',

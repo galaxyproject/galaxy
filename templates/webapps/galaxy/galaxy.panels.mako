@@ -31,6 +31,7 @@
     ${h.js(
         'libs/jquery/jquery',
         'libs/jquery/jquery-ui',
+        "libs/jquery/select2",
         'libs/bootstrap',
         'libs/underscore',
         'libs/backbone/backbone',

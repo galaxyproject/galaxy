@@ -68,53 +68,39 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
             raise exceptions.InternalServerError( 'Error loading from the database.' )
 
         current_user_roles = trans.get_current_user_roles()
-        can_add_library_item = trans.user_is_admin() or trans.app.security_agent.can_add_library_item( current_user_roles, folder )
 
-        if not ( trans.user_is_admin() or trans.app.security_agent.can_access_library_item( current_user_roles, folder, trans.user ) ):
-            if folder.parent_id is None:
-                try:
-                    library = trans.sa_session.query( trans.app.model.Library ).filter( trans.app.model.Library.table.c.root_folder_id == decoded_folder_id ).one()
-                except Exception:
-                    raise exceptions.InternalServerError( 'Error loading from the database.' )
-                if trans.app.security_agent.library_is_unrestricted( library ):
-                    pass
-                else:
-                    if trans.user:
-                        log.warning( "SECURITY: User (id: %s) without proper access rights is trying to load folder with ID of %s" % ( trans.user.id, decoded_folder_id ) )
-                    else:
-                        log.warning( "SECURITY: Anonymous user without proper access rights is trying to load folder with ID of %s" % ( decoded_folder_id ) )
-                    raise exceptions.ObjectNotFound( 'Folder with the id provided ( %s ) was not found' % str( folder_id ) )
+        # Special level of security on top of libraries.
+        if trans.app.security_agent.can_access_library( current_user_roles, folder.parent_library ):
+            pass
+        else:
+            if trans.user:
+                log.warning( "SECURITY: User (id: %s) without proper access rights is trying to load folder with ID of %s" % ( trans.user.id, decoded_folder_id ) )
             else:
-                if trans.user:
-                    log.warning( "SECURITY: User (id: %s) without proper access rights is trying to load folder with ID of %s" % ( trans.user.id, decoded_folder_id ) )
-                else:
-                    log.warning( "SECURITY: Anonymous user without proper access rights is trying to load folder with ID of %s" % ( decoded_folder_id ) )
-                raise exceptions.ObjectNotFound( 'Folder with the id provided ( %s ) was not found' % str( folder_id ) )
+                log.warning( "SECURITY: Anonymous user is trying to load restricted folder with ID of %s" % ( decoded_folder_id ) )
+            raise exceptions.ObjectNotFound( 'Folder with the id provided ( %s ) was not found' % str( folder_id ) )
 
-        def build_path( folder ):
-            """
-            Search the path upwards recursively and load the whole route of
-            names and ids for breadcrumb building purposes.
-
-            :param folder: current folder for navigating up
-            :param type:   Galaxy LibraryFolder
-
-            :returns:   list consisting of full path to the library
-            :type:      list
-            """
-            path_to_root = []
-            # We are almost in root
-            if folder.parent_id is None:
-                path_to_root.append( ( 'F' + trans.security.encode_id( folder.id ), folder.name ) )
-            else:
-            # We add the current folder and traverse up one folder.
-                path_to_root.append( ( 'F' + trans.security.encode_id( folder.id ), folder.name ) )
-                upper_folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( folder.parent_id )
-                path_to_root.extend( build_path( upper_folder ) )
-            return path_to_root
-
-        # Return the reversed path so it starts with the library node.
-        full_path = build_path( folder )[::-1]
+        # if not ( trans.user_is_admin() or trans.app.security_agent.can_access_library_item( current_user_roles, folder, trans.user ) ):
+        #     log.debug('folder parent id:   ' + str(folder.parent_id))
+        #     if folder.parent_id is None:
+        #         try:
+        #             library = trans.sa_session.query( trans.app.model.Library ).filter( trans.app.model.Library.table.c.root_folder_id == decoded_folder_id ).one()
+        #         except Exception:
+        #             raise exceptions.InternalServerError( 'Error loading from the database.' )
+        #         if trans.app.security_agent.library_is_unrestricted( library ):
+        #             pass
+        #         else:
+        #             if trans.user:
+        #                 log.warning( "SECURITY: User (id: %s) without proper access rights is trying to load folder with ID of %s" % ( trans.user.id, decoded_folder_id ) )
+        #             else:
+        #                 log.warning( "SECURITY: Anonymous user without proper access rights is trying to load folder with ID of %s" % ( decoded_folder_id ) )
+        #             raise exceptions.ObjectNotFound( 'Folder with the id provided ( %s ) was not found' % str( folder_id ) )
+            # else:
+            #     if trans.user:
+            #         log.warning( "SECURITY: User (id: %s) without proper access rights is trying to load folder with ID of %s" % ( trans.user.id, decoded_folder_id ) )
+            #     else:
+            #         log.debug('PARENT ID IS NOT NONE')
+            #         log.warning( "SECURITY: Anonymous user without proper access rights is trying to load folder with ID of %s" % ( decoded_folder_id ) )
+            #     raise exceptions.ObjectNotFound( 'Folder with the id provided ( %s ) was not found' % str( folder_id ) )
 
         folder_contents = []
         update_time = ''
@@ -128,17 +114,42 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
 
             if content_item.api_type == 'folder':
                 encoded_id = 'F' + encoded_id
+                # Check whether user can modify current folder
+                can_modify = False
+                if trans.user_is_admin():
+                    can_modify = True
+                elif trans.user:
+                    can_modify = trans.app.security_agent.can_modify_library_item( current_user_roles, folder )
+                return_item.update( dict( can_modify=can_modify ) )
 
             if content_item.api_type == 'file':
-                library_dataset_dict = content_item.to_dict()
-                library_dataset_dict[ 'is_unrestricted' ] = trans.app.security_agent.dataset_is_public( content_item.library_dataset_dataset_association.dataset )
-                library_dataset_dict[ 'is_private' ] = trans.app.security_agent.dataset_is_private_to_user( trans, content_item )
+                # Is the dataset public or private?
+                # When both are False the dataset is 'restricted'
+                is_private = False
+                is_unrestricted = False
+                if trans.app.security_agent.dataset_is_public( content_item.library_dataset_dataset_association.dataset ):
+                    is_unrestricted = True
+                else:
+                    is_unrestricted = False
+                    if trans.user:
+                        is_private = trans.app.security_agent.dataset_is_private_to_user( trans, content_item )
 
+                # Can user manage the permissions on the dataset?
+                can_manage = False
+                if trans.user_is_admin():
+                    can_manage = True
+                elif trans.user:
+                    can_manage = trans.app.security_agent.can_manage_dataset( current_user_roles, content_item.library_dataset_dataset_association.dataset )
+
+                nice_size = util.nice_size( int( content_item.library_dataset_dataset_association.get_size() ) )
+
+                library_dataset_dict = content_item.to_dict()
                 return_item.update( dict( data_type=library_dataset_dict[ 'data_type' ],
-                                          file_size=library_dataset_dict[ 'file_size' ],
                                           date_uploaded=library_dataset_dict[ 'date_uploaded' ],
-                                          is_unrestricted=library_dataset_dict[ 'is_unrestricted' ],
-                                          is_private=library_dataset_dict[ 'is_private' ] ) )
+                                          is_unrestricted=is_unrestricted,
+                                          is_private=is_private,
+                                          can_manage=can_manage,
+                                          file_size=nice_size ) )
 
             # For every item include the default meta-data
             return_item.update( dict( id=encoded_id,
@@ -150,7 +161,42 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
                                       ) )
             folder_contents.append( return_item )
 
-        return { 'metadata': { 'full_path': full_path, 'can_add_library_item': can_add_library_item, 'folder_name': folder.name }, 'folder_contents': folder_contents }
+        # Return the reversed path so it starts with the library node.
+        full_path = self.build_path( trans, folder )[ ::-1 ]
+
+        # Check whether user can add items to the current folder
+        can_add_library_item = trans.user_is_admin() or trans.app.security_agent.can_add_library_item( current_user_roles, folder )
+
+        # Check whether user can modify current folder
+        can_modify_folder = trans.app.security_agent.can_modify_library_item( current_user_roles, folder )
+
+        metadata = dict( full_path=full_path,
+                         can_add_library_item=can_add_library_item,
+                         can_modify_folder=can_modify_folder )
+        folder_container = dict( metadata=metadata, folder_contents=folder_contents )
+        return folder_container
+
+    def build_path( self, trans, folder ):
+        """
+        Search the path upwards recursively and load the whole route of
+        names and ids for breadcrumb building purposes.
+
+        :param folder: current folder for navigating up
+        :param type:   Galaxy LibraryFolder
+
+        :returns:   list consisting of full path to the library
+        :type:      list
+        """
+        path_to_root = []
+        # We are almost in root
+        if folder.parent_id is None:
+            path_to_root.append( ( 'F' + trans.security.encode_id( folder.id ), folder.name ) )
+        else:
+        # We add the current folder and traverse up one folder.
+            path_to_root.append( ( 'F' + trans.security.encode_id( folder.id ), folder.name ) )
+            upper_folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( folder.parent_id )
+            path_to_root.extend( self.build_path( trans, upper_folder ) )
+        return path_to_root
 
     def _load_folder_contents( self, trans, folder, include_deleted ):
         """
@@ -291,14 +337,13 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
         :param  encoded_folder_id:  encoded id of Galaxy LibraryFolder
         :type   encoded_folder_id:  encoded string
 
-        :returns:   last 16 chars of the encoded id in case it was Folder
-            (had 'F' prepended)
+        :returns:   encoded id of Folder (had 'F' prepended)
         :type:  string
 
         :raises:    MalformedId
         """
-        if ( len( encoded_folder_id ) == 17 and encoded_folder_id.startswith( 'F' )):
-            return encoded_folder_id[1:]
+        if ( ( len( encoded_folder_id ) % 16 == 1 ) and encoded_folder_id.startswith( 'F' ) ):
+            return encoded_folder_id[ 1: ]
         else:
             raise exceptions.MalformedId( 'Malformed folder id ( %s ) specified, unable to decode.' % str( encoded_folder_id ) )
 
@@ -307,11 +352,11 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
         """
         GET /api/folders/{encoded_folder_id}/
         """
-        raise exceptions.NotImplemented( 'Showing the library folder content is not implemented.' )
+        raise exceptions.NotImplemented( 'Showing the library folder content is not implemented here.' )
 
     @web.expose_api
     def update( self, trans, id,  library_id, payload, **kwd ):
         """
         PUT /api/folders/{encoded_folder_id}/contents
         """
-        raise exceptions.NotImplemented( 'Updating the library folder content is not implemented.' )
+        raise exceptions.NotImplemented( 'Updating the library folder content is not implemented here.' )

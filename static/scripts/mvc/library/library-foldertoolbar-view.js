@@ -519,16 +519,16 @@ var FolderToolbarView = Backbone.View.extend({
     // CONTAINER
     tmpl_array.push('<div class="library_style_container">');
     // TOOLBAR
-    tmpl_array.push('<div id="library_folder_toolbar">');
+    tmpl_array.push('<div id="library_toolbar">');
     tmpl_array.push('<span data-toggle="tooltip" data-placement="top" class="logged-dataset-manipulation" title="Include deleted datasets" style="display:none;"><input id="include_deleted_datasets_chk" style="margin: 0;" type="checkbox"> <span class="fa fa-trash-o fa-lg"></span></input></span>');
     tmpl_array.push('<div class="btn-group add-library-items" style="display:none;">');
     tmpl_array.push('   <button data-toggle="tooltip" data-placement="top" title="Create New Folder" id="toolbtn_create_folder" class="btn btn-default primary-button" type="button"><span class="fa fa-plus"></span> <span class="fa fa-folder"></span></button>');
     tmpl_array.push('   <button data-toggle="tooltip" data-placement="top" title="Add Datasets to Current Folder" id="toolbtn_add_files" class="btn btn-default toolbtn_add_files primary-button" type="button"><span class="fa fa-plus"></span> <span class="fa fa-file"></span></span></button>');
     tmpl_array.push('</div>');
-    tmpl_array.push('   <button data-toggle="tooltip" data-placement="top" title="Import selected datasets into history" id="toolbtn_bulk_import" class="primary-button dataset-manipulation" style="margin-left: 0.5em; display:none;" type="button"><span class="fa fa-book"></span> to history</button>');
+    tmpl_array.push('   <button data-toggle="tooltip" data-placement="top" title="Import selected datasets into history" id="toolbtn_bulk_import" class="primary-button dataset-manipulation" style="margin-left: 0.5em; display:none;" type="button"><span class="fa fa-book"></span> to History</button>');
     tmpl_array.push('   <div id="toolbtn_dl" class="btn-group dataset-manipulation" style="margin-left: 0.5em; display:none; ">');
     tmpl_array.push('       <button title="Download selected datasets as archive" id="drop_toggle" type="button" class="primary-button dropdown-toggle" data-toggle="dropdown">');
-    tmpl_array.push('       <span class="fa fa-download"></span> download <span class="caret"></span>');
+    tmpl_array.push('       <span class="fa fa-download"></span> Download <span class="caret"></span>');
     tmpl_array.push('       </button>');
     tmpl_array.push('       <ul class="dropdown-menu" role="menu">');
     tmpl_array.push('          <li id="download_archive"><a href="#/folders/<%= id %>/download/tgz">.tar.gz</a></li>');
@@ -536,7 +536,7 @@ var FolderToolbarView = Backbone.View.extend({
     tmpl_array.push('          <li id="download_archive"><a href="#/folders/<%= id %>/download/zip">.zip</a></li>');
     tmpl_array.push('       </ul>');
     tmpl_array.push('   </div>');
-    tmpl_array.push('   <button data-toggle="tooltip" data-placement="top" title="Mark selected datasets deleted" id="toolbtn_bulk_delete" class="primary-button logged-dataset-manipulation" style="margin-left: 0.5em; display:none; " type="button"><span class="fa fa-times"></span> delete</button>');
+    tmpl_array.push('   <button data-toggle="tooltip" data-placement="top" title="Mark selected datasets deleted" id="toolbtn_bulk_delete" class="primary-button logged-dataset-manipulation" style="margin-left: 0.5em; display:none; " type="button"><span class="fa fa-times"></span> Delete</button>');
     tmpl_array.push('   </div>');
     tmpl_array.push('   <div id="folder_items_element">');
     // library items will append here

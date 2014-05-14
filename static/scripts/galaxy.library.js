@@ -11,7 +11,8 @@ define([
     "mvc/library/library-folderlist-view",
     "mvc/library/library-librarylist-view",
     "mvc/library/library-librarytoolbar-view",
-    "mvc/library/library-foldertoolbar-view"
+    "mvc/library/library-foldertoolbar-view",
+    "mvc/library/library-dataset-view"
     ],
 function(mod_masthead,
          mod_utils,
@@ -21,7 +22,8 @@ function(mod_masthead,
          mod_folderlist_view,
          mod_librarylist_view,
          mod_librarytoolbar_view,
-         mod_foldertoolbar_view
+         mod_foldertoolbar_view,
+         mod_library_dataset_view
          ) {
 
 // ============================================================================
@@ -34,10 +36,11 @@ var LibraryRouter = Backbone.Router.extend({
   },
 
   routes: {
-    ""                                        : "libraries",
-    "folders/:id"                             : "folder_content",
-    "folders/:folder_id/datasets/:dataset_id" : "dataset_detail",
-    "folders/:folder_id/download/:format"     : "download"
+    ""                                                     : "libraries",
+    "folders/:id"                                          : "folder_content",
+    "folders/:folder_id/datasets/:dataset_id"              : "dataset_detail",
+    "folders/:folder_id/datasets/:dataset_id/permissions"  : "dataset_permissions",
+    "folders/:folder_id/download/:format"                  : "download"
   },
 
   back: function() {
@@ -80,14 +83,11 @@ var GalaxyLibrary = Backbone.View.extend({
         this.library_router = new LibraryRouter();
 
         this.library_router.on('route:libraries', function() {
-          // initialize and render the toolbar first
           Galaxy.libraries.libraryToolbarView = new mod_librarytoolbar_view.LibraryToolbarView();
-          // initialize and render libraries second
           Galaxy.libraries.libraryListView = new mod_librarylist_view.LibraryListView();
         });
 
         this.library_router.on('route:folder_content', function(id) {
-            // TODO maybe caching somewhere here, sessionstorage/localstorage?
             if (Galaxy.libraries.folderToolbarView){ 
               Galaxy.libraries.folderToolbarView.$el.unbind('click');
             }
@@ -106,12 +106,10 @@ var GalaxyLibrary = Backbone.View.extend({
         });
 
        this.library_router.on('route:dataset_detail', function(folder_id, dataset_id){
-        // if (Galaxy.libraries.folderToolbarView){ 
-          // Galaxy.libraries.folderListView = new mod_folderlist_view.FolderListView({id: folder_id, dataset_id: dataset_id});
-        // } else {
-          Galaxy.libraries.folderToolbarView = new mod_foldertoolbar_view.FolderToolbarView({id: folder_id});
-          Galaxy.libraries.folderListView = new mod_folderlist_view.FolderListView({id: folder_id, dataset_id: dataset_id});
-        // }
+          new mod_library_dataset_view.LibraryDatasetView({id: dataset_id})
+       });
+       this.library_router.on('route:dataset_permissions', function(folder_id, dataset_id){
+          new mod_library_dataset_view.LibraryDatasetView({id: dataset_id, show_permissions: true})
        });
 
     Backbone.history.start({pushState: false});

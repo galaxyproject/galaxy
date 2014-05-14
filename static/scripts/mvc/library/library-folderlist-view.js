@@ -4,12 +4,16 @@ define([
     "utils/utils",
     "libs/toastr",
     "mvc/library/library-model",
-    "mvc/library/library-folderrow-view"],
+    "mvc/library/library-folderrow-view",
+    "mvc/library/library-dataset-view"
+    ],
 function(mod_masthead,
          mod_utils,
          mod_toastr,
          mod_library_model,
-         mod_library_folderrow_view) {
+         mod_library_folderrow_view,
+         mod_library_dataset_view
+         ) {
 
 var FolderListView = Backbone.View.extend({
   el : '#folder_items_element',
@@ -42,16 +46,14 @@ var FolderListView = Backbone.View.extend({
   },
 
   fetchFolder: function(options){
-    // this.options = _.defaults(this.options, options);
     var options = options || {};
     this.options.include_deleted = options.include_deleted;
     var that = this;
 
     this.collection = new mod_library_model.Folder();
 
-    // start to listen if someone adds a model to the collection
+    // start to listen if someone modifies collection
     this.listenTo(this.collection, 'add', this.renderOne);
-
     this.listenTo(this.collection, 'remove', this.removeOne);
 
     this.folderContainer = new mod_library_model.FolderContainer({id: this.options.id});
@@ -65,7 +67,12 @@ var FolderListView = Backbone.View.extend({
           that.render();
           that.addAll(folder_container.get('folder').models);
           if (that.options.dataset_id){
-            _.findWhere(that.rowViews, {id: that.options.dataset_id}).showDatasetDetails();
+            row = _.findWhere(that.rowViews, {id: that.options.dataset_id});
+            if (row) {
+              row.showDatasetDetails();
+            } else {
+              mod_toastr.error('Dataset not found. Showing folder instead.');
+            }
           }
         },
         error: function(model, response){
@@ -109,7 +116,7 @@ var FolderListView = Backbone.View.extend({
     var fetched_metadata = this.folderContainer.attributes.metadata;
     fetched_metadata.contains_file = typeof this.collection.findWhere({type: 'file'}) !== 'undefined';
     Galaxy.libraries.folderToolbarView.configureElements(fetched_metadata);
-    $('.deleted_dataset').hover(function() {
+    $('.dataset').hover(function() {
       $(this).find('.show_on_hover').show();
     }, function () {
       $(this).find('.show_on_hover').hide();
@@ -151,7 +158,7 @@ var FolderListView = Backbone.View.extend({
   renderOne: function(model){
     if (model.get('data_type') !== 'folder'){
         this.options.contains_file = true;
-        model.set('readable_size', this.size_to_string(model.get('file_size')));
+        // model.set('readable_size', this.size_to_string(model.get('file_size')));
       }
     model.set('folder_id', this.id);
     var rowView = new mod_library_folderrow_view.FolderRowView(model);
@@ -161,7 +168,7 @@ var FolderListView = Backbone.View.extend({
 
     this.$el.find('#first_folder_item').after(rowView.el);
 
-    $('.deleted_dataset').hover(function() {
+    $('.dataset').hover(function() {
       $(this).find('.show_on_hover').show();
     }, function () {
       $(this).find('.show_on_hover').hide();
@@ -211,21 +218,6 @@ var FolderListView = Backbone.View.extend({
               return this.collection.sortByNameDesc();
           }
       }
-  },
-
-  /** 
-   * convert size to nice string
-   * @param  {int} size
-   * @return {string} readable representation of size with units
-   */
-  size_to_string : function (size){
-    var unit = "";
-    if (size >= 100000000000)   { size = size / 100000000000; unit = "TB"; } else
-    if (size >= 100000000)      { size = size / 100000000; unit = "GB"; } else
-    if (size >= 100000)         { size = size / 100000; unit = "MB"; } else
-    if (size >= 100)            { size = size / 100; unit = "KB"; } else
-    { size = size * 10; unit = "b"; }
-    return (Math.round(size) / 10) + unit;
   },
 
   /**
@@ -320,7 +312,7 @@ var FolderListView = Backbone.View.extend({
       tmpl_array.push('       <th style="text-align: center; width: 20px; " title="Check to select all datasets"><input id="select-all-checkboxes" style="margin: 0;" type="checkbox"></th>');
       tmpl_array.push('       <th><a class="sort-folder-link" title="Click to reverse order" href="#">name</a> <span title="Sorted alphabetically" class="fa fa-sort-alpha-<%- order %>"></span></th>');
       tmpl_array.push('       <th style="width:5%;">data type</th>');
-      tmpl_array.push('       <th style="width:5%;">size</th>');
+      tmpl_array.push('       <th style="width:10%;">size</th>');
       tmpl_array.push('       <th style="width:160px;">time updated (UTC)</th>');
       tmpl_array.push('       <th style="width:10%;"></th> ');
       tmpl_array.push('   </thead>');

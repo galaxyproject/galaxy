@@ -80,7 +80,7 @@ a.dark
     color: white;
 }
 
-.modal_table{
+.dataset_table{
     tr {
         border-bottom: 1px solid #5f6990 !important;
     }
@@ -97,12 +97,19 @@ th.button_heading
     width: 2em;
 }
 
-#library_folder_toolbar {
-    margin-bottom: 1em;
-    span {
-        margin-right: 0.2em;
-    }
+.bigdrop.select2-container .select2-results {
+    max-height: 300px;
 }
+.bigdrop .select2-results {
+    max-height: 300px;
+}
+.select2-container-multi{
+    width: 100%;
+}
+.roles-selection {
+    width: 66%;
+}
+
 #library_toolbar {
     margin-bottom: 1em;
     span {
@@ -135,7 +142,7 @@ ul {
 pre.peek {
     background: white;
     color: black;
-    width: 100%;
+    // width: 100%;
     overflow: auto;
 }
 

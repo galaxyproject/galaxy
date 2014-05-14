@@ -47,10 +47,66 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
             dataset = self.get_library_dataset( trans, id=id, check_ownership=False, check_accessible=True )
         except Exception:
             raise exceptions.ObjectNotFound( 'Requested dataset was not found.' )
+
+        # Build the full path for breadcrumb purposes.
+        full_path = self._build_path( trans, dataset.folder )
+        dataset_item = ( trans.security.encode_id( dataset.id ), dataset.name )
+        full_path.insert(0, dataset_item)
+        full_path = full_path[ ::-1 ]
+
+        nice_size = util.nice_size( int( dataset.library_dataset_dataset_association.get_size() ) )
+
+        date_uploaded = dataset.library_dataset_dataset_association.create_time.strftime( "%Y-%m-%d %I:%M %p" )
+
         rval = trans.security.encode_all_ids( dataset.to_dict() )
         rval[ 'deleted' ] = dataset.deleted
         rval[ 'folder_id' ] = 'F' + rval[ 'folder_id' ]
+        rval[ 'full_path' ] = full_path
+        rval[ 'file_size' ] = nice_size
+        rval[ 'date_uploaded' ] = date_uploaded
         return rval
+
+    @expose_api
+    def show_roles( self, trans, encoded_dataset_id, **kwd ):
+        """
+        show_roles( self, trans, id, **kwd ):
+        GET /api/libraries/datasets/{encoded_dataset_id}/permissions:
+            Displays information about current and available roles
+            for a given dataset permission.
+        """
+        current_user_roles = trans.get_current_user_roles()
+        page = int( kwd.get( 'page', None ) )
+        page_limit = int( kwd.get( 'page_limit', None ) )
+        query = kwd.get ( 'q', None )
+
+        if page is None:
+            page = 1
+
+        if page_limit is None:
+            page_limit = 10
+
+        try:
+            library_dataset = self.get_library_dataset( trans, id=encoded_dataset_id, check_ownership=False, check_accessible=False )
+        except Exception, e:
+            raise exceptions.ObjectNotFound( 'Requested dataset was not found.' + str(e) )
+        library = library_dataset.folder.parent_library
+        dataset = library_dataset.library_dataset_dataset_association.dataset
+
+        can_manage = trans.app.security_agent.can_manage_dataset( current_user_roles, dataset ) or trans.user_is_admin()
+        if not can_manage:
+            raise exceptions.InsufficientPermissionsException( 'You do not have proper permissions to access permissions.' )
+
+        cntrller = 'standard_user'
+        if trans.user_is_admin():
+            cntrller = 'library_admin'
+
+        roles = trans.app.security_agent.get_legitimate_roles( trans, library, cntrller )
+        total_roles = len( roles )
+        return_roles = []
+        for role in roles:
+            return_roles.append( dict( id=role.name, name=role.name, type=role.type ) )
+
+        return dict( roles=return_roles, page=page, page_limit=page_limit, total=total_roles )
 
     @expose_api
     def delete( self, trans, encoded_dataset_id, **kwd ):
@@ -107,7 +163,9 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         :raises: MessageException, ItemDeletionException, ItemAccessibilityException, HTTPBadRequest, OSError, IOError, ObjectNotFound
         """
         lddas = []
-        datasets_to_download = kwd[ 'ldda_ids%5B%5D' ]
+        datasets_to_download = kwd.get( 'ldda_ids%5B%5D', None )
+        if datasets_to_download is None:
+            datasets_to_download = kwd.get( 'ldda_ids', None )
 
         if ( datasets_to_download is not None ):
             datasets_to_download = util.listify( datasets_to_download )
@@ -121,6 +179,8 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
                     raise exceptions.InternalServerError( 'Internal error. ' + str( e.err_msg ) )
                 except Exception, e:
                     raise exceptions.InternalServerError( 'Unknown error. ' + str( e ) )
+        else:
+            raise exceptions.RequestParameterMissingException( 'Request has to contain a list of dataset ids to download.' )
 
         if format in [ 'zip', 'tgz', 'tbz' ]:
                 # error = False
@@ -262,3 +322,25 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
                     raise exceptions.InternalServerError( "This dataset contains no content." )
         else:
             raise exceptions.RequestParameterInvalidException( "Wrong format parameter specified" )
+
+    def _build_path( self, trans, folder ):
+        """
+        Search the path upwards recursively and load the whole route of
+        names and ids for breadcrumb building purposes.
+
+        :param folder: current folder for navigating up
+        :param type:   Galaxy LibraryFolder
+
+        :returns:   list consisting of full path to the library
+        :type:      list
+        """
+        path_to_root = []
+        # We are almost in root
+        if folder.parent_id is None:
+            path_to_root.append( ( 'F' + trans.security.encode_id( folder.id ), folder.name ) )
+        else:
+        # We add the current folder and traverse up one folder.
+            path_to_root.append( ( 'F' + trans.security.encode_id( folder.id ), folder.name ) )
+            upper_folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( folder.parent_id )
+            path_to_root.extend( self._build_path( trans, upper_folder ) )
+        return path_to_root
