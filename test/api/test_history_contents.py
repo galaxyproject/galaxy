@@ -128,12 +128,28 @@ class HistoryContentsApiTestCase( api.ApiTestCase, TestsDatasets ):
         dataset_collection = show_response.json()
         assert dataset_collection[ "deleted" ]
 
-    def __show( self, hda ):
-        show_response = self._get( "histories/%s/contents/%s" % ( self.history_id, hda[ "id" ] ) )
+    def test_update_dataset_collection( self ):
+        payload = self.dataset_collection_populator.create_pair_payload(
+            self.history_id,
+            type="dataset_collection"
+        )
+        dataset_collection_response = self._post( "histories/%s/contents" % self.history_id, payload )
+        self._assert_status_code_is( dataset_collection_response, 200 )
+        hdca = dataset_collection_response.json()
+        update_url = self._api_url( "histories/%s/contents/dataset_collections/%s" % ( self.history_id, hdca[ "id" ] ), use_key=True )
+        # Awkward json.dumps required here because of https://trello.com/c/CQwmCeG6
+        body = json.dumps( dict( name="newnameforpair" ) )
+        update_response = put_request( update_url, data=body )
+        self._assert_status_code_is( update_response, 200 )
+        show_response = self.__show( hdca )
+        assert str( show_response.json()[ "name" ] ) == "newnameforpair"
+
+    def __show( self, contents ):
+        show_response = self._get( "histories/%s/contents/%ss/%s" % ( self.history_id, contents["history_content_type"], contents[ "id" ] ) )
         return show_response
 
     def __count_contents( self, history_id=None, **kwds ):
-        if history_id == None:
+        if history_id is None:
             history_id = self.history_id
         contents_response = self._get( "histories/%s/contents" % history_id, kwds )
         return len( contents_response.json() )

@@ -2636,20 +2636,8 @@ class DatasetCollection( object, Dictifiable, UsesAnnotations ):
         return new_collection
 
     def set_from_dict( self, new_data ):
-        editable_keys = ( 'name' )
-        changed = {}
-
-        # unknown keys are ignored here
-        for key in [ k for k in new_data.keys() if k in editable_keys ]:
-            new_val = new_data[ key ]
-            old_val = self.__getattribute__( key )
-            if new_val == old_val:
-                continue
-
-            self.__setattr__( key, new_val )
-            changed[ key ] = new_val
-
-        return changed
+        # Nothing currently editable in this class.
+        return {}
 
 
 class DatasetCollectionInstance( object, HasName ):
