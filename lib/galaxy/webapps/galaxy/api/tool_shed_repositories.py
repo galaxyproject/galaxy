@@ -66,6 +66,50 @@ class ToolShedRepositoriesController( BaseAPIController ):
             exported_workflows.append( display_dict )
         return exported_workflows
 
+    @web.expose_api
+    def get_latest_installable_revision( self, trans, payload, **kwd ):
+        """
+        POST /api/tool_shed_repositories/get_latest_installable_revision
+        Get the latest installable revision of a specified repository from a specified Tool Shed.
+
+        :param key: the current Galaxy admin user's API key
+
+        The following parameters are included in the payload.
+        :param tool_shed_url (required): the base URL of the Tool Shed from which to retrieve the Repository revision.
+        :param name (required): the name of the Repository
+        :param owner (required): the owner of the Repository
+        """
+        # Get the information about the repository to be installed from the payload.
+        tool_shed_url = payload.get( 'tool_shed_url', '' )
+        if not tool_shed_url:
+            raise HTTPBadRequest( detail="Missing required parameter 'tool_shed_url'." )
+        name = payload.get( 'name', '' )
+        if not name:
+            raise HTTPBadRequest( detail="Missing required parameter 'name'." )
+        owner = payload.get( 'owner', '' )
+        if not owner:
+            raise HTTPBadRequest( detail="Missing required parameter 'owner'." )
+        # Make sure the current user's API key proves he is an admin user in this Galaxy instance.
+        if not trans.user_is_admin():
+            raise HTTPForbidden( detail='You are not authorized to request the latest installable revision for a repository in this Galaxy instance.' )
+        params = '?name=%s&owner=%s' % ( name, owner )
+        url = common_util.url_join( tool_shed_url,
+                                    'api/repositories/get_ordered_installable_revisions%s' % params )
+        try:
+            raw_text = common_util.tool_shed_get( trans.app, tool_shed_url, url )
+        except Exception, e:
+            message = "Error attempting to retrieve the latest installable revision from tool shed %s for repository %s owned by %s: %s" % \
+                ( str( tool_shed_url ), str( name ), str( owner ), str( e ) )
+            log.debug( message )
+            return dict( status='error', error=message )
+        if raw_text:
+            # If successful, the response from get_ordered_installable_revisions will be a list of
+            # changeset_revision hash strings.
+            changeset_revisions = json.from_json_string( raw_text )
+            if len( changeset_revisions ) >= 1:
+                return changeset_revisions[ -1 ]
+        return suc.INITIAL_CHANGELOG_HASH
+
     def __get_value_mapper( self, trans, tool_shed_repository ):
         value_mapper={ 'id' : trans.security.encode_id( tool_shed_repository.id ),
                        'error_message' : tool_shed_repository.error_message or '' }
