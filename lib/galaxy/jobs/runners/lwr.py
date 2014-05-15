@@ -108,7 +108,7 @@ class LwrJobRunner( AsynchronousJobRunner ):
             sleep( 2 )
             job_state = self.__find_watched_job( job_id )
         if not job_state:
-            log.warn( "Failed to find job corresponding to final status %s in %s" % ( full_status, self.watched ) )
+            log.warn( "Failed to find job corresponding to status %s in %s" % ( full_status, self.watched ) )
         else:
             self.__update_job_state_for_lwr_status(job_state, full_status["status"])
 
