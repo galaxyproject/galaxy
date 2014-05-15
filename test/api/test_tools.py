@@ -204,8 +204,8 @@ class ToolsTestCase( api.ApiTestCase ):
         first_object = first_element[ "object" ]
         assert first_object[ "collection_type" ] == "paired"
         assert len( first_object[ "elements" ] ) == 2
-        first_object_left_element = first_object[ "elements" ][ 0 ]
-        self.assertEquals( outputs[ 0 ][ "id" ], first_object_left_element[ "object" ][ "id" ] )
+        first_object_forward_element = first_object[ "elements" ][ 0 ]
+        self.assertEquals( outputs[ 0 ][ "id" ], first_object_forward_element[ "object" ][ "id" ] )
 
     @skip_without_tool( "cat1" )
     def test_map_over_two_collections( self ):

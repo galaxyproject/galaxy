@@ -292,8 +292,8 @@ class DatasetCollectionPopulator( object ):
         hda1, hda2 = self.__datasets( history_id, count=2, contents=contents )
 
         element_identifiers = [
-            dict( name="left", src="hda", id=hda1[ "id" ] ),
-            dict( name="right", src="hda", id=hda2[ "id" ] ),
+            dict( name="forward", src="hda", id=hda1[ "id" ] ),
+            dict( name="reverse", src="hda", id=hda2[ "id" ] ),
         ]
         return element_identifiers
 

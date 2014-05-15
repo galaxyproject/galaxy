@@ -1,6 +1,6 @@
 <tool id="collection_paired_test" name="paired_test" version="0.1.0">
   <command>
-    cat #for $f in $f1# ${f} #end for# >> $out1;
+    cat $f1.forward $f1.reverse >> $out1;
   </command>
   <inputs>
     <param name="f1" type="data_collection" collection_type="paired" />
@@ -12,8 +12,8 @@
     <test>
       <param name="f1">
         <collection type="paired">
-          <element name="left" value="simple_line.txt" />
-          <element name="right" value="simple_line_alternative.txt" />
+          <element name="forward" value="simple_line.txt" />
+          <element name="reverse" value="simple_line_alternative.txt" />
         </collection>
       </param>
       <output name="out1">
