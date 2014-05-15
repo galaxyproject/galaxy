@@ -3,7 +3,7 @@ cd `dirname $0`
 
 check_if_not_started(){
 	# Search for all pids in the logs and tail for the last one
-	latest_pid=`egrep 'Starting server in PID [0-9]+' $1 -o | sed 's/Starting server in PID //g' | tail -n 1`
+	latest_pid=`egrep '^Starting server in PID [0-9]+.$' $1 -o | sed 's/Starting server in PID //g;s/\.$//g' | tail -n 1`
 	# Grab the current pid from the file we were given
 	current_pid_in_file=$(cat $2);
 	# If they're equivalent, then the current pid file agrees with our logs
