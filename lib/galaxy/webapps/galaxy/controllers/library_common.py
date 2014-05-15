@@ -473,6 +473,20 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
             dbkey = dbkey[0]
         file_formats = [ dtype_name for dtype_name, dtype_value in trans.app.datatypes_registry.datatypes_by_extension.iteritems() if dtype_value.allow_datatype_change ]
         file_formats.sort()
+
+        def __ok_to_edit_metadata( ldda_id ):
+            #prevent modifying metadata when dataset is queued or running as input/output
+            #This code could be more efficient, i.e. by using mappers, but to prevent slowing down loading a History panel, we'll leave the code here for now
+            for job_to_dataset_association in trans.sa_session.query( self.app.model.JobToInputLibraryDatasetAssociation ) \
+                                                              .filter_by( ldda_id=ldda_id ) \
+                                                              .all() \
+                                            + trans.sa_session.query( self.app.model.JobToOutputLibraryDatasetAssociation ) \
+                                                              .filter_by( ldda_id=ldda_id ) \
+                                                              .all():
+                if job_to_dataset_association.job.state not in [ job_to_dataset_association.job.states.OK, job_to_dataset_association.job.states.ERROR, job_to_dataset_association.job.states.DELETED ]:
+                    return False
+            return True
+
         # See if we have any associated templates
         widgets = []
         info_association, inherited = ldda.get_info_association()
@@ -480,14 +494,18 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
             widgets = ldda.get_template_widgets( trans )
         if params.get( 'change', False ):
             # The user clicked the Save button on the 'Change data type' form
-            if ldda.datatype.allow_datatype_change and trans.app.datatypes_registry.get_datatype_by_extension( params.datatype ).allow_datatype_change:
-                trans.app.datatypes_registry.change_datatype( ldda, params.datatype )
-                trans.sa_session.flush()
-                message = "Data type changed for library dataset '%s'." % ldda.name
-                status = 'done'
+            if __ok_to_edit_metadata( ldda.id ):
+                if ldda.datatype.allow_datatype_change and trans.app.datatypes_registry.get_datatype_by_extension( params.datatype ).allow_datatype_change:
+                    trans.app.datatypes_registry.change_datatype( ldda, params.datatype )
+                    trans.sa_session.flush()
+                    message = "Data type changed for library dataset '%s'." % ldda.name
+                    status = 'done'
+                else:
+                    message = "You are unable to change datatypes in this manner. Changing %s to %s is not allowed." % ( ldda.extension, params.datatype )
+                    status = 'error'
             else:
-                message = "You are unable to change datatypes in this manner. Changing %s to %s is not allowed." % ( ldda.extension, params.datatype )
-                status = 'error'
+                message = "This dataset is currently being used as input or output.  You cannot change datatype until the jobs have completed or you have canceled them."
+                status = "error"
         elif params.get( 'save', False ):
             # The user clicked the Save button on the 'Edit Attributes' form
             old_name = ldda.name
@@ -501,33 +519,40 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                 ldda.name = new_name
                 ldda.info = new_info
                 ldda.message = new_message
-                # The following for loop will save all metadata_spec items
-                for name, spec in ldda.datatype.metadata_spec.items():
-                    if spec.get("readonly"):
-                        continue
-                    optional = params.get( "is_" + name, None )
-                    if optional and optional == 'true':
-                        # optional element... == 'true' actually means it is NOT checked (and therefore ommitted)
-                        setattr( ldda.metadata, name, None )
-                    else:
-                        setattr( ldda.metadata, name, spec.unwrap( params.get ( name, None ) ) )
-                ldda.metadata.dbkey = dbkey
-                ldda.datatype.after_setting_metadata( ldda )
+                if __ok_to_edit_metadata( ldda.id ):
+                    # The following for loop will save all metadata_spec items
+                    for name, spec in ldda.datatype.metadata_spec.items():
+                        if spec.get("readonly"):
+                            continue
+                        optional = params.get( "is_" + name, None )
+                        if optional and optional == 'true':
+                            # optional element... == 'true' actually means it is NOT checked (and therefore ommitted)
+                            setattr( ldda.metadata, name, None )
+                        else:
+                            setattr( ldda.metadata, name, spec.unwrap( params.get ( name, None ) ) )
+                    ldda.metadata.dbkey = dbkey
+                    ldda.datatype.after_setting_metadata( ldda )
+                    message = "Attributes updated for library dataset '%s'." % ldda.name
+                    status = 'done'
+                else:
+                    message = "Attributes updated, but metadata could not be changed because this dataset is currently being used as input or output. You must cancel or wait for these jobs to complete before changing metadata."
+                    status = 'warning'
                 trans.sa_session.flush()
-                message = "Attributes updated for library dataset '%s'." % ldda.name
-                status = 'done'
         elif params.get( 'detect', False ):
             # The user clicked the Auto-detect button on the 'Edit Attributes' form
-            for name, spec in ldda.datatype.metadata_spec.items():
-                # We need to be careful about the attributes we are resetting
-                if name not in [ 'name', 'info', 'dbkey' ]:
-                    if spec.get( 'default' ):
-                        setattr( ldda.metadata, name, spec.unwrap( spec.get( 'default' ) ) )
-            ldda.datatype.set_meta( ldda )
-            ldda.datatype.after_setting_metadata( ldda )
+            if __ok_to_edit_metadata( ldda.id ):
+                for name, spec in ldda.datatype.metadata_spec.items():
+                    # We need to be careful about the attributes we are resetting
+                    if name not in [ 'name', 'info', 'dbkey' ]:
+                        if spec.get( 'default' ):
+                            setattr( ldda.metadata, name, spec.unwrap( spec.get( 'default' ) ) )
+                message = "Attributes have been queued to be updated for library dataset '%s'." % ldda.name
+                status = 'done'
+                trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute( trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming = { 'input1':ldda } )
+            else:
+                message = "This dataset is currently being used as input or output.  You cannot change metadata until the jobs have completed or you have canceled them."
+                status = 'error'
             trans.sa_session.flush()
-            message = "Information updated for library dataset '%s'." % ldda.name
-            status = 'done'
         elif params.get( 'change_extended_metadata', False):
             em_string = util.restore_text( params.get("extended_metadata", "") )
             if len(em_string):
