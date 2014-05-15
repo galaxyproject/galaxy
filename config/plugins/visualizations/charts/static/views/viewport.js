@@ -198,8 +198,12 @@ return Backbone.View.extend({
         var group_index = 0;
         var self = this;
         chart.groups.each(function(group) {
+            // increase group counter
+            group_index++;
+            
+            // add selected columns to column string
             for (var key in self.chart_settings.columns) {
-                request_string += key + '_' + (++group_index) + ':' + (parseInt(group.get(key)) + 1) + ', ';
+                request_string += key + '_' + group_index + ':' + (parseInt(group.get(key)) + 1) + ', ';
             }
         });
         
@@ -244,13 +248,13 @@ return Backbone.View.extend({
 
             // add columns
             var columns = {};
-            for (var key in self.chart_settings.columns) {
+            for (var column_key in self.chart_settings.columns) {
                 // get settings for column
-                var column_settings = self.chart_settings.columns[key];
+                var column_settings = self.chart_settings.columns[column_key];
                 
                 // add to columns
-                columns[key] = {
-                    index       : group.get(key),
+                columns[column_key] = {
+                    index       : group.get(column_key),
                     is_label    : column_settings.is_label
                 }
             }
