@@ -26,8 +26,6 @@ from tool_shed.util import workflow_util
 from tool_shed.util import xml_util
 from tool_shed.galaxy_install import repository_util
 import tool_shed.galaxy_install.grids.admin_toolshed_grids as admin_toolshed_grids
-from tool_shed.galaxy_install.install_manager import InstallManager
-from tool_shed.galaxy_install.tool_dependencies.recipe.recipe_manager import TagManager
 import pkg_resources
 
 eggs.require( 'mercurial' )
@@ -458,63 +456,16 @@ class AdminToolshed( AdminGalaxy ):
         message = kwd.get( 'message', '' )
         status = kwd.get( 'status', 'done' )
         err_msg = ''
-        attr_tups_of_dependencies_for_install = [ ( td.name, td.version, td.type ) for td in tool_dependencies ]
         tool_shed_repository = tool_dependencies[ 0 ].tool_shed_repository
         # Get the tool_dependencies.xml file from the repository.
         tool_dependencies_config = suc.get_config_from_disk( suc.TOOL_DEPENDENCY_DEFINITION_FILENAME,
                                                              tool_shed_repository.repo_path( trans.app ) )
-        # Parse the tool_dependencies.xml config.
-        tree, error_message = xml_util.parse_xml( tool_dependencies_config )
-        installed_tool_dependencies = []
-        install_manager = InstallManager()
-        tag_manager = TagManager()
-        root = tree.getroot()
-        for elem in root:
-            package_name = elem.get( 'name', None )
-            package_version = elem.get( 'version', None )
-            if package_name and package_version:
-                # elem is a package tag set.
-                attr_tup = ( package_name, package_version, 'package' )
-                try:
-                    index = attr_tups_of_dependencies_for_install.index( attr_tup )
-                except Exception, e:
-                    index = None
-                if index is not None:
-                    tool_dependency = tool_dependencies[ index ]
-                    tool_dependency, proceed_with_install, action_elem_tuples = \
-                        tag_manager.process_tag_set( trans.app,
-                                                     tool_shed_repository,
-                                                     tool_dependency,
-                                                     elem,
-                                                     package_name,
-                                                     package_version,
-                                                     from_tool_migration_manager=False,
-                                                     tool_dependency_db_records=tool_dependencies )
-                    if proceed_with_install:
-                        try:
-                            tool_dependency = install_manager.install_package( trans.app, 
-                                                                               elem, 
-                                                                               tool_shed_repository, 
-                                                                               tool_dependencies=tool_dependencies, 
-                                                                               from_tool_migration_manager=False )
-                        except Exception, e:
-                            error_message = "Error installing tool dependency package %s version %s: %s" % \
-                                ( str( package_name ), str( package_version ), str( e ) )
-                            log.exception( error_message )
-                            if tool_dependency:
-                                # Since there was an installation error, update the tool dependency status to Error. The
-                                # remove_installation_path option must be left False here.
-                                tool_dependency = \
-                                    tool_dependency_util.handle_tool_dependency_installation_error( trans.app, 
-                                                                                                    tool_dependency, 
-                                                                                                    error_message, 
-                                                                                                    remove_installation_path=False )
-                        if tool_dependency and tool_dependency.status in [ trans.app.install_model.ToolDependency.installation_status.INSTALLED,
-                                                                           trans.app.install_model.ToolDependency.installation_status.ERROR ]:
-                            installed_tool_dependencies.append( tool_dependency )
-                            if trans.app.config.manage_dependency_relationships:
-                                # Add the tool_dependency to the in-memory dictionaries in the installed_repository_manager.
-                                trans.app.installed_repository_manager.handle_tool_dependency_install( tool_shed_repository, tool_dependency )
+        installed_tool_dependencies = \
+            common_install_util.install_specified_packages( app=trans.app,
+                                                            tool_shed_repository=tool_shed_repository,
+                                                            tool_dependencies_config=tool_dependencies_config,
+                                                            tool_dependencies=tool_dependencies,
+                                                            from_tool_migration_manager=False )
         for installed_tool_dependency in installed_tool_dependencies:
             if installed_tool_dependency.status == trans.app.install_model.ToolDependency.installation_status.ERROR:
                 text = util.unicodify( installed_tool_dependency.error_message )

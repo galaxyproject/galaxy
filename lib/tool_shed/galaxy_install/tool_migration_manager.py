@@ -19,8 +19,6 @@ from tool_shed.util import metadata_util
 from tool_shed.util import tool_dependency_util
 from tool_shed.util import tool_util
 from tool_shed.util import xml_util
-from tool_shed.galaxy_install.install_manager import InstallManager
-from tool_shed.galaxy_install.tool_dependencies.recipe.recipe_manager import TagManager
 from galaxy.util.odict import odict
 
 log = logging.getLogger( __name__ )
@@ -447,64 +445,12 @@ class ToolMigrationManager( object ):
                                                     self.app.install_model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES )
             # Get the tool_dependencies.xml file from disk.
             tool_dependencies_config = suc.get_config_from_disk( 'tool_dependencies.xml', repo_install_dir )
-            installed_tool_dependencies = []
-            # Parse the tool_dependencies.xml config.
-            tree, error_message = xml_util.parse_xml( tool_dependencies_config )
-            install_manager = InstallManager()
-            tag_manager = TagManager()
-            root = tree.getroot()
-            for elem in root:
-                package_name = elem.get( 'name', None )
-                package_version = elem.get( 'version', None )
-                if package_name and package_version:
-                    # elem is a package tag set.
-                    tool_dependency = None
-                    for tool_dependency in tool_dependencies:
-                        if package_name == str( tool_dependency.name ) and package_version == str( tool_dependency.version ):
-                            break
-                    if tool_dependency is not None:
-                        attr_tups_of_dependencies_for_install = [ ( td.name, td.version, td.type ) for td in tool_dependencies ]
-                        attr_tup = ( package_name, package_version, 'package' )
-                        try:
-                            index = attr_tups_of_dependencies_for_install.index( attr_tup )
-                        except Exception, e:
-                            index = None
-                        if index is not None:
-                            tool_dependency = tool_dependencies[ index ]
-                            tool_dependency, proceed_with_install, action_elem_tuples = \
-                                tag_manager.process_tag_set( self.app,
-                                                             tool_shed_repository,
-                                                             tool_dependency,
-                                                             elem,
-                                                             package_name,
-                                                             package_version,
-                                                             from_tool_migration_manager=False,
-                                                             tool_dependency_db_records=tool_dependencies )
-                            if proceed_with_install:
-                                try:
-                                    tool_dependency = install_manager.install_package( self.app, 
-                                                                                       elem, 
-                                                                                       tool_shed_repository, 
-                                                                                       tool_dependencies=tool_dependencies, 
-                                                                                       from_tool_migration_manager=True )
-                                except Exception, e:
-                                    error_message = "Error installing tool dependency package %s version %s: %s" % \
-                                        ( str( package_name ), str( package_version ), str( e ) )
-                                    log.exception( error_message )
-                                    if tool_dependency:
-                                        # Since there was an installation error, update the tool dependency status to Error. The
-                                        # remove_installation_path option must be left False here.
-                                        tool_dependency = \
-                                            tool_dependency_util.handle_tool_dependency_installation_error( self.app, 
-                                                                                                            tool_dependency, 
-                                                                                                            error_message, 
-                                                                                                            remove_installation_path=False )
-                                if tool_dependency and tool_dependency.status in [ self.app.install_model.ToolDependency.installation_status.INSTALLED,
-                                                                                   self.app.install_model.ToolDependency.installation_status.ERROR ]:
-                                    installed_tool_dependencies.append( tool_dependency )
-                                    if self.app.config.manage_dependency_relationships:
-                                        # Add the tool_dependency to the in-memory dictionaries in the installed_repository_manager.
-                                        self.app.installed_repository_manager.handle_tool_dependency_install( tool_shed_repository, tool_dependency )
+            installed_tool_dependencies = \
+                common_install_util.install_specified_packages( app=self.app,
+                                                                tool_shed_repository=tool_shed_repository,
+                                                                tool_dependencies_config=tool_dependencies_config,
+                                                                tool_dependencies=tool_dependencies,
+                                                                from_tool_migration_manager=True )
             for installed_tool_dependency in installed_tool_dependencies:
                 if installed_tool_dependency.status == self.app.install_model.ToolDependency.installation_status.ERROR:
                     print '\nThe ToolMigrationManager returned the following error while installing tool dependency ', installed_tool_dependency.name, ':'
