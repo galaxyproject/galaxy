@@ -1096,7 +1096,13 @@ class ColumnListParameter( SelectToolParameter ):
         self.accept_default = string_as_bool( elem.get( "accept_default", False ))
         self.data_ref = elem.get( "data_ref", None )
         self.ref_input = None
+        # Legacy style default value specification...
         self.default_value = elem.get( "default_value", None )
+        if self.default_value is None:
+            # Newer style... more in line with other parameters.
+            self.default_value = elem.get( "value", None )
+        if self.default_value is not None:
+            self.default_value = ColumnListParameter._strip_c( self.default_value )
         self.is_dynamic = True
         self.usecolnames = string_as_bool( elem.get( "use_header_names", False ))
 
@@ -1105,10 +1111,6 @@ class ColumnListParameter( SelectToolParameter ):
         Label convention prepends column number with a 'c', but tool uses the integer. This
         removes the 'c' when entered into a workflow.
         """
-        def _strip_c( column ):
-            if column.startswith( 'c' ):
-                column = column.strip().lower()[1:]
-            return column
         if self.multiple:
             #split on newline and ,
             if value:
@@ -1120,15 +1122,21 @@ class ColumnListParameter( SelectToolParameter ):
                         column2 = column2.strip()
                         if column2:
                             column_list.append( column2 )
-                value = map( _strip_c, column_list )
+                value = map( ColumnListParameter._strip_c, column_list )
             else:
                 value = []
         else:
             if value:
-                value = _strip_c( value )
+                value = ColumnListParameter._strip_c( value )
             else:
                 value = None
         return super( ColumnListParameter, self ).from_html( value, trans, context )
+
+    @staticmethod
+    def _strip_c(column):
+        if column.startswith( 'c' ):
+            column = column.strip().lower()[1:]
+        return column
 
     def get_column_list( self, trans, other_values ):
         """
