@@ -1461,9 +1461,9 @@ mapper( model.History, model.History.table,
                         model.HistoryDatasetCollectionAssociation,
                         primaryjoin=(
                             ( model.HistoryDatasetCollectionAssociation.table.c.history_id ) == model.History.table.c.id ) & not_( model.HistoryDatasetCollectionAssociation.table.c.deleted ),
-                        order_by=asc( model.HistoryDatasetCollectionAssociation.table.c.id ),
+                        order_by=asc( model.HistoryDatasetCollectionAssociation.table.c.hid ),
                         viewonly=True,
-                     ),  # TODO:orderbyhid
+                     ),
                      visible_datasets=relation(
                         model.HistoryDatasetAssociation,
                         primaryjoin=( ( model.HistoryDatasetAssociation.table.c.history_id == model.History.table.c.id ) & not_( model.HistoryDatasetAssociation.table.c.deleted ) & model.HistoryDatasetAssociation.table.c.visible ),
@@ -1473,7 +1473,7 @@ mapper( model.History, model.History.table,
                      visible_dataset_collections=relation(
                         model.HistoryDatasetCollectionAssociation,
                         primaryjoin=( ( model.HistoryDatasetCollectionAssociation.table.c.history_id == model.History.table.c.id ) & not_( model.HistoryDatasetCollectionAssociation.table.c.deleted ) & model.HistoryDatasetCollectionAssociation.table.c.visible ),
-                        order_by=asc( model.HistoryDatasetCollectionAssociation.table.c.id ),
+                        order_by=asc( model.HistoryDatasetCollectionAssociation.table.c.hid ),
                         viewonly=True,
                      ),
                      tags=relation( model.HistoryTagAssociation, order_by=model.HistoryTagAssociation.table.c.id, backref="histories" ),
