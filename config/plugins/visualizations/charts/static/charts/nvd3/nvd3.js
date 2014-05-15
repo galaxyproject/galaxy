@@ -31,9 +31,7 @@ return Backbone.View.extend(
                                 .axisLabelDistance(30);
                 
                 // controls
-                if (chart.groups.length == 1) {
-                    nvd3_model.options({ showControls: false });
-                }
+                nvd3_model.options({showControls: false});
                 
                 // legend
                 var legend_visible = true;

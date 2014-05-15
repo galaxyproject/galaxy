@@ -3,6 +3,7 @@ define([], function() {
 return {
     title       : 'Pie chart',
     library     : 'nvd3.js',
+    category    : 'Area charts',
     tag         : 'svg',
     use_panels  : true,
     columns : {

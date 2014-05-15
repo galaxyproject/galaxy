@@ -1,16 +1,17 @@
 define([], function() {
 
 return {
-    title   : 'Box plot',
-    library : 'highcharts.js',
-    tag     : 'div',
-    execute : 'boxplot',
-    columns : {
+    title       : 'Box plot',
+    category    : 'Data processing (requires \'charts\' tool from Toolshed)',
+    library     : 'highcharts.js',
+    tag         : 'div',
+    execute     : 'boxplot',
+    columns     : {
         y : {
             title   : 'Observations'
         }
     },
-    settings  : {
+    settings    : {
         separator_label  : {
             title       : 'X axis',
             type        : 'separator'

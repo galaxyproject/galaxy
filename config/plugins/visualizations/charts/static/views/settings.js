@@ -44,7 +44,7 @@ return Backbone.View.extend(
         var chart_definition = this.app.types.get(chart_type);
         
         // set title
-        this.form.title(chart_definition.title + ':');
+        this.form.title(chart_definition.category + ' - ' + chart_definition.title + ':');
         
         // update table form model
         this.form.update(chart_definition.settings, this.chart.settings);

@@ -1,8 +1,8 @@
 define(['plugin/charts/nvd3/config'], function(nvd3_config) {
 
 return $.extend(true, {}, nvd3_config, {
-    title       : 'Regular',
-    category    : 'Area charts'
+    title       : 'Line with focus',
+    category    : 'Others'
 });
 
 });

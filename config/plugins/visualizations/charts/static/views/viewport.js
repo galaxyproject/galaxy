@@ -167,7 +167,7 @@ return Backbone.View.extend({
         
         // create chart view
         var self = this;
-        require(['plugin/charts/' + chart_type + '/' + chart_type], function(ChartView) {
+        require(['plugin/charts/' + chart_type + '/wrapper'], function(ChartView) {
             // create chart
             var view = new ChartView(self.app, {canvas : self.canvas_list});
             
@@ -268,19 +268,19 @@ return Backbone.View.extend({
     
     // template
     _template: function() {
-        return  '<div style="height: inherit; min-height: 50px;">' +
-                    '<div id="info" style="position: absolute; margin-left: 10px; margin-top: 10px; margin-bottom: 50px;">' +
-                        '<span id="icon" style="font-size: 1.2em; display: inline-block;"/>' +
-                        '<span id="text" style="position: relative; margin-left: 5px; top: -1px; font-size: 1.0em;"/>' +
+        return  '<div class="charts-viewport">' +
+                    '<div id="info" class="info">' +
+                        '<span id="icon" class="icon" />' +
+                        '<span id="text" class="text" />' +
                     '</div>' +
                 '</div>';
     },
     
     // template svg/div element
     _templateContainer: function(tag, width) {
-        return  '<div class="container" style="float: left; display: block; width:' + width + '%; height: 100%;">' +
+        return  '<div class="container" style="width:' + width + '%;">' +
                     '<div id="menu"/>' +
-                    '<' + tag + ' id="canvas" class="canvas" style="display: block; width:100%; height: inherit;">' +
+                    '<' + tag + ' id="canvas" class="canvas">' +
                 '</div>';
     }
     

@@ -2,11 +2,35 @@
 define(['utils/utils', 'plugin/library/ui-select'], function(Utils, Select) {
 
 // plugin
+var Image = Backbone.View.extend(
+{
+    // options
+    optionsDefault: {
+        url  : ''
+    },
+    
+    // initialize
+    initialize : function(options) {
+        // get options
+        this.options = Utils.merge(options, this.optionsDefault);
+            
+        // create new element
+        this.setElement(this._template(this.options));
+    },
+    
+    // template
+    _template: function(options) {
+        return '<img src="' + options.url + '"/>';
+    }
+});
+
+// plugin
 var Label = Backbone.View.extend(
 {
     // options
     optionsDefault: {
-        title  : ''
+        title : '',
+        cls   : ''
     },
     
     // initialize
@@ -25,7 +49,7 @@ var Label = Backbone.View.extend(
     
     // template
     _template: function(options) {
-        return '<label><b>' + options.title + '</b></label>';
+        return '<label class="' + options.cls + '"><b>' + options.title + '</b></label>';
     },
     
     // value
@@ -108,39 +132,6 @@ var Button = Backbone.View.extend(
 });
 
 // plugin
-var Icon = Backbone.View.extend(
-{
-    // options
-    optionsDefault: {
-        float       : 'right',
-        icon        : '',
-        tooltip     : '',
-        placement   : 'bottom',
-        title       : ''
-    },
-    
-    // initialize
-    initialize : function(options) {
-        // get options
-        this.options = Utils.merge(options, this.optionsDefault);
-            
-        // create new element
-        this.setElement(this._template(this.options));
-        
-        // add tooltip
-        $(this.el).tooltip({title: options.tooltip, placement: 'bottom'});
-    },
-    
-    // element
-    _template: function(options) {
-        return  '<div>' +
-                    '<span class="fa ' + options.icon + '" style="font-size: 1.2em;"/>&nbsp;' +
-                    options.title +
-                '</div>';
-    }
-});
-
-// plugin
 var ButtonIcon = Backbone.View.extend(
 {
     // options
@@ -190,6 +181,39 @@ var ButtonIcon = Backbone.View.extend(
         }
         str +=      '</div>';
         return str;
+    }
+});
+
+// plugin
+var Icon = Backbone.View.extend(
+{
+    // options
+    optionsDefault: {
+        float       : 'right',
+        icon        : '',
+        tooltip     : '',
+        placement   : 'bottom',
+        title       : ''
+    },
+    
+    // initialize
+    initialize : function(options) {
+        // get options
+        this.options = Utils.merge(options, this.optionsDefault);
+            
+        // create new element
+        this.setElement(this._template(this.options));
+        
+        // add tooltip
+        $(this.el).tooltip({title: options.tooltip, placement: 'bottom'});
+    },
+    
+    // element
+    _template: function(options) {
+        return  '<div>' +
+                    '<span class="fa ' + options.icon + '" style="font-size: 1.2em;"/>&nbsp;' +
+                    options.title +
+                '</div>';
     }
 });
 
@@ -552,6 +576,7 @@ var Input = Backbone.View.extend(
 // return
 return {
     Label       : Label,
+    Image       : Image,
     Button      : Button,
     Icon        : Icon,
     ButtonIcon  : ButtonIcon,

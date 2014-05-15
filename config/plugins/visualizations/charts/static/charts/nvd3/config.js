@@ -2,6 +2,7 @@ define([], function() {
 
 return {
     title       : '',
+    category    : '',
     library     : 'nvd3.js',
     tag         : 'svg',
     columns : {

@@ -76,11 +76,7 @@ return Backbone.Model.extend(
     
     // ready
     ready: function() {
-        if (this.counter == 0) {
-            return true;
-        } else {
-            return false;
-        }
+        return (this.counter == 0);
     }
 });
 

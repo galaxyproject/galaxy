@@ -1,8 +1,8 @@
 // dependencies
-define(['mvc/ui/ui-tabs', 'plugin/library/ui-table', 'plugin/library/ui', 'mvc/ui/ui-portlet', 'utils/utils',
+define(['mvc/ui/ui-tabs', 'plugin/library/ui', 'mvc/ui/ui-portlet', 'utils/utils',
         'plugin/models/chart', 'plugin/models/group',
-        'plugin/views/group', 'plugin/views/settings'],
-    function(Tabs, Table, Ui, Portlet, Utils, Chart, Group, GroupView, SettingsView) {
+        'plugin/views/group', 'plugin/views/settings', 'plugin/views/types'],
+    function(Tabs, Ui, Portlet, Utils, Chart, Group, GroupView, SettingsView, TypesView) {
 
 // widget
 return Backbone.View.extend(
@@ -61,11 +61,10 @@ return Backbone.View.extend(
         });
         
         //
-        // table with chart types
+        // grid with chart types
         //
-        this.table = new Table.View({
-            header : false,
-            onchange : function(type) {
+        this.types = new TypesView(app, {
+            onchange   : function(type) {
                 // reset type relevant chart content
                 self.chart.settings.clear();
                 
@@ -76,31 +75,13 @@ return Backbone.View.extend(
                 self.chart.set('modified', true);
             },
             ondblclick  : function(chart_id) {
-                self.tabs.show('settings');
-            },
-            content: 'No chart types available'
-        });
-        
-        // make table header
-        this.table.addHeader('No.');
-        this.table.addHeader('Type');
-        this.table.addHeader('Processing*');
-        this.table.appendHeader();
-        
-        // load chart types into table
-        var types_n = 0;
-        var types = app.types.attributes;
-        for (var id in types){
-            var chart_type = types[id];
-            this.table.add (++types_n + '.');
-            this.table.add(chart_type.title);
-            if (chart_type.execute) {
-                this.table.add(new Ui.Icon({icon: 'fa-check'}).$el, '10%', 'center');
-            } else {
-                this.table.add('');
+                // show viewport
+                self.app.go('viewer');
+                        
+                // save chart
+                self._saveChart();
             }
-            this.table.append(id);
-        }
+        });
         
         //
         // tabs
@@ -130,11 +111,7 @@ return Backbone.View.extend(
         $main.append(Utils.wrap((new Ui.Label({ title : 'Provide a chart title:'})).$el));
         $main.append(Utils.wrap(this.title.$el));
         $main.append(Utils.wrap((new Ui.Label({ title : 'Select a chart type:'})).$el));
-        $main.append(Utils.wrap(this.table.$el));
-        $main.append(new Ui.Text({
-            title: '*Certain chart types pre-process data before rendering the visualization. The pre-processing is done using the charts tool available in the Toolshed.',
-            cls: 'toolParamHelp'
-        }).$el);
+        $main.append(Utils.wrap(this.types.$el));
         
         // add tab
         this.tabs.add({
@@ -172,7 +149,7 @@ return Backbone.View.extend(
             self._refreshTitle();
         });
         this.chart.on('change:type', function(chart) {
-            self.table.value(chart.get('type'));
+            self.types.value(chart.get('type'));
         });
         this.chart.on('reset', function(chart) {
             self._resetChart();
@@ -282,7 +259,7 @@ return Backbone.View.extend(
     _resetChart: function() {
         // reset chart details
         this.chart.set('id', Utils.uuid());
-        this.chart.set('type', 'nvd3_bardiagram');
+        this.chart.set('type', 'nvd3_bar');
         this.chart.set('dataset_id', this.app.options.config.dataset_id);
         this.chart.set('title', 'New Chart');
         
@@ -294,7 +271,7 @@ return Backbone.View.extend(
     _saveChart: function() {
         // update chart data
         this.chart.set({
-            type        : this.table.value(),
+            type        : this.types.value(),
             title       : this.title.value(),
             date        : Utils.time()
         });

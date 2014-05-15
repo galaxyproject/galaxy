@@ -2,6 +2,7 @@ define([], function() {
 
 return {
     title       : 'Heatmap',
+    category    : 'Data processing (requires \'charts\' tool from Toolshed)',
     library     : '',
     tag         : 'div',
     use_panels  : true,

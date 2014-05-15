@@ -37,6 +37,9 @@
 
         ## load merged/minified code
         ${h.javascript_link( app_root + "build-app.js" )}
+        
+        ## install default css
+        ${h.stylesheet_link( app_root + "app.css" )}
     </head>
 
     <body>
@@ -44,7 +47,8 @@
 
             // get configuration
             var config = {
-                root    : '${root}'
+                root     : '${root}',
+                app_root : '${app_root}'
             };
             
             // link galaxy
