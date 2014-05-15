@@ -62,10 +62,10 @@ return Backbone.View.extend({
                     $container.show()
                     break;
                 case 'failed':
-                    $icon.addClass('fa fa-warning');
+                    $icon.addClass('icon fa fa-warning');
                     break;
                 default:
-                    $icon.addClass('fa fa-spinner fa-spin');
+                    $icon.addClass('icon fa fa-spinner fa-spin');
             }
         });
     },

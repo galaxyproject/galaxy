@@ -39,9 +39,7 @@
 
 .charts-viewport .info {
 	position: absolute;
-	margin-left: 10px;
-	margin-top: 10px;
-	margin-bottom: 50px;
+	margin: 10px 20px 50px 10px;
 }
 
 .charts-viewport .text {
