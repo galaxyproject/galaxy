@@ -25,6 +25,49 @@ class ToolsTestCase( api.ApiTestCase ):
         tool_ids = map( itemgetter( "id" ), tools_index )
         assert "upload1" in tool_ids
 
+    @skip_without_tool( "cat1" )
+    def test_show_repeat( self ):
+        tool_info = self._show_valid_tool( "cat1" )
+        parameters = tool_info[ "inputs" ]
+        assert len( parameters ) == 2
+        assert parameters[ 0 ][ "name" ] == "input1"
+        assert parameters[ 1 ][ "name" ] == "queries"
+
+        repeat_info = parameters[ 1 ]
+        self._assert_has_keys( repeat_info, "min", "max", "title", "help" )
+        repeat_params = repeat_info[ "inputs" ]
+        assert len( repeat_params ) == 1
+        assert repeat_params[ 0 ][ "name" ] == "input2"
+
+    @skip_without_tool( "random_lines1" )
+    def test_show_conditional( self ):
+        tool_info = self._show_valid_tool( "random_lines1" )
+
+        cond_info = tool_info[ "inputs" ][ 2 ]
+        self._assert_has_keys( cond_info, "cases", "test_param" )
+        self._assert_has_keys( cond_info[ "test_param" ], 'name', 'type', 'label', 'help' )
+
+        cases = cond_info[ "cases" ]
+        assert len( cases ) == 2
+        case1 = cases[ 0 ]
+        self._assert_has_keys( case1, "value", "inputs" )
+        assert case1[ "value" ] == "no_seed"
+        assert len( case1[ "inputs" ] ) == 0
+
+        case2 = cases[ 1 ]
+        self._assert_has_keys( case2, "value", "inputs" )
+        case2_inputs = case2[ "inputs" ]
+        assert len( case2_inputs ) == 1
+        self._assert_has_keys( case2_inputs[ 0 ], 'name', 'type', 'label', 'help' )
+        assert case2_inputs[ 0 ][ "name" ] == "seed"
+
+    def _show_valid_tool( self, tool_id ):
+        tool_show_response = self._get( "tools/%s" % tool_id, data=dict( io_details=True ) )
+        self._assert_status_code_is( tool_show_response, 200 )
+        tool_info = tool_show_response.json()
+        self._assert_has_keys( tool_info, "inputs", "outputs", "panel_section_id" )
+        return tool_info
+
     def test_upload1_paste( self ):
         history_id = self.dataset_populator.new_history()
         payload = self.dataset_populator.upload_payload( history_id, 'Hello World' )
