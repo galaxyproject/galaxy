@@ -1047,9 +1047,9 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
                     refresh_frames = ['history']
                 trans.sa_session.flush()
                 hist_names_str = ", ".join( ['<a href="%s" target="_top">%s</a>' %
-                                            ( url_for( controller="history", action="switch_to_history", \
-                                                        hist_id=trans.security.encode_id( hist.id ) ), hist.name ) \
-                                                        for hist in target_histories ] )
+                                            ( url_for( controller="history", action="switch_to_history",
+                                                       hist_id=trans.security.encode_id( hist.id ) ), hist.name )
+                                            for hist in target_histories ] )
                 num_source = len( source_content_ids ) - invalid_contents
                 num_target = len(target_histories)
                 done_msg = "%i %s copied to %i %s: %s." % (num_source, inflector.cond_plural(num_source, "dataset"), num_target, inflector.cond_plural(num_target, "history"), hist_names_str )
@@ -1057,19 +1057,19 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
         source_contents = history.active_contents
         target_histories = [history]
         if user:
-           target_histories = user.active_histories
+            target_histories = user.active_histories
         return trans.fill_template( "/dataset/copy_view.mako",
-                                    source_history = history,
-                                    current_history = current_history,
-                                    source_content_ids = source_content_ids,
-                                    target_history_id = target_history_id,
-                                    target_history_ids = target_history_ids,
-                                    source_contents = source_contents,
-                                    target_histories = target_histories,
-                                    new_history_name = new_history_name,
-                                    done_msg = done_msg,
-                                    error_msg = error_msg,
-                                    refresh_frames = refresh_frames )
+                                    source_history=history,
+                                    current_history=current_history,
+                                    source_content_ids=source_content_ids,
+                                    target_history_id=target_history_id,
+                                    target_history_ids=target_history_ids,
+                                    source_contents=source_contents,
+                                    target_histories=target_histories,
+                                    new_history_name=new_history_name,
+                                    done_msg=done_msg,
+                                    error_msg=error_msg,
+                                    refresh_frames=refresh_frames )
 
     def _copy_datasets( self, trans, dataset_ids, target_histories, imported=False ):
         """ Helper method for copying datasets. """
