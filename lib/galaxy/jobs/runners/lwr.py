@@ -43,8 +43,6 @@ class LwrJobRunner( AsynchronousJobRunner ):
     def __init__( self, app, nworkers, transport=None, cache=None, url=None, galaxy_url=DEFAULT_GALAXY_URL, **kwds ):
         """Start the job runner """
         super( LwrJobRunner, self ).__init__( app, nworkers )
-        self.async_status_updates = dict()
-        self._init_monitor_thread()
         self._init_worker_threads()
         amqp_connect_ssl_args = {}
         amqp_consumer_timeout = False
@@ -65,6 +63,10 @@ class LwrJobRunner( AsynchronousJobRunner ):
                 client_manager_kwargs['amqp_consumer_timeout'] = float(kwds['amqp_consumer_timeout'])
         self.galaxy_url = galaxy_url
         self.client_manager = build_client_manager(**client_manager_kwargs)
+        if url:
+            self.client_manager.ensure_has_status_update_callback(self.__async_update)
+        else:
+            self._init_monitor_thread()
 
     def url_to_destination( self, url ):
         """Convert a legacy URL to a job destination"""
@@ -73,18 +75,6 @@ class LwrJobRunner( AsynchronousJobRunner ):
     def check_watched_item(self, job_state):
         try:
             client = self.get_client_from_state(job_state)
-
-            if hasattr(self.client_manager, 'ensure_has_status_update_callback'):
-                # Message queue implementation.
-
-                # TODO: Very hacky now, refactor after Dannon merges in his
-                # message queue work, runners need the ability to disable
-                # check_watched_item like this and instead a callback needs to
-                # be issued post job recovery allowing a message queue
-                # consumer to be setup.
-                self.client_manager.ensure_has_status_update_callback(self.__async_update)
-                return job_state
-
             status = client.get_status()
         except Exception:
             # An orphaned job was put into the queue at app startup, so remote server went down
@@ -108,26 +98,9 @@ class LwrJobRunner( AsynchronousJobRunner ):
 
     def __async_update( self, full_status ):
         job_id = full_status[ "job_id" ]
-        job_state = self.__find_watched_job( job_id )
-        if not job_state:
-            # Probably finished too quickly, sleep and try again.
-            # Kind of a hack, why does monitor queue need to no wait
-            # get and sleep instead of doing a busy wait that would
-            # respond immediately.
-            sleep( 2 )
-            job_state = self.__find_watched_job( job_id )
-        if not job_state:
-            log.warn( "Failed to find job corresponding to status %s in %s" % ( full_status, self.watched ) )
-        else:
-            self.__update_job_state_for_lwr_status(job_state, full_status["status"])
-
-    def __find_watched_job( self, job_id ):
-        found_job = None
-        for async_job_state in self.watched:
-            if str( async_job_state.job_id ) == job_id:
-                found_job = async_job_state
-                break
-        return found_job
+        job, job_wrapper = self.app.job_manager.job_handler.job_queue.job_pair_for_id( job_id )
+        job_state = self.__job_state( job, job_wrapper )
+        self.__update_job_state_for_lwr_status(job_state, full_status["status"])
 
     def queue_job(self, job_wrapper):
         job_destination = job_wrapper.job_destination
@@ -358,12 +331,8 @@ class LwrJobRunner( AsynchronousJobRunner ):
 
     def recover( self, job, job_wrapper ):
         """Recovers jobs stuck in the queued/running state when Galaxy started"""
-        job_state = AsynchronousJobState()
-        job_state.job_id = str( job.get_job_runner_external_id() )
-        job_state.runner_url = job_wrapper.get_job_runner_url()
-        job_state.job_destination = job_wrapper.job_destination
+        job_state = self.__job_state( job, job_wrapper )
         job_wrapper.command_line = job.get_command_line()
-        job_state.job_wrapper = job_wrapper
         state = job.get_state()
         if state in [model.Job.states.RUNNING, model.Job.states.QUEUED]:
             log.debug( "(LWR/%s) is still in running state, adding to the LWR queue" % ( job.get_id()) )
@@ -374,6 +343,14 @@ class LwrJobRunner( AsynchronousJobRunner ):
     def shutdown( self ):
         super( LwrJobRunner, self ).shutdown()
         self.client_manager.shutdown()
+
+    def __job_state( self, job, job_wrapper ):
+        job_state = AsynchronousJobState()
+        job_state.job_id = str( job.get_job_runner_external_id() )
+        job_state.runner_url = job_wrapper.get_job_runner_url()
+        job_state.job_destination = job_wrapper.job_destination
+        job_state.job_wrapper = job_wrapper
+        return job_state
 
     def __client_outputs( self, client, job_wrapper ):
         work_dir_outputs = self.get_work_dir_outputs( job_wrapper )

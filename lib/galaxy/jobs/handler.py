@@ -87,9 +87,9 @@ class JobHandlerQueue( object ):
     def job_wrapper( self, job ):
         return JobWrapper( job, self )
 
-    def job_wrapper_for_id( self, id ):
-        job = self.sa_session.query( model.Job )
-        return self.job_wrapper( job )
+    def job_pair_for_id( self, id ):
+        job = self.sa_session.query( model.Job ).get( id )
+        return job, self.job_wrapper( job )
 
     def __check_jobs_at_startup( self ):
         """
