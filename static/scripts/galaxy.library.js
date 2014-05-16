@@ -74,6 +74,7 @@ var GalaxyLibrary = Backbone.View.extend({
     library_router: null,
     folderToolbarView: null,
     folderListView: null,
+    datasetView: null,
 
     initialize : function(){
         Galaxy.libraries = this;
@@ -106,10 +107,17 @@ var GalaxyLibrary = Backbone.View.extend({
         });
 
        this.library_router.on('route:dataset_detail', function(folder_id, dataset_id){
-          new mod_library_dataset_view.LibraryDatasetView({id: dataset_id})
+          if (Galaxy.libraries.datasetView){
+            Galaxy.libraries.datasetView.$el.unbind('click');
+          }
+          Galaxy.libraries.datasetView = new mod_library_dataset_view.LibraryDatasetView({id: dataset_id});
        });
+
        this.library_router.on('route:dataset_permissions', function(folder_id, dataset_id){
-          new mod_library_dataset_view.LibraryDatasetView({id: dataset_id, show_permissions: true})
+          if (Galaxy.libraries.datasetView){
+            Galaxy.libraries.datasetView.$el.unbind('click');
+          }
+          Galaxy.libraries.datasetView = new mod_library_dataset_view.LibraryDatasetView({id: dataset_id, show_permissions: true});
        });
 
     Backbone.history.start({pushState: false});

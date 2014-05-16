@@ -118,7 +118,7 @@ var LibraryToolbarView = Backbone.View.extend({
     tmpl_array.push('  <div id="toolbar_form">');
     tmpl_array.push('   <% if(admin_user === true) { %>');
     tmpl_array.push('       <div id="library_toolbar">');
-    tmpl_array.push('           <span data-toggle="tooltip" data-placement="top" title="Include deleted libraries"><input id="include_deleted_chk" style="margin: 0;" type="checkbox"> <span class="fa fa-trash-o fa-lg"></span></input></span>');
+    tmpl_array.push('           <span data-toggle="tooltip" data-placement="top" title="Include deleted libraries"><input id="include_deleted_chk" style="margin: 0;" type="checkbox"> include deleted</input></span>');
     tmpl_array.push('           <span data-toggle="tooltip" data-placement="top" title="Create New Library"><button id="create_new_library_btn" class="primary-button btn-xs" type="button"><span class="fa fa-plus"></span> New Library</button><span>');
     tmpl_array.push('       </div>');
     tmpl_array.push('   <% } %>');

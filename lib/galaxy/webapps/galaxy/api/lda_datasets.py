@@ -75,9 +75,16 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
             for a given dataset permission.
         """
         current_user_roles = trans.get_current_user_roles()
-        page = int( kwd.get( 'page', None ) )
-        page_limit = int( kwd.get( 'page_limit', None ) )
-        query = kwd.get ( 'q', None )
+
+        page = kwd.get( 'page', None )
+        if page is not None:
+            page = int( page )
+
+        page_limit = kwd.get( 'page_limit', None )
+        if page_limit is not None:
+            page_limit = int( page_limit )
+
+        query = kwd.get( 'q', None )
 
         if page is None:
             page = 1
@@ -96,17 +103,31 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         if not can_manage:
             raise exceptions.InsufficientPermissionsException( 'You do not have proper permissions to access permissions.' )
 
-        cntrller = 'standard_user'
-        if trans.user_is_admin():
-            cntrller = 'library_admin'
+        roles = trans.app.security_agent.get_valid_dataset_roles( trans, dataset, query, page, page_limit )
 
-        roles = trans.app.security_agent.get_legitimate_roles( trans, library, cntrller )
         total_roles = len( roles )
         return_roles = []
         for role in roles:
             return_roles.append( dict( id=role.name, name=role.name, type=role.type ) )
 
         return dict( roles=return_roles, page=page, page_limit=page_limit, total=total_roles )
+
+    @expose_api
+    def get_roles( self, trans, encoded_dataset_id, **kwd ):
+        try:
+            library_dataset = self.get_library_dataset( trans, id=encoded_dataset_id, check_ownership=False, check_accessible=False )
+        except Exception, e:
+            raise exceptions.ObjectNotFound( 'Requested dataset was not found.' + str(e) )
+        dataset = library_dataset.library_dataset_dataset_association.dataset
+
+        roles = dataset.get_access_roles( trans )
+
+        # roles = dataset.get_manage_permissions_roles( trans )
+
+        # roles = trans.app.security_agent.get_current_dataset_roles( trans, dataset, trans.app.security_agent.permitted_actions.DATASET_ACCESS )
+        # Omit duplicated roles by converting to set
+        roles = set( roles )
+        return [ role.name for role in roles ]
 
     @expose_api
     def delete( self, trans, encoded_dataset_id, **kwd ):

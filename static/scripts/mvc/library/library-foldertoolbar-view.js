@@ -520,7 +520,7 @@ var FolderToolbarView = Backbone.View.extend({
     tmpl_array.push('<div class="library_style_container">');
     // TOOLBAR
     tmpl_array.push('<div id="library_toolbar">');
-    tmpl_array.push('<span data-toggle="tooltip" data-placement="top" class="logged-dataset-manipulation" title="Include deleted datasets" style="display:none;"><input id="include_deleted_datasets_chk" style="margin: 0;" type="checkbox"> <span class="fa fa-trash-o fa-lg"></span></input></span>');
+    tmpl_array.push('<span data-toggle="tooltip" data-placement="top" class="logged-dataset-manipulation" title="Include deleted datasets" style="display:none;"><input id="include_deleted_datasets_chk" style="margin: 0;" type="checkbox"> include deleted</input></span>');
     tmpl_array.push('<div class="btn-group add-library-items" style="display:none;">');
     tmpl_array.push('   <button data-toggle="tooltip" data-placement="top" title="Create New Folder" id="toolbtn_create_folder" class="btn btn-default primary-button" type="button"><span class="fa fa-plus"></span> <span class="fa fa-folder"></span></button>');
     tmpl_array.push('   <button data-toggle="tooltip" data-placement="top" title="Add Datasets to Current Folder" id="toolbtn_add_files" class="btn btn-default toolbtn_add_files primary-button" type="button"><span class="fa fa-plus"></span> <span class="fa fa-file"></span></span></button>');

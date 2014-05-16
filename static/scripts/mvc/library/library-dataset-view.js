@@ -20,10 +20,15 @@ var LibraryDatasetView = Backbone.View.extend({
   events: {
     "click .toolbtn_modify_dataset"       :   "enableModification",
     "click .toolbtn_cancel_modifications" :   "render",
-    "click .toolbtn_change_permissions"   :   "showPermissions",
     "click .toolbtn-download-dataset"     :   "downloadDataset",
     "click .toolbtn-import-dataset"       :   "importIntoHistory",
-    "click .toolbtn-share-dataset"        :   "shareDataset"
+    "click .toolbtn-share-dataset"        :   "shareDataset",
+
+    // missing features below
+    "click .toolbtn_save_modifications"   :   "comingSoon",
+    "click .btn-remove-restrictions"      :   "comingSoon",
+    "click .btn-make-private"             :   "comingSoon",
+    "click .btn-share-dataset"            :   "comingSoon"
 
   },
 
@@ -132,7 +137,7 @@ var LibraryDatasetView = Backbone.View.extend({
   },
 
   importCurrentIntoHistory: function(){
-      var self = this;
+      // var self = this;
       var history_id = $(this.modal.elMain).find('select[name=dataset_import_single] option:selected').val();
       var historyItem = new mod_library_model.HistoryItem();
       historyItem.url = historyItem.urlRoot + history_id + '/contents';
@@ -165,88 +170,102 @@ var LibraryDatasetView = Backbone.View.extend({
     mod_toastr.info('Feature coming soon.');
   },
 
+  goBack: function(){
+    Galaxy.libraries.library_router.back();
+  },
+
   showPermissions: function(){
     $(".tooltip").remove();
     var template = this.templateDatasetPermissions();
     this.$el.html(template({item: this.model}));
 
+    // Select works different for admins
+    var is_admin = false;
+    if (Galaxy.currUser){
+      is_admin = Galaxy.currUser.isAdmin();
+    }
+
     var self = this;
 
-    this.access_perm = new mod_select.View({
-        css: 'access_perm',
-        multiple:true,
-        placeholder: 'Click to select a role',
-        container: self.$el.find('#access_perm'),
-        ajax: {
-            url: "/api/libraries/datasets/5969b1f7201f12ae/permissions",
-            dataType: 'json',
-            quietMillis: 100,
-            data: function (term, page) { // page is the one-based page number tracked by Select2
-                return {
-                    q: term, //search term
-                    page_limit: 10, // page size
-                    page: page // page number
-                };
-            },
-            results: function (data, page) {
-                var more = (page * 10) < data.total; // whether or not there are more results available
-                // notice we return the value of more so Select2 knows if more results can be loaded
-                return {results: data.roles, more: more};
-            }
-        },
-        formatResult : function roleFormatResult(role) {
-            return role.name;
-        },
+    // load all current permissions
+    $.get( "/api/libraries/datasets/" + self.id + "/permissions/current").done(function(fetched_permissions) {
+        var selected_roles = [];
+        for (var i = 0; i < fetched_permissions.length; i++) {
+            selected_roles.push(fetched_permissions[i] + ':' + fetched_permissions[i]);
+        }
+        // ACCESS PERMISSIONS
+        if (is_admin){ // Admin has a special select that allows remote searching
+            var access_select_options = {
+                minimumInputLength: 1,
+                css: 'access_perm',
+                multiple:true,
+                placeholder: 'Click to select a role',
+                container: self.$el.find('#access_perm'),
+                ajax: {
+                    url: "/api/libraries/datasets/" + self.id + "/permissions",
+                    dataType: 'json',
+                    quietMillis: 100,
+                    data: function (term, page) { // page is the one-based page number tracked by Select2
+                        return {
+                            q: term, //search term
+                            page_limit: 10, // page size
+                            page: page // page number
+                        };
+                    },
+                    results: function (data, page) {
+                        var more = (page * 10) < data.total; // whether or not there are more results available
+                        // notice we return the value of more so Select2 knows if more results can be loaded
+                        return {results: data.roles, more: more};
+                    }
+                },
+                formatResult : function roleFormatResult(role) {
+                    return role.name + ' type: ' + role.type;
+                },
 
-        formatSelection: function roleFormatSelection(role) {
-            return role.name;
-        },
-        initSelection: function(element, callback) {
-        // the input tag has a value attribute preloaded that points to a preselected role's id
-        // this function resolves that id attribute to an object that select2 can render
-        // using its formatResult renderer - that way the role name is shown preselected
-            var data = [];
-            $(element.val().split(",")).each(function(i) {
-                var item = this.split(':');
-                data.push({
-                    id: item[1],
-                    name: item[1]
-                });
+                formatSelection: function roleFormatSelection(role) {
+                    return role.name;
+                },
+                initSelection: function(element, callback) {
+                // the input tag has a value attribute preloaded that points to a preselected role's id
+                // this function resolves that id attribute to an object that select2 can render
+                // using its formatResult renderer - that way the role name is shown preselected
+                    var data = [];
+                    $(element.val().split(",")).each(function() {
+                        var item = this.split(':');
+                        data.push({
+                            id: item[1],
+                            name: item[1]
+                        });
+                    });
+                    callback(data);
+                },
+                initialData: selected_roles.join(','),
+                dropdownCssClass: "bigdrop" // apply css that makes the dropdown taller
+            };
+
+            this.accessSelectObject = new mod_select.View(access_select_options);
+        } else { // Non-admins have select with pre-loaded options
+            var template = this.templateAccessSelect();
+            $.get( "/api/libraries/datasets/" + self.id + "/permissions", function( data ) {
+                $('.access_perm').html(template({options:data.roles}));
+                this.accessSelectObject = $('#access_select').select2();
+            }).fail(function() {
+                mod_toastr.error('An error occurred while fetching data with permissions. :(');
             });
-            callback(data);
-        },
-        initialData: 'marten@bx.psu.edu:marten@bx.psu.edu',
-        dropdownCssClass: "bigdrop" // apply css that makes the dropdown taller
+        }
+    }).fail(function(){
+        mod_toastr.error('An error occurred while fetching data with permissions. :(');
     });
-    // this.access_perm.$el.append($('<option>', {value:"NEWVAL", text: "New Option Text"}));
 
-    // this.modify_perm = new mod_select.View({
-    //     css: 'modify_perm',
-    //     placeholder: 'Select a role',
-    //     // onchange : function() {
-    //         // self.model.set('access_perm', self.select_genome.value());
-    //     // },
-    //     data: [{id:'test',text:'testik'}, {id:'dududu', text:'dadada'}],
-    //     container: self.$el.find('#modify_perm'),
-    //     multiple: true
-    //     // value: self.model.get('access_perm')
-    // });
-    // this.modify_perm.$el.append($('<option>', {value:"NEWVAL", text: "New Option Text"}));
-
-    // this.manage_perm = new mod_select.View({
-    //     css: 'manage_perm',
-    //     placeholder: 'Select a role',
-    //     // onchange : function() {
-    //         // self.model.set('access_perm', self.select_genome.value());
-    //     // },
-    //     data: [{id:'test',text:'testik'}, {id:'dududu', text:'dadada'}],
-    //     container: self.$el.find('#manage_perm'),
-    //     multiple: true
-    //     // value: self.model.get('access_perm')
-    // });
-    // this.manage_perm.$el.append($('<option>', {value:"NEWVAL", text: "New Option Text"}));
+    //TODO add permissions for modification and management of datasets
 
     $("#center [data-toggle]").tooltip();
+    //hack to show scrollbars
+    $("#center").css('overflow','auto');
+  },
+
+  comingSoon: function(){
+    mod_toastr.warning('Feature coming soon');
   },
 
 
@@ -259,7 +278,7 @@ var LibraryDatasetView = Backbone.View.extend({
     tmpl_array.push('   <button data-toggle="tooltip" data-placement="top" title="Download dataset" class="btn btn-default toolbtn-download-dataset primary-button" type="button"><span class="fa fa-download"></span> Download</span></button>');
     tmpl_array.push('   <button data-toggle="tooltip" data-placement="top" title="Import dataset into history" class="btn btn-default toolbtn-import-dataset primary-button" type="button"><span class="fa fa-book"></span> to History</span></button>');
     tmpl_array.push('   <button data-toggle="tooltip" data-placement="top" title="Modify dataset" class="btn btn-default toolbtn_modify_dataset primary-button" type="button"><span class="fa fa-pencil"></span> Modify</span></button>');
-    tmpl_array.push('   <button data-toggle="tooltip" data-placement="top" title="Change permissions" class="btn btn-default toolbtn_change_permissions primary-button" type="button"><span class="fa fa-group"></span> Permissions</span></button>');
+    tmpl_array.push('   <a href="#folders/<%- item.get("folder_id") %>/datasets/<%- item.id %>/permissions"><button data-toggle="tooltip" data-placement="top" title="Change permissions" class="btn btn-default toolbtn_change_permissions primary-button" type="button"><span class="fa fa-group"></span> Permissions</span></button></a>');
     tmpl_array.push('   <button data-toggle="tooltip" data-placement="top" title="Share dataset" class="btn btn-default toolbtn-share-dataset primary-button" type="button"><span class="fa fa-share"></span> Share</span></button>');
 
     tmpl_array.push('  </div>');
@@ -481,8 +500,8 @@ var LibraryDatasetView = Backbone.View.extend({
     tmpl_array.push('<div class="library_style_container">');
 
     tmpl_array.push('  <div id="library_toolbar">');
-    tmpl_array.push('   <button data-toggle="tooltip" data-placement="top" title="Cancel modifications" class="btn btn-default toolbtn_cancel_modifications primary-button" type="button"><span class="fa fa-times"></span> Cancel</span></button>');
-    tmpl_array.push('   <button data-toggle="tooltip" data-placement="top" title="Save modifications" class="btn btn-default toolbtn_save_modifications primary-button" type="button"><span class="fa fa-floppy-o"></span> Save</span></button>');
+    tmpl_array.push('   <a href="#folders/<%- item.get("folder_id") %>"><button data-toggle="tooltip" data-placement="top" title="Go back to folder" class="btn btn-default primary-button" type="button"><span class="fa fa-folder-open-o"></span> go to Folder</span></button></a>');
+    tmpl_array.push('   <a href="#folders/<%- item.get("folder_id") %>/datasets/<%- item.id %>"><button data-toggle="tooltip" data-placement="top" title="Go back to dataset" class="btn btn-default primary-button" type="button"><span class="fa fa-file-o"></span> see the Dataset</span></button><a>');
 
     tmpl_array.push('  </div>');
 
@@ -511,11 +530,16 @@ var LibraryDatasetView = Backbone.View.extend({
     tmpl_array.push('<button data-toggle="tooltip" data-placement="top" title="Only you will be able to see the dataset." class="btn btn-default btn-make-private primary-button" type="button"><span class="fa fa-key"></span> Make private</span></button>');
     tmpl_array.push('</p>');
 
+    tmpl_array.push('<p>You can share this dataset with another Galaxy user. ');
+    tmpl_array.push('<button data-toggle="tooltip" data-placement="top" title="Only you and the other user will be able to see the dataset." class="btn btn-default btn-share-dataset primary-button" type="button"><span class="fa fa-share"></span> Share</span></button>');
+    tmpl_array.push('</p>');
+
     tmpl_array.push('<h2>Advanced permissions</h2>');
-    tmpl_array.push('<p>You can assign any number of roles to any of the following three dataset permissions:</p>');
+    tmpl_array.push('<p>You can assign any number of roles to any of the following three dataset permission types. However please read carefully the implications of such actions.</p>');
     tmpl_array.push('<h3>Access Roles</h3>');
     tmpl_array.push('<div class="alert alert-info">User has to have <strong>all these roles</strong> in order to see this dataset.</div>');
     tmpl_array.push('<div id="access_perm" class="access_perm roles-selection"></div>');
+    tmpl_array.push('<button data-toggle="tooltip" data-placement="top" title="Save modifications" class="btn btn-default toolbtn_save_modifications primary-button" type="button"><span class="fa fa-floppy-o"></span> Save</span></button>');
     tmpl_array.push('<h3>Modify Roles</h3>');
     tmpl_array.push('<div class="alert alert-info">Users with <strong>any</strong> of these roles can modify the information about this dataset.</div>');
     tmpl_array.push('<div id="modify_perm" class="modify_perm"></div>');
@@ -532,7 +556,7 @@ var LibraryDatasetView = Backbone.View.extend({
     return _.template(tmpl_array.join(''));
   },
 
-templateBulkImportInModal : function(){
+  templateBulkImportInModal: function(){
     var tmpl_array = [];
 
     tmpl_array.push('<span id="history_modal_combo_bulk" style="width:90%; margin-left: 1em; margin-right: 1em; ">');
@@ -545,8 +569,22 @@ templateBulkImportInModal : function(){
     tmpl_array.push('</span>');
 
     return _.template(tmpl_array.join(''));
-  }
+  },
 
+  templateAccessSelect: function(){
+    var tmpl_array = [];
+
+    tmpl_array.push('<select id="access_select" multiple>');
+
+    tmpl_array.push('   <% _.each(options, function(option) { %>');    
+    tmpl_array.push('       <option value="<%- option.name %>"><%- option.name %></option>');
+    tmpl_array.push('   <% }); %>');
+
+    tmpl_array.push('</select>');
+
+
+    return _.template(tmpl_array.join(''));
+  }
 });
 
 return {

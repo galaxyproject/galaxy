@@ -17,6 +17,7 @@ var View = Backbone.View.extend(
         value               : null,
         multiple            : false,
         minimumInputLength  : 0,
+        // example format of initial data: "id:name,55:anotherrole@role.com,27:role@role.com"
         initialData         : ''
     },
     

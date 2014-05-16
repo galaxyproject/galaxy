@@ -46,7 +46,7 @@ var FolderRowView = Backbone.View.extend({
   },
 
   showDatasetDetails : function(){
-    this.dataset_view = new mod_library_dataset_view.LibraryDatasetView({id: this.id});
+    Galaxy.libraries.datasetView = new mod_library_dataset_view.LibraryDatasetView({id: this.id});
   },
 
   /**
