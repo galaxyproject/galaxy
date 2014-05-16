@@ -98,6 +98,9 @@ class LwrJobRunner( AsynchronousJobRunner ):
         if lwr_status == "complete":
             self.mark_as_finished(job_state)
             return None
+        if lwr_status == "failed":
+            self.fail_job(job_state)
+            return None
         if lwr_status == "running" and not job_state.running:
             job_state.running = True
             job_state.job_wrapper.change_state( model.Job.states.RUNNING )
