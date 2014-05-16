@@ -51,7 +51,13 @@ class LwrJobRunner( AsynchronousJobRunner ):
         for kwd in kwds.keys():
             if kwd.startswith('amqp_connect_ssl_'):
                 amqp_connect_ssl_args[kwd] = kwds[kwd]
-        client_manager_kwargs = {'transport_type': transport, 'cache': string_as_bool_or_none(cache), "url": url, 'amqp_connect_ssl_args': amqp_connect_ssl_args or None}
+        client_manager_kwargs = {
+            'transport_type': transport,
+            'cache': string_as_bool_or_none(cache),
+            "url": url,
+            'amqp_connect_ssl_args': amqp_connect_ssl_args or None,
+            'manager': kwds.get("manager", None),
+        }
         if 'amqp_consumer_timeout' in kwds:
             if kwds['amqp_consumer_timeout'] == 'None':
                 client_manager_kwargs['amqp_consumer_timeout'] = None
