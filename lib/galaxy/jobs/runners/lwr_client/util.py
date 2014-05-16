@@ -62,6 +62,7 @@ def directory_files(directory):
                 contents.append(name)
     return contents
 
+
 def parse_amqp_connect_ssl_params(params):
     ssl = None
     rval = None

@@ -97,6 +97,7 @@ class MessageQueueClientManager(object):
                 try:
                     if "job_id" in body:
                         self.status_cache[body["job_id"]] = body
+                    log.debug("Handling asynchronous status update from remote LWR.")
                     callback(body)
                 except Exception:
                     log.exception("Failure processing job status update message.")
@@ -104,6 +105,7 @@ class MessageQueueClientManager(object):
 
             def run():
                 self.exchange.consume("status_update", callback_wrapper, check=self)
+                log.debug("Leaving LWR client status update thread, no additional LWR updates will be processed.")
 
             thread = threading.Thread(
                 name="lwr_client_%s_status_update_callback" % self.manager_name,

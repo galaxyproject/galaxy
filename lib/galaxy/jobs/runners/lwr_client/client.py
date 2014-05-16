@@ -300,7 +300,7 @@ class MessageJobClient(BaseJobClient):
         launch_params = dict(command_line=command_line, job_id=self.job_id)
         submit_params_dict = submit_params(self.destination_params)
         if submit_params_dict:
-            launch_params['params'] = submit_params_dict
+            launch_params['submit_params'] = submit_params_dict
         if dependencies_description:
             launch_params['dependencies_description'] = dependencies_description.to_dict()
         if env:

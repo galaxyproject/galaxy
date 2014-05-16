@@ -28,6 +28,7 @@ __all__ = [ 'LwrJobRunner' ]
 
 NO_REMOTE_GALAXY_FOR_METADATA_MESSAGE = "LWR misconfiguration - LWR client configured to set metadata remotely, but remote LWR isn't properly configured with a galaxy_home directory."
 NO_REMOTE_DATATYPES_CONFIG = "LWR client is configured to use remote datatypes configuration when setting metadata externally, but LWR is not configured with this information. Defaulting to datatypes_conf.xml."
+GENERIC_REMOTE_ERROR = "Failed to communicate with remote job server."
 
 # Is there a good way to infer some default for this? Can only use
 # url_for from web threads. https://gist.github.com/jmchilton/9098762
@@ -266,7 +267,7 @@ class LwrJobRunner( AsynchronousJobRunner ):
             if failed:
                 job_wrapper.fail("Failed to find or download one or more job outputs from remote server.", exception=True)
         except Exception:
-            message = "Failed to communicate with remote job server."
+            message = GENERIC_REMOTE_ERROR
             job_wrapper.fail( message, exception=True )
             log.exception("failure finishing job %d" % job_wrapper.job_id)
             return
@@ -284,7 +285,7 @@ class LwrJobRunner( AsynchronousJobRunner ):
         Seperated out so we can use the worker threads for it.
         """
         self.stop_job( self.sa_session.query( self.app.model.Job ).get( job_state.job_wrapper.job_id ) )
-        job_state.job_wrapper.fail( job_state.fail_message )
+        job_state.job_wrapper.fail( getattr( job_state, "fail_message", GENERIC_REMOTE_ERROR ) )
 
     def check_pid( self, pid ):
         try:
