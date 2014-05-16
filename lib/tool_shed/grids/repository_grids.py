@@ -1940,8 +1940,8 @@ def filter_by_latest_downloadable_changeset_revision_that_has_failing_tool_tests
     of type repository_suite_definition and tool_dependency_definition.
     """
     repository_metadata = get_latest_downloadable_repository_metadata_if_it_includes_tools( trans, repository )
-    if repository_metadata \
-        and repository_metadata.tool_test_results is not None \
+    if repository_metadata is not None \
+        and has_been_tested( repository_metadata ) \
         and not repository_metadata.missing_test_components \
         and not repository_metadata.tools_functionally_correct \
         and not repository_metadata.test_install_error:
@@ -1957,7 +1957,9 @@ def filter_by_latest_downloadable_changeset_revision_that_has_missing_tool_test_
     tool_dependency_definition.
     """
     repository_metadata = get_latest_downloadable_repository_metadata_if_it_includes_tools( trans, repository )
-    if repository_metadata and repository_metadata.missing_test_components:
+    if repository_metadata is not None \
+        and has_been_tested( repository_metadata ) \
+        and repository_metadata.missing_test_components:
         return repository_metadata.changeset_revision
     return None
 
@@ -1968,9 +1970,10 @@ def filter_by_latest_downloadable_changeset_revision_that_has_no_failing_tool_te
     and tool_dependency_definition.
     """
     repository_metadata = get_latest_downloadable_repository_metadata_if_it_includes_tools( trans, repository )
-    if repository_metadata is not None and \
-        not repository_metadata.missing_test_components and \
-        repository_metadata.tools_functionally_correct:
+    if repository_metadata is not None \
+        and has_been_tested( repository_metadata ) \
+        and not repository_metadata.missing_test_components \
+        and repository_metadata.tools_functionally_correct:
         return repository_metadata.changeset_revision
     return None
 
@@ -1993,7 +1996,9 @@ def filter_by_latest_downloadable_changeset_revision_that_has_test_install_error
     """
     repository_metadata = get_latest_downloadable_repository_metadata_if_it_has_test_install_errors( trans, repository )
     # Filter further by eliminating repositories that are missing test components.
-    if repository_metadata is not None and not repository_metadata.missing_test_components:
+    if repository_metadata is not None \
+        and has_been_tested( repository_metadata ) \
+        and not repository_metadata.missing_test_components:
         return repository_metadata.changeset_revision
     return None
 
@@ -2067,7 +2072,9 @@ def get_latest_downloadable_repository_metadata_if_it_has_test_install_errors( t
     well as types repository_suite_definition and tool_dependency_definition.
     """
     repository_metadata = get_latest_downloadable_repository_metadata( trans, repository )
-    if repository_metadata is not None and repository_metadata.test_install_error:
+    if repository_metadata is not None \
+        and has_been_tested( repository_metadata ) \
+        and repository_metadata.test_install_error:
         return repository_metadata
     return None
 
@@ -2104,3 +2111,25 @@ def get_latest_repository_metadata_if_it_includes_invalid_tools( trans, reposito
         if metadata is not None and 'invalid_tools' in metadata:
             return repository_metadata
     return None
+
+def has_been_tested( repository_metadata ):
+    """
+    Return True if the received repository_metadata record'd tool_test_results column was populated by
+    the Tool Shed's install and test framework. 
+    """
+    tool_test_results = repository_metadata.tool_test_results
+    if tool_test_results is None:
+        return False
+    # The install and test framework's preparation scripts will populate the tool_test_results column
+    # with something like this:
+    # [{"test_environment": 
+    #    {"time_tested": "2014-05-15 16:15:18",
+    #     "tool_shed_database_version": 22, 
+    #     "tool_shed_mercurial_version": "2.2.3", 
+    #     "tool_shed_revision": "13459:9a1415f8108f"}
+    # }]
+    tool_test_results = listify( tool_test_results )
+    for test_results_dict in tool_test_results:
+        if len( test_results_dict ) > 1:
+            return True
+    return False
