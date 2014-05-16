@@ -107,6 +107,12 @@ class PathHelper(object):
     'moo/cow'
     >>> nt_path_helper.local_name("moo\\\\cow")
     'moo/cow'
+    >>> posix_path_helper.from_posix_with_new_base("/galaxy/data/bowtie/hg19.fa", "/galaxy/data/", "/work/galaxy/data")
+    '/work/galaxy/data/bowtie/hg19.fa'
+    >>> posix_path_helper.from_posix_with_new_base("/galaxy/data/bowtie/hg19.fa", "/galaxy/data", "/work/galaxy/data")
+    '/work/galaxy/data/bowtie/hg19.fa'
+    >>> posix_path_helper.from_posix_with_new_base("/galaxy/data/bowtie/hg19.fa", "/galaxy/data", "/work/galaxy/data/")
+    '/work/galaxy/data/bowtie/hg19.fa'
     '''
 
     def __init__(self, separator, local_path_module=os.path):
@@ -122,6 +128,22 @@ class PathHelper(object):
 
     def remote_join(self, *args):
         return self.separator.join(args)
+
+    def from_posix_with_new_base(self, posix_path, old_base, new_base):
+        # TODO: Test with new_base as a windows path against nt_path_helper.
+        if old_base.endswith("/"):
+            old_base = old_base[:-1]
+        if not posix_path.startswith(old_base):
+            message_template = "Cannot compute new path for file %s, does not start with %s."
+            message = message_template % (posix_path, old_base)
+            raise Exception(message)
+        stripped_path = posix_path[ len(old_base): ]
+        while stripped_path.startswith("/"):
+            stripped_path = stripped_path[1:]
+        path_parts = stripped_path.split(self.separator)
+        if new_base.endswith(self.separator):
+            new_base = new_base[:-len(self.separator)]
+        return self.remote_join(new_base, *path_parts)
 
 
 class TransferEventManager(object):

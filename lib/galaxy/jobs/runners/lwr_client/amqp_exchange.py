@@ -48,6 +48,7 @@ class LwrExchange(object):
 
     def consume(self, queue_name, callback, check=True, connection_kwargs={}):
         queue = self.__queue(queue_name)
+        log.debug("Consuming queue '%s'", queue)
         while check:
             try:
                 with self.connection(self.__url, ssl=self.__connect_ssl, **connection_kwargs) as connection:

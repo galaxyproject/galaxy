@@ -78,9 +78,11 @@ class FileStager(object):
         self.job_inputs = JobInputs(self.command_line, self.config_files)
 
         self.action_mapper = FileActionMapper(client)
-        self.transfer_tracker = TransferTracker(client, self.action_mapper, self.job_inputs, rewrite_paths=self.rewrite_paths)
 
         self.__handle_setup(job_config)
+
+        self.transfer_tracker = TransferTracker(client, self.path_helper, self.action_mapper, self.job_inputs, rewrite_paths=self.rewrite_paths)
+
         self.__initialize_referenced_tool_files()
         if self.rewrite_paths:
             self.__initialize_referenced_arbitrary_files()
@@ -142,7 +144,7 @@ class FileStager(object):
                     referenced_arbitrary_path_mappers[path] = mapper
         for path, mapper in referenced_arbitrary_path_mappers.iteritems():
             action = self.action_mapper.action(path, path_type.UNSTRUCTURED, mapper)
-            unstructured_map = action.unstructured_map()
+            unstructured_map = action.unstructured_map(self.path_helper)
             self.arbitrary_files.update(unstructured_map)
 
     def __upload_tool_files(self):
@@ -330,8 +332,9 @@ class JobInputs(object):
 
 class TransferTracker(object):
 
-    def __init__(self, client, action_mapper, job_inputs, rewrite_paths):
+    def __init__(self, client, path_helper, action_mapper, job_inputs, rewrite_paths):
         self.client = client
+        self.path_helper = path_helper
         self.action_mapper = action_mapper
 
         self.job_inputs = job_inputs
@@ -357,6 +360,11 @@ class TransferTracker(object):
             register = self.rewrite_paths or type == 'tool'  # Even if inputs not rewritten, tool must be.
             if register:
                 self.register_rewrite(path, get_path(), type, force=True)
+        elif self.rewrite_paths:
+            path_rewrite = action.path_rewrite(self.path_helper)
+            if path_rewrite:
+                self.register_rewrite(path, path_rewrite, type, force=True)
+
         # else: # No action for this file
 
     def __add_remote_staging_input(self, action, name, type):

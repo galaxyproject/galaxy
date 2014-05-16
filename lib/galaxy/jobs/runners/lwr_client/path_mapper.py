@@ -59,7 +59,7 @@ class PathMapper(object):
         path = str(local_path)  # Use false_path if needed.
         action = self.action_mapper.action(path, path_type.UNSTRUCTURED)
         if not action.staging_needed:
-            return None, []
+            return action.path_rewrite(self.path_helper), []
         unique_names = action.unstructured_map()
         name = unique_names[path]
         remote_path = self.path_helper.remote_join(self.unstructured_files_directory, name)
@@ -70,12 +70,16 @@ class PathMapper(object):
         """
         path = str(dataset_path)  # Use false_path if needed.
         action = self.action_mapper.action(path, dataset_path_type)
-        remote_path_rewrite = None
         if action.staging_needed:
             if name is None:
                 name = os.path.basename(path)
             remote_directory = self.__remote_directory(dataset_path_type)
             remote_path_rewrite = self.path_helper.remote_join(remote_directory, name)
+        else:
+            # Actions which don't require staging MUST define a path_rewrite
+            # method.
+            remote_path_rewrite = action.path_rewrite(self.path_helper)
+
         return remote_path_rewrite
 
     def __action(self, dataset_path, dataset_path_type):
