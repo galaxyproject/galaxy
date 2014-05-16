@@ -400,7 +400,7 @@ class AsynchronousJobRunner( BaseJobRunner ):
         self.watched = new_watched
 
     # Subclasses should implement this unless they override check_watched_items all together.
-    def check_watched_item(self):
+    def check_watched_item(self, job_state):
         raise NotImplementedError()
 
     def finish_job( self, job_state ):
