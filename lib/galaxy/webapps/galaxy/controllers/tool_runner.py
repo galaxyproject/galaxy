@@ -118,6 +118,11 @@ class ToolRunner( BaseUIController ):
                 job = trans.sa_session.query( trans.app.model.Job ).get( job_id )
             except:
                 error( "Invalid value for 'job_id' parameter" )
+            if not trans.user_is_admin():
+                for data_assoc in job.output_datasets:
+                    #only allow rerunning if user is allowed access to the dataset.
+                    if not trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), data_assoc.dataset.dataset ):
+                        error( "You are not allowed to rerun this job" )
             param_error_text = "Failed to get parameters for job id %d " % job_id
         else:
             if not id:
@@ -130,7 +135,6 @@ class ToolRunner( BaseUIController ):
                     id = trans.security.decode_id( id )
                 except:
                     error( "Invalid value for 'id' parameter" )
-    
             # Get the dataset object
             data = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( id )
             #only allow rerunning if user is allowed access to the dataset.
