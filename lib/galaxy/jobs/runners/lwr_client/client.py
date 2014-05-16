@@ -313,7 +313,9 @@ class MessageJobClient(BaseJobClient):
             # before queueing.
             setup_params = _setup_params_from_job_config(job_config)
             launch_params["setup_params"] = setup_params
-        return self.client_manager.exchange.publish("setup", launch_params)
+        response = self.client_manager.exchange.publish("setup", launch_params)
+        log.info("Job published to setup message queue.")
+        return response
 
     def clean(self):
         del self.client_manager.status_cache[self.job_id]
