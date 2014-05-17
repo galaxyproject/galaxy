@@ -15,6 +15,7 @@ SAMPLES="
     tool_sheds_conf.xml.sample
     openid_conf.xml.sample
     universe_wsgi.ini.sample
+    lib/tool_shed/scripts/bootstrap_tool_shed/user_info.xml.sample
     tool-data/shared/ncbi/builds.txt.sample
     tool-data/shared/ensembl/builds.txt.sample
     tool-data/shared/ucsc/builds.txt.sample
