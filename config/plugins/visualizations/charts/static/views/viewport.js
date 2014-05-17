@@ -282,9 +282,9 @@ return Backbone.View.extend({
     
     // template svg/div element
     _templateContainer: function(tag, width) {
-        return  '<div class="container" style="width:' + width + '%;">' +
+        return  '<div class="charts-viewport-container" style="width:' + width + '%;">' +
                     '<div id="menu"/>' +
-                    '<' + tag + ' id="canvas" class="canvas">' +
+                    '<' + tag + ' id="canvas" class="charts-viewport-canvas">' +
                 '</div>';
     }
     

@@ -54,13 +54,13 @@
 	display: inline-block;
 }
 
-.charts-viewport .container {
+.charts-viewport .charts-viewport-container {
 	float: left;
 	display: block; 
 	height: 100%;
 }
 
-.charts-viewport .canvas {
+.charts-viewport .charts-viewport-canvas {
 	display: block;
 	width:100%;
 	height: inherit;

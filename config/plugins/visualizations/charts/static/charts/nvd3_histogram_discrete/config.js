@@ -1,12 +1,13 @@
 define(['plugin/charts/nvd3/config'], function(nvd3_config) {
 
 return $.extend(true, {}, nvd3_config, {
-    title       : 'Histogram',
-    category    : 'Histograms',
-    execute     : 'histogram_discrete',
+    title       : 'Histogram (discrete)',
+    category    : 'Data processing (requires \'charts\' tool from Toolshed)',
+    execute     : 'histogramdiscrete',
     columns     : {
         y : {
-            title   : 'Observations'
+            title       : 'Observations',
+            is_label    : true
         }
     },
     settings    : {

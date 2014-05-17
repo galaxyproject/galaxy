@@ -23,7 +23,7 @@ return Backbone.View.extend(
                 },
                 y: {
                     index: index++
-                },
+                }
             }
         }
         
