@@ -188,7 +188,7 @@ class BaseUIController( BaseController ):
         except MessageException:
             raise       # handled in the caller
         except:
-            log.exception( "Execption in get_object check for %s %s:" % ( class_name, str( id ) ) )
+            log.exception( "Exception in get_object check for %s %s:" % ( class_name, str( id ) ) )
             raise Exception( 'Server error retrieving %s id ( %s ).' % ( class_name, str( id ) ) )
 
 
@@ -204,7 +204,7 @@ class BaseAPIController( BaseController ):
         except MessageException, e:
             raise HTTPBadRequest( detail=e.err_msg )
         except Exception, e:
-            log.exception( "Execption in get_object check for %s %s: %s" % ( class_name, str( id ), str( e ) ) )
+            log.exception( "Exception in get_object check for %s %s: %s" % ( class_name, str( id ), str( e ) ) )
             raise HTTPInternalServerError( comment=str( e ) )
 
     def validate_in_users_and_groups( self, trans, payload ):
@@ -2771,7 +2771,7 @@ class UsesQuotaMixin( object ):
         return self.get_object( trans, id, 'Quota', check_ownership=False, check_accessible=False, deleted=deleted )
 
 
-class UsesTagsMixin( object ):
+class UsesTagsMixin( SharableItemSecurityMixin ):
 
     def get_tag_handler( self, trans ):
         return trans.app.tag_handler
