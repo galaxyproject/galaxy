@@ -9,6 +9,7 @@ import sys
 
 import galaxy.queues
 from galaxy import eggs, util
+eggs.require('anyjson')
 if sys.version_info < (2, 7, 0):
     # Kombu requires importlib and ordereddict to function under Python 2.6.
     eggs.require('importlib')
