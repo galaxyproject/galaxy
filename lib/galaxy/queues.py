@@ -4,9 +4,14 @@ All message queues used by Galaxy
 
 """
 
+import sys
+
 from galaxy import eggs
 
-eggs.require("kombu")
+if sys.version_info < (2, 7, 0):
+    # Kombu requires importlib to function in Python 2.6.
+    eggs.require('importlib')
+eggs.require('kombu')
 from kombu import Exchange, Queue
 
 ALL_CONTROL = "control.*"
