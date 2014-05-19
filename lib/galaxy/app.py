@@ -57,12 +57,16 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
         self.tag_handler = GalaxyTagHandler()
         # Dataset Collection Plugins
         self.dataset_collections_service = dataset_collections.DatasetCollectionsService(self)
+
+        # Tool Data Tables
+        self._configure_tool_data_tables( from_shed_config=False )
+        # Load dbkey / genome build manager
+        self._configure_genome_builds( data_table_name="__dbkeys__", load_old_style=True )
+
         # Genomes
         self.genomes = Genomes( self )
         # Data providers registry.
         self.data_provider_registry = DataProviderRegistry()
-
-        self._configure_tool_data_tables( from_shed_config=False )
 
         # Initialize job metrics manager, needs to be in place before
         # config so per-destination modifications can be made.

@@ -193,36 +193,10 @@ class DefaultToolAction( object ):
 
         # Collect chromInfo dataset and add as parameters to incoming
         db_datasets = {}
-        db_dataset = trans.db_dataset_for( input_dbkey )
+        ( chrom_info, db_dataset ) = trans.app.genome_builds.get_chrom_info( input_dbkey, trans=trans )
         if db_dataset:
-            db_datasets[ "chromInfo" ] = db_dataset
-            incoming[ "chromInfo" ] = db_dataset.file_name
-        else:
-            # -- Get chrom_info (len file) from either a custom or built-in build. --
-
-            chrom_info = None
-            if trans.user and ( 'dbkeys' in trans.user.preferences ) and ( input_dbkey in from_json_string( trans.user.preferences[ 'dbkeys' ] ) ):
-                # Custom build.
-                custom_build_dict = from_json_string( trans.user.preferences[ 'dbkeys' ] )[ input_dbkey ]
-                # HACK: the attempt to get chrom_info below will trigger the
-                # fasta-to-len converter if the dataset is not available or,
-                # which will in turn create a recursive loop when
-                # running the fasta-to-len tool. So, use a hack in the second
-                # condition below to avoid getting chrom_info when running the
-                # fasta-to-len converter.
-                if 'fasta' in custom_build_dict and tool.id != 'CONVERTER_fasta_to_len':
-                    # Build is defined by fasta; get len file, which is obtained from converting fasta.
-                    build_fasta_dataset = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( custom_build_dict[ 'fasta' ] )
-                    chrom_info = build_fasta_dataset.get_converted_dataset( trans, 'len' ).file_name
-                elif 'len' in custom_build_dict:
-                    # Build is defined by len file, so use it.
-                    chrom_info = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( custom_build_dict[ 'len' ] ).file_name
-
-            if not chrom_info:
-                # Default to built-in build.
-                chrom_info = os.path.join( trans.app.config.len_file_path, "%s.len" % input_dbkey )
-            incoming[ "chromInfo" ] = os.path.abspath( chrom_info )
-        inp_data.update( db_datasets )
+            inp_data.update( { "chromInfo": db_dataset } )
+        incoming[ "chromInfo" ] = chrom_info
 
         # Determine output dataset permission/roles list
         existing_datasets = [ inp for inp in inp_data.values() if inp ]

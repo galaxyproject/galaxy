@@ -14,6 +14,7 @@ import galaxy.model
 from galaxy.model import mapping
 from galaxy.tools import Tool
 from galaxy.util import parse_xml
+from galaxy.util.dbkeys import GenomeBuilds
 from galaxy.jobs import NoopQueue
 
 
@@ -96,6 +97,7 @@ class MockApp( object ):
             tool_data_path=os.path.join(test_directory, "tools"),
             root=os.path.join(test_directory, "galaxy"),
             admin_users="mary@example.com",
+            len_file_path=os.path.join( 'tool-data', 'shared', 'ucsc', 'chrom' ),
         )
 
         # Setup some attributes for downstream extension by specific tests.
@@ -115,6 +117,7 @@ class MockApp( object ):
                     self.model[ module_member_name ] = module_member
         else:
             self.model = in_memomry_model
+        self.genome_builds = GenomeBuilds( self )
         self.toolbox = None
         self.object_store = None
         self.security = SecurityHelper(id_secret="testing")

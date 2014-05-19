@@ -157,7 +157,7 @@ def __new_library_upload( trans, cntrller, uploaded_dataset, library_bunch, stat
                 folder = matches[0]
             else:
                 new_folder = trans.app.model.LibraryFolder( name=name, description='Automatically created by upload tool' )
-                new_folder.genome_build = util.dbnames.default_value
+                new_folder.genome_build = trans.app.genome_builds.default_value
                 folder.add_folder( new_folder )
                 trans.sa_session.add( new_folder )
                 trans.sa_session.flush()

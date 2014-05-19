@@ -372,7 +372,7 @@ class DBKeyParameter( SelectParameter ):
         context = context or {}
         other_values = other_values or {}
         try:
-            values = kwd['trans'].db_builds
+            values = kwd['trans'].app.genome_builds.get_genome_build_names( kwd['trans'] )
         except KeyError:
             pass
         return super(DBKeyParameter, self).get_html_field( value, context, other_values, values, **kwd)
@@ -381,7 +381,7 @@ class DBKeyParameter( SelectParameter ):
         context = context or {}
         other_values = other_values or {}
         try:
-            values = kwd['trans'].db_builds
+            values = kwd['trans'].app.genome_builds.get_genome_build_names( kwd['trans'] )
         except KeyError:
             pass
         return super(DBKeyParameter, self).get_html( value, context, other_values, values, **kwd)

@@ -321,6 +321,19 @@ class TabularToolDataTable( ToolDataTable ):
     def get_fields( self ):
         return self.data
 
+    def get_named_fields_list( self ):
+        rval = []
+        named_colums = self.get_column_name_list()
+        for fields in self.get_fields():
+            field_dict = {}
+            for i, field in enumerate( fields ):
+                field_name = named_colums[i]
+                if field_name is None:
+                    field_name = i #check that this is supposed to be 0 based.
+                field_dict[ field_name ] = field
+            rval.append( field_dict )
+        return rval
+
     def get_version_fields( self ):
         return ( self._loaded_content_version, self.data )
 

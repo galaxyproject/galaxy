@@ -178,9 +178,9 @@ class Genomes( object ):
     """
 
     def __init__( self, app ):
-        # Create list of genomes from util.dbnames
+        # Create list of genomes from app.genome_builds
         self.genomes = {}
-        for key, description in util.dbnames:
+        for key, description in app.genome_builds.get_genome_build_names():
             self.genomes[ key ] = Genome( key, description )
 
         # Add len files to genomes.

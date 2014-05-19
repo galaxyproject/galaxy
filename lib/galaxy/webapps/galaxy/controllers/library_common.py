@@ -292,9 +292,9 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
             new_folder = trans.app.model.LibraryFolder( name=util.restore_text( params.name ),
                                                         description=util.restore_text( params.description ) )
             # We are associating the last used genome build with folders, so we will always
-            # initialize a new folder with the first dbkey in util.dbnames which is currently
+            # initialize a new folder with the first dbkey in genome builds list which is currently
             # ?    unspecified (?)
-            new_folder.genome_build = util.dbnames.default_value
+            new_folder.genome_build = trans.app.genome_builds.default_value
             parent_folder.add_folder( new_folder )
             trans.sa_session.add( new_folder )
             trans.sa_session.flush()
@@ -1433,7 +1433,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                 file_formats = trans.app.datatypes_registry.upload_file_formats
                 # Send list of genome builds to the form so the "dbkey" select list can be populated dynamically
                 def get_dbkey_options( last_used_build ):
-                    for dbkey, build_name in util.dbnames:
+                    for dbkey, build_name in trans.app.genome_builds.get_genome_build_names( trans=trans ):
                         yield build_name, dbkey, ( dbkey==last_used_build )
                 dbkeys = get_dbkey_options( last_used_build )
                 # Send the current history to the form to enable importing datasets from history to library

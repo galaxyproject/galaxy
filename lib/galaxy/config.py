@@ -16,6 +16,7 @@ from galaxy.web.formatting import expand_pretty_datetime_format
 from galaxy.util import string_as_bool
 from galaxy.util import listify
 from galaxy.util import parse_xml
+from galaxy.util.dbkeys import GenomeBuilds
 from galaxy import eggs
 import pkg_resources
 
@@ -553,6 +554,9 @@ def configure_logging( config ):
 class ConfiguresGalaxyMixin:
     """ Shared code for configuring Galaxy-like app objects.
     """
+
+    def _configure_genome_builds( self, data_table_name="__dbkeys__", load_old_style=True ):
+        self.genome_builds = GenomeBuilds( self, data_table_name=data_table_name, load_old_style=load_old_style )
 
     def _configure_toolbox( self ):
         # Initialize the tools, making sure the list of tool configs includes the reserved migrated_tools_conf.xml file.

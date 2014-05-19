@@ -1033,17 +1033,18 @@ class GenomeBuildParameter( SelectToolParameter ):
     """
     def __init__( self, *args, **kwds ):
         super( GenomeBuildParameter, self ).__init__( *args, **kwds )
-        self.static_options = [ ( value, key, False ) for key, value in util.dbnames ]
+        if self.tool:
+            self.static_options = [ ( value, key, False ) for key, value in self._get_dbkey_names()]
 
     def get_options( self, trans, other_values ):
         last_used_build = object()
         if trans.history:
             last_used_build = trans.history.genome_build
-        for dbkey, build_name in trans.db_builds:
+        for dbkey, build_name in self._get_dbkey_names( trans=trans ):
             yield build_name, dbkey, ( dbkey == last_used_build )
 
     def get_legal_values( self, trans, other_values ):
-        return set( dbkey for dbkey, _ in trans.db_builds )
+        return set( dbkey for dbkey, _ in self._get_dbkey_names( trans=trans ) )
 
     def to_dict( self, trans, view='collection', value_mapper=None ):
         # skip SelectToolParameter (the immediate parent) bc we need to get options in a different way here
@@ -1062,6 +1063,12 @@ class GenomeBuildParameter( SelectToolParameter ):
             'value': value
         })
         return d
+    
+    def _get_dbkey_names( self, trans=None ):
+        if not self.tool:
+            # Hack for unit tests, since we have no tool
+            return util.dbnames
+        return self.tool.app.genome_builds.get_genome_build_names( trans=trans )
 
 
 class ColumnListParameter( SelectToolParameter ):
