@@ -18,6 +18,7 @@ from galaxy.openid.providers import OpenIDProviders
 from galaxy.tools.data_manager.manager import DataManagers
 from galaxy.jobs import metrics as job_metrics
 from galaxy.web.base import pluginframework
+from galaxy.queue_worker import GalaxyQueueWorker
 
 import logging
 log = logging.getLogger( __name__ )
@@ -146,6 +147,10 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
         # Initialize the external service types
         self.external_service_types = external_service_types.ExternalServiceTypesCollection( self.config.external_service_type_config_file, self.config.external_service_type_path, self )
         self.model.engine.dispose()
+        self.control_worker = GalaxyQueueWorker(self,
+                                                galaxy.queues.control_queue_from_config(self.config),
+                                                galaxy.queue_worker.control_message_to_task)
+        self.control_worker.start()
 
     def shutdown( self ):
         self.job_manager.shutdown()

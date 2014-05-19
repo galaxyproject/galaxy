@@ -340,6 +340,17 @@ class Configuration( object ):
             amqp_config = {}
         for k, v in amqp_config:
             self.amqp[k] = v
+        # Galaxy internal control queue configuration.
+        # If specified in universe, use it, otherwise we use whatever 'real'
+        # database is specified.  Lastly, we create and use new sqlite database
+        # (to minimize locking) as a final option.
+        if 'amqp_internal_connection' in kwargs:
+            self.amqp_internal_connection = kwargs.get('amqp_internal_connection')
+            # TODO Get extra amqp args as necessary for ssl
+        elif 'database_connection' in kwargs:
+            self.amqp_internal_connection = "sqlalchemy+"+self.database_connection
+        else:
+            self.amqp_internal_connection = "sqlalchemy+sqlite:///%s?isolation_level=IMMEDIATE" % resolve_path( "database/control.sqlite", self.root )
         self.biostar_url = kwargs.get( 'biostar_url', None )
         self.biostar_key_name = kwargs.get( 'biostar_key_name', None )
         self.biostar_key = kwargs.get( 'biostar_key', None )
