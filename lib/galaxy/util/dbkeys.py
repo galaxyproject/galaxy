@@ -55,9 +55,9 @@ class GenomeBuilds( object ):
                 chrom_info = db_dataset.file_name
             else:
                 # -- Get chrom_info (len file) from either a custom or built-in build. --
-                if trans.user and ( 'dbkeys' in trans.user.preferences ) and ( input_dbkey in from_json_string( trans.user.preferences[ 'dbkeys' ] ) ):
+                if trans.user and ( 'dbkeys' in trans.user.preferences ) and ( dbkey in from_json_string( trans.user.preferences[ 'dbkeys' ] ) ):
                     # Custom build.
-                    custom_build_dict = from_json_string( trans.user.preferences[ 'dbkeys' ] )[ input_dbkey ]
+                    custom_build_dict = from_json_string( trans.user.preferences[ 'dbkeys' ] )[ dbkey ]
                     # HACK: the attempt to get chrom_info below will trigger the
                     # fasta-to-len converter if the dataset is not available or,
                     # which will in turn create a recursive loop when
