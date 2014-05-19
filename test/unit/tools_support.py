@@ -58,7 +58,7 @@ SIMPLE_CAT_TOOL_CONTENTS = '''<tool id="test_tool" name="Test Tool">
 
 class UsesTools( object ):
 
-    def _init_tool( self, tool_contents ):
+    def _init_tool( self, tool_contents=SIMPLE_TOOL_CONTENTS ):
         self.tool_file = os.path.join( self.test_directory, "tool.xml" )
         self.app.config.drmaa_external_runjob_script = ""
         self.app.config.tool_secret = "testsecret"

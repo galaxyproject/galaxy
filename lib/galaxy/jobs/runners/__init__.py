@@ -196,7 +196,7 @@ class BaseJobRunner( object ):
         output_pairs = []
         # Walk job's output associations to find and use from_work_dir attributes.
         job = job_wrapper.get_job()
-        job_tool = self.app.toolbox.tools_by_id.get( job.tool_id, None )
+        job_tool = job_wrapper.tool
         for dataset_assoc in job.output_datasets + job.output_library_datasets:
             for dataset in dataset_assoc.dataset.dataset.history_associations + dataset_assoc.dataset.dataset.library_associations:
                 if isinstance( dataset, self.app.model.HistoryDatasetAssociation ):
@@ -269,7 +269,36 @@ class BaseJobRunner( object ):
             self.work_queue.put( ( self.finish_job, ajs ) )
 
 
-class AsynchronousJobState( object ):
+class JobState( object ):
+    """
+    Encapsulate state of jobs.
+    """
+
+    def set_defaults( self, files_dir ):
+        if self.job_wrapper is not None:
+            id_tag = self.job_wrapper.get_id_tag()
+            if files_dir is not None:
+                self.job_file = JobState.default_job_file( files_dir, id_tag )
+                self.output_file = os.path.join( files_dir, 'galaxy_%s.o' % id_tag )
+                self.error_file = os.path.join( files_dir, 'galaxy_%s.e' % id_tag )
+                self.exit_code_file = os.path.join( files_dir, 'galaxy_%s.ec' % id_tag )
+            job_name = 'g%s' % id_tag
+            if self.job_wrapper.tool.old_id:
+                job_name += '_%s' % self.job_wrapper.tool.old_id
+            if self.job_wrapper.user:
+                job_name += '_%s' % self.job_wrapper.user
+            self.job_name = ''.join( map( lambda x: x if x in ( string.letters + string.digits + '_' ) else '_', job_name ) )
+
+    @staticmethod
+    def default_job_file( files_dir, id_tag ):
+        return os.path.join( files_dir, 'galaxy_%s.sh' % id_tag )
+
+    @staticmethod
+    def default_exit_code_file( files_dir, id_tag ):
+        return os.path.join( files_dir, 'galaxy_%s.ec' % id_tag )
+
+
+class AsynchronousJobState( JobState ):
     """
     Encapsulate the state of an asynchronous job, this should be subclassed as
     needed for various job runners to capture additional information needed
@@ -295,21 +324,6 @@ class AsynchronousJobState( object ):
         self.set_defaults( files_dir )
 
         self.cleanup_file_attributes = [ 'job_file', 'output_file', 'error_file', 'exit_code_file' ]
-
-    def set_defaults( self, files_dir ):
-        if self.job_wrapper is not None:
-            id_tag = self.job_wrapper.get_id_tag()
-            if files_dir is not None:
-                self.job_file = os.path.join( files_dir, 'galaxy_%s.sh' % id_tag )
-                self.output_file = os.path.join( files_dir, 'galaxy_%s.o' % id_tag )
-                self.error_file = os.path.join( files_dir, 'galaxy_%s.e' % id_tag )
-                self.exit_code_file = os.path.join( files_dir, 'galaxy_%s.ec' % id_tag )
-            job_name = 'g%s' % id_tag
-            if self.job_wrapper.tool.old_id:
-                job_name += '_%s' % self.job_wrapper.tool.old_id
-            if self.job_wrapper.user:
-                job_name += '_%s' % self.job_wrapper.user
-            self.job_name = ''.join( map( lambda x: x if x in ( string.letters + string.digits + '_' ) else '_', job_name ) )
 
     def cleanup( self ):
         for file in [ getattr( self, a ) for a in self.cleanup_file_attributes if hasattr( self, a ) ]:

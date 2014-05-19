@@ -1163,6 +1163,11 @@ class JobWrapper( object ):
                 return 'Job ran longer than the maximum allowed execution time (%s), please try different inputs or parameters' % self.app.job_config.limits.walltime
         return None
 
+    def has_limits( self ):
+        has_output_limit = self.app.job_config.limits.output_size > 0
+        has_walltime_limit = self.app.job_config.limits.walltime_delta is not None
+        return has_output_limit or has_walltime_limit
+
     def get_command_line( self ):
         return self.command_line
 
