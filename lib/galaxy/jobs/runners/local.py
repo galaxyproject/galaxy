@@ -88,6 +88,7 @@ class LocalJobRunner( BaseJobRunner ):
         try:
             stdout_file = tempfile.NamedTemporaryFile( suffix='_stdout', dir=job_wrapper.working_directory )
             stderr_file = tempfile.NamedTemporaryFile( suffix='_stderr', dir=job_wrapper.working_directory )
+            log.debug( '(%s) executing job script: %s' % ( job_id, command_line ) )
             proc = subprocess.Popen( args=command_line,
                                      shell=True,
                                      cwd=job_wrapper.working_directory,

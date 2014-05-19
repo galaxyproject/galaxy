@@ -317,7 +317,6 @@ class PBSJobRunner( AsynchronousJobRunner ):
         # (if a TaskWrapper was passed in):
         galaxy_job_id = job_wrapper.get_id_tag()
         log.debug("(%s) submitting file %s" % ( galaxy_job_id, job_file ) )
-        log.debug("(%s) command is: %s" % ( galaxy_job_id, command_line ) )
 
         tries = 0
         while tries < 5:

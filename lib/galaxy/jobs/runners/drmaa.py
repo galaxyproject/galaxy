@@ -114,9 +114,6 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
         if not self.prepare_job( job_wrapper, include_metadata=True ):
             return
 
-        # command line has been added to the wrapper by prepare_job()
-        command_line = job_wrapper.runner_command_line
-
         # get configured job destination
         job_destination = job_wrapper.job_destination
 
@@ -164,7 +161,6 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
             return
 
         log.debug( "(%s) submitting file %s", galaxy_id_tag, ajs.job_file )
-        log.debug( "(%s) command is: %s", galaxy_id_tag, command_line )
         if native_spec:
             log.debug( "(%s) native specification is: %s", galaxy_id_tag, native_spec )
 

@@ -268,8 +268,8 @@ class BaseJobRunner( object ):
         )
         ## Additional logging to enable if debugging from_work_dir handling, metadata
         ## commands, etc... (or just peak in the job script.)
-        # job_id = job_wrapper.job_id
-        # log.debug( 'Extended command-line for job (%s) is: %s' % ( job_id, command_line ) )
+        job_id = job_wrapper.job_id
+        log.debug( '(%s) command is: %s' % ( job_id, command_line ) )
         options.update(**kwds)
         return job_script(**options)
 

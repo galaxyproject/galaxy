@@ -19,8 +19,8 @@ def build_command( runner, job_wrapper, include_metadata=False, include_work_dir
         - commands to set metadata (if include_metadata is True)
     """
     base_command_line = job_wrapper.get_command_line()
-    job_id = job_wrapper.job_id
-    log.debug( 'Tool evaluation for job (%s) produced command-line: %s' % ( job_id, base_command_line ) )
+    # job_id = job_wrapper.job_id
+    # log.debug( 'Tool evaluation for job (%s) produced command-line: %s' % ( job_id, base_command_line ) )
     commands_builder = CommandsBuilder(base_command_line)
 
     # All job runners currently handle this case which should never occur

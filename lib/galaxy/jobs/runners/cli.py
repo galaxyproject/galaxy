@@ -91,7 +91,6 @@ class ShellJobRunner( AsynchronousJobRunner ):
             return
 
         log.debug( "(%s) submitting file: %s" % ( galaxy_id_tag, ajs.job_file ) )
-        log.debug( "(%s) command is: %s" % ( galaxy_id_tag, command_line ) )
 
         cmd_out = shell.execute(job_interface.submit(ajs.job_file))
         if cmd_out.returncode != 0:
