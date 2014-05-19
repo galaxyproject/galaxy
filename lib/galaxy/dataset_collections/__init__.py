@@ -180,7 +180,6 @@ class DatasetCollectionsService(
         return dataset_collection_instance
 
     def __recursively_create_collections( self, trans, element_identifiers ):
-        # TODO: Optimize - don't recheck parent, reload created model, just use as is.
         for index, element_identifier in enumerate( element_identifiers ):
             try:
                 if not element_identifier[ "src" ] == "new_collection":
@@ -197,9 +196,7 @@ class DatasetCollectionsService(
                 collection_type=collection_type,
                 element_identifiers=element_identifier[ "element_identifiers" ],
             )
-            self.__persist( collection )
-            element_identifier[ "src" ] = "dc"
-            element_identifier[ "id" ] = trans.security.encode_id( collection.id )
+            element_identifier[ "__object__" ] = collection
 
         return element_identifiers
 
@@ -215,7 +212,12 @@ class DatasetCollectionsService(
         #    # consistent with other API methods though.
         #    element_identifier = dict( src='hda', id=str( element_identifier ) )
 
-        # dateset_identifier is dict {src=hda|ldda, id=<encoded_id>}
+        # Previously created collection already found in request, just pass
+        # through as is.
+        if "__object__" in element_identifier:
+            return element_identifier[ "__object__" ]
+
+        # dateset_identifier is dict {src=hda|ldda|hdca|new_collection, id=<encoded_id>}
         try:
             src_type = element_identifier.get( 'src', 'hda' )
         except AttributeError:
@@ -233,8 +235,6 @@ class DatasetCollectionsService(
             # TODO: Option to copy? Force copy? Copy or allow if not owned?
             element = self.__get_history_collection_instance( trans, encoded_id ).collection
         # TODO: ldca.
-        elif src_type == "dc":
-            element = self.get_dataset_collection( trans, encoded_id )
         else:
             raise RequestParameterInvalidException( "Unknown src_type parameter supplied '%s'." % src_type )
         return element
