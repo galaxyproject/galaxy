@@ -4,6 +4,9 @@ from os.path import abspath
 CAPTURE_RETURN_CODE = "return_code=$?"
 YIELD_CAPTURED_CODE = 'sh -c "exit $return_code"'
 
+from logging import getLogger
+log = getLogger( __name__ )
+
 
 def build_command( runner, job_wrapper, include_metadata=False, include_work_dir_outputs=True, remote_command_params={} ):
     """
@@ -15,8 +18,10 @@ def build_command( runner, job_wrapper, include_metadata=False, include_work_dir
         - command line taken from job wrapper
         - commands to set metadata (if include_metadata is True)
     """
-
-    commands_builder = CommandsBuilder(job_wrapper.get_command_line())
+    base_command_line = job_wrapper.get_command_line()
+    job_id = job_wrapper.job_id
+    log.debug( 'Tool evaluation for job (%s) produced command-line: %s' % ( job_id, base_command_line ) )
+    commands_builder = CommandsBuilder(base_command_line)
 
     # All job runners currently handle this case which should never occur
     if not commands_builder.commands:

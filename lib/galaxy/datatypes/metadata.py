@@ -658,7 +658,6 @@ class JobExternalOutputMetadataWrapper( object ):
                 __get_filename_override(),
                 metadata_path_on_compute(metadata_files.filename_override_metadata),
             )
-            log.info(line)
             return line
         if not isinstance( datasets, list ):
             datasets = [ datasets ]

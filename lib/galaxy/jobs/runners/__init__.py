@@ -151,7 +151,11 @@ class BaseJobRunner( object ):
         # Prepare the job
         try:
             job_wrapper.prepare()
-            job_wrapper.runner_command_line = self.build_command_line( job_wrapper, include_metadata=include_metadata, include_work_dir_outputs=include_work_dir_outputs )
+            job_wrapper.runner_command_line = self.build_command_line(
+                job_wrapper,
+                include_metadata=include_metadata,
+                include_work_dir_outputs=include_work_dir_outputs
+            )
         except:
             log.exception("(%s) Failure preparing job" % job_id)
             job_wrapper.fail( "failure preparing job", exception=True )
@@ -254,13 +258,18 @@ class BaseJobRunner( object ):
         envs = destination.get( "env", [] )
         for env in envs:
             env_setup_commands.append( env_to_statement( env ) )
+        command_line = job_wrapper.runner_command_line
         options = dict(
             job_instrumenter=job_instrumenter,
             galaxy_lib=job_wrapper.galaxy_lib_dir,
             env_setup_commands=env_setup_commands,
             working_directory=os.path.abspath( job_wrapper.working_directory ),
-            command=job_wrapper.runner_command_line,
+            command=command_line,
         )
+        ## Additional logging to enable if debugging from_work_dir handling, metadata
+        ## commands, etc... (or just peak in the job script.)
+        # job_id = job_wrapper.job_id
+        # log.debug( 'Extended command-line for job (%s) is: %s' % ( job_id, command_line ) )
         options.update(**kwds)
         return job_script(**options)
 

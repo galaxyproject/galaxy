@@ -86,7 +86,6 @@ class LocalJobRunner( BaseJobRunner ):
         job_id = job_wrapper.get_id_tag()
 
         try:
-            log.debug( '(%s) executing: %s' % ( job_id, command_line ) )
             stdout_file = tempfile.NamedTemporaryFile( suffix='_stdout', dir=job_wrapper.working_directory )
             stderr_file = tempfile.NamedTemporaryFile( suffix='_stderr', dir=job_wrapper.working_directory )
             proc = subprocess.Popen( args=command_line,
