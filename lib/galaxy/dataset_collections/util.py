@@ -2,6 +2,11 @@ from galaxy import exceptions
 from galaxy import web
 from galaxy import model
 
+ERROR_MESSAGE_UNKNOWN_SRC = "Unknown dataset source (src) %s."
+ERROR_MESSAGE_NO_NESTED_IDENTIFIERS = "Dataset source new_collection requires nested element_identifiers for new collection."
+ERROR_MESSAGE_NO_NAME = "Cannot load invalid dataset identifier - missing name - %s"
+ERROR_MESSAGE_NO_COLLECTION_TYPE = "No collection_type define for nested collection %s."
+
 
 def api_payload_to_create_params( payload ):
     """
@@ -20,6 +25,28 @@ def api_payload_to_create_params( payload ):
     )
 
     return params
+
+
+def validate_input_element_identifiers( element_identifiers ):
+    """ Scan through the list of element identifiers supplied by the API consumer
+    and verify the structure is valid.
+    """
+    for element_identifier in element_identifiers:
+        if "name" not in element_identifier:
+            message = ERROR_MESSAGE_NO_NAME % element_identifier
+            raise exceptions.RequestParameterInvalidException( message )
+        src = element_identifier.get( "src", "hda" )
+        if src not in [ "hda", "hdca", "ldda", "new_collection" ]:
+            message = ERROR_MESSAGE_UNKNOWN_SRC % src
+            raise exceptions.RequestParameterInvalidException( message )
+        if src == "new_collection":
+            if "element_identifiers" not in element_identifier:
+                message = ERROR_MESSAGE_NO_NESTED_IDENTIFIERS
+                raise exceptions.RequestParameterInvalidException( ERROR_MESSAGE_NO_NESTED_IDENTIFIERS )
+            if "collection_type" not in element_identifier:
+                message = ERROR_MESSAGE_NO_COLLECTION_TYPE % element_identifier
+                raise exceptions.RequestParameterInvalidException( message )
+            validate_input_element_identifiers( element_identifier[ "element_identifiers" ] )
 
 
 def dictify_dataset_collection_instance( dataset_colleciton_instance, parent, security, view="element" ):

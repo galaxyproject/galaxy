@@ -1,6 +1,8 @@
 from .registry import DatasetCollectionTypesRegistry
 from .matching import MatchingCollections
 from .type_description import CollectionTypeDescriptionFactory
+from .util import validate_input_element_identifiers
+
 
 from galaxy import model
 from galaxy.exceptions import MessageException
@@ -53,6 +55,8 @@ class DatasetCollectionsService(
     ):
         """
         """
+        if element_identifiers:
+            validate_input_element_identifiers( element_identifiers )
         dataset_collection = self.__create_dataset_collection(
             trans=trans,
             collection_type=collection_type,
@@ -99,6 +103,8 @@ class DatasetCollectionsService(
         if not collection_type:
             raise RequestParameterInvalidException( ERROR_NO_COLLECTION_TYPE )
         collection_type_description = self.collection_type_descriptions.for_collection_type( collection_type )
+        # If we have elements, this is an internal request, don't need to load
+        # objects from identifiers.
         if elements is None:
             if collection_type_description.has_subcollections( ):
                 # Nested collection - recursively create collections and update identifiers.
@@ -186,8 +192,6 @@ class DatasetCollectionsService(
 
             # element identifier is a dict with src new_collection...
             collection_type = element_identifier.get( "collection_type", None )
-            if not collection_type:
-                raise RequestParameterInvalidException( "No collection_type define for nested collection." )
             collection = self.__create_dataset_collection(
                 trans=trans,
                 collection_type=collection_type,
@@ -202,10 +206,6 @@ class DatasetCollectionsService(
     def __load_elements( self, trans, element_identifiers ):
         elements = odict.odict()
         for element_identifier in element_identifiers:
-            if "name" not in element_identifier:
-                raise RequestParameterInvalidException(
-                    "Cannot load invalid dataset identifier - missing name - %s" % element_identifier
-                )
             elements[ element_identifier[ "name" ] ] = self.__load_element( trans, element_identifier )
         return elements
 
@@ -234,8 +234,6 @@ class DatasetCollectionsService(
             element = self.__get_history_collection_instance( trans, encoded_id ).collection
         # TODO: ldca.
         elif src_type == "dc":
-            # TODO: Force only used internally during nested creation so no
-            # need to recheck security.
             element = self.get_dataset_collection( trans, encoded_id )
         else:
             raise RequestParameterInvalidException( "Unknown src_type parameter supplied '%s'." % src_type )
