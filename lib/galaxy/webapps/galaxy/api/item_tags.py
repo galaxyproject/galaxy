@@ -4,7 +4,7 @@ API operations related to tagging items.
 import logging
 from galaxy import web
 from galaxy.web.base.controller import BaseAPIController, UsesTagsMixin
-from paste.httpexceptions import HTTPNotImplemented, HTTPBadRequest
+from paste.httpexceptions import HTTPBadRequest
 
 log = logging.getLogger( __name__ )
 
