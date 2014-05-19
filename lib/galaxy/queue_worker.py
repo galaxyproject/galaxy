@@ -5,8 +5,13 @@ reloading the toolbox, etc., across multiple processes.
 
 import logging
 import threading
+import sys
+
 import galaxy.queues
 from galaxy import eggs, util
+if sys.version_info < (2, 7, 0):
+    # Kombu requires importlib to function under Python 2.6.
+    eggs.require('importlib')
 eggs.require('kombu')
 
 from kombu import Connection
