@@ -9,8 +9,9 @@ import sys
 from galaxy import eggs
 
 if sys.version_info < (2, 7, 0):
-    # Kombu requires importlib to function in Python 2.6.
+    # Kombu requires importlib and ordereddict to function in Python 2.6.
     eggs.require('importlib')
+    eggs.require('ordereddict')
 eggs.require('kombu')
 from kombu import Exchange, Queue
 
