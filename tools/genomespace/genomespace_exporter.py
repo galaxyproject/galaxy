@@ -120,7 +120,13 @@ def get_genome_space_launch_apps( atm_url, url_opener, file_url, file_type ):
     
 def galaxy_code_get_genomespace_folders( genomespace_site='prod', trans=None, value=None, base_url=None, **kwd ):
     if value:
-        value = value[0]#single select, only 1 value
+        if isinstance( value, list ):
+            value = value[0] #single select, only 1 value
+        elif not isinstance( value, basestring ):
+            #unvalidated value
+            value = value.value
+            if isinstance( value, list ):
+                value = value[0] #single select, only 1 value
     def recurse_directory_dict( url_opener, cur_options, url ):
         cur_directory = urllib2.Request( url, headers = { 'Content-Type': 'application/json', 'Accept': 'application/json, text/plain' } ) 
         cur_directory.get_method = lambda: 'GET'
