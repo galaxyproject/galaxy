@@ -1,6 +1,7 @@
+import galaxy.queue_worker
 from galaxy import web
-from galaxy.web.base.controller import BaseUIController
 from galaxy.util.json import from_json_string
+from galaxy.web.base.controller import BaseUIController
 
 import pkg_resources;
 pkg_resources.require( "Paste" )
@@ -90,6 +91,9 @@ class DataManager( BaseUIController ):
             table_name = table_name.split( "," )
         # Reload the tool data tables
         table_names = self.app.tool_data_tables.reload_tables( table_names=table_name )
+        galaxy.queue_worker.send_control_task(trans, 'reload_tool_data_tables',
+                                              noop_self=True,
+                                              kwargs={'table_name': table_name} )
         redirect_url = None
         if table_names:
             status = 'done'
