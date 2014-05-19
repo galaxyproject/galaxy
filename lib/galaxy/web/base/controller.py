@@ -125,8 +125,8 @@ class BaseController( object ):
             assert item_class is not None
             item = trans.sa_session.query( item_class ).get( decoded_id )
             assert item is not None
-        except Exception, exc:
-            log.exception( "Invalid %s id ( %s ) specified: %s" % ( class_name, id, str( exc ) ) )
+        except Exception:
+            log.exception( "Invalid %s id ( %s ) specified." % ( class_name, id ) )
             raise MessageException( "Invalid %s id ( %s ) specified" % ( class_name, id ), type="error" )
 
         if check_ownership or check_accessible:
@@ -204,7 +204,7 @@ class BaseAPIController( BaseController ):
         except MessageException, e:
             raise HTTPBadRequest( detail=e.err_msg )
         except Exception, e:
-            log.exception( "Exception in get_object check for %s %s: %s" % ( class_name, str( id ), str( e ) ) )
+            log.exception( "Exception in get_object check for %s %s." % ( class_name, str( id ) ) )
             raise HTTPInternalServerError( comment=str( e ) )
 
     def validate_in_users_and_groups( self, trans, payload ):
@@ -796,8 +796,8 @@ class UsesHistoryDatasetAssociationMixin:
         if expose_dataset_path:
             try:
                 hda_dict[ 'file_name' ] = hda.file_name
-            except objectstore.ObjectNotFound, onf:
-                log.exception( 'objectstore.ObjectNotFound, HDA %s: %s', hda.id, onf )
+            except objectstore.ObjectNotFound:
+                log.exception( 'objectstore.ObjectNotFound, HDA %s.', hda.id )
 
         hda_dict[ 'download_url' ] = url_for( 'history_contents_display',
             history_id = trans.security.encode_id( hda.history.id ),
