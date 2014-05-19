@@ -2,7 +2,7 @@
 Functionality for dealing with dbkeys.
 """
 #dbkeys read from disk using builds.txt
-from galaxy.util import dbnames, galaxy_directory
+from galaxy.util import dbnames
 from galaxy.util.json import from_json_string
 from galaxy.util.odict import odict
 import os.path
@@ -44,7 +44,7 @@ class GenomeBuilds( object ):
                     rval.append( ( key, "%s (%s) [Custom]" % ( chrom_dict['name'], key ) ) )
         return rval
 
-    def get_chrom_info( self, dbkey, trans=None ):
+    def get_chrom_info( self, dbkey, tool, trans=None ):
         chrom_info = None
         db_dataset = None
         # Collect chromInfo from custom builds
