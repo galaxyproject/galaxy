@@ -3,17 +3,17 @@ Job control via a command line interface (e.g. qsub/qstat), possibly over a remo
 """
 
 import os
-import time
-import glob
 import logging
 
 from galaxy import model
 from galaxy.jobs import JobDestination
 from galaxy.jobs.runners import AsynchronousJobState, AsynchronousJobRunner
+from .util.cli import CliInterface, split_params
 
 log = logging.getLogger( __name__ )
 
 __all__ = [ 'ShellJobRunner' ]
+
 
 class ShellJobRunner( AsynchronousJobRunner ):
     """
@@ -25,53 +25,27 @@ class ShellJobRunner( AsynchronousJobRunner ):
         """Start the job runner """
         super( ShellJobRunner, self ).__init__( app, nworkers )
 
-        self.cli_shells = None
-        self.cli_job_interfaces = None
-        self.__load_cli_plugins()
-
+        self.cli_interface = CliInterface()
         self._init_monitor_thread()
         self._init_worker_threads()
 
-    def __load_cli_plugins(self):
-        def __load(module_path, d):
-            for file in glob.glob(os.path.join(os.path.join(os.getcwd(), 'lib', *module_path.split('.')), '*.py')):
-                if os.path.basename(file).startswith('_'):
-                    continue
-                module_name = '%s.%s' % (module_path, os.path.basename(file).rsplit('.py', 1)[0])
-                module = __import__(module_name)
-                for comp in module_name.split( "." )[1:]:
-                    module = getattr(module, comp)
-                for name in module.__all__:
-                    log.debug('Loaded cli plugin %s' % name)
-                    d[name] = getattr(module, name)
-
-        self.cli_shells = {}
-        self.cli_job_interfaces = {}
-        __load('galaxy.jobs.runners.cli_shell', self.cli_shells)
-        __load('galaxy.jobs.runners.cli_job', self.cli_job_interfaces)
-
     def get_cli_plugins( self, shell_params, job_params ):
-        # load shell plugin
-        shell = self.cli_shells[shell_params['plugin']](**shell_params)
-        job_interface = self.cli_job_interfaces[job_params['plugin']](**job_params)
-        return shell, job_interface
+        return self.cli_interface.get_plugins( shell_params, job_params )
 
     def url_to_destination( self, url ):
         params = {}
-        shell_params, job_params = url.split('/')[2:4]
+        shell_params, job_params = url.split( '/' )[ 2:4 ]
         # split 'foo=bar&baz=quux' into { 'foo' : 'bar', 'baz' : 'quux' }
-        shell_params = dict ( [ ( 'shell_' + k, v ) for k, v in [ kv.split('=', 1) for kv in shell_params.split('&') ] ] )
-        job_params = dict ( [ ( 'job_' + k, v ) for k, v in [ kv.split('=', 1) for kv in job_params.split('&') ] ] )
+        shell_params = dict( [ ( 'shell_' + k, v ) for k, v in [ kv.split( '=', 1 ) for kv in shell_params.split( '&' ) ] ] )
+        job_params = dict( [ ( 'job_' + k, v ) for k, v in [ kv.split( '=', 1 ) for kv in job_params.split( '&' ) ] ] )
         params.update( shell_params )
         params.update( job_params )
-        log.debug("Converted URL '%s' to destination runner=cli, params=%s" % (url, params))
+        log.debug( "Converted URL '%s' to destination runner=cli, params=%s" % ( url, params ) )
         # Create a dynamic JobDestination
-        return JobDestination(runner='cli', params=params)
+        return JobDestination( runner='cli', params=params )
 
     def parse_destination_params( self, params ):
-        shell_params = dict((k.replace('shell_', '', 1), v) for k, v in params.items() if k.startswith('shell_'))
-        job_params = dict((k.replace('job_', '', 1), v) for k, v in params.items() if k.startswith('job_'))
-        return shell_params, job_params
+        return split_params( params )
 
     def queue_job( self, job_wrapper ):
         """Create job script and submit it to the DRM"""
@@ -93,8 +67,12 @@ class ShellJobRunner( AsynchronousJobRunner ):
         # define job attributes
         ajs = AsynchronousJobState( files_dir=job_wrapper.working_directory, job_wrapper=job_wrapper )
 
-        # fill in the DRM's job run template
-        script = job_interface.get_job_template(ajs.output_file, ajs.error_file, ajs.job_name, job_wrapper, command_line, ajs.exit_code_file)
+        job_file_kwargs = job_interface.job_script_kwargs(ajs.output_file, ajs.error_file, ajs.job_name)
+        script = self.get_job_file(
+            job_wrapper,
+            exit_code_path=ajs.exit_code_file,
+            **job_file_kwargs
+        )
 
         try:
             fh = file(ajs.job_file, "w")
@@ -113,7 +91,6 @@ class ShellJobRunner( AsynchronousJobRunner ):
             return
 
         log.debug( "(%s) submitting file: %s" % ( galaxy_id_tag, ajs.job_file ) )
-        log.debug( "(%s) command is: %s" % ( galaxy_id_tag, command_line ) )
 
         cmd_out = shell.execute(job_interface.submit(ajs.job_file))
         if cmd_out.returncode != 0:
@@ -121,7 +98,9 @@ class ShellJobRunner( AsynchronousJobRunner ):
             log.error('(%s) submission failed (stderr): %s' % (galaxy_id_tag, cmd_out.stderr))
             job_wrapper.fail("failure submitting job")
             return
-        external_job_id = cmd_out.stdout.strip()
+        # Some job runners return something like 'Submitted batch job XXXX' 
+        # Strip and split to get job ID.
+        external_job_id = cmd_out.stdout.strip().split()[-1]
         if not external_job_id:
             log.error('(%s) submission did not return a job identifier, failing job' % galaxy_id_tag)
             job_wrapper.fail("failure submitting job")

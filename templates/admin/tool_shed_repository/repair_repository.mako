@@ -19,7 +19,7 @@ ${render_galaxy_repository_actions( repository )}
 
 <div class="warningmessage">
     <p>
-        The following repositories will be inspected and repaired in the order listed to ensure each repository and all of it's tool dependencies are
+        The following repositories will be inspected and repaired in the order listed to ensure each repository and all of its tool dependencies are
         correctly installed.
     </p>
     <p>

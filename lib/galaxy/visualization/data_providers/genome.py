@@ -952,8 +952,7 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
 
             # Convert threshold to N for stepping through iterator.
             n = int( 1/threshold )
-            for e in itertools.islice( read_iterator, None, None, n ):
-                yield e
+            return itertools.islice( read_iterator, None, None, n )
 
             # Alternatate and much slower implementation that looks for pending pairs.
             '''
@@ -972,7 +971,7 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
             return { 'data': [], 'message': None, 'max_low': start, 'max_high': start }
 
         read_len = len( first_read.seq )
-        num_reads = ( end - start ) * mean_depth / float ( read_len )
+        num_reads = max( ( end - start ) * mean_depth / float ( read_len ), 1 )
         threshold = float( max_vals )/ num_reads
         iterator = itertools.chain( iter( [ first_read ] ), iterator )
 
@@ -1019,7 +1018,7 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
                 if qname in paired_pending:
                     # Found pair.
                     pair = paired_pending[qname]
-                    results.append( [ "%i_%s" % ( pair['start'], qname ),
+                    results.append( [ hash( "%i_%s" % ( pair['start'], qname ) ),
                                       pair['start'],
                                       read.pos + read_len,
                                       qname,
@@ -1034,7 +1033,7 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
                                               'rlen': read_len, 'strand': strand, 'cigar': read.cigar, 'mapq': read.mapq }
                     count += 1
             else:
-                results.append( [ "%i_%s" % ( read.pos, qname ),
+                results.append( [ hash( "%i_%s" % ( read.pos, qname ) ),
                                 read.pos, read.pos + read_len, qname,
                                 read.cigar, strand, read.seq, read.mapq ] )
                 count += 1

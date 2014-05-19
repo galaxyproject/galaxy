@@ -1,0 +1,8 @@
+{
+  "name": "galaxy-qunit-tests",
+  "devDependencies": {
+    "grunt": "^0.4.4",
+    "grunt-contrib-qunit": "^0.4.0",
+    "grunt-contrib-watch": "~0.5.3"
+  }
+}

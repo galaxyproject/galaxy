@@ -2,6 +2,7 @@ import unittest
 
 from galaxy import model
 from galaxy.tools.actions import DefaultToolAction
+from galaxy.tools.actions import on_text_for_names
 
 import tools_support
 
@@ -23,6 +24,19 @@ DATA_IN_LABEL_TOOL_CONTENTS = '''<tool id="test_tool" name="Test Tool">
     </outputs>
 </tool>
 '''
+
+
+def test_on_text_for_names():
+    def assert_on_text_is( expected, *names ):
+        on_text = on_text_for_names( names )
+        assert on_text == expected, "Wrong on text value %s, expected %s" % ( on_text, expected )
+
+    assert_on_text_is( "data 1", "data 1" )
+    assert_on_text_is( "data 1 and data 2", "data 1", "data 2" )
+    assert_on_text_is( "data 1, data 2, and data 3", "data 1", "data 2", "data 3" )
+    assert_on_text_is( "data 1, data 2, and others", "data 1", "data 2", "data 3", "data 4" )
+
+    assert_on_text_is( "data 1 and data 2", "data 1", "data 1", "data 2" )
 
 
 class DefaultToolActionTestCase( unittest.TestCase, tools_support.UsesApp, tools_support.UsesTools ):

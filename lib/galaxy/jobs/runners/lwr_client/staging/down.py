@@ -80,7 +80,10 @@ class ResultsCollector(object):
             if self._attempt_collect_output('output_workdir', path=output_file, name=lwr_name):
                 self.downloaded_working_directory_files.append(lwr_name)
             # Remove from full output_files list so don't try to download directly.
-            self.output_files.remove(output_file)
+            try:
+                self.output_files.remove(output_file)
+            except ValueError:
+                raise Exception("Failed to remove %s from %s" % (output_file, self.output_files))
 
     def __collect_outputs(self):
         # Legacy LWR not returning list of files, iterate over the list of

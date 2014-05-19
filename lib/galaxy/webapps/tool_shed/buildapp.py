@@ -80,6 +80,12 @@ def app_factory( global_conf, **kwargs ):
     webapp.add_route( '/repos/*path_info', controller='hg', action='handle_request', path_info='/' )
     # Add the web API.  # A good resource for RESTful services - http://routes.readthedocs.org/en/latest/restful.html
     webapp.add_api_controllers( 'galaxy.webapps.tool_shed.api', app )
+    webapp.mapper.resource( 'category',
+                            'categories',
+                            controller='categories',
+                            name_prefix='category_',
+                            path_prefix='/api',
+                            parent_resources=dict( member_name='category', collection_name='categories' ) )
     webapp.mapper.resource( 'repository',
                             'repositories',
                             controller='repositories',
@@ -100,6 +106,12 @@ def app_factory( global_conf, **kwargs ):
                             name_prefix='repository_revision_',
                             path_prefix='/api',
                             parent_resources=dict( member_name='repository_revision', collection_name='repository_revisions' ) )
+    webapp.mapper.resource( 'user',
+                            'users',
+                            controller='users',
+                            name_prefix='user_',
+                            path_prefix='/api',
+                            parent_resources=dict( member_name='user', collection_name='users' ) )
     webapp.finalize_config()
     # Wrap the webapp in some useful middleware
     if kwargs.get( 'middleware', True ):

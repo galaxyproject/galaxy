@@ -1,8 +1,8 @@
-import urllib
 import galaxy.model
 from galaxy.model.orm import *
 from base.test_db_util import sa_session
 from base.twilltestcase import *
+import json
 
 
 class TestHistory( TwillTestCase ):
@@ -98,7 +98,7 @@ class TestHistory( TwillTestCase ):
         if not historyB.deleted:
             raise AssertionError( "Problem deleting history id %d" % historyB.id )
         # Since we deleted the current history, make sure the history frame was refreshed
-        self.check_history_for_string( 'Your history is empty.' )
+        assert self.is_history_empty(), 'Deleting active history did not result in a new empty history being created.'
         # We'll now test deleting a list of histories
         # After deleting the current history, a new one should have been created
         global history1
@@ -109,7 +109,7 @@ class TestHistory( TwillTestCase ):
                              .first()
         assert history1 is not None, "Problem retrieving history1 from database"
         self.upload_file( '1.bed', dbkey='hg18' )
-        self.new_history( name=urllib.quote( 'history2' ) )
+        self.new_history( name='history2' )
         global history2
         history2 = sa_session.query( galaxy.model.History ) \
                              .filter( and_( galaxy.model.History.table.c.deleted == False,
@@ -121,7 +121,7 @@ class TestHistory( TwillTestCase ):
         ids = '%s,%s' % ( self.security.encode_id( history1.id ), self.security.encode_id( history2.id ) )
         self.delete_history( ids )
         # Since we deleted the current history, make sure the history frame was refreshed
-        self.check_history_for_string( 'Your history is empty.' )
+        assert self.is_history_empty(), 'Deleting active history did not result in a new empty history being created.'
         try:
             self.view_stored_active_histories( strings_displayed=[ history1.name ] )
             raise AssertionError( "History %s is displayed in the active history list after it was deleted" % history1.name )
@@ -158,7 +158,7 @@ class TestHistory( TwillTestCase ):
         assert history3 is not None, "Problem retrieving history3 from database"
         if history3.deleted:
             raise AssertionError( "History id %d deleted when it should not be" % latest_history.id )
-        self.rename_history( self.security.encode_id( history3.id ), history3.name, new_name=urllib.quote( 'history 3' ) )
+        self.rename_history( self.security.encode_id( history3.id ), history3.name, new_name='history 3' )
         sa_session.refresh( history3 )
 
     def test_015_history_list( self ):
@@ -348,7 +348,7 @@ class TestHistory( TwillTestCase ):
                              .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
                              .first()
         assert history4 is not None, "Problem retrieving history4 from database"
-        self.rename_history( self.security.encode_id( history4.id ), history4.name, new_name=urllib.quote( 'history 4' ) )
+        self.rename_history( self.security.encode_id( history4.id ), history4.name, new_name='history 4' )
         sa_session.refresh( history4 )
         # Galaxy's new history sharing code does not yet support sharing multiple histories; when support for sharing multiple histories is added,
         # this test will be uncommented and updated.
@@ -383,7 +383,7 @@ class TestHistory( TwillTestCase ):
                              .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
                              .first()
         assert history5 is not None, "Problem retrieving history5 from database"
-        self.rename_history( self.security.encode_id( history5.id ), history5.name, new_name=urllib.quote( 'history 5' ) )
+        self.rename_history( self.security.encode_id( history5.id ), history5.name, new_name='history 5' )
         # Current history is history5
         sa_session.refresh( history5 )
         # Due to the limitations of twill ( not functional with the permissions forms ), we're forced
@@ -547,7 +547,7 @@ class TestHistory( TwillTestCase ):
         # Make sure the history was unshared correctly
         self.logout()
         self.login( email=regular_user2.email )
-        self.visit_page( "root/history_options" )
+        self.visit_url( "/root/history_options" )
         try:
             self.check_page_for_string( 'List</a> histories shared with you by others' )
             raise AssertionError( "history5 still shared with regular_user2 after unsharing it with that user." )
@@ -665,7 +665,7 @@ class TestHistory( TwillTestCase ):
                 if hda[ 'id' ] == self.security.encode_id( hda_2_bed.id ):
                     return ( not hda[ 'accessible' ] )
             return False
-        self.check_history_json( r'\bhdaJSON\s*=\s*(.*);', hda_2_bed_is_inaccessible )
+        self.check_history_json( hda_2_bed_is_inaccessible )
 
         # Admin users can view all datasets ( using the history/view feature ), so make sure 2.bed is accessible to the admin
         self.logout()
@@ -695,7 +695,7 @@ class TestHistory( TwillTestCase ):
         # Make sure the histories were unshared correctly
         self.logout()
         self.login( email=regular_user2.email )
-        self.visit_page( "root/history_options" )
+        self.visit_url( "/root/history_options" )
         try:
             self.check_page_for_string( 'List</a> histories shared with you by others' )
             raise AssertionError( "history5 still shared with regular_user2 after unshaing it with that user." )
@@ -704,7 +704,7 @@ class TestHistory( TwillTestCase ):
 
         self.logout()
         self.login( email=regular_user3.email )
-        self.visit_page( "root/history_options" )
+        self.visit_url( "/root/history_options" )
         try:
             self.check_page_for_string( 'List</a> histories shared with you by others' )
             raise AssertionError( "history5 still shared with regular_user3 after unshaing it with that user." )
@@ -724,7 +724,7 @@ class TestHistory( TwillTestCase ):
 
         # Logged in as admin_user
         # create a new history and upload a new hda (1.bed) into it
-        self.new_history( name=urllib.quote( 'show hide deleted datasets' ) )
+        self.new_history( name='show hide deleted datasets' )
         latest_history = (
             sa_session.query( galaxy.model.History )
                 .filter( and_( galaxy.model.History.table.c.deleted == False,
@@ -738,28 +738,25 @@ class TestHistory( TwillTestCase ):
                 .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) )
                 .first() )
 
-        # delete that item and make sure the 'history empty' message shows
-        self.home()
+        # delete that item and make sure the history is not empty
         log.info( 'deleting last hda' )
         self.delete_history_item( str( latest_hda.id ) )
-        # check the historyPanel settings.show_deleted for a null json value (no show_deleted in query string)
-        self.check_history_json( r'\bshow_deleted\s*:\s*(.*),', lambda x: x == None )
+        # check the number of items returned from the api
+        self.check_history_json( lambda x: len( x ) != 0 )
 
         # reload this history with the show_deleted flag set in the query string
         #   the deleted dataset should be there with the proper 'deleted' text
-        self.home()
         log.info( 'turning show_deleted on' )
-        #self.visit_url( "%s/history/?show_deleted=True" % self.url )
-        # check the historyPanel settings.show_deleted for a true json value
-        self.check_history_json( r'\bshow_deleted\s*:\s*(.*),', lambda x: x == True, show_deleted=True )
+        #self.visit_url( "/api/histories/<id>/contents?deleted=True" )
+        # check the number of items returned from the api
+        self.check_history_json( lambda x: len( x ) != 0, show_deleted=True )
 
         # reload this history again with the show_deleted flag set TO FALSE in the query string
-        #   make sure the 'history empty' message shows
-        self.home()
+        #   make sure the history is empty
         log.info( 'turning show_deleted off' )
-        #self.visit_url( "%s/history/?show_deleted=False" % self.url )
-        # check the historyPanel settings.show_deleted for a false json value
-        self.check_history_json( r'\bshow_deleted\s*:\s*(.*),', lambda x: x == False, show_deleted=False )
+        #self.visit_url( "/api/histories/<id>/contents?deleted=False" )
+        # check the number of items returned from the api
+        self.check_history_json( lambda x: len( x ) == 0, show_deleted=False )
 
         # delete this history
         self.delete_history( self.security.encode_id( latest_history.id ) )
@@ -778,20 +775,25 @@ class TestHistory( TwillTestCase ):
         assert latest_history is not None, "Problem retrieving latest_history from database"
 
         self.rename_history( self.security.encode_id( latest_history.id ),
-            latest_history.name, new_name=urllib.quote( 'delete undelete history items' ) )
+            latest_history.name, new_name='delete undelete history items' )
         # Add a new history item
         self.upload_file( '1.bed', dbkey='hg15' )
         latest_hda = sa_session.query( galaxy.model.HistoryDatasetAssociation ) \
                                .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ) \
                                .first()
-        self.home()
         self.visit_url( "%s/history/?show_deleted=False" % self.url )
         self.check_page_for_string( '1.bed' )
         self.check_page_for_string( 'hg15' )
-        self.assertEqual( len( self.get_history_as_data_list() ), 1 )
+        current_history = self.get_history_from_api( encoded_history_id=self.security.encode_id( latest_history.id ), 
+                                                     show_deleted=False, 
+                                                     show_details=True )
+        self.assertEqual( len( current_history ), 1 )
         # Delete the history item
-        self.delete_history_item( str( latest_hda.id ), strings_displayed=[ "Your history is empty" ] )
-        self.assertEqual( len( self.get_history_as_data_list() ), 0 )
+        self.delete_history_item( str( latest_hda.id ), strings_displayed=[] )
+        current_history = self.get_history_from_api( encoded_history_id=self.security.encode_id( latest_history.id ), 
+                                                     show_deleted=False, 
+                                                     show_details=True )
+        self.assertEqual( len( current_history ), 0 )
         # Try deleting an invalid hid
         try:
             self.delete_history_item( 'XXX' )
@@ -800,7 +802,6 @@ class TestHistory( TwillTestCase ):
             pass
         # Undelete the history item
         self.undelete_history_item( str( latest_hda.id ) )
-        self.home()
         self.visit_url( "%s/history/?show_deleted=False" % self.url )
         self.check_page_for_string( '1.bed' )
         self.check_page_for_string( 'hg15' )
@@ -809,7 +810,7 @@ class TestHistory( TwillTestCase ):
     def test_080_copying_history_items_between_histories( self ):
         """Testing copying history items between histories"""
         # logged in as admin_user
-        self.new_history( name=urllib.quote( 'copy history items' ) )
+        self.new_history( name='copy history items' )
         history6 = sa_session.query( galaxy.model.History ) \
                              .filter( and_( galaxy.model.History.table.c.deleted == False,
                                             galaxy.model.History.table.c.user_id == admin_user.id ) ) \
@@ -838,7 +839,7 @@ class TestHistory( TwillTestCase ):
         if len( history6.datasets ) != 2:
             raise AssertionError( "Copying hda1 to the current history failed, history 6 has %d datasets, but should have 2" % len( history6.datasets ) )
         # Test copying 1 hda to another history
-        self.new_history( name=urllib.quote( 'copy history items - 2' ) )
+        self.new_history( name='copy history items - 2' )
         history7 = sa_session.query( galaxy.model.History ) \
                              .filter( and_( galaxy.model.History.table.c.deleted == False,
                                             galaxy.model.History.table.c.user_id == admin_user.id ) ) \

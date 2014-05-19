@@ -270,7 +270,7 @@ class Fasta( Sequence ):
                             break
                         return True
                     else:
-                        break #we found a non-empty line, but its not a fasta header
+                        break #we found a non-empty line, but it's not a fasta header
             fh.close()
         except:
             pass

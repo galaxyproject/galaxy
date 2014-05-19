@@ -209,7 +209,7 @@ class TestDataSecurity( TwillTestCase ):
         self.create_group( name=name,
                            in_user_ids=in_user_ids,
                            in_role_ids=in_role_ids,
-                           create_role_for_group='yes',
+                           create_role_for_group=True,
                            strings_displayed=[ "Group '%s' has been created with %d associated users and %d associated roles." % ( name, len( in_user_ids ), num_gras ),
                                                "One of the roles associated with this group is the newly created role with the same name." ] )
         # Get the group object for later tests
@@ -232,7 +232,6 @@ class TestDataSecurity( TwillTestCase ):
         # Rename the group
         rename = "Group One's been Renamed"
         self.rename_group( self.security.encode_id( group_one.id ), name=rename, )
-        self.home()
         self.visit_url( '%s/admin/groups' % self.url )
         self.check_page_for_string( rename )
         # Reset the group back to the original name
@@ -365,7 +364,6 @@ class TestDataSecurity( TwillTestCase ):
     def test_065_mark_role_deleted( self ):
         """Testing marking a role as deleted"""
         # Logged in as admin_user
-        self.home()
         self.browse_roles( strings_displayed=[ role_two.name ] )
         self.mark_role_deleted( self.security.encode_id( role_two.id ), role_two.name )
         refresh( role_two )

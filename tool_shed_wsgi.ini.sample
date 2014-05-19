@@ -55,7 +55,7 @@ id_secret = changethisinproductiontoo
 # User authentication can be delegated to an upstream proxy server (usually
 # Apache).  The upstream proxy should set a REMOTE_USER header in the request.
 # Enabling remote user disables regular logins.  For more information, see:
-# http://wiki.g2.bx.psu.edu/Admin/Config/Apache%20Proxy
+# https://wiki.galaxyproject.org/Admin/Config/ApacheProxy
 #use_remote_user = False
 
 # Configuration for debugging middleware
@@ -82,7 +82,7 @@ sendmail_path = /usr/sbin/sendmail
 #email_from = your_tool_shed_email@server
 
 # The URL linked by the "Support" link in the "Help" menu.
-#support_url = http://wiki.g2.bx.psu.edu/Support
+#support_url = https://wiki.galaxyproject.org/Support
 
 # Write thread status periodically to 'heartbeat.log' (careful, uses disk space rapidly!)
 ## use_heartbeat = True

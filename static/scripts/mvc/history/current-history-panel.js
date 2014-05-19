@@ -1,8 +1,9 @@
 define([
     "mvc/dataset/hda-edit",
     "mvc/history/history-panel",
-    "mvc/base-mvc"
-], function( hdaEdit, hpanel, baseMVC ){
+    "mvc/base-mvc",
+    "utils/localization"
+], function( hdaEdit, hpanel, baseMVC, _l ){
 // ============================================================================
 /** session storage for history panel preferences (and to maintain state)
  */
@@ -220,7 +221,7 @@ var CurrentHistoryPanel = hpanel.HistoryPanel.extend(
             $emptyMsg.empty();
 
             $emptyMsg.html([
-                _l( 'This history is empty. ' ), _l( 'You can ' ),
+                _l( 'This history is empty' ), '. ', _l( 'You can ' ),
                 '<a class="uploader-link" href="javascript:void(0)">',
                     _l( 'load your own data' ),
                 '</a>',

@@ -189,6 +189,12 @@ class ToolTestBuilder( object ):
                         if not isinstance(param_value, list):
                             param_value = [ param_value ]
                         processed_value = [ self.__add_uploaded_dataset( context.for_state(), v, param_extra, value ) for v in param_value ]
+                    if isinstance( value, basic.DataCollectionToolParameter ):
+                        assert 'collection' in param_extra
+                        collection_def = param_extra[ 'collection' ]
+                        for ( name, value, extra ) in collection_def.collect_inputs():
+                            require_file( name, value, extra, self.required_files )
+                        processed_value = collection_def
                     else:
                         processed_value = param_value
                     expanded_inputs[ context.for_state() ] = processed_value
@@ -274,6 +280,8 @@ def parse_param_elem( param_elem, i=0 ):
                 attrib['metadata'].append( child )
             elif child.tag == 'edit_attributes':
                 attrib['edit_attributes'].append( child )
+            elif child.tag == 'collection':
+                attrib[ 'collection' ] = TestCollectionDef( child )
         if composite_data_name:
             # Composite datasets need implicit renaming;
             # inserted at front of list so explicit declarations
@@ -297,6 +305,19 @@ def __parse_output_elem( output_elem ):
     if name is None:
         raise Exception( "Test output does not have a 'name'" )
 
+    file, attributes = __parse_test_attributes( output_elem, attrib )
+    primary_datasets = {}
+    for primary_elem in ( output_elem.findall( "discovered_dataset" ) or [] ):
+        primary_attrib = dict( primary_elem.attrib )
+        designation = primary_attrib.pop( 'designation', None )
+        if designation is None:
+            raise Exception( "Test primary dataset does not have a 'designation'" )
+        primary_datasets[ designation ] = __parse_test_attributes( primary_elem, primary_attrib )
+    attributes[ "primary_datasets" ] = primary_datasets
+    return name, file, attributes
+
+
+def __parse_test_attributes( output_elem, attrib ):
     assert_list = __parse_assert_list( output_elem )
     file = attrib.pop( 'file', None )
     # File no longer required if an list of assertions was present.
@@ -321,7 +342,7 @@ def __parse_output_elem( output_elem ):
     attributes['assert_list'] = assert_list
     attributes['extra_files'] = extra_files
     attributes['metadata'] = metadata
-    return name, file, attributes
+    return file, attributes
 
 
 def __parse_assert_list( output_elem ):
@@ -427,6 +448,33 @@ class RootParamContext(object):
 
     def get_index( self ):
         return 0
+
+
+class TestCollectionDef( object ):
+
+    def __init__( self, elem ):
+        self.elements = []
+        attrib = dict( elem.attrib )
+        self.collection_type = attrib[ "type" ]
+        self.name = attrib.get( "name", "Unnamed Collection" )
+        for element in elem.findall( "element" ):
+            element_attrib = dict( element.attrib )
+            element_identifier = element_attrib[ "name" ]
+            nested_collection_elem = element.find( "collection" )
+            if nested_collection_elem:
+                self.elements.append( ( element_identifier, TestCollectionDef( nested_collection_elem ) ) )
+            else:
+                self.elements.append( ( element_identifier, parse_param_elem( element ) ) )
+
+    def collect_inputs( self ):
+        inputs = []
+        for element in self.elements:
+            value = element[ 1 ]
+            if isinstance( value, TestCollectionDef ):
+                inputs.extend( value.collect_inputs() )
+            else:
+                inputs.append( value )
+        return inputs
 
 
 def expand_input_elems( root_elem, prefix="" ):

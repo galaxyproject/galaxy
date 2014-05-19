@@ -171,6 +171,111 @@ class ToolExecutionTestCase( TestCase, tools_support.UsesApp, tools_support.Uses
         state = self.__assert_rerenders_tool_without_errors( template, template_vars )
         assert hda == state.inputs[ "param1" ]
 
+    def test_simple_multirun_state_update( self ):
+        hda1, hda2 = self.__setup_multirun_job()
+        template, template_vars = self.__handle_with_incoming( **{
+            "param1|__multirun__": [ 1, 2 ],
+        } )
+        state = self.__assert_rerenders_tool_without_errors( template, template_vars )
+        self.__assert_state_serializable( state )
+        self.assertEquals( state.inputs[ "param1|__multirun__" ], [ 1, 2 ] )
+
+    def test_simple_multirun_execution( self ):
+        hda1, hda2 = self.__setup_multirun_job()
+        template, template_vars = self.__handle_with_incoming( **{
+            "param1|__multirun__": [ 1, 2 ],
+            "runtool_btn": "dummy",
+        } )
+        self.__assert_exeuted( template, template_vars )
+        # Tool 'executed' twice, with param1 as hda1 and hda2 respectively.
+        assert len( self.tool_action.execution_call_args ) == 2
+        self.assertEquals( self.tool_action.execution_call_args[ 0 ][ "incoming" ][ "param1" ], hda1 )
+        self.assertEquals( self.tool_action.execution_call_args[ 1 ][ "incoming" ][ "param1" ], hda2 )
+        self.assertEquals( len( template_vars[ "jobs" ] ), 2 )
+
+    def test_cannot_multirun_and_remap( self ):
+        hda1, hda2 = self.__setup_multirun_job()
+        template, template_vars = self.__handle_with_incoming( **{
+            "param1|__multirun__": [ 1, 2 ],
+            "rerun_remap_job_id": self.app.security.encode_id(123),  # Not encoded
+            "runtool_btn": "dummy",
+        } )
+        self.assertEquals( template, "message.mako" )
+        assert template_vars[ "status" ] == "error"
+        assert "multiple jobs" in template_vars[ "message" ]
+
+    def test_multirun_with_state_updates( self ):
+        hda1, hda2 = self.__setup_multirun_job()
+
+        # Fresh state contains no repeat elements
+        template, template_vars = self.__handle_with_incoming()
+        state = self.__assert_rerenders_tool_without_errors( template, template_vars )
+        assert len( state.inputs[ "repeat1" ] ) == 0
+        self.__assert_state_serializable( state )
+
+        # Hitting add button adds repeat element
+        template, template_vars = self.__handle_with_incoming( **{
+            "param1|__multirun__": [ 1, 2 ],
+            "repeat1_add": "dummy",
+        } )
+        state = self.__assert_rerenders_tool_without_errors( template, template_vars )
+        assert len( state.inputs[ "repeat1" ] ) == 1
+        self.assertEquals( state.inputs[ "param1|__multirun__" ], [ 1, 2 ] )
+        self.__assert_state_serializable( state )
+
+        # Hitting add button again adds another repeat element
+        template, template_vars = self.__handle_with_incoming( state, **{
+            "repeat1_add": "dummy",
+            "repeat1_0|param2": 1,
+        } )
+        state = self.__assert_rerenders_tool_without_errors( template, template_vars )
+        self.assertEquals( state.inputs[ "param1|__multirun__" ], [ 1, 2 ] )
+        assert len( state.inputs[ "repeat1" ] ) == 2
+        assert state.inputs[ "repeat1" ][ 0 ][ "param2" ] == hda1
+        self.__assert_state_serializable( state )
+
+        # Hitting remove drops a repeat element
+        template, template_vars = self.__handle_with_incoming( state, repeat1_1_remove="dummy" )
+        state = self.__assert_rerenders_tool_without_errors( template, template_vars )
+        assert len( state.inputs[ "repeat1" ] ) == 1
+        self.__assert_state_serializable( state )
+
+    def test_collection_multirun_with_state_updates( self ):
+        hda1, hda2 = self.__setup_multirun_job()
+        collection = self.__history_dataset_collection_for( [ hda1, hda2 ] )
+        collection_id = self.app.security.encode_id( collection.id )
+        self.app.dataset_collections_service = Bunch(
+            match_collections=lambda collections: None
+        )
+        template, template_vars = self.__handle_with_incoming( **{
+            "param1|__collection_multirun__": collection_id,
+            "runtool_btn": "dummy",
+        } )
+        self.__assert_exeuted( template, template_vars )
+
+    def __history_dataset_collection_for( self, hdas, id=1234 ):
+        collection = galaxy.model.DatasetCollection()
+        to_element = lambda hda: galaxy.model.DatasetCollectionElement(
+            collection=collection,
+            element=hda,
+        )
+        collection.datasets = map(to_element, hdas)
+        history_dataset_collection_association = galaxy.model.HistoryDatasetCollectionAssociation(
+            id=id,
+            collection=collection,
+        )
+        hdcas = self.trans.sa_session.model_objects[ galaxy.model.HistoryDatasetCollectionAssociation ]
+        hdcas[ id ] = history_dataset_collection_association
+        return history_dataset_collection_association
+
+    def __assert_state_serializable( self, state ):
+        self.__state_to_string( state )  # Will thrown exception if there is a problem...
+
+    def __setup_multirun_job( self ):
+        self._init_tool( tools_support.SIMPLE_CAT_TOOL_CONTENTS )
+        hda1, hda2 = self.__add_dataset( 1 ), self.__add_dataset( 2 )
+        return hda1, hda2
+
     def __handle_with_incoming( self, previous_state=None, **kwds ):
         """ Execute tool.handle_input with incoming specified by kwds
         (optionally extending a previous state).
@@ -187,6 +292,10 @@ class ToolExecutionTestCase( TestCase, tools_support.UsesApp, tools_support.Uses
     def __to_incoming( self, state, **kwds ):
         new_incoming = {}
         params_to_incoming( new_incoming, self.tool.inputs, state.inputs, self.app )
+        # Copy meta parameters over lost by params_to_incoming...
+        for key, value in state.inputs.iteritems():
+            if key.endswith( "|__multirun__" ):
+                new_incoming[ key ] = value
         new_incoming[ "tool_state" ] = self.__state_to_string( state )
         new_incoming.update( kwds )
         return new_incoming
@@ -210,7 +319,11 @@ class ToolExecutionTestCase( TestCase, tools_support.UsesApp, tools_support.Uses
     def __assert_exeuted( self, template, template_vars ):
         if template == "tool_form.mako":
             self.__assert_no_errors( template_vars )
-        self.assertEquals(template, "tool_executed.mako")
+        self.assertEquals(
+            template,
+            "tool_executed.mako",
+            "Expected tools_execute template - got template %s with vars %s" % ( template, template_vars)
+        )
 
     def __assert_no_errors( self, template_vars ):
         assert "errors" in template_vars, "tool_form.mako rendered without errors defintion."
@@ -258,7 +371,7 @@ class MockAction( object ):
             if num_calls > self.error_message_after_excution:
                 return None, "Test Error Message"
 
-        return None, odict(dict(out1="1"))
+        return galaxy.model.Job(), odict(dict(out1="1"))
 
     def raise_exception( self, after_execution=0 ):
         self.exception_after_exection = after_execution

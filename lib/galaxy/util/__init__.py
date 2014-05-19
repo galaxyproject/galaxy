@@ -29,6 +29,8 @@ from os.path import relpath
 from hashlib import md5
 from itertools import izip
 
+from urlparse import urlparse
+
 from galaxy import eggs
 
 eggs.require( 'docutils' )
@@ -690,6 +692,17 @@ def object_to_string( obj ):
 
 def string_to_object( s ):
     return pickle.loads( binascii.unhexlify( s ) )
+
+def compare_urls( url1, url2, compare_scheme=True, compare_hostname=True, compare_path=True ):
+    url1 = urlparse( url1 )
+    url2 = urlparse( url2 )
+    if compare_scheme and url1.scheme and url2.scheme and url1.scheme != url2.scheme:
+        return False
+    if compare_hostname and url1.hostname and url2.hostname and url1.hostname != url2.hostname:
+        return False
+    if compare_path and url1.path and url2.path and url1.path != url2.path:
+        return False
+    return True
 
 def get_ucsc_by_build(build):
     sites = []

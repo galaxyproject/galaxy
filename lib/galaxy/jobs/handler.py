@@ -84,6 +84,13 @@ class JobHandlerQueue( object ):
         self.monitor_thread.start()
         log.info( "job handler queue started" )
 
+    def job_wrapper( self, job ):
+        return JobWrapper( job, self )
+
+    def job_pair_for_id( self, id ):
+        job = self.sa_session.query( model.Job ).get( id )
+        return job, self.job_wrapper( job )
+
     def __check_jobs_at_startup( self ):
         """
         Checks all jobs that are in the 'new', 'queued' or 'running' state in
@@ -110,7 +117,7 @@ class JobHandlerQueue( object ):
         for job in jobs_at_startup:
             if job.tool_id not in self.app.toolbox.tools_by_id:
                 log.warning( "(%s) Tool '%s' removed from tool config, unable to recover job" % ( job.id, job.tool_id ) )
-                JobWrapper( job, self ).fail( 'This tool was disabled before the job completed.  Please contact your Galaxy administrator.' )
+                self.job_wrapper( job ).fail( 'This tool was disabled before the job completed.  Please contact your Galaxy administrator.' )
             elif job.job_runner_name is not None and job.job_runner_external_id is None:
                 # This could happen during certain revisions of Galaxy where a runner URL was persisted before the job was dispatched to a runner.
                 log.debug( "(%s) Job runner assigned but no external ID recorded, adding to the job handler queue" % job.id )
@@ -122,7 +129,7 @@ class JobHandlerQueue( object ):
             elif job.job_runner_name is not None and job.job_runner_external_id is not None and job.destination_id is None:
                 # This is the first start after upgrading from URLs to destinations, convert the URL to a destination and persist
                 # TODO: test me extensively
-                job_wrapper = JobWrapper( job, self )
+                job_wrapper = self.job_wrapper( job )
                 job_destination = self.dispatcher.url_to_destination(job.job_runner_name)
                 if job_destination.id is None:
                     job_destination.id = 'legacy_url'
@@ -138,7 +145,7 @@ class JobHandlerQueue( object ):
                     self.queue.put( ( job.id, job.tool_id ) )
             else:
                 # Already dispatched and running
-                job_wrapper = JobWrapper( job, self )
+                job_wrapper = self.job_wrapper( job )
                 job_wrapper.job_runner_mapper.cached_job_destination = JobDestination(id=job.destination_id, runner=job.job_runner_name, params=job.destination_params)
                 self.dispatcher.recover( job, job_wrapper )
         if self.sa_session.dirty:
@@ -296,21 +303,21 @@ class JobHandlerQueue( object ):
                     continue
                 # don't run jobs for which the input dataset was deleted
                 if idata.deleted:
-                    self.job_wrappers.pop(job.id, JobWrapper( job, self )).fail( "input data %s (file: %s) was deleted before the job started" % ( idata.hid, idata.file_name ) )
+                    self.job_wrappers.pop(job.id, self.job_wrapper( job )).fail( "input data %s (file: %s) was deleted before the job started" % ( idata.hid, idata.file_name ) )
                     return JOB_INPUT_DELETED
                 # an error in the input data causes us to bail immediately
                 elif idata.state == idata.states.ERROR:
-                    self.job_wrappers.pop(job.id, JobWrapper( job, self )).fail( "input data %s is in error state" % ( idata.hid ) )
+                    self.job_wrappers.pop(job.id, self.job_wrapper( job )).fail( "input data %s is in error state" % ( idata.hid ) )
                     return JOB_INPUT_ERROR
                 elif idata.state == idata.states.FAILED_METADATA:
-                    self.job_wrappers.pop(job.id, JobWrapper( job, self )).fail( "input data %s failed to properly set metadata" % ( idata.hid ) )
+                    self.job_wrappers.pop(job.id, self.job_wrapper( job )).fail( "input data %s failed to properly set metadata" % ( idata.hid ) )
                     return JOB_INPUT_ERROR
                 elif idata.state != idata.states.OK and not ( idata.state == idata.states.SETTING_METADATA and job.tool_id is not None and job.tool_id == self.app.datatypes_registry.set_external_metadata_tool.id ):
                     # need to requeue
                     return JOB_WAIT
         # Create the job wrapper so that the destination can be set
         if job.id not in self.job_wrappers:
-            self.job_wrappers[job.id] = JobWrapper(job, self)
+            self.job_wrappers[job.id] = self.job_wrapper( job )
         # Cause the job_destination to be set and cached by the mapper
         try:
             self.job_wrappers[job.id].job_destination

@@ -39,9 +39,11 @@ class FluentTraceLogger( object ):
         del self.thread_local.context[key]
         self.lock.release()
 
-    def log( self, label, **kwargs ):
+    def log( self, label, time=None, **kwargs ):
         self.lock.acquire()
         if hasattr( self.thread_local, 'context' ):
             kwargs.update( self.thread_local.context )
         self.lock.release()
-        self.sender.emit_with_time( label, int(time.time()), kwargs )
+        if time is None:
+            time = int( time.time() )
+        self.sender.emit_with_time( label, time, kwargs )

@@ -263,7 +263,7 @@ the specific language governing permissions and limitations under the Apache Lic
             $el.focus();
 
             /* make sure el received focus so we do not error out when trying to manipulate the caret.
-                sometimes modals or others listeners may steal it after its set */
+                sometimes modals or others listeners may steal it after it's set */
             if ($el.is(":visible") && el === document.activeElement) {
 
                 /* after the focus is set move the caret to the end, necessary when we val()
@@ -2761,7 +2761,7 @@ the specific language governing permissions and limitations under the Apache Lic
                 }
             }
 
-            // since its not possible to select an element that has already been
+            // since it's not possible to select an element that has already been
             // added we do not need to check if this is a new element before firing change
             this.triggerChange({ added: data });
 

@@ -15,11 +15,11 @@ from tool_shed.repository_types.metadata import TipOnly
 from tool_shed.util import common_util
 from tool_shed.util import common_install_util
 from tool_shed.util import container_util
+from tool_shed.util import hg_util
 from tool_shed.util import readme_util
 from tool_shed.util import tool_dependency_util
 from tool_shed.util import tool_util
 from tool_shed.util import xml_util
-from tool_shed.galaxy_install.tool_dependencies import install_util
 from tool_shed.galaxy_install.tool_dependencies import td_common_util
 import tool_shed.repository_types.util as rt_util
 
@@ -206,11 +206,13 @@ def compare_repository_dependencies( trans, ancestor_repository_dependencies, cu
         for ancestor_tup in ancestor_repository_dependencies:
             a_tool_shed, a_repo_name, a_repo_owner, a_changeset_revision, a_prior_installation_required, a_only_if_compiling_contained_td = \
                 ancestor_tup
+            cleaned_a_tool_shed = common_util.remove_protocol_from_tool_shed_url( a_tool_shed )
             found_in_current = False
             for current_tup in current_repository_dependencies:
                 c_tool_shed, c_repo_name, c_repo_owner, c_changeset_revision, c_prior_installation_required, c_only_if_compiling_contained_td = \
                     current_tup
-                if c_tool_shed == a_tool_shed and \
+                cleaned_c_tool_shed = common_util.remove_protocol_from_tool_shed_url( c_tool_shed )
+                if cleaned_c_tool_shed == cleaned_a_tool_shed and \
                     c_repo_name == a_repo_name and \
                     c_repo_owner == a_repo_owner and \
                     c_changeset_revision == a_changeset_revision and \
@@ -220,7 +222,7 @@ def compare_repository_dependencies( trans, ancestor_repository_dependencies, cu
                     break
             if not found_in_current:
                 # In some cases, the only difference between a dependency definition in the lists is the changeset_revision value.  We'll
-                # check to see if this is the case, and if the defined dependency is a repository that has metadata set only on it's tip.
+                # check to see if this is the case, and if the defined dependency is a repository that has metadata set only on its tip.
                 if not different_revision_defines_tip_only_repository_dependency( trans, ancestor_tup, current_repository_dependencies ):
                     return NOT_EQUAL_AND_NOT_SUBSET
                 return SUBSET
@@ -345,7 +347,7 @@ def create_or_update_repository_metadata( trans, id, repository, changeset_revis
         # changeset revision in the received repository's changelog (up to the received changeset revision) to see if it is contained in the
         # skip_tool_test table.  If it is, but is not associated with a repository_metadata record, reset that skip_tool_test record to the
         # newly created repository_metadata record.
-        repo = hg.repository( suc.get_configured_ui(), repository.repo_path( trans.app ) )
+        repo = hg.repository( hg_util.get_configured_ui(), repository.repo_path( trans.app ) )
         for changeset in repo.changelog:
             changeset_hash = str( repo.changectx( changeset ) )
             skip_tool_test = suc.get_skip_tool_test_by_changeset_revision( trans, changeset_hash )
@@ -369,15 +371,18 @@ def create_or_update_repository_metadata( trans, id, repository, changeset_revis
 
 def different_revision_defines_tip_only_repository_dependency( trans, rd_tup, repository_dependencies ):
     """
-    Determine if the only difference between rd_tup and a dependency definition in the list of repository_dependencies is the changeset_revision value.
+    Determine if the only difference between rd_tup and a dependency definition in the list of
+    repository_dependencies is the changeset_revision value.
     """
     new_metadata_required = False
     rd_tool_shed, rd_name, rd_owner, rd_changeset_revision, rd_prior_installation_required, rd_only_if_compiling_contained_td = \
         common_util.parse_repository_dependency_tuple( rd_tup )
+    cleaned_rd_tool_shed = common_util.remove_protocol_from_tool_shed_url( rd_tool_shed )
     for repository_dependency in repository_dependencies:
         tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
             common_util.parse_repository_dependency_tuple( repository_dependency )
-        if rd_tool_shed == tool_shed and rd_name == name and rd_owner == owner:
+        cleaned_tool_shed = common_util.remove_protocol_from_tool_shed_url( tool_shed )
+        if cleaned_rd_tool_shed == cleaned_tool_shed and rd_name == name and rd_owner == owner:
             # Determine if the repository represented by the dependency tuple is an instance of the repository type TipOnly.
             required_repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
             repository_type_class = trans.app.repository_types_registry.get_class_by_label( required_repository.type )
@@ -393,11 +398,11 @@ def generate_data_manager_metadata( app, repository, repo_dir, data_manager_conf
         # Galaxy Side.
         repo_files_directory = repository.repo_files_directory( app )
         repo_dir = repo_files_directory
-        repository_clone_url = suc.generate_clone_url_for_installed_repository( app, repository )
+        repository_clone_url = common_util.generate_clone_url_for_installed_repository( app, repository )
     except AttributeError:
         # Tool Shed side.
         repo_files_directory = repo_path
-        repository_clone_url = suc.generate_clone_url_for_repository_in_tool_shed( None, repository )
+        repository_clone_url = common_util.generate_clone_url_for_repository_in_tool_shed( None, repository )
     relative_data_manager_dir = util.relpath( os.path.split( data_manager_config_filename )[0], repo_dir )
     rel_data_manager_config_filename = os.path.join( relative_data_manager_dir, os.path.split( data_manager_config_filename )[1] )
     data_managers = {}
@@ -557,14 +562,11 @@ def generate_environment_dependency_metadata( elem, valid_tool_dependencies_dict
     # <set_environment version="1.0">
     #    <environment_variable name="JAVA_JAR_PATH" action="set_to">$INSTALL_DIR</environment_variable>
     # </set_environment>
-    requirements_dict = {}
     for env_elem in elem:
         # <environment_variable name="JAVA_JAR_PATH" action="set_to">$INSTALL_DIR</environment_variable>
         env_name = env_elem.get( 'name', None )
         if env_name:
-            requirements_dict[ 'name' ] = env_name
-            requirements_dict[ 'type' ] = 'set_environment'
-        if requirements_dict:
+            requirements_dict = dict( name=env_name, type='set_environment' )
             if 'set_environment' in valid_tool_dependencies_dict:
                 valid_tool_dependencies_dict[ 'set_environment' ].append( requirements_dict )
             else:
@@ -572,7 +574,7 @@ def generate_environment_dependency_metadata( elem, valid_tool_dependencies_dict
     return valid_tool_dependencies_dict
 
 def generate_guid_for_object( repository_clone_url, guid_type, obj_id, version ):
-    tmp_url = suc.clean_repository_clone_url( repository_clone_url )
+    tmp_url = common_util.remove_protocol_and_user_from_clone_url( repository_clone_url )
     return '%s/%s/%s/%s' % ( tmp_url, guid_type, obj_id, version )
 
 def generate_metadata_for_changeset_revision( app, repository, changeset_revision, repository_clone_url,
@@ -580,7 +582,7 @@ def generate_metadata_for_changeset_revision( app, repository, changeset_revisio
                                               resetting_all_metadata_on_repository=False, updating_installed_repository=False,
                                               persist=False ):
     """
-    Generate metadata for a repository using it's files on disk.  To generate metadata for changeset revisions older than
+    Generate metadata for a repository using its files on disk.  To generate metadata for changeset revisions older than
     the repository tip, the repository will have been cloned to a temporary location and updated to a specified changeset
     revision to access that changeset revision's disk files, so the value of repository_files_dir will not always be
     repository.repo_path( app ) (it could be an absolute path to a temporary directory containing a clone).  If it is an
@@ -644,7 +646,7 @@ def generate_metadata_for_changeset_revision( app, repository, changeset_revisio
     # Copy all sample files included in the repository to a single directory location so we can load tools that depend on them.
     for sample_file in sample_file_copy_paths:
         tool_util.copy_sample_file( app, sample_file, dest_path=work_dir )
-        # If the list of sample files includes a tool_data_table_conf.xml.sample file, laad it's table elements into memory.
+        # If the list of sample files includes a tool_data_table_conf.xml.sample file, load its table elements into memory.
         relative_path, filename = os.path.split( sample_file )
         if filename == 'tool_data_table_conf.xml.sample':
             new_table_elems, error_message = \
@@ -918,6 +920,7 @@ def generate_tool_dependency_metadata( app, repository, changeset_revision, repo
     invalid_tool_dependencies_dict = {}
     valid_repository_dependency_tups = []
     invalid_repository_dependency_tups = []
+    tools_metadata = metadata_dict.get( 'tools', None )
     description = root.get( 'description' )
     for elem in root:
         if elem.tag == 'package':
@@ -1043,7 +1046,7 @@ def generate_workflow_metadata( relative_path, exported_workflow_dict, metadata_
 def get_latest_repository_metadata( trans, decoded_repository_id, downloadable=False ):
     """Get last metadata defined for a specified repository from the database."""
     repository = trans.sa_session.query( trans.model.Repository ).get( decoded_repository_id )
-    repo = hg.repository( suc.get_configured_ui(), repository.repo_path( trans.app ) )
+    repo = hg.repository( hg_util.get_configured_ui(), repository.repo_path( trans.app ) )
     if downloadable:
         changeset_revision = suc.get_latest_downloadable_changeset_revision( trans, repository, repo )
     else:
@@ -1115,21 +1118,6 @@ def get_repository_metadata_revisions_for_review( repository, reviewed=True ):
             if metadata_revision.changeset_revision not in metadata_changeset_revision_hashes:
                 repository_metadata_revisions.append( metadata_revision )
     return repository_metadata_revisions
-
-def get_rev_label_changeset_revision_from_repository_metadata( trans, repository_metadata, repository=None ):
-    if repository is None:
-        repository = repository_metadata.repository
-    repo = hg.repository( suc.get_configured_ui(), repository.repo_path( trans.app ) )
-    changeset_revision = repository_metadata.changeset_revision
-    ctx = suc.get_changectx_for_changeset( repo, changeset_revision )
-    if ctx:
-        changeset_revision_date = suc.get_readable_ctx_date( ctx )
-        rev = '%04d' % ctx.rev()
-        label = "%s:%s (%s)" % ( str( ctx.rev() ), changeset_revision, changeset_revision_date )
-    else:
-        rev = '-1'
-        label = "-1:%s" % changeset_revision
-    return rev, label, changeset_revision
 
 def get_sample_files_from_disk( repository_files_dir, tool_path=None, relative_install_dir=None,
                                 resetting_all_metadata_on_repository=False ):
@@ -1217,27 +1205,27 @@ def handle_repository_elem( app, repository_elem, only_if_compiling_contained_td
                                   changeset_revision,
                                   prior_installation_required,
                                   str( only_if_compiling_contained_td ) ]
-    cleaned_toolshed = td_common_util.clean_tool_shed_url( toolshed )
     user = None
     repository = None
+    toolshed = common_util.remove_protocol_from_tool_shed_url( toolshed )
     if app.name == 'galaxy':
         # We're in Galaxy.  We reach here when we're generating the metadata for a tool dependencies package defined
         # for a repository or when we're generating metadata for an installed repository.  See if we can locate the
         # installed repository via the changeset_revision defined in the repository_elem (it may be outdated).  If we're
         # successful in locating an installed repository with the attributes defined in the repository_elem, we know it
         # is valid.
-        repository = suc.get_repository_for_dependency_relationship( app, cleaned_toolshed, name, owner, changeset_revision )
+        repository = suc.get_repository_for_dependency_relationship( app, toolshed, name, owner, changeset_revision )
         if repository:
             return repository_dependency_tup, is_valid, error_message
         else:
             # Send a request to the tool shed to retrieve appropriate additional changeset revisions with which the repository
             # may have been installed.
-            text = install_util.get_updated_changeset_revisions_from_tool_shed( app, toolshed, name, owner, changeset_revision )
+            text = suc.get_updated_changeset_revisions_from_tool_shed( app, toolshed, name, owner, changeset_revision )
             if text:
                 updated_changeset_revisions = util.listify( text )
                 for updated_changeset_revision in updated_changeset_revisions:
                     repository = suc.get_repository_for_dependency_relationship( app,
-                                                                                 cleaned_toolshed,
+                                                                                 toolshed,
                                                                                  name,
                                                                                  owner,
                                                                                  updated_changeset_revision )
@@ -1289,9 +1277,9 @@ def handle_repository_elem( app, repository_elem, only_if_compiling_contained_td
                 log.debug( error_message )
                 is_valid = False
                 return repository_dependency_tup, is_valid, error_message
-            repo = hg.repository( suc.get_configured_ui(), repository.repo_path( app ) )
+            repo = hg.repository( hg_util.get_configured_ui(), repository.repo_path( app ) )
             # The received changeset_revision may be None since defining it in the dependency definition is optional.
-            # If this is the case, the default will be to set it's value to the repository dependency tip revision.
+            # If this is the case, the default will be to set its value to the repository dependency tip revision.
             # This probably occurs only when handling circular dependency definitions.
             tip_ctx = repo.changectx( repo.changelog.tip() )
             # Make sure the repo.changlog includes at least 1 revision.
@@ -1355,7 +1343,7 @@ def is_level_one_certified( trans, repository ):
     """
     if repository.deleted:
         return ( None, False )
-    repo = hg.repository( suc.get_configured_ui(), repository.repo_path( trans.app ) )
+    repo = hg.repository( hg_util.get_configured_ui(), repository.repo_path( trans.app ) )
     # Get the latest installable changeset revision since that is all that is currently configured for testing.
     latest_installable_changeset_revision = suc.get_latest_downloadable_changeset_revision( trans, repository, repo )
     if latest_installable_changeset_revision not in [ None, suc.INITIAL_CHANGELOG_HASH ]:
@@ -1514,7 +1502,7 @@ def new_repository_dependency_metadata_required( trans, repository_metadata, met
                 for saved_repository_dependency in saved_repository_dependencies:
                     if saved_repository_dependency not in new_repository_dependencies:
                         # In some cases, the only difference between a dependency definition in the lists is the changeset_revision value.  We'll
-                        # check to see if this is the case, and if the defined dependency is a repository that has metadata set only on it's tip.
+                        # check to see if this is the case, and if the defined dependency is a repository that has metadata set only on its tip.
                         if not different_revision_defines_tip_only_repository_dependency( trans, saved_repository_dependency, new_repository_dependencies ):
                             return True
                 return False
@@ -1648,9 +1636,12 @@ def populate_containers_dict_from_repository_metadata( trans, tool_shed_url, too
             if reinstalling or repository.status not in [ trans.install_model.ToolShedRepository.installation_status.DEACTIVATED,
                                                           trans.install_model.ToolShedRepository.installation_status.INSTALLED ]:
                 # Since we're reinstalling, we need to send a request to the tool shed to get the README files.
-                url = suc.url_join( tool_shed_url,
-                                    'repository/get_readme_files?name=%s&owner=%s&changeset_revision=%s' % \
-                                    ( repository.name, repository.owner, repository.installed_changeset_revision ) )
+                tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( trans.app, tool_shed_url )
+                params = '?name=%s&owner=%s&changeset_revision=%s' % ( str( repository.name ),
+                                                                       str( repository.owner ),
+                                                                       str( repository.installed_changeset_revision ) )
+                url = common_util.url_join( tool_shed_url,
+                                            'repository/get_readme_files%s' % params )
                 raw_text = common_util.tool_shed_get( trans.app, tool_shed_url, url )
                 readme_files_dict = json.from_json_string( raw_text )
             else:
@@ -1722,8 +1713,7 @@ def populate_containers_dict_from_repository_metadata( trans, tool_shed_url, too
 def reset_all_metadata_on_installed_repository( trans, id ):
     """Reset all metadata on a single tool shed repository installed into a Galaxy instance."""
     repository = suc.get_installed_tool_shed_repository( trans, id )
-    tool_shed_url = suc.get_url_from_tool_shed( trans.app, repository.tool_shed )
-    repository_clone_url = suc.generate_clone_url_for_installed_repository( trans.app, repository )
+    repository_clone_url = common_util.generate_clone_url_for_installed_repository( trans.app, repository )
     tool_path, relative_install_dir = repository.get_tool_relative_path( trans.app )
     if relative_install_dir:
         original_metadata_dict = repository.metadata
@@ -1790,8 +1780,8 @@ def reset_all_metadata_on_repository_in_tool_shed( trans, id ):
     repository = suc.get_repository_in_tool_shed( trans, id )
     log.debug( "Resetting all metadata on repository: %s" % repository.name )
     repo_dir = repository.repo_path( trans.app )
-    repo = hg.repository( suc.get_configured_ui(), repo_dir )
-    repository_clone_url = suc.generate_clone_url_for_repository_in_tool_shed( trans, repository )
+    repo = hg.repository( hg_util.get_configured_ui(), repo_dir )
+    repository_clone_url = common_util.generate_clone_url_for_repository_in_tool_shed( trans, repository )
     # The list of changeset_revisions refers to repository_metadata records that have been created or updated.  When the following loop
     # completes, we'll delete all repository_metadata records for this repository that do not have a changeset_revision value in this list.
     changeset_revisions = []
@@ -1806,7 +1796,7 @@ def reset_all_metadata_on_repository_in_tool_shed( trans, id ):
         current_changeset_revision = str( repo.changectx( changeset ) )
         ctx = repo.changectx( changeset )
         log.debug( "Cloning repository changeset revision: %s", str( ctx.rev() ) )
-        cloned_ok, error_message = suc.clone_repository( repository_clone_url, work_dir, str( ctx.rev() ) )
+        cloned_ok, error_message = hg_util.clone_repository( repository_clone_url, work_dir, str( ctx.rev() ) )
         if cloned_ok:
             log.debug( "Generating metadata for changset revision: %s", str( ctx.rev() ) )
             current_metadata_dict, invalid_tups = generate_metadata_for_changeset_revision( app=trans.app,
@@ -1818,7 +1808,8 @@ def reset_all_metadata_on_repository_in_tool_shed( trans, id ):
                                                                                             resetting_all_metadata_on_repository=True,
                                                                                             updating_installed_repository=False,
                                                                                             persist=False )
-            # We'll only display error messages for the repository tip (it may be better to display error messages for each installable changeset revision).
+            # We'll only display error messages for the repository tip (it may be better to display error
+            # messages for each installable changeset revision).
             if current_changeset_revision == repository.tip( trans.app ):
                 invalid_file_tups.extend( invalid_tups )
             if current_metadata_dict:
@@ -1969,9 +1960,9 @@ def set_repository_metadata( trans, repository, content_alert_str='', **kwd ):
     message = ''
     status = 'done'
     encoded_id = trans.security.encode_id( repository.id )
-    repository_clone_url = suc.generate_clone_url_for_repository_in_tool_shed( trans, repository )
+    repository_clone_url = common_util.generate_clone_url_for_repository_in_tool_shed( trans, repository )
     repo_dir = repository.repo_path( trans.app )
-    repo = hg.repository( suc.get_configured_ui(), repo_dir )
+    repo = hg.repository( hg_util.get_configured_ui(), repo_dir )
     metadata_dict, invalid_file_tups = generate_metadata_for_changeset_revision( app=trans.app,
                                                                                  repository=repository,
                                                                                  changeset_revision=repository.tip( trans.app ),

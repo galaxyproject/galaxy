@@ -28,8 +28,8 @@ HistoryPanel.prototype.toString = function toString(){
 
 */
 // =================================================================== INTERNAL
-var xpath = require( 'casper' ).selectXPath;
-    //utils = require( 'utils' );
+var require = patchRequire( require ),
+    xpath = require( 'casper' ).selectXPath;
 
 // =================================================================== API (external)
 // ------------------------------------------------------------------- frame control
@@ -91,20 +91,6 @@ HistoryPanel.prototype.getHdaEncodedId = function getHdaEncodedId( hdaSelector )
 };
 
 // ------------------------------------------------------------------- step functions
-///** Version of Casper#withFrame for the history iframe.
-// *      Hopefully will allow easier test transition if/when frames are removed
-// *      (i.e. -> just call the function).
-// *      NOTE: is more than one Casper step.
-// *  @param {Function} then  function called when in the history frame
-// */
-//HistoryPanel.prototype.then = function then( thenFn ){
-//    if( this.inFrame() ){
-//        thenFn.call( this.spaceghost );
-//    } else {
-//        this.spaceghost.withHistoryPanel( thenFn );
-//    }
-//};
-//
 /** Moves into history iframe and waits until hdas are visible or empty message is.
  *      NOTE: is more than one Casper step.
  *  @see Casper@waitFor
@@ -127,51 +113,44 @@ HistoryPanel.prototype.waitForHdas = function waitForHdas( then, timeout, maxWai
     return spaceghost;
 };
 
-/** Expands or collapses an HDA by clicking the title (does nothing if already in desired state).
+/** Moves into history iframe and waits until hdas are visible or empty message is.
  *      NOTE: is more than one Casper step.
- *  @param {String} hdaSelector     a css or xpath selector for an historyItemWrapper
- *  @param {Function} then          function called when the change is made
- *  @param {Boolean} desiredClosed  true if you want to collapse, false if you want open
- *  @private
+ *  @see Casper@waitFor
  */
-HistoryPanel.prototype._thenExpandOrCollapseHda = function _thenExpandOrCollapseHda( hdaSelector, then, desiredClosed ){
-    // using a step here (instead of a jump) bc we need the wait for function
-    this.spaceghost.then( function checkingHda(){
-        this.info( (( desiredClosed )?( 'collapsing' ):( 'expanding' )) + ' hda: ' + hdaSelector );
+HistoryPanel.prototype.waitForHda = function waitForHda( hdaName, then, timeout, maxWait ){
+    //TODO:?? should this wait until the seletors are in AND they are opaque?
+    var spaceghost = this.spaceghost,
+        hdaElement = null,
+        previousState = null;
+    spaceghost.then( function waitingForHda(){
+        this.waitFor(
+            function checkHpanel(){
+                var wrapperXpath = xpath( '//span[contains(text(),"' + hdaName + '")]/../../..' );
+                hdaElement = this.elementInfoOrNull( wrapperXpath );
+                //NOTE: this will probably fail if the name was used on a previous HDA
+                if( !hdaElement ){ return false; }
+                
+                var state = hdaElement.attributes[ "class" ].match( /state\-([\w\-_]*)/ )[1];
+                if( state !== previousState ){
+                    spaceghost.info( 'state: ' + state );
+                    previousState = state;
+                }
+                if( state !== 'ok' ){ return false; }
 
-        // click to open if the body isn't visible and call wait to account for opening animation
-        if( this.visible( hdaSelector + ' ' + this.historypanel.data.selectors.hda.body ) === desiredClosed ){
-            this.click( hdaSelector + ' ' + this.historypanel.data.selectors.hda.title );
-            //NOTE: then is executed in the top frame
-            //TODO: magic number
-            this.wait( 500, then );
-
-        // otherwise, just call then
-        } else if( then ){
-            then.call( this );
-        }
+                var hdaOpacity = this.evaluate( function( name ){
+                    return $( '.dataset-name:contains("' + name + '")' ).parents( '.hda' ).css( 'opacity' );
+                }, hdaName );
+                this.debug( 'fading in: ' + hdaOpacity );
+                return hdaOpacity >= 1;
+            },
+            function _then(){ then.call( this, hdaElement ); },
+            function _timeout(){ timeout.call( this, hdaElement ); },
+            maxWait );
     });
-    return this.spaceghost;
+    return spaceghost;
 };
 
-/** Collapses an HDA by clicking the title (does nothing if already collapsed).
- *      NOTE: is more than one Casper step.
- *  @param {String} hdaSelector     a css or xpath selector for an historyItemWrapper
- *  @param {Function} then          function called when the change is made
- */
-HistoryPanel.prototype.thenCollapseHda = function thenCollapseHda( hdaSelector, then ){
-    return this._thenExpandOrCollapseHda( hdaSelector, then, true );
-};
-
-/** Expands an HDA by clicking the title (does nothing if already expanded).
- *      NOTE: is more than one Casper step.
- *  @param {String} hdaSelector     a css or xpath selector for an historyItemWrapper
- *  @param {Function} then          function called when the change is made
- */
-HistoryPanel.prototype.thenExpandHda = function thenExpandHda( hdaSelector, then ){
-    return this._thenExpandOrCollapseHda( hdaSelector, then, false );
-};
-
+//TODO: combine with above
 /** Wait for the hda with given id to move into the given state.
  *      whenInStateFn and timeoutFn will be passed the hda element info (see Casper#getElementInfo)
  *      NOTE: is more than one Casper step.
@@ -231,6 +210,51 @@ HistoryPanel.prototype.waitForHdaState = function waitForHdaState( hdaSelector, 
         );
     });
     return spaceghost;
+};
+
+/** Expands or collapses an HDA by clicking the title (does nothing if already in desired state).
+ *      NOTE: is more than one Casper step.
+ *  @param {String} hdaSelector     a css or xpath selector for an historyItemWrapper
+ *  @param {Function} then          function called when the change is made
+ *  @param {Boolean} desiredClosed  true if you want to collapse, false if you want open
+ *  @private
+ */
+HistoryPanel.prototype._thenExpandOrCollapseHda = function _thenExpandOrCollapseHda( hdaSelector, then, desiredClosed ){
+    // using a step here (instead of a jump) bc we need the wait for function
+    this.spaceghost.then( function checkingHda(){
+        this.info( (( desiredClosed )?( 'collapsing' ):( 'expanding' )) + ' hda: ' + hdaSelector );
+
+        // click to open if the body isn't visible and call wait to account for opening animation
+        if( this.visible( hdaSelector + ' ' + this.historypanel.data.selectors.hda.body ) === desiredClosed ){
+            this.click( hdaSelector + ' ' + this.historypanel.data.selectors.hda.title );
+            //NOTE: then is executed in the top frame
+            //TODO: magic number
+            this.wait( 500, then );
+
+        // otherwise, just call then
+        } else if( then ){
+            then.call( this );
+        }
+    });
+    return this.spaceghost;
+};
+
+/** Collapses an HDA by clicking the title (does nothing if already collapsed).
+ *      NOTE: is more than one Casper step.
+ *  @param {String} hdaSelector     a css or xpath selector for an historyItemWrapper
+ *  @param {Function} then          function called when the change is made
+ */
+HistoryPanel.prototype.thenCollapseHda = function thenCollapseHda( hdaSelector, then ){
+    return this._thenExpandOrCollapseHda( hdaSelector, then, true );
+};
+
+/** Expands an HDA by clicking the title (does nothing if already expanded).
+ *      NOTE: is more than one Casper step.
+ *  @param {String} hdaSelector     a css or xpath selector for an historyItemWrapper
+ *  @param {Function} then          function called when the change is made
+ */
+HistoryPanel.prototype.thenExpandHda = function thenExpandHda( hdaSelector, then ){
+    return this._thenExpandOrCollapseHda( hdaSelector, then, false );
 };
 
 /** Deletes an hda by finding an hda with the given title and clicking on the delete icon.

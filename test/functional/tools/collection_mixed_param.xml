@@ -1,0 +1,24 @@
+<tool id="collection_mixed_param" name="collection_mixed_param" version="0.1.0">
+  <command>
+    cat #for $f in $f1# ${f} #end for# $f2 >> $out1;
+  </command>
+  <inputs>
+    <param name="f1" type="data_collection" collection_type="paired" />
+    <param name="f2" type="data" format="txt" />
+  </inputs>
+  <outputs>
+    <data format="txt" name="out1" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="f1">
+        <collection type="paired">
+          <element name="forward" value="simple_line.txt" />
+          <element name="reverse" value="simple_line_alternative.txt" />
+        </collection>
+      </param>
+      <param name="f2" value="simple_lines_both.txt" />
+      <output name="out1" file="simple_lines_interleaved.txt"/>
+    </test>
+  </tests>
+</tool>

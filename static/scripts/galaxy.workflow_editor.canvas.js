@@ -1,18 +1,177 @@
-function Terminal( element ) {
-    this.element = element;
-    this.connectors = [];
+function CollectionTypeDescription( collectionType ) {
+    this.collectionType = collectionType;
+    this.isCollection = true;
+    this.rank = collectionType.split(":").length;
 }
-$.extend( Terminal.prototype, {
+
+$.extend( CollectionTypeDescription.prototype, {
+    append: function( otherCollectionTypeDescription ) {
+        if( otherCollectionTypeDescription === NULL_COLLECTION_TYPE_DESCRIPTION ) {
+            return this;
+        }
+        if( otherCollectionTypeDescription === ANY_COLLECTION_TYPE_DESCRIPTION ) {
+            return otherCollectionType;
+        }
+        return new CollectionTypeDescription( this.collectionType + ":" + otherCollectionTypeDescription.collectionType );
+    },
+    canMatch: function( otherCollectionTypeDescription ) {
+        if( otherCollectionTypeDescription === NULL_COLLECTION_TYPE_DESCRIPTION ) {
+            return false;
+        }
+        if( otherCollectionTypeDescription === ANY_COLLECTION_TYPE_DESCRIPTION ) {
+            return true;
+        }
+        return otherCollectionTypeDescription.collectionType == this.collectionType;
+    },
+    canMapOver: function( otherCollectionTypeDescription ) {
+        if( otherCollectionTypeDescription === NULL_COLLECTION_TYPE_DESCRIPTION ) {
+            return false;
+        }
+        if( otherCollectionTypeDescription === ANY_COLLECTION_TYPE_DESCRIPTION ) {
+            return false;
+        }
+        if( this.rank <= otherCollectionTypeDescription.rank ) {
+            // Cannot map over self...
+            return false;
+        }
+        var requiredSuffix = otherCollectionTypeDescription.collectionType
+        return this._endsWith( this.collectionType, requiredSuffix );
+    },
+    effectiveMapOver: function( otherCollectionTypeDescription ) {
+        var otherCollectionType = otherCollectionTypeDescription.collectionType;
+        var effectiveCollectionType = this.collectionType.substring( 0, this.collectionType.length - otherCollectionType.length - 1 );
+        return new CollectionTypeDescription( effectiveCollectionType );
+    },
+    equal: function( otherCollectionTypeDescription ) {
+        return otherCollectionTypeDescription.collectionType == this.collectionType;
+    },
+    toString: function() {
+        return "CollectionType[" + this.collectionType + "]";
+    },
+    _endsWith: function( str, suffix ) {
+        return str.indexOf(suffix, str.length - suffix.length) !== -1;
+    }
+} );
+
+NULL_COLLECTION_TYPE_DESCRIPTION = {
+    isCollection: false,
+    canMatch: function( other ) { return false; },
+    canMapOver: function( other ) {
+        return false;
+    },
+    toString: function() {
+        return "NullCollectionType[]";
+    },
+    append: function( otherCollectionType ) {
+        return otherCollectionType;
+    },
+    equal: function( other ) {
+        return other === this;
+    }
+};
+
+ANY_COLLECTION_TYPE_DESCRIPTION = {
+    isCollection: true,
+    canMatch: function( other ) { return NULL_COLLECTION_TYPE_DESCRIPTION !== other; },
+    canMapOver: function( other ) {
+        return false;
+    },
+    toString: function() {
+        return "AnyCollectionType[]";
+    },
+    append: function( otherCollectionType ) {
+        throw "Cannot append to ANY_COLLECTION_TYPE_DESCRIPTION";
+    },
+    equal: function( other ) {
+        return other === this;
+    }
+};
+
+var TerminalMapping = Backbone.Model.extend( {
+    initialize: function( attr ) {
+        this.mapOver = attr.mapOver || NULL_COLLECTION_TYPE_DESCRIPTION;
+        this.terminal = attr.terminal;
+        this.terminal.terminalMapping = this;
+    },
+    disableMapOver: function() {
+        this.setMapOver( NULL_COLLECTION_TYPE_DESCRIPTION );
+    },
+    setMapOver: function( collectionTypeDescription ) {
+        // TODO: Can I use "attributes" or something to auto trigger "change"
+        // event?
+        this.mapOver = collectionTypeDescription;
+        this.trigger("change");
+    }
+} );
+
+var TerminalMappingView = Backbone.View.extend( {
+    tagName: "div",
+    className: "fa-icon-button fa fa-folder-o",
+
+    initialize: function( options ) {
+        var mapText = "Run tool in parallel over collection";
+        this.$el.tooltip( {delay: 500, title: mapText } );
+        this.model.bind( "change", _.bind( this.render, this ) );
+    },
+
+    render: function() {
+        if( this.model.mapOver.isCollection ) {
+            this.$el.show();
+        } else {
+            this.$el.hide();
+        }
+    },
+
+} );
+
+var InputTerminalMappingView = TerminalMappingView.extend( {
+    events: {
+        "click": "onClick",
+        "mouseenter": "onMouseEnter",
+        "mouseleave": "onMouseLeave",
+    },
+    onMouseEnter: function( e ) {
+        var model = this.model;
+        if( ! model.terminal.connected() && model.mapOver.isCollection ) {
+            this.$el.color( "red" );
+        }
+    },
+    onMouseLeave: function( e ) {
+        this.$el.color( "blue" );
+    },
+    onClick: function( e ) {
+        var model = this.model;
+        if( ! model.terminal.connected() && model.mapOver.isCollection ) {
+            // TODO: Consider prompting...
+            model.terminal.resetMapping();
+        }
+    },
+} );
+
+var InputTerminalMapping = TerminalMapping;
+var InputCollectionTerminalMapping = TerminalMapping;
+var OutputTerminalMapping = TerminalMapping;
+var OutputTerminalMappingView = TerminalMappingView;
+var InputCollectionTerminalMappingView = InputTerminalMappingView;
+var OutputCollectionTerminalMapping = TerminalMapping;
+var OutputCollectionTerminalMappingView = TerminalMappingView;
+
+var Terminal = Backbone.Model.extend( {
+    initialize: function( attr ) {
+        this.element = attr.element;
+        this.connectors = [];
+    },
     connect: function ( connector ) {
         this.connectors.push( connector );
         if ( this.node ) {
-            this.node.changed();
+            this.node.markChanged();
         }
     },
     disconnect: function ( connector ) {
         this.connectors.splice( $.inArray( connector, this.connectors ), 1 );
         if ( this.node ) {
-            this.node.changed();
+            this.node.markChanged();
+            this.resetMappingIfNeeded();
         }
     },
     redraw: function () {
@@ -24,49 +183,323 @@ $.extend( Terminal.prototype, {
         $.each( this.connectors.slice(), function( _, c ) {
             c.destroy();
         });
+    },
+    destroyInvalidConnections: function( ) {
+        _.each( this.connectors, function( connector ) {
+            connector.destroyIfInvalid();
+        } );
+    },
+    setMapOver : function( val ) {
+        if( this.multiple ) {
+            return; // Cannot set this to be multirun...
+        }
+
+        if( ! this.mapOver().equal( val ) ) {
+            this.terminalMapping.setMapOver( val );
+            _.each( this.node.output_terminals, function( outputTerminal ) {
+                outputTerminal.setMapOver( val );
+            } );
+        }
+    },
+    mapOver: function( ) {
+        if ( ! this.terminalMapping ) {
+            return NULL_COLLECTION_TYPE_DESCRIPTION;
+        } else {
+            return this.terminalMapping.mapOver;
+        }
+    },
+    isMappedOver: function( ) {
+        return this.terminalMapping && this.terminalMapping.mapOver.isCollection;
+    },
+    resetMapping: function() {
+        this.terminalMapping.disableMapOver();
+    },
+
+    resetMappingIfNeeded: function( ) {}, // Subclasses should override this...
+
+} );
+
+var OutputTerminal = Terminal.extend( {
+    initialize: function( attr ) {
+        Terminal.prototype.initialize.call( this, attr );
+        this.datatypes = attr.datatypes;
+    },
+
+    resetMappingIfNeeded: function( ) {
+        if( ! this.node.hasMappedOverInputTerminals() ) {
+            this.resetMapping();
+        }
+    },
+
+    resetMapping: function() {
+        this.terminalMapping.disableMapOver();
+        _.each( this.connectors, function( connector ) {
+            var connectedInput = connector.handle2;
+            if( connectedInput ) {
+                // Not exactly right because this is still connected.
+                // Either rewrite resetMappingIfNeeded or disconnect
+                // and reconnect if valid.
+                connectedInput.resetMappingIfNeeded();
+                connector.destroyIfInvalid();
+            }
+        } );
     }
-});
 
-function OutputTerminal( element, datatypes ) {
-    Terminal.call( this, element );
-    this.datatypes = datatypes;
-}
+} );
 
-OutputTerminal.prototype = new Terminal();
 
-function InputTerminal( element, datatypes, multiple ) {
-    Terminal.call( this, element );
-    this.datatypes = datatypes;
-    this.multiple = multiple
-}
-
-InputTerminal.prototype = new Terminal();
-
-$.extend( InputTerminal.prototype, {
-    can_accept: function ( other ) {
-        if ( this.connectors.length < 1 || this.multiple) {
-            for ( var t in this.datatypes ) {
-                var cat_outputs = new Array();
-                cat_outputs = cat_outputs.concat(other.datatypes);
-                if (other.node.post_job_actions){
-                    for (var pja_i in other.node.post_job_actions){
-                        var pja = other.node.post_job_actions[pja_i];
-                        if (pja.action_type == "ChangeDatatypeAction" && (pja.output_name == '' || pja.output_name == other.name) && pja.action_arguments){
-                            cat_outputs.push(pja.action_arguments['newtype']);
+var BaseInputTerminal = Terminal.extend( {
+    initialize: function( attr ) {
+        Terminal.prototype.initialize.call( this, attr );
+        this.update( attr.input ); // subclasses should implement this...
+    },
+    canAccept: function ( other ) {
+        if( this._inputFilled() ) {
+            return false;
+        } else {
+            return this.attachable( other );
+        }
+    },
+    resetMappingIfNeeded: function( ) {
+        var mapOver = this.mapOver();
+        if( ! mapOver.isCollection ) {
+            return;
+        }
+        // No output terminals are counting on this being mapped
+        // over if connected inputs are still mapped over or if none
+        // of the outputs are connected...
+        var reset = this.node.hasConnectedMappedInputTerminals() ||
+                        ( ! this.node.hasConnectedOutputTerminals() );
+        if( reset ) {
+            this.resetMapping();
+        }
+    },
+    resetMapping: function() {
+        this.terminalMapping.disableMapOver();
+        if( ! this.node.hasMappedOverInputTerminals() ) {
+            _.each( this.node.output_terminals, function( terminal) {
+                // This shouldn't be called if there are mapped over
+                // outputs.
+                terminal.resetMapping();
+            } );
+        }
+    },
+    connected: function() {
+        return this.connectors.length !== 0;
+    },
+    _inputFilled: function() {
+        var inputFilled;
+        if( ! this.connected() ) {
+            inputFilled = false;
+        } else {
+            if( this.multiple ) {
+                if( ! this.connected() ) {
+                    inputFilled = false;
+                } else {
+                    var firstOutput = this.connectors[ 0 ].handle1;
+                    if( firstOutput === null ){
+                        inputFilled = false;
+                    } else {
+                        if( firstOutput.isDataCollectionInput || firstOutput.isMappedOver() || firstOutput.datatypes.indexOf( "input_collection" ) > 0 ) {
+                            inputFilled = true;
+                        } else {
+                            inputFilled = false;
                         }
                     }
                 }
-                // FIXME: No idea what to do about case when datatype is 'input'
-                for ( var other_datatype_i in cat_outputs ) {
-                    if ( cat_outputs[other_datatype_i] == "input" || issubtype( cat_outputs[other_datatype_i], this.datatypes[t] ) ) {
-                        return true;
+            } else {
+                inputFilled = true;
+            }
+        }
+        return inputFilled;
+    },
+    _mappingConstraints: function( ) {
+        // If this is a connected terminal, return list of collection types
+        // other terminals connected to node are constraining mapping to.
+        if( ! this.node ) {
+            return [];  // No node - completely unconstrained
+        }
+        var mapOver = this.mapOver();
+        if( mapOver.isCollection ) {
+            return [ mapOver ];
+        }
+
+        var constraints = [];
+        if( ! this.node.hasConnectedOutputTerminals() ) {
+            _.each( this.node.connectedMappedInputTerminals(), function( inputTerminal ) {
+                constraints.push( inputTerminal.mapOver() );
+            } );
+        } else {
+            // All outputs should have same mapOver status - least specific.
+            constraints.push( _.first( _.values( this.node.output_terminals ) ).mapOver() );
+        }
+        return constraints;
+    },
+    _producesAcceptableDatatype: function( other ) {
+        // other is a non-collection output...
+        for ( var t in this.datatypes ) {
+            var cat_outputs = new Array();
+            cat_outputs = cat_outputs.concat(other.datatypes);
+            if (other.node.post_job_actions){
+                for (var pja_i in other.node.post_job_actions){
+                    var pja = other.node.post_job_actions[pja_i];
+                    if (pja.action_type == "ChangeDatatypeAction" && (pja.output_name == '' || pja.output_name == other.name) && pja.action_arguments){
+                        cat_outputs.push(pja.action_arguments['newtype']);
                     }
+                }
+            }
+            // FIXME: No idea what to do about case when datatype is 'input'
+            for ( var other_datatype_i in cat_outputs ) {
+                var other_datatype = cat_outputs[other_datatype_i];
+                if ( other_datatype == "input" || other_datatype == "input_collection" || issubtype( cat_outputs[other_datatype_i], this.datatypes[t] ) ) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    },
+    _otherCollectionType: function( other ) {
+        var otherCollectionType = NULL_COLLECTION_TYPE_DESCRIPTION;
+        if( other.isDataCollectionInput ) {
+            otherCollectionType = other.collectionType;
+        } else {
+            var otherMapOver = other.mapOver();
+            if( otherMapOver.isCollection ) {
+                otherCollectionType = otherMapOver;
+            }
+        }
+        return otherCollectionType;
+    },
+} );
+
+
+
+
+
+var InputTerminal = BaseInputTerminal.extend( {
+    update: function( input ) {
+        this.datatypes = input.extensions;
+        this.multiple = input.multiple;
+        this.collection = false;    	
+    },
+    connect: function( connector ) {
+        BaseInputTerminal.prototype.connect.call( this, connector );
+        var other_output = connector.handle1;
+        if( ! other_output ) {
+            return;
+        }
+        var otherCollectionType = this._otherCollectionType( other_output );
+        if( otherCollectionType.isCollection ) {
+            this.setMapOver( otherCollectionType );
+        }
+    },
+    attachable: function( other ) {
+        var otherCollectionType = this._otherCollectionType( other );
+        var thisMapOver = this.mapOver();
+        if( otherCollectionType.isCollection ) {
+            // TODO: Handle if this multiple....
+            if( thisMapOver.isCollection && thisMapOver.canMatch( otherCollectionType ) ) {
+                return this._producesAcceptableDatatype( other );
+            } else {
+                //  Need to check if this would break constraints...
+                var mappingConstraints = this._mappingConstraints();
+                if( mappingConstraints.every( _.bind( otherCollectionType.canMatch, otherCollectionType ) ) ) {
+                    return this._producesAcceptableDatatype( other );
+                } else {
+                    return false;
+                }
+            }
+        } else if( thisMapOver.isCollection ) {
+            // Attempting to match a non-collection output to an
+            // explicitly collection input.
+            return false;
+        }
+        return this._producesAcceptableDatatype( other );
+    }
+
+});
+
+var InputCollectionTerminal = BaseInputTerminal.extend( {
+    update: function( input ) {
+        this.multiple = false;
+        this.collection = true;
+        this.datatypes = input.extensions;
+        if( input.collection_type ) {
+            this.collectionType = new CollectionTypeDescription( input.collection_type );
+        } else {
+            this.collectionType = ANY_COLLECTION_TYPE_DESCRIPTION;
+        }
+    },
+    connect: function( connector ) {
+        BaseInputTerminal.prototype.connect.call( this, connector );
+        var other = connector.handle1;
+        if( ! other ) {
+            return;
+        }
+
+        var effectiveMapOver = this._effectiveMapOver( other );
+        this.setMapOver( effectiveMapOver );
+    },
+    _effectiveMapOver: function( other ) {
+        var collectionType = this.collectionType;
+        var otherCollectionType = this._otherCollectionType( other );
+        if( ! collectionType.canMatch( otherCollectionType ) ) {
+            return otherCollectionType.effectiveMapOver( collectionType );
+        } else {
+            return NULL_COLLECTION_TYPE_DESCRIPTION;
+        }
+    },
+    _effectiveCollectionType: function( ) {
+        var collectionType = this.collectionType;
+        var thisMapOver = this.mapOver();
+        return thisMapOver.append( collectionType );
+    },
+    attachable: function ( other ) {
+        var otherCollectionType = this._otherCollectionType( other );
+        if( otherCollectionType.isCollection ) {
+            var effectiveCollectionType = this._effectiveCollectionType( );
+            var thisMapOver = this.mapOver();
+            if( effectiveCollectionType.canMatch( otherCollectionType ) ) {
+                // Only way a direct match...
+                return this._producesAcceptableDatatype( other );
+                // Otherwise we need to mapOver
+            } else if( thisMapOver.isCollection ) {
+                // In this case, mapOver already set and we didn't match skipping...
+                return false;
+            } else if( otherCollectionType.canMapOver( this.collectionType ) ) {
+                var effectiveMapOver = this._effectiveMapOver( other );
+                if( ! effectiveMapOver.isCollection ) {
+                    return false;
+                }
+                //  Need to check if this would break constraints...
+                var mappingConstraints = this._mappingConstraints();
+                if( mappingConstraints.every( effectiveMapOver.canMatch ) ) {
+                    return this._producesAcceptableDatatype( other );
                 }
             }
         }
         return false;
     }
 });
+
+var OutputCollectionTerminal = Terminal.extend( {
+    initialize: function( attr ) {
+        Terminal.prototype.initialize.call( this, attr );
+        this.datatypes = attr.datatypes;
+        this.collectionType = new CollectionTypeDescription( attr.collection_type );
+        this.isDataCollectionInput = true;
+    },
+    update: function( output ) {
+        var newCollectionType = new CollectionTypeDescription( output.collection_type );
+        if( newCollectionType.collectionType != this.collectionType.collectionType ) {
+            _.each( this.connectors, function( connector ) {
+                // TODO: consider checking if connection valid before removing...
+                connector.destroy();
+            } );
+        }
+        this.collectionType = newCollectionType;
+    }
+} );
 
 function Connector( handle1, handle2 ) {
     this.canvas = null;
@@ -96,6 +529,11 @@ $.extend( Connector.prototype, {
             this.handle2.disconnect( this );
         }
         $(this.canvas).remove();
+    },
+    destroyIfInvalid: function() {
+        if( this.handle1 && this.handle2 && ! this.handle2.attachable( this.handle1 ) ) {
+            this.destroy();
+        }        
     },
     redraw : function () {
         var canvas_container = $("#canvas-container");
@@ -146,127 +584,123 @@ $.extend( Connector.prototype, {
         end_x -= canvas_left;
         end_y -= canvas_top;
         // Draw the line
+
+        var c = this.canvas.getContext("2d"),
+            start_offsets = null,
+            end_offsets = null;
+        var num_offsets = 1;
+        if ( this.handle1 && this.handle1.isMappedOver() ) {
+            var start_offsets = [ -6, -3, 0, 3, 6 ];
+            num_offsets = 5;
+        } else {
+            var start_offsets = [ 0 ];
+        }
+        if ( this.handle2 && this.handle2.isMappedOver() ) {
+            var end_offsets = [ -6, -3, 0, 3, 6 ];
+            num_offsets = 5;
+        } else {
+            var end_offsets = [ 0 ];
+        }
+        var connector = this;
+        for( var i = 0; i < num_offsets; i++ ) {
+            var inner_width = 5,
+                outer_width = 7;
+            if( start_offsets.length > 1 || end_offsets.length > 1 ) {
+                // We have a multi-run, using many lines, make them small.
+                inner_width = 1;
+                outer_width = 3;
+            }
+            connector.draw_outlined_curve( start_x, start_y, end_x, end_y, cp_shift, inner_width, outer_width, start_offsets[ i % start_offsets.length ], end_offsets[ i % end_offsets.length ] ); 
+        }
+    },
+    draw_outlined_curve : function( start_x, start_y, end_x, end_y, cp_shift, inner_width, outer_width, offset_start, offset_end ) {
+        var offset_start = offset_start || 0;
+        var offset_end = offset_end || 0;
         var c = this.canvas.getContext("2d");
         c.lineCap = "round";
         c.strokeStyle = this.outer_color;
-        c.lineWidth = 7;
+        c.lineWidth = outer_width;
         c.beginPath();
-        c.moveTo( start_x, start_y );
-        c.bezierCurveTo( start_x + cp_shift, start_y, end_x - cp_shift, end_y, end_x, end_y );
+        c.moveTo( start_x, start_y + offset_start );
+        c.bezierCurveTo( start_x + cp_shift, start_y + offset_start, end_x - cp_shift, end_y + offset_end, end_x, end_y + offset_end);
         c.stroke();
         // Inner line
         c.strokeStyle = this.inner_color;
-        c.lineWidth = 5;
+        c.lineWidth = inner_width;
         c.beginPath();
-        c.moveTo( start_x, start_y );
-        c.bezierCurveTo( start_x + cp_shift, start_y, end_x - cp_shift, end_y, end_x, end_y );
+        c.moveTo( start_x, start_y + offset_start );
+        c.bezierCurveTo( start_x + cp_shift, start_y + offset_start, end_x - cp_shift, end_y + offset_end, end_x, end_y + offset_end );
         c.stroke();
     }
 } );
 
-function Node( element ) {
-    this.element = element;
-    this.input_terminals = {};
-    this.output_terminals = {};
-    this.tool_errors = {};
-}
-$.extend( Node.prototype, {
-    new_input_terminal : function( input ) {
-        var t = $("<div class='terminal input-terminal'></div>");
-        this.enable_input_terminal( t, input.name, input.extensions, input.multiple );
-        return t;
+var Node = Backbone.Model.extend({
+
+    initialize: function( attr ) {
+        this.element = attr.element;
+        this.input_terminals = {};
+        this.output_terminals = {};
+        this.tool_errors = {};
     },
-    enable_input_terminal : function( elements, name, types, multiple ) {
-        var node = this;
-        $(elements).each( function() {
-            var terminal = this.terminal = new InputTerminal( this, types, multiple );
-            terminal.node = node;
-            terminal.name = name;
-            $(this).bind( "dropinit", function( e, d ) {
-                // Accept a dragable if it is an output terminal and has a
-                // compatible type
-                return $(d.drag).hasClass( "output-terminal" ) && terminal.can_accept( d.drag.terminal );
-            }).bind( "dropstart", function( e, d  ) {
-                if (d.proxy.terminal) { 
-                    d.proxy.terminal.connectors[0].inner_color = "#BBFFBB";
-                }
-            }).bind( "dropend", function ( e, d ) {
-                if (d.proxy.terminal) { 
-                    d.proxy.terminal.connectors[0].inner_color = "#FFFFFF";
-                }
-            }).bind( "drop", function( e, d ) {
-                ( new Connector( d.drag.terminal, terminal ) ).redraw();
-            }).bind( "hover", function() {
-                // If connected, create a popup to allow disconnection
-                if ( terminal.connectors.length > 0 ) {
-                    // Create callout
-                    var t = $("<div class='callout'></div>")
-                        .css( { display: 'none' } )
-                        .appendTo( "body" )
-                        .append(
-                            $("<div class='button'></div>").append(
-                                $("<div/>").addClass("fa-icon-button fa fa-times").click( function() {
-                                    $.each( terminal.connectors, function( _, x ) {
-                                        if (x) {
-                                            x.destroy();
-                                        }
-                                    });
-                                    t.remove();
-                                })))
-                        .bind( "mouseleave", function() {
-                            $(this).remove();
-                        });
-                    // Position it and show
-                    t.css({
-                            top: $(this).offset().top - 2,
-                            left: $(this).offset().left - t.width(),
-                            'padding-right': $(this).width()
-                        }).show();
-                }
-            });
-            node.input_terminals[name] = terminal;
-        });
+    connectedOutputTerminals: function() {
+        var connected_outputs = [];
+        $.each( this.output_terminals, function( _, t ) {
+            if( t.connectors.length > 0 ) {
+                connected_outputs.push( t );
+            }
+        } );
+        return connected_outputs;
     },
-    enable_output_terminal : function( elements, name, type ) {
-        var node = this;
-        $(elements).each( function() {
-            var terminal_element = this;
-            var terminal = this.terminal = new OutputTerminal( this, type );
-            terminal.node = node;
-            terminal.name = name;
-            $(this).bind( "dragstart", function( e, d ) { 
-                $( d.available ).addClass( "input-terminal-active" );
-                // Save PJAs in the case of change datatype actions.
-                workflow.check_changes_in_active_form(); 
-                // Drag proxy div
-                var h = $( '<div class="drag-terminal" style="position: absolute;"></div>' )
-                    .appendTo( "#canvas-container" ).get(0);
-                // Terminal and connection to display noodle while dragging
-                h.terminal = new OutputTerminal( h );
-                var c = new Connector();
-                c.dragging = true;
-                c.connect( this.terminal, h.terminal );
-                return h;
-            }).bind( "drag", function ( e, d ) {
-                var onmove = function() {
-                    var po = $(d.proxy).offsetParent().offset(),
-                        x = d.offsetX - po.left,
-                        y = d.offsetY - po.top;
-                    $(d.proxy).css( { left: x, top: y } );
-                    d.proxy.terminal.redraw();
-                    // FIXME: global
-                    canvas_manager.update_viewport_overlay();
-                };
-                onmove();
-                $("#canvas-container").get(0).scroll_panel.test( e, onmove );
-            }).bind( "dragend", function ( e, d ) {
-                d.proxy.terminal.connectors[0].destroy();
-                $(d.proxy).remove();
-                $( d.available ).removeClass( "input-terminal-active" );
-                $("#canvas-container").get(0).scroll_panel.stop();
-            });
-            node.output_terminals[name] = terminal;
+    hasConnectedOutputTerminals: function() {
+        // return this.connectedOutputTerminals().length > 0; <- optimized this
+        var outputTerminals = this.output_terminals;
+        for( var outputName in outputTerminals ) {
+            if( outputTerminals[ outputName ].connectors.length > 0 ) {
+                return true;
+            }
+        }
+        return false;
+    },
+    connectedMappedInputTerminals: function() {
+        return this._connectedMappedTerminals( this.input_terminals );
+    },
+    hasConnectedMappedInputTerminals: function() {
+        // return this.connectedMappedInputTerminals().length > 0; <- optimized this
+        var inputTerminals = this.input_terminals;
+        for( var inputName in inputTerminals ) {
+            var inputTerminal = inputTerminals[ inputName ];
+            if( inputTerminal.connectors.length > 0 && inputTerminal.isMappedOver() ) {
+                return true;
+            }
+        }
+        return false;
+    },
+    _connectedMappedTerminals: function( all_terminals ) {
+        var mapped_outputs = [];
+        $.each( all_terminals, function( _, t ) {
+            var mapOver = t.mapOver();
+            if( mapOver.isCollection ) {
+                if( t.connectors.length > 0 ) {
+                    mapped_outputs.push( t );
+                }
+            }
         });
+        return mapped_outputs;
+    },
+    hasMappedOverInputTerminals: function() {
+        var found = false;
+        _.each( this.input_terminals, function( t ) {
+            var mapOver = t.mapOver();
+            if( mapOver.isCollection ) {
+                found = true;
+            }
+        } );
+        return found;
+    },
+    forceDisconnectOutputs: function() {
+        _.each( this.output_terminals, function( terminal ) {
+            terminal.disconnectAll();
+        } );
     },
     redraw : function () {
         $.each( this.input_terminals, function( _, t ) {
@@ -298,7 +732,6 @@ $.extend( Node.prototype, {
         $(element).removeClass( "toolForm-active" );
     },
     init_field_data : function ( data ) {
-        var f = this.element;
         if ( data.type ) {
             this.type = data.type;
         }
@@ -311,141 +744,62 @@ $.extend( Node.prototype, {
         this.post_job_actions = data.post_job_actions ? data.post_job_actions : {};
         this.workflow_outputs = data.workflow_outputs ? data.workflow_outputs : [];
 
-        if ( this.tool_errors ) {
-            f.addClass( "tool-node-error" );
-        } else {
-            f.removeClass( "tool-node-error" );
-        }
         var node = this;
-        var output_width = Math.max(150, f.width());
-        var b = f.find( ".toolFormBody" );
-        b.find( "div" ).remove();
-        var ibox = $("<div class='inputs'></div>").appendTo( b );
+        var nodeView = new NodeView({
+            el: this.element[ 0 ],
+            node: node,
+        });
+        node.nodeView = nodeView;
+
         $.each( data.data_inputs, function( i, input ) {
-            var t = node.new_input_terminal( input );
-            var ib = $("<div class='form-row dataRow input-data-row' name='" + input.name + "'>" + input.label + "</div>" );
-            ib.css({  position:'absolute',
-                        left: -1000,
-                        top: -1000,
-                        display:'none'});
-            $('body').append(ib);
-            output_width = Math.max(output_width, ib.outerWidth());
-            ib.css({ position:'',
-                       left:'',
-                       top:'',
-                       display:'' });
-            ib.remove();
-            ibox.append( ib.prepend( t ) );
+            nodeView.addDataInput( input );
         });
         if ( ( data.data_inputs.length > 0 ) && ( data.data_outputs.length > 0 ) ) {
-            b.append( $( "<div class='rule'></div>" ) );
+            nodeView.addRule();
         }
         $.each( data.data_outputs, function( i, output ) {
-            var t = $( "<div class='terminal output-terminal'></div>" );
-            node.enable_output_terminal( t, output.name, output.extensions );
-            var label = output.name;
-            if ( output.extensions.indexOf( 'input' ) < 0 ) {
-                label = label + " (" + output.extensions.join(", ") + ")";
-            }
-            var r = $("<div class='form-row dataRow'>" + label + "</div>" );
-            if (node.type == 'tool'){
-                var callout = $("<div class='callout "+label+"'></div>")
-                    .css( { display: 'none' } )
-                    .append(
-                        $("<div class='buttons'></div>").append(
-                            $("<img/>").attr('src', galaxy_config.root + 'static/images/fugue/asterisk-small-outline.png').click( function() {
-                                if ($.inArray(output.name, node.workflow_outputs) != -1){
-                                    node.workflow_outputs.splice($.inArray(output.name, node.workflow_outputs), 1);
-                                    callout.find('img').attr('src', galaxy_config.root + 'static/images/fugue/asterisk-small-outline.png');
-                                }else{
-                                    node.workflow_outputs.push(output.name);
-                                    callout.find('img').attr('src', galaxy_config.root + 'static/images/fugue/asterisk-small.png');
-                                }
-                                workflow.has_changes = true;
-                                canvas_manager.draw_overview();
-                            })))
-                    .tooltip({delay:500, title: "Mark dataset as a workflow output. All unmarked datasets will be hidden." });
-                callout.css({
-                        top: '50%',
-                        margin:'-8px 0px 0px 0px',
-                        right: 8
-                    });
-                callout.show();
-                r.append(callout);
-                if ($.inArray(output.name, node.workflow_outputs) === -1){
-                    callout.find('img').attr('src', galaxy_config.root + 'static/images/fugue/asterisk-small-outline.png');
-                }else{
-                    callout.find('img').attr('src', galaxy_config.root + 'static/images/fugue/asterisk-small.png');
-                }
-                r.hover(
-                    function(){
-                        callout.find('img').attr('src', galaxy_config.root + 'static/images/fugue/asterisk-small-yellow.png');
-                    },
-                    function(){
-                        if ($.inArray(output.name, node.workflow_outputs) === -1){
-                            callout.find('img').attr('src', galaxy_config.root + 'static/images/fugue/asterisk-small-outline.png');
-                        }else{
-                            callout.find('img').attr('src', galaxy_config.root + 'static/images/fugue/asterisk-small.png');
-                        }
-                    });
-            }
-            r.css({  position:'absolute',
-                        left: -1000,
-                        top: -1000,
-                        display:'none'});
-            $('body').append(r);
-            output_width = Math.max(output_width, r.outerWidth() + 17);
-            r.css({ position:'',
-                       left:'',
-                       top:'',
-                       display:'' });
-            r.detach();
-            b.append( r.append( t ) );
-        });
-        f.css( "width", Math.min(250, Math.max(f.width(), output_width )));
+            nodeView.addDataOutput( output );
+        } );
+        nodeView.render();
         workflow.node_changed( this );
     },
     update_field_data : function( data ) {
-        var el = $(this.element),
-            node = this;
+        var node = this;
+            nodeView = node.nodeView;
         this.tool_state = data.tool_state;
         this.form_html = data.form_html;
         this.tool_errors = data.tool_errors;
         this.annotation = data['annotation'];
-        var pja_in = $.parseJSON(data.post_job_actions);
-        this.post_job_actions = pja_in ? pja_in : {};
-        if ( this.tool_errors ) {
-                el.addClass( "tool-node-error" );
-        } else {
-                el.removeClass( "tool-node-error" );
+        if( "post_job_actions" in data ) {
+            // Won't be present in response for data inputs
+            var pja_in = $.parseJSON(data.post_job_actions);
+            this.post_job_actions = pja_in ? pja_in : {};
         }
+        node.nodeView.renderToolErrors();
         // Update input rows
-        var old_body = el.find( "div.inputs" );
-        var new_body = $("<div class='inputs'></div>");
-        var old = old_body.find( "div.input-data-row");
-        $.each( data.data_inputs, function( i, input ) {
-            var t = node.new_input_terminal( input );
-            // If already connected save old connection
-            old_body.find( "div[name='" + input.name + "']" ).each( function() {
-                $(this).find( ".input-terminal" ).each( function() {
-                    var c = this.terminal.connectors[0];
-                    if ( c ) {
-                        t[0].terminal.connectors[0] = c;
-                        c.handle2 = t[0].terminal;
-                    }
-                });
-                $(this).remove();
-            });
-            // Append to new body
-            new_body.append( $("<div class='form-row dataRow input-data-row' name='" + input.name + "'>" + input.label + "</div>" ).prepend( t ) );
+        var old_body = nodeView.$( "div.inputs" );
+        var new_body = nodeView.newInputsDiv();
+        var newTerminalViews = {};
+        _.each( data.data_inputs, function( input ) {
+            var terminalView = node.nodeView.addDataInput( input, new_body );
+            newTerminalViews[ input.name ] = terminalView;
         });
-        old_body.replaceWith( new_body );
         // Cleanup any leftover terminals
-        old_body.find( "div.input-data-row > .terminal" ).each( function() {
-            this.terminal.destroy();
-        });
+        _.each( _.difference( _.values( nodeView.terminalViews ), _.values( newTerminalViews ) ), function( unusedView ) {
+            unusedView.el.terminal.destroy();
+        } );
+        nodeView.terminalViews = newTerminalViews;
+        // In general workflow editor assumes tool outputs don't change in # or
+        // type (not really valid right?) but adding special logic here for
+        // data collection input parameters that can have their collection
+        // change.
+        if( data.data_outputs.length == 1 && "collection_type" in data.data_outputs[ 0 ] ) {
+            nodeView.updateDataOutput( data.data_outputs[ 0 ] );
+        }
+
+        old_body.replaceWith( new_body );
         // If active, reactivate with new form_html
-        this.changed();
+        this.markChanged();
         this.redraw();
     },
     error : function ( text ) {
@@ -456,7 +810,7 @@ $.extend( Node.prototype, {
         b.html( tmp );
         workflow.node_changed( this );
     },
-    changed: function() {
+    markChanged: function() {
         workflow.node_changed( this );
     }
 } );
@@ -841,7 +1195,7 @@ function round_up( x, n ) {
      
 function prebuild_node( type, title_text, tool_id ) {
     var f = $("<div class='toolForm toolFormInCanvas'></div>");
-    var node = new Node( f );
+    var node = new Node( { element: f } );
     node.type = type;
     if ( type == 'tool' ) {
         node.tool_id = tool_id;
@@ -893,6 +1247,18 @@ function prebuild_node( type, title_text, tool_id ) {
     return node;
 }
 
+function add_node( type, title_text, tool_id ) {
+    // Abstraction for use by galaxy.workflow.js to hide
+    // some editor details from workflow code and reduce duplication
+    // between add_node_for_tool and add_node_for_module.
+    var node = prebuild_node( type, title_text, tool_id );
+    workflow.add_node( node );
+    workflow.fit_canvas_to_nodes();
+    canvas_manager.draw_overview();
+    workflow.activate_node( node );    
+    return node;
+}
+
 
 var ext_to_type = null;
 var type_to_type = null;
@@ -907,6 +1273,446 @@ function populate_datatype_info( data ) {
     ext_to_type = data.ext_to_class_name;
     type_to_type = data.class_to_classes;
 }
+
+
+//////////////
+// START VIEWS
+//////////////
+
+
+var NodeView = Backbone.View.extend( {
+    initialize: function( options ){
+        this.node = options.node;
+        this.output_width = Math.max(150, this.$el.width());
+        this.tool_body = this.$el.find( ".toolFormBody" );
+        this.tool_body.find( "div" ).remove();
+        this.newInputsDiv().appendTo( this.tool_body );
+        this.terminalViews = {};
+        this.outputTerminlViews = {};
+    },
+
+    render : function() {
+        this.renderToolErrors();
+        this.$el.css( "width", Math.min(250, Math.max(this.$el.width(), this.output_width )));
+    },
+
+    renderToolErrors: function( ) {
+        if ( this.node.tool_errors ) {
+            this.$el.addClass( "tool-node-error" );
+        } else {
+            this.$el.removeClass( "tool-node-error" );
+        }
+    },
+
+    newInputsDiv: function() {
+        return $("<div class='inputs'></div>");
+    },
+
+    updateMaxWidth: function( newWidth ) {
+        this.output_width = Math.max( this.output_width, newWidth );
+    },
+
+    addRule: function() {
+        this.tool_body.append( $( "<div class='rule'></div>" ) );
+    },
+
+    addDataInput: function( input, body ) {
+        var skipResize = true;
+        if( ! body ) {
+            body = this.$( ".inputs" );
+            // initial addition to node - resize input to help calculate node
+            // width.
+            skipResize = false;
+        }
+        var terminalView = this.terminalViews[ input.name ];
+        if( ! terminalView ) {
+	        var terminalViewClass = ( input.input_type == "dataset_collection" ) ? InputCollectionTerminalView : InputTerminalView;
+            terminalView = new terminalViewClass( {
+                node: this.node,
+                input: input
+            } );             
+        } else {
+            var terminal = terminalView.el.terminal;
+            terminal.update( input );
+            terminal.destroyInvalidConnections();
+        }
+        this.terminalViews[ input.name ] = terminalView;
+        var terminalElement = terminalView.el;
+        var inputView = new DataInputView( {
+            terminalElement: terminalElement,
+            input: input, 
+            nodeView: this,
+            skipResize: skipResize
+        } );
+        var ib = inputView.$el;
+
+        // Append to new body
+        body.append( ib.prepend( terminalView.terminalElements() ) );
+        return terminalView;
+    },
+
+    addDataOutput: function( output ) {
+        var terminalViewClass = ( output.collection_type ) ? OutputCollectionTerminalView : OutputTerminalView;
+        var terminalView = new terminalViewClass( {
+            node: this.node,
+            output: output
+        } );
+        var outputView = new DataOutputView( {
+            "output": output,
+            "terminalElement": terminalView.el,
+            "nodeView": this,
+        } );
+        this.tool_body.append( outputView.$el.append( terminalView.terminalElements() ) );
+    },
+
+    updateDataOutput: function( output ) {
+        var outputTerminal = this.node.output_terminals[ output.name ];
+        outputTerminal.update( output );
+    }
+
+} );
+
+
+
+var DataInputView = Backbone.View.extend( {
+    className: "form-row dataRow input-data-row",
+
+    initialize: function( options ){
+        this.input = options.input;
+        this.nodeView = options.nodeView;
+        this.terminalElement = options.terminalElement;
+
+        this.$el.attr( "name", this.input.name )
+                .html( this.input.label );
+
+        if( ! options.skipResize ) {
+            this.$el.css({  position:'absolute',
+                            left: -1000,
+                            top: -1000,
+                            display:'none'});
+        $('body').append(this.el);
+            this.nodeView.updateMaxWidth( this.$el.outerWidth() );
+            this.$el.css({ position:'',
+                           left:'',
+                           top:'',
+                           display:'' });
+            this.$el.remove();
+        }
+    },
+
+} );
+
+
+
+var OutputCalloutView = Backbone.View.extend( {
+    tagName: "div",
+
+    initialize: function( options ) {
+        this.label = options.label;
+        this.node = options.node;
+        this.output = options.output;
+
+        var view = this;
+        this.$el
+            .attr( "class", 'callout '+this.label )
+            .css( { display: 'none' } )
+            .append(
+                $("<div class='buttons'></div>").append(
+                    $("<img/>").attr('src', galaxy_config.root + 'static/images/fugue/asterisk-small-outline.png').click( function() {
+                        if ($.inArray(view.output.name, view.node.workflow_outputs) != -1){
+                            view.node.workflow_outputs.splice($.inArray(view.output.name, view.node.workflow_outputs), 1);
+                            view.$('img').attr('src', galaxy_config.root + 'static/images/fugue/asterisk-small-outline.png');
+                        }else{
+                            view.node.workflow_outputs.push(view.output.name);
+                            view.$('img').attr('src', galaxy_config.root + 'static/images/fugue/asterisk-small.png');
+                        }
+                        workflow.has_changes = true;
+                        canvas_manager.draw_overview();
+                    })))
+            .tooltip({delay:500, title: "Mark dataset as a workflow output. All unmarked datasets will be hidden." });
+        
+        this.$el.css({
+                top: '50%',
+                margin:'-8px 0px 0px 0px',
+                right: 8
+            });
+        this.$el.show();
+        this.resetImage();
+    },
+
+    resetImage: function() {
+        if ($.inArray( this.output.name, this.node.workflow_outputs) === -1){
+            this.$('img').attr('src', galaxy_config.root + 'static/images/fugue/asterisk-small-outline.png');
+        } else{
+            this.$('img').attr('src', galaxy_config.root + 'static/images/fugue/asterisk-small.png');
+        }
+    },
+
+    hoverImage: function() {
+        this.$('img').attr('src', galaxy_config.root + 'static/images/fugue/asterisk-small-yellow.png');
+    }
+
+} );
+
+
+
+
+var DataOutputView = Backbone.View.extend( {
+    className: "form-row dataRow",
+
+    initialize: function( options ) {
+        this.output = options.output;
+        this.terminalElement = options.terminalElement;
+        this.nodeView = options.nodeView;
+
+        var output = this.output;
+        var label = output.name;
+        var node = this.nodeView.node;
+
+        var isInput = output.extensions.indexOf( 'input' ) >= 0 || output.extensions.indexOf( 'input_collection' ) >= 0;
+        if ( ! isInput ) {
+            label = label + " (" + output.extensions.join(", ") + ")";
+        }
+        this.$el.html( label )
+
+        if (node.type == 'tool'){
+            var calloutView = new OutputCalloutView( {
+                "label": label,
+                "output": output,
+                "node": node,
+            });
+            this.$el.append( calloutView.el );
+            this.$el.hover( function() { calloutView.hoverImage() }, function() { calloutView.resetImage() } );
+        }
+        this.$el.css({  position:'absolute',
+                        left: -1000,
+                        top: -1000,
+                        display:'none'});
+        $('body').append( this.el );
+        this.nodeView.updateMaxWidth( this.$el.outerWidth() + 17 );
+        this.$el.css({ position:'',
+                       left:'',
+                       top:'',
+                       display:'' })
+                .detach();
+    }
+
+} );
+
+
+var TerminalView = Backbone.View.extend( {
+
+    setupMappingView: function( terminal ) {
+        var terminalMapping = new this.terminalMappingClass( { terminal: terminal } );
+        var terminalMappingView = new this.terminalMappingViewClass( { model: terminalMapping } );
+        terminalMappingView.render();
+        terminal.terminalMappingView = terminalMappingView;
+        this.terminalMappingView = terminalMappingView;
+    },
+
+    terminalElements: function() {
+        if( this.terminalMappingView ) {
+            return [ this.terminalMappingView.el, this.el ];
+        } else{
+            return [ this.el ];
+        }
+    }
+
+} );
+
+
+var BaseInputTerminalView = TerminalView.extend( {
+    className: "terminal input-terminal",
+
+    initialize: function( options ) {
+        var node = options.node;
+        var input = options.input;
+        var name = input.name;
+        var terminal = this.terminalForInput( input );
+        if( ! terminal.multiple ) {
+            this.setupMappingView( terminal );
+        }
+        this.el.terminal = terminal;
+        terminal.node = node;
+        terminal.name = name;
+        node.input_terminals[name] = terminal;
+    },
+
+    events: {
+        "dropinit": "onDropInit",
+        "dropstart": "onDropStart",
+        "dropend": "onDropEnd",
+        "drop": "onDrop",
+        "hover": "onHover",
+    },
+
+    onDropInit: function( e, d ) {
+        var terminal = this.el.terminal;
+        // Accept a dragable if it is an output terminal and has a
+        // compatible type
+        return $(d.drag).hasClass( "output-terminal" ) && terminal.canAccept( d.drag.terminal );
+    },
+
+    onDropStart: function( e, d  ) {
+        if (d.proxy.terminal) { 
+            d.proxy.terminal.connectors[0].inner_color = "#BBFFBB";
+        }
+    },
+
+    onDropEnd: function ( e, d ) {
+        if (d.proxy.terminal) { 
+            d.proxy.terminal.connectors[0].inner_color = "#FFFFFF";
+        }
+    },
+
+    onDrop: function( e, d ) {
+        var terminal = this.el.terminal;        
+        new Connector( d.drag.terminal, terminal ).redraw();
+    },
+
+    onHover: function() {
+        var element = this.el;
+        var terminal = element.terminal;
+
+        // If connected, create a popup to allow disconnection
+        if ( terminal.connectors.length > 0 ) {
+            // Create callout
+            var t = $("<div class='callout'></div>")
+                .css( { display: 'none' } )
+                .appendTo( "body" )
+                .append(
+                    $("<div class='button'></div>").append(
+                        $("<div/>").addClass("fa-icon-button fa fa-times").click( function() {
+                            $.each( terminal.connectors, function( _, x ) {
+                                if (x) {
+                                    x.destroy();
+                                }
+                            });
+                            t.remove();
+                        })))
+                .bind( "mouseleave", function() {
+                    $(this).remove();
+                });
+            // Position it and show
+            t.css({
+                    top: $(element).offset().top - 2,
+                    left: $(element).offset().left - t.width(),
+                    'padding-right': $(element).width()
+                }).show();
+        }
+    },
+
+} );
+
+var InputTerminalView = BaseInputTerminalView.extend( {
+    terminalMappingClass: InputTerminalMapping,
+    terminalMappingViewClass: InputTerminalMappingView,
+
+    terminalForInput: function( input ) {
+        return new InputTerminal( { element: this.el, input: input } );
+    },
+
+} );
+
+var InputCollectionTerminalView = BaseInputTerminalView.extend( {
+    terminalMappingClass: InputCollectionTerminalMapping,
+    terminalMappingViewClass: InputCollectionTerminalMappingView,
+
+    terminalForInput: function( input ) {
+        return new InputCollectionTerminal( { element: this.el, input: input } );
+    },
+
+} );
+
+var BaseOutputTerminalView = TerminalView.extend( {
+    className: "terminal output-terminal",
+
+    initialize: function( options ) {
+        var node = options.node;
+        var output = options.output;
+
+        var name = output.name;
+        var terminal = this.terminalForOutput( output );
+        this.setupMappingView( terminal );
+        this.el.terminal = terminal;
+        terminal.node = node;
+        terminal.name = name;
+        node.output_terminals[name] = terminal;
+    },
+
+    events: {
+        "drag": "onDrag",
+        "dragstart": "onDragStart",
+        "dragend": "onDragEnd",
+    },
+
+    onDrag: function ( e, d ) {
+        var onmove = function() {
+            var po = $(d.proxy).offsetParent().offset(),
+                x = d.offsetX - po.left,
+                y = d.offsetY - po.top;
+            $(d.proxy).css( { left: x, top: y } );
+            d.proxy.terminal.redraw();
+            // FIXME: global
+            canvas_manager.update_viewport_overlay();
+        };
+        onmove();
+        $("#canvas-container").get(0).scroll_panel.test( e, onmove );
+    },
+
+    onDragStart: function( e, d ) { 
+        $( d.available ).addClass( "input-terminal-active" );
+        // Save PJAs in the case of change datatype actions.
+        workflow.check_changes_in_active_form(); 
+        // Drag proxy div
+        var h = $( '<div class="drag-terminal" style="position: absolute;"></div>' )
+            .appendTo( "#canvas-container" ).get(0);
+        // Terminal and connection to display noodle while dragging
+        h.terminal = new OutputTerminal( { element: h } );
+        var c = new Connector();
+        c.dragging = true;
+        c.connect( this.el.terminal, h.terminal );
+        return h;
+    },
+
+    onDragEnd: function ( e, d ) {
+        d.proxy.terminal.connectors[0].destroy();
+        $(d.proxy).remove();
+        $( d.available ).removeClass( "input-terminal-active" );
+        $("#canvas-container").get(0).scroll_panel.stop();
+    }
+
+} );
+
+var OutputTerminalView = BaseOutputTerminalView.extend( {
+    terminalMappingClass: OutputTerminalMapping,
+    terminalMappingViewClass: OutputTerminalMappingView,
+
+    terminalForOutput: function( output ) {
+        var type = output.extensions;
+        var terminal = new OutputTerminal( { element: this.el, datatypes: type } );
+        return terminal;
+    },
+
+} );
+
+var OutputCollectionTerminalView = BaseOutputTerminalView.extend( {
+    terminalMappingClass: OutputCollectionTerminalMapping,
+    terminalMappingViewClass: OutputCollectionTerminalMappingView,
+
+    terminalForOutput: function( output ) {
+        var collection_type = output.collection_type;
+        var terminal = new OutputCollectionTerminal( { element: this.el, collection_type: collection_type, datatypes: output.extensions } );
+        return terminal;
+    },
+
+} );
+
+
+////////////
+// END VIEWS
+////////////
+
 
 // FIXME: merge scroll panel into CanvasManager, clean up hardcoded stuff.
 

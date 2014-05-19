@@ -3,7 +3,6 @@ import logging
 import os
 import urllib
 import urllib2
-from galaxy import eggs
 from galaxy import util
 from galaxy import web
 from galaxy.util import json
@@ -17,14 +16,15 @@ from tool_shed.util import datatype_util
 from tool_shed.util import tool_dependency_util
 from tool_shed.util import tool_util
 from tool_shed.util import xml_util
-from tool_shed.galaxy_install.tool_dependencies.install_util import install_package
-from tool_shed.galaxy_install.tool_dependencies.install_util import set_environment
+
+from tool_shed.galaxy_install.install_manager import InstallManager
+from tool_shed.galaxy_install.tool_dependencies.recipe.recipe_manager import TagManager
 
 log = logging.getLogger( __name__ )
 
 def activate_repository( trans, repository ):
     """Activate an installed tool shed repository that has been marked as deactivated."""
-    repository_clone_url = suc.generate_clone_url_for_installed_repository( trans.app, repository )
+    repository_clone_url = common_util.generate_clone_url_for_installed_repository( trans.app, repository )
     shed_tool_conf, tool_path, relative_install_dir = suc.get_tool_panel_config_tool_path_install_dir( trans.app, repository )
     repository.deleted = False
     repository.status = trans.install_model.ToolShedRepository.installation_status.INSTALLED
@@ -90,7 +90,7 @@ def get_dependencies_for_repository( trans, tool_shed_url, repo_info_dict, inclu
         # Inspect the tool_dependencies dictionary to separate the installed and missing tool dependencies.
         # We don't add to installed_td and missing_td here because at this point they are empty.
         installed_td, missing_td = \
-            get_installed_and_missing_tool_dependencies_for_repository( trans, tool_shed_url, tool_dependencies )
+            get_installed_and_missing_tool_dependencies_for_repository( trans, tool_dependencies )
     # In cases where a repository dependency is required only for compiling a dependent repository's
     # tool dependency, the value of repository_dependencies will be an empty dictionary here.
     if repository_dependencies:
@@ -130,9 +130,7 @@ def get_dependencies_for_repository( trans, tool_shed_url, repo_info_dict, inclu
             if required_tool_dependencies:
                 # Discover and categorize all tool dependencies defined for this repository's repository dependencies.
                 required_installed_td, required_missing_td = \
-                    get_installed_and_missing_tool_dependencies_for_repository( trans,
-                                                                                tool_shed_url,
-                                                                                required_tool_dependencies )
+                    get_installed_and_missing_tool_dependencies_for_repository( trans, required_tool_dependencies )
                 if required_installed_td:
                     if not includes_tool_dependencies:
                         includes_tool_dependencies = True
@@ -189,7 +187,7 @@ def get_installed_and_missing_repository_dependencies( trans, repository ):
         installed_rd_tups = []
         missing_rd_tups = []
         for tsr in repository.repository_dependencies:
-            prior_installation_required = suc.set_prior_installation_required( repository, tsr )
+            prior_installation_required = suc.set_prior_installation_required( trans.app, repository, tsr )
             only_if_compiling_contained_td = suc.set_only_if_compiling_contained_td( repository, tsr )
             rd_tup = [ tsr.tool_shed,
                        tsr.name,
@@ -261,7 +259,7 @@ def get_installed_and_missing_repository_dependencies_for_new_or_updated_install
                 # that includes the correct repository owner which we get from the current rd_tup.  The current
                 # tuple looks like: ( description, repository_clone_url, changeset_revision, ctx_rev, repository_owner,
                 #                     repository_dependencies, installed_td )
-                tmp_clone_url = suc.generate_clone_url_from_repo_info_tup( rd_tup )
+                tmp_clone_url = common_util.generate_clone_url_from_repo_info_tup( trans, rd_tup )
                 tmp_repo_info_tuple = ( None, tmp_clone_url, changeset_revision, None, owner, None, None )
                 repository, installed_changeset_revision = suc.repository_was_previously_installed( trans,
                                                                                                     tool_shed,
@@ -280,7 +278,7 @@ def get_installed_and_missing_repository_dependencies_for_new_or_updated_install
                         if new_rd_tup not in installed_rd_tups:
                             installed_rd_tups.append( new_rd_tup )
                     else:
-                        # A repository dependency that is not installed will not be considered missing if it's value
+                        # A repository dependency that is not installed will not be considered missing if its value
                         # for only_if_compiling_contained_td is True  This is because this type of repository dependency
                         # will only be considered at the time that the specified tool dependency is being installed, and
                         # even then only if the compiled binary of the tool dependency could not be installed due to the
@@ -298,7 +296,7 @@ def get_installed_and_missing_repository_dependencies_for_new_or_updated_install
                                    None,
                                   'Never installed' ]
                     if not util.asbool( only_if_compiling_contained_td ):
-                        # A repository dependency that is not installed will not be considered missing if it's value for
+                        # A repository dependency that is not installed will not be considered missing if its value for
                         # only_if_compiling_contained_td is True - see above...
                         if new_rd_tup not in missing_rd_tups:
                             missing_rd_tups.append( new_rd_tup )
@@ -312,7 +310,7 @@ def get_installed_and_missing_repository_dependencies_for_new_or_updated_install
         missing_repository_dependencies[ 'description' ] = description
     return installed_repository_dependencies, missing_repository_dependencies
 
-def get_installed_and_missing_tool_dependencies_for_repository( trans, tool_shed_url, tool_dependencies_dict ):
+def get_installed_and_missing_tool_dependencies_for_repository( trans, tool_dependencies_dict ):
     """
     Return the lists of installed tool dependencies and missing tool dependencies for a set of repositories
     being installed into Galaxy.
@@ -351,9 +349,15 @@ def get_installed_and_missing_tool_dependencies_for_repository( trans, tool_shed
                     requirement_dict[ 'status' ] = tool_dependency_status
                     new_val.append( requirement_dict )
                     if tool_dependency_status in [ trans.install_model.ToolDependency.installation_status.INSTALLED ]:
-                        installed_tool_dependencies[ td_key ] = new_val
+                        if td_key in installed_tool_dependencies:
+                            installed_tool_dependencies[ td_key ].extend( new_val )
+                        else:
+                            installed_tool_dependencies[ td_key ] = new_val
                     else:
-                        missing_tool_dependencies[ td_key ] = new_val
+                        if td_key in missing_tool_dependencies:
+                            missing_tool_dependencies[ td_key ].extend( new_val )
+                        else:
+                            missing_tool_dependencies[ td_key ] = new_val
             else:
                 # The val dictionary looks something like this:
                 # {'repository_name': 'xx',
@@ -439,7 +443,10 @@ def get_required_repo_info_dicts( trans, tool_shed_url, repo_info_dicts ):
                     encoded_required_repository_tups.append( encoding_util.encoding_sep.join( required_repository_tup ) )
                 encoded_required_repository_str = encoding_util.encoding_sep2.join( encoded_required_repository_tups )
                 encoded_required_repository_str = encoding_util.tool_shed_encode( encoded_required_repository_str )
-                url = suc.url_join( tool_shed_url, '/repository/get_required_repo_info_dict' )
+                if trans.webapp.name == 'galaxy':
+                    # Handle secure / insecure Tool Shed URL protocol changes and port changes.
+                    tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( trans.app, tool_shed_url )
+                url = common_util.url_join( tool_shed_url, '/repository/get_required_repo_info_dict' )
                 request = urllib2.Request( url, data=urllib.urlencode( dict( encoded_str=encoded_required_repository_str ) ) )
                 response = urllib2.urlopen( request ).read()
                 if response:
@@ -463,113 +470,95 @@ def get_required_repo_info_dicts( trans, tool_shed_url, repo_info_dicts ):
                                     all_required_repo_info_dict[ k ] = v
                         if required_repo_info_dicts:
                             for required_repo_info_dict in required_repo_info_dicts:
-                                if required_repo_info_dict not in all_repo_info_dicts:
+                                # Each required_repo_info_dict has a single entry, and all_repo_info_dicts is a list
+                                # of dictionaries, each of which has a single entry.  We'll check keys here rather than
+                                # the entire dictionary because a dictionary entry in all_repo_info_dicts will include
+                                # lists of discovered repository dependencies, but these lists will be empty in the
+                                # required_repo_info_dict since dependency discovery has not yet been performed for these
+                                # dictionaries.
+                                required_repo_info_dict_key = required_repo_info_dict.keys()[ 0 ]
+                                all_repo_info_dicts_keys = [ d.keys()[ 0 ] for d in all_repo_info_dicts ]
+                                if required_repo_info_dict_key not in all_repo_info_dicts_keys:
                                     all_repo_info_dicts.append( required_repo_info_dict )
                     all_required_repo_info_dict[ 'all_repo_info_dicts' ] = all_repo_info_dicts
     return all_required_repo_info_dict
 
-def handle_tool_dependencies( app, tool_shed_repository, tool_dependencies_config, tool_dependencies, from_install_manager=False ):
+def install_specified_packages( app, tool_shed_repository, tool_dependencies_config, tool_dependencies, from_tool_migration_manager=False ):
     """
-    Install and build tool dependencies defined in the tool_dependencies_config.  This config's tag sets can currently refer to installation
-    methods in Galaxy's tool_dependencies module.  In the future, proprietary fabric scripts contained in the repository will be supported.
-    Future enhancements to handling tool dependencies may provide installation processes in addition to fabric based processes.  The dependencies
-    will be installed in:
-    ~/<app.config.tool_dependency_dir>/<package_name>/<package_version>/<repo_owner>/<repo_name>/<repo_installed_changeset_revision>
+    Follow the recipe in the received tool_dependencies_config to install specified packages for
+    repository tools.  The received list of tool_dependencies are the database records for those
+    dependencies defined in the tool_dependencies_config that are to be installed.  This list may
+    be a subset of the set of dependencies defined in the tool_dependencies_config.  This allows
+    for filtering out dependencies that have not been checked for installation on the 'Manage tool
+    dependencies' page for an installed Tool Shed repository.
     """
-    # The received list of tool_dependencies are the database records for those dependencies defined in the received tool_dependencies_config
-    # that should be installed.  This allows for filtering out dependencies that have not been checked for installation on the 'Manage tool
-    # dependencies' page for an installed tool shed repository.
     attr_tups_of_dependencies_for_install = [ ( td.name, td.version, td.type ) for td in tool_dependencies ]
-    context = app.install_model.context
-    installed_tool_dependencies = []
+    installed_packages = []
+    install_manager = InstallManager()
+    tag_manager = TagManager()
     # Parse the tool_dependencies.xml config.
     tree, error_message = xml_util.parse_xml( tool_dependencies_config )
     if tree is None:
-        return installed_tool_dependencies
+        log.debug( "The received tool_dependencies.xml file is likely invalid: %s" % str( error_message ) )
+        return installed_packages
     root = tree.getroot()
-    fabric_version_checked = False
     for elem in root:
-        if elem.tag == 'package':
-            # Only install the tool_dependency if it is not already installed and it is associated with a database record in the received
-            # tool_dependencies.
-            package_name = elem.get( 'name', None )
-            package_version = elem.get( 'version', None )
-            if package_name and package_version:
-                attr_tup = ( package_name, package_version, 'package' )
-                try:
-                    index = attr_tups_of_dependencies_for_install.index( attr_tup )
-                except Exception, e:
-                    index = None
-                if index is not None:
-                    tool_dependency = tool_dependencies[ index ]
-                    if tool_dependency.can_install:
-                        # The database record is currently in a state that allows us to install the package on the file system.
-                        log.debug( 'Attempting to install tool dependency package %s version %s.' % ( str( package_name ), str( package_version ) ) )
-                        try:
-                            dependencies_ignored = not app.toolbox.dependency_manager.uses_tool_shed_dependencies()
-                            if dependencies_ignored:
-                                log.debug( "Skipping installation of tool dependency package %s because tool shed dependency resolver not enabled." % \
-                                    str( package_name ) )
-                                # Tool dependency resolves have been configured and they do not include the tool shed. Do not install package.
-                                if app.toolbox.dependency_manager.find_dep( package_name, package_version, type='package') != INDETERMINATE_DEPENDENCY:
-                                    ## TODO: Do something here such as marking it installed or
-                                    ## configured externally.
-                                    pass
-                                tool_dependency = \
-                                    tool_dependency_util.set_tool_dependency_attributes( app,
-                                                                                         tool_dependency=tool_dependency,
-                                                                                         status=app.install_model.ToolDependency.installation_status.ERROR,
-                                                                                         error_message=None,
-                                                                                         remove_from_disk=False )
-                            else:
-                                tool_dependency = install_package( app, 
-                                                                   elem, 
-                                                                   tool_shed_repository, 
-                                                                   tool_dependencies=tool_dependencies, 
-                                                                   from_install_manager=from_install_manager )
-                        except Exception, e:
-                            error_message = "Error installing tool dependency package %s version %s: %s" % ( str( package_name ), str( package_version ), str( e ) )
-                            log.exception( error_message )
-                            if tool_dependency:
-                                # Since there was an installation error, update the tool dependency status to Error. The remove_installation_path option must
-                                # be left False here.
-                                tool_dependency = tool_dependency_util.handle_tool_dependency_installation_error( app, 
-                                                                                                                  tool_dependency, 
-                                                                                                                  error_message, 
-                                                                                                                  remove_installation_path=False )
-                        if tool_dependency and tool_dependency.status in [ app.install_model.ToolDependency.installation_status.INSTALLED,
-                                                                           app.install_model.ToolDependency.installation_status.ERROR ]:
-                            installed_tool_dependencies.append( tool_dependency )
-                            if app.config.manage_dependency_relationships:
-                                # Add the tool_dependency to the in-memory dictionaries in the installed_repository_manager.
-                                app.installed_repository_manager.handle_tool_dependency_install( tool_shed_repository, tool_dependency )
-        elif elem.tag == 'set_environment':
-            # <set_environment version="1.0">
-            #    <environment_variable name="R_SCRIPT_PATH"action="set_to">$REPOSITORY_INSTALL_DIR</environment_variable>
-            # </set_environment>
+        package_name = elem.get( 'name', None )
+        package_version = elem.get( 'version', None )
+        if package_name and package_version:
+            # elem is a package tag set.
+            attr_tup = ( package_name, package_version, 'package' )
             try:
-                tool_dependency = set_environment( app, elem, tool_shed_repository, attr_tups_of_dependencies_for_install )
+                index = attr_tups_of_dependencies_for_install.index( attr_tup )
             except Exception, e:
-                error_message = "Error setting environment for tool dependency: %s" % str( e )
-                log.debug( error_message )
-                if tool_dependency:
-                    # Since there was an installation error, update the tool dependency status to Error. The remove_installation_path option must
-                    # be left False here.
-                    tool_dependency = tool_dependency_util.handle_tool_dependency_installation_error( app, 
-                                                                                                      tool_dependency, 
-                                                                                                      error_message, 
-                                                                                                      remove_installation_path=False )
-            if tool_dependency and tool_dependency.status in [ app.install_model.ToolDependency.installation_status.INSTALLED,
-                                                               app.install_model.ToolDependency.installation_status.ERROR ]:
-                installed_tool_dependencies.append( tool_dependency )
-    return installed_tool_dependencies
+                index = None
+            if index is not None:
+                tool_dependency = tool_dependencies[ index ]
+                tool_dependency, proceed_with_install, action_elem_tuples = \
+                    tag_manager.process_tag_set( app,
+                                                 tool_shed_repository,
+                                                 tool_dependency,
+                                                 elem,
+                                                 package_name,
+                                                 package_version,
+                                                 from_tool_migration_manager=from_tool_migration_manager,
+                                                 tool_dependency_db_records=tool_dependencies )
+                if proceed_with_install:
+                    try:
+                        tool_dependency = install_manager.install_package( app, 
+                                                                           elem, 
+                                                                           tool_shed_repository, 
+                                                                           tool_dependencies=tool_dependencies, 
+                                                                           from_tool_migration_manager=from_tool_migration_manager )
+                    except Exception, e:
+                        error_message = "Error installing tool dependency package %s version %s: %s" % \
+                            ( str( package_name ), str( package_version ), str( e ) )
+                        log.exception( error_message )
+                        if tool_dependency:
+                            # Since there was an installation error, update the tool dependency status to Error. The
+                            # remove_installation_path option must be left False here.
+                            tool_dependency = \
+                                tool_dependency_util.handle_tool_dependency_installation_error( app, 
+                                                                                                tool_dependency, 
+                                                                                                error_message, 
+                                                                                                remove_installation_path=False )
+                    if tool_dependency and tool_dependency.status in [ app.install_model.ToolDependency.installation_status.INSTALLED,
+                                                                       app.install_model.ToolDependency.installation_status.ERROR ]:
+                        installed_packages.append( tool_dependency )
+                        if app.config.manage_dependency_relationships:
+                            # Add the tool_dependency to the in-memory dictionaries in the installed_repository_manager.
+                            app.installed_repository_manager.handle_tool_dependency_install( tool_shed_repository, tool_dependency )
+    return installed_packages
 
 def repository_dependency_needed_only_for_compiling_tool_dependency( repository, repository_dependency ):
     for rd_tup in repository.tuples_of_repository_dependencies_needed_for_compiling_td:
         tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = rd_tup
         # TODO: we may discover that we need to check more than just installed_changeset_revision and changeset_revision here, in which
         # case we'll need to contact the tool shed to get the list of all possible changeset_revisions.
-        if repository_dependency.tool_shed == tool_shed and \
+        cleaned_tool_shed = common_util.remove_protocol_and_port_from_tool_shed_url( tool_shed )
+        cleaned_repository_dependency_tool_shed = \
+            common_util.remove_protocol_and_port_from_tool_shed_url( str( repository_dependency.tool_shed ) )
+        if cleaned_repository_dependency_tool_shed == cleaned_tool_shed and \
             repository_dependency.name == name and \
             repository_dependency.owner == owner and \
             ( repository_dependency.installed_changeset_revision == changeset_revision or \

@@ -51,13 +51,6 @@
     <tool file="filters/wig_to_bigwig.xml" />
     <tool file="filters/bed_to_bigbed.xml" />
   </section>
-  <section id="fasta_manipulation" name="FASTA manipulation">
-    <tool file="fasta_tools/fasta_compute_length.xml" />
-    <tool file="fasta_tools/fasta_filter_by_length.xml" />
-    <tool file="fasta_tools/fasta_concatenate_by_species.xml" />
-    <tool file="fasta_tools/fasta_to_tabular.xml" />
-    <tool file="fasta_tools/tabular_to_fasta.xml" />
-  </section>
   <section id="filter" name="Filter and Sort">
     <tool file="stats/filtering.xml" />
     <tool file="filters/sorter.xml" />
@@ -97,9 +90,6 @@
     <tool file="filters/wiggle_to_simple.xml" />
     <tool file="stats/aggregate_binned_scores_in_intervals.xml" />
   </section>
-  <section id="bxops" name="Operate on Genomic Intervals">
-    <tool file="annotation_profiler/annotation_profiler.xml" />
-  </section>
   <section id="stats" name="Statistics">
     <tool file="stats/gsummary.xml" />
     <tool file="filters/uniq.xml" />
@@ -115,12 +105,6 @@
     <tool file="visualization/build_ucsc_custom_track.xml" />
     <tool file="maf/vcf_to_maf_customtrack.xml" />
     <tool file="mutation/visualize.xml" />
-  </section>
-  <section id="multVar" name="Multivariate Analysis">
-    <tool file="multivariate_stats/pca.xml" />
-    <tool file="multivariate_stats/cca.xml" />
-    <tool file="multivariate_stats/kpca.xml" />
-    <tool file="multivariate_stats/kcca.xml" />
   </section>
   <section id="hgv" name="Phenotype Association">
     <tool file="evolution/codingSnps.xml" />
@@ -141,8 +125,6 @@
   <section id="cshl_library_information" name="NGS: QC and manipulation">
     <label id="illumina" text="Illumina data" />
     <label id="454" text="Roche-454 data" />
-        <tool file="metag_tools/short_reads_figure_score.xml" />
-        <tool file="metag_tools/short_reads_trim_seq.xml" />
     <label id="solid" text="AB-SOLiD data" />
         <tool file="next_gen_conversion/solid2fastq.xml" />
         <tool file="solid_tools/solid_qual_stats.xml" />
@@ -153,8 +135,6 @@
   <section id="ngs_mapping" name="NGS: Mapping">
     <label id="illumina" text="Illumina" />
     <label id="roche_454" text="Roche-454" />
-    <tool file="metag_tools/megablast_wrapper.xml" />
-    <tool file="metag_tools/megablast_xml_parser.xml" />
     <label id="ab_solid" text="AB-SOLiD" />
   </section>
   <section id="samtools" name="NGS: SAM Tools">

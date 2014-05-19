@@ -1,6 +1,7 @@
 define([
-    "mvc/base-mvc"
-], function( baseMVC ){
+    "mvc/base-mvc",
+    "utils/localization"
+], function( baseMVC, _l ){
 //==============================================================================
 /** @class Model for a Galaxy user (including anonymous users).
  *  @name User

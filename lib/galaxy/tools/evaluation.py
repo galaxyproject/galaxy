@@ -8,6 +8,7 @@ from galaxy.util.template import fill_template
 from galaxy.tools.wrappers import (
     DatasetFilenameWrapper,
     DatasetListWrapper,
+    DatasetCollectionWrapper,
     LibraryDatasetValueWrapper,
     SelectToolParameterWrapper,
     InputValueWrapper,
@@ -15,11 +16,15 @@ from galaxy.tools.wrappers import (
 )
 from galaxy.tools.parameters.basic import (
     DataToolParameter,
+    DataCollectionToolParameter,
     LibraryDatasetToolParameter,
     SelectToolParameter,
 )
 from galaxy.tools.parameters.grouping import Conditional, Repeat
 from galaxy.jobs.datasets import dataset_path_rewrites
+
+import logging
+log = logging.getLogger( __name__ )
 
 
 class ToolEvaluator( object ):
@@ -137,8 +142,11 @@ class ToolEvaluator( object ):
 
         def wrap_input( input_values, input ):
             if isinstance( input, DataToolParameter ) and input.multiple:
+                dataset_instances = input_values[ input.name ]
+                if isinstance( dataset_instances, model.HistoryDatasetCollectionAssociation ):
+                    dataset_instances = dataset_instances.collection.dataset_instances[:]
                 input_values[ input.name ] = \
-                    DatasetListWrapper( input_values[ input.name ],
+                    DatasetListWrapper( dataset_instances,
                                         dataset_paths=input_dataset_paths,
                                         datatypes_registry=self.app.datatypes_registry,
                                         tool=self.tool,
@@ -188,10 +196,22 @@ class ToolEvaluator( object ):
                         wrapper_kwds[ "dataset_path" ] = input_dataset_paths[ real_path ]
                 input_values[ input.name ] = \
                     DatasetFilenameWrapper( dataset, **wrapper_kwds )
+            elif isinstance( input, DataCollectionToolParameter ):
+                dataset_collection = input_values[ input.name ]
+                wrapper_kwds = dict(
+                    datatypes_registry=self.app.datatypes_registry,
+                    dataset_paths=input_dataset_paths,
+                    tool=self,
+                    name=input.name
+                )
+                wrapper = DatasetCollectionWrapper(
+                    dataset_collection,
+                    **wrapper_kwds
+                )
+                input_values[ input.name ] = wrapper
             elif isinstance( input, SelectToolParameter ):
                 input_values[ input.name ] = SelectToolParameterWrapper(
                     input, input_values[ input.name ], self.app, other_values=param_dict, path_rewriter=self.unstructured_path_rewriter )
-
             elif isinstance( input, LibraryDatasetToolParameter ):
                 # TODO: Handle input rewrites in here? How to test LibraryDatasetToolParameters?
                 input_values[ input.name ] = LibraryDatasetValueWrapper(
@@ -207,6 +227,8 @@ class ToolEvaluator( object ):
             self.__walk_inputs( self.tool.inputs, param_dict, wrap_input )
 
     def __populate_input_dataset_wrappers(self, param_dict, input_datasets, input_dataset_paths):
+        # TODO: Update this method for dataset collections? Need to test. -John.
+
         ## FIXME: when self.check_values==True, input datasets are being wrapped
         ##        twice (above and below, creating 2 separate
         ##        DatasetFilenameWrapper objects - first is overwritten by
@@ -251,7 +273,10 @@ class ToolEvaluator( object ):
             if real_path in output_dataset_paths:
                 dataset_path = output_dataset_paths[ real_path ]
                 param_dict[name] = DatasetFilenameWrapper( hda, dataset_path=dataset_path )
-                open( dataset_path.false_path, 'w' ).close()
+                try:
+                    open( dataset_path.false_path, 'w' ).close()
+                except EnvironmentError:
+                    pass  # May well not exist - e.g. LWR.
             else:
                 param_dict[name] = DatasetFilenameWrapper( hda )
             # Provide access to a path to store additional files

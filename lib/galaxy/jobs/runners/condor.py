@@ -120,7 +120,6 @@ class CondorJobRunner( AsynchronousJobRunner ):
             return
 
         log.debug( "(%s) submitting file %s" % ( galaxy_id_tag, executable ) )
-        log.debug( "(%s) command is: %s" % ( galaxy_id_tag, command_line ) )
 
         external_job_id, message = condor_submit(submit_file)
         if external_job_id is None:

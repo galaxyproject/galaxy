@@ -23,8 +23,6 @@
         <param type="genome_region">genome_region</param>
         <param type="dbkey">dbkey</param>
     </params>
-    <!-- template_root and template are currently ignored for the 'built-in' visualizations -->
-    <template_root>webapps/galaxy/visualization/tracks</template_root>
     <template>browser.mako</template>
     <render_target>_top</render_target>
 </visualization>

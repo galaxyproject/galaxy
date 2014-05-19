@@ -14,6 +14,7 @@ eggs.require( 'mercurial' )
 
 import ConfigParser
 import galaxy.webapps.tool_shed.config as tool_shed_config
+from tool_shed.util import hg_util
 import tool_shed.util.shed_util_common as suc
 import logging
 import shutil
@@ -109,9 +110,9 @@ def check_and_update_repository_metadata( app, info_only=False, verbosity=1 ):
         if tool_dicts is not None:
             # Clone the repository up to the changeset revision we're checking.
             repo_dir = repository.repo_path( app )
-            repo = hg.repository( suc.get_configured_ui(), repo_dir )
+            repo = hg.repository( hg_util.get_configured_ui(), repo_dir )
             work_dir = tempfile.mkdtemp( prefix="tmp-toolshed-cafr"  )
-            cloned_ok, error_message = suc.clone_repository( repo_dir, work_dir, changeset_revision )
+            cloned_ok, error_message = hg_util.clone_repository( repo_dir, work_dir, changeset_revision )
             if cloned_ok:
                 # Iterate through all the directories in the cloned changeset revision and determine whether there's a
                 # directory named test-data. If this directory is not present update the metadata record for the changeset
@@ -368,7 +369,7 @@ def should_set_do_not_test_flag( app, repository, changeset_revision, testable_r
     """
     if not testable_revision:
         repo_dir = repository.repo_path( app )
-        repo = hg.repository( suc.get_configured_ui(), repo_dir )
+        repo = hg.repository( hg_util.get_configured_ui(), repo_dir )
         changeset_revisions = suc.get_ordered_metadata_changeset_revisions( repository, repo, downloadable=True )
         if len( changeset_revisions ) > 1:
             latest_downloadable_revision = changeset_revisions[ -1 ]

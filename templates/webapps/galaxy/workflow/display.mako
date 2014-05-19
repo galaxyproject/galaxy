@@ -3,6 +3,7 @@
 
 <%!
     from galaxy.tools.parameters import DataToolParameter, RuntimeValue
+    from galaxy.tools.parameters import DataCollectionToolParameter
     from galaxy.web import form_builder
 %>
 
@@ -41,7 +42,7 @@
     <div class="${cls}">
         <label>${param.get_label()}</label>
         <div>
-            %if isinstance( param, DataToolParameter ):
+            %if isinstance( param, DataToolParameter ) or isinstance( param, DataCollectionToolParameter ):
                 %if ( prefix + param.name ) in step.input_connections_by_name:
                     <%
                         conns = step.input_connections_by_name[ prefix + param.name ]
@@ -78,7 +79,7 @@
 
 <%def name="render_item( workflow, steps )">
     <%
-        # HACK: Rendering workflow steps requires that trans have a history; however, if it's  user's first visit to Galaxy is here, he won't have a history
+        # HACK: Rendering workflow steps requires that trans have a history; however, if its user's first visit to Galaxy is here, he won't have a history
         # and an error will occur. To prevent this error, make sure user has a history. 
         trans.get_history( create=True ) 
     %>

@@ -55,7 +55,7 @@ class TestInstallingComplexRepositoryDependencies( ShedTwillTestCase ):
                               commit_message='Uploaded tool_dependencies.xml.',
                               strings_displayed=[ 'This repository currently contains a single file named <b>tool_dependencies.xml</b>' ], 
                               strings_not_displayed=[] )
-            self.display_manage_repository_page( repository, strings_displayed=[ 'Tool dependencies', 'type should be set to' ] )
+            self.display_manage_repository_page( repository, strings_displayed=[ 'Tool dependencies', 'consider setting its type' ] )
 
     def test_0010_create_bwa_base_repository( self ):
         '''Create and populate bwa_base_0100.'''

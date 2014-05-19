@@ -37,6 +37,7 @@ class ObjectInvalid( Exception ):
 
 # Please keep the exceptions ordered by status code
 
+
 class ActionInputError( MessageException ):
     status_code = 400
     err_code = error_codes.USER_REQUEST_INVALID_PARAMETER
@@ -44,64 +45,94 @@ class ActionInputError( MessageException ):
     def __init__( self, err_msg, type="error" ):
         super( ActionInputError, self ).__init__( err_msg, type )
 
+
 class DuplicatedSlugException( MessageException ):
     status_code = 400
     err_code = error_codes.USER_SLUG_DUPLICATE
+
 
 class ObjectAttributeInvalidException( MessageException ):
     status_code = 400
     err_code = error_codes.USER_OBJECT_ATTRIBUTE_INVALID
 
+
 class ObjectAttributeMissingException( MessageException ):
     status_code = 400
     err_code = error_codes.USER_OBJECT_ATTRIBUTE_MISSING
+
 
 class MalformedId( MessageException ):
     status_code = 400
     err_code = error_codes.MALFORMED_ID
 
+
+class UnknownContentsType( MessageException ):
+    status_code = 400
+    err_code = error_codes.UNKNOWN_CONTENTS_TYPE
+
+
 class RequestParameterMissingException( MessageException ):
     status_code = 400
     err_code = error_codes.USER_REQUEST_MISSING_PARAMETER
 
+
+class ToolMetaParameterException( MessageException ):
+    status_code = 400
+    err_code = error_codes.USER_TOOL_META_PARAMETER_PROBLEM
+
+
 class RequestParameterInvalidException( MessageException ):
     status_code = 400
     err_code = error_codes.USER_REQUEST_INVALID_PARAMETER
+
 
 class AuthenticationRequired( MessageException ):
     status_code = 403
     #TODO: as 401 and send WWW-Authenticate: ???
     err_code = error_codes.USER_NO_API_KEY
 
+
 class ItemAccessibilityException( MessageException ):
     status_code = 403
     err_code = error_codes.USER_CANNOT_ACCESS_ITEM
+
 
 class ItemOwnershipException( MessageException ):
     status_code = 403
     err_code = error_codes.USER_DOES_NOT_OWN_ITEM
 
+
 class ConfigDoesNotAllowException( MessageException ):
     status_code = 403
     err_code = error_codes.CONFIG_DOES_NOT_ALLOW
+
+
+class InsufficientPermissionsException( MessageException ):
+    status_code = 403
+    err_code = error_codes.INSUFFICIENT_PERMISSIONS
+
 
 class ObjectNotFound( MessageException ):
     """ Accessed object was not found """
     status_code = 404
     err_code = error_codes.USER_OBJECT_NOT_FOUND
 
+
 class Conflict( MessageException ):
     status_code = 409
-    err_code = error_codes.CONFLICT   
+    err_code = error_codes.CONFLICT
+
 
 class InconsistentDatabase ( MessageException ):
     status_code = 500
-    err_code = error_codes.INCONSISTENT_DATABASE   
+    err_code = error_codes.INCONSISTENT_DATABASE
+
 
 class InternalServerError ( MessageException ):
     status_code = 500
-    err_code = error_codes.INTERNAL_SERVER_ERROR    
+    err_code = error_codes.INTERNAL_SERVER_ERROR
+
 
 class NotImplemented ( MessageException ):
     status_code = 501
-    err_code = error_codes.NOT_IMPLEMENTED    
+    err_code = error_codes.NOT_IMPLEMENTED

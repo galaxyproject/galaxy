@@ -1,8 +1,9 @@
 define([
     "mvc/dataset/hda-model",
     "mvc/dataset/hda-base",
-    "mvc/history/readonly-history-panel"
-], function( hdaModel, hdaBase, readonlyPanel ){
+    "mvc/history/readonly-history-panel",
+    "utils/localization"
+], function( hdaModel, hdaBase, readonlyPanel, _l ){
 /* =============================================================================
 TODO:
 
@@ -61,7 +62,7 @@ var AnnotatedHistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
         return $newRender;
     },
 
-    /** render the history's annotation as it's own field */
+    /** render the history's annotation as its own field */
     renderHistoryAnnotation : function(){
         var annotation = this.model.get( 'annotation' );
         if( !annotation ){ return null; }
@@ -87,7 +88,7 @@ var AnnotatedHistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
     /** attach an hdaView to the panel
      *  In this override, wrap the hdaView in a table row and cell, adding a 2nd cell for the hda annotation
      */
-    attachHdaView : function( hdaView, $whereTo ){
+    attachContentView : function( hdaView, $whereTo ){
         $whereTo = $whereTo || this.$el;
         // build a row around the dataset with the std hdaView in the first cell and the annotation in the next
         var stateClass = _.find( hdaView.el.classList, function( c ){ return ( /^state\-/ ).test( c ); }),

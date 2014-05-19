@@ -1,27 +1,13 @@
-try {
-    var utils = require( 'utils' ),
-        xpath = require( 'casper' ).selectXPath,
-        format = utils.format,
+var require = patchRequire( require ),
+    spaceghost = require( 'spaceghost' ).fromCasper( casper ),
+    utils = require( 'utils' ),
+    xpath = require( 'casper' ).selectXPath,
+    format = utils.format;
 
-        //...if there's a better way - please let me know, universe
-        scriptDir = require( 'system' ).args[3]
-            // remove the script filename
-            .replace( /[\w|\.|\-|_]*$/, '' )
-            // if given rel. path, prepend the curr dir
-            .replace( /^(?!\/)/, './' ),
-        spaceghost = require( scriptDir + 'spaceghost' ).create({
-            // script options here (can be overridden by CLI)
-            //verbose: true,
-            //logLevel: debug,
-            scriptDir: scriptDir
-        });
-
+spaceghost.test.begin( 'Testing logging in and logging out', 0, function suite( test ){
     spaceghost.start();
+    //console.debug( 'suiteResults: ' + test.suiteResults );
 
-} catch( error ){
-    console.debug( error );
-    phantom.exit( 1 );
-}
 
 // =================================================================== globals and helpers
 var email = spaceghost.user.getRandomEmail(),
@@ -86,7 +72,7 @@ spaceghost.each( badPasswords, function( self, badPassword ){
 // ------------------------------------------------------------------- test yoself
 // these versions are for conv. use in other tests, they should throw errors if used improperly
 spaceghost.then( function(){
-    this.assertStepsRaise( 'GalaxyError: LoginError', function(){
+    this.assertStepsRaise( 'LoginError', function(){
         this.then( function(){
             this.test.comment( 'testing (js) error thrown on bad email' );
             this.user.login( 'nihilist', '1234' );
@@ -95,7 +81,7 @@ spaceghost.then( function(){
 });
 
 spaceghost.then( function(){
-    this.assertStepsRaise( 'GalaxyError: LoginError', function(){
+    this.assertStepsRaise( 'LoginError', function(){
         this.then( function(){
             this.test.comment( 'testing (js) error thrown on bad password' );
             this.user.login( email, '1234' );
@@ -105,6 +91,5 @@ spaceghost.then( function(){
 /*
 */
 // ===================================================================
-spaceghost.run( function(){
-    this.test.done();
+spaceghost.run( function(){ test.done(); });
 });

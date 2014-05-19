@@ -8,6 +8,12 @@
     ${render_msg( message, status )}
 %endif
 
+%if error_messages:
+    %for error_message in error_messages:
+        ${ render_msg( error_message, 'error' ) }
+    %endfor
+%endif
+
 %if view_only:
     <p>Not implemented</p>
 %else:
@@ -15,7 +21,7 @@
 <table class="tabletip">
     <thead>
         <tr><th colspan="2" style="font-size: 120%;">
-            Data Manager: ${ data_manager.name | h } - ${ data_manager.description | h }
+            Data Manager: <a href="${ h.url_for( controller='tool_runner', action='index', tool_id=data_manager.tool.id ) }">${ data_manager.name | h }</a> - ${ data_manager.description | h } <a class="icon-btn" href="${ h.url_for( controller="tool_runner", action="rerun", job_id=trans.security.encode_id( job.id ) ) }" title="Rerun" data-placement="bottom"><span class="fa fa-refresh"></span></a>
         </th></tr>
     </thead>
     <tbody>
@@ -34,7 +40,7 @@
 <table class="tabletip">
     <thead>
         <tr><th colspan="2" style="font-size: 120%;">
-            Data Table: ${ table_name | h }
+            Data Table: <a href="${h.url_for( controller='data_manager', action='manage_data_table', table_name=table_name)}">${ table_name | h }</a>
         </th></tr>
     </thead>
     <% len_json_table = len( json_table ) %>

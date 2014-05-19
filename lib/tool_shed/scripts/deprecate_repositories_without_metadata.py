@@ -20,7 +20,7 @@ from time import strftime
 from optparse import OptionParser
 
 from galaxy.tools import parameters
-from tool_shed.util.shed_util_common import url_join
+from tool_shed.util.common_util import url_join
 import galaxy.webapps.tool_shed.config as tool_shed_config
 import galaxy.webapps.tool_shed.model.mapping
 import sqlalchemy as sa

@@ -2,8 +2,8 @@ from base.twilltestcase import *
 from base.test_db_util import *
 
 
-# TODO: Functional tests start failing at 070, fix or eliminate rest of tests.
 class TestLibraryFeatures( TwillTestCase ):
+
     def test_000_initiate_users( self ):
         """Ensuring all required user accounts exist"""
         self.logout()
@@ -34,6 +34,7 @@ class TestLibraryFeatures( TwillTestCase ):
         assert admin_user is not None, 'Problem retrieving user with email "test@bx.psu.edu" from the database'
         global admin_user_private_role
         admin_user_private_role = get_private_role( admin_user )
+
     def test_005_create_libraries( self ):
         """Testing creating libraries used in this script, then renaming one of them"""
         # Logged in as admin_user
@@ -68,10 +69,11 @@ class TestLibraryFeatures( TwillTestCase ):
         self.library_info( 'library_admin',
                             self.security.encode_id( library1.id ),
                             library1.name,
-                            new_name=name,
+                            new_name='library1',
                             new_description='library1 description',
                             new_synopsis='library1 synopsis' )
         refresh( library1 )
+
     def test_030_add_folder_to_library1( self ):
         """Testing adding a folder to a library1"""
         # logged in as admin_user
@@ -89,6 +91,7 @@ class TestLibraryFeatures( TwillTestCase ):
         self.browse_library( cntrller='library_admin',
                              library_id=self.security.encode_id( library1.id ),
                              strings_displayed=[ folder1.name, folder1.description ] )
+
     def test_035_add_subfolder_to_folder( self ):
         """Testing adding a folder to a folder"""
         # logged in as admin_user
@@ -105,6 +108,7 @@ class TestLibraryFeatures( TwillTestCase ):
         self.browse_library( cntrller='library_admin',
                              library_id=self.security.encode_id( library1.id ),
                              strings_displayed=[ subfolder1.name, subfolder1.description ] )
+
     def test_040_add_2nd_folder_to_library1( self ):
         """Testing adding a 2nd folder to a library1"""
         # logged in as admin_user
@@ -121,6 +125,7 @@ class TestLibraryFeatures( TwillTestCase ):
         self.browse_library( cntrller='library_admin',
                              library_id=self.security.encode_id( library1.id ),
                              strings_displayed=[ folder2.name, folder2.description ] )
+
     def test_045_add_public_dataset_to_folder2( self ):
         """Testing adding a public dataset to folder2"""
         # Logged in as admin_user
@@ -140,6 +145,7 @@ class TestLibraryFeatures( TwillTestCase ):
         self.browse_library( cntrller='library_admin',
                              library_id=self.security.encode_id( library1.id ),
                              strings_displayed=[ ldda2.name, ldda2.message, 'bed' ] )
+
     def test_050_add_2nd_public_dataset_to_folder2( self ):
         """Testing adding a 2nd public dataset folder2"""
         # Logged in as admin_user
@@ -159,6 +165,7 @@ class TestLibraryFeatures( TwillTestCase ):
         self.browse_library( cntrller='library_admin',
                              library_id=self.security.encode_id( library1.id ),
                              strings_displayed=[ ldda3.name, ldda3.message, 'bed' ] )
+
     def test_055_copy_dataset_from_history_to_subfolder( self ):
         """Testing copying a dataset from the current history to a subfolder"""
         # logged in as admin_user
@@ -179,6 +186,7 @@ class TestLibraryFeatures( TwillTestCase ):
         self.browse_library( cntrller='library_admin',
                              library_id=self.security.encode_id( library1.id ),
                              strings_displayed=[ ldda4.name, ldda4.message, 'bed' ] )
+
     def test_060_editing_dataset_attribute_info( self ):
         """Testing editing a library dataset's attribute information"""
         # logged in as admin_user
@@ -193,6 +201,7 @@ class TestLibraryFeatures( TwillTestCase ):
         self.browse_library( cntrller='library_admin',
                              library_id=self.security.encode_id( library1.id ),
                              strings_displayed=[ new_ldda_name, ldda4.message ] )
+
     def test_065_uploading_new_dataset_version( self ):
         """Testing uploading a new version of a library dataset"""
         # logged in as admin_user
@@ -227,6 +236,7 @@ class TestLibraryFeatures( TwillTestCase ):
         self.browse_library( cntrller='library_admin',
                              library_id=self.security.encode_id( library1.id ),
                              strings_not_displayed=[ ldda4.name, ldda4.message ] )
+
     def test_070_upload_directory_of_files_from_libraries_view( self ):
         """Testing uploading a directory of files to a root folder from the Data Libraries view"""
         # logged in as admin_user
@@ -269,6 +279,7 @@ class TestLibraryFeatures( TwillTestCase ):
                                      server_dir='run1',
                                      ldda_message=ldda_message,
                                      strings_displayed=[ 'Upload a directory of files', '<option>None</option>' ] )
+
     def test_075_download_archive_of_library_files( self ):
         """Testing downloading an archive of files from library1"""
         # logged in as regular_user3
@@ -292,6 +303,7 @@ class TestLibraryFeatures( TwillTestCase ):
                                                               format=format )
             self.check_archive_contents( archive, ( ldda1, ldda2 ) )
             os.remove( archive )
+
     def test_080_check_libraries_for_uploaded_directories_of_files( self ):
         """Testing the results of uploading directories of files to library1"""
         # We'll make sure the directories of files were uploaded in test_070... above.
@@ -306,6 +318,7 @@ class TestLibraryFeatures( TwillTestCase ):
         self.browse_library( 'library',
                              self.security.encode_id( library1.id ),
                              strings_displayed=[ 'fasta', ldda_message, '2.fasta' ] )
+
     def test_085_mark_ldda2_deleted( self ):
         """Testing marking ldda2 as deleted"""
         # Logged in as admin_user
@@ -317,6 +330,7 @@ class TestLibraryFeatures( TwillTestCase ):
         self.browse_library( cntrller='library_admin',
                              library_id=self.security.encode_id( library1.id ),
                              strings_not_displayed=[ ldda2.name, ldda2.message ] )
+
     def test_090_display_and_hide_deleted_ldda2( self ):
         """Testing displaying and hiding a deleted ldda2"""
         # Logged in as admin_user
@@ -327,6 +341,7 @@ class TestLibraryFeatures( TwillTestCase ):
         self.browse_library( 'library_admin',
                              self.security.encode_id( library1.id ),
                              strings_not_displayed=[ ldda2.name, ldda2.message ] )
+
     def test_095_mark_folder2_deleted( self ):
         """Testing marking folder2 as deleted"""
         # Logged in as admin_user
@@ -338,6 +353,7 @@ class TestLibraryFeatures( TwillTestCase ):
         self.browse_library( cntrller='library_admin',
                              library_id=self.security.encode_id( library1.id ),
                              strings_not_displayed=[ folder2.name ] )
+
     def test_100_mark_folder_undeleted( self ):
         """Testing marking a library folder as undeleted"""
         # Logged in as admin_user
@@ -352,6 +368,7 @@ class TestLibraryFeatures( TwillTestCase ):
                              library_id=self.security.encode_id( library1.id ),
                              strings_displayed=[ folder2.name ],
                              strings_not_displayed=[ ldda2.name ] )
+
     def test_105_mark_library_deleted( self ):
         """Testing marking a library as deleted"""
         # Logged in as admin_user
@@ -368,6 +385,7 @@ class TestLibraryFeatures( TwillTestCase ):
                                   item_type='library' )
         self.browse_libraries_admin( strings_not_displayed=[ library1.name ] )
         self.browse_libraries_admin( deleted=True, strings_displayed=[ library1.name ] )
+
     def test_110_mark_library_undeleted( self ):
         """Testing marking a library as undeleted"""
         # Logged in as admin_user
@@ -381,6 +399,7 @@ class TestLibraryFeatures( TwillTestCase ):
                              library_id=self.security.encode_id( library1.id ),
                              strings_displayed=[ library1.name ],
                              strings_not_displayed=[ folder2.name ] )
+
     def test_115_purge_library( self ):
         """Testing purging a library"""
         # Logged in as admin_user
@@ -394,6 +413,7 @@ class TestLibraryFeatures( TwillTestCase ):
         refresh( library1 )
         if not ( library1.deleted and library1.purged ):
             raise AssertionError( 'The library id %s named "%s" has not been marked as deleted and purged.' % ( str( library1.id ), library1.name ) )
+    
         def check_folder( library_folder ):
             for folder in library_folder.folders:
                 refresh( folder )
@@ -421,6 +441,7 @@ class TestLibraryFeatures( TwillTestCase ):
                     raise AssertionError( 'The library_dataset id %s named "%s" has not been marked as deleted.' % \
                                           ( str( library_dataset.id ), library_dataset.name ) )
         check_folder( library1.root_folder )
+
     def test_120_populate_public_library2( self ):
         """Testing library datasets within a library"""
         # Logged in as admin_user
@@ -500,6 +521,7 @@ class TestLibraryFeatures( TwillTestCase ):
         global ldda7
         ldda7 = get_latest_ldda_by_name( filename )
         assert ldda7 is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda7 from the database'
+
     def test_125_move_dataset_within_library2( self ):
         """Testing moving a dataset within library2"""
         # Logged in as admin_user
@@ -513,6 +535,7 @@ class TestLibraryFeatures( TwillTestCase ):
                                 strings_displayed=[ 'Move data library items',
                                                     '3.bed' ],
                                 strings_displayed_after_submit=[ '1 dataset moved to folder (Three) within data library (library2)' ] )
+
     def test_130_move_folder_to_another_library( self ):
         """Testing moving a folder to another library"""
         # Logged in as admin_user
@@ -536,6 +559,7 @@ class TestLibraryFeatures( TwillTestCase ):
         self.browse_library( cntrller='library_admin',
                              library_id=self.security.encode_id( library3.id ),
                              strings_displayed=[ folder5.name, folder5.description, ldda7.name ] )
+
     def test_135_upload_unsorted_bam_to_library_using_file_path_with_link_to_file( self ):
         """Test uploading 3unsorted.bam, using filesystem_paths option in combination with link_to_files"""
         filename = '3unsorted.bam'
@@ -555,6 +579,7 @@ class TestLibraryFeatures( TwillTestCase ):
                         folder_id=self.security.encode_id( library2.root_folder.id ),
                         ldda_id=self.security.encode_id( ldda8.id ),
                         strings_displayed=[ 'The uploaded files need grooming, so change your <b>Copy data into Galaxy?</b> selection to be' ] )
+
     def test_999_reset_data_for_later_test_runs( self ):
         """Reseting data to enable later test runs to pass"""
         # Logged in as admin_user

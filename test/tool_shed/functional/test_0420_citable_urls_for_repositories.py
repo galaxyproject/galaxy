@@ -104,7 +104,6 @@ class TestRepositoryCitableURLs( ShedTwillTestCase ):
         strings_displayed = [ '/repository/browse_repositories', encoded_user_id, 'operation=repositories_by_user' ]
         strings_displayed.append( encoded_user_id )
         strings_displayed_in_iframe = [ 'user1', 'filtering_0420', 'Galaxy filtering tool for test 0420' ]
-        strings_displayed_in_iframe.append( self.get_repository_tip( repository ) )
         self.load_citable_url( username='user1', 
                                repository_name=None, 
                                changeset_revision=None, 
@@ -208,7 +207,6 @@ class TestRepositoryCitableURLs( ShedTwillTestCase ):
         strings_displayed.extend( [ 'list+of+repositories+owned', 'does+not+include+one+named', '%21%21invalid%21%21', 'status=error' ] )
         strings_displayed_in_iframe = [ 'user1', 'filtering_0420' ]
         strings_displayed_in_iframe.append( 'Repositories Owned by user1' )
-        strings_displayed_in_iframe.append( tip_revision )
         self.load_citable_url( username='user1', 
                                repository_name='!!invalid!!', 
                                changeset_revision=None, 

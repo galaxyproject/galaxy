@@ -1,7 +1,7 @@
 import logging
 import os
 import tool_shed.util.shed_util_common as suc
-import tool_shed.util.metadata_util as metadata_util
+from tool_shed.util import hg_util
 from galaxy.web.form_builder import SelectField
 from galaxy.util.bunch import Bunch
 
@@ -96,9 +96,11 @@ def build_changeset_revision_select_field( trans, repository, selected_value=Non
         repository_metadata_revisions = repository.metadata_revisions
     for repository_metadata in repository_metadata_revisions:
         rev, label, changeset_revision = \
-            metadata_util.get_rev_label_changeset_revision_from_repository_metadata( trans,
-                                                                                     repository_metadata,
-                                                                                     repository=repository )
+            hg_util.get_rev_label_changeset_revision_from_repository_metadata( trans,
+                                                                               repository_metadata,
+                                                                               repository=repository,
+                                                                               include_date=True,
+                                                                               include_hash=False )
         changeset_tups.append( ( rev, label, changeset_revision ) )
         refresh_on_change_values.append( changeset_revision )
     # Sort options by the revision label.  Even though the downloadable_revisions query sorts by update_time,

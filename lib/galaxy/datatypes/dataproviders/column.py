@@ -19,7 +19,7 @@ log = logging.getLogger( __name__ )
 # ----------------------------------------------------------------------------- base classes
 class ColumnarDataProvider( line.RegexLineDataProvider ):
     """
-    Data provider that provide a list of columns from the lines of it's source.
+    Data provider that provide a list of columns from the lines of its source.
 
     Columns are returned in the order given in indeces, so this provider can
     re-arrange columns.
@@ -209,7 +209,7 @@ class ColumnarDataProvider( line.RegexLineDataProvider ):
 
 class FilteredByColumnDataProvider( ColumnarDataProvider ):
     """
-    Data provider that provide a list of columns from the lines of it's source
+    Data provider that provide a list of columns from the lines of its source
     _only_ if they pass a given filter function.
 
     e.g. column #3 is type int and > N

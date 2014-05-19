@@ -208,6 +208,75 @@ class GalaxyRBACAgent( RBACAgent ):
                 roles.add( role )
         return self.sort_by_attr( [ role for role in roles ], 'name' )
 
+    def get_valid_dataset_roles( self, trans, dataset, query, page, page_limit ):
+        """
+        This method retrieves the list of possible roles that user can select
+        in the dataset permissions form. Admins can select any role so the
+        results are paginated in order to save the bandwidth and to speed
+        things up.
+        Standard users can select their own private role, any  fo their
+        sharing roles and any public role (not private and not sharing).
+        """
+        roles = []
+        if query is not None:
+            query = query.replace( '_', '/_' ).replace( '%', '/%' ).replace( '/', '//' )
+            search_query = query + '%'
+        # Limit the query only to get the page needed
+        limit = page * page_limit
+
+        # Admins see it all
+        if trans.user_is_admin():
+            # Add all roles that fit the query
+            db_query = trans.sa_session.query( trans.app.model.Role ).filter( self.model.Role.table.c.deleted == False )
+            if query is not None:
+                db_query = db_query.filter( self.model.Role.table.c.name.like( search_query, escape='/' ) )
+            for role in ( db_query.order_by( self.model.Role.table.c.name ).limit( limit ) ):
+                roles.append( role )
+            # Take last page of the selection
+            roles = roles[ ( -page_limit ): ]
+
+        # Non-admins see the list of relevant roles
+        else:
+            if self.dataset_is_public( dataset ):
+                # Add the current user's private role
+                roles.append( self.get_private_user_role( trans.user ) )
+                # Add the current user's sharing roles
+                for role in self.get_sharing_roles( trans.user ):
+                    roles.append( role )
+                # Add all remaining non-private, non-sharing roles
+                for role in trans.sa_session.query( trans.app.model.Role ) \
+                                            .filter( and_( self.model.Role.table.c.deleted == False,
+                                                           self.model.Role.table.c.type != self.model.Role.types.PRIVATE,
+                                                           self.model.Role.table.c.type != self.model.Role.types.SHARING ) ) \
+                                            .order_by( self.model.Role.table.c.name ):
+                    roles.append( role )
+
+            else:
+                # If item has roles associated with the access permission, we need to start with them.
+                access_roles = dataset.get_access_roles( trans )
+                for role in access_roles:
+                    if trans.user_is_admin() or self.ok_to_display( trans.user, role ):
+                        roles.append( role )
+                        # Each role potentially has users.  We need to find all roles that each of those users have.
+                        for ura in role.users:
+                            user = ura.user
+                            for ura2 in user.roles:
+                                if trans.user_is_admin() or self.ok_to_display( trans.user, ura2.role ):
+                                    roles.append( ura2.role )
+                        # Each role also potentially has groups which, in turn, have members ( users ).  We need to
+                        # find all roles that each group's members have.
+                        for gra in role.groups:
+                            group = gra.group
+                            for uga in group.users:
+                                user = uga.user
+                                for ura in user.roles:
+                                    if trans.user_is_admin() or self.ok_to_display( trans.user, ura.role ):
+                                        roles.append( ura.role )
+
+        # Omit duplicated roles by converting to set
+        return_roles = set( roles )
+        return self.sort_by_attr( [ role for role in return_roles ], 'name' )
+
     def get_legitimate_roles( self, trans, item, cntrller ):
         """
         Return a sorted list of legitimate roles that can be associated with a permission on
@@ -563,6 +632,8 @@ class GalaxyRBACAgent( RBACAgent ):
             return self.can_access_library( roles, item.folder.parent_library ) and self.can_access_dataset( roles, item.library_dataset_dataset_association.dataset )
         elif type( item ) == self.model.LibraryDatasetDatasetAssociation:
             return self.can_access_library( roles, item.library_dataset.folder.parent_library ) and self.can_access_dataset( roles, item.dataset )
+        elif type( item ) == self.model.LibraryDatasetCollectionAssociation:
+            return self.can_access_library( roles, item.folder.parent_library )
         else:
             log.warning( 'Unknown library item type: %s' % type( item ) )
             return False
@@ -924,6 +995,10 @@ class GalaxyRBACAgent( RBACAgent ):
         # A library is considered public if there are no "access" actions associated with it.
         return self.permitted_actions.LIBRARY_ACCESS.action not in [ a.action for a in library.actions ]
 
+    def library_is_unrestricted( self, library ):
+        # A library is considered unrestricted if there are no "access" actions associated with it.
+        return self.permitted_actions.LIBRARY_ACCESS.action not in [ a.action for a in library.actions ]
+
     def make_library_public( self, library, contents=False ):
         flush_needed = False
         if contents:
@@ -947,6 +1022,11 @@ class GalaxyRBACAgent( RBACAgent ):
                 return False
         return True
 
+    def folder_is_unrestricted( self, folder ):
+        # TODO implement folder restrictions
+        # for now all folders are _visible_ but the restricted datasets within are not visible
+        return True
+
     def make_folder_public( self, folder ):
         # Make all of the contents (include deleted contents, but not purged contents) of folder public
         for sub_folder in folder.folders:
@@ -958,10 +1038,36 @@ class GalaxyRBACAgent( RBACAgent ):
                 self.make_dataset_public( dataset )
 
     def dataset_is_public( self, dataset ):
-        # A dataset is considered public if there are no "access" actions associated with it.  Any
-        # other actions ( 'manage permissions', 'edit metadata' ) are irrelevant.
-        # SM: Accessing dataset.actions will cause a query to be emitted.
+        """
+        A dataset is considered public if there are no "access" actions
+        associated with it.  Any other actions ( 'manage permissions',
+        'edit metadata' ) are irrelevant. Accessing dataset.actions
+        will cause a query to be emitted.
+        """
         return self.permitted_actions.DATASET_ACCESS.action not in [ a.action for a in dataset.actions ]
+
+    def dataset_is_unrestricted( self, trans, dataset):
+        """
+        Different implementation of the method above with signature:
+        def dataset_is_public( self, dataset )
+        """
+        return len( dataset.library_dataset_dataset_association.get_access_roles( trans ) ) == 0
+
+    def dataset_is_private_to_user( self, trans, dataset ):
+        """
+        If the LibraryDataset object has exactly one access role and that is
+        the current user's private role then we consider the dataset private.
+        """
+        private_role = self.get_private_user_role( trans.user )
+        access_roles = dataset.library_dataset_dataset_association.get_access_roles( trans )
+
+        if len(access_roles) != 1:
+            return False
+        else:
+            if access_roles[0].id == private_role.id:
+                return True
+            else:
+                return False
 
     def datasets_are_public( self, trans, datasets ):
         '''

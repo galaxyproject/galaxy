@@ -2,8 +2,9 @@ define([
     "mvc/dataset/hda-model",
     "mvc/dataset/hda-base",
     "mvc/tags",
-    "mvc/annotations"
-], function( hdaModel, hdaBase, tagsMod, annotationsMod ){
+    "mvc/annotations",
+    "utils/localization"
+], function( hdaModel, hdaBase, tagsMod, annotationsMod, _l ){
 //==============================================================================
 /** @class Editing view for HistoryDatasetAssociation.
  *  @name HDAEditView
@@ -35,6 +36,9 @@ var HDAEditView = hdaBase.HDABaseView.extend(
             this._render_rerunButton
         ];
 
+        /** allow user purge of dataset files? */
+        this.purgeAllowed = attributes.purgeAllowed || false;
+
         //TODO: move to HiddenUntilActivatedViewMixin
         /** should the tags editor be shown or hidden initially? */
         this.tagsEditorShown        = attributes.tagsEditorShown || false;
@@ -64,8 +68,7 @@ var HDAEditView = hdaBase.HDABaseView.extend(
     _render_editButton : function(){
         // don't show edit while uploading, in-accessible
         // DO show if in error (ala previous history panel)
-        if( ( this.model.get( 'state' ) === hdaModel.HistoryDatasetAssociation.STATES.NEW )
-        ||  ( this.model.get( 'state' ) === hdaModel.HistoryDatasetAssociation.STATES.DISCARDED )
+        if( ( this.model.get( 'state' ) === hdaModel.HistoryDatasetAssociation.STATES.DISCARDED )
         ||  ( this.model.get( 'state' ) === hdaModel.HistoryDatasetAssociation.STATES.NOT_VIEWABLE )
         ||  ( !this.model.get( 'accessible' ) ) ){
             return null;
@@ -93,6 +96,11 @@ var HDAEditView = hdaBase.HDABaseView.extend(
         } else if( this.model.get( 'state' ) === hdaModel.HistoryDatasetAssociation.STATES.UPLOAD ){
             editBtnData.disabled = true;
             editBtnData.title = _l( 'This dataset must finish uploading before it can be edited' );
+
+        // disable if new
+        } else if( this.model.get( 'state' ) === hdaModel.HistoryDatasetAssociation.STATES.NEW ){
+            editBtnData.disabled = true;
+            editBtnData.title = _l( 'This dataset is not yet editable' );
         }
         editBtnData.faIcon = 'fa-pencil';
         return faIconButton( editBtnData );
@@ -103,8 +111,7 @@ var HDAEditView = hdaBase.HDABaseView.extend(
      */
     _render_deleteButton : function(){
         // don't show delete if...
-        if( ( this.model.get( 'state' ) === hdaModel.HistoryDatasetAssociation.STATES.NEW )
-        ||  ( this.model.get( 'state' ) === hdaModel.HistoryDatasetAssociation.STATES.NOT_VIEWABLE )
+        if( ( this.model.get( 'state' ) === hdaModel.HistoryDatasetAssociation.STATES.NOT_VIEWABLE )
         ||  ( !this.model.get( 'accessible' ) ) ){
             return null;
         }
@@ -219,7 +226,7 @@ var HDAEditView = hdaBase.HDABaseView.extend(
 
         // No need for popup menu because there's a single visualization.
         if( visualizations.length === 1 ){
-            $icon.attr( 'data-original-title', _l( 'Visualize in ' ) + _l( titleCase( visualizations[0] ) ) );
+            $icon.attr( 'data-original-title', _l( 'Visualize in' ) + ' ' + _l( titleCase( visualizations[0] ) ) );
             $icon.click( create_viz_action( visualizations[0] ) );
 
         // >1: Populate menu dict with visualization fns, make the popupmenu
@@ -249,7 +256,7 @@ var HDAEditView = hdaBase.HDABaseView.extend(
         // No need for popup menu because there's a single visualization.
         if( visualizations.length === 1 ) {
             var onlyVisualization = visualizations[0];
-            $icon.attr( 'data-original-title', _l( 'Visualize in ' ) + onlyVisualization.html );
+            $icon.attr( 'data-original-title', _l( 'Visualize in' ) + ' ' + onlyVisualization.html );
             $icon.attr( 'href', onlyVisualization.href );
 
         // >1: Populate menu dict with visualization fns, make the popupmenu
@@ -280,13 +287,25 @@ var HDAEditView = hdaBase.HDABaseView.extend(
     _buildNewRender : function(){
         var $newRender = hdaBase.HDABaseView.prototype._buildNewRender.call( this );
 
-        //TODO: this won't localize easily
-        $newRender.find( '.dataset-deleted-msg' ).append(
-            _l( ' Click <a href="javascript:void(0);" class="dataset-undelete">here</a> to undelete it' +
-            ' or <a href="javascript:void(0);" class="dataset-purge">here</a> to immediately remove it from disk' ));
+//TODO: this won't localize easily
+        var br = '<br />', p = '.',
+            link = function( t, c ){
+                return [ '<a href="javascript:void(0)" class="', c, '">', t, '</a>' ].join( '' );
+            };
 
-        $newRender.find( '.dataset-hidden-msg' ).append(
-            _l( ' Click <a href="javascript:void(0);" class="dataset-unhide">here</a> to unhide it' ));
+        $newRender.find( '.dataset-deleted-msg' ).append([
+            br, link( _l( 'Undelete it' ), 'dataset-undelete' ), p
+        ].join( '' ));
+
+        if( this.purgeAllowed ){
+            $newRender.find( '.dataset-deleted-msg' ).append([
+                br, link( _l( 'Permanently remove it from disk' ), 'dataset-purge' ), p
+            ].join( '' ));
+        }
+
+        $newRender.find( '.dataset-hidden-msg' ).append([
+            br, link( _l( 'Unhide it' ), 'dataset-unhide' ), p
+        ].join( '' ));
 
         return $newRender;
     },

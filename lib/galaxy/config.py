@@ -4,14 +4,19 @@ Universe configuration builder.
 # absolute_import needed for tool_shed package.
 from __future__ import absolute_import
 
-import sys, os, tempfile, re
-import logging, logging.config
+import os
+import re
+import sys
+import tempfile
+import logging
+import logging.config
 import ConfigParser
 from datetime import timedelta
 from galaxy.web.formatting import expand_pretty_datetime_format
 from galaxy.util import string_as_bool
 from galaxy.util import listify
 from galaxy.util import parse_xml
+from galaxy.util.dbkeys import GenomeBuilds
 from galaxy import eggs
 import pkg_resources
 
@@ -23,11 +28,14 @@ def resolve_path( path, root ):
         path = os.path.join( root, path )
     return path
 
+
 class ConfigurationError( Exception ):
     pass
 
+
 class Configuration( object ):
     deprecated_options = ( 'database_file', )
+
     def __init__( self, **kwargs ):
         self.config_dict = kwargs
         self.root = kwargs.get( 'root_dir', '.' )
@@ -87,17 +95,22 @@ class Configuration( object ):
         self.user_section_filters = listify( kwargs.get( "user_tool_section_filters", [] ), do_strip=True )
 
         self.tool_configs = [ resolve_path( p, self.root ) for p in listify( tcf ) ]
+        # Check for tools defined in the above non-shed tool configs (i.e., tool_conf.xml) tht have
+        # been migrated from the Galaxy code distribution to the Tool Shed.
+        self.check_migrate_tools = string_as_bool( kwargs.get( 'check_migrate_tools', True ) )
         self.shed_tool_data_path = kwargs.get( "shed_tool_data_path", None )
         if self.shed_tool_data_path:
             self.shed_tool_data_path = resolve_path( self.shed_tool_data_path, self.root )
         else:
             self.shed_tool_data_path = self.tool_data_path
-        self.tool_data_table_config_path = resolve_path( kwargs.get( 'tool_data_table_config_path', 'tool_data_table_conf.xml' ), self.root )
+        self.tool_data_table_config_path = [ resolve_path( x, self.root ) for x in kwargs.get( 'tool_data_table_config_path', 'tool_data_table_conf.xml' ).split( ',' ) ]
         self.shed_tool_data_table_config = resolve_path( kwargs.get( 'shed_tool_data_table_config', 'shed_tool_data_table_conf.xml' ), self.root )
         self.enable_tool_shed_check = string_as_bool( kwargs.get( 'enable_tool_shed_check', False ) )
         self.manage_dependency_relationships = string_as_bool( kwargs.get( 'manage_dependency_relationships', False ) )
         self.running_functional_tests = string_as_bool( kwargs.get( 'running_functional_tests', False ) )
         self.hours_between_check = kwargs.get( 'hours_between_check', 12 )
+        if isinstance( self.hours_between_check, basestring ):
+            self.hours_between_check = float( self.hours_between_check )
         try:
             if isinstance( self.hours_between_check, int ):
                 if self.hours_between_check < 1 or self.hours_between_check > 24:
@@ -137,6 +150,7 @@ class Configuration( object ):
         self.template_path = resolve_path( kwargs.get( "template_path", "templates" ), self.root )
         self.template_cache = resolve_path( kwargs.get( "template_cache_path", "database/compiled_templates" ), self.root )
         self.dependency_resolvers_config_file = resolve_path( kwargs.get( 'dependency_resolvers_config_file', 'dependency_resolvers_conf.xml' ), self.root )
+        self.job_metrics_config_file = resolve_path( kwargs.get( 'job_metrics_config_file', 'job_metrics_conf.xml' ), self.root )
         self.job_config_file = resolve_path( kwargs.get( 'job_config_file', 'job_conf.xml' ), self.root )
         self.local_job_queue_workers = int( kwargs.get( "local_job_queue_workers", "5" ) )
         self.cluster_job_queue_workers = int( kwargs.get( "cluster_job_queue_workers", "3" ) )
@@ -217,7 +231,7 @@ class Configuration( object ):
         self.message_box_visible = kwargs.get( 'message_box_visible', False )
         self.message_box_content = kwargs.get( 'message_box_content', None )
         self.message_box_class = kwargs.get( 'message_box_class', 'info' )
-        self.support_url = kwargs.get( 'support_url', 'http://wiki.g2.bx.psu.edu/Support' )
+        self.support_url = kwargs.get( 'support_url', 'https://wiki.galaxyproject.org/Support' )
         self.wiki_url = kwargs.get( 'wiki_url', 'http://wiki.galaxyproject.org/' )
         self.blog_url = kwargs.get( 'blog_url', None )
         self.screencasts_url = kwargs.get( 'screencasts_url', None )
@@ -329,6 +343,8 @@ class Configuration( object ):
         self.biostar_url = kwargs.get( 'biostar_url', None )
         self.biostar_key_name = kwargs.get( 'biostar_key_name', None )
         self.biostar_key = kwargs.get( 'biostar_key', None )
+        self.biostar_enable_bug_reports = string_as_bool( kwargs.get( 'biostar_enable_bug_reports', True ) )
+        self.biostar_never_authenticate = string_as_bool( kwargs.get( 'biostar_never_authenticate', False ) )
         self.pretty_datetime_format = expand_pretty_datetime_format( kwargs.get( 'pretty_datetime_format', '$locale (UTC)' ) )
         self.master_api_key = kwargs.get( 'master_api_key', None )
         if self.master_api_key == "changethis":  # default in sample config file
@@ -394,13 +410,26 @@ class Configuration( object ):
             return rval
         except ConfigParser.NoSectionError:
             return {}
+
     def get( self, key, default ):
         return self.config_dict.get( key, default )
+
     def get_bool( self, key, default ):
         if key in self.config_dict:
             return string_as_bool( self.config_dict[key] )
         else:
             return default
+
+    def ensure_tempdir( self ):
+        self._ensure_directory( self.new_file_path )
+
+    def _ensure_directory( self, path ):
+        if path not in [ None, False ] and not os.path.isdir( path ):
+            try:
+                os.makedirs( path )
+            except Exception, e:
+                raise ConfigurationError( "Unable to create missing directory: %s\n%s" % ( path, e ) )
+
     def check( self ):
         paths_to_check = [ self.root, self.tool_path, self.tool_data_path, self.template_path ]
         # Check that required directories exist
@@ -424,11 +453,7 @@ class Configuration( object ):
                     self.whoosh_index_dir, \
                     self.object_store_cache_path, \
                     os.path.join( self.tool_data_path, 'shared', 'jars' ):
-            if path not in [ None, False ] and not os.path.isdir( path ):
-                try:
-                    os.makedirs( path )
-                except Exception, e:
-                    raise ConfigurationError( "Unable to create missing directory: %s\n%s" % ( path, e ) )
+            self._ensure_directory( path )
         # Check that required files exist
         tool_configs = self.tool_configs
         if self.migrated_tools_config not in tool_configs:
@@ -452,6 +477,11 @@ class Configuration( object ):
         """
         admin_users = [ x.strip() for x in self.get( "admin_users", "" ).split( "," ) ]
         return ( user is not None and user.email in admin_users )
+
+    def resolve_path( self, path ):
+        """ Resolve a path relative to Galaxy's root.
+        """
+        return resolve_path( path, self.root )
 
 def get_database_engine_options( kwargs, model_prefix='' ):
     """
@@ -479,7 +509,6 @@ def get_database_engine_options( kwargs, model_prefix='' ):
                 value = conversions[key](value)
             rval[ key  ] = value
     return rval
-
 
 def configure_logging( config ):
     """
@@ -525,6 +554,9 @@ def configure_logging( config ):
 class ConfiguresGalaxyMixin:
     """ Shared code for configuring Galaxy-like app objects.
     """
+
+    def _configure_genome_builds( self, data_table_name="__dbkeys__", load_old_style=True ):
+        self.genome_builds = GenomeBuilds( self, data_table_name=data_table_name, load_old_style=load_old_style )
 
     def _configure_toolbox( self ):
         # Initialize the tools, making sure the list of tool configs includes the reserved migrated_tools_conf.xml file.

@@ -20,7 +20,8 @@ SUBMIT_PARAM_PREFIX = "submit_"
 
 def submission_params(prefix=SUBMIT_PARAM_PREFIX, **kwds):
     submission_params = {}
-    for key, value in kwds.iteritems():
+    for key in kwds:
+        value = kwds[key]
         key = key.lower()
         if key.startswith(prefix):
             condor_key = key[len(prefix):]

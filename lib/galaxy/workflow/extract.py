@@ -5,6 +5,7 @@ from galaxy.util.odict import odict
 from galaxy import model
 from galaxy.tools.parameters.basic import (
     DataToolParameter,
+    DataCollectionToolParameter,
     DrillDownSelectToolParameter,
     SelectToolParameter,
     UnvalidatedValue
@@ -18,11 +19,14 @@ from .steps import (
     order_workflow_steps_with_levels
 )
 
+import logging
+log = logging.getLogger( __name__ )
+
 WARNING_SOME_DATASETS_NOT_READY = "Some datasets still queued or running were ignored"
 
 
-def extract_workflow( trans, user, history=None, job_ids=None, dataset_ids=None, workflow_name=None ):
-    steps = extract_steps( trans, history=history, job_ids=job_ids, dataset_ids=dataset_ids )
+def extract_workflow( trans, user, history=None, job_ids=None, dataset_ids=None, dataset_collection_ids=None, workflow_name=None ):
+    steps = extract_steps( trans, history=history, job_ids=job_ids, dataset_ids=dataset_ids, dataset_collection_ids=dataset_collection_ids )
     # Workflow to populate
     workflow = model.Workflow()
     workflow.name = workflow_name
@@ -48,7 +52,7 @@ def extract_workflow( trans, user, history=None, job_ids=None, dataset_ids=None,
     return stored
 
 
-def extract_steps( trans, history=None, job_ids=None, dataset_ids=None ):
+def extract_steps( trans, history=None, job_ids=None, dataset_ids=None, dataset_collection_ids=None ):
     # Ensure job_ids and dataset_ids are lists (possibly empty)
     if job_ids is None:
         job_ids = []
@@ -58,12 +62,18 @@ def extract_steps( trans, history=None, job_ids=None, dataset_ids=None ):
         dataset_ids = []
     elif type( dataset_ids ) is not list:
         dataset_ids = [ dataset_ids ]
+    if dataset_collection_ids is None:
+        dataset_collection_ids = []
+    elif type( dataset_collection_ids) is not list:
+        dataset_collection_ids = [  dataset_collection_ids ]
     # Convert both sets of ids to integers
     job_ids = [ int( id ) for id in job_ids ]
     dataset_ids = [ int( id ) for id in dataset_ids ]
+    dataset_collection_ids = [ int( id ) for id in dataset_collection_ids ]
     # Find each job, for security we (implicately) check that they are
     # associated witha job in the current history.
-    jobs, warnings = summarize( trans, history=history )
+    summary = WorkflowSummary( trans, history )
+    jobs = summary.jobs
     jobs_by_id = dict( ( job.id, job ) for job in jobs.keys() )
     steps = []
     steps_by_job_id = {}
@@ -75,9 +85,18 @@ def extract_steps( trans, history=None, job_ids=None, dataset_ids=None ):
         step.tool_inputs = dict( name="Input Dataset" )
         hid_to_output_pair[ hid ] = ( step, 'output' )
         steps.append( step )
+    for hid in dataset_collection_ids:
+        step = model.WorkflowStep()
+        step.type = 'data_collection_input'
+        collection_type = summary.collection_types[ hid ]
+        step.tool_inputs = dict( name="Input Dataset Collection", collection_type=collection_type )
+        hid_to_output_pair[ hid ] = ( step, 'output' )
+        steps.append( step )
     # Tool steps
     for job_id in job_ids:
-        assert job_id in jobs_by_id, "Attempt to create workflow with job not connected to current history"
+        if job_id not in jobs_by_id:
+            log.warn( "job_id %s not found in jobs_by_id %s" % ( job_id, jobs_by_id ) )
+            raise AssertionError( "Attempt to create workflow with job not connected to current history" )
         job = jobs_by_id[ job_id ]
         tool_inputs, associations = step_inputs( trans, job )
         step = model.WorkflowStep()
@@ -88,6 +107,11 @@ def extract_steps( trans, history=None, job_ids=None, dataset_ids=None ):
         #       an earlier job can be used as an input to a later
         #       job.
         for other_hid, input_name in associations:
+            if job in summary.implicit_map_jobs:
+                an_implicit_output_collection = jobs[ job ][ 0 ][ 1 ]
+                input_collection = an_implicit_output_collection.find_implicit_input_collection( input_name )
+                if input_collection:
+                    other_hid = input_collection.hid
             if other_hid in hid_to_output_pair:
                 other_step, other_name = hid_to_output_pair[ other_hid ]
                 conn = model.WorkflowStepConnection()
@@ -100,7 +124,18 @@ def extract_steps( trans, history=None, job_ids=None, dataset_ids=None ):
         steps_by_job_id[ job_id ] = step
         # Store created dataset hids
         for assoc in job.output_datasets:
-            hid_to_output_pair[ assoc.dataset.hid ] = ( step, assoc.name )
+            if job in summary.implicit_map_jobs:
+                hid = None
+                for implicit_pair in jobs[ job ]:
+                    query_assoc_name, dataset_collection = implicit_pair
+                    if query_assoc_name == assoc.name:
+                        hid = dataset_collection.hid
+                if hid is None:
+                    log.warn("Failed to find matching implicit job.")
+                    raise Exception( "Failed to extract job." )
+            else:
+                hid = assoc.dataset.hid
+            hid_to_output_pair[ hid ] = ( step, assoc.name )
     return steps
 
 
@@ -114,40 +149,117 @@ class FakeJob( object ):
         self.id = "fake_%s" % dataset.id
 
 
+class DatasetCollectionCreationJob( object ):
+
+    def __init__( self, dataset_collection ):
+        self.is_fake = True
+        self.id = "fake_%s" % dataset_collection.id
+        self.from_jobs = None
+        self.name = "Dataset Collection Creation"
+        self.disabled_why = "Dataset collection created in a way not compatible with workflows"
+
+    def set_jobs( self, jobs ):
+        assert jobs is not None
+        self.from_jobs = jobs
+
+
 def summarize( trans, history=None ):
     """ Return mapping of job description to datasets for active items in
     supplied history - needed for building workflow from a history.
 
     Formerly call get_job_dict in workflow web controller.
     """
-    if not history:
-        history = trans.get_history()
+    summary = WorkflowSummary( trans, history )
+    return summary.jobs, summary.warnings
 
-    # Get the jobs that created the datasets
-    warnings = set()
-    jobs = odict()
-    for dataset in history.active_datasets:
-        # FIXME: Create "Dataset.is_finished"
-        if dataset.state in ( 'new', 'running', 'queued' ):
-            warnings.add( WARNING_SOME_DATASETS_NOT_READY )
-            continue
 
-        #if this hda was copied from another, we need to find the job that created the origial hda
-        job_hda = dataset
-        while job_hda.copied_from_history_dataset_association:
-            job_hda = job_hda.copied_from_history_dataset_association
+class WorkflowSummary( object ):
+
+    def __init__( self, trans, history ):
+        if not history:
+            history = trans.get_history()
+        self.history = history
+        self.warnings = set()
+        self.jobs = odict()
+        self.implicit_map_jobs = []
+        self.collection_types = {}
+
+        self.__summarize()
+
+    def __summarize( self ):
+        # Make a first pass handle all singleton jobs, input dataset and dataset collections
+        # just grab the implicitly mapped jobs and handle in second pass. Second pass is
+        # needed because cannot allow selection of individual datasets from an implicit
+        # mapping during extraction - you get the collection or nothing.
+        for content in self.history.active_contents:
+            if content.history_content_type == "dataset_collection":
+                hid = content.hid
+                content = self.__original_hdca( content )
+                self.collection_types[ hid ] = content.collection.collection_type
+                if not content.implicit_output_name:
+                    job = DatasetCollectionCreationJob( content )
+                    self.jobs[ job ] = [ ( None, content ) ]
+                else:
+                    dataset_collection = content
+                    # TODO: Optimize db call
+                    # TODO: Ensure this is deterministic, must get same job
+                    # for each dataset collection.
+                    dataset_instance = dataset_collection.collection.dataset_instances[ 0 ]
+                    if not self.__check_state( dataset_instance ):
+                        # Just checking the state of one instance, don't need more but
+                        # makes me wonder if even need this check at all?
+                        continue
+
+                    job_hda = self.__original_hda( dataset_instance )
+                    if not job_hda.creating_job_associations:
+                        log.warn( "An implicitly create output dataset collection doesn't have a creating_job_association, should not happen!" )
+                        job = DatasetCollectionCreationJob( dataset_collection )
+                        self.jobs[ job ] = [ ( None, dataset_collection ) ]
+
+                    for assoc in job_hda.creating_job_associations:
+                        job = assoc.job
+                        if job not in self.jobs or self.jobs[ job ][ 0 ][ 1 ].history_content_type == "dataset":
+                            self.jobs[ job ] = [ ( assoc.name, dataset_collection ) ]
+                            self.implicit_map_jobs.append( job )
+                        else:
+                            self.jobs[ job ].append( ( assoc.name, dataset_collection ) )
+            else:
+                self.__append_dataset( content )
+
+    def __append_dataset( self, dataset ):
+        if not self.__check_state( dataset ):
+            return
+
+        job_hda = self.__original_hda( dataset )
 
         if not job_hda.creating_job_associations:
-            jobs[ FakeJob( dataset ) ] = [ ( None, dataset ) ]
+            self.jobs[ FakeJob( dataset ) ] = [ ( None, dataset ) ]
 
         for assoc in job_hda.creating_job_associations:
             job = assoc.job
-            if job in jobs:
-                jobs[ job ].append( ( assoc.name, dataset ) )
+            if job in self.jobs:
+                self.jobs[ job ].append( ( assoc.name, dataset ) )
             else:
-                jobs[ job ] = [ ( assoc.name, dataset ) ]
+                self.jobs[ job ] = [ ( assoc.name, dataset ) ]
 
-    return jobs, warnings
+    def __original_hdca( self, hdca ):
+        while hdca.copied_from_history_dataset_collection_association:
+            hdca = hdca.copied_from_history_dataset_collection_association
+        return hdca
+
+    def __original_hda( self, hda ):
+        #if this hda was copied from another, we need to find the job that created the origial hda
+        job_hda = hda
+        while job_hda.copied_from_history_dataset_association:
+            job_hda = job_hda.copied_from_history_dataset_association
+        return job_hda
+
+    def __check_state( self, hda ):
+        # FIXME: Create "Dataset.is_finished"
+        if hda.state in ( 'new', 'running', 'queued' ):
+            self.warnings.add( WARNING_SOME_DATASETS_NOT_READY )
+            return
+        return hda
 
 
 def step_inputs( trans, job ):
@@ -175,12 +287,14 @@ def __cleanup_param_values( inputs, values ):
             if isinstance( input, ( SelectToolParameter, DrillDownSelectToolParameter ) ):
                 if input.is_dynamic and not isinstance( values[key], UnvalidatedValue ):
                     values[key] = UnvalidatedValue( values[key] )
-            if isinstance( input, DataToolParameter ):
+            if isinstance( input, DataToolParameter ) or isinstance( input, DataCollectionToolParameter ):
                 tmp = values[key]
                 values[key] = None
                 # HACK: Nested associations are not yet working, but we
                 #       still need to clean them up so we can serialize
                 # if not( prefix ):
+                if isinstance( tmp, model.DatasetCollectionElement ):
+                    tmp = tmp.first_dataset_instance()
                 if tmp:  # this is false for a non-set optional dataset
                     if not isinstance(tmp, list):
                         associations.append( ( tmp.hid, prefix + key ) )

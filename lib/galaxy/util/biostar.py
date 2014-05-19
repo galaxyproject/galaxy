@@ -2,6 +2,7 @@
 Support for integration with the Biostar application
 """
 
+import logging
 import hmac
 import urlparse
 import re
@@ -10,9 +11,11 @@ from galaxy.web.base.controller import url_for
 from galaxy.tools.errors import ErrorReporter
 from . import smart_str
 
+log = logging.getLogger( __name__ )
+
 _punct_re = re.compile(r'[\t !"#$%&\'()*\-/<=>?@\[\\\]^_`{|},.]+')
 
-DEFAULT_GALAXY_TAG = 'galaxy'
+DEFAULT_GALAXY_TAG = ''
 
 # Default values for new posts to Biostar
 DEFAULT_PAYLOAD = {
@@ -77,7 +80,10 @@ def tag_for_tool( tool ):
 def populate_tag_payload( payload=None, tool=None ):
     if payload is None:
         payload = {}
-    tag_val = [ DEFAULT_GALAXY_TAG ]
+    if DEFAULT_GALAXY_TAG:
+        tag_val = [ DEFAULT_GALAXY_TAG ]
+    else:
+        tag_val = []
     if tool:
         tag_val.append( tag_for_tool( tool ) )
     payload[ 'tag_val' ] =  ','.join( tag_val )
@@ -110,7 +116,10 @@ def determine_cookie_domain( galaxy_hostname, biostar_hostname ):
     
     return galaxy_hostname
 
-def create_cookie( trans, key_name, key, email, age=DEFAULT_BIOSTAR_COOKIE_AGE ):
+def create_cookie( trans, key_name, key, email, age=DEFAULT_BIOSTAR_COOKIE_AGE, override_never_authenticate=False ):
+    if trans.app.config.biostar_never_authenticate and not override_never_authenticate:
+        log.debug( 'A BioStar link was clicked, but never authenticate has been enabled, so we will not create the login cookie.' )
+        return
     digest = hmac.new( key, email ).hexdigest()
     value = "%s:%s" % (email, digest)
     trans.set_cookie( value, name=key_name, path='/', age=age, version='1' )
@@ -122,7 +131,7 @@ def create_cookie( trans, key_name, key, email, age=DEFAULT_BIOSTAR_COOKIE_AGE )
 def delete_cookie( trans, key_name ):
     #Set expiration of Cookie to time in past, to cause browser to delete
     if key_name in trans.request.cookies:
-        create_cookie( trans, trans.app.config.biostar_key_name, '', '', age=-90 )
+        create_cookie( trans, trans.app.config.biostar_key_name, '', '', age=-90, override_never_authenticate=True )
 
 def biostar_logged_in( trans ):
     if biostar_enabled( trans.app ):
@@ -139,6 +148,7 @@ def biostar_logout( trans ):
 class BiostarErrorReporter( ErrorReporter ):
     def _send_report( self, user, email=None, message=None, **kwd ):
         assert biostar_enabled( self.app ), ValueError( "Biostar is not configured for this galaxy instance" )
+        assert self.app.config.biostar_enable_bug_reports, ValueError( "Biostar is not configured to allow bug reporting for this galaxy instance" )
         assert self._can_access_dataset( user ), Exception( "You are not allowed to access this dataset." )
         tool_version_select_field, tools, tool = \
             self.app.toolbox.get_tool_components( self.tool_id, tool_version=None, get_loaded_tools_by_lineage=False, set_selected=True )

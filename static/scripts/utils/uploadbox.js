@@ -80,7 +80,7 @@
         // drop event
         function drop(e)
         {
-            // check if its a file transfer
+            // check if it's a file transfer
             if(!e.dataTransfer)
                 return;
             
@@ -197,7 +197,7 @@
             // identify maximum file size
             var maxfilesize = 1048576 * opts.maxfilesize;
   
-            // check file size, unless its an ftp file
+            // check file size, unless it's an ftp file
             if (filesize < maxfilesize || file.mode == 'ftp')
             {
                 // get parameters

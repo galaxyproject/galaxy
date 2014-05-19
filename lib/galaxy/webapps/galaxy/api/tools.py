@@ -7,6 +7,7 @@ from galaxy.web.base.controller import UsesHistoryMixin
 from galaxy.visualization.genomes import GenomeRegion
 from galaxy.util.json import to_json_string
 from galaxy.visualization.data_providers.genome import *
+from galaxy.dataset_collections.util import dictify_dataset_collection_instance
 
 import logging
 log = logging.getLogger( __name__ )
@@ -133,10 +134,18 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMix
             return { "message": { "type": "error", "data" : vars[ 'errors' ] } }
 
         # TODO: check for errors and ensure that output dataset(s) are available.
-        output_datasets = vars.get( 'out_data', {} ).iteritems()
+        output_datasets = vars.get( 'out_data', [] )
         rval = {
-            "outputs": []
+            "outputs": [],
+            "jobs": [],
+            "implicit_collections": [],
         }
+
+        job_errors = vars.get( 'job_errors', [] )
+        if job_errors:
+            # If we are here - some jobs were successfully executed but some failed.
+            rval[ "errors" ] = job_errors
+
         outputs = rval[ "outputs" ]
         #TODO:?? poss. only return ids?
         for output_name, output in output_datasets:
@@ -144,55 +153,23 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMix
             #add the output name back into the output data structure
             #so it's possible to figure out which newly created elements
             #correspond with which tool file outputs
-            output_dict['output_name'] = output_name
+            output_dict[ 'output_name' ] = output_name
             outputs.append( trans.security.encode_dict_ids( output_dict ) )
+
+        for job in vars[ 'jobs' ]:
+            rval[ 'jobs' ].append( self.encode_all_ids( trans, job.to_dict( view='collection' ), recursive=True ) )
+
+        for output_name, collection_instance in vars.get( 'implicit_collections', {} ).iteritems():
+            history = target_history or trans.history
+            output_dict = dictify_dataset_collection_instance( collection_instance, security=trans.security, parent=history )
+            output_dict[ 'output_name' ] = output_name
+            rval[ 'implicit_collections' ].append( output_dict )
+
         return rval
 
     #
     # -- Helper methods --
     #
-
-    def _run_tool( self, trans, tool_id, target_dataset_id, **kwargs ):
-        """
-        Run a tool. This method serves as a general purpose way to run tools asynchronously.
-        """
-
-        #
-        # Set target history (the history that tool will use for outputs) using
-        # target dataset. If user owns dataset, put new data in original
-        # dataset's history; if user does not own dataset (and hence is accessing
-        # dataset via sharing), put new data in user's current history.
-        #
-        target_dataset = self.get_dataset( trans, target_dataset_id, check_ownership=False, check_accessible=True )
-        if target_dataset.history.user == trans.user:
-            target_history = target_dataset.history
-        else:
-            target_history = trans.get_history( create=True )
-
-        # HACK: tools require unencoded parameters but kwargs are typically
-        # encoded, so try decoding all parameter values.
-        for key, value in kwargs.items():
-            try:
-                value = trans.security.decode_id( value )
-                kwargs[ key ] = value
-            except:
-                pass
-
-        #
-        # Execute tool.
-        #
-        tool = trans.app.toolbox.get_tool( tool_id )
-        if not tool:
-            return trans.app.model.Dataset.conversion_messages.NO_TOOL
-
-        # HACK: add run button so that tool.handle_input will run tool.
-        kwargs['runtool_btn'] = 'Execute'
-        params = util.Params( kwargs, sanitize=False )
-        template, vars = tool.handle_input( trans, params.__dict__, history=target_history )
-
-        # TODO: check for errors and ensure that output dataset is available.
-        output_datasets = vars[ 'out_data' ].values()
-        return self.add_track_async( trans, output_datasets[0].id )
 
     def _rerun_tool( self, trans, payload, **kwargs ):
         """
@@ -318,7 +295,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMix
                 else:
                     # Recursive search.
                     return_val = False
-                    for name, value in param_dict.items():
+                    for value in param_dict.values():
                         if isinstance( value, dict ):
                             return_val = set_value( value, group_name, group_index, param_name, param_value)
                             if return_val:

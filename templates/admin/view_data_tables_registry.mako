@@ -18,7 +18,7 @@
                 <th bgcolor="#D8D8D8">Name</th>
                 <th bgcolor="#D8D8D8">Filename</th>
                 <th bgcolor="#D8D8D8">Tool data path</th>
-                <th bgcolor="#D8D8D8">Missing index file</th>
+                <th bgcolor="#D8D8D8">Errors</th>
             </tr>
             %for data_table_elem_name, data_table in sorted_data_tables:
                 %if ctr % 2 == 1:
@@ -26,7 +26,7 @@
                 %else:
                     <tr class="tr">
                 %endif
-                    <td>${data_table.name}</td>
+                    <td><a href="${ h.url_for( controller="data_manager", action="manage_data_table", table_name=data_table.name ) }">${data_table.name}</a></td>
                     %for i, ( filename, file_dict ) in enumerate( data_table.filenames.iteritems() ):
                         %if i > 0:
                             <tr><td></td>
@@ -35,8 +35,11 @@
                         <td>${ file_dict.get( 'tool_data_path' ) | h }</td>
                         <td>
                             %if not file_dict.get( 'found' ):
-                                missing
+                                file missing
                             %endif
+                            %for error in file_dict.get( 'errors', [] ):
+                                ${ error | h } <br/>
+                            %endfor
                         </td>
                         </tr>
                     %endfor

@@ -1,19 +1,17 @@
-// dependencies
 define([
     "galaxy.masthead",
-    "mvc/base-mvc", 
+    "mvc/base-mvc",
     "utils/utils",
     "libs/toastr",
     "mvc/library/library-model",
-    "mvc/library/library-libraryrow-view"], 
+    "mvc/library/library-libraryrow-view"],
 function(mod_masthead,
-         mod_baseMVC, 
-         mod_utils, 
+         mod_baseMVC,
+         mod_utils,
          mod_toastr,
          mod_library_model,
          mod_library_libraryrow_view) {
 
-// galaxy library view
 var LibraryListView = Backbone.View.extend({
     el: '#libraries_element',
 
@@ -23,13 +21,14 @@ var LibraryListView = Backbone.View.extend({
 
     modal: null,
 
+    // collection of {Item}s
     collection: null,
 
     // map of library model ids to library views = cache
     rowViews: {},
 
-    // initialize
-    initialize : function(){
+    initialize : function(options){
+        this.options = _.defaults(this.options || {}, options);
         var viewContext = this;
 
         this.rowViews = {};
@@ -37,34 +36,38 @@ var LibraryListView = Backbone.View.extend({
         this.collection = new mod_library_model.Libraries();
 
         this.collection.fetch({
-          success: function(libraries){
+          success: function(){
             viewContext.render();
           },
           error: function(model, response){
-            mod_toastr.error('An error occured. Please try again.');
+              if (typeof response.responseJSON !== "undefined"){
+                mod_toastr.error(response.responseJSON.err_msg);
+              } else {
+                mod_toastr.error('An error ocurred :(');
+              }
           }
-        })
+        });
     },
 
     /** Renders the libraries table either from the object's own collection, 
-     or from a given array of library models,
-     or renders an empty list in case no data is given. */
+     *  or from a given array of library models,
+     *  or renders an empty list in case no data is given. */
     render: function (options) {
         var template = this.templateLibraryList();
         var libraries_to_render = null;
-        var include_deleted = true;
         var include_deleted = Galaxy.libraries.preferences.get('with_deleted');
-        var models = null
+        var models = null;
         if (typeof options !== 'undefined'){
             include_deleted = typeof options.with_deleted !== 'undefined' ? options.with_deleted : false;
             models = typeof options.models !== 'undefined' ? options.models : null;
         }
 
         if (this.collection !== null && models === null){
+            this.sortLibraries();
             if (include_deleted){ // show all the libraries
               libraries_to_render = this.collection.models;
             } else{ // show only undeleted libraries
-              libraries_to_render = this.collection.where({deleted: false});;
+              libraries_to_render = this.collection.where({deleted: false});
             }
         } else if (models !== null){
             libraries_to_render = models;
@@ -74,13 +77,17 @@ var LibraryListView = Backbone.View.extend({
 
         this.$el.html(template({length: libraries_to_render.length, order: Galaxy.libraries.preferences.get('sort_order') }));
 
-        this.renderRows(libraries_to_render);
+        if (libraries_to_render.length > 0){
+            this.renderRows(libraries_to_render);
+        }
         // initialize the library tooltips
         $("#center [data-toggle]").tooltip();
-        // modification of upper DOM element to show scrollbars due to the #center element inheritance
+        // modification of upper DOM element to show scrollbars due 
+        // to the #center element inheritance
         $("#center").css('overflow','auto');
     },
 
+    /** Renders all given models as rows in the library list */
     renderRows: function(libraries_to_render){
         for (var i = 0; i < libraries_to_render.length; i++) {
           var library = libraries_to_render[i];
@@ -89,20 +96,33 @@ var LibraryListView = Backbone.View.extend({
             cachedView.delegateEvents();
             this.$el.find('#library_list_body').append(cachedView.el);
           } else {
-            var rowView = new mod_library_libraryrow_view.LibraryRowView(library);
-            this.$el.find('#library_list_body').append(rowView.el);
-            // save new rowView to cache
-            this.rowViews[library.get('id')] = rowView; 
+            this.renderOne({library:library})
           }
-        };
+        }
     },
 
+    /**
+     * Creates a view for the given model and adds it to the libraries view.
+     * @param {Library} model of the view that will be rendered
+     */
+    renderOne: function(options){
+        var library = options.library;
+        var rowView = new mod_library_libraryrow_view.LibraryRowView(library);
+        // we want to prepend new item
+        if (options.prepend){ 
+            this.$el.find('#library_list_body').prepend(rowView.el);
+        } else {
+            this.$el.find('#library_list_body').append(rowView.el);
+        }
+        // save new rowView to cache
+        this.rowViews[library.get('id')] = rowView;
+    },
+
+    /** Table heading was clicked, update sorting preferences and re-render */
     sort_clicked : function(){
         if (Galaxy.libraries.preferences.get('sort_order') === 'asc'){
-            this.sortLibraries('name','desc');
             Galaxy.libraries.preferences.set({'sort_order': 'desc'});
         } else {
-            this.sortLibraries('name','asc');
             Galaxy.libraries.preferences.set({'sort_order': 'asc'});
         }
         this.render();
@@ -110,24 +130,13 @@ var LibraryListView = Backbone.View.extend({
 
     /** Sorts the underlying collection according to the parameters received. 
         Currently supports only sorting by name. */
-    sortLibraries: function(sort_by, order){
-        if (sort_by === 'name'){
-            if (order === 'asc'){
-                // this.collection.sort_order = 'asc';
-                this.collection.comparator = function(libraryA, libraryB){
-                      if (libraryA.get('name').toLowerCase() > libraryB.get('name').toLowerCase()) return 1; // after
-                      if (libraryB.get('name').toLowerCase() > libraryA.get('name').toLowerCase()) return -1; // before
-                      return 0; // equal
-                }
-            } else if (order === 'desc'){
-                // this.collection.sort_order = 'desc';
-                this.collection.comparator = function(libraryA, libraryB){
-                      if (libraryA.get('name').toLowerCase() > libraryB.get('name').toLowerCase()) return -1; // before
-                      if (libraryB.get('name').toLowerCase() > libraryA.get('name').toLowerCase()) return 1; // after
-                      return 0; // equal
-                }
+    sortLibraries: function(){
+        if (Galaxy.libraries.preferences.get('sort_by') === 'name'){
+            if (Galaxy.libraries.preferences.get('sort_order') === 'asc'){
+                this.collection.sortByNameAsc();
+            } else if (Galaxy.libraries.preferences.get('sort_order') === 'desc'){
+                this.collection.sortByNameDesc();
             }
-            this.collection.sort();
         }
     },
 
@@ -140,7 +149,7 @@ var LibraryListView = Backbone.View.extend({
 
         tmpl_array.push('<div class="library_container table-responsive">');
         tmpl_array.push('<% if(length === 0) { %>');
-        tmpl_array.push("<div>I see no libraries. Why don't you create one?</div>");
+        tmpl_array.push('<div>There are no libraries visible to you. If you expected some to show up please consult the <a href="https://wiki.galaxyproject.org/Admin/DataLibraries/LibrarySecurity">library security wikipage</a> or visit the <a href="https://biostar.usegalaxy.org/">Galaxy support site</a>.</div>');
         tmpl_array.push('<% } else{ %>');
         tmpl_array.push('<table class="grid table table-condensed">');
         tmpl_array.push('   <thead>');
@@ -158,94 +167,17 @@ var LibraryListView = Backbone.View.extend({
 
         return _.template(tmpl_array.join(''));
     },
-    
-    templateNewLibraryInModal: function(){
-        tmpl_array = [];
 
-        tmpl_array.push('<div id="new_library_modal">');
-        tmpl_array.push('   <form>');
-        tmpl_array.push('       <input type="text" name="Name" value="" placeholder="Name">');
-        tmpl_array.push('       <input type="text" name="Description" value="" placeholder="Description">');
-        tmpl_array.push('       <input type="text" name="Synopsis" value="" placeholder="Synopsis">');
-        tmpl_array.push('   </form>');
-        tmpl_array.push('</div>');
-
-        return tmpl_array.join('');
-    },
 
     redirectToHome: function(){
         window.location = '../';
-    },    
+    },
     redirectToLogin: function(){
         window.location = '/user/login';
     },
 
-    // show/hide create library modal
-    show_library_modal : function (event){
-        event.preventDefault();
-        event.stopPropagation();
-
-        // create modal
-        var self = this;
-        this.modal = Galaxy.modal;
-        this.modal.show({
-            closing_events  : true,
-            title           : 'Create New Library',
-            body            : this.templateNewLibraryInModal(),
-            buttons         : {
-                'Create'    : function() {self.create_new_library_event()},
-                'Close'     : function() {self.modal.hide();}
-            }
-        });
-    },
-
-    // create the new library from modal
-    create_new_library_event: function(){
-        var libraryDetails = this.serialize_new_library();
-        if (this.validate_new_library(libraryDetails)){
-            var library = new mod_library_model.Library();
-            var self = this;
-            library.save(libraryDetails, {
-              success: function (library) {
-                self.collection.add(library);
-                self.modal.hide();
-                self.clear_library_modal();
-                self.render();
-                mod_toastr.success('Library created');
-              },
-              error: function(){
-                mod_toastr.error('An error occured :(');
-              }
-            });
-        } else {
-            mod_toastr.error('Library\'s name is missing');
-        }
-        return false;
-    },
-
-    // clear the library modal once saved
-    clear_library_modal : function(){
-        $("input[name='Name']").val('');
-        $("input[name='Description']").val('');
-        $("input[name='Synopsis']").val('');
-    },
-
-    // serialize data from the form
-    serialize_new_library : function(){
-        return {
-            name: $("input[name='Name']").val(),
-            description: $("input[name='Description']").val(),
-            synopsis: $("input[name='Synopsis']").val()
-        };
-    },
-
-    // validate new library info
-    validate_new_library: function(libraryDetails){
-        return libraryDetails.name !== '';
-    }
 });
 
-// return
 return {
     LibraryListView: LibraryListView
 };

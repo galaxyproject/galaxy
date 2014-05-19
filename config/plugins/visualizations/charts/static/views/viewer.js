@@ -29,7 +29,7 @@ return Backbone.View.extend(
                 edit_button: new Ui.ButtonIcon({
                     icon    : 'fa-edit',
                     tooltip : 'Customize this chart',
-                    title   : 'Customize',
+                    title   : 'Editor',
                     onclick : function() {
                         // attempt to load chart editor
                         self._wait (self.chart, function() {

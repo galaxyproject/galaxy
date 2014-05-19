@@ -20,46 +20,74 @@ from tool_shed.util import encoding_util
 
 log = logging.getLogger( __name__ )
 
+
 class UserListGrid( grids.Grid ):
+
+
     class EmailColumn( grids.TextColumn ):
+
         def get_value( self, trans, grid, user ):
             return user.email
+
+
     class UserNameColumn( grids.TextColumn ):
+
         def get_value( self, trans, grid, user ):
             if user.username:
                 return user.username
             return 'not set'
+
+
     class StatusColumn( grids.GridColumn ):
+
         def get_value( self, trans, grid, user ):
             if user.purged:
                 return "purged"
             elif user.deleted:
                 return "deleted"
             return ""
+
+
     class GroupsColumn( grids.GridColumn ):
+
         def get_value( self, trans, grid, user ):
             if user.groups:
                 return len( user.groups )
             return 0
+
+
     class RolesColumn( grids.GridColumn ):
+
         def get_value( self, trans, grid, user ):
             if user.roles:
                 return len( user.roles )
             return 0
+
+
     class ExternalColumn( grids.GridColumn ):
+
         def get_value( self, trans, grid, user ):
             if user.external:
                 return 'yes'
             return 'no'
+
+
     class LastLoginColumn( grids.GridColumn ):
+
         def get_value( self, trans, grid, user ):
             if user.galaxy_sessions:
                 return self.format( user.galaxy_sessions[ 0 ].update_time )
             return 'never'
+
+
     class TimeCreatedColumn( grids.GridColumn ):
+
         def get_value( self, trans, grid, user ):
             return user.create_time.strftime('%x')
+
+
     class ActivatedColumn( grids.GridColumn ):
+
         def get_value( self, trans, grid, user ):
             if user.active:
                 return 'Y'
@@ -121,32 +149,53 @@ class UserListGrid( grids.Grid ):
     num_rows_per_page = 50
     preserve_state = False
     use_paging = True
+
     def get_current_item( self, trans, **kwargs ):
         return trans.user
 
+
 class RoleListGrid( grids.Grid ):
+
+
     class NameColumn( grids.TextColumn ):
+
         def get_value( self, trans, grid, role ):
             return role.name
+
+
     class DescriptionColumn( grids.TextColumn ):
+
         def get_value( self, trans, grid, role ):
             if role.description:
                 return role.description
             return ''
+
+
     class TypeColumn( grids.TextColumn ):
+
         def get_value( self, trans, grid, role ):
             return role.type
+
+
     class StatusColumn( grids.GridColumn ):
+
         def get_value( self, trans, grid, role ):
             if role.deleted:
                 return "deleted"
             return ""
+
+
     class GroupsColumn( grids.GridColumn ):
+
         def get_value( self, trans, grid, role ):
             if role.groups:
                 return len( role.groups )
             return 0
+
+
     class UsersColumn( grids.GridColumn ):
+
+
         def get_value( self, trans, grid, role ):
             if role.users:
                 return len( role.users )
@@ -212,24 +261,38 @@ class RoleListGrid( grids.Grid ):
     num_rows_per_page = 50
     preserve_state = False
     use_paging = True
+
     def apply_query_filter( self, trans, query, **kwargs ):
         return query.filter( model.Role.type != model.Role.types.PRIVATE )
 
+
 class GroupListGrid( grids.Grid ):
+
+
     class NameColumn( grids.TextColumn ):
+
         def get_value( self, trans, grid, group ):
             return group.name
+
+
     class StatusColumn( grids.GridColumn ):
+
         def get_value( self, trans, grid, group ):
             if group.deleted:
                 return "deleted"
             return ""
+
+
     class RolesColumn( grids.GridColumn ):
+
         def get_value( self, trans, grid, group ):
             if group.roles:
                 return len( group.roles )
             return 0
+
+
     class UsersColumn( grids.GridColumn ):
+
         def get_value( self, trans, grid, group ):
             if group.members:
                 return len( group.members )
@@ -287,30 +350,48 @@ class GroupListGrid( grids.Grid ):
     use_paging = True
 
 class QuotaListGrid( grids.Grid ):
+
+
     class NameColumn( grids.TextColumn ):
+
         def get_value( self, trans, grid, quota ):
             return quota.name
+
+
     class DescriptionColumn( grids.TextColumn ):
+
         def get_value( self, trans, grid, quota ):
             if quota.description:
                 return quota.description
             return ''
+
+
     class AmountColumn( grids.TextColumn ):
+
         def get_value( self, trans, grid, quota ):
             return quota.operation + quota.display_amount
+
+
     class StatusColumn( grids.GridColumn ):
+
         def get_value( self, trans, grid, quota ):
             if quota.deleted:
                 return "deleted"
             elif quota.default:
                 return "<strong>default for %s users</strong>" % quota.default[0].type
             return ""
+
+
     class UsersColumn( grids.GridColumn ):
+
         def get_value( self, trans, grid, quota ):
             if quota.users:
                 return len( quota.users )
             return 0
+
+
     class GroupsColumn( grids.GridColumn ):
+
         def get_value( self, trans, grid, quota ):
             if quota.groups:
                 return len( quota.groups )
@@ -397,15 +478,22 @@ class QuotaListGrid( grids.Grid ):
     preserve_state = False
     use_paging = True
 
+
 class ToolVersionListGrid( grids.Grid ):
+
+
     class ToolIdColumn( grids.TextColumn ):
+
         def get_value( self, trans, grid, tool_version ):
             if tool_version.tool_id in trans.app.toolbox.tools_by_id:
                 link = url_for( controller='tool_runner', tool_id=tool_version.tool_id )
                 link_str = '<a href="%s">' % link
                 return '<div class="count-box state-color-ok">%s%s</a></div>' % ( link_str, tool_version.tool_id )
             return tool_version.tool_id
+
+
     class ToolVersionsColumn( grids.TextColumn ):
+
         def get_value( self, trans, grid, tool_version ):
             tool_ids_str = ''
             for tool_id in tool_version.get_version_ids( trans.app ):
@@ -443,6 +531,7 @@ class ToolVersionListGrid( grids.Grid ):
     def build_initial_query( self, trans, **kwd ):
         return trans.install_model.context.query( self.model_class )
 
+
 class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaParamParser ):
 
     user_list_grid = UserListGrid()
@@ -479,6 +568,7 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
                 return self.edit_quota( trans, **kwargs )
         # Render the list view
         return self.quota_list_grid( trans, **kwargs )
+
     @web.expose
     @web.require_admin
     def create_quota( self, trans, **kwd ):
@@ -525,6 +615,7 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
                                     out_groups=params.out_groups,
                                     message=params.message,
                                     status=params.status )
+
     @web.expose
     @web.require_admin
     def rename_quota( self, trans, **kwd ):
@@ -538,6 +629,7 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
                                     webapp=params.webapp,
                                     message=params.message,
                                     status=params.status )
+
     @web.expose
     @web.require_admin
     def manage_users_and_groups_for_quota( self, trans, **kwd ):
@@ -572,6 +664,7 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
                                     webapp=params.webapp,
                                     message=params.message,
                                     status=params.status )
+
     @web.expose
     @web.require_admin
     def edit_quota( self, trans, **kwd ):
@@ -585,6 +678,7 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
                                     webapp=params.webapp,
                                     message=params.message,
                                     status=params.status )
+
     @web.expose
     @web.require_admin
     def set_quota_default( self, trans, **kwd ):
@@ -603,6 +697,7 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
                                     webapp=params.webapp,
                                     message=params.message,
                                     status=params.status )
+
     @web.expose
     @web.require_admin
     def unset_quota_default( self, trans, **kwd ):
@@ -614,6 +709,7 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
                                                           webapp=params.webapp,
                                                           message=sanitize_text( params.message ),
                                                           status='error' ) )
+
     @web.expose
     @web.require_admin
     def mark_quota_deleted( self, trans, **kwd ):
@@ -625,6 +721,7 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
                                                           webapp=params.webapp,
                                                           message=sanitize_text( params.message ),
                                                           status='error' ) )
+
     @web.expose
     @web.require_admin
     def undelete_quota( self, trans, **kwd ):
@@ -636,6 +733,7 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
                                                           webapp=params.webapp,
                                                           message=sanitize_text( params.message ),
                                                           status='error' ) )
+
     @web.expose
     @web.require_admin
     def purge_quota( self, trans, **kwd ):
@@ -647,6 +745,7 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
                                                           webapp=params.webapp,
                                                           message=sanitize_text( params.message ),
                                                           status='error' ) )
+
     def _quota_op( self, trans, do_op, op_method, kwd, listify=False ):
         params = self.get_quota_params( kwd )
         if listify:
@@ -684,6 +783,7 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
                 params.message = e.err_msg
                 params.status = e.type
         return quota, params
+
     @web.expose
     @web.require_admin
     def impersonate( self, trans, email=None, **kwd ):
@@ -705,21 +805,14 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
         if emails is None:
             emails = [ u.email for u in trans.sa_session.query( trans.app.model.User ).enable_eagerloads( False ).all() ]
         return trans.fill_template( 'admin/impersonate.mako', emails=emails, message=message, status=status )
-    def get_tool_shed_url_from_tools_xml_file_path( self, trans, tool_shed ):
-        search_str = '://%s' % tool_shed
-        for shed_name, shed_url in trans.app.tool_shed_registry.tool_sheds.items():
-            if shed_url.find( search_str ) >= 0:
-                if shed_url.endswith( '/' ):
-                    shed_url = shed_url.rstrip( '/' )
-                return shed_url
-        return None
+
     def check_for_tool_dependencies( self, trans, migration_stage ):
         # Get the 000x_tools.xml file associated with migration_stage.
         tools_xml_file_path = os.path.abspath( os.path.join( trans.app.config.root, 'scripts', 'migrate_tools', '%04d_tools.xml' % migration_stage ) )
         tree = galaxy.util.parse_xml( tools_xml_file_path )
         root = tree.getroot()
         tool_shed = root.get( 'name' )
-        tool_shed_url = self.get_tool_shed_url_from_tools_xml_file_path( trans, tool_shed )
+        tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( trans.app, tool_shed )
         repo_name_dependency_tups = []
         if tool_shed_url:
             for elem in root:
@@ -728,7 +821,7 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
                     tool_dependencies_dict = {}
                     repository_name = elem.get( 'name' )
                     changeset_revision = elem.get( 'changeset_revision' )
-                    url = '%s/repository/get_tool_dependencies?name=%s&owner=devteam&changeset_revision=%s&from_install_manager=True' % \
+                    url = '%s/repository/get_tool_dependencies?name=%s&owner=devteam&changeset_revision=%s' % \
                         ( tool_shed_url, repository_name, changeset_revision )
                     text = common_util.tool_shed_get( trans.app, tool_shed_url, url )
                     if text:
@@ -741,6 +834,7 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
                             tool_dependencies.append( ( tool_dependency_name, tool_dependency_version, tool_dependency_type, tool_dependency_readme ) )
                     repo_name_dependency_tups.append( ( repository_name, tool_dependencies ) )
         return repo_name_dependency_tups
+
     @web.expose
     @web.require_admin
     def review_tool_migration_stages( self, trans, **kwd ):
@@ -772,12 +866,14 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
                                     migration_stages_dict=migration_stages_dict,
                                     message=message,
                                     status=status )
+
     @web.expose
     @web.require_admin
     def view_datatypes_registry( self, trans, **kwd ):
         message = galaxy.util.restore_text( kwd.get( 'message', '' ) )
         status = galaxy.util.restore_text( kwd.get( 'status', 'done' ) )
         return trans.fill_template( 'admin/view_datatypes_registry.mako', message=message, status=status )
+
     @web.expose
     @web.require_admin
     def view_tool_data_tables( self, trans, **kwd ):

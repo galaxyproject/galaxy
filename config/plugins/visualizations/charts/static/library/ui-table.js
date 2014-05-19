@@ -62,10 +62,13 @@ var View = Backbone.View.extend(
     },
     
     // add row cell
-    add: function($el, width) {
+    add: function($el, width, align) {
         var wrapper = $('<td></td>');
         if (width) {
             wrapper.css('width', width);
+        }
+        if (align) {
+            wrapper.css('text-align', align);
         }
         wrapper.append($el);
         this.row.append(wrapper);
@@ -159,13 +162,14 @@ var View = Backbone.View.extend(
         // get values
         var old_value = this.value();
         var new_value = $(e.target).closest('tr').attr('id');
-        
-        // check equality
-        if (new_value && old_value != new_value) {
-            if (this.options.onconfirm) {
-                this.options.onconfirm(new_value);
-            } else {
-                this.value(new_value);
+        if (new_value != ''){
+            // check equality
+            if (new_value && old_value != new_value) {
+                if (this.options.onconfirm) {
+                    this.options.onconfirm(new_value);
+                } else {
+                    this.value(new_value);
+                }
             }
         }
     },

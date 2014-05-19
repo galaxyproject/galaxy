@@ -59,7 +59,7 @@ def create_or_verify_database( url, engine_options={}, app=None ):
         Table( "tool_shed_repository", meta, autoload=True )
     except NoSuchTableError:
         # No table means a completely uninitialized database.  If we
-        # have an app, we'll set it's new_installation setting to True
+        # have an app, we'll set its new_installation setting to True
         # so the tool migration process will be skipped.
         migrate()
         return

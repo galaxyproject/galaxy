@@ -24,7 +24,7 @@ log = logging.getLogger( __name__ )
 class SubprocessDataProvider( base.DataProvider ):
     """
     Data provider that uses the output from an intermediate program and
-    subprocess as it's data source.
+    subprocess as its data source.
     """
     #TODO: need better ways of checking returncode, stderr for errors and raising
     def __init__( self, *args, **kwargs ):
@@ -74,7 +74,7 @@ class SubprocessDataProvider( base.DataProvider ):
 
 class RegexSubprocessDataProvider( line.RegexLineDataProvider ):
     """
-    RegexLineDataProvider that uses a SubprocessDataProvider as it's data source.
+    RegexLineDataProvider that uses a SubprocessDataProvider as its data source.
     """
     # this is a conv. class and not really all that necc...
     def __init__( self, *args, **kwargs ):
@@ -86,7 +86,7 @@ class RegexSubprocessDataProvider( line.RegexLineDataProvider ):
 # ----------------------------------------------------------------------------- other apis
 class URLDataProvider( base.DataProvider ):
     """
-    Data provider that uses the contents of a URL for it's data source.
+    Data provider that uses the contents of a URL for its data source.
 
     This can be piped through other providers (column, map, genome region, etc.).
     """
@@ -128,7 +128,7 @@ class URLDataProvider( base.DataProvider ):
 # ----------------------------------------------------------------------------- generic compression
 class GzipDataProvider( base.DataProvider ):
     """
-    Data provider that uses g(un)zip on a file as it's source.
+    Data provider that uses g(un)zip on a file as its source.
 
     This can be piped through other providers (column, map, genome region, etc.).
     """

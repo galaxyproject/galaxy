@@ -78,6 +78,7 @@ def app_factory( global_conf, **kwargs ):
 
     valid_history_contents_types = [
         'dataset',
+        'dataset_collection',
     ]
     # This must come before history contents below.
     # Accesss HDA details via histories/:history_id/contents/datasets/:hda_id
@@ -135,6 +136,7 @@ def app_factory( global_conf, **kwargs ):
                                path_prefix='/api/histories/:history_id/contents/:history_content_id' )
 
     webapp.mapper.resource( 'dataset', 'datasets', path_prefix='/api' )
+    webapp.mapper.resource( 'dataset_collection', 'dataset_collections', path_prefix='/api/')
     webapp.mapper.resource( 'sample', 'samples', path_prefix='/api' )
     webapp.mapper.resource( 'request', 'requests', path_prefix='/api' )
     webapp.mapper.resource( 'form', 'forms', path_prefix='/api' )
@@ -165,7 +167,6 @@ def app_factory( global_conf, **kwargs ):
                                 parent_resources=dict( member_name='page', collection_name='pages' ) )
 
     # add as a non-ATOM API call to support the notion of a 'current/working' history unique to the history resource
-    #webapp.mapper.connect( "set_as_current", "/api/histories/set_as_current/{id}",
     webapp.mapper.connect( "set_as_current", "/api/histories/{id}/set_as_current",
         controller="histories", action="set_as_current", conditions=dict( method=["PUT"] ) )
 
@@ -190,7 +191,6 @@ def app_factory( global_conf, **kwargs ):
     webapp.mapper.connect( 'import_shared_workflow', '/api/workflows/import', controller='workflows', action='import_shared_workflow', conditions=dict( method=['POST'] ) )
     webapp.mapper.connect( 'workflow_usage', '/api/workflows/{workflow_id}/usage', controller='workflows', action='workflow_usage', conditions=dict(method=['GET']))
     webapp.mapper.connect( 'workflow_usage_contents', '/api/workflows/{workflow_id}/usage/{usage_id}', controller='workflows', action='workflow_usage_contents', conditions=dict(method=['GET']))
-
 
     # ============================
     # ===== AUTHENTICATE API =====
@@ -218,32 +218,33 @@ def app_factory( global_conf, **kwargs ):
                            action='show',
                            conditions=dict( method=[ "GET" ] ) )
 
+    webapp.mapper.connect( 'show_legitimate_lda_roles',
+                           '/api/libraries/datasets/:encoded_dataset_id/permissions',
+                           controller='lda_datasets',
+                           action='show_roles',
+                           conditions=dict( method=[ "GET" ] ) )
+
+    webapp.mapper.connect( 'show_legitimate_lda_roles',
+                           '/api/libraries/datasets/:encoded_dataset_id/permissions/current',
+                           controller='lda_datasets',
+                           action='get_roles',
+                           conditions=dict( method=[ "GET" ] ) )
+
+    webapp.mapper.connect( 'delete_lda_item',
+                           '/api/libraries/datasets/:encoded_dataset_id',
+                           controller='lda_datasets',
+                           action='delete',
+                           conditions=dict( method=[ "DELETE" ] ) )
+
     webapp.mapper.connect( 'download_lda_items',
                            '/api/libraries/datasets/download/:format',
                            controller='lda_datasets',
                            action='download',
                            conditions=dict( method=[ "POST", "GET" ] ) )
 
-    webapp.mapper.connect( 'create_folder',
-                           '/api/folders/:encoded_parent_folder_id',
-                           controller='folders',
-                           action='create',
-                           conditions=dict( method=[ "POST" ] ) )
-
     webapp.mapper.resource_with_deleted( 'library',
                                          'libraries',
                                          path_prefix='/api' )
-    webapp.mapper.resource( 'folder',
-                            'folders',
-                            path_prefix='/api' )
-
-    webapp.mapper.resource( 'content',
-                            'contents',
-                            controller='folder_contents',
-                            name_prefix='folder_',
-                            path_prefix='/api/folders/:folder_id',
-                            parent_resources=dict( member_name='folder', collection_name='folders' ),
-                            conditions=dict( method=[ "GET" ] )  )
 
     webapp.mapper.resource( 'content',
                             'contents',
@@ -257,10 +258,44 @@ def app_factory( global_conf, **kwargs ):
                             path_prefix='/api/libraries/:library_id',
                             parent_resources=dict( member_name='library', collection_name='libraries' ) )
 
+    _add_item_extended_metadata_controller( webapp,
+                                            name_prefix="library_dataset_",
+                                            path_prefix='/api/libraries/:library_id/contents/:library_content_id' )
+
+    # =======================
+    # ===== FOLDERS API =====
+    # =======================
+
+    webapp.mapper.connect( 'add_history_datasets_to_library',
+                           '/api/folders/:encoded_folder_id/contents',
+                           controller='folder_contents',
+                           action='create',
+                           conditions=dict( method=[ "POST" ] ) )
+
+    webapp.mapper.connect( 'create_folder',
+                           '/api/folders/:encoded_parent_folder_id',
+                           controller='folders',
+                           action='create',
+                           conditions=dict( method=[ "POST" ] ) )
+
+    webapp.mapper.resource( 'folder',
+                            'folders',
+                            path_prefix='/api' )
+
+    webapp.mapper.resource( 'content',
+                            'contents',
+                            controller='folder_contents',
+                            name_prefix='folder_',
+                            path_prefix='/api/folders/:folder_id',
+                            parent_resources=dict( member_name='folder', collection_name='folders' ),
+                            conditions=dict( method=[ "GET" ] )  )
+
     webapp.mapper.resource( 'job',
                             'jobs',
                             path_prefix='/api' )
     webapp.mapper.connect( 'job_search', '/api/jobs/search', controller='jobs', action='search', conditions=dict( method=['POST'] ) )
+    webapp.mapper.connect( 'job_inputs', '/api/jobs/{id}/inputs', controller='jobs', action='inputs', conditions=dict( method=['GET'] ) )
+    webapp.mapper.connect( 'job_outputs', '/api/jobs/{id}/outputs', controller='jobs', action='outputs', conditions=dict( method=['GET'] ) )
 
     # Job files controllers. Only for consumption by remote job runners.
     webapp.mapper.resource( 'file',
@@ -268,12 +303,7 @@ def app_factory( global_conf, **kwargs ):
                             controller="job_files",
                             name_prefix="job_",
                             path_prefix='/api/jobs/:job_id',
-                            parent_resources=dict( member_name="job", collection_name="jobs")
-    )
-
-    _add_item_extended_metadata_controller( webapp,
-                               name_prefix="library_dataset_",
-                               path_prefix='/api/libraries/:library_id/contents/:library_content_id' )
+                            parent_resources=dict( member_name="job", collection_name="jobs" ) )
 
     _add_item_extended_metadata_controller( webapp,
                                name_prefix="history_dataset_",
@@ -297,17 +327,30 @@ def app_factory( global_conf, **kwargs ):
                                      'exported_workflows' : 'GET',
                                      'import_workflow' : 'POST',
                                      'import_workflows' : 'POST' },
-                            collection={ 'reset_metadata_on_installed_repositories' : 'POST' },
+                            collection={ 'get_latest_installable_revision' : 'POST',
+                                         'reset_metadata_on_installed_repositories' : 'POST' },
                             controller='tool_shed_repositories',
                             name_prefix='tool_shed_repository_',
                             path_prefix='/api',
                             new={ 'install_repository_revision' : 'POST' },
                             parent_resources=dict( member_name='tool_shed_repository', collection_name='tool_shed_repositories' ) )
 
+
+    # ==== Trace/Metrics Logger
     # Connect logger from app
     if app.trace_logger:
         webapp.trace_logger = app.trace_logger
 
+    # metrics logging API
+    #webapp.mapper.connect( "index", "/api/metrics",
+    #    controller="metrics", action="index", conditions=dict( method=["GET"] ) )
+    #webapp.mapper.connect( "show", "/api/metrics/{id}",
+    #    controller="metrics", action="show", conditions=dict( method=["GET"] ) )
+    webapp.mapper.connect( "create", "/api/metrics",
+        controller="metrics", action="create", conditions=dict( method=["POST"] ) )
+
+
+    # ==== Done
     # Indicate that all configuration settings have been provided
     webapp.finalize_config()
 

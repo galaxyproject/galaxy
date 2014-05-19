@@ -56,19 +56,22 @@ class ToolDataTableManager( object ):
         3. When a tool shed repository that includes a tool_data_table_conf.xml.sample file is being installed into a local
            Galaxy instance.  In this case, we have 2 entry types to handle, files whose root tag is <tables>, for example:
         """
-        tree = util.parse_xml( config_filename )
-        root = tree.getroot()
         table_elems = []
-        for table_elem in root.findall( 'table' ):
-            table = ToolDataTable.from_elem( table_elem, tool_data_path, from_shed_config )
-            table_elems.append( table_elem )
-            if table.name not in self.data_tables:
-                self.data_tables[ table.name ] = table
-                log.debug( "Loaded tool data table '%s'", table.name )
-            else:
-                log.debug( "Loading another instance of data table '%s', attempting to merge content.", table.name )
-                self.data_tables[ table.name ].merge_tool_data_table( table, allow_duplicates=False ) #only merge content, do not persist to disk, do not allow duplicate rows when merging
-                # FIXME: This does not account for an entry with the same unique build ID, but a different path.
+        if not isinstance( config_filename, list ):
+            config_filename = [ config_filename ]
+        for filename in config_filename:
+            tree = util.parse_xml( filename )
+            root = tree.getroot()
+            for table_elem in root.findall( 'table' ):
+                table = ToolDataTable.from_elem( table_elem, tool_data_path, from_shed_config )
+                table_elems.append( table_elem )
+                if table.name not in self.data_tables:
+                    self.data_tables[ table.name ] = table
+                    log.debug( "Loaded tool data table '%s'", table.name )
+                else:
+                    log.debug( "Loading another instance of data table '%s', attempting to merge content.", table.name )
+                    self.data_tables[ table.name ].merge_tool_data_table( table, allow_duplicates=False ) #only merge content, do not persist to disk, do not allow duplicate rows when merging
+                    # FIXME: This does not account for an entry with the same unique build ID, but a different path.
         return table_elems
 
     def add_new_entries_from_config_file( self, config_filename, tool_data_path, shed_tool_data_table_config, persist=False ):
@@ -141,6 +144,18 @@ class ToolDataTableManager( object ):
             out.write( '</tables>\n' )
         os.chmod( full_path, 0644 )
 
+    def reload_tables( self, table_names=None ):
+        tables = self.get_tables()
+        if not table_names:
+            table_names = tables.keys()
+        elif not isinstance( table_names, list ):
+            table_names = [ table_names ]
+        for table_name in table_names:
+            tables[ table_name ].reload_from_files()
+            log.debug( "Reloaded tool data table '%s' from files.", table_name )
+        return table_names
+
+
 class ToolDataTable( object ):
 
     @classmethod
@@ -160,9 +175,14 @@ class ToolDataTable( object ):
         # increment this variable any time a new entry is added, or when the table is totally reloaded
         # This value has no external meaning, and does not represent an abstract version of the underlying data
         self._loaded_content_version = 1
+        self._load_info = ( [ config_element, tool_data_path ], { 'from_shed_config':from_shed_config } )
+        self._merged_load_info = []
 
-    def _update_version( self ):
-        self._loaded_content_version += 1
+    def _update_version( self, version=None ):
+        if version is not None:
+            self._loaded_content_version = version
+        else:
+            self._loaded_content_version += 1
         return self._loaded_content_version
 
     def get_empty_field_by_name( self, name ):
@@ -186,6 +206,16 @@ class ToolDataTable( object ):
 
     def merge_tool_data_table( self, other_table, allow_duplicates=True, persist=False, persist_on_error=False, entry_source=None, **kwd ):
         raise NotImplementedError( "Abstract method" )
+
+    def reload_from_files( self ):
+        new_version = self._update_version()
+        merged_info = self._merged_load_info
+        self.__init__( *self._load_info[0], **self._load_info[1] )
+        self._update_version( version=new_version )
+        for ( tool_data_table_class, load_info ) in merged_info:
+            self.merge_tool_data_table( tool_data_table_class( *load_info[0], **load_info[1] ), allow_duplicates=False )
+        return self._update_version()
+
 
 class TabularToolDataTable( ToolDataTable ):
     """
@@ -258,8 +288,9 @@ class TabularToolDataTable( ToolDataTable ):
                         filename = corrected_filename
                         found = True
 
+            errors = []
             if found:
-                self.data.extend( self.parse_file_fields( open( filename ) ) )
+                self.data.extend( self.parse_file_fields( open( filename ), errors=errors ) )
                 self._update_version()
             else:
                 self.missing_index_file = filename
@@ -267,7 +298,7 @@ class TabularToolDataTable( ToolDataTable ):
 
             if filename not in self.filenames or not self.filenames[ filename ][ 'found' ]:
                 self.filenames[ filename ] = dict( found=found, filename=filename, from_shed_config=from_shed_config, tool_data_path=tool_data_path,
-                                                   config_element=config_element, tool_shed_repository=repo_info )
+                                                   config_element=config_element, tool_shed_repository=repo_info, errors=errors )
             else:
                 log.debug( "Filename '%s' already exists in filenames (%s), not adding", filename, self.filenames.keys() )
 
@@ -278,6 +309,8 @@ class TabularToolDataTable( ToolDataTable ):
         for filename, info in other_table.filenames.iteritems():
             if filename not in self.filenames:
                 self.filenames[ filename ] = info
+        #save info about table
+        self._merged_load_info.append( ( other_table.__class__, other_table._load_info ) )
         #add data entries and return current data table version
         return self.add_entries( other_table.data, allow_duplicates=allow_duplicates, persist=persist, persist_on_error=persist_on_error, entry_source=entry_source, **kwd )
 
@@ -287,6 +320,19 @@ class TabularToolDataTable( ToolDataTable ):
 
     def get_fields( self ):
         return self.data
+
+    def get_named_fields_list( self ):
+        rval = []
+        named_colums = self.get_column_name_list()
+        for fields in self.get_fields():
+            field_dict = {}
+            for i, field in enumerate( fields ):
+                field_name = named_colums[i]
+                if field_name is None:
+                    field_name = i #check that this is supposed to be 0 based.
+                field_dict[ field_name ] = field
+            rval.append( field_dict )
+        return rval
 
     def get_version_fields( self ):
         return ( self._loaded_content_version, self.data )
@@ -324,7 +370,7 @@ class TabularToolDataTable( ToolDataTable ):
         if 'name' not in self.columns:
             self.columns['name'] = self.columns['value']
 
-    def parse_file_fields( self, reader ):
+    def parse_file_fields( self, reader, errors=None ):
         """
         Parse separated lines from file and return a list of tuples.
 
@@ -342,9 +388,10 @@ class TabularToolDataTable( ToolDataTable ):
                 if self.largest_index < len( fields ):
                     rval.append( fields )
                 else:
-                    log.warn( "Line %i in tool data table '%s' is invalid (HINT: "
-                              "'%s' characters must be used to separate fields):\n%s"
-                              % ( ( i + 1 ), self.name, separator_char, line ) )
+                    line_error = "Line %i in tool data table '%s' is invalid (HINT: '%s' characters must be used to separate fields):\n%s" % ( ( i + 1 ), self.name, separator_char, line )
+                    if errors is not None:
+                        errors.append( line_error )
+                    log.warn( line_error )
         return rval
 
     def get_column_name_list( self ):

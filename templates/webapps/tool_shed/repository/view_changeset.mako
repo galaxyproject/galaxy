@@ -49,7 +49,7 @@ ${render_tool_shed_repository_actions( repository=repository )}
 %endif
 <div class="toolForm">
     <%
-        from tool_shed.util.shed_util_common import get_readable_ctx_date
+        from tool_shed.util.hg_util import get_readable_ctx_date
         changeset_revision_date = get_readable_ctx_date( ctx )
         if can_download:
             title_str = 'Changeset <b>%s:%s</b> <i>(%s)</i>' % ( ctx.rev(), ctx, changeset_revision_date )

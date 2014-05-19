@@ -32,7 +32,7 @@ class LocalSetupHandler(object):
     def __init__(self, client, destination_args):
         self.client = client
         system_properties = self.__build_system_properties(destination_args)
-        system_properties["sep"] = client.job_directory.separator
+        system_properties["separator"] = client.job_directory.separator
         self.system_properties = system_properties
         self.jobs_directory = destination_args["jobs_directory"]
 

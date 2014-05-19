@@ -354,7 +354,7 @@ class Inflector:
         return self.Inflector.unaccent(text)
 
     def urlize(self, text) :
-        '''Transform a string its unaccented and underscored
+        '''Transform a string to its unaccented and underscored
         version ready to be inserted in friendly URLs'''
         return self.Inflector.urlize(text)
 

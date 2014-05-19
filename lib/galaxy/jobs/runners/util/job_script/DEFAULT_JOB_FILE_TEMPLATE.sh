@@ -12,6 +12,8 @@ if [ "$GALAXY_LIB" != "None" ]; then
     export PYTHONPATH
 fi
 $env_setup_commands
+$instrument_pre_commands
 cd $working_directory
 $command
 echo $? > $exit_code_path
+$instrument_post_commands

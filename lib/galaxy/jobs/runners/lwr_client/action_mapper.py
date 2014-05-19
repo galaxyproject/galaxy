@@ -132,6 +132,24 @@ class FileActionMapper(object):
         self.mappers = mappers_from_dicts(config.get("paths", []))
         self.files_endpoint = config.get("files_endpoint", None)
 
+    def action(self, path, type, mapper=None):
+        mapper = self.__find_mapper(path, type, mapper)
+        action_class = self.__action_class(path, type, mapper)
+        file_lister = DEFAULT_FILE_LISTER
+        action_kwds = {}
+        if mapper:
+            file_lister = mapper.file_lister
+            action_kwds = mapper.action_kwds
+        action = action_class(path, file_lister=file_lister, **action_kwds)
+        self.__process_action(action, type)
+        return action
+
+    def unstructured_mappers(self):
+        """ Return mappers that will map 'unstructured' files (i.e. go beyond
+        mapping inputs, outputs, and config files).
+        """
+        return filter(lambda m: path_type.UNSTRUCTURED in m.path_types, self.mappers)
+
     def to_dict(self):
         return dict(
             default_action=self.default_action,
@@ -153,36 +171,29 @@ class FileActionMapper(object):
         config = load(open(path, 'rb'))
         self.mappers = mappers_from_dicts(config.get('paths', []))
 
-    def action(self, path, type, mapper=None):
-        action_type = self.default_action if type in ACTION_DEFAULT_PATH_TYPES else "none"
-        file_lister = DEFAULT_FILE_LISTER
-        normalized_path = abspath(path)
+    def __find_mapper(self, path, type, mapper=None):
         if not mapper:
+            normalized_path = abspath(path)
             for query_mapper in self.mappers:
                 if query_mapper.matches(normalized_path, type):
                     mapper = query_mapper
                     break
+        return mapper
+
+    def __action_class(self, path, type, mapper):
+        action_type = self.default_action if type in ACTION_DEFAULT_PATH_TYPES else "none"
         if mapper:
             action_type = mapper.action_type
-            file_lister = mapper.file_lister
         if type in ["workdir", "output_workdir"] and action_type == "none":
-            ## We are changing the working_directory relative to what
-            ## Galaxy would use, these need to be copied over.
+            # We are changing the working_directory relative to what
+            # Galaxy would use, these need to be copied over.
             action_type = "copy"
         action_class = actions.get(action_type, None)
         if action_class is None:
             message_template = "Unknown action_type encountered %s while trying to map path %s"
             message_args = (action_type, path)
             raise Exception(message_template % message_args)
-        action = action_class(path, file_lister=file_lister)
-        self.__process_action(action, type)
-        return action
-
-    def unstructured_mappers(self):
-        """ Return mappers that will map 'unstructured' files (i.e. go beyond
-        mapping inputs, outputs, and config files).
-        """
-        return filter(lambda m: path_type.UNSTRUCTURED in m.path_types, self.mappers)
+        return action_class
 
     def __process_action(self, action, file_type):
         """ Extension point to populate extra action information after an
@@ -198,19 +209,30 @@ class FileActionMapper(object):
             url = "%s&path=%s&file_type=%s" % (url_base, action.path, file_type)
             action.url = url
 
+REQUIRED_ACTION_KWD = object()
+
 
 class BaseAction(object):
+    action_spec = {}
 
     def __init__(self, path, file_lister=None):
         self.path = path
         self.file_lister = file_lister or DEFAULT_FILE_LISTER
 
-    def unstructured_map(self):
+    def unstructured_map(self, path_helper):
         unstructured_map = self.file_lister.unstructured_map(self.path)
-        # To ensure uniqueness, prepend unique prefix to each name
-        prefix = unique_path_prefix(self.path)
-        for path, name in unstructured_map.iteritems():
-            unstructured_map[path] = join(prefix, name)
+        if self.staging_needed:
+            # To ensure uniqueness, prepend unique prefix to each name
+            prefix = unique_path_prefix(self.path)
+            for path, name in unstructured_map.iteritems():
+                unstructured_map[path] = join(prefix, name)
+        else:
+            path_rewrites = {}
+            for path in unstructured_map:
+                rewrite = self.path_rewrite(path_helper, path)
+                if rewrite:
+                    path_rewrites[path] = rewrite
+            unstructured_map = path_rewrites
         return unstructured_map
 
     @property
@@ -229,6 +251,56 @@ class NoneAction(BaseAction):
     paths. """
     action_type = "none"
     staging = STAGING_ACTION_NONE
+
+    def to_dict(self):
+        return dict(path=self.path, action_type=self.action_type)
+
+    @classmethod
+    def from_dict(cls, action_dict):
+        return NoneAction(path=action_dict["path"])
+
+    def path_rewrite(self, path_helper, path=None):
+        return None
+
+
+class RewriteAction(BaseAction):
+    """ This actin indicates the LWR server should simply rewrite the path
+    to the specified file.
+    """
+    action_spec = dict(
+        source_directory=REQUIRED_ACTION_KWD,
+        destination_directory=REQUIRED_ACTION_KWD
+    )
+    action_type = "rewrite"
+    staging = STAGING_ACTION_NONE
+
+    def __init__(self, path, file_lister=None, source_directory=None, destination_directory=None):
+        self.path = path
+        self.file_lister = file_lister or DEFAULT_FILE_LISTER
+        self.source_directory = source_directory
+        self.destination_directory = destination_directory
+
+    def to_dict(self):
+        return dict(
+            path=self.path,
+            action_type=self.action_type,
+            source_directory=self.source_directory,
+            destination_directory=self.destination_directory,
+        )
+
+    @classmethod
+    def from_dict(cls, action_dict):
+        return RewriteAction(
+            path=action_dict["path"],
+            source_directory=action_dict["source_directory"],
+            destination_directory=action_dict["destination_directory"],
+        )
+
+    def path_rewrite(self, path_helper, path=None):
+        if not path:
+            path = self.path
+        new_path = path_helper.from_posix_with_new_base(self.path, self.source_directory, self.destination_directory)
+        return None if new_path == self.path else new_path
 
 
 class TransferAction(BaseAction):
@@ -353,7 +425,18 @@ def from_dict(action_dict):
 class BasePathMapper(object):
 
     def __init__(self, config):
-        self.action_type = config.get('action', DEFAULT_MAPPED_ACTION)
+        action_type = config.get('action', DEFAULT_MAPPED_ACTION)
+        action_class = actions.get(action_type, None)
+        action_kwds = action_class.action_spec.copy()
+        for key, value in action_kwds.items():
+            if key in config:
+                action_kwds[key] = config[key]
+            elif value is REQUIRED_ACTION_KWD:
+                message_template = "action_type %s requires key word argument %s"
+                message = message_template % (action_type, key)
+                raise Exception( message )
+        self.action_type = action_type
+        self.action_kwds = action_kwds
         path_types_str = config.get('path_types', "*defaults*")
         path_types_str = path_types_str.replace("*defaults*", ",".join(ACTION_DEFAULT_PATH_TYPES))
         path_types_str = path_types_str.replace("*any*", ",".join(ALL_PATH_TYPES))
@@ -368,9 +451,10 @@ class BasePathMapper(object):
         base_dict = dict(
             action=self.action_type,
             path_types=",".join(self.path_types),
-            match_type=self.match_type,
-            **self.file_lister.to_dict()
+            match_type=self.match_type
         )
+        base_dict.update(self.file_lister.to_dict())
+        base_dict.update(self.action_kwds)
         base_dict.update(**kwds)
         return base_dict
 
@@ -464,10 +548,11 @@ DEFAULT_FILE_LISTER = FileLister(dict(depth=0))
 
 ACTION_CLASSES = [
     NoneAction,
+    RewriteAction,
     TransferAction,
     CopyAction,
     RemoteCopyAction,
-    RemoteTransferAction
+    RemoteTransferAction,
 ]
 actions = dict([(clazz.action_type, clazz) for clazz in ACTION_CLASSES])
 

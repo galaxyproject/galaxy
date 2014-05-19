@@ -8,6 +8,8 @@ elif [ -n "$NSLOTS" ]; then
     GALAXY_SLOTS="$NSLOTS"
 elif [ -f "$PBS_NODEFILE" ]; then
     GALAXY_SLOTS=`wc -l < $PBS_NODEFILE`
+elif [ -n "$LSB_DJOB_NUMPROC" ]; then
+    GALAXY_SLOTS="$LSB_DJOB_NUMPROC"
 else
     GALAXY_SLOTS="1"
     unset GALAXY_SLOTS_CONFIGURED

@@ -66,7 +66,7 @@ def create_or_verify_database( url, galaxy_config_file, engine_options={}, app=N
         dataset_table = Table( "dataset", meta, autoload=True )
     except NoSuchTableError:
         # No 'dataset' table means a completely uninitialized database.  If we have an app, we'll
-        # set it's new_installation setting to True so the tool migration process will be skipped.
+        # set its new_installation setting to True so the tool migration process will be skipped.
         if app:
             app.new_installation = True
         log.info( "No database, initializing" )

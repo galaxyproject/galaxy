@@ -60,11 +60,55 @@ class ToolShedRepositoriesController( BaseAPIController ):
             annotation = exported_workflow_dict.get( 'annotation', '' )
             format_version = exported_workflow_dict.get( 'format-version', '' )
             workflow_name = exported_workflow_dict.get( 'name', '' )
-            # Since we don't have an in-memory object with an id, we'll identify the exported workflow via it's
+            # Since we don't have an in-memory object with an id, we'll identify the exported workflow via its
             # location (i.e., index) in the list.
             display_dict = dict( index=index, annotation=annotation, format_version=format_version, workflow_name=workflow_name )
             exported_workflows.append( display_dict )
         return exported_workflows
+
+    @web.expose_api
+    def get_latest_installable_revision( self, trans, payload, **kwd ):
+        """
+        POST /api/tool_shed_repositories/get_latest_installable_revision
+        Get the latest installable revision of a specified repository from a specified Tool Shed.
+
+        :param key: the current Galaxy admin user's API key
+
+        The following parameters are included in the payload.
+        :param tool_shed_url (required): the base URL of the Tool Shed from which to retrieve the Repository revision.
+        :param name (required): the name of the Repository
+        :param owner (required): the owner of the Repository
+        """
+        # Get the information about the repository to be installed from the payload.
+        tool_shed_url = payload.get( 'tool_shed_url', '' )
+        if not tool_shed_url:
+            raise HTTPBadRequest( detail="Missing required parameter 'tool_shed_url'." )
+        name = payload.get( 'name', '' )
+        if not name:
+            raise HTTPBadRequest( detail="Missing required parameter 'name'." )
+        owner = payload.get( 'owner', '' )
+        if not owner:
+            raise HTTPBadRequest( detail="Missing required parameter 'owner'." )
+        # Make sure the current user's API key proves he is an admin user in this Galaxy instance.
+        if not trans.user_is_admin():
+            raise HTTPForbidden( detail='You are not authorized to request the latest installable revision for a repository in this Galaxy instance.' )
+        params = '?name=%s&owner=%s' % ( name, owner )
+        url = common_util.url_join( tool_shed_url,
+                                    'api/repositories/get_ordered_installable_revisions%s' % params )
+        try:
+            raw_text = common_util.tool_shed_get( trans.app, tool_shed_url, url )
+        except Exception, e:
+            message = "Error attempting to retrieve the latest installable revision from tool shed %s for repository %s owned by %s: %s" % \
+                ( str( tool_shed_url ), str( name ), str( owner ), str( e ) )
+            log.debug( message )
+            return dict( status='error', error=message )
+        if raw_text:
+            # If successful, the response from get_ordered_installable_revisions will be a list of
+            # changeset_revision hash strings.
+            changeset_revisions = json.from_json_string( raw_text )
+            if len( changeset_revisions ) >= 1:
+                return changeset_revisions[ -1 ]
+        return suc.INITIAL_CHANGELOG_HASH
 
     def __get_value_mapper( self, trans, tool_shed_repository ):
         value_mapper={ 'id' : trans.security.encode_id( tool_shed_repository.id ),
@@ -95,7 +139,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
             raise HTTPBadRequest( detail="Missing required parameter 'index'." )
         repository = suc.get_tool_shed_repository_by_id( trans, tool_shed_repository_id )
         exported_workflows = json.from_json_string( self.exported_workflows( trans, tool_shed_repository_id ) )
-        # Since we don't have an in-memory object with an id, we'll identify the exported workflow via it's location (i.e., index) in the list.
+        # Since we don't have an in-memory object with an id, we'll identify the exported workflow via its location (i.e., index) in the list.
         exported_workflow = exported_workflows[ int( index ) ]
         workflow_name = exported_workflow[ 'workflow_name' ]
         workflow, status, error_message = workflow_util.import_workflow( trans, repository, workflow_name )
@@ -107,7 +151,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
     @web.expose_api
     def import_workflows( self, trans, **kwd ):
         """
-        POST /api/tool_shed_repositories/import_workflow
+        POST /api/tool_shed_repositories/import_workflows
 
         Import all of the exported workflows contained in the specified installed tool shed repository into Galaxy.
 
@@ -207,9 +251,9 @@ class ToolShedRepositoriesController( BaseAPIController ):
         # Keep track of all repositories that are installed - there may be more than one if repository dependencies are installed.
         installed_tool_shed_repositories = []
         # Get all of the information necessary for installing the repository from the specified tool shed.
-        url = suc.url_join( tool_shed_url,
-                            'api/repositories/get_repository_revision_install_info?name=%s&owner=%s&changeset_revision=%s' % \
-                            ( name, owner, changeset_revision ) )
+        params = '?name=%s&owner=%s&changeset_revision=%s' % ( name, owner, changeset_revision )
+        url = common_util.url_join( tool_shed_url,
+                                    'api/repositories/get_repository_revision_install_info%s' % params )
         try:
             raw_text = common_util.tool_shed_get( trans.app, tool_shed_url, url )
         except Exception, e:
@@ -230,8 +274,18 @@ class ToolShedRepositoriesController( BaseAPIController ):
                 ( str( tool_shed_url ), str( changeset_revision ), str( name ), str( owner ), str( e ) )
             log.debug( message )
             return dict( status='error', error=message )
-        repo_info_dicts = [ repo_info_dict ]
         # Make sure the tool shed returned everything we need for installing the repository.
+        if not repository_revision_dict or not repo_info_dict:
+            key = kwd.get( 'key', None )
+            invalid_parameter_message = "No information is available for the requested repository revision.\n"
+            invalid_parameter_message += "One or more of the following parameter values is likely invalid:\n"
+            invalid_parameter_message += "key: %s\n" % str( key )
+            invalid_parameter_message += "tool_shed_url: %s\n" % str( tool_shed_url )
+            invalid_parameter_message += "name: %s\n" % str( name )
+            invalid_parameter_message += "owner: %s\n" % str( owner )
+            invalid_parameter_message += "changeset_revision: %s\n" % str( changeset_revision )
+            raise HTTPBadRequest( detail=invalid_parameter_message )
+        repo_info_dicts = [ repo_info_dict ]
         try:
             has_repository_dependencies = repository_revision_dict[ 'has_repository_dependencies' ]
         except:

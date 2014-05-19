@@ -320,11 +320,7 @@ function scroll_to_nodes() {
 
 // Add a new step to the workflow by tool id
 function add_node_for_tool( id, title ) {
-    var node = prebuild_node( 'tool', title, id );
-    workflow.add_node( node );
-    workflow.fit_canvas_to_nodes();
-    canvas_manager.draw_overview();
-    workflow.activate_node( node );
+    node = add_node( 'tool', title, id );
     $.ajax( {
         url: get_new_module_info_url,
         data: { type: "tool", tool_id: id, "_": "true" },
@@ -344,11 +340,7 @@ function add_node_for_tool( id, title ) {
 }
 
 function add_node_for_module( type, title ) {
-    node = prebuild_node( type, title );
-    workflow.add_node( node );
-    workflow.fit_canvas_to_nodes();
-    canvas_manager.draw_overview();
-    workflow.activate_node( node );
+    node = add_node( type, title );
     $.ajax( {
         url: get_new_module_info_url,
         data: { type: type, "_": "true" },
@@ -502,6 +494,9 @@ function show_form_for_tool( text, node ) {
     }).each( function() {
         var form = this;
         $(this).find( "select[refresh_on_change='true']").change( function() {
+            $(form).submit();
+        });
+        $(this).find( "input[refresh_on_change='true']").change( function() {
             $(form).submit();
         });
         $(this).find( ".popupmenu" ).each( function() {

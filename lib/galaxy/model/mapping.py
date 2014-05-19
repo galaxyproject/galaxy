@@ -111,6 +111,7 @@ model.HistoryDatasetAssociation.table = Table( "history_dataset_association", me
     Column( "deleted", Boolean, index=True, default=False ),
     Column( "purged", Boolean, index=True, default=False ),
     Column( "visible", Boolean ),
+    Column( "hidden_beneath_collection_instance_id", ForeignKey( "history_dataset_collection_association.id" ), nullable=True ),
     Column( "extended_metadata_id", Integer,
         ForeignKey( "extended_metadata.id" ), index=True )
     )
@@ -428,6 +429,18 @@ model.JobToOutputDatasetAssociation.table = Table( "job_to_output_dataset", meta
     Column( "dataset_id", Integer, ForeignKey( "history_dataset_association.id" ), index=True ),
     Column( "name", String(255) ) )
 
+model.JobToInputDatasetCollectionAssociation.table = Table( "job_to_input_dataset_collection", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "job_id", Integer, ForeignKey( "job.id" ), index=True ),
+    Column( "dataset_collection_id", Integer, ForeignKey( "history_dataset_collection_association.id" ), index=True ),
+    Column( "name", Unicode(255) ) )
+
+model.JobToOutputDatasetCollectionAssociation.table = Table( "job_to_output_dataset_collection", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "job_id", Integer, ForeignKey( "job.id" ), index=True ),
+    Column( "dataset_collection_id", Integer, ForeignKey( "history_dataset_collection_association.id" ), index=True ),
+    Column( "name", Unicode(255) ) )
+
 model.JobToInputLibraryDatasetAssociation.table = Table( "job_to_input_library_dataset", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "job_id", Integer, ForeignKey( "job.id" ), index=True ),
@@ -439,6 +452,12 @@ model.JobToOutputLibraryDatasetAssociation.table = Table( "job_to_output_library
     Column( "job_id", Integer, ForeignKey( "job.id" ), index=True ),
     Column( "ldda_id", Integer, ForeignKey( "library_dataset_dataset_association.id" ), index=True ),
     Column( "name", String(255) ) )
+
+model.ImplicitlyCreatedDatasetCollectionInput.table = Table( "implicitly_created_dataset_collection_inputs", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "dataset_collection_id", Integer, ForeignKey( "history_dataset_collection_association.id" ), index=True ),
+    Column( "input_dataset_collection_id", Integer, ForeignKey( "history_dataset_collection_association.id" ), index=True ),
+    Column( "name", Unicode(255) ) )
 
 model.JobExternalOutputMetadata.table = Table( "job_external_output_metadata", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -469,6 +488,52 @@ model.JobImportHistoryArchive.table = Table( "job_import_history_archive", metad
     Column( "history_id", Integer, ForeignKey( "history.id" ), index=True ),
     Column( "archive_dir", TEXT )
     )
+
+
+JOB_METRIC_MAX_LENGTH = 1023
+
+model.JobMetricText.table = Table(
+    "job_metric_text",
+    metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "job_id", Integer, ForeignKey( "job.id" ), index=True ),
+    Column( "plugin", Unicode(255), ),
+    Column( "metric_name", Unicode(255), ),
+    Column( "metric_value", Unicode(JOB_METRIC_MAX_LENGTH), ),
+)
+
+model.TaskMetricText.table = Table(
+    "task_metric_text",
+    metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "task_id", Integer, ForeignKey( "task.id" ), index=True ),
+    Column( "plugin", Unicode(255), ),
+    Column( "metric_name", Unicode(255), ),
+    Column( "metric_value", Unicode(JOB_METRIC_MAX_LENGTH), ),
+)
+
+
+model.JobMetricNumeric.table = Table(
+    "job_metric_numeric",
+    metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "job_id", Integer, ForeignKey( "job.id" ), index=True ),
+    Column( "plugin", Unicode(255), ),
+    Column( "metric_name", Unicode(255), ),
+    Column( "metric_value", Numeric( 22, 7 ), ),
+)
+
+
+model.TaskMetricNumeric.table = Table(
+    "task_metric_numeric",
+    metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "task_id", Integer, ForeignKey( "task.id" ), index=True ),
+    Column( "plugin", Unicode(255), ),
+    Column( "metric_name", Unicode(255), ),
+    Column( "metric_value", Numeric( 22, 7 ), ),
+)
+
 
 model.GenomeIndexToolData.table = Table( "genome_index_tool_data", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -533,6 +598,46 @@ model.TransferJob.table = Table( "transfer_job", metadata,
     Column( "pid", Integer ),
     Column( "socket", Integer ),
     Column( "params", JSONType ) )
+
+model.DatasetCollection.table = Table( "dataset_collection", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "collection_type", Unicode(255), nullable=False ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+)
+
+model.HistoryDatasetCollectionAssociation.table = Table( "history_dataset_collection_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "collection_id", Integer, ForeignKey( "dataset_collection.id" ), index=True ),
+    Column( "history_id", Integer, ForeignKey( "history.id" ), index=True ),
+    Column( "name", TrimmedString( 255 ) ),
+    Column( "hid", Integer ),
+    Column( "visible", Boolean ),
+    Column( "deleted", Boolean, default=False ),
+    Column( "copied_from_history_dataset_collection_association_id", Integer, ForeignKey( "history_dataset_collection_association.id" ), nullable=True ),
+    Column( "implicit_output_name", Unicode(255), nullable=True ),
+)
+
+model.LibraryDatasetCollectionAssociation.table = Table( "library_dataset_collection_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "collection_id", Integer, ForeignKey( "dataset_collection.id" ), index=True ),
+    Column( "folder_id", Integer, ForeignKey( "library_folder.id" ), index=True ),
+    Column( "name", TrimmedString( 255 ) ),
+    Column( "deleted", Boolean, default=False ),
+)
+
+model.DatasetCollectionElement.table = Table( "dataset_collection_element", metadata,
+    Column( "id", Integer, primary_key=True ),
+    # Parent collection id describing what collection this element belongs to.
+    Column( "dataset_collection_id", Integer, ForeignKey( "dataset_collection.id" ), index=True, nullable=False ),
+    # Child defined by this association - HDA, LDDA, or another dataset association...
+    Column( "hda_id", Integer, ForeignKey( "history_dataset_association.id" ), index=True, nullable=True ),
+    Column( "ldda_id", Integer, ForeignKey( "library_dataset_dataset_association.id" ), index=True, nullable=True ),
+    Column( "child_collection_id", Integer, ForeignKey( "dataset_collection.id" ), index=True, nullable=True ),
+    # Element index and identifier to define this parent-child relationship.
+    Column( "element_index", Integer ),
+    Column( "element_identifier", Unicode(255), ),
+)
 
 model.Event.table = Table( "event", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -952,6 +1057,24 @@ model.VisualizationTagAssociation.table = Table( "visualization_tag_association"
     Column( "value", TrimmedString(255), index=True),
     Column( "user_value", TrimmedString(255), index=True) )
 
+model.HistoryDatasetCollectionTagAssociation.table = Table( "history_dataset_collection_tag_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "history_dataset_collection_id", Integer, ForeignKey( "history_dataset_collection_association.id" ), index=True ),
+    Column( "tag_id", Integer, ForeignKey( "tag.id" ), index=True ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+    Column( "user_tname", TrimmedString(255), index=True),
+    Column( "value", TrimmedString(255), index=True),
+    Column( "user_value", TrimmedString(255), index=True) )
+
+model.LibraryDatasetCollectionTagAssociation.table = Table( "library_dataset_collection_tag_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "library_dataset_collection_id", Integer, ForeignKey( "library_dataset_collection_association.id" ), index=True ),
+    Column( "tag_id", Integer, ForeignKey( "tag.id" ), index=True ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+    Column( "user_tname", TrimmedString(255), index=True),
+    Column( "value", TrimmedString(255), index=True),
+    Column( "user_value", TrimmedString(255), index=True) )
+
 model.ToolTagAssociation.table = Table( "tool_tag_association", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "tool_id", TrimmedString(255), index=True ),
@@ -999,6 +1122,18 @@ model.VisualizationAnnotationAssociation.table = Table( "visualization_annotatio
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "annotation", TEXT, index=True) )
 
+model.HistoryDatasetCollectionAnnotationAssociation.table = Table( "history_dataset_collection_annotation_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "history_dataset_collection_id", Integer, ForeignKey( "history_dataset_collection_association.id" ), index=True ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+    Column( "annotation", TEXT, index=True) )
+
+model.LibraryDatasetCollectionAnnotationAssociation.table = Table( "library_dataset_collection_annotation_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "library_dataset_collection_id", Integer, ForeignKey( "library_dataset_collection_association.id" ), index=True ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+    Column( "annotation", TEXT, index=True) )
+
 # Ratings tables.
 model.HistoryRatingAssociation.table = Table( "history_rating_association", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -1027,6 +1162,18 @@ model.PageRatingAssociation.table = Table( "page_rating_association", metadata,
 model.VisualizationRatingAssociation.table = Table( "visualization_rating_association", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "visualization_id", Integer, ForeignKey( "visualization.id" ), index=True ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+    Column( "rating", Integer, index=True) )
+
+model.HistoryDatasetCollectionRatingAssociation.table = Table( "history_dataset_collection_rating_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "history_dataset_collection_id", Integer, ForeignKey( "history_dataset_collection_association.id" ), index=True ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+    Column( "rating", Integer, index=True) )
+
+model.LibraryDatasetCollectionRatingAssociation.table = Table( "library_dataset_collection_rating_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "library_dataset_collection_id", Integer, ForeignKey( "library_dataset_collection_association.id" ), index=True ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "rating", Integer, index=True) )
 
@@ -1245,7 +1392,13 @@ simple_mapping( model.HistoryDatasetAssociation,
     extended_metadata=relation(
             model.ExtendedMetadata,
             primaryjoin=( ( model.HistoryDatasetAssociation.table.c.extended_metadata_id == model.ExtendedMetadata.table.c.id ) )
-        )
+        ),
+    hidden_beneath_collection_instance=relation(
+        model.HistoryDatasetCollectionAssociation,
+        primaryjoin=( ( model.HistoryDatasetAssociation.table.c.hidden_beneath_collection_instance_id == model.HistoryDatasetCollectionAssociation.table.c.id ) ),
+        uselist=False,
+        backref="hidden_dataset_instances",
+    )
 )
 
 simple_mapping( model.Dataset,
@@ -1296,9 +1449,33 @@ mapper( model.History, model.History.table,
     properties=dict( galaxy_sessions=relation( model.GalaxySessionToHistoryAssociation ),
                      datasets=relation( model.HistoryDatasetAssociation, backref="history", order_by=asc(model.HistoryDatasetAssociation.table.c.hid) ),
                      exports=relation( model.JobExportHistoryArchive, primaryjoin=( model.JobExportHistoryArchive.table.c.history_id == model.History.table.c.id ), order_by=desc( model.JobExportHistoryArchive.table.c.id ) ),
-                     active_datasets=relation( model.HistoryDatasetAssociation, primaryjoin=( ( model.HistoryDatasetAssociation.table.c.history_id == model.History.table.c.id ) & not_( model.HistoryDatasetAssociation.table.c.deleted ) ), order_by=asc( model.HistoryDatasetAssociation.table.c.hid ), viewonly=True ),
-                     visible_datasets=relation( model.HistoryDatasetAssociation, primaryjoin=( ( model.HistoryDatasetAssociation.table.c.history_id == model.History.table.c.id ) & not_( model.HistoryDatasetAssociation.table.c.deleted ) & model.HistoryDatasetAssociation.table.c.visible ),
-                     order_by=asc( model.HistoryDatasetAssociation.table.c.hid ), viewonly=True ),
+                     active_datasets=relation(
+                        model.HistoryDatasetAssociation,
+                        primaryjoin=(
+                            ( model.HistoryDatasetAssociation.table.c.history_id == model.History.table.c.id ) & not_( model.HistoryDatasetAssociation.table.c.deleted )
+                        ),
+                        order_by=asc( model.HistoryDatasetAssociation.table.c.hid ),
+                        viewonly=True
+                     ),
+                     active_dataset_collections=relation(
+                        model.HistoryDatasetCollectionAssociation,
+                        primaryjoin=(
+                            ( model.HistoryDatasetCollectionAssociation.table.c.history_id ) == model.History.table.c.id ) & not_( model.HistoryDatasetCollectionAssociation.table.c.deleted ),
+                        order_by=asc( model.HistoryDatasetCollectionAssociation.table.c.hid ),
+                        viewonly=True,
+                     ),
+                     visible_datasets=relation(
+                        model.HistoryDatasetAssociation,
+                        primaryjoin=( ( model.HistoryDatasetAssociation.table.c.history_id == model.History.table.c.id ) & not_( model.HistoryDatasetAssociation.table.c.deleted ) & model.HistoryDatasetAssociation.table.c.visible ),
+                        order_by=asc( model.HistoryDatasetAssociation.table.c.hid ),
+                        viewonly=True,
+                     ),
+                     visible_dataset_collections=relation(
+                        model.HistoryDatasetCollectionAssociation,
+                        primaryjoin=( ( model.HistoryDatasetCollectionAssociation.table.c.history_id == model.History.table.c.id ) & not_( model.HistoryDatasetCollectionAssociation.table.c.deleted ) & model.HistoryDatasetCollectionAssociation.table.c.visible ),
+                        order_by=asc( model.HistoryDatasetCollectionAssociation.table.c.hid ),
+                        viewonly=True,
+                     ),
                      tags=relation( model.HistoryTagAssociation, order_by=model.HistoryTagAssociation.table.c.id, backref="histories" ),
                      annotations=relation( model.HistoryAnnotationAssociation, order_by=model.HistoryAnnotationAssociation.table.c.id, backref="histories" ),
                      ratings=relation( model.HistoryRatingAssociation, order_by=model.HistoryRatingAssociation.table.c.id, backref="histories" ) )
@@ -1558,6 +1735,17 @@ mapper( model.JobToOutputDatasetAssociation,
             job=relation( model.Job ), dataset=relation(
                 model.HistoryDatasetAssociation, lazy=False ) ) )
 
+mapper( model.JobToInputDatasetCollectionAssociation,
+        model.JobToInputDatasetCollectionAssociation.table, properties=dict(
+            job=relation( model.Job ), dataset_collection=relation(
+                model.HistoryDatasetCollectionAssociation, lazy=False,
+                backref="dependent_jobs" ) ) )
+
+mapper( model.JobToOutputDatasetCollectionAssociation,
+        model.JobToOutputDatasetCollectionAssociation.table, properties=dict(
+            job=relation( model.Job ), dataset_collection=relation(
+                model.HistoryDatasetCollectionAssociation, lazy=False ) ) )
+
 mapper( model.JobToInputLibraryDatasetAssociation,
         model.JobToInputLibraryDatasetAssociation.table, properties=dict(
             job=relation( model.Job ), dataset=relation(
@@ -1568,6 +1756,35 @@ mapper( model.JobToOutputLibraryDatasetAssociation,
         model.JobToOutputLibraryDatasetAssociation.table, properties=dict(
             job=relation( model.Job ), dataset=relation(
                 model.LibraryDatasetDatasetAssociation, lazy=False ) ) )
+
+simple_mapping(
+    model.JobMetricText,
+    job=relation( model.Job, backref="text_metrics" ),
+)
+
+simple_mapping(
+    model.TaskMetricText,
+    task=relation( model.Task, backref="text_metrics" ),
+)
+
+simple_mapping(
+    model.JobMetricNumeric,
+    job=relation( model.Job, backref="numeric_metrics" ),
+)
+
+simple_mapping(
+    model.TaskMetricNumeric,
+    task=relation( model.Task, backref="numeric_metrics" ),
+)
+
+simple_mapping(
+    model.ImplicitlyCreatedDatasetCollectionInput,
+    input_dataset_collection=relation(
+        model.HistoryDatasetCollectionAssociation,
+        primaryjoin=( ( model.HistoryDatasetCollectionAssociation.table.c.id == model.ImplicitlyCreatedDatasetCollectionInput.table.c.input_dataset_collection_id ) ),
+        # backref="implicitly_created_dataset_collections",
+    ),
+)
 
 mapper( model.JobParameter, model.JobParameter.table )
 
@@ -1621,6 +1838,61 @@ mapper( model.DeferredJob, model.DeferredJob.table,
 
 mapper( model.TransferJob, model.TransferJob.table,
     properties = {} )
+
+
+simple_mapping( model.DatasetCollection,
+    elements=relation(
+        model.DatasetCollectionElement,
+        primaryjoin=( model.DatasetCollection.table.c.id == model.DatasetCollectionElement.table.c.dataset_collection_id ),
+        remote_side=[ model.DatasetCollectionElement.table.c.dataset_collection_id ],
+        backref="collection",
+        order_by=model.DatasetCollectionElement.table.c.element_index,
+    ),
+)
+
+simple_mapping( model.HistoryDatasetCollectionAssociation,
+    collection=relation( model.DatasetCollection ),
+    history=relation( model.History, backref='dataset_collections' ),
+    copied_from_history_dataset_collection_association=relation(
+        model.HistoryDatasetCollectionAssociation,
+        primaryjoin=( model.HistoryDatasetCollectionAssociation.table.c.copied_from_history_dataset_collection_association_id == model.HistoryDatasetCollectionAssociation.table.c.id ),
+        remote_side=[model.HistoryDatasetCollectionAssociation.table.c.id],
+        uselist=False ),
+    copied_to_history_dataset_collection_associations=relation(
+        model.HistoryDatasetCollectionAssociation,
+        primaryjoin=( model.HistoryDatasetCollectionAssociation.table.c.copied_from_history_dataset_collection_association_id == model.HistoryDatasetCollectionAssociation.table.c.id ) ),
+    implicit_input_collections=relation(
+        model.ImplicitlyCreatedDatasetCollectionInput,
+        primaryjoin=( ( model.HistoryDatasetCollectionAssociation.table.c.id == model.ImplicitlyCreatedDatasetCollectionInput.table.c.dataset_collection_id ) ),
+        backref="dataset_collection",
+    ),
+    tags=relation( model.HistoryDatasetCollectionTagAssociation, order_by=model.HistoryDatasetCollectionTagAssociation.table.c.id, backref='dataset_collections' ),
+    annotations=relation( model.HistoryDatasetCollectionAnnotationAssociation, order_by=model.HistoryDatasetCollectionAnnotationAssociation.table.c.id, backref="dataset_collections" ),
+    ratings=relation( model.HistoryDatasetCollectionRatingAssociation, order_by=model.HistoryDatasetCollectionRatingAssociation.table.c.id, backref="dataset_collections" ),
+)
+
+simple_mapping( model.LibraryDatasetCollectionAssociation,
+    collection=relation( model.DatasetCollection ),
+    folder=relation( model.LibraryFolder, backref='dataset_collections' ),
+    tags=relation( model.LibraryDatasetCollectionTagAssociation, order_by=model.LibraryDatasetCollectionTagAssociation.table.c.id, backref='dataset_collections' ),
+    annotations=relation( model.LibraryDatasetCollectionAnnotationAssociation, order_by=model.LibraryDatasetCollectionAnnotationAssociation.table.c.id, backref="dataset_collections" ),
+    ratings=relation( model.LibraryDatasetCollectionRatingAssociation, order_by=model.LibraryDatasetCollectionRatingAssociation.table.c.id, backref="dataset_collections" ),
+)
+
+simple_mapping( model.DatasetCollectionElement,
+    hda=relation(
+        model.HistoryDatasetAssociation,
+        primaryjoin=( model.DatasetCollectionElement.table.c.hda_id == model.HistoryDatasetAssociation.table.c.id )
+    ),
+    ldda=relation(
+        model.LibraryDatasetDatasetAssociation,
+        primaryjoin=( model.DatasetCollectionElement.table.c.ldda_id == model.LibraryDatasetDatasetAssociation.table.c.id )
+    ),
+    child_collection=relation(
+        model.DatasetCollection,
+        primaryjoin=( model.DatasetCollectionElement.table.c.child_collection_id == model.DatasetCollection.table.c.id ),
+    ),
+)
 
 mapper( model.Event, model.Event.table,
     properties=dict( history=relation( model.History ),
@@ -1782,6 +2054,10 @@ tag_mapping( model.WorkflowStepTagAssociation, "tagged_workflow_steps" )
 
 tag_mapping( model.VisualizationTagAssociation, "tagged_visualizations" )
 
+tag_mapping( model.HistoryDatasetCollectionTagAssociation, "tagged_history_dataset_collections" )
+
+tag_mapping( model.LibraryDatasetCollectionTagAssociation, "tagged_library_dataset_collections" )
+
 tag_mapping( model.ToolTagAssociation, "tagged_tools" )
 
 
@@ -1802,6 +2078,10 @@ annotation_mapping( model.PageAnnotationAssociation, page=model.Page )
 
 annotation_mapping( model.VisualizationAnnotationAssociation, visualization=model.Visualization )
 
+annotation_mapping( model.HistoryDatasetCollectionAnnotationAssociation, history_dataset_collection=model.HistoryDatasetCollectionAssociation )
+
+annotation_mapping( model.LibraryDatasetCollectionAnnotationAssociation, library_dataset_collection=model.LibraryDatasetCollectionAssociation )
+
 
 # Rating tables.
 def rating_mapping( rating_class, **kwds ):
@@ -1817,6 +2097,10 @@ rating_mapping( model.StoredWorkflowRatingAssociation, stored_workflow=model.Sto
 rating_mapping( model.PageRatingAssociation, page=model.Page )
 
 rating_mapping( model.VisualizationRatingAssociation, visualizaiton=model.Visualization )
+
+rating_mapping( model.HistoryDatasetCollectionRatingAssociation, history_dataset_collection=model.HistoryDatasetCollectionAssociation )
+
+rating_mapping( model.LibraryDatasetCollectionRatingAssociation, libary_dataset_collection=model.LibraryDatasetCollectionAssociation )
 
 #Data Manager tables
 mapper( model.DataManagerHistoryAssociation, model.DataManagerHistoryAssociation.table,
@@ -1848,6 +2132,8 @@ mapper( model.APIKeys, model.APIKeys.table,
 #model.LibraryDatasetDatasetAssociation.mapper.add_property( "creating_job_associations", relation( model.JobToOutputLibraryDatasetAssociation ) )
 class_mapper(model.HistoryDatasetAssociation).add_property( "creating_job_associations", relation( model.JobToOutputDatasetAssociation ) )
 class_mapper(model.LibraryDatasetDatasetAssociation).add_property( "creating_job_associations", relation( model.JobToOutputLibraryDatasetAssociation ) )
+
+class_mapper(model.HistoryDatasetCollectionAssociation).add_property( "creating_job_associations", relation( model.JobToOutputDatasetCollectionAssociation ) )
 
 # Helper methods.
 

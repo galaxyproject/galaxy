@@ -20,8 +20,6 @@
         <param type="hda_or_ldda" var_name_in_template="dataset">dataset_id</param>
         <param_modifier type="string" modifies="dataset_id">hda_ldda</param_modifier>
     </params>
-    <!-- template_root and template are currently ignored for the 'built-in' visualizations -->
-    <template_root>webapps/galaxy/visualization</template_root>
     <template>sweepster.mako</template>
     <render_target>_top</render_target>
 </visualization>

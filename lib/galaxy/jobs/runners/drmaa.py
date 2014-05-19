@@ -114,9 +114,6 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
         if not self.prepare_job( job_wrapper, include_metadata=True ):
             return
 
-        # command line has been added to the wrapper by prepare_job()
-        command_line = job_wrapper.runner_command_line
-
         # get configured job destination
         job_destination = job_wrapper.job_destination
 
@@ -164,7 +161,6 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
             return
 
         log.debug( "(%s) submitting file %s", galaxy_id_tag, ajs.job_file )
-        log.debug( "(%s) command is: %s", galaxy_id_tag, command_line )
         if native_spec:
             log.debug( "(%s) native specification is: %s", galaxy_id_tag, native_spec )
 
@@ -177,10 +173,16 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
             while external_job_id is None and trynum < 5:
                 try:
                     external_job_id = self.ds.runJob(jt)
-                except drmaa.InternalException, e:
+                    break
+                except ( drmaa.InternalException, drmaa.DeniedByDrmException ), e:
                     trynum += 1
                     log.warning( '(%s) drmaa.Session.runJob() failed, will retry: %s', galaxy_id_tag, e )
                     time.sleep( 5 )
+            else:
+                log.error( "(%s) All attempts to submit job failed" % galaxy_id_tag )
+                job_wrapper.fail( "Unable to run this job due to a cluster error, please retry it later" )
+                self.ds.deleteJobTemplate( jt )
+                return
         else:
             job_wrapper.change_ownership_for_run()
             log.debug( '(%s) submitting with credentials: %s [uid: %s]' % ( galaxy_id_tag, job_wrapper.user_system_pwent[0], job_wrapper.user_system_pwent[2] ) )

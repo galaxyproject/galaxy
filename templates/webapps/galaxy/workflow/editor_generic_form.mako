@@ -9,13 +9,24 @@
                   cls = "form-row"
                   if input.error:
                       cls += " form-row-error"
+                  extra_attributes = ""
+                  for key, value in getattr( input, "extra_attributes", {} ).iteritems():
+                      extra_attributes += " %s=\"%s\"" % ( key, value )
+                  type_attribute = ""
+                  if input.type:
+                    type_attribute = "type=\"input.type\""
                   %>
                   <div class="${cls}">
                     <label>
                         ${input.label}:
                     </label>
                     <div style="float: left; width: 250px; margin-right: 10px;">
-                        <input type="${input.type}" name="${input.name | h}" value="${input.value | h}" size="30">
+
+                        <input ${type_attribute} name="${input.name | h}" value="${input.value | h}" size="30" ${extra_attributes}>
+                        %if hasattr( input, "body_html" ):
+                              ${input.body_html()}
+                            </input>
+                        %endif
                     </div>
                     %if input.error:
                     <div style="float: left; color: red; font-weight: bold; padding-top: 1px; padding-bottom: 3px;">

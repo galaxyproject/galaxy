@@ -39,6 +39,7 @@ class BaseJobClient(object):
             )
         else:
             job_directory = None
+        self.env = destination_params.get("env", [])
         self.files_endpoint = destination_params.get("files_endpoint", None)
         self.job_directory = job_directory
 
@@ -81,7 +82,7 @@ class JobClient(BaseJobClient):
         super(JobClient, self).__init__(destination_params, job_id)
         self.job_manager_interface = job_manager_interface
 
-    def launch(self, command_line, requirements=[], remote_staging=[], job_config=None):
+    def launch(self, command_line, dependencies_description=None, env=[], remote_staging=[], job_config=None):
         """
         Queue up the execution of the supplied `command_line` on the remote
         server. Called launch for historical reasons, should be renamed to
@@ -96,8 +97,10 @@ class JobClient(BaseJobClient):
         submit_params_dict = submit_params(self.destination_params)
         if submit_params_dict:
             launch_params['params'] = dumps(submit_params_dict)
-        if requirements:
-            launch_params['requirements'] = dumps([requirement.to_dict() for requirement in requirements])
+        if dependencies_description:
+            launch_params['dependencies_description'] = dumps(dependencies_description.to_dict())
+        if env:
+            launch_params['env'] = dumps(env)
         if remote_staging:
             launch_params['remote_staging'] = dumps(remote_staging)
         if job_config and self.setup_handler.local:
@@ -244,8 +247,8 @@ class JobClient(BaseJobClient):
         return self._raw_execute(self._upload_file_action(args), args, contents, input_path)
 
     def _upload_file_action(self, args):
-        ## Hack for backward compatibility, instead of using new upload_file
-        ## path. Use old paths.
+        # Hack for backward compatibility, instead of using new upload_file
+        # path. Use old paths.
         input_type = args['input_type']
         action = {
             # For backward compatibility just target upload_input_extra for all
@@ -291,15 +294,17 @@ class MessageJobClient(BaseJobClient):
             raise Exception(error_message)
         self.client_manager = client_manager
 
-    def launch(self, command_line, requirements=[], remote_staging=[], job_config=None):
+    def launch(self, command_line, dependencies_description=None, env=[], remote_staging=[], job_config=None):
         """
         """
         launch_params = dict(command_line=command_line, job_id=self.job_id)
         submit_params_dict = submit_params(self.destination_params)
         if submit_params_dict:
-            launch_params['params'] = submit_params_dict
-        if requirements:
-            launch_params['requirements'] = [requirement.to_dict() for requirement in requirements]
+            launch_params['submit_params'] = submit_params_dict
+        if dependencies_description:
+            launch_params['dependencies_description'] = dependencies_description.to_dict()
+        if env:
+            launch_params['env'] = env
         if remote_staging:
             launch_params['remote_staging'] = remote_staging
         if job_config and self.setup_handler.local:
@@ -308,7 +313,9 @@ class MessageJobClient(BaseJobClient):
             # before queueing.
             setup_params = _setup_params_from_job_config(job_config)
             launch_params["setup_params"] = setup_params
-        return self.client_manager.exchange.publish("setup", launch_params)
+        response = self.client_manager.exchange.publish("setup", launch_params)
+        log.info("Job published to setup message queue.")
+        return response
 
     def clean(self):
         del self.client_manager.status_cache[self.job_id]

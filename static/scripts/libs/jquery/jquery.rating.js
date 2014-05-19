@@ -296,7 +296,7 @@
 			this.data('rating', control);
 			// Update display
 			this.rating('draw');
-			// find current input and its sibblings
+			// find current input and its siblings
 			var current = $( control.current ? control.current.data('rating.input') : null );
 			var lastipt = $( control.inputs ).filter(':checked');
 			var deadipt = $( control.inputs ).not(current);

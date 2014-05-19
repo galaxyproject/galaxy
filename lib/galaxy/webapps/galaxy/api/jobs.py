@@ -13,6 +13,7 @@ from galaxy.web.base.controller import UsesHistoryDatasetAssociationMixin
 from galaxy.web.base.controller import UsesLibraryMixinItems
 from galaxy import exceptions
 from galaxy import util
+from galaxy import model
 
 import logging
 log = logging.getLogger( __name__ )
@@ -91,10 +92,62 @@ class JobController( BaseAPIController, UsesHistoryDatasetAssociationMixin, Uses
         :rtype:     dictionary
         :returns:   dictionary containing full description of job data
         """
+        job = self.__get_job( trans, id )
+        return self.encode_all_ids( trans, job.to_dict( 'element' ), True )
+
+    @expose_api
+    def inputs( self, trans, id, **kwd ):
+        """
+        show( trans, id )
+        * GET /api/jobs/{job_id}/inputs
+            returns input datasets created by job
+
+        :type   id: string
+        :param  id: Encoded job id
+
+        :rtype:     dictionary
+        :returns:   dictionary containing input dataset associations
+        """
+        job = self.__get_job( trans, id )
+        return self.__dictify_associations( trans, job.input_datasets, job.input_library_datasets )
+
+    @expose_api
+    def outputs( self, trans, id, **kwd ):
+        """
+        show( trans, id )
+        * GET /api/jobs/{job_id}/outputs
+            returns output datasets created by job
+
+        :type   id: string
+        :param  id: Encoded job id
+
+        :rtype:     dictionary
+        :returns:   dictionary containing output dataset associations
+        """
+        job = self.__get_job( trans, id )
+        return self.__dictify_associations( trans, job.output_datasets, job.output_library_datasets )
+
+    def __dictify_associations( self, trans, *association_lists ):
+        rval = []
+        for association_list in association_lists:
+            rval.extend( map( lambda a: self.__dictify_association( trans, a ), association_list ) )
+        return rval
+
+    def __dictify_association( self, trans, job_dataset_association ):
+        dataset_dict = None
+        dataset = job_dataset_association.dataset
+        if dataset:
+            if isinstance( dataset, model.HistoryDatasetAssociation ):
+                dataset_dict = dict( src="hda", id=trans.security.encode_id( dataset.id ) )
+            else:
+                dataset_dict = dict( src="ldda", id=trans.security.encode_id( dataset.id ) )
+        return dict( name=job_dataset_association.name, dataset=dataset_dict )
+
+    def __get_job( self, trans, id ):
         try:
-            decoded_job_id = trans.security.decode_id(id)
-        except:
-            raise exceptions.ObjectAttributeInvalidException()
+            decoded_job_id = trans.security.decode_id( id )
+        except Exception:
+            raise exceptions.MalformedId()
         query = trans.sa_session.query( trans.app.model.Job ).filter(
             trans.app.model.Job.user == trans.user,
             trans.app.model.Job.id == decoded_job_id
@@ -102,7 +155,7 @@ class JobController( BaseAPIController, UsesHistoryDatasetAssociationMixin, Uses
         job = query.first()
         if job is None:
             raise exceptions.ObjectNotFound()
-        return self.encode_all_ids( trans, job.to_dict( 'element' ), True )
+        return job
 
     @expose_api
     def create( self, trans, payload, **kwd ):

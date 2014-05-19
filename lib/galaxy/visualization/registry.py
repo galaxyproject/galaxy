@@ -240,10 +240,13 @@ class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
                 # parse test_result based on result_type (curr: only datatype has to do this)
                 if result_type == 'datatype':
                     # convert datatypes to their actual classes (for use with isinstance)
-                    test_result = trans.app.datatypes_registry.get_datatype_class_by_name( test_result )
+                    datatype_class_name = test_result
+                    test_result = trans.app.datatypes_registry.get_datatype_class_by_name( datatype_class_name )
                     if not test_result:
                         # warn if can't find class, but continue (with other tests)
-                        log.warn( 'visualizations_registry cannot find class (%s) for applicability test', test_result )
+                        log.warn( 'visualizations_registry cannot find class (%s)' +
+                                  ' for applicability test on: %s, id: %s', datatype_class_name,
+                                  target_object, getattr( target_object, 'id', '' ) )
                         continue
 
             #NOTE: tests are OR'd, if any test passes - the visualization can be applied
@@ -473,7 +476,7 @@ class VisualizationsConfigParser( object ):
             returned[ 'render_target' ] = render_target.text
         else:
             returned[ 'render_target' ] = 'galaxy_main'
-        # consider unifying the above into it's own element and parsing method
+        # consider unifying the above into its own element and parsing method
 
         return returned
 
@@ -791,7 +794,7 @@ class ResourceParser( object ):
             # optionally rename the variable returned, defaulting to the original name
             var_name_in_template = param_config.get( 'var_name_in_template', param_name )
 
-            # if the param is present, get it's value, any param modifiers for that param, and parse it into a resource
+            # if the param is present, get its value, any param modifiers for that param, and parse it into a resource
             # use try catch here and not caller to fall back on the default value or re-raise if required
             resource = None
             query_val = query_params.get( param_name, None )

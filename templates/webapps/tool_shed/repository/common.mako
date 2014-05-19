@@ -215,7 +215,7 @@
 
 <%def name="render_clone_str( repository )">
     <%
-        from tool_shed.util.shed_util_common import generate_clone_url_for_repository_in_tool_shed
+        from tool_shed.util.common_util import generate_clone_url_for_repository_in_tool_shed
         clone_str = generate_clone_url_for_repository_in_tool_shed( trans, repository )
     %>
     hg clone <a href="${clone_str}">${clone_str}</a>

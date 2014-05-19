@@ -2,10 +2,7 @@
 <%namespace file="/admin/tool_shed_repository/repository_actions_menu.mako" import="*" />
 <%namespace file="/message.mako" import="render_msg" />
 
-<% 
-    import os
-    from tool_shed.util.common_util import parse_repository_dependency_tuple
-%>
+<% import os %>
 
 ${render_galaxy_repository_actions( repository )}
 
@@ -56,16 +53,21 @@ ${render_galaxy_repository_actions( repository )}
                         %for key, requirements_dict in tool_dependencies_dict.items():
                             <%
                                 readme_text = None
-                                key_items = key.split( '/' )
-                                key_name = key_items[ 0 ]
-                                key_version = key_items[ 1 ]
-                                readme_text = requirements_dict.get( 'readme', None )
-                                install_dir = os.path.join( trans.app.config.tool_dependency_dir,
-                                                            key_name,
-                                                            key_version,
-                                                            repository.owner,
-                                                            repository.name,
-                                                            repository.installed_changeset_revision )
+                                if key == 'set_environment':
+                                    key_name = ', '.join( [ environment_variable[ 'name' ] for environment_variable in requirements_dict ] )
+                                    key_version = ''
+                                    install_dir = ''
+                                else:
+                                    key_items = key.split( '/' )
+                                    key_name = key_items[ 0 ]
+                                    key_version = key_items[ 1 ]
+                                    readme_text = requirements_dict.get( 'readme', None )
+                                    install_dir = os.path.join( trans.app.config.tool_dependency_dir,
+                                                                key_name,
+                                                                key_version,
+                                                                repository.owner,
+                                                                repository.name,
+                                                                repository.installed_changeset_revision )
                             %>
                             %if not os.path.exists( install_dir ):
                                 <tr>

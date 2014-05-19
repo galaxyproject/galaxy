@@ -1,5 +1,4 @@
-// dependencies
-define(['utils/utils'], function(Utils) {
+define([], function() {
 
 var View = Backbone.View.extend({
 
@@ -8,12 +7,13 @@ var View = Backbone.View.extend({
     
     // defaults options
     optionsDefault: {
-        title           : 'ui-modal',
-        body            : '',
-        backdrop        : true,
-        height          : null,
-        width           : null,
-        closing_events  : false
+        title            : 'ui-modal',
+        body             : '',
+        backdrop         : true,
+        height           : null,
+        width            : null,
+        closing_events   : false,
+        closing_callback : null
     },
 
     // button list
@@ -59,6 +59,9 @@ var View = Backbone.View.extend({
     hide: function() {
         this.visible = false;
         this.$el.fadeOut('fast');
+        if (this.options.closing_callback){
+            this.options.closing_callback();
+        }
     },
 
     // enable buttons

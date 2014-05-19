@@ -1,4 +1,5 @@
 <!DOCTYPE HTML>
+<%namespace name="galaxy_client" file="/galaxy_client_app.mako" />
 
 <%
     self.has_left_panel = hasattr( self, 'left_panel' )
@@ -19,7 +20,10 @@
 
 ## Default stylesheets
 <%def name="stylesheets()">
-    ${h.css('base','jquery.rating')}
+    ${h.css(
+        'base',
+        'jquery.rating'
+    )}
     <style type="text/css">
     #center {
         %if not self.has_left_panel:
@@ -58,7 +62,7 @@
         'libs/require',
         "mvc/ui"
     )}
-
+    
     <script type="text/javascript">
         ## global configuration object
         var galaxy_config =
@@ -66,12 +70,9 @@
             root: '${h.url_for( "/" )}'
         };
 
-        ## load additional style sheet
-        if (window != window.top)
-            $('<link href="' + galaxy_config.root + 'static/style/galaxy.frame.masthead.css" rel="stylesheet">').appendTo('head');
-
-        // start a Galaxy namespace for objects created
-        window.Galaxy = window.Galaxy || {};
+        //## load additional style sheet
+        //if (window != window.top)
+        //    $('<link href="' + galaxy_config.root + 'static/style/galaxy.frame.masthead.css" rel="stylesheet">').appendTo('head');
 
         // console protection
         window.console = window.console || {
@@ -92,13 +93,25 @@
             }
         });
     </script>
+
+</%def>
+
+<%def name="javascript_app()">
+    ## load the Galaxy global js var
+    ${ galaxy_client.load() }
 </%def>
 
 ## Default late-load javascripts
 <%def name="late_javascripts()">
     ## Scripts can be loaded later since they progressively add features to
     ## the panels, but do not change layout
-    ${h.js( 'libs/jquery/jquery.event.drag', 'libs/jquery/jquery.event.hover', 'libs/jquery/jquery.form', 'libs/jquery/jquery.rating', 'galaxy.panels' )}
+    ${h.js(
+        'libs/jquery/jquery.event.drag',
+        'libs/jquery/jquery.event.hover',
+        'libs/jquery/jquery.form',
+        'libs/jquery/jquery.rating',
+        'galaxy.panels'
+    )}
     <script type="text/javascript">
         
     ensure_dd_helper();
@@ -195,7 +208,7 @@
                             } );
 
                             // show the dataset we created above in the history panel
-                            Galaxy && Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.refreshHdas();
+                            Galaxy && Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.refreshContents();
 
                             if (upload_error == true) {
                                 return false;
@@ -293,6 +306,7 @@
         <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
         ${self.stylesheets()}
         ${self.javascripts()}
+        ${self.javascript_app()}
     </head>
     
     <%

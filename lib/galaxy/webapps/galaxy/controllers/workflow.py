@@ -20,6 +20,7 @@ from galaxy.datatypes.data import Data
 from galaxy.model.item_attrs import UsesItemRatings
 from galaxy.model.mapping import desc
 from galaxy.tools.parameters.basic import DataToolParameter
+from galaxy.tools.parameters.basic import DataCollectionToolParameter
 from galaxy.tools.parameters import visit_input_values
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import error, url_for
@@ -29,6 +30,7 @@ from galaxy.web.framework.helpers import grids, time_ago
 from galaxy.web.framework.helpers import to_unicode
 from galaxy.workflow.modules import module_factory
 from galaxy.workflow.run import invoke
+from galaxy.workflow.run import WorkflowRunConfig
 from galaxy.workflow.extract import summarize
 from galaxy.workflow.extract import extract_workflow
 from galaxy.workflow.steps import (
@@ -215,12 +217,13 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
 
     @web.expose
     def list_published( self, trans, **kwargs ):
+        kwargs[ 'embedded' ] = True
         grid = self.published_list_grid( trans, **kwargs )
         if 'async' in kwargs:
             return grid
-        else:
-            # Render grid wrapped in panels
-            return trans.fill_template( "workflow/list_published.mako", grid=grid )
+
+        # Render grid wrapped in panels
+        return trans.fill_template( "workflow/list_published.mako", embedded_grid=grid )
 
     @web.expose
     def display_by_username_and_slug( self, trans, username, slug, format='html' ):
@@ -755,15 +758,20 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             }
             # Connections
             input_connections = step.input_connections
+            input_connections_type = {}
             multiple_input = {}  # Boolean value indicating if this can be mutliple
             if step.type is None or step.type == 'tool':
                 # Determine full (prefixed) names of valid input datasets
                 data_input_names = {}
 
                 def callback( input, value, prefixed_name, prefixed_label ):
-                    if isinstance( input, DataToolParameter ):
+                    if isinstance( input, DataToolParameter ) or isinstance( input, DataCollectionToolParameter ):
                         data_input_names[ prefixed_name ] = True
-                        multiple_input[input.name] = input.multiple
+                        multiple_input[ prefixed_name ] = input.multiple
+                        if isinstance( input, DataToolParameter ):
+                            input_connections_type[ input.name ] = "dataset"
+                        if isinstance( input, DataCollectionToolParameter ):
+                            input_connections_type[ input.name ] = "dataset_collection"
                 visit_input_values( module.tool.inputs, module.state.inputs, callback )
                 # Filter
                 # FIXME: this removes connection without displaying a message currently!
@@ -785,7 +793,10 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             # Encode input connections as dictionary
             input_conn_dict = {}
             for conn in input_connections:
-                conn_dict = dict( id=conn.output_step.order_index, output_name=conn.output_name )
+                input_type = "dataset"
+                if conn.input_name in input_connections_type:
+                    input_type = input_connections_type[ conn.input_name ]
+                conn_dict = dict( id=conn.output_step.order_index, output_name=conn.output_name, input_type=input_type )
                 if conn.input_name in multiple_input:
                     if conn.input_name in input_conn_dict:
                         input_conn_dict[ conn.input_name ].append( conn_dict )
@@ -824,7 +835,8 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         steps_by_external_id = {}
         errors = []
         for key, step_dict in data['steps'].iteritems():
-            if step_dict['type'] != 'data_input' and step_dict['tool_id'] not in trans.app.toolbox.tools_by_id:
+            is_input = step_dict[ 'type' ] in [ 'data_input', 'data_collection_input' ]
+            if not is_input and step_dict['tool_id'] not in trans.app.toolbox.tools_by_id:
                 errors.append("Step %s requires tool '%s'." % (step_dict['id'], step_dict['tool_id']))
         if errors:
             return dict( name=workflow.name,
@@ -1186,7 +1198,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         return dict( ext_to_class_name=ext_to_class_name, class_to_classes=class_to_classes )
 
     @web.expose
-    def build_from_current_history( self, trans, job_ids=None, dataset_ids=None, workflow_name=None ):
+    def build_from_current_history( self, trans, job_ids=None, dataset_ids=None, dataset_collection_ids=None, workflow_name=None ):
         user = trans.get_user()
         history = trans.get_history()
         if not user:
@@ -1201,17 +1213,19 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                         history=history
             )
         else:
-            extract_workflow(
+            stored_workflow = extract_workflow(
                 trans,
                 user=user,
                 job_ids=job_ids,
                 dataset_ids=dataset_ids,
+                dataset_collection_ids=dataset_collection_ids,
                 workflow_name=workflow_name
             )
             # Index page with message
-            return trans.show_message( "Workflow '%s' created from current history." % workflow_name )
-            ## return trans.show_ok_message( "<p>Workflow '%s' created.</p><p><a target='_top' href='%s'>Click to load in workflow editor</a></p>"
-            ##     % ( workflow_name, web.url_for(controller='workflow', action='editor', id=trans.security.encode_id(stored.id) ) ) )
+            workflow_id = trans.security.encode_id( stored_workflow.id )
+            return trans.show_message( 'Workflow "%s" created from current history. You can <a href="%s" target="_parent">edit</a> or <a href="%s">run</a> the workflow.' %
+                                       ( workflow_name, url_for( controller='workflow', action='editor', id=workflow_id ), 
+                                       url_for( controller='workflow', action='run', id=workflow_id ) ) )
 
     @web.expose
     def run( self, trans, id, history_id=None, multiple_input_mode="product", hide_fixed_params=False, **kwargs ):
@@ -1321,12 +1335,16 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                             if k.startswith('wf_parm|'):
                                 replacement_dict[k[8:]] = v
 
-                        outputs = invoke(
-                            trans=trans,
-                            workflow=workflow,
+                        run_config = WorkflowRunConfig(
                             target_history=target_history,
                             replacement_dict=replacement_dict,
                             copy_inputs_to_history=new_history is not None
+                        )
+
+                        outputs = invoke(
+                            trans=trans,
+                            workflow=workflow,
+                            workflow_run_config=run_config
                         )
 
                         invocations.append({'outputs': outputs,
@@ -1626,7 +1644,6 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         return canvas
 
 
-## ---- Utility methods -------------------------------------------------------
 def _build_workflow_on_str(instance_ds_names):
     # Returns suffix for new histories based on multi input iteration
     num_multi_inputs = len(instance_ds_names)

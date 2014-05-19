@@ -39,7 +39,8 @@
                     hiddenInput.name = button.name;
                     hiddenInput.value = button.value;
                     form.appendChild( hiddenInput );
-                    return true;
+                    form.submit();
+                    return false;
                 }
                 return false;
             }
@@ -102,7 +103,7 @@
                     </div>
                     <div class="form-row">
                         <input type="submit" name="submit_error_report" value="Report" onclick="return sendReport( this, this.form, '_self' );"/>
-                        %if trans.app.config.biostar_url:
+                        %if trans.app.config.biostar_url and trans.app.config.biostar_enable_bug_reports:
                             <input type="submit" name="submit_error_report" value="Post on Biostar" onclick="return sendReport( this, this.form, '_blank', true );"/>
                         %endif
                     </div>

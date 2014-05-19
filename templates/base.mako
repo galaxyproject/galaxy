@@ -1,3 +1,6 @@
+<%namespace name="galaxy_client" file="/galaxy_client_app.mako" />
+<% self.js_app = None %>
+
 <% _=n_ %>
 <!DOCTYPE HTML>
 <html>
@@ -9,6 +12,7 @@
         ${self.metas()}
         ${self.stylesheets()}
         ${self.javascripts()}
+        ${self.javascript_app()}
     </head>
     <body class="inbound">
         ${next.body()}
@@ -91,6 +95,10 @@
         </script>
     %endif
 
+</%def>
+
+<%def name="javascript_app()">
+    ${ galaxy_client.load( app=self.js_app ) }
 </%def>
 
 ## Additional metas can be defined by templates inheriting from this one.

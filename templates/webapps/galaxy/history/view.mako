@@ -1,4 +1,3 @@
-<%namespace file="/history/history_panel.mako" import="history_panel_javascripts" />
 <%namespace file="/galaxy.masthead.mako" import="get_user_json" />
 
 ## ----------------------------------------------------------------------------
@@ -17,9 +16,6 @@
     self.has_right_panel=False
     self.message_box_visible=False
 %>
-</%def>
-
-<%def name="center_panel()">
 </%def>
 
 ## ----------------------------------------------------------------------------
@@ -70,44 +66,52 @@ a.btn {
 ## ----------------------------------------------------------------------------
 <%def name="javascripts()">
 ${parent.javascripts()}
-${history_panel_javascripts()}
-
-%if not use_panels:
-<script type="text/javascript">
-window.Galaxy = {};
-</script>
-%endif
 
 </%def>
 
 ## ----------------------------------------------------------------------------
 <%def name="center_panel()">
 <%
+    imp_with_deleted_url = h.url_for( controller='history', action='imp', id=history[ 'id' ], all_datasets=True )
+    imp_without_deleted_url = h.url_for( controller='history', action='imp', id=history[ 'id' ] )
+
+    structure_url = h.url_for( controller='history', action='display_structured', id=history[ 'id' ] )
+
+    switch_to_url = h.url_for( controller='history', action='switch_to_history', hist_id=history[ 'id' ] )
+
     show_deleted = context.get( 'show_deleted', None )
     show_hidden  = context.get( 'show_hidden',  None )
 
     user_is_owner_json = 'true' if user_is_owner else 'false'
     show_deleted_json  = h.to_json_string( show_deleted )
     show_hidden_json   = h.to_json_string( show_hidden )
-
-    imp_with_deleted_url = h.url_for( controller='history', action='imp', id=history['id'], all_datasets=True )
-    imp_without_deleted_url = h.url_for( controller='history', action='imp', id=history['id'] )
 %>
 
 <div id="header" class="clear">
-    <div id="history-view-controls" class="pull-right">
-        %if not user_is_owner and not history[ 'purged' ]:
-            <button id="import" class="btn btn-default"></button>
-        %endif
-        <button id="toggle-deleted" class="btn btn-default"></button>
-        <button id="toggle-hidden" class="btn btn-default"></button>
+    <div id="history-view-controls">
+        <div class="pull-left">
+            %if not history[ 'purged' ]:
+                %if user_is_owner:
+                    <button id="switch" class="btn btn-default">${ _( 'Switch to this history' ) }</button>
+                %else:
+                    <button id="import" class="btn btn-default"></button>
+                %endif
+                <a id="structure" href="${ structure_url }" class="btn btn-default">${ _( 'Show structure' ) }</a>
+            %endif
+        </div>
+        <div class="pull-right">
+            <button id="toggle-deleted" class="btn btn-default"></button>
+            <button id="toggle-hidden" class="btn btn-default"></button>
+        </div>
     </div>
 </div>
 
 <div id="history-${ history[ 'id' ] }" class="history-panel unified-panel-body" style="overflow: auto;"></div>
 
 <script type="text/javascript">
-    $(function(){
+
+    function setUpBehaviors(){
+
         $( '#toggle-deleted' ).modeButton({
             initialMode : "${ 'showing_deleted' if show_deleted else 'not_showing_deleted' }",
             modes: [
@@ -118,7 +122,7 @@ window.Galaxy = {};
             // allow the 'include/exclude deleted' button to control whether the 'import' button includes deleted
             //  datasets when importing or not; when deleted datasets are shown, they'll be imported
             $( '#import' ).modeButton( 'setMode',
-                $( this ).modeButton( 'current' ) === 'showing_deleted'? 'with_deleted': 'without_deleted' )
+                $( this ).modeButton( 'current' ) === 'showing_deleted'? 'with_deleted': 'without_deleted' );
         });
 
         $( '#toggle-hidden' ).modeButton({
@@ -129,6 +133,18 @@ window.Galaxy = {};
             ]
         });
 
+        $( '#switch' ).click( function( ev ){
+            ##HACK:ity hack hack
+            ##TODO: remove when out of iframe
+            var hpanel = Galaxy.currHistoryPanel
+                      || ( top.Galaxy && top.Galaxy.currHistoryPanel )? top.Galaxy.currHistoryPanel : null;
+            if( hpanel ){
+                hpanel.switchToHistory( "${ history[ 'id' ] }" );
+            } else {
+                window.location = "${ switch_to_url }";
+            }
+        });
+        
         $( '#import' ).modeButton({
             switchModesOnClick : false,
             initialMode : "${ 'with_deleted' if show_deleted else 'without_deleted' }",
@@ -142,13 +158,12 @@ window.Galaxy = {};
                     onclick: function importWithoutDeleted(){
                         window.location = '${imp_without_deleted_url}';
                     }
-                },
+                }
             ]
         });
-    });
+    }
 
-    var debugging    = JSON.parse( sessionStorage.getItem( 'debugging' ) ) || false,
-        userIsOwner  = ${'true' if user_is_owner else 'false'},
+    var userIsOwner  = ${'true' if user_is_owner else 'false'},
         historyJSON  = ${h.to_json_string( history )},
         hdaJSON      = ${h.to_json_string( hdas )};
         panelToUse   = ( userIsOwner )?
@@ -157,23 +172,20 @@ window.Galaxy = {};
 
     require.config({
         baseUrl : "${h.url_for( '/static/scripts' )}"
-    })([ 'mvc/user/user-model', panelToUse.location ], function( user, panelMod ){
+    })([ 'mvc/user/user-model', panelToUse.location, 'utils/localization' ], function( user, panelMod, _l ){
         $(function(){
-            if( !Galaxy.currUser ){
-                Galaxy.currUser = new user.User( ${h.to_json_string( get_user_json() )} );
-            }
+            setUpBehaviors();
      
             var panelClass = panelMod[ panelToUse.className ],
                 // history module is already in the dpn chain from the panel. We can re-scope it here.
                 historyModel = require( 'mvc/history/history-model' ),
                 hdaBaseView  = require( 'mvc/dataset/hda-base' ),
-                history = new historyModel.History( historyJSON, hdaJSON, {
-                    logger: ( debugging )?( console ):( null )
-                });
+                history = new historyModel.History( historyJSON, hdaJSON );
 
             window.historyPanel = new panelClass({
                 show_deleted    : ${show_deleted_json},
                 show_hidden     : ${show_hidden_json},
+                purgeAllowed    : Galaxy.config.allow_user_dataset_purge,
                 el              : $( "#history-" + historyJSON.id ),
                 model           : history,
                 onready         : function(){

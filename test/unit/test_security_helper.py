@@ -12,6 +12,26 @@ def test_encode_decode():
     assert 1 == test_helper_1.decode_id( test_helper_1.encode_id( 1 ) )
 
 
+def test_nested_encoding():
+    # Does nothing if not a dict
+    assert test_helper_1.encode_all_ids( 1 ) == 1
+
+    # Encodes top-level things ending in _id
+    assert test_helper_1.encode_all_ids( dict( history_id=1 ) )[ "history_id" ] == test_helper_1.encode_id( 1 )
+    # ..except tool_id
+    assert test_helper_1.encode_all_ids( dict( tool_id=1 ) )[ "tool_id" ] == 1
+
+    # Encodes lists at top level is end in _ids
+    expected_ids = [ test_helper_1.encode_id( 1 ), test_helper_1.encode_id( 2 ) ]
+    assert test_helper_1.encode_all_ids( dict( history_ids=[ 1, 2 ] ) )[ "history_ids" ] == expected_ids
+
+    # Encodes nested stuff if and only if recursive set to true.
+    nested_dict = dict( objects=dict( history_ids=[ 1, 2 ] ) )
+    assert test_helper_1.encode_all_ids( nested_dict )[ "objects" ][ "history_ids" ] == [ 1, 2 ]
+    assert test_helper_1.encode_all_ids( nested_dict, recursive=False )[ "objects" ][ "history_ids" ] == [ 1, 2 ]
+    assert test_helper_1.encode_all_ids( nested_dict, recursive=True )[ "objects" ][ "history_ids" ] == expected_ids
+
+
 def test_per_kind_encode_deocde():
     # Different ids are encoded differently
     assert test_helper_1.encode_id( 1, kind="k1" ) != test_helper_1.encode_id( 2, kind="k1" )

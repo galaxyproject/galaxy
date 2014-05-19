@@ -59,26 +59,24 @@ return Backbone.Model.extend(
     
     // unregister process
     done: function(id) {
-        // delete tag
-        delete this.process[id];
-        
-        // decrease process counter
-        this.counter--;
-        
-        // log
-        console.debug('Deferred:done() - Unregistering ' + id);
-        
-        // trigger change
-        this.trigger('refresh');
+        if (this.process[id]) {
+            // delete tag
+            delete this.process[id];
+            
+            // decrease process counter
+            this.counter--;
+            
+            // log
+            console.debug('Deferred:done() - Unregistering ' + id);
+            
+            // trigger change
+            this.trigger('refresh');
+        }
     },
     
     // ready
     ready: function() {
-        if (this.counter == 0) {
-            return true;
-        } else {
-            return false;
-        }
+        return (this.counter == 0);
     }
 });
 
