@@ -68,6 +68,7 @@ define([ "libs/underscore", "mvc/tools" ], function( _, Tools ) {
             var view = this;
 
             var index = 0;
+            var visibleCount = 0;
             _.each( this.switchOptions, function( option, onValue ) {
                 var numValues = _.size( option.options );
                 var selectionType = SELECTION_TYPE[ onValue ];
@@ -79,15 +80,21 @@ define([ "libs/underscore", "mvc/tools" ], function( _, Tools ) {
                     hidden = true;
                 }
                 if( ! hidden ) {
-                    var button = $('<i class="fa ' + selectionType['icon_class'] + '" style="padding-left: 5px; padding-right: 2px;"></i>').click(function() {
+                    visibleCount++;
+                    var button = $('<i class="fa ' + selectionType['icon_class'] + ' runOptionIcon" style="padding-left: 5px; padding-right: 2px;"></i>').click(function() {
                         view.enableSelectBy( iIndex, onValue );
                     }).attr(
                         'title',
                         selectionType['select_by']
                     );
-                    view.formRow().find( "label" ).append( button );                    
+                    view.formRow().find( "label" ).append( button );
                 }
             });
+            if( visibleCount < 2 ) {
+                // Don't show buttons to switch options...
+                view.formRow().find("i.runOptionIcon").hide();
+            }
+
             if( defaultIndex != null) {
                 view.enableSelectBy( defaultIndex, defaultOption );
             }
