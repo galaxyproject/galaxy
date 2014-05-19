@@ -6,6 +6,7 @@ import galaxy.quota
 import galaxy.datatypes.registry
 import galaxy.webapps.tool_shed.model
 from galaxy.openid.providers import OpenIDProviders
+from galaxy.util.dbkeys import GenomeBuilds
 from galaxy.web import security
 from galaxy.tags.tag_handler import CommunityTagHandler
 from tool_shed.grids.util import RepositoryGridFilterManager
@@ -49,6 +50,7 @@ class UniverseApplication( object ):
         # Initialize the Tool Shed tool data tables.  Never pass a configuration file here
         # because the Tool Shed should always have an empty dictionary!
         self.tool_data_tables = galaxy.tools.data.ToolDataTableManager( self.config.tool_data_path )
+        self.genome_builds = GenomeBuilds( self )
         # The Tool Shed makes no use of a Galaxy toolbox, but this attribute is still required.
         self.toolbox = tools.ToolBox( [], self.config.tool_path, self )
         # Initialize the Tool Shed security agent.
