@@ -2,8 +2,6 @@ from galaxy.util import permutations
 from galaxy import model
 from galaxy import util
 from galaxy import exceptions
-from galaxy.dataset_collections import matching
-from galaxy.dataset_collections import subcollections
 
 import logging
 log = logging.getLogger( __name__ )
@@ -29,6 +27,7 @@ def expand_meta_parameters( trans, tool, incoming ):
         else:
             return permutations.input_classification.SINGLE, incoming[ input_key ]
 
+    from galaxy.dataset_collections import matching
     collections_to_match = matching.CollectionsToMatch()
 
     def collection_classifier( input_key ):
@@ -52,6 +51,7 @@ def expand_meta_parameters( trans, tool, incoming ):
             hdc = trans.sa_session.query( model.HistoryDatasetCollectionAssociation ).get( hdc_id )
             collections_to_match.add( input_key, hdc, subcollection_type=subcollection_type )
             if subcollection_type is not None:
+                from galaxy.dataset_collections import subcollections
                 subcollection_elements = subcollections.split_dataset_collection_instance( hdc, subcollection_type )
                 return permutations.input_classification.MATCHED, subcollection_elements
             else:
