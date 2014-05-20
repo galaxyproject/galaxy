@@ -883,13 +883,14 @@
         %else:
             <td style="padding-left: ${pad+20}px;">
                 %if tool.repository_id:
-                    <div style="float:left;" class="menubutton split popup" id="tool-${encoded_id}-popup">
-                        <a class="view-info" href="${h.url_for( controller='repository', action='display_tool', repository_id=trans.security.encode_id( tool.repository_id ), tool_config=tool.tool_config, changeset_revision=tool.changeset_revision, render_repository_actions_for=render_repository_actions_for )}">${tool.name | h}</a>
-                    </div>
-                    <div popupmenu="tool-${encoded_id}-popup">
-                        <a class="action-button" href="${h.url_for( controller='repository', action='view_tool_metadata', repository_id=trans.security.encode_id( tool.repository_id ), changeset_revision=tool.changeset_revision, tool_id=tool.tool_id, render_repository_actions_for=render_repository_actions_for )}">View tool metadata</a>
-                    </div>
-                    %if trans.webapp.name == 'galaxy':
+                    %if trans.webapp.name == 'tool_shed':
+                        <div style="float:left;" class="menubutton split popup" id="tool-${encoded_id}-popup">
+                            <a class="view-info" href="${h.url_for( controller='repository', action='display_tool', repository_id=trans.security.encode_id( tool.repository_id ), tool_config=tool.tool_config, changeset_revision=tool.changeset_revision, render_repository_actions_for=render_repository_actions_for )}">${tool.name | h}</a>
+                        </div>
+                        <div popupmenu="tool-${encoded_id}-popup">
+                            <a class="action-button" href="${h.url_for( controller='repository', action='view_tool_metadata', repository_id=trans.security.encode_id( tool.repository_id ), changeset_revision=tool.changeset_revision, tool_id=tool.tool_id, render_repository_actions_for=render_repository_actions_for )}">View tool metadata</a>
+                        </div>
+                    %elif trans.webapp.name == 'galaxy':
                         %if tool.repository_installation_status == trans.install_model.ToolShedRepository.installation_status.INSTALLED:
                             <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='view_tool_metadata', repository_id=trans.security.encode_id( tool.repository_id ), changeset_revision=tool.changeset_revision, tool_id=tool.tool_id )}">${tool.name | h}</a>
                         %else:
