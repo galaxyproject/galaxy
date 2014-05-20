@@ -22,17 +22,16 @@ class GenomeBuilds( object ):
                 self._static_dbkeys[ key ] = value
 
     def get_genome_build_names( self, trans=None ):
-        #FIXME: how to deal with key duplicates?
-        #Load old builds.txt static keys
-        rval = ( self._static_dbkeys.items() )
-        #load dbkeys from dbkey data table
-        dbkey_table = self._app.tool_data_tables.get( self._data_table_name, None )
-        if dbkey_table is not None:
-            for field_dict in dbkey_table.get_named_fields_list():
-                rval.append( ( field_dict[ 'value' ], field_dict[ 'name' ] ) )
-        #load user custom genome builds
+        # FIXME: how to deal with key duplicates?
+        rval = []
+        # load user custom genome builds
         if trans is not None:
             if trans.history:
+                # This is a little bit Odd. We are adding every .len file in the current history to dbkey list,
+                # but this is previous behavior from trans.db_names, so we'll continue to do it.
+                # It does allow one-off, history specific dbkeys to be created by a user. But we are not filtering,
+                # so a len file will be listed twice (as the build name and again as dataset name), 
+                # if custom dbkey creation/conversion occurred within the current history.
                 datasets = trans.sa_session.query( self._app.model.HistoryDatasetAssociation ) \
                                           .filter_by( deleted=False, history_id=trans.history.id, extension="len" )
                 for dataset in datasets:
@@ -42,10 +41,17 @@ class GenomeBuilds( object ):
                 user_keys = from_json_string( user.preferences['dbkeys'] )
                 for key, chrom_dict in user_keys.iteritems():
                     rval.append( ( key, "%s (%s) [Custom]" % ( chrom_dict['name'], key ) ) )
+        # Load old builds.txt static keys
+        rval.extend( self._static_dbkeys.items() )
+        #load dbkeys from dbkey data table
+        dbkey_table = self._app.tool_data_tables.get( self._data_table_name, None )
+        if dbkey_table is not None:
+            for field_dict in dbkey_table.get_named_fields_list():
+                rval.append( ( field_dict[ 'value' ], field_dict[ 'name' ] ) )
         return rval
 
     def get_chrom_info( self, dbkey, trans=None, custom_build_hack_get_len_from_fasta_conversion=True ):
-        #FIXME: flag to turn off custom_build_hack_get_len_from_fasta_conversion should not be required 
+        # FIXME: flag to turn off custom_build_hack_get_len_from_fasta_conversion should not be required 
         chrom_info = None
         db_dataset = None
         # Collect chromInfo from custom builds
@@ -75,7 +81,7 @@ class GenomeBuilds( object ):
             dbkey_table = self._app.tool_data_tables.get( self._data_table_name, None )
             if dbkey_table is not None:
                 chrom_info = dbkey_table.get_entry( 'value', dbkey, 'len_path', default=None )
-        #use configured len path
+        # use configured server len path
         if not chrom_info:
             # Default to built-in build.
             chrom_info = os.path.join( self._static_chrom_info_path, "%s.len" % dbkey )
