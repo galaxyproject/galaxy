@@ -44,19 +44,18 @@ class GenomeBuilds( object ):
                     rval.append( ( key, "%s (%s) [Custom]" % ( chrom_dict['name'], key ) ) )
         return rval
 
-    def get_chrom_info( self, dbkey, tool, trans=None ):
+    def get_chrom_info( self, dbkey, trans=None, custom_build_hack_get_len_from_fasta_conversion=True ):
+        #FIXME: flag to turn off custom_build_hack_get_len_from_fasta_conversion should not be required 
         chrom_info = None
         db_dataset = None
         # Collect chromInfo from custom builds
         if trans:
             db_dataset = trans.db_dataset_for( dbkey )
             if db_dataset:
-                #incoming[ "chromInfo" ] = db_dataset.file_name
                 chrom_info = db_dataset.file_name
             else:
-                # -- Get chrom_info (len file) from either a custom or built-in build. --
+                # Do Custom Build handling
                 if trans.user and ( 'dbkeys' in trans.user.preferences ) and ( dbkey in from_json_string( trans.user.preferences[ 'dbkeys' ] ) ):
-                    # Custom build.
                     custom_build_dict = from_json_string( trans.user.preferences[ 'dbkeys' ] )[ dbkey ]
                     # HACK: the attempt to get chrom_info below will trigger the
                     # fasta-to-len converter if the dataset is not available or,
@@ -64,17 +63,19 @@ class GenomeBuilds( object ):
                     # running the fasta-to-len tool. So, use a hack in the second
                     # condition below to avoid getting chrom_info when running the
                     # fasta-to-len converter.
-                    if 'fasta' in custom_build_dict and tool.id != 'CONVERTER_fasta_to_len':
+                    if 'fasta' in custom_build_dict and custom_build_hack_get_len_from_fasta_conversion:
                         # Build is defined by fasta; get len file, which is obtained from converting fasta.
                         build_fasta_dataset = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( custom_build_dict[ 'fasta' ] )
                         chrom_info = build_fasta_dataset.get_converted_dataset( trans, 'len' ).file_name
                     elif 'len' in custom_build_dict:
                         # Build is defined by len file, so use it.
                         chrom_info = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( custom_build_dict[ 'len' ] ).file_name
+        # Check Data table
         if not chrom_info:
             dbkey_table = self._app.tool_data_tables.get( self._data_table_name, None )
             if dbkey_table is not None:
                 chrom_info = dbkey_table.get_entry( 'value', dbkey, 'len_path', default=None )
+        #use configured len path
         if not chrom_info:
             # Default to built-in build.
             chrom_info = os.path.join( self._static_chrom_info_path, "%s.len" % dbkey )
