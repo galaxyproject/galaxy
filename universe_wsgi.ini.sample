@@ -831,7 +831,7 @@ use_interactive = True
 # will automatically create and use a separate sqlite database located in your
 # <galaxy>/database folder (indicated in the commented out line below).
 
-#amqp_internal_connection = "sqlite:///./database/control.sqlite?isolation_level=IMMEDIATE"
+#amqp_internal_connection = sqlite:///./database/control.sqlite?isolation_level=IMMEDIATE
 
 
 
