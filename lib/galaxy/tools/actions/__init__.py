@@ -193,7 +193,7 @@ class DefaultToolAction( object ):
 
         # Collect chromInfo dataset and add as parameters to incoming
         db_datasets = {}
-        ( chrom_info, db_dataset ) = trans.app.genome_builds.get_chrom_info( input_dbkey, tool, trans=trans )
+        ( chrom_info, db_dataset ) = trans.app.genome_builds.get_chrom_info( input_dbkey, trans=trans, custom_build_hack_get_len_from_fasta_conversion=tool.id!='CONVERTER_fasta_to_len' )
         if db_dataset:
             inp_data.update( { "chromInfo": db_dataset } )
         incoming[ "chromInfo" ] = chrom_info
