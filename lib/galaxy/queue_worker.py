@@ -70,11 +70,16 @@ def send_control_task(trans, task, noop_self=False, kwargs={}):
                'kwargs': kwargs}
     if noop_self:
         payload['noop'] = trans.app.config.server_name
-    c = Connection(trans.app.config.amqp_internal_connection)
-    with producers[c].acquire(block=True) as producer:
-        producer.publish(payload, exchange=galaxy.queues.galaxy_exchange,
-                         declare=[galaxy.queues.galaxy_exchange] + galaxy.queues.all_control_queues_for_declare(trans.app.config),
-                         routing_key='control')
+    try:
+        c = Connection(trans.app.config.amqp_internal_connection)
+        with producers[c].acquire(block=True) as producer:
+            producer.publish(payload, exchange=galaxy.queues.galaxy_exchange,
+                             declare=[galaxy.queues.galaxy_exchange] + galaxy.queues.all_control_queues_for_declare(trans.app.config),
+                             routing_key='control')
+    except Exception:
+        # This is likely connection refused.
+        # TODO Use the specific Exception above.
+        log.exception("Error sending control task: %s." % payload)
 
 
 # Tasks -- to be reorganized into a separate module as appropriate.  This is
