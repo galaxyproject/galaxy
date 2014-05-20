@@ -19,7 +19,7 @@ class Configuration( object ):
         self.config_dict = kwargs
         self.root = kwargs.get( 'root_dir', '.' )
         # Database related configuration
-        self.database = resolve_path( kwargs.get( "database_file", "database/universe.d" ), self.root )
+        self.database = resolve_path( kwargs.get( "database_file", "database/universe.sqlite" ), self.root )
         self.database_connection =  kwargs.get( "database_connection", False )
         self.database_engine_options = get_database_engine_options( kwargs )
         # Where dataset files are stored
