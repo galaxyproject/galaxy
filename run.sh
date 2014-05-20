@@ -19,6 +19,7 @@ SAMPLES="
     data_manager_conf.xml.sample
     shed_data_manager_conf.xml.sample
     openid_conf.xml.sample
+    job_metrics_conf.xml.sample
     universe_wsgi.ini.sample
     tool-data/shared/ncbi/builds.txt.sample
     tool-data/shared/ensembl/builds.txt.sample
