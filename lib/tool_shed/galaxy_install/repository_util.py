@@ -59,7 +59,7 @@ def create_repo_info_dict( trans, repository_clone_url, changeset_revision, ctx_
     repository = suc.get_repository_by_name_and_owner( trans.app, repository_name, repository_owner )
     if trans.webapp.name == 'tool_shed':
         # We're in the tool shed.
-        repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans,
+        repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans.app,
                                                                                  trans.security.encode_id( repository.id ),
                                                                                  changeset_revision )
         if repository_metadata:
@@ -189,7 +189,7 @@ def get_repo_info_dict( trans, repository_id, changeset_revision ):
     repo_dir = repository.repo_path( trans.app )
     repo = hg.repository( hg_util.get_configured_ui(), repo_dir )
     repository_clone_url = common_util.generate_clone_url_for_repository_in_tool_shed( trans, repository )
-    repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans,
+    repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans.app,
                                                                              repository_id,
                                                                              changeset_revision )
     if not repository_metadata:
@@ -200,7 +200,7 @@ def get_repo_info_dict( trans, repository_id, changeset_revision ):
             suc.get_next_downloadable_changeset_revision( repository,repo, changeset_revision )
         if next_downloadable_changeset_revision:
             repository_metadata = \
-                suc.get_repository_metadata_by_changeset_revision( trans, repository_id, next_downloadable_changeset_revision )
+                suc.get_repository_metadata_by_changeset_revision( trans.app, repository_id, next_downloadable_changeset_revision )
     if repository_metadata:
         # For now, we'll always assume that we'll get repository_metadata, but if we discover our assumption
         # is not valid we'll have to enhance the callers to handle repository_metadata values of None in the

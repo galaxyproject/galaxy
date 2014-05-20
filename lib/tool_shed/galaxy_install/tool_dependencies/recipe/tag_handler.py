@@ -552,4 +552,3 @@ class SetEnvironment( RecipeTag ):
                                                                                      remove_from_disk=False )
             tool_dependencies.append( tool_dependency )
         return tool_dependencies
-

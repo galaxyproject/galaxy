@@ -7,7 +7,7 @@ UNRESTRICTED = 'unrestricted'
 REPOSITORY_SUITE_DEFINITION = 'repository_suite_definition'
 TOOL_DEPENDENCY_DEFINITION = 'tool_dependency_definition'
 
-types = [ UNRESTRICTED, TOOL_DEPENDENCY_DEFINITION ]
+types = [ UNRESTRICTED, TOOL_DEPENDENCY_DEFINITION, REPOSITORY_SUITE_DEFINITION ]
 
 def build_repository_type_select_field( trans, repository=None, name='repository_type' ):
     """Called from the Tool Shed to generate the current list of supported repository types."""

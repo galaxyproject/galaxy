@@ -546,7 +546,7 @@ def get_version_lineage_for_tool( trans, repository_id, repository_metadata, gui
     current_child_guid = guid
     for changeset in suc.reversed_upper_bounded_changelog( repo, repository_metadata.changeset_revision ):
         ctx = repo.changectx( changeset )
-        rm = suc.get_repository_metadata_by_changeset_revision( trans, repository_id, str( ctx ) )
+        rm = suc.get_repository_metadata_by_changeset_revision( trans.app, repository_id, str( ctx ) )
         if rm:
             parent_guid = rm.tool_versions.get( current_child_guid, None )
             if parent_guid:
@@ -558,7 +558,7 @@ def get_version_lineage_for_tool( trans, repository_id, repository_metadata, gui
                                                                  repository_metadata.changeset_revision,
                                                                  repository.tip( trans.app ) ):
         ctx = repo.changectx( changeset )
-        rm = suc.get_repository_metadata_by_changeset_revision( trans, repository_id, str( ctx ) )
+        rm = suc.get_repository_metadata_by_changeset_revision( trans.app, repository_id, str( ctx ) )
         if rm:
             tool_versions = rm.tool_versions
             for child_guid, parent_guid in tool_versions.items():

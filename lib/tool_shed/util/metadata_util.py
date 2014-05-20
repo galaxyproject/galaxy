@@ -307,7 +307,7 @@ def create_or_update_repository_metadata( trans, id, repository, changeset_revis
         downloadable = True
     else:
         downloadable = False
-    repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
+    repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans.app, id, changeset_revision )
     if repository_metadata:
         # A repository metadata record already exists with the received changeset_revision, so we don't need to
         # check the skip_tool_test table.
@@ -1048,17 +1048,17 @@ def get_latest_repository_metadata( trans, decoded_repository_id, downloadable=F
     repository = trans.sa_session.query( trans.model.Repository ).get( decoded_repository_id )
     repo = hg.repository( hg_util.get_configured_ui(), repository.repo_path( trans.app ) )
     if downloadable:
-        changeset_revision = suc.get_latest_downloadable_changeset_revision( trans, repository, repo )
+        changeset_revision = suc.get_latest_downloadable_changeset_revision( trans.app, repository, repo )
     else:
         changeset_revision = suc.get_latest_changeset_revision( trans, repository, repo )
-    return suc.get_repository_metadata_by_changeset_revision( trans, trans.security.encode_id( repository.id ), changeset_revision )
+    return suc.get_repository_metadata_by_changeset_revision( trans.app, trans.security.encode_id( repository.id ), changeset_revision )
 
 def get_parent_id( trans, id, old_id, version, guid, changeset_revisions ):
     parent_id = None
     # Compare from most recent to oldest.
     changeset_revisions.reverse()
     for changeset_revision in changeset_revisions:
-        repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
+        repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans.app, id, changeset_revision )
         metadata = repository_metadata.metadata
         tools_dicts = metadata.get( 'tools', [] )
         for tool_dict in tools_dicts:
@@ -1093,11 +1093,11 @@ def get_repository_metadata_by_id( trans, id ):
 def get_repository_metadata_by_repository_id_changeset_revision( trans, id, changeset_revision, metadata_only=False ):
     """Get a specified metadata record for a specified repository in the tool shed."""
     if metadata_only:
-        repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
+        repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans.app, id, changeset_revision )
         if repository_metadata and repository_metadata.metadata:
             return repository_metadata.metadata
         return None
-    return suc.get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
+    return suc.get_repository_metadata_by_changeset_revision( trans.app, id, changeset_revision )
     
 def get_repository_metadata_revisions_for_review( repository, reviewed=True ):
     repository_metadata_revisions = []
@@ -1336,63 +1336,6 @@ def is_downloadable( metadata_dict ):
         # We have exported workflows.
         return True
     return False
-
-def is_level_one_certified( trans, repository ):
-    """
-    Return True if the latest installable changeset_revision of the received repository is level one certified.
-    """
-    if repository.deleted:
-        return ( None, False )
-    repo = hg.repository( hg_util.get_configured_ui(), repository.repo_path( trans.app ) )
-    # Get the latest installable changeset revision since that is all that is currently configured for testing.
-    latest_installable_changeset_revision = suc.get_latest_downloadable_changeset_revision( trans, repository, repo )
-    if latest_installable_changeset_revision not in [ None, suc.INITIAL_CHANGELOG_HASH ]:
-        encoded_repository_id = trans.security.encode_id( repository.id )
-        repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans,
-                                                                                 encoded_repository_id,
-                                                                                 latest_installable_changeset_revision )
-        if repository_metadata:
-            # Filter out repository revisions that have not been tested.
-            if repository_metadata.time_last_tested is not None and repository_metadata.tool_test_results is not None:
-                if repository.type in [ rt_util.REPOSITORY_SUITE_DEFINITION, rt_util.TOOL_DEPENDENCY_DEFINITION ]:
-                    # Look in the tool_test_results dictionary for installation errors.
-                    try:
-                        tool_test_results_dict = repository_metadata.tool_test_results[ 0 ]
-                    except Exception, e:
-                        message = 'Error attempting to retrieve install and test results for repository %s:\n' % str( repository.name )
-                        message += '%s' % str( e )
-                        log.exception( message )
-                        return ( latest_installable_changeset_revision, False )
-                    if 'installation_errors' in tool_test_results_dict:
-                        return ( latest_installable_changeset_revision, False )
-                    return ( latest_installable_changeset_revision, True )
-                else:
-                    # We have a repository with type Unrestricted.
-                    if repository_metadata.includes_tools:
-                        if repository_metadata.tools_functionally_correct:
-                            return ( latest_installable_changeset_revision, True )
-                        return ( latest_installable_changeset_revision, False )
-                    else:
-                        # Look in the tool_test_results dictionary for installation errors.
-                        try:
-                            tool_test_results_dict = repository_metadata.tool_test_results[ 0 ]
-                        except Exception, e:
-                            message = 'Error attempting to retrieve install and test results for repository %s:\n' % str( repository.name )
-                            message += '%s' % str( e )
-                            log.exception( message )
-                            return ( latest_installable_changeset_revision, False )
-                        if 'installation_errors' in tool_test_results_dict:
-                            return ( latest_installable_changeset_revision, False )
-                        return ( latest_installable_changeset_revision, True )
-            else:
-                # No test results.
-                return ( latest_installable_changeset_revision, False )
-        else:
-            # No repository_metadata.
-            return ( latest_installable_changeset_revision, False )
-    else:
-        # No installable changeset_revision.
-        return ( None, False )
 
 def new_datatypes_metadata_required( trans, repository_metadata, metadata_dict ):
     """
@@ -1746,7 +1689,7 @@ def reset_all_metadata_on_repository_in_tool_shed( trans, id ):
         changeset_revisions_that_contain_tools = []
         for changeset in repo.changelog:
             changeset_revision = str( repo.changectx( changeset ) )
-            repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
+            repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans.app, id, changeset_revision )
             if repository_metadata:
                 metadata = repository_metadata.metadata
                 if metadata:
@@ -1756,7 +1699,7 @@ def reset_all_metadata_on_repository_in_tool_shed( trans, id ):
         # If a repository includes tools, build a dictionary of { 'tool id' : 'parent tool id' } pairs for each tool in each changeset revision.
         for index, changeset_revision in enumerate( changeset_revisions_that_contain_tools ):
             tool_versions_dict = {}
-            repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
+            repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans.app, id, changeset_revision )
             metadata = repository_metadata.metadata
             tool_dicts = metadata[ 'tools' ]
             if index == 0:
@@ -2038,7 +1981,7 @@ def set_repository_metadata( trans, repository, content_alert_str='', **kwd ):
             changeset_revisions = []
             for changeset in repo.changelog:
                 changeset_revision = str( repo.changectx( changeset ) )
-                if suc.get_repository_metadata_by_changeset_revision( trans, encoded_id, changeset_revision ):
+                if suc.get_repository_metadata_by_changeset_revision( trans.app, encoded_id, changeset_revision ):
                     changeset_revisions.append( changeset_revision )
             add_tool_versions( trans, encoded_id, repository_metadata, changeset_revisions )
     elif len( repo ) == 1 and not invalid_file_tups:

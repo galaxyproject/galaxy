@@ -223,7 +223,7 @@ def get_repo_info_dicts( trans, tool_shed_url, repository_id, changeset_revision
     received repository_id.
     """
     repository = suc.get_repository_in_tool_shed( trans, repository_id )
-    repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
+    repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans.app, repository_id, changeset_revision )
     # Get a dictionary of all repositories upon which the contents of the current repository_metadata record depend.
     toolshed_base_url = str( web.url_for( '/', qualified=True ) ).rstrip( '/' )
     repository_dependencies = \

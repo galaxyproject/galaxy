@@ -131,7 +131,7 @@ def build_tool_dependencies_select_field( trans, tool_shed_repository, name, mul
 
 def changeset_is_malicious( trans, id, changeset_revision, **kwd ):
     """Check the malicious flag in repository metadata for a specified change set"""
-    repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
+    repository_metadata = get_repository_metadata_by_changeset_revision( trans.app, id, changeset_revision )
     if repository_metadata:
         return repository_metadata.malicious
     return False
@@ -488,14 +488,14 @@ def get_ctx_file_path_from_manifest( filename, repo, changeset_revision ):
 
 def get_current_repository_metadata_for_changeset_revision( trans, repository, changeset_revision ):
     encoded_repository_id = trans.security.encode_id( repository.id )
-    repository_metadata = get_repository_metadata_by_changeset_revision( trans, encoded_repository_id, changeset_revision )
+    repository_metadata = get_repository_metadata_by_changeset_revision( trans.app, encoded_repository_id, changeset_revision )
     if repository_metadata:
         return repository_metadata
     # The installable changeset_revision may have been changed because it was "moved ahead" in the repository changelog.
     repo = hg.repository( hg_util.get_configured_ui(), repository.repo_path( trans.app ) )
     updated_changeset_revision = get_next_downloadable_changeset_revision( repository, repo, after_changeset_revision=changeset_revision )
     if updated_changeset_revision:
-        repository_metadata = get_repository_metadata_by_changeset_revision( trans, encoded_repository_id, updated_changeset_revision )
+        repository_metadata = get_repository_metadata_by_changeset_revision( trans.app, encoded_repository_id, updated_changeset_revision )
         if repository_metadata:
             return repository_metadata
     return None
@@ -610,7 +610,7 @@ def get_installed_tool_shed_repository( trans, id ):
 
 def get_latest_changeset_revision( trans, repository, repo ):
     repository_tip = repository.tip( trans.app )
-    repository_metadata = get_repository_metadata_by_changeset_revision( trans, trans.security.encode_id( repository.id ), repository_tip )
+    repository_metadata = get_repository_metadata_by_changeset_revision( trans.app, trans.security.encode_id( repository.id ), repository_tip )
     if repository_metadata and repository_metadata.downloadable:
         return repository_tip
     changeset_revisions = get_ordered_metadata_changeset_revisions( repository, repo, downloadable=False )
@@ -618,9 +618,9 @@ def get_latest_changeset_revision( trans, repository, repo ):
         return changeset_revisions[ -1 ]
     return INITIAL_CHANGELOG_HASH
 
-def get_latest_downloadable_changeset_revision( trans, repository, repo ):
-    repository_tip = repository.tip( trans.app )
-    repository_metadata = get_repository_metadata_by_changeset_revision( trans, trans.security.encode_id( repository.id ), repository_tip )
+def get_latest_downloadable_changeset_revision( app, repository, repo ):
+    repository_tip = repository.tip( app )
+    repository_metadata = get_repository_metadata_by_changeset_revision( app, app.security.encode_id( repository.id ), repository_tip )
     if repository_metadata and repository_metadata.downloadable:
         return repository_tip
     changeset_revisions = get_ordered_metadata_changeset_revisions( repository, repo, downloadable=True )
@@ -1076,21 +1076,22 @@ def get_repository_in_tool_shed( trans, id ):
     """Get a repository on the tool shed side from the database via id."""
     return trans.sa_session.query( trans.model.Repository ).get( trans.security.decode_id( id ) )
 
-def get_repository_metadata_by_changeset_revision( trans, id, changeset_revision ):
+def get_repository_metadata_by_changeset_revision( app, id, changeset_revision ):
     """Get metadata for a specified repository change set from the database."""
     # Make sure there are no duplicate records, and return the single unique record for the changeset_revision.
     # Duplicate records were somehow created in the past.  The cause of this issue has been resolved, but we'll
     # leave this method as is for a while longer to ensure all duplicate records are removed.
-    all_metadata_records = trans.sa_session.query( trans.model.RepositoryMetadata ) \
-                                           .filter( and_( trans.model.RepositoryMetadata.table.c.repository_id == trans.security.decode_id( id ),
-                                                          trans.model.RepositoryMetadata.table.c.changeset_revision == changeset_revision ) ) \
-                                           .order_by( trans.model.RepositoryMetadata.table.c.update_time.desc() ) \
-                                           .all()
+    sa_session = app.model.context.current
+    all_metadata_records = sa_session.query( app.model.RepositoryMetadata ) \
+                                     .filter( and_( app.model.RepositoryMetadata.table.c.repository_id == app.security.decode_id( id ),
+                                                    app.model.RepositoryMetadata.table.c.changeset_revision == changeset_revision ) ) \
+                                     .order_by( app.model.RepositoryMetadata.table.c.update_time.desc() ) \
+                                     .all()
     if len( all_metadata_records ) > 1:
         # Delete all records older than the last one updated.
         for repository_metadata in all_metadata_records[ 1: ]:
-            trans.sa_session.delete( repository_metadata )
-            trans.sa_session.flush()
+            sa_session.delete( repository_metadata )
+            sa_session.flush()
         return all_metadata_records[ 0 ]
     elif all_metadata_records:
         return all_metadata_records[ 0 ]

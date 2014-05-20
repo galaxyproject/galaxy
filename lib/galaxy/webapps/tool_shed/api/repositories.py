@@ -127,7 +127,7 @@ class RepositoriesController( BaseAPIController ):
                                                     action='show',
                                                     id=encoded_repository_id )
             # Get the repository_metadata information.
-            repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans,
+            repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans.app,
                                                                                      encoded_repository_id,
                                                                                      changeset_revision )
             if repository_metadata is None:
@@ -136,7 +136,7 @@ class RepositoriesController( BaseAPIController ):
                 repo_dir = repository.repo_path( trans.app )
                 repo = hg.repository( hg_util.get_configured_ui(), repo_dir )
                 new_changeset_revision = suc.get_next_downloadable_changeset_revision( repository, repo, changeset_revision )
-                repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans,
+                repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans.app,
                                                                                          encoded_repository_id,
                                                                                          new_changeset_revision )
                 changeset_revision = new_changeset_revision

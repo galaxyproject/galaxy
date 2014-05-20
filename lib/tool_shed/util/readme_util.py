@@ -27,7 +27,7 @@ def build_readme_files_dict( trans, repository, changeset_revision, metadata, to
         can_use_disk_files = True
     else:
         repo = hg.repository( hg_util.get_configured_ui(), repository.repo_path( trans.app ) )
-        latest_downloadable_changeset_revision = suc.get_latest_downloadable_changeset_revision( trans, repository, repo )
+        latest_downloadable_changeset_revision = suc.get_latest_downloadable_changeset_revision( trans.app, repository, repo )
         can_use_disk_files = changeset_revision == latest_downloadable_changeset_revision
     readme_files_dict = {}
     if metadata:

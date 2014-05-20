@@ -155,7 +155,7 @@ class RepositoryReviewController( BaseUIController, ratings_util.ItemRatings ):
                                                                           **kwd ) )
                     # A review can be initially performed only on an installable revision of a repository, so make sure we have metadata associated
                     # with the received changeset_revision.
-                    repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
+                    repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans.app, repository_id, changeset_revision )
                     if repository_metadata:
                         metadata = repository_metadata.metadata
                         if metadata:
@@ -485,7 +485,7 @@ class RepositoryReviewController( BaseUIController, ratings_util.ItemRatings ):
                         repository_reviews = review_util.get_reviews_by_repository_id_changeset_revision( trans, repository_id, changeset_revision )
                         # Determine if the current user can add a review to this revision.
                         can_add_review = trans.user not in [ repository_review.user for repository_review in repository_reviews ]
-                        repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
+                        repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans.app, repository_id, changeset_revision )
                         if repository_metadata:
                             repository_metadata_reviews = util.listify( repository_metadata.reviews )
                         else:
