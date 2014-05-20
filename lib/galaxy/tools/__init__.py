@@ -145,7 +145,7 @@ class ToolBox( object, Dictifiable ):
                 self.init_tools( config_filename )
             except:
                 log.exception( "Error loading tools defined in config %s", config_filename )
-        if self.integrated_tool_panel_config_has_contents:
+        if self.app.name == 'galaxy' and self.integrated_tool_panel_config_has_contents:
             # Load self.tool_panel based on the order in self.integrated_tool_panel.
             self.load_tool_panel()
         if app.config.update_integrated_tool_panel:
