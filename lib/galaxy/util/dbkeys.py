@@ -4,7 +4,6 @@ Functionality for dealing with dbkeys.
 #dbkeys read from disk using builds.txt
 from galaxy.util import dbnames
 from galaxy.util.json import from_json_string
-from galaxy.util.odict import odict
 import os.path
 
 
@@ -16,10 +15,10 @@ class GenomeBuilds( object ):
         self._app = app
         self._data_table_name = data_table_name
         self._static_chrom_info_path = app.config.len_file_path
-        self._static_dbkeys = odict() #need odict to keep ? at top of list
+        # A dbkey can be listed multiple times, but with different names, so we can't use dictionaries for lookups
+        self._static_dbkeys = []
         if load_old_style:
-            for key, value in dbnames:
-                self._static_dbkeys[ key ] = value
+            self._static_dbkeys = list( dbnames )
 
     def get_genome_build_names( self, trans=None ):
         # FIXME: how to deal with key duplicates?
@@ -42,7 +41,7 @@ class GenomeBuilds( object ):
                 for key, chrom_dict in user_keys.iteritems():
                     rval.append( ( key, "%s (%s) [Custom]" % ( chrom_dict['name'], key ) ) )
         # Load old builds.txt static keys
-        rval.extend( self._static_dbkeys.items() )
+        rval.extend( self._static_dbkeys )
         #load dbkeys from dbkey data table
         dbkey_table = self._app.tool_data_tables.get( self._data_table_name, None )
         if dbkey_table is not None:
