@@ -304,7 +304,7 @@ class SharableItemSecurityMixin:
     def security_check( self, trans, item, check_ownership=False, check_accessible=False ):
         """ Security checks for an item: checks if (a) user owns item or (b) item is accessible to user. """
         # all items are accessible to an admin
-        if trans.user and trans.user_is_admin():
+        if trans.user_is_admin():
             return item
 
         # Verify ownership: there is a current user and that user is the same as the item's
