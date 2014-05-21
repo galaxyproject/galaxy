@@ -12,6 +12,7 @@ from tool_shed.util import hg_util
 from tool_shed.util import metadata_util
 from tool_shed.util import xml_util
 import tool_shed.util.shed_util_common as suc
+import tool_shed.repository_types.util as rt_util
 
 from galaxy import eggs
 eggs.require( 'mercurial' )
@@ -240,7 +241,7 @@ def import_repository_archive( trans, repository, repository_archive_dict ):
         archive.close()
         for filename in filenames_in_archive:
             uploaded_file_name = os.path.join( full_path, filename )
-            if os.path.split( uploaded_file_name )[ -1 ] == suc.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME:
+            if os.path.split( uploaded_file_name )[ -1 ] == rt_util.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME:
                 # Inspect the contents of the file to see if changeset_revision values are missing and if so, set them appropriately.
                 altered, root_elem, error_message = commit_util.handle_repository_dependencies_definition( trans,
                                                                                                            uploaded_file_name,
@@ -251,7 +252,7 @@ def import_repository_archive( trans, repository, repository_archive_dict ):
                 if altered:
                     tmp_filename = xml_util.create_and_write_tmp_file( root_elem )
                     shutil.move( tmp_filename, uploaded_file_name )
-            elif os.path.split( uploaded_file_name )[ -1 ] == suc.TOOL_DEPENDENCY_DEFINITION_FILENAME:
+            elif os.path.split( uploaded_file_name )[ -1 ] == rt_util.TOOL_DEPENDENCY_DEFINITION_FILENAME:
                 # Inspect the contents of the file to see if changeset_revision values are missing and if so, set them appropriately.
                 altered, root_elem, error_message = commit_util.handle_tool_dependencies_definition( trans, uploaded_file_name )
                 if error_message:

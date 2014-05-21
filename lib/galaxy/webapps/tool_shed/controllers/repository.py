@@ -1713,11 +1713,14 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         changeset_revision = kwd.get( 'changeset_revision', None )
         repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
         repository_id = trans.security.encode_id( repository.id )
-        # We aren't concerned with repositories of type tool_dependency_definition here if a repository_metadata record is not returned
-        # because repositories of this type will never have repository dependencies. However, if a readme file is uploaded, or some other
-        # change is made that does not create a new downloadable changeset revision but updates the existing one, we still want to be able
-        # to get repository dependencies.
-        repository_metadata = suc.get_current_repository_metadata_for_changeset_revision( trans, repository, changeset_revision )
+        # We aren't concerned with repositories of type tool_dependency_definition here if a
+        # repository_metadata record is not returned because repositories of this type will never
+        # have repository dependencies. However, if a readme file is uploaded, or some other change
+        # is made that does not create a new downloadable changeset revision but updates the existing
+        # one, we still want to be able to get repository dependencies.
+        repository_metadata = suc.get_current_repository_metadata_for_changeset_revision( trans.app,
+                                                                                          repository,
+                                                                                          changeset_revision )
         if repository_metadata:
             metadata = repository_metadata.metadata
             if metadata:
@@ -1838,7 +1841,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         #manafest.
         repo_dir = repository.repo_path( trans.app )
         # Get the tool_dependencies.xml file from disk.
-        tool_dependencies_config = suc.get_config_from_disk( suc.TOOL_DEPENDENCY_DEFINITION_FILENAME, repo_dir )
+        tool_dependencies_config = suc.get_config_from_disk( rt_util.TOOL_DEPENDENCY_DEFINITION_FILENAME, repo_dir )
         # Return the encoded contents of the tool_dependencies.xml file.
         if tool_dependencies_config:
             tool_dependencies_config_file = open( tool_dependencies_config, 'rb' )
@@ -2362,13 +2365,15 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                                                                                    handled_key_rd_dicts=None )
                 if str( repository.type ) != rt_util.REPOSITORY_SUITE_DEFINITION:
                     # Handle messaging for resetting repository type to the optimal value.
-                    change_repository_type_message = suc.generate_message_for_repository_type_change( trans, repository )
+                    change_repository_type_message = rt_util.generate_message_for_repository_type_change( trans.app,
+                                                                                                          repository )
                     if change_repository_type_message:
                         message += change_repository_type_message
                         status = 'warning'
                 elif str( repository.type ) != rt_util.TOOL_DEPENDENCY_DEFINITION:
                     # Handle messaging for resetting repository type to the optimal value.
-                    change_repository_type_message = suc.generate_message_for_repository_type_change( trans, repository )
+                    change_repository_type_message = rt_util.generate_message_for_repository_type_change( trans.app,
+                                                                                                          repository )
                     if change_repository_type_message:
                         message += change_repository_type_message
                         status = 'warning'
@@ -3245,7 +3250,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                     status = 'warning'
         else:
             metadata = None
-        is_malicious = suc.changeset_is_malicious( trans, id, repository.tip( trans.app ) )
+        is_malicious = suc.changeset_is_malicious( trans.app, id, repository.tip( trans.app ) )
         if is_malicious:
             if trans.app.security_agent.can_push( trans.app, trans.user, repository ):
                 message += malicious_error_can_push

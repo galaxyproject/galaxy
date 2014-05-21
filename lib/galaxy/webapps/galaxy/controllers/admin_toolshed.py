@@ -1,6 +1,7 @@
 import logging
 import os
 import shutil
+
 from admin import AdminGalaxy
 from galaxy import eggs
 from galaxy import web
@@ -10,7 +11,10 @@ from galaxy.web.framework.helpers import grids
 from galaxy.web.framework.helpers import iff
 from galaxy.util import json
 from galaxy.model.orm import or_
+
 import tool_shed.util.shed_util_common as suc
+import tool_shed.repository_types.util as rt_util
+
 from tool_shed.util import common_util
 from tool_shed.util import common_install_util
 from tool_shed.util import data_manager_util
@@ -26,6 +30,7 @@ from tool_shed.util import workflow_util
 from tool_shed.util import xml_util
 from tool_shed.galaxy_install import repository_util
 import tool_shed.galaxy_install.grids.admin_toolshed_grids as admin_toolshed_grids
+
 import pkg_resources
 
 eggs.require( 'mercurial' )
@@ -458,7 +463,7 @@ class AdminToolshed( AdminGalaxy ):
         err_msg = ''
         tool_shed_repository = tool_dependencies[ 0 ].tool_shed_repository
         # Get the tool_dependencies.xml file from the repository.
-        tool_dependencies_config = suc.get_config_from_disk( suc.TOOL_DEPENDENCY_DEFINITION_FILENAME,
+        tool_dependencies_config = suc.get_config_from_disk( rt_util.TOOL_DEPENDENCY_DEFINITION_FILENAME,
                                                              tool_shed_repository.repo_path( trans.app ) )
         installed_tool_dependencies = \
             common_install_util.install_specified_packages( app=trans.app,

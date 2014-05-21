@@ -39,8 +39,8 @@ SUBSET = 'subset'
 SUBSET_VALUES = [ EQUAL, SUBSET ]
 
 NOT_TOOL_CONFIGS = [ suc.DATATYPES_CONFIG_FILENAME,
-                     suc.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME,
-                     suc.TOOL_DEPENDENCY_DEFINITION_FILENAME,
+                     rt_util.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME,
+                     rt_util.TOOL_DEPENDENCY_DEFINITION_FILENAME,
                      suc.REPOSITORY_DATA_MANAGER_CONFIG_FILENAME ]
 
 def add_tool_versions( trans, id, repository_metadata, changeset_revisions ):
@@ -49,7 +49,12 @@ def add_tool_versions( trans, id, repository_metadata, changeset_revisions ):
     tool_versions_dict = {}
     for tool_dict in metadata.get( 'tools', [] ):
         # We have at least 2 changeset revisions to compare tool guids and tool ids.
-        parent_id = get_parent_id( trans, id, tool_dict[ 'id' ], tool_dict[ 'version' ], tool_dict[ 'guid' ], changeset_revisions )
+        parent_id = get_parent_id( trans.app,
+                                   id,
+                                   tool_dict[ 'id' ],
+                                   tool_dict[ 'version' ],
+                                   tool_dict[ 'guid' ],
+                                   changeset_revisions )
         tool_versions_dict[ tool_dict[ 'guid' ] ] = parent_id
     if tool_versions_dict:
         repository_metadata.tool_versions = tool_versions_dict
@@ -662,7 +667,7 @@ def generate_metadata_for_changeset_revision( app, repository, changeset_revisio
                 dirs.remove( '.hg' )
             for name in files:
                 # See if we have a repository dependencies defined.
-                if name == suc.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME:
+                if name == rt_util.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME:
                     path_to_repository_dependencies_config = os.path.join( root, name )
                     metadata_dict, error_message = \
                         generate_repository_dependency_metadata( app,
@@ -1048,17 +1053,23 @@ def get_latest_repository_metadata( trans, decoded_repository_id, downloadable=F
     repository = trans.sa_session.query( trans.model.Repository ).get( decoded_repository_id )
     repo = hg.repository( hg_util.get_configured_ui(), repository.repo_path( trans.app ) )
     if downloadable:
-        changeset_revision = suc.get_latest_downloadable_changeset_revision( trans.app, repository, repo )
+        changeset_revision = suc.get_latest_downloadable_changeset_revision( trans.app,
+                                                                             repository,
+                                                                             repo )
     else:
-        changeset_revision = suc.get_latest_changeset_revision( trans, repository, repo )
-    return suc.get_repository_metadata_by_changeset_revision( trans.app, trans.security.encode_id( repository.id ), changeset_revision )
+        changeset_revision = suc.get_latest_changeset_revision( trans.app,
+                                                                repository,
+                                                                repo )
+    return suc.get_repository_metadata_by_changeset_revision( trans.app,
+                                                              trans.security.encode_id( repository.id ),
+                                                              changeset_revision )
 
-def get_parent_id( trans, id, old_id, version, guid, changeset_revisions ):
+def get_parent_id( app, id, old_id, version, guid, changeset_revisions ):
     parent_id = None
     # Compare from most recent to oldest.
     changeset_revisions.reverse()
     for changeset_revision in changeset_revisions:
-        repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans.app, id, changeset_revision )
+        repository_metadata = suc.get_repository_metadata_by_changeset_revision( app, id, changeset_revision )
         metadata = repository_metadata.metadata
         tools_dicts = metadata.get( 'tools', [] )
         for tool_dict in tools_dicts:
@@ -1709,7 +1720,7 @@ def reset_all_metadata_on_repository_in_tool_shed( trans, id ):
                     tool_versions_dict[ tool_dict[ 'guid' ] ] = tool_dict[ 'id' ]
             else:
                 for tool_dict in tool_dicts:
-                    parent_id = get_parent_id( trans,
+                    parent_id = get_parent_id( trans.app,
                                                id,
                                                tool_dict[ 'id' ],
                                                tool_dict[ 'version' ],

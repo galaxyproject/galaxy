@@ -7,6 +7,7 @@ import threading
 from time import gmtime
 from time import strftime
 import tool_shed.util.shed_util_common as suc
+import tool_shed.repository_types.util as rt_util
 from galaxy import eggs
 from galaxy import web
 from galaxy.util.odict import odict
@@ -71,7 +72,9 @@ def export_repository( trans, tool_shed_url, repository_id, repository_name, cha
         ordered_repositories = []
         ordered_changeset_revisions = []
         if repository:
-            repository_metadata = suc.get_current_repository_metadata_for_changeset_revision( trans, repository, changeset_revision )
+            repository_metadata = suc.get_current_repository_metadata_for_changeset_revision( trans.app,
+                                                                                              repository,
+                                                                                              changeset_revision )
             if repository_metadata:
                 ordered_repository_ids = [ repository_id ]
                 ordered_repositories = [ repository ]
@@ -147,17 +150,19 @@ def generate_repository_archive( trans, work_dir, tool_shed_url, repository, cha
                 full_path = os.path.join( root, name )
                 relative_path = full_path.replace( work_dir, '' ).lstrip( '/' )
                 # See if we have a repository dependencies defined.
-                if name == suc.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME:
+                if name == rt_util.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME:
                     # Eliminate the toolshed, and changeset_revision attributes from all <repository> tags.
-                    altered, root_elem, error_message = commit_util.handle_repository_dependencies_definition( trans, full_path, unpopulate=True )
+                    altered, root_elem, error_message = \
+                        commit_util.handle_repository_dependencies_definition( trans, full_path, unpopulate=True )
                     if error_message:
                         return None, error_message
                     if altered:
                         tmp_filename = xml_util.create_and_write_tmp_file( root_elem, use_indent=True )
                         shutil.move( tmp_filename, full_path )
-                elif name == suc.TOOL_DEPENDENCY_DEFINITION_FILENAME:
+                elif name == rt_util.TOOL_DEPENDENCY_DEFINITION_FILENAME:
                     # Eliminate the toolshed, and changeset_revision attributes from all <repository> tags.
-                    altered, root_elem, error_message = commit_util.handle_tool_dependencies_definition( trans, full_path, unpopulate=True )
+                    altered, root_elem, error_message = \
+                        commit_util.handle_tool_dependencies_definition( trans, full_path, unpopulate=True )
                     if error_message:
                         return None, error_message
                     if altered:
@@ -167,7 +172,8 @@ def generate_repository_archive( trans, work_dir, tool_shed_url, repository, cha
     repository_archive.close()
     return repository_archive, error_message
 
-def generate_repository_archive_filename( tool_shed_url, name, owner, changeset_revision, file_type, export_repository_dependencies=False, use_tmp_archive_dir=False ):
+def generate_repository_archive_filename( tool_shed_url, name, owner, changeset_revision, file_type,
+                                          export_repository_dependencies=False, use_tmp_archive_dir=False ):
     tool_shed = remove_protocol_from_tool_shed_url( tool_shed_url )
     file_type_str = suc.get_file_type_str( changeset_revision, file_type )
     if export_repository_dependencies:
@@ -200,7 +206,9 @@ def get_components_from_repo_info_dict( trans, repo_info_dict ):
         description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = \
             suc.get_repo_info_tuple_contents( repo_info_tup )
         repository = suc.get_repository_by_name_and_owner( trans.app, repository_name, repository_owner )
-        repository_metadata = suc.get_current_repository_metadata_for_changeset_revision( trans, repository, changeset_revision )
+        repository_metadata = suc.get_current_repository_metadata_for_changeset_revision( trans.app,
+                                                                                          repository,
+                                                                                          changeset_revision )
         if repository_metadata:
             return repository, repository_metadata.changeset_revision
     return None, None

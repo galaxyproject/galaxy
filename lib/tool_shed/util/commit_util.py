@@ -51,10 +51,10 @@ def check_archive( repository, archive ):
         if member.name in [ 'hgrc' ]:
             message = "Uploaded archives cannot contain hgrc files."
             return False, message
-        if repository.type == rt_util.REPOSITORY_SUITE_DEFINITION and member.name != suc.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME:
+        if repository.type == rt_util.REPOSITORY_SUITE_DEFINITION and member.name != rt_util.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME:
             message = 'Repositories of type <b>Repsoitory suite definition</b> can contain only a single file named <b>repository_dependencies.xml</b>.'
             return False, message
-        if repository.type == rt_util.TOOL_DEPENDENCY_DEFINITION and member.name != suc.TOOL_DEPENDENCY_DEFINITION_FILENAME:
+        if repository.type == rt_util.TOOL_DEPENDENCY_DEFINITION and member.name != rt_util.TOOL_DEPENDENCY_DEFINITION_FILENAME:
             message = 'Repositories of type <b>Tool dependency definition</b> can contain only a single file named <b>tool_dependencies.xml</b>.'
             return False, message
     return True, ''

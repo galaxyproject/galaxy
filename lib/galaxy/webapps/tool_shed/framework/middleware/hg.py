@@ -131,7 +131,7 @@ class Hg( object ):
                                     # We possibly found an altered file entry.
                                     filename, change_list = entry
                                     if filename and isinstance( filename, str ):
-                                        if filename == suc.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME:
+                                        if filename == rt_util.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME:
                                             # Make sure the any complex repository dependency definitions contain valid <repository> tags.
                                             is_valid, error_msg = commit_util.repository_tags_are_valid( filename, change_list )
                                             if not is_valid:
@@ -150,7 +150,7 @@ class Hg( object ):
                                     # We possibly found an altered file entry.
                                     filename, change_list = entry
                                     if filename and isinstance( filename, str ):
-                                        if filename == suc.TOOL_DEPENDENCY_DEFINITION_FILENAME:
+                                        if filename == rt_util.TOOL_DEPENDENCY_DEFINITION_FILENAME:
                                             # Make sure the any complex repository dependency definitions contain valid <repository> tags.
                                             is_valid, error_msg = commit_util.repository_tags_are_valid( filename, change_list )
                                             if not is_valid:
@@ -171,8 +171,8 @@ class Hg( object ):
                                     # We possibly found an altered file entry.
                                     filename, change_list = entry
                                     if filename and isinstance( filename, str ):
-                                        if filename in [ suc.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME,
-                                                        suc.TOOL_DEPENDENCY_DEFINITION_FILENAME ]:
+                                        if filename in [ rt_util.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME,
+                                                         rt_util.TOOL_DEPENDENCY_DEFINITION_FILENAME ]:
                                             # We check both files since tool dependency definitions files can contain complex
                                             # repository dependency definitions.
                                             is_valid, error_msg = commit_util.repository_tags_are_valid( filename, change_list )

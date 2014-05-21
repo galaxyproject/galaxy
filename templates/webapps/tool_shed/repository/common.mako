@@ -208,7 +208,7 @@
 <%def name="render_sharable_str( repository, changeset_revision=None )">
     <%
         from tool_shed.util.shed_util_common import generate_sharable_link_for_repository_in_tool_shed
-        sharable_link = generate_sharable_link_for_repository_in_tool_shed( trans, repository, changeset_revision=changeset_revision )
+        sharable_link = generate_sharable_link_for_repository_in_tool_shed( repository, changeset_revision=changeset_revision )
     %>
     ${sharable_link}
 </%def>

@@ -39,8 +39,6 @@ MAXDIFFSIZE = 8000
 MAX_DISPLAY_SIZE = 32768
 DATATYPES_CONFIG_FILENAME = 'datatypes_conf.xml'
 REPOSITORY_DATA_MANAGER_CONFIG_FILENAME = 'data_manager_conf.xml'
-REPOSITORY_DEPENDENCY_DEFINITION_FILENAME = 'repository_dependencies.xml'
-TOOL_DEPENDENCY_DEFINITION_FILENAME = 'tool_dependencies.xml'
 
 new_repo_email_alert_template = """
 Sharable link:         ${sharable_link}
@@ -129,9 +127,9 @@ def build_tool_dependencies_select_field( trans, tool_shed_repository, name, mul
         tool_dependencies_select_field.add_option( option_label, option_value )
     return tool_dependencies_select_field
 
-def changeset_is_malicious( trans, id, changeset_revision, **kwd ):
+def changeset_is_malicious( app, id, changeset_revision, **kwd ):
     """Check the malicious flag in repository metadata for a specified change set"""
-    repository_metadata = get_repository_metadata_by_changeset_revision( trans.app, id, changeset_revision )
+    repository_metadata = get_repository_metadata_by_changeset_revision( app, id, changeset_revision )
     if repository_metadata:
         return repository_metadata.malicious
     return False
@@ -258,25 +256,6 @@ def extract_components_from_tuple( repository_components_tuple ):
         components_list = [ toolshed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td ]
     return components_list
 
-def generate_message_for_repository_type_change( trans, repository ):
-    message = ''
-    if repository.can_change_type_to( trans.app, rt_util.REPOSITORY_SUITE_DEFINITION ):
-        repository_suite_definition_type_class = \
-            trans.app.repository_types_registry.get_class_by_label( rt_util.REPOSITORY_SUITE_DEFINITION )
-        message += "This repository currently contains a single file named <b>%s</b>.  If the intent of this repository is " % \
-            REPOSITORY_DEPENDENCY_DEFINITION_FILENAME
-        message += "to define relationships to a collection of repositories that contain related Galaxy utilities with "
-        message += "no plans to add additional files, consider setting its type to <b>%s</b>.<br/>" % \
-            repository_suite_definition_type_class.label
-    elif repository.can_change_type_to( trans.app, rt_util.TOOL_DEPENDENCY_DEFINITION ):
-        tool_dependency_definition_type_class = \
-            trans.app.repository_types_registry.get_class_by_label( rt_util.TOOL_DEPENDENCY_DEFINITION )
-        message += "This repository currently contains a single file named <b>%s</b>.  If additional files will " % \
-            TOOL_DEPENDENCY_DEFINITION_FILENAME
-        message += "not be added to this repository, consider setting its type to <b>%s</b>.<br/>" % \
-            tool_dependency_definition_type_class.label
-    return message
-
 def generate_repository_info_elem( tool_shed, repository_name, changeset_revision, owner, parent_elem=None, **kwd ):
     """Create and return an ElementTree repository info Element."""
     if parent_elem is None:
@@ -306,7 +285,7 @@ def generate_repository_info_elem_from_repository( tool_shed_repository, parent_
                                           parent_elem=parent_elem,
                                           **kwd )
 
-def generate_sharable_link_for_repository_in_tool_shed( trans, repository, changeset_revision=None ):
+def generate_sharable_link_for_repository_in_tool_shed( repository, changeset_revision=None ):
     """Generate the URL for sharing a repository that is in the tool shed."""
     base_url = url_for( '/', qualified=True ).rstrip( '/' )
     protocol, base = base_url.split( '://' )
@@ -486,16 +465,23 @@ def get_ctx_file_path_from_manifest( filename, repo, changeset_revision ):
                 return manifest_ctx, ctx_file
     return None, None
 
-def get_current_repository_metadata_for_changeset_revision( trans, repository, changeset_revision ):
-    encoded_repository_id = trans.security.encode_id( repository.id )
-    repository_metadata = get_repository_metadata_by_changeset_revision( trans.app, encoded_repository_id, changeset_revision )
+def get_current_repository_metadata_for_changeset_revision( app, repository, changeset_revision ):
+    encoded_repository_id = app.security.encode_id( repository.id )
+    repository_metadata = get_repository_metadata_by_changeset_revision( app,
+                                                                         encoded_repository_id,
+                                                                         changeset_revision )
     if repository_metadata:
         return repository_metadata
-    # The installable changeset_revision may have been changed because it was "moved ahead" in the repository changelog.
-    repo = hg.repository( hg_util.get_configured_ui(), repository.repo_path( trans.app ) )
-    updated_changeset_revision = get_next_downloadable_changeset_revision( repository, repo, after_changeset_revision=changeset_revision )
+    # The installable changeset_revision may have been changed because it was "moved ahead"
+    # in the repository changelog.
+    repo = hg.repository( hg_util.get_configured_ui(), repository.repo_path( app ) )
+    updated_changeset_revision = get_next_downloadable_changeset_revision( repository,
+                                                                           repo,
+                                                                           after_changeset_revision=changeset_revision )
     if updated_changeset_revision:
-        repository_metadata = get_repository_metadata_by_changeset_revision( trans.app, encoded_repository_id, updated_changeset_revision )
+        repository_metadata = get_repository_metadata_by_changeset_revision( app,
+                                                                             encoded_repository_id,
+                                                                             updated_changeset_revision )
         if repository_metadata:
             return repository_metadata
     return None
@@ -608,9 +594,11 @@ def get_installed_tool_shed_repository( trans, id ):
     """Get a tool shed repository record from the Galaxy database defined by the id."""
     return trans.install_model.context.query( trans.install_model.ToolShedRepository ).get( trans.security.decode_id( id ) )
 
-def get_latest_changeset_revision( trans, repository, repo ):
-    repository_tip = repository.tip( trans.app )
-    repository_metadata = get_repository_metadata_by_changeset_revision( trans.app, trans.security.encode_id( repository.id ), repository_tip )
+def get_latest_changeset_revision( app, repository, repo ):
+    repository_tip = repository.tip( app )
+    repository_metadata = get_repository_metadata_by_changeset_revision( app,
+                                                                         app.security.encode_id( repository.id ),
+                                                                         repository_tip )
     if repository_metadata and repository_metadata.downloadable:
         return repository_tip
     changeset_revisions = get_ordered_metadata_changeset_revisions( repository, repo, downloadable=False )
@@ -1403,7 +1391,7 @@ def handle_email_alerts( trans, repository, content_alert_str='', new_repo_alert
     """
     repo_dir = repository.repo_path( trans.app )
     repo = hg.repository( hg_util.get_configured_ui(), repo_dir )
-    sharable_link = generate_sharable_link_for_repository_in_tool_shed( trans, repository, changeset_revision=None )
+    sharable_link = generate_sharable_link_for_repository_in_tool_shed( repository, changeset_revision=None )
     smtp_server = trans.app.config.smtp_server
     if smtp_server and ( new_repo_alert or repository.email_alerts ):
         # Send email alert to users that want them.

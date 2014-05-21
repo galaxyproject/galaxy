@@ -149,12 +149,12 @@ class UploadController( BaseUIController ):
                                                                          isgzip=isgzip,
                                                                          isbz2=isbz2 )
                     if repository.type == rt_util.REPOSITORY_SUITE_DEFINITION and \
-                        uploaded_file_filename != suc.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME:
+                        uploaded_file_filename != rt_util.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME:
                         ok = False
                         message = 'Repositories of type <b>Repository suite definition</b> can only contain a single file named '
                         message += '<b>repository_dependencies.xml</b>.'
                     elif repository.type == rt_util.TOOL_DEPENDENCY_DEFINITION and \
-                        uploaded_file_filename != suc.TOOL_DEPENDENCY_DEFINITION_FILENAME:
+                        uploaded_file_filename != rt_util.TOOL_DEPENDENCY_DEFINITION_FILENAME:
                         ok = False
                         message = 'Repositories of type <b>Tool dependency definition</b> can only contain a single file named '
                         message += '<b>tool_dependencies.xml</b>.'
@@ -164,7 +164,7 @@ class UploadController( BaseUIController ):
                         else:
                             full_path = os.path.abspath( os.path.join( repo_dir, uploaded_file_filename ) )
                         # Move some version of the uploaded file to the load_point within the repository hierarchy.
-                        if uploaded_file_filename in [ suc.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME ]:
+                        if uploaded_file_filename in [ rt_util.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME ]:
                             # Inspect the contents of the file to see if changeset_revision values are missing and if so,
                             # set them appropriately.
                             altered, root_elem, error_message = \
@@ -180,8 +180,8 @@ class UploadController( BaseUIController ):
                                 shutil.move( tmp_filename, full_path )
                             else:
                                 shutil.move( uploaded_file_name, full_path )
-                        elif uploaded_file_filename in [ suc.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME,
-                                                         suc.TOOL_DEPENDENCY_DEFINITION_FILENAME ]:
+                        elif uploaded_file_filename in [ rt_util.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME,
+                                                         rt_util.TOOL_DEPENDENCY_DEFINITION_FILENAME ]:
                             # Inspect the contents of the file to see if changeset_revision values are
                             # missing and if so, set them appropriately.
                             altered, root_elem, error_message = \
@@ -264,7 +264,8 @@ class UploadController( BaseUIController ):
                         metadata_dict = {}
                     if str( repository.type ) not in [ rt_util.REPOSITORY_SUITE_DEFINITION,
                                                        rt_util.TOOL_DEPENDENCY_DEFINITION ]:
-                        change_repository_type_message = suc.generate_message_for_repository_type_change( trans, repository )
+                        change_repository_type_message = rt_util.generate_message_for_repository_type_change( trans.app,
+                                                                                                              repository )
                         if change_repository_type_message:
                             message += change_repository_type_message
                             status = 'warning'
@@ -336,9 +337,9 @@ class UploadController( BaseUIController ):
             for uploaded_file in files:
                 relative_path = os.path.normpath( os.path.join( os.path.relpath( root, uploaded_directory ), uploaded_file ) )
                 if repository.type == rt_util.REPOSITORY_SUITE_DEFINITION:
-                    ok = os.path.basename( uploaded_file ) == suc.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME
+                    ok = os.path.basename( uploaded_file ) == rt_util.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME
                 elif repository.type == rt_util.TOOL_DEPENDENCY_DEFINITION:
-                    ok = os.path.basename( uploaded_file ) == suc.TOOL_DEPENDENCY_DEFINITION_FILENAME
+                    ok = os.path.basename( uploaded_file ) == rt_util.TOOL_DEPENDENCY_DEFINITION_FILENAME
                 else:
                     ok = os.path.basename( uploaded_file ) not in commit_util.UNDESIRABLE_FILES
                 if ok:
@@ -351,7 +352,7 @@ class UploadController( BaseUIController ):
                     undesirable_files_removed += 1
                 if ok:
                     uploaded_file_name = os.path.abspath( os.path.join( root, uploaded_file ) )
-                    if os.path.split( uploaded_file_name )[ -1 ] == suc.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME:
+                    if os.path.split( uploaded_file_name )[ -1 ] == rt_util.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME:
                         # Inspect the contents of the file to see if changeset_revision values are missing and
                         # if so, set them appropriately.
                         altered, root_elem, error_message = \
@@ -363,7 +364,7 @@ class UploadController( BaseUIController ):
                         elif altered:
                             tmp_filename = xml_util.create_and_write_tmp_file( root_elem )
                             shutil.move( tmp_filename, uploaded_file_name )
-                    elif os.path.split( uploaded_file_name )[ -1 ] == suc.TOOL_DEPENDENCY_DEFINITION_FILENAME:
+                    elif os.path.split( uploaded_file_name )[ -1 ] == rt_util.TOOL_DEPENDENCY_DEFINITION_FILENAME:
                         # Inspect the contents of the file to see if changeset_revision values are missing and if so, set them appropriately.
                         altered, root_elem, error_message = commit_util.handle_tool_dependencies_definition( trans, uploaded_file_name )
                         if error_message:
@@ -420,7 +421,7 @@ class UploadController( BaseUIController ):
             uploaded_file.close()
             for filename in filenames_in_archive:
                 uploaded_file_name = os.path.join( full_path, filename )
-                if os.path.split( uploaded_file_name )[ -1 ] == suc.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME:
+                if os.path.split( uploaded_file_name )[ -1 ] == rt_util.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME:
                     # Inspect the contents of the file to see if changeset_revision values are missing and if so, set them appropriately.
                     altered, root_elem, error_message = commit_util.handle_repository_dependencies_definition( trans,
                                                                                                                uploaded_file_name,
@@ -430,7 +431,7 @@ class UploadController( BaseUIController ):
                     elif altered:
                         tmp_filename = xml_util.create_and_write_tmp_file( root_elem )
                         shutil.move( tmp_filename, uploaded_file_name )
-                elif os.path.split( uploaded_file_name )[ -1 ] == suc.TOOL_DEPENDENCY_DEFINITION_FILENAME:
+                elif os.path.split( uploaded_file_name )[ -1 ] == rt_util.TOOL_DEPENDENCY_DEFINITION_FILENAME:
                     # Inspect the contents of the file to see if changeset_revision values are missing and if so, set them appropriately.
                     altered, root_elem, error_message = commit_util.handle_tool_dependencies_definition( trans, uploaded_file_name )
                     if error_message:

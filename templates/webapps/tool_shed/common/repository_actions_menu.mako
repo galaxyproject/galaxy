@@ -27,7 +27,7 @@
         else:
             is_new = False
 
-        if changeset_is_malicious( trans, trans.security.encode_id( repository.id ), repository.tip( trans.app ) ):
+        if changeset_is_malicious( trans.app, trans.security.encode_id( repository.id ), repository.tip( trans.app ) ):
             is_malicious = True
         else:
             is_malicious = False
