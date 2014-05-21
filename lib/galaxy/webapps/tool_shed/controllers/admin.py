@@ -171,6 +171,8 @@ class AdminController( BaseUIController, Admin ):
                         repository.deleted = True
                         trans.sa_session.add( repository )
                         trans.sa_session.flush()
+                        # Update the repository registry.
+                        trans.app.repository_registry.remove_entry( repository )
                         count += 1
                         deleted_repositories += " %s " % repository.name
             if count:

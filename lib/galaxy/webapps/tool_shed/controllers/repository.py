@@ -1051,6 +1051,8 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         trans.sa_session.add( repository )
         trans.sa_session.flush()
         if mark_deprecated:
+            # Update the repository registry.
+            trans.app.repository_registry.remove_entry( repository )
             message = 'The repository <b>%s</b> has been marked as deprecated.' % repository.name
         else:
             # Update the repository registry.

@@ -17,6 +17,7 @@ log = logging.getLogger( __name__ )
 class Registry( object ):
 
     def __init__( self, app ):
+        log.debug( "Loading the repository registry..." )
         self.app = app
         self.certified_level_one_clause_list = self.get_certified_level_one_clause_list()
         # The following lists contain tuples like ( repository.name, repository.user.username, changeset_revision )
@@ -164,9 +165,11 @@ class Registry( object ):
         if tip_changeset_hash != suc.INITIAL_CHANGELOG_HASH:
             certified_level_one_tuple = ( name, owner, tip_changeset_hash )
             if repository.type == rt_util.REPOSITORY_SUITE_DEFINITION:
-                self.certified_level_one_suite_tuples.append( certified_level_one_tuple )
+                if certified_level_one_tuple not in self.certified_level_one_suite_tuples:
+                    self.certified_level_one_suite_tuples.append( certified_level_one_tuple )
             else:
-                self.certified_level_one_repository_and_suite_tuples.append( certified_level_one_tuple )
+                if certified_level_one_tuple not in self.certified_level_one_repository_and_suite_tuples:
+                    self.certified_level_one_repository_and_suite_tuples.append( certified_level_one_tuple )
 
     def load_repository_and_suite_tuple( self, repository ):
         name = str( repository.name )
@@ -174,9 +177,11 @@ class Registry( object ):
         for repository_metadata in repository.metadata_revisions:
             changeset_revision = str( repository_metadata.changeset_revision )
             tuple = ( name, owner, changeset_revision )
-            self.repository_and_suite_tuples.append( tuple )
+            if tuple not in self.repository_and_suite_tuples:
+                self.repository_and_suite_tuples.append( tuple )
             if repository.type == rt_util.REPOSITORY_SUITE_DEFINITION:
-                self.suite_tuples.append( tuple )
+                if tuple not in self.suite_tuples:
+                    self.suite_tuples.append( tuple )
 
     def load_repository_and_suite_tuples( self ):
         # Load self.certified_level_one_repository_and_suite_tuples and self.certified_level_one_suite_tuples.
@@ -237,6 +242,55 @@ class Registry( object ):
                         if repository.type in [ rt_util.REPOSITORY_SUITE_DEFINITION ]:
                             self.certified_level_one_viewable_suites_by_category[ category_name ] += 1
 
+    def remove_entry( self, repository  ):
+        if repository:
+            is_valid = self.is_valid( repository )
+            for rca in repository.categories:
+                category = rca.category
+                category_name = str( category.name )
+                self.viewable_repositories_and_suites_by_category[ category_name ] -= 1
+                if is_valid:
+                    self.viewable_valid_repositories_and_suites_by_category[ category_name ] -= 1
+                if repository.type == rt_util.REPOSITORY_SUITE_DEFINITION:
+                    self.viewable_suites_by_category[ category_name ] -= 1
+                    if is_valid:
+                        self.viewable_valid_suites_by_category[ category_name ] -= 1
+            certified_level_one_tuple = self.get_certified_level_one_tuple( repository )
+            latest_installable_changeset_revision, is_level_one_certified = certified_level_one_tuple
+            if is_level_one_certified:
+                self.certified_level_one_viewable_repositories_and_suites_by_category[ category_name ] -= 1
+                if repository.type == rt_util.REPOSITORY_SUITE_DEFINITION:
+                    self.certified_level_one_viewable_suites_by_category[ category_name ] -= 1
+            self.unload_repository_and_suite_tuple( repository )
+            if is_level_one_certified:
+                self.unload_certified_level_one_repository_and_suite_tuple( repository )
+
     @property
     def sa_session( self ):
         return self.app.model.context.current
+
+    def unload_certified_level_one_repository_and_suite_tuple( self, repository ):
+        # The received repository has been determined to be level one certified.
+        name = str( repository.name )
+        owner = str( repository.user.username )
+        tip_changeset_hash = repository.tip( self.app )
+        if tip_changeset_hash != suc.INITIAL_CHANGELOG_HASH:
+            certified_level_one_tuple = ( name, owner, tip_changeset_hash )
+            if repository.type == rt_util.REPOSITORY_SUITE_DEFINITION:
+                if certified_level_one_tuple in self.certified_level_one_suite_tuples:
+                    self.certified_level_one_suite_tuples.remove( certified_level_one_tuple )
+            else:
+                if certified_level_one_tuple in self.certified_level_one_repository_and_suite_tuples:
+                    self.certified_level_one_repository_and_suite_tuples.remove( certified_level_one_tuple )
+
+    def unload_repository_and_suite_tuple( self, repository ):
+        name = str( repository.name )
+        owner = str( repository.user.username )
+        for repository_metadata in repository.metadata_revisions:
+            changeset_revision = str( repository_metadata.changeset_revision )
+            tuple = ( name, owner, changeset_revision )
+            if tuple in self.repository_and_suite_tuples:
+                self.repository_and_suite_tuples.remove( tuple )
+            if repository.type == rt_util.REPOSITORY_SUITE_DEFINITION:
+                if tuple in self.suite_tuples:
+                    self.suite_tuples.remove( tuple )
