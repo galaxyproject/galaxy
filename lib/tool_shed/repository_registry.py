@@ -114,14 +114,17 @@ class Registry( object ):
             return ( None, False )
 
     def is_level_one_certified( self, repository_metadata ):
-        repository = repository_metadata.repository
-        if repository.deprecated or repository.deleted:
-            return False
-        tuple = ( str( repository.name ), str( repository.user.username ), str( repository_metadata.changeset_revision ) )
-        if repository.type in [ rt_util.REPOSITORY_SUITE_DEFINITION ]:
-            return tuple in self.certified_level_one_suite_tuples
-        else:
-            return tuple in self.certified_level_one_repository_and_suite_tuples
+        if repository_metadata:
+            repository = repository_metadata.repository
+            if repository:
+                if repository.deprecated or repository.deleted:
+                    return False
+                tuple = ( str( repository.name ), str( repository.user.username ), str( repository_metadata.changeset_revision ) )
+                if repository.type in [ rt_util.REPOSITORY_SUITE_DEFINITION ]:
+                    return tuple in self.certified_level_one_suite_tuples
+                else:
+                    return tuple in self.certified_level_one_repository_and_suite_tuples
+        return False
 
     def load_repository_and_suite_tuples( self ):
         # Load self.certified_level_one_repository_and_suite_tuples and self.certified_level_one_suite_tuples.
