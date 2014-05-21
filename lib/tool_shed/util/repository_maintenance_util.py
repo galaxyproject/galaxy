@@ -93,6 +93,8 @@ def create_repository( trans, name, type, description, long_description, user_id
             flush_needed = True
     if flush_needed:
         trans.sa_session.flush()
+    # Update the repository registry.
+    trans.app.repository_registry.add_entry( repository )
     message = "Repository <b>%s</b> has been created." % str( repository.name )
     return repository, message
 

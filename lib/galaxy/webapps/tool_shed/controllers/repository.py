@@ -1053,6 +1053,8 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         if mark_deprecated:
             message = 'The repository <b>%s</b> has been marked as deprecated.' % repository.name
         else:
+            # Update the repository registry.
+            trans.app.repository_registry.add_entry( repository )
             message = 'The repository <b>%s</b> has been marked as not deprecated.' % repository.name
         trans.response.send_redirect( web.url_for( controller='repository',
                                                    action='browse_repositories',

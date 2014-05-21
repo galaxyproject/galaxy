@@ -367,6 +367,9 @@ class AdminController( BaseUIController, Admin ):
                         repository.deleted = False
                         trans.sa_session.add( repository )
                         trans.sa_session.flush()
+                        if not repository.deprecated:
+                            # Update the repository registry.
+                            trans.app.repository_registry.add_entry( repository )
                         count += 1
                         undeleted_repositories += " %s" % repository.name
             if count:

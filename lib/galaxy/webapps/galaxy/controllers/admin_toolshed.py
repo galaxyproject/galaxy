@@ -31,12 +31,6 @@ from tool_shed.util import xml_util
 from tool_shed.galaxy_install import repository_util
 import tool_shed.galaxy_install.grids.admin_toolshed_grids as admin_toolshed_grids
 
-import pkg_resources
-
-pkg_resources.require( 'elementtree' )
-from elementtree import ElementTree
-from elementtree.ElementTree import Element
-
 log = logging.getLogger( __name__ )
 
 
