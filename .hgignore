@@ -35,6 +35,7 @@ tool_shed_webapp.lock
 tool_shed_webapp.log
 tool_shed_webapp.pid
 hgweb.config*
+lib/tool_shed/scripts/bootstrap_tool_shed/user_info.xml
 
 # Reports Runtime Files
 reports_webapp.lock
