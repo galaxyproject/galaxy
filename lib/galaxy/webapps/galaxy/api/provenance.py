@@ -5,6 +5,7 @@ import logging
 from galaxy import web
 from galaxy.web.base.controller import BaseAPIController, UsesHistoryMixin
 from paste.httpexceptions import HTTPNotImplemented, HTTPBadRequest
+from galaxy.managers import hdas
 
 log = logging.getLogger( __name__ )
 
@@ -12,6 +13,10 @@ log = logging.getLogger( __name__ )
 class BaseProvenanceController( BaseAPIController, UsesHistoryMixin ):
     """
     """
+    def __init__( self, app ):
+        super( BaseProvenanceController, self ).__init__( app )
+        self.hdas = hdas.HDAManager()
+
     @web.expose_api
     def index( self, trans, **kwd ):
         follow = kwd.get('follow', False)
@@ -34,7 +39,11 @@ class BaseProvenanceController( BaseAPIController, UsesHistoryMixin ):
         raise HTTPBadRequest("Cannot Delete Provenance")
 
     def _get_provenance(self, trans, item_class_name, item_id, follow=True):
-        provenance_item = self.get_object( trans, item_id, item_class_name, check_ownership=False, check_accessible=True )
+        provenance_item = self.get_object( trans, item_id, item_class_name, check_ownership=False, check_accessible=False)
+        if item_class_name == "HistoryDatasetAssociation":
+            self.hdas.check_accessible(trans, provenance_item)
+        else:
+            self.security_check(trans, provenance_item, check_accessible=True)
         out = self._get_record(trans, provenance_item, follow)
         return out
 
