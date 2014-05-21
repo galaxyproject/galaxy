@@ -203,9 +203,17 @@ class WorkflowInvoker( object ):
         # ds_map.
         if self.copy_inputs_to_history:
             for input_dataset_hda in out_data.values():
-                new_hda = input_dataset_hda.copy( copy_children=True )
-                self.target_history.add_dataset( new_hda )
-                outputs[ step.id ][ 'input_ds_copy' ] = new_hda
+                content_type = input_dataset_hda.history_content_type
+                if content_type == "dataset":
+                    new_hda = input_dataset_hda.copy( copy_children=True )
+                    self.target_history.add_dataset( new_hda )
+                    outputs[ step.id ][ 'input_ds_copy' ] = new_hda
+                elif content_type == "dataset_collection":
+                    new_hdca = input_dataset_hda.copy()
+                    self.target_history.add_dataset_collection( new_hdca )
+                    outputs[ step.id ][ 'input_ds_copy' ] = new_hdca
+                else:
+                    raise Exception("Unknown history content encountered")
         if self.ds_map:
             outputs[ step.id ][ 'output' ] = self.ds_map[ str( step.id ) ][ 'hda' ]
 
