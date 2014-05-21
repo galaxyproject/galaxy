@@ -14,13 +14,6 @@ from tool_shed.util import xml_util
 import tool_shed.util.shed_util_common as suc
 import tool_shed.repository_types.util as rt_util
 
-from galaxy import eggs
-eggs.require( 'mercurial' )
-
-from mercurial import commands
-from mercurial import hg
-from mercurial import ui
-
 log = logging.getLogger( __name__ )
 
 def check_status_and_reset_downloadable( trans, import_results_tups ):
@@ -214,7 +207,7 @@ def import_repository_archive( trans, repository, repository_archive_dict ):
     archive_file_path = os.path.join( file_path, archive_file_name )
     archive = tarfile.open( archive_file_path, 'r:*' )
     repo_dir = repository.repo_path( trans.app )
-    repo = hg.repository( hg_util.get_configured_ui(), repo_dir )
+    repo = hg_util.get_repo_for_repository( trans.app, repository=None, repo_path=repo_dir, create=False )
     undesirable_dirs_removed = 0
     undesirable_files_removed = 0
     ok, error_message = commit_util.check_archive( repository, archive )

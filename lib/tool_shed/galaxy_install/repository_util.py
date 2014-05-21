@@ -26,8 +26,6 @@ from galaxy import eggs
 eggs.require( 'mercurial' )
 
 from mercurial import commands
-from mercurial import hg
-from mercurial import ui
 
 log = logging.getLogger( __name__ )
 
@@ -186,8 +184,7 @@ def get_repair_dict( trans, repository ):
 
 def get_repo_info_dict( trans, repository_id, changeset_revision ):
     repository = suc.get_repository_in_tool_shed( trans, repository_id )
-    repo_dir = repository.repo_path( trans.app )
-    repo = hg.repository( hg_util.get_configured_ui(), repo_dir )
+    repo = hg_util.get_repo_for_repository( trans.app, repository=repository, repo_path=None, create=False )
     repository_clone_url = common_util.generate_clone_url_for_repository_in_tool_shed( trans, repository )
     repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans.app,
                                                                              repository_id,
@@ -578,7 +575,10 @@ def install_tool_shed_repository( trans, tool_shed_repository, repo_info_dict, t
             current_changeset_revision = changeset_revision_dict.get( 'changeset_revision', None )
             current_ctx_rev = changeset_revision_dict.get( 'ctx_rev', None )
             if current_ctx_rev != ctx_rev:
-                repo = hg.repository( hg_util.get_configured_ui(), path=os.path.abspath( install_dir ) )
+                repo = hg_util.get_repo_for_repository( trans.app,
+                                                        repository=None,
+                                                        repo_path=os.path.abspath( install_dir ),
+                                                        create=False )
                 pull_repository( repo, repository_clone_url, current_changeset_revision )
                 hg_util.update_repository( repo, ctx_rev=current_ctx_rev )
         handle_repository_contents( trans,

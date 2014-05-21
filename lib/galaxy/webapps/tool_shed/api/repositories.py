@@ -19,10 +19,6 @@ from tool_shed.util import metadata_util
 from tool_shed.util import repository_maintenance_util
 from tool_shed.util import tool_util
 
-eggs.require( 'mercurial' )
-
-from mercurial import hg
-
 log = logging.getLogger( __name__ )
 
 
@@ -49,8 +45,7 @@ class RepositoriesController( BaseAPIController ):
                 error_message += "cannot locate repository %s owned by %s." % ( str( name ), str( owner ) )
                 log.debug( error_message )
                 return []
-            repo_dir = repository.repo_path( trans.app )
-            repo = hg.repository( hg_util.get_configured_ui(), repo_dir )
+            repo = hg_util.get_repo_for_repository( trans.app, repository=repository, repo_path=None, create=False )
             ordered_installable_revisions = suc.get_ordered_metadata_changeset_revisions( repository, repo, downloadable=True )
             return ordered_installable_revisions
         else:
@@ -133,8 +128,7 @@ class RepositoriesController( BaseAPIController ):
             if repository_metadata is None:
                 # The changeset_revision column in the repository_metadata table has been updated with a new
                 # value value, so find the changeset_revision to which we need to update.
-                repo_dir = repository.repo_path( trans.app )
-                repo = hg.repository( hg_util.get_configured_ui(), repo_dir )
+                repo = hg_util.get_repo_for_repository( trans.app, repository=repository, repo_path=None, create=False )
                 new_changeset_revision = suc.get_next_downloadable_changeset_revision( repository, repo, changeset_revision )
                 repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans.app,
                                                                                          encoded_repository_id,

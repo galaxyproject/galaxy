@@ -4,7 +4,6 @@ import os
 import shutil
 import tempfile
 import galaxy.tools
-from galaxy import eggs
 from galaxy import util
 from galaxy.datatypes import checkers
 from galaxy.model.orm import and_
@@ -19,12 +18,6 @@ from tool_shed.util import hg_util
 from tool_shed.util import xml_util
 import tool_shed.util.shed_util_common as suc
 from xml.etree import ElementTree as XmlET
-
-eggs.require( 'mercurial' )
-
-from mercurial import commands
-from mercurial import hg
-from mercurial import ui
 
 log = logging.getLogger( __name__ )
 
@@ -538,8 +531,7 @@ def get_version_lineage_for_tool( trans, repository_id, repository_metadata, gui
     repsitory_metadata.tool_versions.
     """
     repository = suc.get_repository_by_id( trans, repository_id )
-    repo_dir = repository.repo_path( trans.app )
-    repo = hg.repository( hg_util.get_configured_ui(), repo_dir )
+    repo = hg_util.get_repo_for_repository( trans.app, repository=repository, repo_path=None, create=False )
     # Initialize the tool lineage
     version_lineage = [ guid ]
     # Get all ancestor guids of the received guid.
@@ -867,7 +859,7 @@ def load_tool_from_changeset_revision( trans, repository_id, changeset_revision,
     original_tool_data_path = trans.app.config.tool_data_path
     repository = suc.get_repository_in_tool_shed( trans, repository_id )
     repo_files_dir = repository.repo_path( trans.app )
-    repo = hg.repository( hg_util.get_configured_ui(), repo_files_dir )
+    repo = hg_util.get_repo_for_repository( trans.app, repository=None, repo_path=repo_files_dir, create=False )
     message = ''
     tool = None
     can_use_disk_file = False

@@ -21,10 +21,7 @@ from tool_shed.util import xml_util
 
 eggs.require( 'mercurial' )
 
-import mercurial.util
 from mercurial import commands
-from mercurial import hg
-from mercurial import patch
 from mercurial import ui
 
 log = logging.getLogger( __name__ )
@@ -39,7 +36,7 @@ class ExportedRepositoryRegistry( object ):
 
 def archive_repository_revision( trans, ui, repository, archive_dir, changeset_revision ):
     '''Create an un-versioned archive of a repository.'''
-    repo = hg.repository( hg_util.get_configured_ui(), repository.repo_path( trans.app ) )
+    repo = hg_util.get_repo_for_repository( trans.app, repository=repository, repo_path=None, create=False )
     options_dict = hg_util.get_mercurial_default_options_dict( 'archive' )
     options_dict[ 'rev' ] = changeset_revision
     error_message = ''
@@ -242,7 +239,7 @@ def get_repo_info_dicts( trans, tool_shed_url, repository_id, changeset_revision
                                                                                        key_rd_dicts_to_be_processed=None,
                                                                                        all_repository_dependencies=None,
                                                                                        handled_key_rd_dicts=None )
-    repo = hg.repository( hg_util.get_configured_ui(), repository.repo_path( trans.app ) )
+    repo = hg_util.get_repo_for_repository( trans.app, repository=repository, repo_path=None, create=False )
     ctx = hg_util.get_changectx_for_changeset( repo, changeset_revision )
     repo_info_dict = {}
     # Cast unicode to string.

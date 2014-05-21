@@ -1,19 +1,17 @@
 import logging
 import os
 import threading
+
 from mako.template import Template
-from galaxy import eggs
+
 from galaxy import web
 from galaxy.util import json
 from galaxy.util import rst_to_html
 from galaxy.util import unicodify
+
 import tool_shed.util.shed_util_common as suc
 from tool_shed.util import common_util
 from tool_shed.util import hg_util
-
-eggs.require( 'mercurial' )
-
-from mercurial import hg
 
 log = logging.getLogger( __name__ )
 
@@ -26,7 +24,7 @@ def build_readme_files_dict( trans, repository, changeset_revision, metadata, to
     if trans.webapp.name == 'galaxy':
         can_use_disk_files = True
     else:
-        repo = hg.repository( hg_util.get_configured_ui(), repository.repo_path( trans.app ) )
+        repo = hg_util.get_repo_for_repository( trans.app, repository=repository, repo_path=None, create=False )
         latest_downloadable_changeset_revision = suc.get_latest_downloadable_changeset_revision( trans.app, repository, repo )
         can_use_disk_files = changeset_revision == latest_downloadable_changeset_revision
     readme_files_dict = {}

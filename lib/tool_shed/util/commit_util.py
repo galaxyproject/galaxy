@@ -20,11 +20,8 @@ import tool_shed.repository_types.util as rt_util
 from galaxy import eggs
 eggs.require( 'mercurial' )
 from mercurial import commands
-from mercurial import hg
-from mercurial import ui
 from mercurial.changegroup import readbundle
 from mercurial.changegroup import readexactly
-from mercurial.changegroup import writebundle
 
 log = logging.getLogger( __name__ )
 
@@ -156,8 +153,7 @@ def handle_complex_repository_dependency_elem( trans, elem, sub_elem_index, sub_
 
 def handle_directory_changes( trans, repository, full_path, filenames_in_archive, remove_repo_files_not_in_tar, new_repo_alert,
                               commit_message, undesirable_dirs_removed, undesirable_files_removed ):
-    repo_dir = repository.repo_path( trans.app )
-    repo = hg.repository( hg_util.get_configured_ui(), repo_dir )
+    repo = hg_util.get_repo_for_repository( trans.app, repository=repository, repo_path=None, create=False )
     content_alert_str = ''
     files_to_remove = []
     filenames_in_archive = [ os.path.join( full_path, name ) for name in filenames_in_archive ]
@@ -342,8 +338,7 @@ def handle_repository_dependency_elem( trans, elem, unpopulate=False ):
         # revision are valid.
         repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
         if repository:
-            repo_dir = repository.repo_path( trans.app )
-            repo = hg.repository( hg_util.get_configured_ui(), repo_dir )
+            repo = hg_util.get_repo_for_repository( trans.app, repository=repository, repo_path=None, create=False )
             lastest_installable_changeset_revision = suc.get_latest_downloadable_changeset_revision( trans.app, repository, repo )
             if lastest_installable_changeset_revision != suc.INITIAL_CHANGELOG_HASH:
                 elem.attrib[ 'changeset_revision' ] = lastest_installable_changeset_revision

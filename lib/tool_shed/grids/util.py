@@ -168,7 +168,7 @@ def get_latest_downloadable_repository_metadata( trans, repository ):
      tool_dependency_definition.
     """
     encoded_repository_id = trans.security.encode_id( repository.id )
-    repo = hg.repository( hg_util.get_configured_ui(), repository.repo_path( trans.app ) )
+    repo = hg_util.get_repo_for_repository( trans.app, repository=repository, repo_path=None, create=False )
     tip_ctx = str( repo.changectx( repo.changelog.tip() ) )
     repository_metadata = None
     try:
@@ -218,7 +218,7 @@ def get_latest_repository_metadata( trans, repository ):
      tool_dependency_definition.
     """
     encoded_repository_id = trans.security.encode_id( repository.id )
-    repo = hg.repository( hg_util.get_configured_ui(), repository.repo_path( trans.app ) )
+    repo = hg_util.get_repo_for_repository( trans.app, repository=repository, repo_path=None, create=False )
     tip_ctx = str( repo.changectx( repo.changelog.tip() ) )
     try:
         repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans.app, encoded_repository_id, tip_ctx )

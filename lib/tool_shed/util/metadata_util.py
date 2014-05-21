@@ -1,7 +1,7 @@
 import logging
 import os
 import tempfile
-from galaxy import eggs
+
 from galaxy import util
 from galaxy import web
 from galaxy.datatypes import checkers
@@ -10,6 +10,7 @@ from galaxy.tools.data_manager.manager import DataManager
 from galaxy.util import inflector
 from galaxy.util import json
 from galaxy.web import url_for
+
 import tool_shed.util.shed_util_common as suc
 from tool_shed.repository_types.metadata import TipOnly
 from tool_shed.util import common_util
@@ -22,12 +23,6 @@ from tool_shed.util import tool_util
 from tool_shed.util import xml_util
 from tool_shed.galaxy_install.tool_dependencies import td_common_util
 import tool_shed.repository_types.util as rt_util
-
-eggs.require( 'mercurial' )
-
-from mercurial import commands
-from mercurial import hg
-from mercurial import ui
 
 log = logging.getLogger( __name__ )
 
@@ -352,7 +347,7 @@ def create_or_update_repository_metadata( trans, id, repository, changeset_revis
         # changeset revision in the received repository's changelog (up to the received changeset revision) to see if it is contained in the
         # skip_tool_test table.  If it is, but is not associated with a repository_metadata record, reset that skip_tool_test record to the
         # newly created repository_metadata record.
-        repo = hg.repository( hg_util.get_configured_ui(), repository.repo_path( trans.app ) )
+        repo = hg_util.get_repo_for_repository( trans.app, repository=repository, repo_path=None, create=False )
         for changeset in repo.changelog:
             changeset_hash = str( repo.changectx( changeset ) )
             skip_tool_test = suc.get_skip_tool_test_by_changeset_revision( trans, changeset_hash )
@@ -1051,7 +1046,7 @@ def generate_workflow_metadata( relative_path, exported_workflow_dict, metadata_
 def get_latest_repository_metadata( trans, decoded_repository_id, downloadable=False ):
     """Get last metadata defined for a specified repository from the database."""
     repository = trans.sa_session.query( trans.model.Repository ).get( decoded_repository_id )
-    repo = hg.repository( hg_util.get_configured_ui(), repository.repo_path( trans.app ) )
+    repo = hg_util.get_repo_for_repository( trans.app, repository=repository, repo_path=None, create=False )
     if downloadable:
         changeset_revision = suc.get_latest_downloadable_changeset_revision( trans.app,
                                                                              repository,
@@ -1288,7 +1283,8 @@ def handle_repository_elem( app, repository_elem, only_if_compiling_contained_td
                 log.debug( error_message )
                 is_valid = False
                 return repository_dependency_tup, is_valid, error_message
-            repo = hg.repository( hg_util.get_configured_ui(), repository.repo_path( app ) )
+            repo = hg_util.get_repo_for_repository( app, repository=repository, repo_path=None, create=False )
+            
             # The received changeset_revision may be None since defining it in the dependency definition is optional.
             # If this is the case, the default will be to set its value to the repository dependency tip revision.
             # This probably occurs only when handling circular dependency definitions.
@@ -1734,7 +1730,7 @@ def reset_all_metadata_on_repository_in_tool_shed( trans, id ):
     repository = suc.get_repository_in_tool_shed( trans, id )
     log.debug( "Resetting all metadata on repository: %s" % repository.name )
     repo_dir = repository.repo_path( trans.app )
-    repo = hg.repository( hg_util.get_configured_ui(), repo_dir )
+    repo = hg_util.get_repo_for_repository( trans.app, repository=None, repo_path=repo_dir, create=False )
     repository_clone_url = common_util.generate_clone_url_for_repository_in_tool_shed( trans, repository )
     # The list of changeset_revisions refers to repository_metadata records that have been created or updated.  When the following loop
     # completes, we'll delete all repository_metadata records for this repository that do not have a changeset_revision value in this list.
@@ -1916,7 +1912,7 @@ def set_repository_metadata( trans, repository, content_alert_str='', **kwd ):
     encoded_id = trans.security.encode_id( repository.id )
     repository_clone_url = common_util.generate_clone_url_for_repository_in_tool_shed( trans, repository )
     repo_dir = repository.repo_path( trans.app )
-    repo = hg.repository( hg_util.get_configured_ui(), repo_dir )
+    repo = hg_util.get_repo_for_repository( trans.app, repository=None, repo_path=repo_dir, create=False )
     metadata_dict, invalid_file_tups = generate_metadata_for_changeset_revision( app=trans.app,
                                                                                  repository=repository,
                                                                                  changeset_revision=repository.tip( trans.app ),

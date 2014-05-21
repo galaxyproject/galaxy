@@ -1,9 +1,10 @@
 import logging
 import os
-from galaxy import eggs
+
 from galaxy.util import asbool
 from galaxy.util import json
 from galaxy.util import listify
+
 import tool_shed.util.shed_util_common as suc
 from tool_shed.util import common_util
 from tool_shed.util import common_install_util
@@ -12,12 +13,6 @@ from tool_shed.util import encoding_util
 from tool_shed.util import hg_util
 from tool_shed.util import metadata_util
 from tool_shed.util import tool_util
-
-eggs.require( 'mercurial' )
-
-from mercurial import commands
-from mercurial import hg
-from mercurial import ui
 
 log = logging.getLogger( __name__ )
 
@@ -536,12 +531,12 @@ def get_updated_changeset_revisions_for_repository_dependencies( trans, key_rd_d
                     updated_key_rd_dicts.append( key_rd_dict )
                 else:
                     # The repository changeset_revision is no longer installable, so see if there's been an update.
-                    repo_dir = repository.repo_path( trans.app )
-                    repo = hg.repository( hg_util.get_configured_ui(), repo_dir )
+                    repo = hg_util.get_repo_for_repository( trans.app, repository=repository, repo_path=None, create=False )
                     changeset_revision = suc.get_next_downloadable_changeset_revision( repository, repo, rd_changeset_revision )
-                    repository_metadata = metadata_util.get_repository_metadata_by_repository_id_changeset_revision( trans,
-                                                                                                                     trans.security.encode_id( repository.id ),
-                                                                                                                     changeset_revision )
+                    repository_metadata = \
+                        metadata_util.get_repository_metadata_by_repository_id_changeset_revision( trans,
+                                                                                                   trans.security.encode_id( repository.id ),
+                                                                                                   changeset_revision )
                     if repository_metadata:
                         new_key_rd_dict = {}
                         new_key_rd_dict[ key ] = \

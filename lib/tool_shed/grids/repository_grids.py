@@ -17,12 +17,6 @@ from galaxy import eggs
 eggs.require('markupsafe')
 from markupsafe import escape as escape_html
 
-eggs.require('mercurial')
-from mercurial import commands
-from mercurial import hg
-from mercurial import patch
-from mercurial import ui
-
 log = logging.getLogger( __name__ )
 
 class CategoryGrid( grids.Grid ):
@@ -103,8 +97,7 @@ class RepositoryGrid( grids.Grid ):
 
         def get_value( self, trans, grid, repository ):
             """Display the current repository heads."""
-            repo_dir = repository.repo_path( trans.app )
-            repo = hg.repository( hg_util.get_configured_ui(), repo_dir )
+            repo = hg_util.get_repo_for_repository( trans.app, repository=repository, repo_path=None, create=False )
             heads = suc.get_repository_heads( repo )
             multiple_heads = len( heads ) > 1
             if multiple_heads:
@@ -1477,8 +1470,10 @@ class RepositoryDependenciesGrid( RepositoryMetadataGrid ):
                                                                                                                required_repository_id,
                                                                                                               changeset_revision )
                                 if not required_repository_metadata:
-                                    repo_dir = required_repository.repo_path( trans.app )
-                                    repo = hg.repository( hg_util.get_configured_ui(), repo_dir )
+                                    repo = hg_util.get_repo_for_repository( trans.app,
+                                                                            repository=required_repository,
+                                                                            repo_path=None,
+                                                                            create=False )
                                     updated_changeset_revision = \
                                         suc.get_next_downloadable_changeset_revision( required_repository,
                                                                                       repo,

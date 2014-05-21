@@ -9,13 +9,6 @@ import tool_shed.util.shed_util_common as suc
 from tool_shed.util import hg_util
 from tool_shed.util import metadata_util
 
-from galaxy import eggs
-eggs.require('mercurial')
-from mercurial import commands
-from mercurial import hg
-from mercurial import patch
-from mercurial import ui
-
 log = logging.getLogger( __name__ )
 
 
@@ -67,7 +60,7 @@ class RepositoriesWithReviewsGrid( RepositoryGrid ):
             # Restrict to revisions that have been reviewed.
             if repository.reviews:
                 rval = ''
-                repo = hg.repository( hg_util.get_configured_ui(), repository.repo_path( trans.app ) )
+                repo = hg_util.get_repo_for_repository( trans.app, repository=repository, repo_path=None, create=False )
                 for review in repository.reviews:
                     changeset_revision = review.changeset_revision
                     rev, label = hg_util.get_rev_label_from_changeset_revision( repo, changeset_revision )

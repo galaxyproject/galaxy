@@ -69,15 +69,18 @@ def get_readable_ctx_date( ctx ):
     ctx_date = date.strftime( "%Y-%m-%d" )
     return ctx_date
 
-def get_repo_for_repository( app, repository ):
-    return hg.repository( get_configured_ui(), repository.repo_path( app ) )
+def get_repo_for_repository( app, repository=None, repo_path=None, create=False ):
+    if repository is not None:
+        return hg.repository( get_configured_ui(), repository.repo_path( app ), create=create )
+    if repo_path is not None:
+        return hg.repository( get_configured_ui(), repo_path, create=create )
 
 def get_revision_label( trans, repository, changeset_revision, include_date=True, include_hash=True ):
     """
     Return a string consisting of the human read-able changeset rev and the changeset revision string
     which includes the revision date if the receive include_date is True.
     """
-    repo = get_repo_for_repository( trans.app, repository )
+    repo = get_repo_for_repository( trans.app, repository=repository, repo_path=None )
     ctx = get_changectx_for_changeset( repo, changeset_revision )
     if ctx:
         return get_revision_label_from_ctx( ctx, include_date=include_date, include_hash=include_hash )

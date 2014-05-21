@@ -62,7 +62,7 @@ class Registry( object ):
         """
         if repository.deleted:
             return ( None, False )
-        repo = hg_util.get_repo_for_repository( self.app, repository )
+        repo = hg_util.get_repo_for_repository( self.app, repository=repository, repo_path=None, create=False )
         # Get the latest installable changeset revision since that is all that is currently configured for testing.
         latest_installable_changeset_revision = suc.get_latest_downloadable_changeset_revision( self.app, repository, repo )
         if latest_installable_changeset_revision not in [ None, suc.INITIAL_CHANGELOG_HASH ]:

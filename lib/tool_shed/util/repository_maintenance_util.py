@@ -9,14 +9,6 @@ from galaxy import util
 from galaxy.web.form_builder import build_select_field
 from galaxy.webapps.tool_shed.model import directory_hash_id
 
-from galaxy import eggs
-eggs.require( 'mercurial' )
-
-from mercurial import commands
-from mercurial import hg
-from mercurial import patch
-from mercurial import ui
-
 log = logging.getLogger( __name__ )
 
 VALID_REPOSITORYNAME_RE = re.compile( "^[a-z0-9\_]+$" )
@@ -48,7 +40,7 @@ def create_hgrc_file( trans, repository ):
     # Since we support both http and https, we set push_ssl to False to override the default (which is True) in the mercurial api.  The hg
     # purge extension purges all files and directories not being tracked by mercurial in the current repository.  It'll remove unknown files
     # and empty directories.  This is not currently used because it is not supported in the mercurial API.
-    repo = hg.repository( hg_util.get_configured_ui(), path=repository.repo_path( trans.app ) )
+    repo = hg_util.get_repo_for_repository( trans.app, repository=repository, repo_path=None, create=False )
     fp = repo.opener( 'hgrc', 'wb' )
     fp.write( '[paths]\n' )
     fp.write( 'default = .\n' )
@@ -84,7 +76,7 @@ def create_repository( trans, name, type, description, long_description, user_id
     if not os.path.exists( repository_path ):
         os.makedirs( repository_path )
     # Create the local repository.
-    repo = hg.repository( hg_util.get_configured_ui(), repository_path, create=True )
+    repo = hg_util.get_repo_for_repository( trans.app, repository=None, repo_path=repository_path, create=True )
     # Add an entry in the hgweb.config file for the local repository.
     lhs = "repos/%s/%s" % ( repository.user.username, repository.name )
     trans.app.hgweb_config_manager.add_entry( lhs, repository_path )

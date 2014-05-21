@@ -13,10 +13,6 @@ from galaxy.util.odict import odict
 import tool_shed.grids.repository_review_grids as repository_review_grids
 import tool_shed.grids.util as grids_util
 
-from galaxy import eggs
-eggs.require('mercurial')
-from mercurial import hg, ui, patch, commands
-
 log = logging.getLogger( __name__ )
 
 
@@ -73,7 +69,7 @@ class RepositoryReviewController( BaseUIController, ratings_util.ItemRatings ):
         status = kwd.get( 'status', 'done' )
         review = review_util.get_review( trans, kwd[ 'id' ] )
         repository = review.repository
-        repo = hg.repository( hg_util.get_configured_ui(), repository.repo_path( trans.app ) )
+        repo = hg_util.get_repo_for_repository( trans.app, repository=repository, repo_path=None, create=False )
         rev, changeset_revision_label = hg_util.get_rev_label_from_changeset_revision( repo, review.changeset_revision )
         return trans.fill_template( '/webapps/tool_shed/repository_review/browse_review.mako',
                                     repository=repository,
@@ -233,7 +229,7 @@ class RepositoryReviewController( BaseUIController, ratings_util.ItemRatings ):
         for component in review_util.get_components( trans ):
             components_dict[ component.name ] = dict( component=component, component_review=None )
         repository = review.repository
-        repo = hg.repository( hg_util.get_configured_ui(), repository.repo_path( trans.app ) )
+        repo = hg_util.get_repo_for_repository( trans.app, repository=repository, repo_path=None, create=False )
         for component_review in review.component_reviews:
             if component_review and component_review.component:
                 component_name = component_review.component.name
@@ -470,8 +466,7 @@ class RepositoryReviewController( BaseUIController, ratings_util.ItemRatings ):
         repository_id = kwd.get( 'id', None )
         if repository_id:
             repository = suc.get_repository_in_tool_shed( trans, repository_id )
-            repo_dir = repository.repo_path( trans.app )
-            repo = hg.repository( hg_util.get_configured_ui(), repo_dir )
+            repo = hg_util.get_repo_for_repository( trans.app, repository=repository, repo_path=None, create=False )
             metadata_revision_hashes = [ metadata_revision.changeset_revision for metadata_revision in repository.metadata_revisions ]
             reviewed_revision_hashes = [ review.changeset_revision for review in repository.reviews ]
             reviews_dict = odict()
@@ -517,8 +512,7 @@ class RepositoryReviewController( BaseUIController, ratings_util.ItemRatings ):
         repository_id = kwd.get( 'id', None )
         changeset_revision = kwd.get( 'changeset_revision', None )
         repository = suc.get_repository_in_tool_shed( trans, repository_id )
-        repo_dir = repository.repo_path( trans.app )
-        repo = hg.repository( hg_util.get_configured_ui(), repo_dir )
+        repo = hg_util.get_repo_for_repository( trans.app, repository=repository, repo_path=None, create=False )
         installable = changeset_revision in [ metadata_revision.changeset_revision for metadata_revision in repository.metadata_revisions ]
         rev, changeset_revision_label = hg_util.get_rev_label_from_changeset_revision( repo, changeset_revision )
         reviews = review_util.get_reviews_by_repository_id_changeset_revision( trans, repository_id, changeset_revision )
@@ -583,7 +577,7 @@ class RepositoryReviewController( BaseUIController, ratings_util.ItemRatings ):
         status = kwd.get( 'status', 'done' )
         repository = suc.get_repository_in_tool_shed( trans, kwd[ 'id' ] )
         changeset_revision = kwd.get( 'changeset_revision', None )
-        repo = hg.repository( hg_util.get_configured_ui(), repository.repo_path( trans.app ) )
+        repo = hg_util.get_repo_for_repository( trans.app, repository=repository, repo_path=None, create=False )
         previous_reviews_dict = review_util.get_previous_repository_reviews( trans, repository, changeset_revision )
         rev, changeset_revision_label = hg_util.get_rev_label_from_changeset_revision( repo, changeset_revision )
         return trans.fill_template( '/webapps/tool_shed/repository_review/select_previous_review.mako',

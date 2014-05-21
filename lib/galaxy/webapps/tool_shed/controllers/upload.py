@@ -21,8 +21,6 @@ from tool_shed.util import xml_util
 from galaxy import eggs
 eggs.require( 'mercurial' )
 from mercurial import commands
-from mercurial import hg
-from mercurial import ui
 
 log = logging.getLogger( __name__ )
 
@@ -40,7 +38,7 @@ class UploadController( BaseUIController ):
         repository_id = kwd.get( 'repository_id', '' )
         repository = suc.get_repository_in_tool_shed( trans, repository_id )
         repo_dir = repository.repo_path( trans.app )
-        repo = hg.repository( hg_util.get_configured_ui(), repo_dir )
+        repo = hg_util.get_repo_for_repository( trans.app, repository=None, repo_path=repo_dir, create=False )
         uncompress_file = util.string_as_bool( kwd.get( 'uncompress_file', 'true' ) )
         remove_repo_files_not_in_tar = util.string_as_bool( kwd.get( 'remove_repo_files_not_in_tar', 'true' ) )
         uploaded_file = None
@@ -325,7 +323,7 @@ class UploadController( BaseUIController ):
     def upload_directory( self, trans, repository, uploaded_directory, upload_point, remove_repo_files_not_in_tar,
                           commit_message, new_repo_alert ):
         repo_dir = repository.repo_path( trans.app )
-        repo = hg.repository( hg_util.get_configured_ui(), repo_dir )
+        repo = hg_util.get_repo_for_repository( trans.app, repository=None, repo_path=repo_dir, create=False )
         undesirable_dirs_removed = 0
         undesirable_files_removed = 0
         if upload_point is not None:
@@ -389,7 +387,7 @@ class UploadController( BaseUIController ):
     def upload_tar( self, trans, repository, tar, uploaded_file, upload_point, remove_repo_files_not_in_tar, commit_message, new_repo_alert ):
         # Upload a tar archive of files.
         repo_dir = repository.repo_path( trans.app )
-        repo = hg.repository( hg_util.get_configured_ui(), repo_dir )
+        repo = hg_util.get_repo_for_repository( trans.app, repository=None, repo_path=repo_dir, create=False )
         undesirable_dirs_removed = 0
         undesirable_files_removed = 0
         ok, message = commit_util.check_archive( repository, tar )

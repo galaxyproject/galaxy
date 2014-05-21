@@ -23,9 +23,6 @@ from xml.etree import ElementTree as XmlET
 from urllib2 import HTTPError
 
 from galaxy import eggs
-eggs.require( 'mercurial' )
-
-from mercurial import hg
 
 eggs.require( 'markupsafe' )
 import markupsafe
@@ -474,7 +471,7 @@ def get_current_repository_metadata_for_changeset_revision( app, repository, cha
         return repository_metadata
     # The installable changeset_revision may have been changed because it was "moved ahead"
     # in the repository changelog.
-    repo = hg.repository( hg_util.get_configured_ui(), repository.repo_path( app ) )
+    repo = hg_util.get_repo_for_repository( app, repository=repository, repo_path=None, create=False )
     updated_changeset_revision = get_next_downloadable_changeset_revision( repository,
                                                                            repo,
                                                                            after_changeset_revision=changeset_revision )
@@ -528,8 +525,10 @@ def get_dependent_downloadable_revisions( trans, repository_metadata ):
                                         # The defined changeset_revision is not associated with a repository_metadata
                                         # record, so updates must be necessary.
                                         defined_repository = get_repository_by_name_and_owner( trans.app, name, owner )
-                                        defined_repo_dir = defined_repository.repo_path( trans.app )
-                                        defined_repo = hg.repository( hg_util.get_configured_ui(), defined_repo_dir )
+                                        defined_repo = hg_util.get_repo_for_repository( trans.app,
+                                                                                        repository=defined_repository,
+                                                                                        repo_path=None,
+                                                                                        create=False )
                                         updated_changeset_revision = \
                                             get_next_downloadable_changeset_revision( defined_repository,
                                                                                       defined_repo,
@@ -1324,8 +1323,7 @@ def get_updated_changeset_revisions( trans, name, owner, changeset_revision ):
     revision for the repository defined by the received name and owner.
     """
     repository = get_repository_by_name_and_owner( trans.app, name, owner )
-    repo_dir = repository.repo_path( trans.app )
-    repo = hg.repository( hg_util.get_configured_ui(), repo_dir )
+    repo = hg_util.get_repo_for_repository( trans.app, repository=repository, repo_path=None, create=False )
     # Get the upper bound changeset revision.
     upper_bound_changeset_revision = get_next_downloadable_changeset_revision( repository, repo, changeset_revision )
     # Build the list of changeset revision hashes defining each available update up to, but excluding, upper_bound_changeset_revision.
@@ -1389,8 +1387,7 @@ def handle_email_alerts( trans, repository, content_alert_str='', new_repo_alert
        user is not an admin user, the email will not include any information about both HTML and image content
        that was included in the change set.
     """
-    repo_dir = repository.repo_path( trans.app )
-    repo = hg.repository( hg_util.get_configured_ui(), repo_dir )
+    repo = hg_util.get_repo_for_repository( trans.app, repository=repository, repo_path=None, create=False )
     sharable_link = generate_sharable_link_for_repository_in_tool_shed( repository, changeset_revision=None )
     smtp_server = trans.app.config.smtp_server
     if smtp_server and ( new_repo_alert or repository.email_alerts ):

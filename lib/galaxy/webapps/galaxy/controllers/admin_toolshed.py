@@ -33,11 +33,6 @@ import tool_shed.galaxy_install.grids.admin_toolshed_grids as admin_toolshed_gri
 
 import pkg_resources
 
-eggs.require( 'mercurial' )
-from mercurial import commands
-from mercurial import hg
-from mercurial import ui
-
 pkg_resources.require( 'elementtree' )
 from elementtree import ElementTree
 from elementtree.ElementTree import Element
@@ -1865,7 +1860,10 @@ class AdminToolshed( AdminGalaxy ):
                         repo_files_dir = os.path.abspath( os.path.join( tool_path, relative_install_dir, name ) )
                     else:
                         repo_files_dir = os.path.abspath( os.path.join( relative_install_dir, name ) )
-                    repo = hg.repository( hg_util.get_configured_ui(), path=repo_files_dir )
+                    repo = hg_util.get_repo_for_repository( trans.app,
+                                                            repository=None,
+                                                            repo_path=repo_files_dir,
+                                                            create=False )
                     repository_clone_url = os.path.join( tool_shed_url, 'repos', owner, name )
                     repository_util.pull_repository( repo, repository_clone_url, latest_ctx_rev )
                     hg_util.update_repository( repo, latest_ctx_rev )
