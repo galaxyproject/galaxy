@@ -16,9 +16,10 @@ class GenomeBuilds( object ):
         self._data_table_name = data_table_name
         self._static_chrom_info_path = app.config.len_file_path
         # A dbkey can be listed multiple times, but with different names, so we can't use dictionaries for lookups
-        self._static_dbkeys = []
         if load_old_style:
             self._static_dbkeys = list( dbnames )
+        else:
+            self._static_dbkeys = []
 
     def get_genome_build_names( self, trans=None ):
         # FIXME: how to deal with key duplicates?
@@ -34,7 +35,7 @@ class GenomeBuilds( object ):
                 datasets = trans.sa_session.query( self._app.model.HistoryDatasetAssociation ) \
                                           .filter_by( deleted=False, history_id=trans.history.id, extension="len" )
                 for dataset in datasets:
-                    rval.append( (dataset.dbkey, dataset.name) )
+                    rval.append( ( dataset.dbkey, "%s (%s) [History]" % ( dataset.name, dataset.dbkey ) ) )
             user = trans.get_user()
             if user and 'dbkeys' in user.preferences:
                 user_keys = from_json_string( user.preferences['dbkeys'] )
