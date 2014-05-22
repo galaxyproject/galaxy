@@ -27,7 +27,7 @@ from galaxy.web.base.controller import UsesFormDefinitionsMixin
 from galaxy.web.base.controller import CreatesUsersMixin
 from galaxy.web.base.controller import CreatesApiKeysMixin
 from galaxy.web.form_builder import CheckboxField
-from galaxy.web.form_builder import  build_select_field
+from galaxy.web.form_builder import build_select_field
 from galaxy.web.framework.helpers import time_ago, grids
 from datetime import datetime, timedelta
 from galaxy.util import hash_util, biostar
@@ -41,12 +41,13 @@ require_login_template = """
 <p/>
 """
 
+
 class UserOpenIDGrid( grids.Grid ):
     use_panels = False
     title = "OpenIDs linked to your account"
     model_class = model.UserOpenID
     template = '/user/openid_manage.mako'
-    default_filter = { "openid" : "All" }
+    default_filter = { "openid": "All" }
     default_sort_key = "-create_time"
     columns = [
         grids.TextColumn( "OpenID URL", key="openid", link=( lambda x: dict( action='openid_auth', login_button="Login", openid_url=x.openid if not x.provider else '', openid_provider=x.provider, auto_associate=True ) ) ),
@@ -55,6 +56,7 @@ class UserOpenIDGrid( grids.Grid ):
     operations = [
         grids.GridOperation( "Delete", async_compatible=True ),
     ]
+
     def build_initial_query( self, trans, **kwd ):
         return trans.sa_session.query( self.model_class ).filter( self.model_class.user_id == trans.user.id )
 
@@ -66,6 +68,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
     @web.expose
     def index( self, trans, cntrller, **kwd ):
         return trans.fill_template( '/user/index.mako', cntrller=cntrller )
+
     @web.expose
     def openid_auth( self, trans, **kwd ):
         '''Handles user request to access an OpenID provider'''
@@ -76,7 +79,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         openid_url = kwd.get( 'openid_url', '' )
         openid_provider = kwd.get( 'openid_provider', '' )
         if not openid_provider or openid_url:
-            openid_provider = trans.app.openid_providers.NO_PROVIDER_ID #empty fields cause validation errors
+            openid_provider = trans.app.openid_providers.NO_PROVIDER_ID  # empty fields cause validation errors
         redirect = kwd.get( 'redirect', '' ).strip()
         auto_associate = util.string_as_bool( kwd.get( 'auto_associate', False ) )
         use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
@@ -91,7 +94,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         elif openid_provider_obj:
             if not redirect:
                 redirect = ' '
-            process_url = trans.request.base.rstrip( '/' ) + url_for( controller='user', action='openid_process', redirect=redirect, openid_provider=openid_provider, auto_associate=auto_associate ) #None of these values can be empty, or else a verification error will occur
+            process_url = trans.request.base.rstrip( '/' ) + url_for( controller='user', action='openid_process', redirect=redirect, openid_provider=openid_provider, auto_associate=auto_associate )  # None of these values can be empty, or else a verification error will occur
             request = None
             try:
                 request = consumer.begin( openid_provider_obj.op_endpoint_url )
@@ -107,7 +110,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                     trans.app.openid_manager.persist_session( trans, consumer )
                     return trans.response.send_redirect( redirect_url )
                 else:
-                    form = request.htmlMarkup( trans.request.base, process_url, form_tag_attrs={'id':'openid_message','target':'_top'} )
+                    form = request.htmlMarkup( trans.request.base, process_url, form_tag_attrs={'id': 'openid_message', 'target': '_top'} )
                     trans.app.openid_manager.persist_session( trans, consumer )
                     return form
         return trans.response.send_redirect( url_for( controller='user',
@@ -163,14 +166,14 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
             if trans.user:
                 if user_openid.user and user_openid.user.id != trans.user.id:
                     message = "The OpenID <strong>%s</strong> is already associated with another Galaxy account, <strong>%s</strong>.  Please disassociate it from that account before attempting to associate it with a new account." % ( display_identifier, user_openid.user.email )
-                if not trans.user.active and trans.app.config.user_activation_on: # Account activation is ON and the user is INACTIVE.
-                    if ( trans.app.config.activation_grace_period != 0 ): # grace period is ON
-                        if self.is_outside_grace_period( trans, trans.user.create_time ): # User is outside the grace period. Login is disabled and he will have the activation email resent.
+                if not trans.user.active and trans.app.config.user_activation_on:  # Account activation is ON and the user is INACTIVE.
+                    if ( trans.app.config.activation_grace_period != 0 ):  # grace period is ON
+                        if self.is_outside_grace_period( trans, trans.user.create_time ):  # User is outside the grace period. Login is disabled and he will have the activation email resent.
                             message, status = self.resend_verification_email( trans, trans.user.email, trans.user.username )
-                        else: # User is within the grace period, let him log in.
+                        else:  # User is within the grace period, let him log in.
                             pass
-                    else: # Grace period is off. Login is disabled and user will have the activation email resent.
-                        message, status = self.resend_verification_email( trans, trans.user.email, trans.user.username )                    
+                    else:  # Grace period is off. Login is disabled and user will have the activation email resent.
+                        message, status = self.resend_verification_email( trans, trans.user.email, trans.user.username )
                 elif not user_openid.user or user_openid.user == trans.user:
                     if openid_provider_obj.id:
                         user_openid.provider = openid_provider_obj.id
@@ -188,18 +191,18 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                         trans.log_event( "User associated OpenID: %s" % display_identifier )
                     else:
                         message = "The OpenID <strong>%s</strong> cannot be used to log into your Galaxy account, but any post authentication actions have been performed." % ( openid_provider_obj.name )
-                        status ="info"
+                        status = "info"
                     openid_provider_obj.post_authentication( trans, trans.app.openid_manager, info )
                     if redirect:
                         message = '%s<br>Click <a href="%s"><strong>here</strong></a> to return to the page you were previously viewing.' % ( message, redirect )
                 if redirect and status != "error":
                     return trans.response.send_redirect( redirect )
                 return trans.response.send_redirect( url_for( controller='user',
-                                                       action='openid_manage',
-                                                       use_panels=True,
-                                                       redirect=redirect,
-                                                       message=message,
-                                                       status=status ) )
+                                                     action='openid_manage',
+                                                     use_panels=True,
+                                                     redirect=redirect,
+                                                     message=message,
+                                                     status=status ) )
             elif user_openid.user:
                 trans.handle_user_login( user_openid.user )
                 trans.log_event( "User logged in via OpenID: %s" % display_identifier )
@@ -221,15 +224,15 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                 email = sreg_resp.get( sreg_email_name, '' )
             except AttributeError:
                 email = ''
-            #OpenID success, but user not logged in, and not previously associated
+            # OpenID success, but user not logged in, and not previously associated
             return trans.response.send_redirect( url_for( controller='user',
-                                                   action='openid_associate',
-                                                   use_panels=True,
-                                                   redirect=redirect,
-                                                   username=username,
-                                                   email=email,
-                                                   message=message,
-                                                   status='warning' ) )
+                                                 action='openid_associate',
+                                                 use_panels=True,
+                                                 redirect=redirect,
+                                                 username=username,
+                                                 email=email,
+                                                 message=message,
+                                                 status='warning' ) )
         elif info.status == trans.app.openid_manager.CANCEL:
             message = "Login via OpenID was cancelled by an action at the OpenID provider's site."
             status = "warning"
@@ -286,19 +289,19 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                         message = '%s<li><a href="%s" target="_blank">%s</a></li>' % ( message, url_for( controller='user', action='openid_auth', openid_provider=openid.id, redirect=redirect, auto_associate=True ), openid.name )
                     message = "%s</ul>" % ( message )
                     return trans.response.send_redirect( url_for( controller='user',
-                                                                   action='openid_manage',
-                                                                   use_panels=use_panels,
-                                                                   redirect=redirect,
-                                                                   message=message,
-                                                                   status='info' ) )
+                                                                  action='openid_manage',
+                                                                  use_panels=use_panels,
+                                                                  redirect=redirect,
+                                                                  message=message,
+                                                                  status='info' ) )
                 if redirect:
                     return trans.response.send_redirect( redirect )
                 return trans.response.send_redirect( url_for( controller='user',
-                                                               action='openid_manage',
-                                                               use_panels=use_panels,
-                                                               redirect=redirect,
-                                                               message=message,
-                                                               status='info' ) )
+                                                              action='openid_manage',
+                                                              use_panels=use_panels,
+                                                              redirect=redirect,
+                                                              message=message,
+                                                              status='info' ) )
         if kwd.get( 'create_user_button', False ):
             password = kwd.get( 'password', '' )
             confirm = kwd.get( 'confirm', '' )
@@ -338,19 +341,19 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                                 message = '%s<li><a href="%s" target="_blank">%s</a></li>' % ( message, url_for( controller='user', action='openid_auth', openid_provider=openid.id, redirect=redirect, auto_associate=True ), openid.name )
                             message = "%s</ul>" % ( message )
                             return trans.response.send_redirect( url_for( controller='user',
-                                                               action='openid_manage',
-                                                               use_panels=True,
-                                                               redirect=redirect,
-                                                               message=message,
-                                                               status='info' ) )
+                                                                          action='openid_manage',
+                                                                          use_panels=True,
+                                                                          redirect=redirect,
+                                                                          message=message,
+                                                                          status='info' ) )
                         if redirect:
                             return trans.response.send_redirect( redirect )
                         return trans.response.send_redirect( url_for( controller='user',
-                                                                       action='openid_manage',
-                                                                       use_panels=use_panels,
-                                                                       redirect=redirect,
-                                                                       message=message,
-                                                                       status='info' ) )
+                                                                      action='openid_manage',
+                                                                      use_panels=use_panels,
+                                                                      redirect=redirect,
+                                                                      message=message,
+                                                                      status='info' ) )
                 else:
                     message = error
                     status = 'error'
@@ -421,10 +424,10 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                 message = '%s OpenIDs were disassociated from your Galaxy account.' % len( ids )
                 status = 'done'
         return trans.response.send_redirect( url_for( controller='user',
-                                               action='openid_manage',
-                                               use_panels=use_panels,
-                                               message=message,
-                                               status=status ) )
+                                                      action='openid_manage',
+                                                      use_panels=use_panels,
+                                                      message=message,
+                                                      status=status ) )
 
     @web.expose
     @web.require_login( 'manage OpenIDs' )
@@ -437,9 +440,9 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
             operation = kwd['operation'].lower()
             if operation == "delete":
                 return trans.response.send_redirect( url_for( controller='user',
-                                                       action='openid_disassociate',
-                                                       use_panels=use_panels,
-                                                       id=kwd['id'] ) )
+                                                              action='openid_disassociate',
+                                                              use_panels=use_panels,
+                                                              id=kwd['id'] ) )
         kwd['redirect'] = kwd.get( 'redirect', url_for( controller='user', action='openid_manage', use_panels=True ) ).strip()
         kwd['openid_providers'] = trans.app.openid_providers
         return self.user_openid_grid( trans, **kwd )
@@ -449,8 +452,8 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         '''Handle Galaxy Log in'''
         redirect = kwd.get( 'redirect', trans.request.referer ).strip()
         root_url = url_for( '/', qualified=True )
-        redirect_url = '' #always start with redirect_url being empty
-        # compare urls, to prevent a redirect from pointing (directly) outside of galaxy 
+        redirect_url = ''  # always start with redirect_url being empty
+        # compare urls, to prevent a redirect from pointing (directly) outside of galaxy
         # or to enter a logout/login loop
         if not util.compare_urls( root_url, redirect, compare_path=False ) or util.compare_urls( url_for( controller='user', action='logout', qualified=True ), redirect ):
             redirect = root_url
@@ -461,7 +464,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         user = trans.user
         email = kwd.get( 'email', '' )
         if user:
-            #already logged in
+            # already logged in
             redirect_url = redirect
             message = 'You are already logged in.'
             status = 'info'
@@ -511,32 +514,32 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         username = kwd.get( 'username', '' )
         redirect = kwd.get( 'redirect', trans.request.referer ).strip()
         success = False
-        user = trans.sa_session.query( trans.app.model.User ).filter( trans.app.model.User.table.c.email==email ).first()
+        user = trans.sa_session.query( trans.app.model.User ).filter( trans.app.model.User.table.c.email == email ).first()
         if not user:
             message = "No such user (please note that login is case sensitive)"
         elif user.deleted:
             message = "This account has been marked deleted, contact your local Galaxy administrator to restore the account."
             if trans.app.config.error_email_to is not None:
-                message += ' Contact: %s' %  trans.app.config.error_email_to
+                message += ' Contact: %s' % trans.app.config.error_email_to
         elif user.external:
             message = "This account was created for use with an external authentication method, contact your local Galaxy administrator to activate it."
             if trans.app.config.error_email_to is not None:
-                message += ' Contact: %s' %  trans.app.config.error_email_to
+                message += ' Contact: %s' % trans.app.config.error_email_to
         elif not user.check_password( password ):
             message = "Invalid password"
-        elif trans.app.config.user_activation_on and not user.active: # activation is ON and the user is INACTIVE
-            if ( trans.app.config.activation_grace_period != 0 ): # grace period is ON
-                if self.is_outside_grace_period( trans, user.create_time ): # User is outside the grace period. Login is disabled and he will have the activation email resent.
+        elif trans.app.config.user_activation_on and not user.active:  # activation is ON and the user is INACTIVE
+            if ( trans.app.config.activation_grace_period != 0 ):  # grace period is ON
+                if self.is_outside_grace_period( trans, user.create_time ):  # User is outside the grace period. Login is disabled and he will have the activation email resent.
                     message, status = self.resend_verification_email( trans, email, username )
-                else: # User is within the grace period, let him log in.
+                else:  # User is within the grace period, let him log in.
                     message, success, status = self.proceed_login( trans, user, redirect )
-            else: # Grace period is off. Login is disabled and user will have the activation email resent.
+            else:  # Grace period is off. Login is disabled and user will have the activation email resent.
                 message, status = self.resend_verification_email( trans, email, username )
-        else: # activation is OFF
+        else:  # activation is OFF
             message, success, status = self.proceed_login( trans, user, redirect )
         return ( message, status, user, success )
 
-    def proceed_login ( self, trans, user, redirect ):
+    def proceed_login( self, trans, user, redirect ):
         """
         Function processes user login. It is called in case all the login requirements are valid.
         """
@@ -551,9 +554,9 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         success = True
         status = 'done'
         return message, success, status
-    
+
     @web.expose
-    def resend_verification ( self, trans ):
+    def resend_verification( self, trans ):
         """
         Exposed function for use outside of the class. E.g. when user click on the resend link in the masthead.
         """
@@ -562,16 +565,16 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
             return trans.show_ok_message( message )
         else:
             return trans.show_error_message( message )
-    
+
     def resend_verification_email( self, trans, email, username ):
         """
         Function resends the verification email in case user wants to log in with an inactive account or he clicks the resend link.
         """
-        if email is None: # User is coming from outside registration form, load email from trans
+        if email is None:  # User is coming from outside registration form, load email from trans
             email = trans.user.email
-        if username is None: # User is coming from outside registration form, load email from trans
+        if username is None:  # User is coming from outside registration form, load email from trans
             username = trans.user.username
-        is_activation_sent  = self.send_verification_email( trans, email, username)
+        is_activation_sent = self.send_verification_email( trans, email, username)
         if is_activation_sent:
             message = 'This account has not been activated yet. The activation link has been sent again. Please check your email address <b>%s</b> including the spam/trash folder.<br><a target="_top" href="%s">Return to the home page</a>.' % ( email, url_for( '/' ) )
             status = 'error'
@@ -579,19 +582,19 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
             message = 'This account has not been activated yet but we are unable to send the activation link. Please contact your local Galaxy administrator.<br><a target="_top" href="%s">Return to the home page</a>.' % url_for( '/' )
             status = 'error'
             if trans.app.config.error_email_to is not None:
-                message += '<br>Error contact: %s' %  trans.app.config.error_email_to
+                message += '<br>Error contact: %s' % trans.app.config.error_email_to
         return message, status
 
-    def is_outside_grace_period ( self, trans, create_time ):
+    def is_outside_grace_period( self, trans, create_time ):
         """
-        Function checks whether the user is outside the config-defined grace period for inactive accounts. 
+        Function checks whether the user is outside the config-defined grace period for inactive accounts.
         """
         #  Activation is forced and the user is not active yet. Check the grace period.
         activation_grace_period = trans.app.config.activation_grace_period
         #  Default value is 3 hours.
         if activation_grace_period is None:
             activation_grace_period = 3
-        delta = timedelta( hours = int( activation_grace_period ) )
+        delta = timedelta( hours=int( activation_grace_period ) )
         time_difference = datetime.utcnow() - create_time
         return ( time_difference > delta or activation_grace_period == 0 )
 
@@ -612,7 +615,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         if biostar.biostar_logged_in( trans ):
             biostar_url = biostar.biostar_logout( trans )
             if biostar_url:
-                #TODO: It would be better if we automatically logged this user out of biostar
+                # TODO: It would be better if we automatically logged this user out of biostar
                 message += '<br>To logout of Biostar, please click <a href="%s" target="_blank">here</a>.' % ( biostar_url )
         return trans.fill_template( '/user/logout.mako',
                                     refresh_frames=refresh_frames,
@@ -627,7 +630,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         honeypot_field = params.get( 'bear_field', '' )
         if honeypot_field != '':
             return trans.show_error_message( "You are considered a bot. If you are not one please try registering again and follow the form's legend. <a target=\"_top\" href=\"%s\">Go to the home page</a>." ) % url_for( '/' )
-       
+
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         use_panels = util.string_as_bool( kwd.get( 'use_panels', True ) )
@@ -644,7 +647,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         if not trans.app.config.allow_user_creation and not trans.user_is_admin():
             message = 'User registration is disabled.  Please contact your local Galaxy administrator for an account.'
             if trans.app.config.error_email_to is not None:
-                message += ' Contact: %s' %  trans.app.config.error_email_to
+                message += ' Contact: %s' % trans.app.config.error_email_to
             status = 'error'
         else:
             if not refresh_frames:
@@ -776,9 +779,9 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                 else:
                     message = 'Unable to send activation email, please contact your local Galaxy administrator.'
                     if trans.app.config.error_email_to is not None:
-                        message += ' Contact: %s' %  trans.app.config.error_email_to
+                        message += ' Contact: %s' % trans.app.config.error_email_to
                     success = False
-            else: # User activation is OFF, proceed without sending the activation email.
+            else:  # User activation is OFF, proceed without sending the activation email.
                 message = 'Now logged in as %s.<br><a target="_top" href="%s">Return to the home page.</a>' % ( user.email, url_for( '/' ) )
                 success = True
         return ( message, status, user, success )
@@ -791,13 +794,18 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
             username = trans.user.username
         activation_link = self.prepare_activation_link( trans, email )
 
-        body =  ("Hello %s,\n\n"
+        body = ("Hello %s,\n\n"
                 "In order to complete the activation process for %s begun on %s at %s, please click on the following link to verify your account:\n\n"
                 "%s \n\n"
                 "By clicking on the above link and opening a Galaxy account you are also confirming that you have read and agreed to Galaxy's Terms and Conditions for use of this service (%s). This includes a quota limit of one account per user. Attempts to subvert this limit by creating multiple accounts or through any other method may result in termination of all associated accounts and data.\n\n"
                 "Please contact us if you need help with your account at: %s. You can also browse resources available at: %s. \n\n"
                 "More about the Galaxy Project can be found at galaxyproject.org\n\n"
-                "Your Galaxy Team" % ( username, email, datetime.utcnow().strftime( "%D" ), trans.request.host, activation_link,trans.app.config.terms_url, trans.app.config.error_email_to, trans.app.config.instance_resource_url ))
+                "Your Galaxy Team" % (username, email,
+                                      datetime.utcnow().strftime( "%D"),
+                                      trans.request.host, activation_link,
+                                      trans.app.config.terms_url,
+                                      trans.app.config.error_email_to,
+                                      trans.app.config.instance_resource_url))
         to = email
         frm = trans.app.config.activation_email
         subject = 'Galaxy Account Activation'
@@ -815,14 +823,14 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         activation_link = url_for( controller='user', action='activate', activation_token=activation_token, email=email, qualified=True  )
         return activation_link
 
-    def get_activation_token ( self, trans, email ):
+    def get_activation_token( self, trans, email ):
         """
         Checks for the activation token. Creates new activation token and stores it in the database if none found.
         """
         user = trans.sa_session.query( trans.app.model.User ).filter( trans.app.model.User.table.c.email == email ).first()
         activation_token = user.activation_token
         if activation_token is None:
-            activation_token =  hash_util.new_secure_hash( str( random.getrandbits( 256 ) ) )
+            activation_token = hash_util.new_secure_hash( str( random.getrandbits( 256 ) ) )
             user.activation_token = activation_token
             trans.sa_session.add( user )
             trans.sa_session.flush()
@@ -831,7 +839,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
     @web.expose
     def activate( self, trans, **kwd ):
         """
-        Function checks whether token fits the user and then activates the user's account.    
+        Function checks whether token fits the user and then activates the user's account.
         """
         params = util.Params( kwd, sanitize=False )
         email = urllib.unquote( params.get( 'email', None ) )
@@ -841,9 +849,9 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
             #  We don't have the email or activation_token, show error.
             return trans.show_error_message( "You are using wrong activation link. Try to log-in and we will send you a new activation email. <br><a href='%s'>Go to login page.</a>" ) % web.url_for( controller="root", action="index" )
         else:
-            #  Find the user
-            user = trans.sa_session.query( trans.app.model.User ).filter( trans.app.model.User.table.c.email==email ).first()
-            # If the user is active already don't try to activate            
+            # Find the user
+            user = trans.sa_session.query( trans.app.model.User ).filter( trans.app.model.User.table.c.email == email ).first()
+            # If the user is active already don't try to activate
             if user.active == True:
                 return trans.show_ok_message( "Your account is already active. Nothing has changed. <br><a href='%s'>Go to login page.</a>" ) % web.url_for( controller='root', action='index' )
             if user.activation_token == activation_token:
@@ -893,7 +901,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         else:
             user = trans.user
         if not user:
-            raise AssertionError, "The user id (%s) is not valid" % str( user_id )
+            raise AssertionError("The user id (%s) is not valid" % str( user_id ))
         email = util.restore_text( params.get( 'email', user.email ) )
         username = util.restore_text( params.get( 'username', '' ) )
         if not username:
@@ -1031,9 +1039,9 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                     user.set_password_cleartext( password )
                     # Invalidate all other sessions
                     for other_galaxy_session in trans.sa_session.query( trans.app.model.GalaxySession ) \
-                                                     .filter( and_( trans.app.model.GalaxySession.table.c.user_id==trans.user.id,
-                                                                    trans.app.model.GalaxySession.table.c.is_valid==True,
-                                                                    trans.app.model.GalaxySession.table.c.id!=trans.galaxy_session.id ) ):
+                                                     .filter( and_( trans.app.model.GalaxySession.table.c.user_id == trans.user.id,
+                                                                    trans.app.model.GalaxySession.table.c.is_valid is True,
+                                                                    trans.app.model.GalaxySession.table.c.id != trans.galaxy_session.id ) ):
                         other_galaxy_session.is_valid = False
                         trans.sa_session.add( other_galaxy_session )
                     trans.sa_session.add( user )
@@ -1088,7 +1096,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         message = util.restore_text( kwd.get( 'message', '' ) )
         status = 'done'
         if kwd.get( 'reset_password_button', False ):
-            reset_user = trans.sa_session.query( trans.app.model.User ).filter( trans.app.model.User.table.c.email==email ).first()
+            reset_user = trans.sa_session.query( trans.app.model.User ).filter( trans.app.model.User.table.c.email == email ).first()
             user = trans.get_user()
             if reset_user:
                 if user and user.id != reset_user.id:
@@ -1306,21 +1314,19 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         """ Returns information about the most recently used tool. """
 
         # Get most recently used tool.
-        query = trans.sa_session.query( self.app.model.Job.tool_id ).join( self.app.model.History ). \
-                                        filter( self.app.model.History.user==trans.user ). \
-                                        order_by( self.app.model.Job.create_time.desc() ).limit(1)
-        tool_id = query[0][0] # Get first element in first row of query.
+        query = trans.sa_session.query( self.app.model.Job.tool_id ).join( self.app.model.History ) \
+                                .filter( self.app.model.History.user == trans.user ) \
+                                .order_by( self.app.model.Job.create_time.desc() ).limit(1)
+        tool_id = query[0][0]  # Get first element in first row of query.
         tool = self.get_toolbox().get_tool( tool_id )
 
         # Return tool info.
-        tool_info = {
-            "id" : tool.id,
-            "link" : url_for( controller='tool_runner', tool_id=tool.id ),
-            "target" : tool.target,
-            "name" : tool.name, ## TODO: translate this using _()
-            "minsizehint" : tool.uihints.get( 'minwidth', -1 ),
-            "description" : tool.description
-        }
+        tool_info = {"id": tool.id,
+                     "link": url_for( controller='tool_runner', tool_id=tool.id ),
+                     "target": tool.target,
+                     "name": tool.name,  # TODO: translate this using _()
+                     "minsizehint": tool.uihints.get( 'minwidth', -1 ),
+                     "description": tool.description}
         return tool_info
 
     @web.expose
@@ -1553,9 +1559,10 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
     def set_user_pref_async( self, trans, pref_name, pref_value ):
         """ Set a user preference asynchronously. If user is not logged in, do nothing. """
         if trans.user:
-            trans.log_action( trans.get_user(), "set_user_pref", "", { pref_name : pref_value } )
+            trans.log_action( trans.get_user(), "set_user_pref", "", { pref_name: pref_value } )
             trans.user.preferences[pref_name] = pref_value
             trans.sa_session.flush()
+
     @web.expose
     def log_user_action_async( self, trans, action, context, params ):
         """ Log a user action asynchronously. If user is not logged in, do nothing. """
@@ -1594,7 +1601,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
 
             # Look for build's chrom info in len_file and len_text.
             len_file = kwds.get( 'len_file', None )
-            if getattr( len_file, "file", None ): # Check if it's a FieldStorage object
+            if getattr( len_file, "file", None ):  # Check if it's a FieldStorage object
                 len_text = len_file.file.read()
             else:
                 len_text = kwds.get( 'len_text', None )
@@ -1624,7 +1631,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                     # LEN files have format:
                     #   <chrom_name><tab><chrom_length>
                     for line in len_text.split("\n"):
-                        lst = line.strip().rsplit(None, 1) # Splits at the last whitespace in the line
+                        lst = line.strip().rsplit(None, 1)  # Splits at the last whitespace in the line
                         if not lst or len(lst) < 2:
                             lines_skipped += 1
                             continue
@@ -1683,11 +1690,10 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
             user.preferences['dbkeys'] = to_json_string(dbkeys)
             trans.sa_session.flush()
 
-
         # Potential genome data for custom builds is limited to fasta datasets in current history for now.
         fasta_hdas = trans.sa_session.query( model.HistoryDatasetAssociation ) \
-                        .filter_by( history=trans.history, extension="fasta", deleted=False ) \
-                        .order_by( model.HistoryDatasetAssociation.hid.desc() )
+                          .filter_by( history=trans.history, extension="fasta", deleted=False ) \
+                          .order_by( model.HistoryDatasetAssociation.hid.desc() )
 
         return trans.fill_template( 'user/dbkeys.mako',
                                     user=user,
@@ -1697,6 +1703,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                                     lines_skipped=lines_skipped,
                                     fasta_hdas=fasta_hdas,
                                     use_panels=kwds.get( 'use_panels', False ) )
+
     @web.expose
     @web.require_login()
     def api_keys( self, trans, cntrller, **kwd ):
