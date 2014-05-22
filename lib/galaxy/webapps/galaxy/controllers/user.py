@@ -852,7 +852,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
             # Find the user
             user = trans.sa_session.query( trans.app.model.User ).filter( trans.app.model.User.table.c.email == email ).first()
             # If the user is active already don't try to activate
-            if user.active == True:
+            if user.active is True:
                 return trans.show_ok_message( "Your account is already active. Nothing has changed. <br><a href='%s'>Go to login page.</a>" ) % web.url_for( controller='root', action='index' )
             if user.activation_token == activation_token:
                 user.activation_token = None
@@ -1129,7 +1129,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                                                                       action='reset_password',
                                                                       message=message,
                                                                       status=status ) )
-            elif email != None:
+            elif email is not None:
                 message = "The specified user does not exist"
                 status = 'error'
             elif email is None:
