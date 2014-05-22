@@ -5,6 +5,7 @@ from galaxy.util import listify
 from galaxy.web.form_builder import SelectField
 
 from tool_shed.util import hg_util
+from tool_shed.util import shed_util_common as suc
 
 log = logging.getLogger( __name__ )
 
