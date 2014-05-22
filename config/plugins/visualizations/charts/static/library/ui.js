@@ -550,13 +550,13 @@ var Input = Backbone.View.extend(
             this.$el.hide();
         }
         
-        // onchange event handler
+        // onchange event handler. fires on user activity.
         var self = this;
-        if (this.options.onchange) {
-            this.$el.on('input', function() {
-                self.options.onchange();
-            });
-        }
+        this.$el.on('input', function() {
+            if (self.options.onchange) {
+                self.options.onchange(self.$el.val());
+            }
+        });
     },
     
     // value

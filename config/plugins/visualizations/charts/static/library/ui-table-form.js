@@ -40,14 +40,6 @@ var View = Backbone.View.extend(
         for (var id in settings) {
             this._add(id, settings[id], model);
         }
-        
-        // trigger change
-        for (var id in this.list) {
-            var onchange = this.list[id].options.onchange;
-            if (onchange) {
-                onchange();
-            }
-        }
     },
     
     // add table row
@@ -66,8 +58,9 @@ var View = Backbone.View.extend(
                 field = new Ui.Input({
                             id          : id,
                             placeholder : settings_def.placeholder,
-                            onchange    : function() {
-                                model.set(id, field.value());
+                            value       : model.get(id),
+                            onchange    : function(value) {
+                                model.set(id, value);
                             }
                         });
                 break;
@@ -76,13 +69,13 @@ var View = Backbone.View.extend(
                 field = new Ui.Select.View({
                             id          : id,
                             data        : settings_def.data,
-                            onchange    : function() {
+                            value       : model.get(id),
+                            onchange    : function(value) {
                                 // set new value
-                                var selected = field.value();
-                                model.set(id, selected);
+                                model.set(id, value);
                                 
                                 // find selected dictionary
-                                var dict = _.findWhere(settings_def.data, {value: selected});
+                                var dict = _.findWhere(settings_def.data, {value: value});
                                 if (dict) {
                                     if (dict.show) {
                                         self.$el.find('#' + dict.show).fadeIn('fast');

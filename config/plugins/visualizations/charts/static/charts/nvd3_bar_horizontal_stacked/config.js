@@ -9,11 +9,6 @@ return $.extend(true, {}, nvd3_config, {
         }
     },
     columns     : {
-        x : {
-            title   : 'Values for x-axis',
-            is_label: true,
-            is_auto : true
-        },
         y : {
             title   : 'Values for y-axis'
         }

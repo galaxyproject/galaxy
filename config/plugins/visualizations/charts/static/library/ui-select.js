@@ -5,7 +5,7 @@ define(['utils/utils'], function(Utils) {
 var View = Backbone.View.extend(
 {
     // options
-    optionsDefault: {
+    optionsDefault : {
         id      : '',
         cls     : '',
         empty   : 'No data available',
@@ -21,6 +21,9 @@ var View = Backbone.View.extend(
         // configure options
         this.options = Utils.merge(options, this.optionsDefault);
         
+        // initial value
+        this.selected = this.options.value;
+        
         // create new element
         this.setElement(this._template(this.options));
         
@@ -28,10 +31,7 @@ var View = Backbone.View.extend(
         this.$select = this.$el.find('#select');
         this.$icon = this.$el.find('#icon');
         
-        // initial value
-        this.selected = this.options.value;
-        
-        // add change event
+        // add change event. fires only on user activity
         var self = this;
         this.$select.on('change', function() {
             self.value(self.$select.val());
@@ -67,15 +67,25 @@ var View = Backbone.View.extend(
         
         // get current id/value
         var after = this.selected;
-        if(after) {
+        if (after) {
             // fire onchange
-            if ((after != before && this.options.onchange)) {
+            if (after != before && this.options.onchange) {
                 this.options.onchange(after);
             }
         }
         
         // return
         return after;
+    },
+    
+    // first
+    first: function() {
+        var options = this.$select.find('option');
+        if (options.length > 0) {
+            return options.val();
+        } else {
+            return undefined;
+        }
     },
     
     // label
@@ -147,40 +157,17 @@ var View = Backbone.View.extend(
             this.$select.append(this._templateOption(options[key]));
         }
         
-        // select first option if nothing else is selected
-        if (!this.selected && options.length > 0) {
-            this.value(options[0].value);
-        }
-        
         // refresh
         this._refresh();
     },
     
-    // force selection to existing value
-    force: function() {
-        if (!this._exists(this.selected)) {
-            // get select options
-            var options = this.$select.find('option');
-            if (options.length > 0) {
-                // get value from options field
-                var value = options.val();
-                
-                // log
-                console.debug('Ui-Select()::force() - Forcing value from "' + this.selected + '" to "' + value + '".');
-
-                // set value
-                this.value(value);
-            }
-        }
-    },
-    
     // set on change event
-    onchange: function(callback) {
+    setOnChange: function(callback) {
         this.options.onchange = callback;
     },
     
     // check if selected value exists
-    _exists: function(value) {
+    exists: function(value) {
         return this.$select.find('option[value=' + value + ']').length > 0;
     },
     
@@ -200,11 +187,11 @@ var View = Backbone.View.extend(
         } else {
             // enable select field
             this.enable();
-            
-            // update selected value
-            if (this.selected) {
-                this.$select.val(this.selected);
-            }
+        }
+        
+        // update value
+        if (this.selected) {
+            this.$select.val(this.selected);
         }
     },
     

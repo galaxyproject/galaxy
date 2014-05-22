@@ -22,8 +22,8 @@ return Backbone.View.extend(
         // ui elements
         this.group_key = new Ui.Input({
             placeholder: 'Data label',
-            onchange: function() {
-                self.group.set('key', self.group_key.value());
+            onchange: function(value) {
+                self.group.set('key', value);
             }
         });
         this.table = new Table.View({content: 'No data column.'});
@@ -92,8 +92,6 @@ return Backbone.View.extend(
             // create select field
             var select = new Ui.Select.View({
                 id      : 'select_' + id,
-                gid     : id,
-                value   : this.group.get(id),
                 wait    : true
             });
             
@@ -116,48 +114,7 @@ return Backbone.View.extend(
         this.app.datasets.request({id : dataset_id}, function(dataset) {
             // update select fields
             for (var id in list) {
-                
-                // select
-                var select = list[id];
-                
-                // is a numeric number required
-                var is_label    = chart_settings.columns[id].is_label;
-                var is_auto     = chart_settings.columns[id].is_auto;
-                
-                // configure columns
-                var columns = [];
-                
-                // add auto selection column
-                if (is_auto) {
-                    columns.push({
-                        'label' : 'Column: Row Number',
-                        'value' : 'auto'
-                    });
-                }
-                
-                // meta data
-                var meta = dataset.metadata_column_types;
-                for (var key in meta) {
-                    // check type
-                    if ((!is_label && (meta[key] == 'int' || meta[key] == 'float')) || is_label) {
-                        // add to selection
-                        columns.push({
-                            'label' : 'Column: ' + (parseInt(key) + 1) + ' [' + meta[key] + ']',
-                            'value' : key
-                        });
-                    }
-                }
-            
-                // add onchange event
-                select.onchange(function(value) {
-                    self.group.set(this.gid, value);
-                    self.chart.set('modified', true);
-                });
-                
-                // list
-                select.update(columns);
-                select.force();
-                select.show();
+                self._addRow(id, dataset, list[id], chart_settings.columns[id])
             }
             
             // loading
@@ -165,6 +122,62 @@ return Backbone.View.extend(
             
             // unregister
             self.chart.deferred.done(process_id);
+        });
+    },
+    
+    // add row
+    _addRow: function(id, dataset, select, chart_setting) {
+        // is a numeric number required
+        var is_label    = chart_setting.is_label;
+        var is_auto     = chart_setting.is_auto;
+        
+        // configure columns
+        var columns = [];
+        
+        // add auto selection column
+        if (is_auto) {
+            columns.push({
+                'label' : 'Column: Row Number',
+                'value' : 'auto'
+            });
+        }
+        
+        // meta data
+        var meta = dataset.metadata_column_types;
+        for (var key in meta) {
+            // check type
+            if ((!is_label && (meta[key] == 'int' || meta[key] == 'float')) || is_label) {
+                // add to selection
+                columns.push({
+                    'label' : 'Column: ' + (parseInt(key) + 1) + ' [' + meta[key] + ']',
+                    'value' : key
+                });
+            }
+        }
+    
+        // update selection list
+        select.update(columns);
+        select.show();
+        
+        // update current value
+        if (!select.exists(this.group.get(id))) {
+            // get first value
+            var first = select.first();
+            
+            // log
+            console.debug('Group()::_addRow() - Switching model value from "' + this.group.get(id) + '" to "' + first + '".');
+            
+            // update model value
+            this.group.set(id, first);
+        }
+        select.value(this.group.get(id));
+        
+        // add onchange event
+        var self = this;
+        select.setOnChange(function(value) {
+            // update model value
+            self.group.set(id, value);
+            self.chart.set('modified', true);
         });
     },
     
