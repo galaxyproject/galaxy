@@ -28,8 +28,6 @@ def validate_email( trans, email, user=None, check_dup=True ):
 def validate_publicname( trans, publicname, user=None ):
     # User names must be at least four characters in length and contain only lower-case
     # letters, numbers, and the '-' character.
-    if publicname in [ 'None', None, '' ]:
-        return ''
     if user and user.username == publicname:
         return ''
     if trans.webapp.name == 'tool_shed':
