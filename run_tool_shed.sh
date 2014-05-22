@@ -2,37 +2,14 @@
 
 cd `dirname $0`
 
-SAMPLES="
-    tool_shed_wsgi.ini.sample
-    datatypes_conf.xml.sample
-    external_service_types_conf.xml.sample
-    migrated_tools_conf.xml.sample
-    reports_wsgi.ini.sample
-    shed_tool_conf.xml.sample
-    tool_conf.xml.sample
-    shed_tool_data_table_conf.xml.sample
-    tool_data_table_conf.xml.sample
-    tool_sheds_conf.xml.sample
-    openid_conf.xml.sample
-    universe_wsgi.ini.sample
-    lib/tool_shed/scripts/bootstrap_tool_shed/user_info.xml.sample
-    tool-data/shared/ncbi/builds.txt.sample
-    tool-data/shared/ensembl/builds.txt.sample
-    tool-data/shared/ucsc/builds.txt.sample
-    tool-data/shared/ucsc/publicbuilds.txt.sample
-    tool-data/shared/igv/igv_build_sites.txt.sample
-    tool-data/shared/rviewer/rviewer_build_sites.txt.sample
-    tool-data/*.sample
-    static/welcome.html.sample
-"
+./scripts/copy_sample_files.sh
 
-# Create any missing config/location files
-for sample in $SAMPLES; do
-    file=`echo $sample | sed -e 's/\.sample$//'`
-    if [ ! -f "$file" -a -f "$sample" ]; then
-        echo "Initializing $file from `basename $sample`"
-        cp $sample $file
-    fi
-done
+tool_shed=`./lib/tool_shed/scripts/bootstrap_tool_shed/parse_run_sh_args.sh $@`
+args=$@
 
-python ./scripts/paster.py serve tool_shed_wsgi.ini --pid-file=tool_shed_webapp.pid --log-file=tool_shed_webapp.log $@
+if [ $? -eq 0 ] ; then
+	bash ./lib/tool_shed/scripts/bootstrap_tool_shed/bootstrap_tool_shed.sh $@
+	args=`echo $@ | sed "s#-\?-bootstrap_from_tool_shed $tool_shed##"`
+fi
+
+python ./scripts/paster.py serve tool_shed_wsgi.ini --pid-file=tool_shed_webapp.pid --log-file=tool_shed_webapp.log $args

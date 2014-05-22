@@ -125,7 +125,7 @@ def validate_password( password ):
     return ''
 
 def validate_publicname( username ):
-    """""Validates the public username."""
+    """Validates the public username."""
     if len( username ) < 3:
         return "Public name must be at least 3 characters in length"
     if len( username ) > 255:
@@ -154,5 +154,7 @@ if __name__ == "__main__":
     if user is not None:
         api_key = create_api_key( app, user )
         print "Created new user with public username '", user.username, ".  An API key was also created and associated with the user."
+        exit(0)
     else:
         print "Problem creating a new user and an associated API key."
+        exit(1)
