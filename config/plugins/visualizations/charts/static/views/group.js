@@ -82,25 +82,21 @@ return Backbone.View.extend(
         // load list
         var list = {};
         for (var id in chart_settings.columns) {
-            // initialize
-            var value = this.group.get(id);
-            if (!value) {
-                this.group.set(id, 0);
-            }
-            
-            // create select field
+            // get definition
             var data_def = chart_settings.columns[id];
+            if (!data_def) {
+                console.debug('Group::_refreshTable() - Skipping column definition.');
+                continue;
+            }
+
+            // create select field
             var select = new Ui.Select.View({
-                id   : 'select_' + id,
-                gid  : id,
-                onchange : function(value) {
-                    self.group.set(this.gid, value);
-                    self.chart.set('modified', true);
-                },
-                value : value,
-                wait  : true
+                id      : 'select_' + id,
+                gid     : id,
+                value   : this.group.get(id),
+                wait    : true
             });
-    
+            
             // add row to table
             this.table.add(data_def.title, '25%');
             this.table.add(select.$el);
@@ -121,11 +117,25 @@ return Backbone.View.extend(
             // update select fields
             for (var id in list) {
                 
+                // select
+                var select = list[id];
+                
                 // is a numeric number required
-                var is_label = chart_settings.columns[id].is_label;
-            
+                var is_label    = chart_settings.columns[id].is_label;
+                var is_auto     = chart_settings.columns[id].is_auto;
+                
                 // configure columns
                 var columns = [];
+                
+                // add auto selection column
+                if (is_auto) {
+                    columns.push({
+                        'label' : 'Column: Row Number',
+                        'value' : 'auto'
+                    });
+                }
+                
+                // meta data
                 var meta = dataset.metadata_column_types;
                 for (var key in meta) {
                     // check type
@@ -138,9 +148,16 @@ return Backbone.View.extend(
                     }
                 }
             
+                // add onchange event
+                select.onchange(function(value) {
+                    self.group.set(this.gid, value);
+                    self.chart.set('modified', true);
+                });
+                
                 // list
-                list[id].update(columns);
-                list[id].show();
+                select.update(columns);
+                select.force();
+                select.show();
             }
             
             // loading

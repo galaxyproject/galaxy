@@ -6,6 +6,9 @@ return $.extend(true, {}, nvd3_config, {
     columns     : {
         x : {
             title   : 'Values for x-axis'
+        },
+        y : {
+            title   : 'Values for y-axis'
         }
     }
 });

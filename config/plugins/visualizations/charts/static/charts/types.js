@@ -48,7 +48,7 @@ return Backbone.Model.extend(
         'nvd3_scatter'                      : nvd3_scatter,
         'nvd3_pie'                          : nvd3_pie,
         'nvd3_histogram'                    : nvd3_histogram,
-        //'nvd3_histogram_discrete'           : nvd3_histogram_discrete,
+        'nvd3_histogram_discrete'           : nvd3_histogram_discrete,
         'highcharts_boxplot'                : highcharts_boxplot,
         'heatmap'                           : heatmap
     }

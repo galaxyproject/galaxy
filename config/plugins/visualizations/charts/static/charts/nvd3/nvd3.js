@@ -34,11 +34,13 @@ return Backbone.View.extend(
                 nvd3_model.options({showControls: false});
                 
                 // legend
-                var legend_visible = true;
-                if (chart.settings.get('show_legend') == 'false') {
-                    legend_visible = false;
+                if (nvd3_model.showLegend) {
+                    var legend_visible = true;
+                    if (chart.settings.get('show_legend') == 'false') {
+                        legend_visible = false;
+                    }
+                    nvd3_model.showLegend(legend_visible);
                 }
-                nvd3_model.showLegend(legend_visible);
                 
                 // custom callback
                 if (callback) {

@@ -9,7 +9,8 @@ return {
     columns : {
         label : {
             title       : 'Labels',
-            is_label    : true
+            is_label    : true,
+            is_auto     : true
         },
         y : {
             title       : 'Values'

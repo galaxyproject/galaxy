@@ -27,29 +27,37 @@ return Backbone.Collection.extend(
         
         // check if column data is requested
         if (request_dictionary.groups) {
-            this._get(request_dictionary, success);
-        } else {
-            // check if dataset is available from cache
-            var dataset = this.list[request_dictionary.id];
-            if (dataset) {
-                success(dataset);
-                return;
-            }
-        
-            // request dataset
-            Utils.request('GET', config.root + 'api/datasets/' + request_dictionary.id, {}, function(dataset) {
-                switch (dataset.state) {
-                    case 'error':
-                        if (error) {
-                            error(dataset);
-                        }
-                        break;
-                    default:
-                        self.list[request_dictionary.id] = dataset;
-                        success(dataset);
-                }
+            this._get_dataset(request_dictionary.id, function() {
+                self._get(request_dictionary, success);
             });
+        } else {
+            this._get_dataset(request_dictionary.id, success, error)
         }
+    },
+    
+    // get dataset
+    _get_dataset: function(id, success, error) {
+        // check if dataset is available from cache
+        var dataset = this.list[id];
+        if (dataset) {
+            success(dataset);
+            return;
+        }
+    
+        // request dataset
+        var self = this;
+        Utils.request('GET', config.root + 'api/datasets/' + id, {}, function(dataset) {
+            switch (dataset.state) {
+                case 'error':
+                    if (error) {
+                        error(dataset);
+                    }
+                    break;
+                default:
+                    self.list[id] = dataset;
+                    success(dataset);
+            }
+        });
     },
     
     // get block id
@@ -78,7 +86,7 @@ return Backbone.Collection.extend(
                 
                 // check if column is in cache
                 var block_id = this._block_id(request_dictionary, column);
-                if (this.cache[block_id]) {
+                if (this.cache[block_id] || column === 'auto') {
                     continue;
                 }
                 
@@ -134,45 +142,74 @@ return Backbone.Collection.extend(
         // log
         console.debug('Datasets::_fill_from_cache() - Filling request from cache.');
     
-        // collect all data into the defined groups
+        // get dataset
+        var dataset = this.list[request_dictionary.id];
+        if (!dataset) {
+            console.debug('FAILED - Datasets::_fill_from_cache() - Dataset not found.');
+        }
+        
+        // identify start/end of request
+        var start = request_dictionary.start;
+        var end   = Math.min(request_dictionary.end, dataset.metadata_data_lines);
+        if (end - start <= 0) {
+            console.debug('FAILED - Datasets::_fill_from_cache() - Invalid range.');
+        }
+        
+        // initialize group values
         for (var i in request_dictionary.groups) {
             // get group
             var group = request_dictionary.groups[i];
             
-            // create array for values
+            // reset group
             group.values = [];
+        
+            // add values
+            for (var j = 0; j < end - start; j++) {
+                // add default x values
+                group.values[j] = {
+                    x : parseInt(j) + start
+                };
+            }
+        }
+        
+        // collect all data into the defined groups
+        for (var i in request_dictionary.groups) {
+            // get group
+            var group = request_dictionary.groups[i];
             
             // fill value
             for (var key in group.columns) {
                 // get column
                 var column = group.columns[key];
           
-                // get block
-                var block_id = this._block_id(request_dictionary, column.index);
-                var column_data = this.cache[block_id];
-            
-                // go through column
-                for (k in column_data) {
-                    // initialize value
-                    var value = group.values[k];
-                    if (value === undefined) {
-                        // create new value field
-                        value = {
-                            x : parseInt(k) + request_dictionary.start
+                // check if auto block is requested
+                if (column.index == 'auto') {
+                    for (var j = start; j < end; j++) {
+                        // get value dictionary
+                        var value = group.values[j];
+                        
+                        // add auto value
+                        value[key] = parseInt(j) + start;
+                    }
+                } else {
+                    // get block
+                    var block_id = this._block_id(request_dictionary, column.index);
+                    var column_data = this.cache[block_id];
+                
+                    // go through column
+                    for (var j = start; j < end; j++) {
+                        // get value dictionary
+                        var value = group.values[j];
+                        
+                        // get/fix value
+                        var v = column_data[j];
+                        if (isNaN(v) && !column.is_label) {
+                            v = 0;
                         }
                         
-                        // add to group
-                        group.values[k] = value;
-                    };
-                    
-                    // get/fix value
-                    var v = column_data[k];
-                    if (isNaN(v) && !column.is_label) {
-                        v = 0;
+                        // add to dict
+                        value[key] = v;
                     }
-                    
-                    // add to dict
-                    value[key] = v;
                 }
             }
         }

@@ -33,11 +33,9 @@ var View = Backbone.View.extend(
         
         // add change event
         var self = this;
-        if (this.options.onchange) {
-            this.$select.on('change', function() {
-                self.value(self.$select.val());
-            });
-        }
+        this.$select.on('change', function() {
+            self.value(self.$select.val());
+        });
         
         // refresh
         this._refresh();
@@ -158,6 +156,34 @@ var View = Backbone.View.extend(
         this._refresh();
     },
     
+    // force selection to existing value
+    force: function() {
+        if (!this._exists(this.selected)) {
+            // get select options
+            var options = this.$select.find('option');
+            if (options.length > 0) {
+                // get value from options field
+                var value = options.val();
+                
+                // log
+                console.debug('Ui-Select()::force() - Forcing value from "' + this.selected + '" to "' + value + '".');
+
+                // set value
+                this.value(value);
+            }
+        }
+    },
+    
+    // set on change event
+    onchange: function(callback) {
+        this.options.onchange = callback;
+    },
+    
+    // check if selected value exists
+    _exists: function(value) {
+        return this.$select.find('option[value=' + value + ']').length > 0;
+    },
+    
     // refresh
     _refresh: function() {
         // remove placeholder
@@ -166,9 +192,11 @@ var View = Backbone.View.extend(
         // count remaining entries
         var remaining = this.$select.find('option').length;
         if (remaining == 0) {
+            // disable select field
+            this.disable();
+        
             // append placeholder
             this.$select.append(this._templateOption({value : 'null', label : this.options.empty}));
-            this.disable();
         } else {
             // enable select field
             this.enable();
@@ -178,12 +206,6 @@ var View = Backbone.View.extend(
                 this.$select.val(this.selected);
             }
         }
-    },
-    
-    // exists
-    _exists: function(value) {
-        // check if selected value exists
-        return 0 != this.$select.find('option[value=' + value + ']').length;
     },
     
     // option

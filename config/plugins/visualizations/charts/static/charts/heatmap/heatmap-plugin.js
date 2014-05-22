@@ -285,14 +285,15 @@ return Backbone.View.extend(
         }
         
         // prepare indices
+        dataRangeFormat = d3.format('.3f');
         var dataRangeMin = 0;
-        var dataRangeMid = parseInt((dataRange.length - 1) / 2);
+        var dataRangeMid = '';
         var dataRangeMax = dataRange.length - 1;
         
         // add labels
-        dataRange[dataRangeMin] = this.min;
+        dataRange[dataRangeMin] = dataRangeFormat(this.min);
         dataRange[dataRangeMid] = this.mid;
-        dataRange[dataRangeMax] = this.max;
+        dataRange[dataRangeMax] = dataRangeFormat(this.max);
         
         // create legend
         var legend = this.svg.selectAll('.legend')

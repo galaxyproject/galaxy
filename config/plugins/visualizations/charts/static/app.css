@@ -63,5 +63,6 @@
 .charts-viewport .charts-viewport-canvas {
 	display: block;
 	width:100%;
+	min-height: 100px;
 	height: inherit;
 }

@@ -5,7 +5,7 @@ return $.extend(true, {}, nvd3_config, {
     category    : 'Data processing (requires \'charts\' tool from Toolshed)',
     execute     : 'histogramdiscrete',
     columns     : {
-        y : {
+        x : {
             title       : 'Observations',
             is_label    : true
         }
