@@ -142,16 +142,25 @@ return Backbone.Collection.extend(
         // log
         console.debug('Datasets::_fill_from_cache() - Filling request from cache.');
     
-        // get dataset
-        var dataset = this.list[request_dictionary.id];
-        if (!dataset) {
-            console.debug('FAILED - Datasets::_fill_from_cache() - Dataset not found.');
+        // identify start of request
+        var start = request_dictionary.start;
+        
+        // identify end of request
+        var limit = 0;
+        for (var i in request_dictionary.groups) {
+            var group = request_dictionary.groups[i];
+            for (var key in group.columns) {
+                var column = group.columns[key];
+                var block_id = this._block_id(request_dictionary, column.index);
+                var column_data = this.cache[block_id];
+                if (column_data) {
+                    limit = Math.max(limit, column_data.length);
+                }
+            }
         }
         
-        // identify start/end of request
-        var start = request_dictionary.start;
-        var end   = Math.min(request_dictionary.end, dataset.metadata_data_lines);
-        if (end - start <= 0) {
+        // check length
+        if (limit == 0) {
             console.debug('FAILED - Datasets::_fill_from_cache() - Invalid range.');
         }
         
@@ -164,7 +173,7 @@ return Backbone.Collection.extend(
             group.values = [];
         
             // add values
-            for (var j = 0; j < end - start; j++) {
+            for (var j = 0; j < limit; j++) {
                 // add default x values
                 group.values[j] = {
                     x : parseInt(j) + start
@@ -184,7 +193,7 @@ return Backbone.Collection.extend(
           
                 // check if auto block is requested
                 if (column.index == 'auto') {
-                    for (var j = start; j < end; j++) {
+                    for (var j = 0; j < limit; j++) {
                         // get value dictionary
                         var value = group.values[j];
                         
@@ -197,7 +206,7 @@ return Backbone.Collection.extend(
                     var column_data = this.cache[block_id];
                 
                     // go through column
-                    for (var j = start; j < end; j++) {
+                    for (var j = 0; j < limit; j++) {
                         // get value dictionary
                         var value = group.values[j];
                         
