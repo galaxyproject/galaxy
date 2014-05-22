@@ -667,8 +667,8 @@ var HDACollection = Backbone.Collection.extend( baseMVC.LoggableMixin ).extend(
             if( ids.length != 2 ){
                 // TODO: Do something...
             }
-            element_identifiers.push( { name: "left", src: "hda", id: ids[ 0 ] } );
-            element_identifiers.push( { name: "right", src: "hda", id: ids[ 1 ] } );
+            element_identifiers.push( { name: "forward", src: "hda", id: ids[ 0 ] } );
+            element_identifiers.push( { name: "reverse", src: "hda", id: ids[ 1 ] } );
             name = "New Dataset Pair";
         }
         options.data = {type: "dataset_collection",
