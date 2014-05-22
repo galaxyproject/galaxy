@@ -6,6 +6,7 @@ VALID_PUBLICNAME_SUB = re.compile( "[^a-z0-9\-]" )
 VALID_EMAIL_RE = re.compile( "[^@]+@[^@]+\.[^@]+" )
 FILL_CHAR = '-'
 
+
 def validate_email( trans, email, user=None, check_dup=True ):
     """
     Validates the email format, also checks whether the domain is blacklisted in the disposable domains configuration.
@@ -24,6 +25,7 @@ def validate_email( trans, email, user=None, check_dup=True ):
         if email.split('@')[1] in trans.app.config.blacklist_content:
             message = "Please enter your permanent email address."
     return message
+
 
 def validate_publicname( trans, publicname, user=None ):
     # User names must be at least four characters in length and contain only lower-case
@@ -44,10 +46,11 @@ def validate_publicname( trans, publicname, user=None ):
         return "Public name is taken; please choose another"
     return ''
 
+
 def transform_publicname( trans, publicname, user=None ):
     # User names must be at least four characters in length and contain only lower-case
     # letters, numbers, and the '-' character.
-    #TODO: Enhance to allow generation of semi-random publicnnames e.g., when valid but taken
+    # TODO: Enhance to allow generation of semi-random publicnnames e.g., when valid but taken
     if user and user.username == publicname:
         return publicname
     elif publicname not in [ 'None', None, '' ]:
@@ -57,6 +60,7 @@ def transform_publicname( trans, publicname, user=None ):
         if not trans.sa_session.query( trans.app.model.User ).filter_by( username=publicname ).first():
             return publicname
     return ''
+
 
 def validate_password( trans, password, confirm ):
     if len( password ) < 6:
