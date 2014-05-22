@@ -75,7 +75,6 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         if not trans.app.config.enable_openid:
             return trans.show_error_message( 'OpenID authentication is not enabled in this instance of Galaxy' )
         message = 'Unspecified failure authenticating via OpenID'
-        status = kwd.get( 'status', 'done' )
         openid_url = kwd.get( 'openid_url', '' )
         openid_provider = kwd.get( 'openid_provider', '' )
         if not openid_provider or openid_url:
@@ -103,7 +102,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
             except Exception, e:
                 message = 'Failed to begin OpenID authentication: %s' % str( e )
             if request is not None:
-                sreg_request = trans.app.openid_manager.add_sreg( trans, request, required=openid_provider_obj.sreg_required, optional=openid_provider_obj.sreg_optional )
+                trans.app.openid_manager.add_sreg( trans, request, required=openid_provider_obj.sreg_required, optional=openid_provider_obj.sreg_optional )
                 if request.shouldSendRedirect():
                     redirect_url = request.redirectURL(
                         trans.request.base, process_url )
@@ -1519,7 +1518,6 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         try:
             user_address = trans.sa_session.query( trans.app.model.UserAddress ).get( trans.security.decod_id( address_id ) )
         except:
-            user_adress = None
             message = 'Invalid address is (%s)' % address_id
             status = 'error'
         if user_address:
@@ -1540,7 +1538,6 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         try:
             user_address = trans.sa_session.query( trans.app.model.UserAddress ).get( trans.security.decode_id( address_id ) )
         except:
-            user_adress = None
             message = 'Invalid address is (%s)' % address_id
             status = 'error'
         if user_address:
