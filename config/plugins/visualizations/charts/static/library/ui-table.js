@@ -22,9 +22,6 @@ var View = Backbone.View.extend(
         'dblclick'  : '_ondblclick'
     },
     
-    // first
-    first: true,
-    
     // initialize
     initialize : function(options) {
         // configure options

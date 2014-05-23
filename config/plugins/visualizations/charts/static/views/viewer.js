@@ -1,7 +1,7 @@
 // dependencies
 define(['utils/utils', 'plugin/library/ui', 'mvc/ui/ui-portlet',
-        'plugin/models/group', 'plugin/views/viewport',],
-        function(Utils, Ui, Portlet, Group, ViewportView) {
+        'plugin/models/group', 'plugin/views/viewport', 'plugin/library/screenshot'],
+        function(Utils, Ui, Portlet, Group, ViewportView, Screenshot) {
 
 // widget
 return Backbone.View.extend(
@@ -37,28 +37,17 @@ return Backbone.View.extend(
                         });
                     }
                 }),
-                /*picture_button: new Ui.ButtonIcon({
+                picture_button: new Ui.ButtonIcon({
                     icon    : 'fa-camera',
-                    tooltip : 'Download SVG-file',
+                    tooltip : 'Download PDF-file (' + self.app.config.get('screenshot_url') + ')',
                     title   : 'Screenshot',
                     onclick : function() {
                         // attempt to load chart editor
                         self._wait (self.chart, function() {
-                            self._screenshot();
+                            Screenshot.create(self.viewport_view.$el, self.app.config.get('screenshot_url'), self.chart.get('title'));
                         });
                     }
-                }),
-                settings_button: new Ui.ButtonIcon({
-                    icon    : 'fa-gear',
-                    tooltip : 'Configure this application',
-                    title   : 'Application',
-                    onclick : function() {
-                        // attempt to load chart editor
-                        self._wait (self.chart, function() {
-                            self.app.go('editor');
-                        });
-                    }
-                })*/
+                })
             }
         });
         
@@ -93,17 +82,6 @@ return Backbone.View.extend(
     _refreshTitle: function() {
         var title = this.chart.get('title');
         this.portlet.title(title);
-    },
-    
-    // download svg file
-    _screenshot: function() {
-        // Encode the SVG
-        var serializer = new XMLSerializer();
-        var xmlString = serializer.serializeToString(this.viewport_view.svg.node());
-        var imgData = 'data:image/svg+xml;base64,' + btoa(xmlString);
-        //Use the download attribute (or a shim) to provide a link
-        //this.portlet.append('<a href="' + imgData + '" download>Download</a>');
-        window.location.href = 'data:application/x-download/;charset=utf-8,' + encodeURIComponent(xmlString);
     },
     
     // wait for chart to be ready

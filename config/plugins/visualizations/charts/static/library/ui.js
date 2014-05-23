@@ -512,7 +512,7 @@ var ButtonMenu = Backbone.View.extend(
         if (options.icon)
             tmpl +=         '<i class="fa ' + options.icon + '"></i>';
          
-                        '</button>' +
+        tmpl +=         '</button>' +
                     '</div>';
         
         // return template

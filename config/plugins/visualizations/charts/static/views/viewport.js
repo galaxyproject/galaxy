@@ -1,6 +1,6 @@
 // dependencies
-define(['mvc/ui/ui-portlet', 'plugin/library/ui', 'utils/utils'],
-        function(Portlet, Ui, Utils) {
+define(['mvc/ui/ui-portlet', 'plugin/library/ui', 'plugin/library/screenshot', 'utils/utils'],
+        function(Portlet, Ui, Screenshot, Utils) {
 
 // widget
 return Backbone.View.extend({
@@ -187,7 +187,10 @@ return Backbone.View.extend({
             }
         });
     },
-    
+
+    //
+    // REQUEST STRING FUNCTIONS
+    //
     // create default chart request
     _defaultRequestString: function(chart) {
     
