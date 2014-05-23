@@ -42,7 +42,7 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
                 return [item]
         for user in query:
             item = user.to_dict( value_mapper={ 'id': trans.security.encode_id } )
-            #TODO: move into api_values
+            # TODO: move into api_values
             rval.append( item )
         return rval
 
@@ -78,12 +78,11 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
             else:
                 raise HTTPBadRequest( detail='Invalid user id ( %s ) specified' % id )
         item = user.to_dict( view='element', value_mapper={ 'id': trans.security.encode_id,
-                                                                  'total_disk_usage': float } )
-
+                                                            'total_disk_usage': float } )
         # add a list of tags used by the user (as strings)
         item[ 'tags_used' ] = self.get_user_tags_used( trans, user=user )
-        #TODO: move into api_values (needs trans, tho - can we do that with api_keys/@property??)
-        #TODO: works with other users (from admin)??
+        # TODO: move into api_values (needs trans, tho - can we do that with api_keys/@property??)
+        # TODO: works with other users (from admin)??
         item['quota_percent'] = trans.app.quota_agent.get_percent( trans=trans )
         item['is_admin'] = trans.user_is_admin()
         return item
@@ -103,8 +102,8 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
             email = payload[ 'email' ]
             password = payload[ 'password' ]
             message = "\n".join( [ validate_email( trans, email ),
-                                validate_password( trans, password, password ),
-                                validate_publicname( trans, username ) ] ).rstrip()
+                                   validate_password( trans, password, password ),
+                                   validate_publicname( trans, username ) ] ).rstrip()
             if message:
                 raise exceptions.RequestParameterInvalidException( message )
             else:
@@ -138,15 +137,13 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
     def undelete( self, trans, **kwd ):
         raise HTTPNotImplemented()
 
-    #TODO: move to more basal, common resource than this
+    # TODO: move to more basal, common resource than this
     def anon_user_api_value( self, trans ):
         """
         Returns data for an anonymous user, truncated to only usage and quota_percent
         """
         usage = trans.app.quota_agent.get_usage( trans )
         percent = trans.app.quota_agent.get_percent( trans=trans, usage=usage )
-        return {
-            'total_disk_usage'      : int( usage ),
-            'nice_total_disk_usage' : util.nice_size( usage ),
-            'quota_percent'         : percent
-        }
+        return {'total_disk_usage': int( usage ),
+                'nice_total_disk_usage': util.nice_size( usage ),
+                'quota_percent': percent}
