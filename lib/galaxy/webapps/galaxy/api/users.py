@@ -3,10 +3,14 @@ API operations on User objects.
 """
 import logging
 from paste.httpexceptions import HTTPBadRequest, HTTPNotImplemented
-from galaxy import util, web
+
+from galaxy import util, web, exceptions
+from galaxy.security.validate_user_input import validate_email
+from galaxy.security.validate_user_input import validate_password
+from galaxy.security.validate_user_input import validate_publicname
 from galaxy.web.base.controller import BaseAPIController, UsesTagsMixin
-from galaxy.web.base.controller import CreatesUsersMixin
 from galaxy.web.base.controller import CreatesApiKeysMixin
+from galaxy.web.base.controller import CreatesUsersMixin
 
 log = logging.getLogger( __name__ )
 
@@ -98,7 +102,13 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
             username = payload[ 'username' ]
             email = payload[ 'email' ]
             password = payload[ 'password' ]
-            user = self.create_user( trans=trans, email=email, username=username, password=password )
+            message = "\n".join( [ validate_email( trans, email ),
+                                validate_password( trans, password, password ),
+                                validate_publicname( trans, username ) ] ).rstrip()
+            if message:
+                raise exceptions.RequestParameterInvalidException( message )
+            else:
+                user = self.create_user( trans=trans, email=email, username=username, password=password )
         else:
             raise HTTPNotImplemented()
         item = user.to_dict( view='element', value_mapper={ 'id': trans.security.encode_id,
