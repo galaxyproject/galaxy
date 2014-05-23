@@ -1144,9 +1144,9 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                 return "A public user name is required in the tool shed."
             if username in [ 'repos' ]:
                 return "The term <b>%s</b> is a reserved word in the tool shed, so it cannot be used as a public user name." % username
-        message = "\n".join(validate_email( trans, email ),
-                            validate_password( trans, password, confirm ),
-                            validate_publicname( trans, username ))
+        message = "\n".join( [ validate_email( trans, email ),
+                               validate_password( trans, password, confirm ),
+                               validate_publicname( trans, username ) ] ).rstrip()
         if not message:
             if trans.webapp.name == 'galaxy':
                 if self.get_all_forms( trans,
