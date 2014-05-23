@@ -76,6 +76,7 @@ class DatasetCollectionsService(
                     trans.sa_session.add( output_dataset )
 
                 dataset_collection_instance.implicit_output_name = implicit_collection_info[ "implicit_output_name" ]
+            log.debug("Created collection with %d elements" % ( len( dataset_collection_instance.collection.elements ) ) )
             # Handle setting hid
             parent.add_dataset_collection( dataset_collection_instance )
         elif isinstance( parent, model.LibraryFolder ):
