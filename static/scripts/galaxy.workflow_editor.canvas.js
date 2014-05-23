@@ -1333,8 +1333,12 @@ var NodeView = Backbone.View.extend( {
             skipResize = false;
         }
         var terminalView = this.terminalViews[ input.name ];
+        var terminalViewClass = ( input.input_type == "dataset_collection" ) ? InputCollectionTerminalView : InputTerminalView;
+        if( terminalView && ! ( terminalView instanceof terminalViewClass ) ) {
+            terminalView.el.terminal.destroy();
+            terminalView = null;
+        }
         if( ! terminalView ) {
-	        var terminalViewClass = ( input.input_type == "dataset_collection" ) ? InputCollectionTerminalView : InputTerminalView;
             terminalView = new terminalViewClass( {
                 node: this.node,
                 input: input
