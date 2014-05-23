@@ -8,6 +8,7 @@ from galaxy import util
 from galaxy import web
 from galaxy.util import json
 from galaxy.web.base.controller import BaseAPIController
+from galaxy.web.base.controller import HTTPBadRequest
 from galaxy.web.framework.helpers import time_ago
 import tool_shed.repository_types.util as rt_util
 import tool_shed.util.shed_util_common as suc
@@ -24,6 +25,48 @@ log = logging.getLogger( __name__ )
 
 class RepositoriesController( BaseAPIController ):
     """RESTful controller for interactions with repositories in the Tool Shed."""
+
+    @web.expose_api
+    def add_repository_registry_entry( self, trans, payload, **kwd ):
+        """
+        POST /api/repository_revisions/add_repository_registry_entry
+        Adds appropriate entries to the repository registry for the repository defined by the received name and owner.
+
+        :param key: the user's API key
+        
+        The following parameters are included in the payload.
+        :param tool_shed_url (required): the base URL of the Tool Shed containing the Repository
+        :param name (required): the name of the Repository
+        :param owner (required): the owner of the Repository
+        """
+        response_dict = {}
+        if not trans.user_is_admin():
+            response_dict[ 'status' ] = 'error'
+            response_dict[ 'message' ] = "You are not authorized to add entries to this Tool Shed's repository registry."
+            return response_dict
+        tool_shed_url = payload.get( 'tool_shed_url', '' )
+        if not tool_shed_url:
+            raise HTTPBadRequest( detail="Missing required parameter 'tool_shed_url'." )
+        tool_shed_url = tool_shed_url.rstrip( '/' )
+        name = payload.get( 'name', '' )
+        if not name:
+            raise HTTPBadRequest( detail="Missing required parameter 'name'." )
+        owner = payload.get( 'owner', '' )
+        if not owner:
+            raise HTTPBadRequest( detail="Missing required parameter 'owner'." )
+        repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
+        if repository is None:
+            error_message = 'Cannot locate repository with name %s and owner %s,' % ( str( name ), str( owner ) )
+            log.debug( error_message )
+            response_dict[ 'status' ] = 'error'
+            response_dict[ 'message' ] = error_message
+            return response_dict
+        # Update the repository registry.
+        trans.app.repository_registry.add_entry( repository )
+        response_dict[ 'status' ] = 'ok'
+        response_dict[ 'message' ] = 'Entries for repository %s owned by %s have been added to the Tool Shed repository registry..' \
+            % ( name, owner )
+        return response_dict
 
     @web.expose_api_anonymous
     def get_ordered_installable_revisions( self, trans, name, owner, **kwd ):
@@ -267,6 +310,48 @@ class RepositoriesController( BaseAPIController ):
                                                     id=trans.security.encode_id( repository.id ) )
             repository_dicts.append( repository_dict )
         return repository_dicts
+
+    @web.expose_api
+    def remove_repository_registry_entry( self, trans, payload, **kwd ):
+        """
+        POST /api/repository_revisions/add_repository_registry_entry
+        Removes appropriate entries from the repository registry for the repository defined by the received name and owner.
+
+        :param key: the user's API key
+        
+        The following parameters are included in the payload.
+        :param tool_shed_url (required): the base URL of the Tool Shed containing the Repository
+        :param name (required): the name of the Repository
+        :param owner (required): the owner of the Repository
+        """
+        response_dict = {}
+        if not trans.user_is_admin():
+            response_dict[ 'status' ] = 'error'
+            response_dict[ 'message' ] = "You are not authorized to remove entries from this Tool Shed's repository registry."
+            return response_dict
+        tool_shed_url = payload.get( 'tool_shed_url', '' )
+        if not tool_shed_url:
+            raise HTTPBadRequest( detail="Missing required parameter 'tool_shed_url'." )
+        tool_shed_url = tool_shed_url.rstrip( '/' )
+        name = payload.get( 'name', '' )
+        if not name:
+            raise HTTPBadRequest( detail="Missing required parameter 'name'." )
+        owner = payload.get( 'owner', '' )
+        if not owner:
+            raise HTTPBadRequest( detail="Missing required parameter 'owner'." )
+        repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
+        if repository is None:
+            error_message = 'Cannot locate repository with name %s and owner %s,' % ( str( name ), str( owner ) )
+            log.debug( error_message )
+            response_dict[ 'status' ] = 'error'
+            response_dict[ 'message' ] = error_message
+            return response_dict
+        # Update the repository registry.
+        trans.app.repository_registry.remove_entry( repository )
+        response_dict[ 'status' ] = 'ok'
+        response_dict[ 'message' ] = 'Entries for repository %s owned by %s have been removed from the Tool Shed repository registry.' \
+            % ( name, owner )
+        return response_dict
 
     @web.expose_api
     def repository_ids_for_setting_metadata( self, trans, my_writable=False, **kwd ):

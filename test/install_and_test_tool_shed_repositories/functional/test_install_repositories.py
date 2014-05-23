@@ -11,8 +11,10 @@ class InstallTestRepositories( InstallTestRepository ):
 
     def do_install( self, repository_dict ):
         self.logout()
-        self.login( email='test@bx.psu.edu', username='test' )
-        admin_user = test_db_util.get_user( 'test@bx.psu.edu' )
+        admin_email = 'test@bx.psu.edu'
+        admin_username = 'test'
+        self.login( email=admin_email, username=admin_username )
+        admin_user = test_db_util.get_user( admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % admin_email
         admin_user_private_role = test_db_util.get_private_role( admin_user )
         # Install the repository through the web interface using twill.  The install_repository() method may 

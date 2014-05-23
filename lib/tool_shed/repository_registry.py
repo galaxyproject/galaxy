@@ -41,28 +41,34 @@ class Registry( object ):
         self.load_viewable_repositories_and_suites_by_category()
         self.load_repository_and_suite_tuples()
 
-    def add_entry( self, repository  ):            
-        if repository:
-            is_valid = self.is_valid( repository )
-            for rca in repository.categories:
-                category = rca.category
-                category_name = str( category.name )
-                self.viewable_repositories_and_suites_by_category[ category_name ] += 1
-                if is_valid:
-                    self.viewable_valid_repositories_and_suites_by_category[ category_name ] += 1
-                if repository.type == rt_util.REPOSITORY_SUITE_DEFINITION:
-                    self.viewable_suites_by_category[ category_name ] += 1
+    def add_entry( self, repository ):
+        try:
+            if repository:
+                is_valid = self.is_valid( repository )
+                certified_level_one_tuple = self.get_certified_level_one_tuple( repository )
+                latest_installable_changeset_revision, is_level_one_certified = certified_level_one_tuple
+                for rca in repository.categories:
+                    category = rca.category
+                    category_name = str( category.name )
+                    self.viewable_repositories_and_suites_by_category[ category_name ] += 1
                     if is_valid:
-                        self.viewable_valid_suites_by_category[ category_name ] += 1
-            certified_level_one_tuple = self.get_certified_level_one_tuple( repository )
-            latest_installable_changeset_revision, is_level_one_certified = certified_level_one_tuple
-            if is_level_one_certified:
-                self.certified_level_one_viewable_repositories_and_suites_by_category[ category_name ] += 1
-                if repository.type == rt_util.REPOSITORY_SUITE_DEFINITION:
-                    self.certified_level_one_viewable_suites_by_category[ category_name ] += 1
-            self.load_repository_and_suite_tuple( repository )
-            if is_level_one_certified:
-                self.load_certified_level_one_repository_and_suite_tuple( repository )
+                        self.viewable_valid_repositories_and_suites_by_category[ category_name ] += 1
+                    if repository.type == rt_util.REPOSITORY_SUITE_DEFINITION:
+                        self.viewable_suites_by_category[ category_name ] += 1
+                        if is_valid:
+                            self.viewable_valid_suites_by_category[ category_name ] += 1
+                    if is_level_one_certified:
+                        self.certified_level_one_viewable_repositories_and_suites_by_category[ category_name ] += 1
+                        if repository.type == rt_util.REPOSITORY_SUITE_DEFINITION:
+                            self.certified_level_one_viewable_suites_by_category[ category_name ] += 1
+                self.load_repository_and_suite_tuple( repository )
+                if is_level_one_certified:
+                    self.load_certified_level_one_repository_and_suite_tuple( repository )
+        except Exception, e:
+            # The viewable repository numbers and the categorized (filtered) lists of repository tuples
+            # may be slightly skewed, but that is no reason to result in a potential server error.  All
+            # will be corrected at next server start.
+            log.exception( "Handled error adding entry to repository registry: %s." % str( e ) )
 
     def get_certified_level_one_clause_list( self ):
         certified_level_one_tuples = []
@@ -242,28 +248,34 @@ class Registry( object ):
                         if repository.type in [ rt_util.REPOSITORY_SUITE_DEFINITION ]:
                             self.certified_level_one_viewable_suites_by_category[ category_name ] += 1
 
-    def remove_entry( self, repository  ):
-        if repository:
-            is_valid = self.is_valid( repository )
-            for rca in repository.categories:
-                category = rca.category
-                category_name = str( category.name )
-                self.viewable_repositories_and_suites_by_category[ category_name ] -= 1
-                if is_valid:
-                    self.viewable_valid_repositories_and_suites_by_category[ category_name ] -= 1
-                if repository.type == rt_util.REPOSITORY_SUITE_DEFINITION:
-                    self.viewable_suites_by_category[ category_name ] -= 1
+    def remove_entry( self, repository ):
+        try:
+            if repository:
+                is_valid = self.is_valid( repository )
+                certified_level_one_tuple = self.get_certified_level_one_tuple( repository )
+                latest_installable_changeset_revision, is_level_one_certified = certified_level_one_tuple
+                for rca in repository.categories:
+                    category = rca.category
+                    category_name = str( category.name )
+                    self.viewable_repositories_and_suites_by_category[ category_name ] -= 1
                     if is_valid:
-                        self.viewable_valid_suites_by_category[ category_name ] -= 1
-            certified_level_one_tuple = self.get_certified_level_one_tuple( repository )
-            latest_installable_changeset_revision, is_level_one_certified = certified_level_one_tuple
-            if is_level_one_certified:
-                self.certified_level_one_viewable_repositories_and_suites_by_category[ category_name ] -= 1
-                if repository.type == rt_util.REPOSITORY_SUITE_DEFINITION:
-                    self.certified_level_one_viewable_suites_by_category[ category_name ] -= 1
-            self.unload_repository_and_suite_tuple( repository )
-            if is_level_one_certified:
-                self.unload_certified_level_one_repository_and_suite_tuple( repository )
+                        self.viewable_valid_repositories_and_suites_by_category[ category_name ] -= 1
+                    if repository.type == rt_util.REPOSITORY_SUITE_DEFINITION:
+                        self.viewable_suites_by_category[ category_name ] -= 1
+                        if is_valid:
+                            self.viewable_valid_suites_by_category[ category_name ] -= 1
+                    if is_level_one_certified:
+                        self.certified_level_one_viewable_repositories_and_suites_by_category[ category_name ] -= 1
+                        if repository.type == rt_util.REPOSITORY_SUITE_DEFINITION:
+                            self.certified_level_one_viewable_suites_by_category[ category_name ] -= 1
+                self.unload_repository_and_suite_tuple( repository )
+                if is_level_one_certified:
+                    self.unload_certified_level_one_repository_and_suite_tuple( repository )
+        except Exception, e:
+            # The viewable repository numbers and the categorized (filtered) lists of repository tuples
+            # may be slightly skewed, but that is no reason to result in a potential server error.  All
+            # will be corrected at next server start.
+            log.exception( "Handled error removing entry from repository registry: %s." % str( e ) )
 
     @property
     def sa_session( self ):

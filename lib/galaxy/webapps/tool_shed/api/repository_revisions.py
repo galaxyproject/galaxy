@@ -232,6 +232,8 @@ class RepositoryRevisionsController( BaseAPIController ):
         """
         PUT /api/repository_revisions/{encoded_repository_metadata_id}/{payload}
         Updates the value of specified columns of the repository_metadata table based on the key / value pairs in payload.
+        
+        :param id: the encoded id of the `RepositoryMetadata` object
         """
         repository_metadata_id = kwd.get( 'id', None )
         if repository_metadata_id is None:
