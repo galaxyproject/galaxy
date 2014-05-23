@@ -397,7 +397,15 @@ var InputTerminal = BaseInputTerminal.extend( {
         var otherCollectionType = this._otherCollectionType( other );
         var thisMapOver = this.mapOver();
         if( otherCollectionType.isCollection ) {
-            // TODO: Handle if this multiple....
+            if( this.multiple ) {
+                if( otherCollectionType.rank == 1 ) {
+                    return this._producesAcceptableDatatype( other );
+                } else {
+                    // TODO: Allow subcollection mapping over this as if it were
+                    // a list collection input.
+                    return false;
+                }
+            }
             if( thisMapOver.isCollection && thisMapOver.canMatch( otherCollectionType ) ) {
                 return this._producesAcceptableDatatype( other );
             } else {
