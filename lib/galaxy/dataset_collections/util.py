@@ -2,6 +2,9 @@ from galaxy import exceptions
 from galaxy import web
 from galaxy import model
 
+import logging
+log = logging.getLogger( __name__ )
+
 ERROR_MESSAGE_UNKNOWN_SRC = "Unknown dataset source (src) %s."
 ERROR_MESSAGE_NO_NESTED_IDENTIFIERS = "Dataset source new_collection requires nested element_identifiers for new collection."
 ERROR_MESSAGE_NO_NAME = "Cannot load invalid dataset identifier - missing name - %s"
@@ -32,6 +35,7 @@ def validate_input_element_identifiers( element_identifiers ):
     """ Scan through the list of element identifiers supplied by the API consumer
     and verify the structure is valid.
     """
+    log.debug( "Validating %d element identifiers for collection creation." % len( element_identifiers ) )
     for element_identifier in element_identifiers:
         if "__object__" in element_identifier:
             message = ERROR_MESSAGE_INVALID_PARAMETER_FOUND % ( "__model_object__", element_identifier )
