@@ -83,7 +83,7 @@ def app_factory( global_conf, **kwargs ):
     webapp.mapper.connect( 'api_key_retrieval',
                            '/api/authenticate/baseauth/',
                            controller='authenticate',
-                           action='get_api_key',
+                           action='get_tool_shed_api_key',
                            conditions=dict( method=[ "GET" ] ) )
     webapp.mapper.resource( 'category',
                             'categories',
