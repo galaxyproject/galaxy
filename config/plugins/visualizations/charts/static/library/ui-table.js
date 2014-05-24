@@ -81,8 +81,13 @@ var View = Backbone.View.extend(
         this._commit(id, true);
     },
     
-    // remove
-    remove: function(id) {
+    // get element
+    get: function(id) {
+        return this.$el.find('#' + id);
+    },
+    
+    // delete
+    del: function(id) {
         var item = this.$tbody.find('#' + id);
         if (item.length > 0) {
             item.remove();
@@ -91,8 +96,8 @@ var View = Backbone.View.extend(
         }
     },
 
-    // remove
-    removeAll: function() {
+    // delete all
+    delAll: function() {
         this.$tbody.html('');
         this.row_count = 0;
         this._refresh();
@@ -134,7 +139,7 @@ var View = Backbone.View.extend(
     // commit
     _commit: function(id, prepend) {
         // remove previous item with same id
-        this.remove(id);
+        this.del(id);
         
         // add
         this.row.attr('id', id);

@@ -26,42 +26,42 @@ return {
                 {
                     label   : '-- Do not show values --',
                     value   : 'hide',
-                    hide    : 'x_axis_tick'
+                    hide    : ['x_axis_tick']
                 },
                 {
                     label   : 'Auto',
                     value   : 'auto',
-                    hide    : 'x_axis_tick'
+                    hide    : ['x_axis_tick']
                 },
                 {
                     label   : 'Float',
                     value   : 'f',
-                    show    : 'x_axis_tick'
+                    show    : ['x_axis_tick']
                 },
                 {
                     label   : 'Exponent',
                     value   : 'e',
-                    show    : 'x_axis_tick'
+                    show    : ['x_axis_tick']
                 },
                 {
                     label   : 'Integer',
                     value   : 'd',
-                    hide    : 'x_axis_tick'
+                    hide    : ['x_axis_tick']
                 },
                 {
                     label   : 'Percentage',
                     value   : 'p',
-                    show    : 'x_axis_tick'
+                    show    : ['x_axis_tick']
                 },
                 {
                     label   : 'Rounded',
                     value   : 'r',
-                    show    : 'x_axis_tick'
+                    show    : ['x_axis_tick']
                 },
                 {
                     label   : 'SI-prefix',
                     value   : 's',
-                    show    : 'x_axis_tick'
+                    show    : ['x_axis_tick']
                 }
             ]
         },
@@ -118,42 +118,42 @@ return {
                 {
                     label   : '-- Do not show values --',
                     value   : 'hide',
-                    hide    : 'y_axis_tick'
+                    hide    : ['y_axis_tick']
                 },
                 {
                     label   : 'Auto',
                     value   : 'auto',
-                    hide    : 'y_axis_tick'
+                    hide    : ['y_axis_tick']
                 },
                 {
                     label   : 'Float',
                     value   : 'f',
-                    show    : 'y_axis_tick'
+                    show    : ['y_axis_tick']
                 },
                 {
                     label   : 'Exponent',
                     value   : 'e',
-                    show    : 'y_axis_tick'
+                    show    : ['y_axis_tick']
                 },
                 {
                     label   : 'Integer',
                     value   : 'd',
-                    hide    : 'y_axis_tick'
+                    hide    : ['y_axis_tick']
                 },
                 {
                     label   : 'Percentage',
                     value   : 'p',
-                    show    : 'y_axis_tick'
+                    show    : ['y_axis_tick']
                 },
                 {
                     label   : 'Rounded',
                     value   : 'r',
-                    show    : 'y_axis_tick'
+                    show    : ['y_axis_tick']
                 },
                 {
                     label   : 'SI-prefix',
                     value   : 's',
-                    show    : 'y_axis_tick'
+                    show    : ['y_axis_tick']
                 }
             ]
         },

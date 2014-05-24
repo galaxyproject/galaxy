@@ -31,7 +31,7 @@ var View = Backbone.View.extend(
     // update
     update: function(settings, model) {
         // reset table
-        this.table.removeAll();
+        this.table.delAll();
         
         // reset list
         this.list = [];
@@ -39,6 +39,11 @@ var View = Backbone.View.extend(
         // load settings elements into table
         for (var id in settings) {
             this._add(id, settings[id], model);
+        }
+        
+        // trigger change
+        for (var id in this.list) {
+            this.list[id].trigger('change');
         }
     },
     
@@ -56,36 +61,38 @@ var View = Backbone.View.extend(
             // text input field
             case 'text' :
                 field = new Ui.Input({
-                            id          : id,
-                            placeholder : settings_def.placeholder,
-                            value       : model.get(id),
-                            onchange    : function(value) {
-                                model.set(id, value);
-                            }
-                        });
+                    id          : 'field_' + id,
+                    placeholder : settings_def.placeholder,
+                    value       : model.get(id),
+                    onchange    : function(value) {
+                        model.set(id, value);
+                    }
+                });
                 break;
             // select field
             case 'select' :
                 field = new Ui.Select.View({
-                            id          : id,
-                            data        : settings_def.data,
-                            value       : model.get(id),
-                            onchange    : function(value) {
-                                // set new value
-                                model.set(id, value);
-                                
-                                // find selected dictionary
-                                var dict = _.findWhere(settings_def.data, {value: value});
-                                if (dict) {
-                                    if (dict.show) {
-                                        self.$el.find('#' + dict.show).fadeIn('fast');
-                                    }
-                                    if (dict.hide) {
-                                        self.$el.find('#' + dict.hide).fadeOut('fast');
-                                    }
-                                }
+                    id          : 'field_' + id,
+                    data        : settings_def.data,
+                    value       : model.get(id),
+                    onchange    : function(value) {
+                        // set new value
+                        model.set(id, value);
+                        
+                        // find selected dictionary
+                        var dict = _.findWhere(settings_def.data, {value: value});
+                        if (dict) {
+                            for (var i in dict.show) {
+                                var target = dict.show[i];
+                                self.table.get(target).show();
                             }
-                        });
+                            for (var i in dict.hide) {
+                                var target = dict.hide[i];
+                                self.table.get(target).hide();
+                            }
+                        }
+                    }
+                });
                 break;
             // slider input field
             case 'separator' :

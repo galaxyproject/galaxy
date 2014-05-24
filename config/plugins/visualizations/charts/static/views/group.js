@@ -77,7 +77,7 @@ return Backbone.View.extend(
         var chart_settings = this.app.types.get(chart_type);
     
         // reset table
-        this.table.removeAll();
+        this.table.delAll();
         
         // load list
         var list = {};

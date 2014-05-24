@@ -37,6 +37,13 @@ var View = Backbone.View.extend(
             self.value(self.$select.val());
         });
         
+        // add change event. fires on trigger
+        this.on('change', function() {
+            if (self.options.onchange) {
+                self.options.onchange(self.value());
+            }
+        });
+        
         // refresh
         this._refresh();
         

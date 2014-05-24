@@ -40,6 +40,7 @@ return Backbone.View.extend(
         if (!chart_type) {
             return;
         }
+        
         // get settings
         var chart_definition = this.app.types.get(chart_type);
         
