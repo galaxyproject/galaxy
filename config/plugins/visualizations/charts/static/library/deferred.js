@@ -20,11 +20,14 @@ return Backbone.Model.extend(
         this.on('refresh', function() {
             if (this.counter == 0) {
                 for (var index in this.queue) {
-                    // execute callback
-                    this.queue[index]();
+                    // get callback
+                    var callback = this.queue[index];
                 
                     // remove callback
                     this.queue.splice(index, 1);
+                
+                    // execute callback
+                    callback();
                 }
             }
         });
