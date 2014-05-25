@@ -13,7 +13,8 @@ var View = Backbone.View.extend(
         content     : 'No content available.',
         onchange    : null,
         ondblclick  : null,
-        onconfirm   : null
+        onconfirm   : null,
+        cls         : 'grid'
     },
     
     // events
@@ -197,7 +198,7 @@ var View = Backbone.View.extend(
     _template: function(options)
     {
         return  '<div>' +
-                    '<table class="grid">' +
+                    '<table class="' + options.cls + '">' +
                         '<thead></thead>' +
                         '<tbody style="cursor: pointer;"></tbody>' +
                     '</table>' +

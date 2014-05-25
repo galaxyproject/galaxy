@@ -5,6 +5,13 @@ define(['plugin/library/ui-table', 'plugin/library/ui', 'utils/utils'],
 // widget
 var View = Backbone.View.extend(
 {
+    // options
+    optionsDefault: {
+        title       : '',
+        content     : '',
+        mode        : ''
+    },
+    
     // elements
     list: [],
     
