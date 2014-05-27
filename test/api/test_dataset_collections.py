@@ -106,6 +106,19 @@ class DatasetCollectionApiTestCase( api.ApiTestCase ):
             create_response = self._post( "dataset_collections", payload )
             self._assert_status_code_is( create_response, 403 )
 
+    def test_enforces_unique_names( self ):
+        element_identifiers = self.dataset_collection_populator.list_identifiers( self.history_id )
+        element_identifiers[ 2 ][ "name" ] = element_identifiers[ 0 ][ "name" ]
+        payload = dict(
+            instance_type="history",
+            history_id=self.history_id,
+            element_identifiers=json.dumps(element_identifiers),
+            collection_type="list",
+        )
+
+        create_response = self._post( "dataset_collections", payload )
+        self._assert_status_code_is( create_response, 400 )
+
     def _check_create_response( self, create_response ):
         self._assert_status_code_is( create_response, 200 )
         dataset_collection = create_response.json()

@@ -10,6 +10,7 @@ ERROR_MESSAGE_NO_NESTED_IDENTIFIERS = "Dataset source new_collection requires ne
 ERROR_MESSAGE_NO_NAME = "Cannot load invalid dataset identifier - missing name - %s"
 ERROR_MESSAGE_NO_COLLECTION_TYPE = "No collection_type define for nested collection %s."
 ERROR_MESSAGE_INVALID_PARAMETER_FOUND = "Found invalid parameter %s in element identifier description %s."
+ERROR_MESSAGE_DUPLICATED_IDENTIFIER_FOUND = "Found duplicated element idenfier name %s."
 
 
 def api_payload_to_create_params( payload ):
@@ -36,6 +37,7 @@ def validate_input_element_identifiers( element_identifiers ):
     and verify the structure is valid.
     """
     log.debug( "Validating %d element identifiers for collection creation." % len( element_identifiers ) )
+    identifier_names = set()
     for element_identifier in element_identifiers:
         if "__object__" in element_identifier:
             message = ERROR_MESSAGE_INVALID_PARAMETER_FOUND % ( "__model_object__", element_identifier )
@@ -43,6 +45,12 @@ def validate_input_element_identifiers( element_identifiers ):
         if "name" not in element_identifier:
             message = ERROR_MESSAGE_NO_NAME % element_identifier
             raise exceptions.RequestParameterInvalidException( message )
+        name = element_identifier[ "name" ]
+        if name in identifier_names:
+            message = ERROR_MESSAGE_DUPLICATED_IDENTIFIER_FOUND % name
+            raise exceptions.RequestParameterInvalidException( message )
+        else:
+            identifier_names.add( name )
         src = element_identifier.get( "src", "hda" )
         if src not in [ "hda", "hdca", "ldda", "new_collection" ]:
             message = ERROR_MESSAGE_UNKNOWN_SRC % src
