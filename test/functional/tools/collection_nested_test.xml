@@ -16,8 +16,8 @@
         <collection type="list:paired">
           <element name="i1">
             <collection type="paired">
-              <element name="left" value="simple_line.txt" />
-              <element name="right" value="simple_line_alternative.txt" />
+              <element name="forward" value="simple_line.txt" />
+              <element name="reverse" value="simple_line_alternative.txt" />
             </collection>
           </element>
         </collection>
@@ -37,8 +37,8 @@
     <test>
       <param name="f1">
         <collection type="paired">
-          <element name="left" value="simple_line.txt" />
-          <element name="right" value="simple_line_alternative.txt" />
+          <element name="forward" value="simple_line.txt" />
+          <element name="reverse" value="simple_line_alternative.txt" />
         </collection>
       </param>
       <output name="out1">
