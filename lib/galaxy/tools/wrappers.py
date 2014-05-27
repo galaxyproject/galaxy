@@ -272,6 +272,12 @@ class DatasetCollectionWrapper( object, HasDatasets ):
     def is_collection( self ):
         return True
 
+    def __getitem__( self, key ):
+        if isinstance( key, int ):
+            return self.element_instance_list[ key ]
+        else:
+            return self.element_instances[ key ]
+
     def __getattr__( self, key ):
         return self.element_instances[ key ]
 
