@@ -10,7 +10,7 @@ ERROR_MESSAGE_NO_NESTED_IDENTIFIERS = "Dataset source new_collection requires ne
 ERROR_MESSAGE_NO_NAME = "Cannot load invalid dataset identifier - missing name - %s"
 ERROR_MESSAGE_NO_COLLECTION_TYPE = "No collection_type define for nested collection %s."
 ERROR_MESSAGE_INVALID_PARAMETER_FOUND = "Found invalid parameter %s in element identifier description %s."
-ERROR_MESSAGE_DUPLICATED_IDENTIFIER_FOUND = "Found duplicated element idenfier name %s."
+ERROR_MESSAGE_DUPLICATED_IDENTIFIER_FOUND = "Found duplicated element identifier name %s."
 
 
 def api_payload_to_create_params( payload ):
