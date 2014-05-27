@@ -39,20 +39,25 @@ def check_archive( repository, archive ):
     for member in archive.getmembers():
         # Allow regular files and directories only
         if not ( member.isdir() or member.isfile() or member.islnk() ):
-            message = "Uploaded archives can only include regular directories and files (no symbolic links, devices, etc). Offender: %s" % str( member )
+            message = "Uploaded archives can only include regular directories and files (no symbolic links, devices, etc).  "
+            message += "The problematic member in this archive is %s," % str( member.name )
             return False, message
         for item in [ '.hg', '..', '/' ]:
             if member.name.startswith( item ):
-                message = "Uploaded archives cannot contain .hg directories, absolute filenames starting with '/', or filenames with two dots '..'."
+                message = "Uploaded archives cannot contain .hg directories, absolute filenames starting with '/', or filenames with two dots '..'.  "
+                message += "The problematic member in this archive is %s." % str( member.name )
                 return False, message
         if member.name in [ 'hgrc' ]:
-            message = "Uploaded archives cannot contain hgrc files."
+            message = "Uploaded archives cannot contain hgrc files.  "
+            message += "The problematic member in this archive is %s." % str( member.name )
             return False, message
         if repository.type == rt_util.REPOSITORY_SUITE_DEFINITION and member.name != rt_util.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME:
-            message = 'Repositories of type <b>Repsoitory suite definition</b> can contain only a single file named <b>repository_dependencies.xml</b>.'
+            message = 'Repositories of type <b>Repository suite definition</b> can contain only a single file named <b>repository_dependencies.xml</b>.'
+            message += 'This archive contains a member named %s.' % str( member.name )
             return False, message
         if repository.type == rt_util.TOOL_DEPENDENCY_DEFINITION and member.name != rt_util.TOOL_DEPENDENCY_DEFINITION_FILENAME:
             message = 'Repositories of type <b>Tool dependency definition</b> can contain only a single file named <b>tool_dependencies.xml</b>.'
+            message += 'This archive contains a member named %s.' % str( member.name )
             return False, message
     return True, ''
 
