@@ -8,7 +8,6 @@ require(
 [
     // load js libraries
     'utils/utils',
-    'libs/jquery/jstorage',
     'libs/jquery/jquery.event.drag',
     'libs/jquery/jquery.event.hover',
     'libs/jquery/jquery.mousewheel',
