@@ -133,11 +133,11 @@ var InputTerminalMappingView = TerminalMappingView.extend( {
     onMouseEnter: function( e ) {
         var model = this.model;
         if( ! model.terminal.connected() && model.mapOver.isCollection ) {
-            this.$el.color( "red" );
+            this.$el.css( "color", "red" );
         }
     },
     onMouseLeave: function( e ) {
-        this.$el.color( "blue" );
+        this.$el.css( "color", "black" );
     },
     onClick: function( e ) {
         var model = this.model;
