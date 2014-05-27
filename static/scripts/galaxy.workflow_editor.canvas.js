@@ -398,6 +398,9 @@ var InputTerminal = BaseInputTerminal.extend( {
         var thisMapOver = this.mapOver();
         if( otherCollectionType.isCollection ) {
             if( this.multiple ) {
+                if( this.connected() ) {
+                    return false;
+                }
                 if( otherCollectionType.rank == 1 ) {
                     return this._producesAcceptableDatatype( other );
                 } else {

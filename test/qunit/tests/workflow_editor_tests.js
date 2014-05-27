@@ -917,6 +917,24 @@ define([
         this.verifyNotAttachable( inputTerminal1, "list:paired" );
     } );
 
+    test( "unconnected multiple inputs can be connected to rank 1 collections", function() {
+        var inputTerminal1 = this.newInputTerminal( null, { multiple: true } );
+        this.verifyAttachable( inputTerminal1, "list" );
+    } );
+
+    test( "connected multiple input cannot be connected to collections", function() {
+        var inputTerminal1 = this.newInputTerminal( null, { multiple: true } );
+        var connectedInput1 = this.addConnectedInput( inputTerminal1 );
+        this.addConnectedOutput( connectedInput1 );
+        // Normally could do this reduction, but cannot because input already connected.
+        this.verifyNotAttachable( connectedInput1, "list" );
+    } );
+
+    test( "unconnected multiple inputs cannot be connected to rank > 1 collections (yet...)", function() {
+        var inputTerminal1 = this.newInputTerminal( null, { multiple: true } );
+        this.verifyNotAttachable( inputTerminal1, "list:paired" );
+    } );
+
     test( "resetMappingIfNeeded does nothing if not mapped", function() {
         var inputTerminal1 = this.newInputTerminal();
         inputTerminal1.resetMappingIfNeeded();
