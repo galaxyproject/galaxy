@@ -477,7 +477,7 @@ define([
             var terminal = this.view.node.input_terminals[ "TestName" ];
 
             var outputTerminal = new OutputTerminal( { name: "TestOuptut", datatypes: [ outputType ] } );
-            outputTerminal.node = { markChanged: function() {}, post_job_actions: [], hasMappedOverInputTerminals: function() { return false; } };
+            outputTerminal.node = { markChanged: function() {}, post_job_actions: [], hasMappedOverInputTerminals: function() { return false; }, hasConnectedOutputTerminals: function() { return true; } };
             outputTerminal.terminalMapping = { disableMapOver: function() {}, mapOver: NULL_COLLECTION_TYPE_DESCRIPTION }; 
             var c = new Connector( outputTerminal, terminal );
 
@@ -488,7 +488,7 @@ define([
             var terminal = this.view.node.input_terminals[ "TestName" ];
 
             var outputTerminal = new OutputTerminal( { name: "TestOuptut", datatypes: [ "txt" ] } );
-            outputTerminal.node = { markChanged: function() {}, post_job_actions: [], hasMappedOverInputTerminals: function() { return false; } };
+            outputTerminal.node = { markChanged: function() {}, post_job_actions: [], hasMappedOverInputTerminals: function() { return false; }, hasConnectedOutputTerminals: function() { return true; } };
             outputTerminal.terminalMapping = { disableMapOver: function() {}, mapOver: new CollectionTypeDescription( "list" ) }; 
             var c = new Connector( outputTerminal, terminal );
 
