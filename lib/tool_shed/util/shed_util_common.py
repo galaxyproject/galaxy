@@ -929,6 +929,11 @@ def get_repository_for_dependency_relationship( app, tool_shed, name, owner, cha
     """
     # This method is used only in Galaxy, not the Tool Shed.  We store the port (if one exists) in the database.
     tool_shed = common_util.remove_protocol_from_tool_shed_url( tool_shed )
+    if tool_shed is None or name is None or owner is None or changeset_revision is None:
+        message = "Unable to retrieve the repository record from the database because one or more of the following "
+        message += "required parameters is None: tool_shed: %s, name: %s, owner: %s, changeset_revision: %s " % \
+            ( str( tool_shed ), str( name ), str( owner ), str( changeset_revision ) )
+        raise Exception( message )
     repository = get_tool_shed_repository_by_shed_name_owner_installed_changeset_revision( app=app,
                                                                                            tool_shed=tool_shed,
                                                                                            name=name,
@@ -1343,6 +1348,11 @@ def get_updated_changeset_revisions_from_tool_shed( app, tool_shed_url, name, ow
     the received tool_shed_url / name / owner combination.
     """
     tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( app, tool_shed_url )
+    if tool_shed_url is None or name is None or owner is None or changeset_revision is None:
+        message = "Unable to get updated changeset revisions from the Tool Shed because one or more of the following "
+        message += "required parameters is None: tool_shed_url: %s, name: %s, owner: %s, changeset_revision: %s " % \
+            ( str( tool_shed_url ), str( name ), str( owner ), str( changeset_revision ) )
+        raise Exception( message )
     params = '?name=%s&owner=%s&changeset_revision=%s' % ( name, owner, changeset_revision )
     url = common_util.url_join( tool_shed_url,
                                 'repository/updated_changeset_revisions%s' % params )

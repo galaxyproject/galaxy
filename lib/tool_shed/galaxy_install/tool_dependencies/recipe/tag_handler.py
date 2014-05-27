@@ -161,6 +161,11 @@ class Repository( RecipeTag ):
     def create_temporary_tool_dependencies_config( self, app, tool_shed_url, name, owner, changeset_revision ):
         """Make a call to the tool shed to get the required repository's tool_dependencies.xml file."""
         tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( app, tool_shed_url )
+        if tool_shed_url is None or name is None or owner is None or changeset_revision is None:
+            message = "Unable to retrieve required tool_dependencies.xml file from the Tool Shed because one or more of the "
+            message += "following required parameters is None: tool_shed_url: %s, name: %s, owner: %s, changeset_revision: %s " % \
+                ( str( tool_shed_url ), str( name ), str( owner ), str( changeset_revision ) )
+            raise Exception( message )
         params = '?name=%s&owner=%s&changeset_revision=%s' % ( name, owner, changeset_revision )
         url = common_util.url_join( tool_shed_url,
                         'repository/get_tool_dependencies_config_contents%s' % params )
@@ -175,7 +180,7 @@ class Repository( RecipeTag ):
             fh.close()
             return tmp_filename
         else:
-            message = "Unable to retrieve required tool_dependencies.xml file from the tool shed for revision "
+            message = "Unable to retrieve required tool_dependencies.xml file from the Tool Shed for revision "
             message += "%s of installed repository %s owned by %s." % ( str( changeset_revision ), str( name ), str( owner ) )
             raise Exception( message )
             return None
