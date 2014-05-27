@@ -1663,7 +1663,6 @@ div.permissionContainer{padding-left:20px}
 .hda.dataset .dataset-body .dataset-actions .right .icon-btn{margin-left:2px}
 .hda.dataset .dataset-body .tags-display{display:none;margin-bottom:8px}.hda.dataset .dataset-body .tags-display .select2-container{min-width:0px}.hda.dataset .dataset-body .tags-display .select2-container .select2-choices{border-radius:3px}
 .hda.dataset .dataset-body .annotation-display{display:none;margin-bottom:8px}.hda.dataset .dataset-body .annotation-display .annotation{border-radius:3px;border:1px solid rgba(153,153,153,0.30000000000000004);padding:4px;white-space:pre-line;overflow:auto}
-.hda.dataset .dataset-body .annotation-display .annotation:empty{height:22px}
 .hda.dataset .dataset-body .annotation-display .annotation:empty:after{position:relative;top:-4px;font-size:10px;font-style:italic;color:grey;content:'Click here to edit annotation'}
 .hda.dataset .dataset-body .annotation-display textarea{margin:0px 0px 2px 0px;display:block;border-radius:3px;width:100%}
 .hda.dataset .dataset-body .dataset-display-applications .display-application:last-child{margin-bottom:8px}
@@ -1693,7 +1692,6 @@ div.permissionContainer{padding-left:20px}
 .history-panel .history-controls .tags-display .select2-container{min-width:0px}.history-panel .history-controls .tags-display .select2-container .select2-choices{border-radius:3px}
 .history-panel .history-controls .tags-display input{border-radius:3px}
 .history-panel .history-controls .annotation-display .annotation{border-radius:3px;border:1px solid rgba(153,153,153,0.5);padding:4px;white-space:pre-line;overflow:auto}
-.history-panel .history-controls .annotation-display .annotation:empty{height:22px}
 .history-panel .history-controls .annotation-display .annotation:empty:after{position:relative;top:-4px;font-size:10px;font-style:italic;color:grey;content:'Click here to edit annotation'}
 .history-panel .history-controls .annotation-display textarea{margin:0px 0px 2px 0px;display:block;border-radius:3px;width:100%}
 .history-panel .history-controls .history-dataset-actions{display:none}.history-panel .history-controls .history-dataset-actions:before,.history-panel .history-controls .history-dataset-actions:after{content:" ";display:table;}
