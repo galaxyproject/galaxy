@@ -1738,7 +1738,7 @@ class DataToolParameter( BaseDataToolParameter ):
     
         dataset_collection_matcher = DatasetCollectionMatcher( dataset_matcher )
 
-        for history_dataset_collection in history.dataset_collections:
+        for history_dataset_collection in history.active_dataset_collections:
             if dataset_collection_matcher.hdca_match( history_dataset_collection, reduction=reduction ):
                 name = history_dataset_collection.name
                 hid = str( history_dataset_collection.hid )
@@ -2042,7 +2042,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
         dataset_matcher = DatasetMatcher( trans, self, value, other_values )
         dataset_collection_matcher = DatasetCollectionMatcher( dataset_matcher )
 
-        for history_dataset_collection in history.dataset_collections:
+        for history_dataset_collection in history.active_dataset_collections:
             if not self._history_query( trans ).can_map_over( history_dataset_collection ):
                 continue
 

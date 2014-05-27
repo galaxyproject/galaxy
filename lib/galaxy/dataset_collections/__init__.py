@@ -170,7 +170,7 @@ class DatasetCollectionsService(
         return validated_payload
 
     def history_dataset_collections(self, history, query):
-        collections = history.dataset_collections
+        collections = history.active_dataset_collections
         collections = filter( query.direct_match, collections )
         return collections
 
