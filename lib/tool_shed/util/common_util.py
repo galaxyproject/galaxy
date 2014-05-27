@@ -107,7 +107,7 @@ def check_tool_tag_set( elem, migrated_tool_configs_dict, missing_tool_configs_d
 def generate_clone_url_for_installed_repository( app, repository ):
     """Generate the URL for cloning a repository that has been installed into a Galaxy instance."""
     tool_shed_url = get_tool_shed_url_from_tool_shed_registry( app, str( repository.tool_shed ) )
-    return url_join( tool_shed_url, 'repos', repository.owner, repository.name )
+    return url_join( tool_shed_url, 'repos', str( repository.owner ), str( repository.name ) )
 
 def generate_clone_url_for_repository_in_tool_shed( trans, repository ):
     """Generate the URL for cloning a repository that is in the tool shed."""
@@ -316,5 +316,6 @@ def url_join( *args ):
     """Return a valid URL produced by appending a base URL and a set of request parameters."""
     parts = []
     for arg in args:
-        parts.append( arg.strip( '/' ) )
+        if arg is not None:
+            parts.append( arg.strip( '/' ) )
     return '/'.join( parts )
