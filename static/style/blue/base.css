@@ -1692,7 +1692,7 @@ div.permissionContainer{padding-left:20px}
 .history-panel .history-controls .tags-display label:after,.history-panel .history-controls .annotation-display label:after{content:':'}
 .history-panel .history-controls .tags-display .select2-container{min-width:0px}.history-panel .history-controls .tags-display .select2-container .select2-choices{border-radius:3px}
 .history-panel .history-controls .tags-display input{border-radius:3px}
-.history-panel .history-controls .annotation-display .annotation{border-radius:3px;border:1px solid rgba(153,153,153,0.5);padding:4px;white-space:pre-line}
+.history-panel .history-controls .annotation-display .annotation{border-radius:3px;border:1px solid rgba(153,153,153,0.5);padding:4px;white-space:pre-line;overflow:auto}
 .history-panel .history-controls .annotation-display .annotation:empty{height:22px}
 .history-panel .history-controls .annotation-display .annotation:empty:after{position:relative;top:-4px;font-size:10px;font-style:italic;color:grey;content:'Click here to edit annotation'}
 .history-panel .history-controls .annotation-display textarea{margin:0px 0px 2px 0px;display:block;border-radius:3px;width:100%}
