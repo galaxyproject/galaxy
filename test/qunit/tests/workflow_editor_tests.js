@@ -477,8 +477,19 @@ define([
             var terminal = this.view.node.input_terminals[ "TestName" ];
 
             var outputTerminal = new OutputTerminal( { name: "TestOuptut", datatypes: [ outputType ] } );
-            outputTerminal.node = { markChanged: function() {}, post_job_actions: [], hasMappedOverInputTerminals: function() { return false; } };
+            outputTerminal.node = { markChanged: function() {}, post_job_actions: [], hasMappedOverInputTerminals: function() { return false; }, hasConnectedOutputTerminals: function() { return true; } };
             outputTerminal.terminalMapping = { disableMapOver: function() {}, mapOver: NULL_COLLECTION_TYPE_DESCRIPTION }; 
+            var c = new Connector( outputTerminal, terminal );
+
+            return c;
+        },
+        connectAttachedMappedOutput: function( ) {
+            this.view.addDataInput( { name: "TestName", extensions: [ "txt" ], input_type: "dataset_collection" } );
+            var terminal = this.view.node.input_terminals[ "TestName" ];
+
+            var outputTerminal = new OutputTerminal( { name: "TestOuptut", datatypes: [ "txt" ] } );
+            outputTerminal.node = { markChanged: function() {}, post_job_actions: [], hasMappedOverInputTerminals: function() { return false; }, hasConnectedOutputTerminals: function() { return true; } };
+            outputTerminal.terminalMapping = { disableMapOver: function() {}, mapOver: new CollectionTypeDescription( "list" ) }; 
             var c = new Connector( outputTerminal, terminal );
 
             return c;
@@ -519,12 +530,40 @@ define([
         ok( connector.handle2 === terminal );
     } );
 
+    test( "replacing mapped terminal on data collection input update preserves connections", function() {
+        var connector = this.connectAttachedMappedOutput();
+        var newElement = $("<div class='inputs'></div>");
+        this.view.addDataInput( { name: "TestName", extensions: ["txt"], input_type: "dataset_collection" }, newElement );
+        var terminal = newElement.find(".input-terminal")[ 0 ].terminal;
+        ok( connector.handle2 === terminal );
+    } );
+
     test( "replacing terminal on data input destroys invalid connections", function() {
         var connector = this.connectAttachedTerminal( "txt", "txt" );
         var newElement = $("<div class='inputs'></div>");
         var connector_destroy_spy = sinon.spy( connector, "destroy" );
         // Replacing input with same name - but now of type bam should destroy connection.
         this.view.addDataInput( { name: "TestName", extensions: ["bam"] }, newElement );
+        var terminal = newElement.find(".input-terminal")[ 0 ].terminal;
+        ok( connector_destroy_spy.called );
+    } );
+
+    test( "replacing terminal on data input with collection changes mapping view type", function() {
+        var connector = this.connectAttachedTerminal( "txt", "txt" );
+        var newElement = $("<div class='inputs'></div>");
+        var connector_destroy_spy = sinon.spy( connector, "destroy" );
+        this.view.addDataInput( { name: "TestName", extensions: ["txt"], input_type: "dataset_collection" }, newElement );
+        // Input type changed to dataset_collection - old connections are reset.
+        // Would be nice to preserve these connections and make them map over.
+        var terminal = newElement.find(".input-terminal")[ 0 ].terminal;
+        ok( connector_destroy_spy.called );
+    } );
+
+    test( "replacing terminal on data collection input with simple input changes mapping view type", function() {
+        var connector = this.connectAttachedMappedOutput();
+        var newElement = $("<div class='inputs'></div>");
+        var connector_destroy_spy = sinon.spy( connector, "destroy" );
+        this.view.addDataInput( { name: "TestName", extensions: ["txt"], input_type: "dataset" }, newElement );
         var terminal = newElement.find(".input-terminal")[ 0 ].terminal;
         ok( connector_destroy_spy.called );
     } );
@@ -875,6 +914,24 @@ define([
         var inputTerminal1 = this.newInputCollectionTerminal( { collection_type: "list:paired" } );
         inputTerminal1.setMapOver( new CollectionTypeDescription( "list" ) );
         // effectively input is list:list:paired so shouldn't be able to attach
+        this.verifyNotAttachable( inputTerminal1, "list:paired" );
+    } );
+
+    test( "unconnected multiple inputs can be connected to rank 1 collections", function() {
+        var inputTerminal1 = this.newInputTerminal( null, { multiple: true } );
+        this.verifyAttachable( inputTerminal1, "list" );
+    } );
+
+    test( "connected multiple input cannot be connected to collections", function() {
+        var inputTerminal1 = this.newInputTerminal( null, { multiple: true } );
+        var connectedInput1 = this.addConnectedInput( inputTerminal1 );
+        this.addConnectedOutput( connectedInput1 );
+        // Normally could do this reduction, but cannot because input already connected.
+        this.verifyNotAttachable( connectedInput1, "list" );
+    } );
+
+    test( "unconnected multiple inputs cannot be connected to rank > 1 collections (yet...)", function() {
+        var inputTerminal1 = this.newInputTerminal( null, { multiple: true } );
         this.verifyNotAttachable( inputTerminal1, "list:paired" );
     } );
 

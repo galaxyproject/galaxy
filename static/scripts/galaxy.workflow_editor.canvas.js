@@ -133,11 +133,11 @@ var InputTerminalMappingView = TerminalMappingView.extend( {
     onMouseEnter: function( e ) {
         var model = this.model;
         if( ! model.terminal.connected() && model.mapOver.isCollection ) {
-            this.$el.color( "red" );
+            this.$el.css( "color", "red" );
         }
     },
     onMouseLeave: function( e ) {
-        this.$el.color( "blue" );
+        this.$el.css( "color", "black" );
     },
     onClick: function( e ) {
         var model = this.model;
@@ -226,7 +226,16 @@ var OutputTerminal = Terminal.extend( {
     },
 
     resetMappingIfNeeded: function( ) {
-        if( ! this.node.hasMappedOverInputTerminals() ) {
+        // If inputs were only mapped over to preserve
+        // an output just disconnected reset these...
+        if( ! this.node.hasConnectedOutputTerminals() && ! this.node.hasConnectedMappedInputTerminals()){
+            _.each( this.node.mappedInputTerminals(), function( mappedInput ) {
+                mappedInput.resetMappingIfNeeded();
+            } );
+        }
+
+        var noMappedInputs = ! this.node.hasMappedOverInputTerminals();
+        if( noMappedInputs ) {
             this.resetMapping();
         }
     },
@@ -398,6 +407,9 @@ var InputTerminal = BaseInputTerminal.extend( {
         var thisMapOver = this.mapOver();
         if( otherCollectionType.isCollection ) {
             if( this.multiple ) {
+                if( this.connected() ) {
+                    return false;
+                }
                 if( otherCollectionType.rank == 1 ) {
                     return this._producesAcceptableDatatype( other );
                 } else {
@@ -651,13 +663,16 @@ var Node = Backbone.Model.extend({
         this.tool_errors = {};
     },
     connectedOutputTerminals: function() {
-        var connected_outputs = [];
-        $.each( this.output_terminals, function( _, t ) {
+        return this._connectedTerminals( this.output_terminals );
+    },
+    _connectedTerminals: function( terminals ) {
+        var connectedTerminals = [];
+        $.each( terminals, function( _, t ) {
             if( t.connectors.length > 0 ) {
-                connected_outputs.push( t );
+                connectedTerminals.push( t );
             }
         } );
-        return connected_outputs;
+        return connectedTerminals;        
     },
     hasConnectedOutputTerminals: function() {
         // return this.connectedOutputTerminals().length > 0; <- optimized this
@@ -683,9 +698,9 @@ var Node = Backbone.Model.extend({
         }
         return false;
     },
-    _connectedMappedTerminals: function( all_terminals ) {
+    _connectedMappedTerminals: function( terminals ) {
         var mapped_outputs = [];
-        $.each( all_terminals, function( _, t ) {
+        $.each( terminals, function( _, t ) {
             var mapOver = t.mapOver();
             if( mapOver.isCollection ) {
                 if( t.connectors.length > 0 ) {
@@ -694,6 +709,19 @@ var Node = Backbone.Model.extend({
             }
         });
         return mapped_outputs;
+    },
+    mappedInputTerminals: function() {
+        return this._mappedTerminals( this.input_terminals );
+    },
+    _mappedTerminals: function( terminals ) {
+        var mappedTerminals = [];
+        $.each( terminals, function( _, t ) {
+            var mapOver = t.mapOver();
+            if( mapOver.isCollection ) {
+                mappedTerminals.push( t );
+            }
+        } );
+        return mappedTerminals;
     },
     hasMappedOverInputTerminals: function() {
         var found = false;
@@ -704,11 +732,6 @@ var Node = Backbone.Model.extend({
             }
         } );
         return found;
-    },
-    forceDisconnectOutputs: function() {
-        _.each( this.output_terminals, function( terminal ) {
-            terminal.disconnectAll();
-        } );
     },
     redraw : function () {
         $.each( this.input_terminals, function( _, t ) {
