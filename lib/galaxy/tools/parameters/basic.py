@@ -894,6 +894,10 @@ class SelectToolParameter( ToolParameter ):
         # If we got this far, we can actually look at the dependencies
         # to see if their values will not be available until runtime.
         for dep_name in self.get_dependencies():
+            # This may not be completely correct, but it's possible to go
+            # through the layers indicated below without assigning dep_value,
+            # which is even worse.  TODO fix it?
+            dep_value = None
             if dep_name in context:
                 dep_value = context[ dep_name ]
             else:
@@ -1063,7 +1067,7 @@ class GenomeBuildParameter( SelectToolParameter ):
             'value': value
         })
         return d
-    
+
     def _get_dbkey_names( self, trans=None ):
         if not self.tool:
             # Hack for unit tests, since we have no tool
@@ -1735,7 +1739,7 @@ class DataToolParameter( BaseDataToolParameter ):
 
         field_name = "%s%s" % ( self.name, suffix )
         field = form_builder.SelectField( field_name, multiple, None, self.refresh_on_change, refresh_on_change_values=self.refresh_on_change_values )
-    
+
         dataset_collection_matcher = DatasetCollectionMatcher( dataset_matcher )
 
         for history_dataset_collection in history.active_dataset_collections:
