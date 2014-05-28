@@ -10,7 +10,7 @@ from tool_shed.util import shed_util_common as suc
 from tool_shed.util import tool_dependency_util
 from tool_shed.util import xml_util
 
-from tool_shed.galaxy_install.tool_dependencies import td_common_util
+from tool_shed.galaxy_install.tool_dependencies.env_manager import EnvManager
 from tool_shed.galaxy_install.tool_dependencies.recipe.env_file_builder import EnvFileBuilder
 from tool_shed.galaxy_install.tool_dependencies.recipe.install_environment import InstallEnvironment
 
@@ -85,9 +85,9 @@ class Install( RecipeTag ):
             platform_info_dict = tool_dependency_util.get_platform_info_dict()
             if package_install_version == '1.0':
                 # Handle tool dependency installation using a fabric method included in the Galaxy framework.
-                actions_elem_tuples = td_common_util.parse_package_elem( package_elem,
-                                                                         platform_info_dict=platform_info_dict,
-                                                                         include_after_install_actions=True )
+                actions_elem_tuples = tool_dependency_util.parse_package_elem( package_elem,
+                                                                               platform_info_dict=platform_info_dict,
+                                                                               include_after_install_actions=True )
                 if not actions_elem_tuples:
                     proceed_with_install = False
                     error_message = 'Version %s of the %s package cannot be installed because ' % ( str( package_version ), str( package_name ) )
@@ -491,6 +491,7 @@ class SetEnvironment( RecipeTag ):
         # <set_environment version="1.0">
         #    <repository toolshed="<tool shed>" name="<repository name>" owner="<repository owner>" changeset_revision="<changeset revision>" />
         # </set_environment>
+        env_manager = EnvManager( app )
         tool_dependencies = []
         env_var_version = elem.get( 'version', '1.0' )
         tool_shed_repository_install_dir = os.path.abspath( tool_shed_repository.repo_files_directory( app ) )
@@ -514,8 +515,8 @@ class SetEnvironment( RecipeTag ):
                                                                               tool_dependency_version=None )
                     install_environment = InstallEnvironment( tool_shed_repository_install_dir=tool_shed_repository_install_dir,
                                                               install_dir=install_dir )
-                    env_var_dict = td_common_util.create_env_var_dict( elem=env_var_elem,
-                                                                       install_environment=install_environment )
+                    env_var_dict = env_manager.create_env_var_dict( elem=env_var_elem,
+                                                                    install_environment=install_environment )
                     if env_var_dict:
                         if not os.path.exists( install_dir ):
                             os.makedirs( install_dir )

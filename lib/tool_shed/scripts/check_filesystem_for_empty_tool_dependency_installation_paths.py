@@ -7,7 +7,7 @@ new_path = [ os.path.join( os.getcwd(), "lib" ) ]
 new_path.extend( sys.path[1:] )
 sys.path = new_path
 
-from tool_shed.galaxy_install.tool_dependencies import td_common_util
+from tool_shed.util.basic_util import INSTALLATION_LOG
     
 def main( args ):
     empty_installation_paths = []
@@ -31,13 +31,13 @@ def main( args ):
         no_files = False
         if len( dirs ) == 0:
             no_dirs = True
-        if len( files ) == 0 or len( files ) == 1 and td_common_util.INSTALLATION_LOG in files:
+        if len( files ) == 0 or len( files ) == 1 and INSTALLATION_LOG in files:
             no_files = True
         if no_files and no_dirs and root not in empty_installation_paths:
             empty_installation_paths.append( root )
     if len( empty_installation_paths ) > 0:
         print 'The following %d tool dependency installation directories were found to be empty or contain only the file %s.' % \
-            ( len( empty_installation_paths ), td_common_util.INSTALLATION_LOG )
+            ( len( empty_installation_paths ), INSTALLATION_LOG )
         if args.delete:
             for path in empty_installation_paths:
                 if os.path.exists( path ):

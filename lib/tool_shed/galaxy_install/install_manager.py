@@ -1,5 +1,7 @@
 import logging
 import os
+import sys
+import traceback
 
 from galaxy import eggs
 
@@ -11,7 +13,6 @@ from fabric.api import lcd
 
 from tool_shed.util import tool_dependency_util
 
-from tool_shed.galaxy_install.tool_dependencies import td_common_util
 from tool_shed.galaxy_install.tool_dependencies.recipe.env_file_builder import EnvFileBuilder
 from tool_shed.galaxy_install.tool_dependencies.recipe.install_environment import InstallEnvironment
 from tool_shed.galaxy_install.tool_dependencies.recipe.recipe_manager import StepManager
@@ -24,6 +25,10 @@ INSTALL_ACTIONS = [ 'download_binary', 'download_by_url', 'download_file', 'setu
 
 
 class InstallManager( object ):
+
+    def format_traceback( self ):
+        ex_type, ex, tb = sys.exc_info()
+        return ''.join( traceback.format_tb( tb ) )
 
     def get_tool_shed_repository_install_dir( self, app, tool_shed_repository ):
         return os.path.abspath( tool_shed_repository.repo_files_directory( app ) )
@@ -112,7 +117,7 @@ class InstallManager( object ):
             log.exception( 'Error installing tool dependency %s version %s.', str( tool_dependency.name ), str( tool_dependency.version ) )
             # Since there was an installation error, update the tool dependency status to Error. The remove_installation_path option must
             # be left False here.
-            error_message = '%s\n%s' % ( td_common_util.format_traceback(), str( e ) )
+            error_message = '%s\n%s' % ( self.format_traceback(), str( e ) )
             tool_dependency = tool_dependency_util.handle_tool_dependency_installation_error( app, 
                                                                                               tool_dependency, 
                                                                                               error_message, 

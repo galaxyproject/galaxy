@@ -24,10 +24,12 @@ from galaxy.util import DATABASE_MAX_STRING_SIZE_PRETTY
 from galaxy.util import shrink_string_by_size
 from galaxy.util import unicodify
 
-from tool_shed.galaxy_install.tool_dependencies import td_common_util
 from tool_shed.galaxy_install.tool_dependencies.recipe import asynchronous_reader
 
+from tool_shed.util import basic_util
+
 log = logging.getLogger( __name__ )
+
 
 class InstallEnvironment( object ):
     """Object describing the environment built up as part of the process of building and installing a package."""
@@ -44,7 +46,7 @@ class InstallEnvironment( object ):
         self.tool_shed_repository_install_dir = tool_shed_repository_install_dir
 
     def __call__( self ):
-        with settings( warn_only=True, **td_common_util.get_env_var_values( self ) ):
+        with settings( warn_only=True, **basic_util.get_env_var_values( self ) ):
             with prefix( self.__setup_environment() ):
                 yield
 
@@ -125,7 +127,7 @@ class InstallEnvironment( object ):
         context = app.install_model.context
         command = str( cmd )
         output = self.handle_complex_command( command )
-        self.log_results( cmd, output, os.path.join( self.install_dir, td_common_util.INSTALLATION_LOG ) )
+        self.log_results( cmd, output, os.path.join( self.install_dir, basic_util.INSTALLATION_LOG ) )
         stdout = output.stdout
         stderr = output.stderr
         if len( stdout ) > DATABASE_MAX_STRING_SIZE:
@@ -214,18 +216,18 @@ class InstallEnvironment( object ):
             # Sleep a bit before asking the readers again.
             time.sleep( .1 )
             current_wait_time = time.time() - start_timer
-            if stdout_queue.empty() and stderr_queue.empty() and current_wait_time > td_common_util.NO_OUTPUT_TIMEOUT:
+            if stdout_queue.empty() and stderr_queue.empty() and current_wait_time > basic_util.NO_OUTPUT_TIMEOUT:
                 err_msg = "\nShutting down process id %s because it generated no output for the defined timeout period of %.1f seconds.\n" % \
-                        ( pid, td_common_util.NO_OUTPUT_TIMEOUT )
+                        ( pid, basic_util.NO_OUTPUT_TIMEOUT )
                 stderr_reader.lines.append( err_msg )
                 process_handle.kill()
                 break
         thread_lock.release()
         # Wait until each of the threads we've started terminate.  The following calls will block each thread
         # until it terminates either normally, through an unhandled exception, or until the timeout occurs.
-        stdio_thread.join( td_common_util.NO_OUTPUT_TIMEOUT )
-        stdout_reader.join( td_common_util.NO_OUTPUT_TIMEOUT )
-        stderr_reader.join( td_common_util.NO_OUTPUT_TIMEOUT )
+        stdio_thread.join( basic_util.NO_OUTPUT_TIMEOUT )
+        stdout_reader.join( basic_util.NO_OUTPUT_TIMEOUT )
+        stderr_reader.join( basic_util.NO_OUTPUT_TIMEOUT )
         # Close subprocess' file descriptors.
         error = self.close_file_descriptor( process_handle.stdout )
         error = self.close_file_descriptor( process_handle.stderr )

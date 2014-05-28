@@ -292,9 +292,28 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         return hda_dict
 
     def __create_dataset_collection( self, trans, history, payload, **kwd ):
-        create_params = api_payload_to_create_params( payload )
+        source = kwd.get("source", "new_collection")
         service = trans.app.dataset_collections_service
-        dataset_collection_instance = service.create( trans, parent=history, **create_params )
+        if source == "new_collection":
+            create_params = api_payload_to_create_params( payload )
+            dataset_collection_instance = service.create(
+                trans,
+                parent=history,
+                **create_params
+            )
+        elif source == "hdca":
+            content = payload.get( 'content', None )
+            if content is None:
+                raise exceptions.RequestParameterMissingException( "'content' id of target to copy is missing" )
+            dataset_collection_instance = service.copy(
+                trans=trans,
+                parent=history,
+                source="hdca",
+                encoded_source_id=content,
+            )
+        else:
+            message = "Invalid 'source' parameter in request %s" % source
+            raise exceptions.RequestParameterInvalidException(message)
         return self.__collection_dict( trans, dataset_collection_instance, view="element" )
 
     @expose_api_anonymous

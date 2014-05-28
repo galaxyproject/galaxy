@@ -22,10 +22,11 @@ from tool_shed.util import readme_util
 from tool_shed.util import tool_dependency_util
 from tool_shed.util import tool_util
 from tool_shed.util import xml_util
-from tool_shed.galaxy_install.tool_dependencies import td_common_util
 import tool_shed.repository_types.util as rt_util
 
 log = logging.getLogger( __name__ )
+
+REPOSITORY_DATA_MANAGER_CONFIG_FILENAME = 'data_manager_conf.xml'
 
 # Repository metadata comparisons for changeset revisions.
 EQUAL = 'equal'
@@ -37,7 +38,7 @@ SUBSET_VALUES = [ EQUAL, SUBSET ]
 NOT_TOOL_CONFIGS = [ suc.DATATYPES_CONFIG_FILENAME,
                      rt_util.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME,
                      rt_util.TOOL_DEPENDENCY_DEFINITION_FILENAME,
-                     suc.REPOSITORY_DATA_MANAGER_CONFIG_FILENAME ]
+                     REPOSITORY_DATA_MANAGER_CONFIG_FILENAME ]
 
 def add_tool_versions( trans, id, repository_metadata, changeset_revisions ):
     # Build a dictionary of { 'tool id' : 'parent tool id' } pairs for each tool in repository_metadata.
@@ -750,7 +751,7 @@ def generate_metadata_for_changeset_revision( app, repository, changeset_revisio
     metadata_dict = generate_data_manager_metadata( app,
                                                     repository,
                                                     files_dir,
-                                                    hg_util.get_config_from_disk( suc.REPOSITORY_DATA_MANAGER_CONFIG_FILENAME, files_dir ),
+                                                    hg_util.get_config_from_disk( REPOSITORY_DATA_MANAGER_CONFIG_FILENAME, files_dir ),
                                                     metadata_dict,
                                                     shed_config_dict=shed_config_dict )
 
@@ -809,10 +810,10 @@ def generate_package_dependency_metadata( app, elem, valid_tool_dependencies_dic
                 if package_install_version == '1.0':
                     # Complex repository dependencies can be defined within the last <actions> tag set contained in an
                     # <actions_group> tag set.  Comments, <repository> tag sets and <readme> tag sets will be skipped
-                    # in td_common_util.parse_package_elem().
-                    actions_elem_tuples = td_common_util.parse_package_elem( sub_elem,
-                                                                             platform_info_dict=None,
-                                                                             include_after_install_actions=False )
+                    # in tool_dependency_util.parse_package_elem().
+                    actions_elem_tuples = tool_dependency_util.parse_package_elem( sub_elem,
+                                                                                   platform_info_dict=None,
+                                                                                   include_after_install_actions=False )
                     if actions_elem_tuples:
                         # We now have a list of a single tuple that looks something like:
                         # [(True, <Element 'actions' at 0x104017850>)]
