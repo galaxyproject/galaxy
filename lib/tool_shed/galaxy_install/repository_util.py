@@ -9,6 +9,7 @@ from galaxy import util
 from galaxy import web
 from galaxy.model.orm import or_
 import tool_shed.util.shed_util_common as suc
+from tool_shed.util import basic_util
 from tool_shed.util import common_util
 from tool_shed.util import common_install_util
 from tool_shed.util import container_util
@@ -448,7 +449,7 @@ def handle_repository_contents( trans, tool_shed_repository, tool_path, reposito
         files_dir = relative_install_dir
         if shed_config_dict.get( 'tool_path' ):
             files_dir = os.path.join( shed_config_dict[ 'tool_path' ], files_dir )
-        datatypes_config = suc.get_config_from_disk( suc.DATATYPES_CONFIG_FILENAME, files_dir )
+        datatypes_config = hg_util.get_config_from_disk( suc.DATATYPES_CONFIG_FILENAME, files_dir )
         # Load data types required by tools.
         converter_path, display_path = \
             datatype_util.alter_config_and_load_prorietary_datatypes( trans.app, datatypes_config, files_dir, override=False )
@@ -620,14 +621,14 @@ def install_tool_shed_repository( trans, tool_shed_repository, repo_info_dict, t
                                                     tool_shed_repository,
                                                     trans.install_model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES )
             # Get the tool_dependencies.xml file from the repository.
-            tool_dependencies_config = suc.get_config_from_disk( 'tool_dependencies.xml', install_dir )
+            tool_dependencies_config = hg_util.get_config_from_disk( 'tool_dependencies.xml', install_dir )
             installed_tool_dependencies = \
                 common_install_util.install_specified_packages( app=trans.app,
                                                                 tool_shed_repository=tool_shed_repository,
                                                                 tool_dependencies_config=tool_dependencies_config,
                                                                 tool_dependencies=tool_shed_repository.tool_dependencies,
                                                                 from_tool_migration_manager=False )
-            suc.remove_dir( work_dir )
+            basic_util.remove_dir( work_dir )
         suc.update_tool_shed_repository_status( trans.app,
                                                 tool_shed_repository,
                                                 trans.install_model.ToolShedRepository.installation_status.INSTALLED )
@@ -878,7 +879,7 @@ def repair_tool_shed_repository( trans, repository, repo_info_dict ):
                                                     repository,
                                                     trans.install_model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES )
             # Get the tool_dependencies.xml file from the repository.
-            tool_dependencies_config = suc.get_config_from_disk( 'tool_dependencies.xml', repository.repo_path( trans.app ) )
+            tool_dependencies_config = hg_util.get_config_from_disk( 'tool_dependencies.xml', repository.repo_path( trans.app ) )
             installed_tool_dependencies = \
                 common_install_util.install_specified_packages( app=trans.app,
                                                                 tool_shed_repository=repository,
@@ -888,7 +889,7 @@ def repair_tool_shed_repository( trans, repository, repo_info_dict ):
             for installed_tool_dependency in installed_tool_dependencies:
                 if installed_tool_dependency.status in [ trans.install_model.ToolDependency.installation_status.ERROR ]:
                     repair_dict = add_repair_dict_entry( repository.name, installed_tool_dependency.error_message )
-            suc.remove_dir( work_dir )
+            basic_util.remove_dir( work_dir )
         suc.update_tool_shed_repository_status( trans.app, repository, trans.install_model.ToolShedRepository.installation_status.INSTALLED )
     return repair_dict
 

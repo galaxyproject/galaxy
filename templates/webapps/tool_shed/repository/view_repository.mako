@@ -6,7 +6,7 @@
 
 <%
     from galaxy.web.framework.helpers import time_ago
-    from tool_shed.util.shed_util_common import to_html_string
+    from tool_shed.util.basic_util import to_html_string
 
     is_new = repository.is_new( trans.app )
     is_deprecated = repository.deprecated

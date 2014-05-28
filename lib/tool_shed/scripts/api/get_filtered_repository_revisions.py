@@ -34,7 +34,7 @@ from common import json_from_url
 
 from galaxy.util import asbool
 from galaxy.util.json import from_json_string
-import tool_shed.util.shed_util_common as suc
+from tool_shed.util import hg_util
 
 def main( options ):
     base_tool_shed_url = options.tool_shed_url.rstrip( '/' )
@@ -71,12 +71,12 @@ def main( options ):
                 repository_dicts.append( baseline_repository_dict )
             else:
                 # Don't test empty repositories.
-                changeset_revision = baseline_repository_dict.get( 'changeset_revision', suc.INITIAL_CHANGELOG_HASH )
-                if changeset_revision != suc.INITIAL_CHANGELOG_HASH:
+                changeset_revision = baseline_repository_dict.get( 'changeset_revision', hg_util.INITIAL_CHANGELOG_HASH )
+                if changeset_revision != hg_util.INITIAL_CHANGELOG_HASH:
                     # Merge the dictionary returned from /api/repository_revisions with the detailed repository_dict and
                     # append it to the list of repository_dicts to install and test.
                     if latest_revision_only:
-                        latest_revision = repository_dict.get( 'latest_revision', suc.INITIAL_CHANGELOG_HASH )
+                        latest_revision = repository_dict.get( 'latest_revision', hg_util.INITIAL_CHANGELOG_HASH )
                         if changeset_revision == latest_revision:
                             repository_dicts.append( dict( repository_dict.items() + baseline_repository_dict.items() ) )
                     else:

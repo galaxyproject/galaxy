@@ -6,7 +6,7 @@
 <%
     from galaxy.web.form_builder import CheckboxField
     from tool_shed.util.container_util import STRSEP
-    from tool_shed.util.shed_util_common import to_html_string
+    from tool_shed.util.basic_util import to_html_string
 %>
 
 <%def name="stylesheets()">

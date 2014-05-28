@@ -11,6 +11,7 @@ import logging
 from galaxy import util
 from galaxy.tools import ToolSection
 import tool_shed.util.shed_util_common as suc
+from tool_shed.util import basic_util
 from tool_shed.util import common_install_util
 from tool_shed.util import common_util
 from tool_shed.util import datatype_util
@@ -251,13 +252,13 @@ class ToolMigrationManager( object ):
     def get_guid( self, repository_clone_url, relative_install_dir, tool_config ):
         if self.shed_config_dict.get( 'tool_path' ):
             relative_install_dir = os.path.join( self.shed_config_dict[ 'tool_path' ], relative_install_dir )
-        tool_config_filename = suc.strip_path( tool_config )
+        tool_config_filename = basic_util.strip_path( tool_config )
         for root, dirs, files in os.walk( relative_install_dir ):
             if root.find( '.hg' ) < 0 and root.find( 'hgrc' ) < 0:
                 if '.hg' in dirs:
                     dirs.remove( '.hg' )
                 for name in files:
-                    filename = suc.strip_path( name )
+                    filename = basic_util.strip_path( name )
                     if filename == tool_config_filename:
                         full_path = str( os.path.abspath( os.path.join( root, name ) ) )
                         tool = self.toolbox.load_tool( full_path )
@@ -444,7 +445,7 @@ class ToolMigrationManager( object ):
                                                     tool_shed_repository,
                                                     self.app.install_model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES )
             # Get the tool_dependencies.xml file from disk.
-            tool_dependencies_config = suc.get_config_from_disk( 'tool_dependencies.xml', repo_install_dir )
+            tool_dependencies_config = hg_util.get_config_from_disk( 'tool_dependencies.xml', repo_install_dir )
             installed_tool_dependencies = \
                 common_install_util.install_specified_packages( app=self.app,
                                                                 tool_shed_repository=tool_shed_repository,
@@ -462,7 +463,7 @@ class ToolMigrationManager( object ):
             self.app.install_model.context.add( tool_shed_repository )
             self.app.install_model.context.flush()
             work_dir = tempfile.mkdtemp( prefix="tmp-toolshed-hrc" )
-            datatypes_config = suc.get_config_from_disk( suc.DATATYPES_CONFIG_FILENAME, repo_install_dir )
+            datatypes_config = hg_util.get_config_from_disk( suc.DATATYPES_CONFIG_FILENAME, repo_install_dir )
             # Load proprietary data types required by tools.  The value of override is not important here since the Galaxy server will be started
             # after this installation completes.
             converter_path, display_path = datatype_util.alter_config_and_load_prorietary_datatypes( self.app, datatypes_config, repo_install_dir, override=False ) #repo_install_dir was relative_install_dir
@@ -481,7 +482,7 @@ class ToolMigrationManager( object ):
             if display_path:
                 # Load proprietary datatype display applications
                 self.app.datatypes_registry.load_display_applications( installed_repository_dict=repository_dict )
-            suc.remove_dir( work_dir )
+            basic_util.remove_dir( work_dir )
 
     def install_repository( self, repository_elem, tool_shed_repository, install_dependencies, is_repository_dependency=False ):
         """Install a single repository, loading contained tools into the tool panel."""

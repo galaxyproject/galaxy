@@ -42,6 +42,7 @@ import galaxy.webapps.tool_shed.model.mapping
 
 from nose.plugins import Plugin
 from tool_shed.util import common_util
+from tool_shed.util import hg_util
 from tool_shed.util import tool_dependency_util
 
 from tool_shed.util.xml_util import parse_xml
@@ -356,8 +357,8 @@ def get_repositories_to_install( tool_shed_url, test_framework ):
             # Filter deprecated repositories in the initial query.  Repositories included in the query may have
             # repository dependencies that are deprecated though.
             if not deprecated:
-                changeset_revision = baseline_repository_dict.get( 'changeset_revision', suc.INITIAL_CHANGELOG_HASH )
-                if changeset_revision != suc.INITIAL_CHANGELOG_HASH:
+                changeset_revision = baseline_repository_dict.get( 'changeset_revision', hg_util.INITIAL_CHANGELOG_HASH )
+                if changeset_revision != hg_util.INITIAL_CHANGELOG_HASH:
                     # If testing repositories of type tool_dependency_definition, filter accordingly.
                     if test_framework == TOOL_DEPENDENCY_DEFINITIONS and \
                         repository_dict.get( 'type', None ) != rt_util.TOOL_DEPENDENCY_DEFINITION:

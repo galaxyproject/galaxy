@@ -13,6 +13,7 @@ from galaxy.web import url_for
 
 import tool_shed.util.shed_util_common as suc
 from tool_shed.repository_types.metadata import TipOnly
+from tool_shed.util import basic_util
 from tool_shed.util import common_util
 from tool_shed.util import common_install_util
 from tool_shed.util import container_util
@@ -526,7 +527,7 @@ def generate_datatypes_metadata( app, repository, repository_clone_url, reposito
                     tool_config = sub_elem.attrib[ 'file' ]
                     target_datatype = sub_elem.attrib[ 'target_datatype' ]
                     # Parse the tool_config to get the guid.
-                    tool_config_path = suc.get_config_from_disk( tool_config, repository_files_dir )
+                    tool_config_path = hg_util.get_config_from_disk( tool_config, repository_files_dir )
                     full_path = os.path.abspath( tool_config_path )
                     tool, valid, error_message = tool_util.load_tool_from_config( app, app.security.encode_id( repository.id ), full_path )
                     if tool is None:
@@ -632,7 +633,7 @@ def generate_metadata_for_changeset_revision( app, repository, changeset_revisio
         app.config.tool_data_path = work_dir #FIXME: Thread safe?
         app.config.tool_data_table_config_path = work_dir
     # Handle proprietary datatypes, if any.
-    datatypes_config = suc.get_config_from_disk( suc.DATATYPES_CONFIG_FILENAME, files_dir )
+    datatypes_config = hg_util.get_config_from_disk( suc.DATATYPES_CONFIG_FILENAME, files_dir )
     if datatypes_config:
         metadata_dict = generate_datatypes_metadata( app, repository, repository_clone_url, files_dir, datatypes_config, metadata_dict )
     # Get the relative path to all sample files included in the repository for storage in the repository's metadata.
@@ -749,14 +750,14 @@ def generate_metadata_for_changeset_revision( app, repository, changeset_revisio
     metadata_dict = generate_data_manager_metadata( app,
                                                     repository,
                                                     files_dir,
-                                                    suc.get_config_from_disk( suc.REPOSITORY_DATA_MANAGER_CONFIG_FILENAME, files_dir ),
+                                                    hg_util.get_config_from_disk( suc.REPOSITORY_DATA_MANAGER_CONFIG_FILENAME, files_dir ),
                                                     metadata_dict,
                                                     shed_config_dict=shed_config_dict )
 
     if readme_files:
         metadata_dict[ 'readme_files' ] = readme_files
     # This step must be done after metadata for tools has been defined.
-    tool_dependencies_config = suc.get_config_from_disk( 'tool_dependencies.xml', files_dir )
+    tool_dependencies_config = hg_util.get_config_from_disk( 'tool_dependencies.xml', files_dir )
     if tool_dependencies_config:
         metadata_dict, error_message = generate_tool_dependency_metadata( app,
                                                                           repository,
@@ -772,7 +773,7 @@ def generate_metadata_for_changeset_revision( app, repository, changeset_revisio
     # Reset the value of the app's tool_data_path  and tool_data_table_config_path to their respective original values.
     app.config.tool_data_path = original_tool_data_path
     app.config.tool_data_table_config_path = original_tool_data_table_config_path
-    suc.remove_dir( work_dir )
+    basic_util.remove_dir( work_dir )
     return metadata_dict, invalid_file_tups
 
 def generate_package_dependency_metadata( app, elem, valid_tool_dependencies_dict, invalid_tool_dependencies_dict ):
@@ -1006,7 +1007,7 @@ def generate_tool_metadata( tool_config, tool, repository_clone_url, metadata_di
             outputs = []
             for output in ttb.outputs:
                 name, file_name, extra = output
-                outputs.append( ( name, suc.strip_path( file_name ) if file_name else None ) )
+                outputs.append( ( name, basic_util.strip_path( file_name ) if file_name else None ) )
                 if file_name not in required_files and file_name is not None:
                     required_files.append( file_name )
             test_dict = dict( name=str( ttb.name ),
@@ -1077,6 +1078,29 @@ def get_parent_id( app, id, old_id, version, guid, changeset_revisions ):
     if parent_id is None:
         # The tool did not change through all of the changeset revisions.
         return old_id
+
+def get_previous_metadata_changeset_revision( repository, repo, before_changeset_revision, downloadable=True ):
+    """
+    Return the changeset_revision in the repository changelog that has associated metadata prior to
+    the changeset to which before_changeset_revision refers.  If there isn't one, return the hash value
+    of an empty repository changelog, hg_util.INITIAL_CHANGELOG_HASH.
+    """
+    changeset_revisions = suc.get_ordered_metadata_changeset_revisions( repository, repo, downloadable=downloadable )
+    if len( changeset_revisions ) == 1:
+        changeset_revision = changeset_revisions[ 0 ]
+        if changeset_revision == before_changeset_revision:
+            return hg_util.INITIAL_CHANGELOG_HASH
+        return changeset_revision
+    previous_changeset_revision = None
+    for changeset_revision in changeset_revisions:
+        if changeset_revision == before_changeset_revision:
+            if previous_changeset_revision:
+                return previous_changeset_revision
+            else:
+                # Return the hash value of an empty repository changelog - note that this will not be a valid changeset revision.
+                return hg_util.INITIAL_CHANGELOG_HASH
+        else:
+            previous_changeset_revision = changeset_revision
 
 def get_relative_path_to_repository_file( root, name, relative_install_dir, work_dir, shed_config_dict, resetting_all_metadata_on_repository ):
     if resetting_all_metadata_on_repository:
@@ -1342,6 +1366,13 @@ def is_downloadable( metadata_dict ):
     if 'workflows' in metadata_dict:
         # We have exported workflows.
         return True
+    return False
+
+def is_malicious( app, id, changeset_revision, **kwd ):
+    """Check the malicious flag in repository metadata for a specified change set revision."""
+    repository_metadata = suc.get_repository_metadata_by_changeset_revision( app, id, changeset_revision )
+    if repository_metadata:
+        return repository_metadata.malicious
     return False
 
 def new_datatypes_metadata_required( trans, repository_metadata, metadata_dict ):
@@ -1821,7 +1852,7 @@ def reset_all_metadata_on_repository_in_tool_shed( trans, id ):
                     changeset_revisions.append( metadata_changeset_revision )
                     ancestor_changeset_revision = None
                     ancestor_metadata_dict = None
-        suc.remove_dir( work_dir )
+        basic_util.remove_dir( work_dir )
     # Delete all repository_metadata records for this repository that do not have a changeset_revision
     # value in changeset_revisions.
     clean_repository_metadata( trans, id, changeset_revisions )

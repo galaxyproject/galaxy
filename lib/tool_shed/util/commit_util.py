@@ -345,7 +345,7 @@ def handle_repository_dependency_elem( trans, elem, unpopulate=False ):
         if repository:
             repo = hg_util.get_repo_for_repository( trans.app, repository=repository, repo_path=None, create=False )
             lastest_installable_changeset_revision = suc.get_latest_downloadable_changeset_revision( trans.app, repository, repo )
-            if lastest_installable_changeset_revision != suc.INITIAL_CHANGELOG_HASH:
+            if lastest_installable_changeset_revision != hg_util.INITIAL_CHANGELOG_HASH:
                 elem.attrib[ 'changeset_revision' ] = lastest_installable_changeset_revision
                 revised = True
             else:

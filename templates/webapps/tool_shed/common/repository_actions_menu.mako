@@ -3,7 +3,7 @@
 <%def name="render_tool_shed_repository_actions( repository, metadata=None, changeset_revision=None )">
     <%
         from tool_shed.util.review_util import can_browse_repository_reviews, changeset_revision_reviewed_by_user, get_review_by_repository_id_changeset_revision_user_id
-        from tool_shed.util.shed_util_common import changeset_is_malicious
+        from tool_shed.util.metadata_util import is_malicious
 
         if repository.metadata_revisions:
             has_metadata = True
@@ -27,10 +27,10 @@
         else:
             is_new = False
 
-        if changeset_is_malicious( trans.app, trans.security.encode_id( repository.id ), repository.tip( trans.app ) ):
-            is_malicious = True
+        if is_malicious( trans.app, trans.security.encode_id( repository.id ), repository.tip( trans.app ) ):
+            changeset_is_malicious = True
         else:
-            is_malicious = False
+            changeset_is_malicious = False
 
         can_browse_contents = not is_new
 
@@ -54,7 +54,7 @@
         else:
             can_push = False
 
-        if not is_deprecated and not is_new and ( not is_malicious or can_push ):
+        if not is_deprecated and not is_new and ( not changeset_is_malicious or can_push ):
             can_download = True
         else:
             can_download = False

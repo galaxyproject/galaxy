@@ -7,13 +7,13 @@ import tempfile
 from galaxy import util
 from galaxy.util import asbool
 from galaxy.util import json
-from galaxy.util import unicodify
 from galaxy.web import url_for
 from galaxy.web.form_builder import SelectField
 from galaxy.datatypes import checkers
 from galaxy.model.orm import and_
 from galaxy.model.orm import or_
 import sqlalchemy.orm.exc
+from tool_shed.util import basic_util
 from tool_shed.util import common_util
 from tool_shed.util import encoding_util
 from tool_shed.util import hg_util
@@ -22,18 +22,11 @@ import tool_shed.repository_types.util as rt_util
 from xml.etree import ElementTree as XmlET
 from urllib2 import HTTPError
 
-from galaxy import eggs
-
-eggs.require( 'markupsafe' )
-import markupsafe
-
 log = logging.getLogger( __name__ )
 
 CHUNK_SIZE = 2**20 # 1Mb
-INITIAL_CHANGELOG_HASH = '000000000000'
 MAX_CONTENT_SIZE = 1048576
 MAXDIFFSIZE = 8000
-MAX_DISPLAY_SIZE = 32768
 DATATYPES_CONFIG_FILENAME = 'datatypes_conf.xml'
 REPOSITORY_DATA_MANAGER_CONFIG_FILENAME = 'data_manager_conf.xml'
 
@@ -124,13 +117,6 @@ def build_tool_dependencies_select_field( trans, tool_shed_repository, name, mul
         tool_dependencies_select_field.add_option( option_label, option_value )
     return tool_dependencies_select_field
 
-def changeset_is_malicious( app, id, changeset_revision, **kwd ):
-    """Check the malicious flag in repository metadata for a specified change set"""
-    repository_metadata = get_repository_metadata_by_changeset_revision( app, id, changeset_revision )
-    if repository_metadata:
-        return repository_metadata.malicious
-    return False
-
 def check_or_update_tool_shed_status_for_installed_repository( trans, repository ):
     updated = False
     tool_shed_status_dict = get_tool_shed_status_for_installed_repository( trans.app, repository )
@@ -156,19 +142,6 @@ def config_elems_to_xml_file( app, config_elems, config_filename, tool_path ):
     os.close( fd )
     shutil.move( filename, os.path.abspath( config_filename ) )
     os.chmod( config_filename, 0644 )
-
-def copy_file_from_manifest( repo, ctx, filename, dir ):
-    """Copy the latest version of the file named filename from the repository manifest to the directory to which dir refers."""
-    for changeset in reversed_upper_bounded_changelog( repo, ctx ):
-        changeset_ctx = repo.changectx( changeset )
-        fctx = get_file_context_from_ctx( changeset_ctx, filename )
-        if fctx and fctx not in [ 'DELETED' ]:
-            file_path = os.path.join( dir, filename )
-            fh = open( file_path, 'wb' )
-            fh.write( fctx.data() )
-            fh.close()
-            return file_path
-    return None
 
 def create_or_update_tool_shed_repository( app, name, description, installed_changeset_revision, ctx_rev, repository_clone_url,
                                            metadata_dict, status, current_changeset_revision=None, owner='', dist_to_shed=False ):
@@ -337,7 +310,7 @@ def generate_tool_panel_dict_from_shed_tool_conf_entries( app, repository ):
         for tool_dict in metadata[ 'tools' ]:
             guid = tool_dict[ 'guid' ]
             tool_config = tool_dict[ 'tool_config' ]
-            file_name = strip_path( tool_config )
+            file_name = basic_util.strip_path( tool_config )
             guids_and_configs[ guid ] = file_name
     # Parse the shed_tool_conf file in which all of this repository's tools are defined and generate the tool_panel_dict.
     tree, error_message = xml_util.parse_xml( shed_tool_conf )
@@ -389,7 +362,7 @@ def generate_tool_shed_repository_install_dir( repository_clone_url, changeset_r
 
 def get_absolute_path_to_file_in_repository( repo_files_dir, file_name ):
     """Return the absolute path to a specified disk file contained in a repository."""
-    stripped_file_name = strip_path( file_name )
+    stripped_file_name = basic_util.strip_path( file_name )
     file_path = None
     for root, dirs, files in os.walk( repo_files_dir ):
         if root.find( '.hg' ) < 0:
@@ -416,25 +389,6 @@ def get_category_by_name( trans, name ):
     except sqlalchemy.orm.exc.NoResultFound:
         return None
 
-def get_config( config_file, repo, ctx, dir ):
-    """Return the latest version of config_filename from the repository manifest."""
-    config_file = strip_path( config_file )
-    for changeset in reversed_upper_bounded_changelog( repo, ctx ):
-        changeset_ctx = repo.changectx( changeset )
-        for ctx_file in changeset_ctx.files():
-            ctx_file_name = strip_path( ctx_file )
-            if ctx_file_name == config_file:
-                return get_named_tmpfile_from_ctx( changeset_ctx, ctx_file, dir )
-    return None
-
-def get_config_from_disk( config_file, relative_install_dir ):
-    for root, dirs, files in os.walk( relative_install_dir ):
-        if root.find( '.hg' ) < 0:
-            for name in files:
-                if name == config_file:
-                    return os.path.abspath( os.path.join( root, name ) )
-    return None
-
 def get_ctx_rev( app, tool_shed_url, name, owner, changeset_revision ):
     """
     Send a request to the tool shed to retrieve the ctx_rev for a repository defined by the
@@ -446,21 +400,6 @@ def get_ctx_rev( app, tool_shed_url, name, owner, changeset_revision ):
                                 'repository/get_ctx_rev%s' % params )
     ctx_rev = common_util.tool_shed_get( app, tool_shed_url, url )
     return ctx_rev
-
-def get_ctx_file_path_from_manifest( filename, repo, changeset_revision ):
-    """
-    Get the ctx file path for the latest revision of filename from the repository manifest up
-    to the value of changeset_revision.
-    """
-    stripped_filename = strip_path( filename )
-    for changeset in reversed_upper_bounded_changelog( repo, changeset_revision ):
-        manifest_changeset_revision = str( repo.changectx( changeset ) )
-        manifest_ctx = repo.changectx( changeset )
-        for ctx_file in manifest_ctx.files():
-            ctx_file_name = strip_path( ctx_file )
-            if ctx_file_name == stripped_filename:
-                return manifest_ctx, ctx_file
-    return None, None
 
 def get_current_repository_metadata_for_changeset_revision( app, repository, changeset_revision ):
     encoded_repository_id = app.security.encode_id( repository.id )
@@ -537,40 +476,6 @@ def get_dependent_downloadable_revisions( trans, repository_metadata ):
                                             dependent_downloadable_revisions.append( downloadable_revision )
     return dependent_downloadable_revisions
 
-def get_file_context_from_ctx( ctx, filename ):
-    """Return the mercurial file context for a specified file."""
-    # We have to be careful in determining if we found the correct file because multiple files with
-    # the same name may be in different directories within ctx if the files were moved within the change
-    # set.  For example, in the following ctx.files() list, the former may have been moved to the latter: 
-    # ['tmap_wrapper_0.0.19/tool_data_table_conf.xml.sample', 'tmap_wrapper_0.3.3/tool_data_table_conf.xml.sample'].
-    # Another scenario is that the file has been deleted.
-    deleted = False
-    filename = strip_path( filename )
-    for ctx_file in ctx.files():
-        ctx_file_name = strip_path( ctx_file )
-        if filename == ctx_file_name:
-            try:
-                # If the file was moved, its destination will be returned here.
-                fctx = ctx[ ctx_file ]
-                return fctx
-            except LookupError, e:
-                # Set deleted for now, and continue looking in case the file was moved instead of deleted.
-                deleted = True
-    if deleted:
-        return 'DELETED'
-    return None
-
-def get_file_type_str( changeset_revision, file_type ):
-    if file_type == 'zip':
-        file_type_str = '%s.zip' % changeset_revision
-    elif file_type == 'bz2':
-        file_type_str = '%s.tar.bz2' % changeset_revision
-    elif file_type == 'gz':
-        file_type_str = '%s.tar.gz' % changeset_revision
-    else:
-        file_type_str = ''
-    return file_type_str
-
 def get_ids_of_tool_shed_repositories_being_installed( trans, as_string=False ):
     installing_repository_ids = []
     new_status = trans.install_model.ToolShedRepository.installation_status.NEW
@@ -603,7 +508,7 @@ def get_latest_changeset_revision( app, repository, repo ):
     changeset_revisions = get_ordered_metadata_changeset_revisions( repository, repo, downloadable=False )
     if changeset_revisions:
         return changeset_revisions[ -1 ]
-    return INITIAL_CHANGELOG_HASH
+    return hg_util.INITIAL_CHANGELOG_HASH
 
 def get_latest_downloadable_changeset_revision( app, repository, repo ):
     repository_tip = repository.tip( app )
@@ -613,30 +518,7 @@ def get_latest_downloadable_changeset_revision( app, repository, repo ):
     changeset_revisions = get_ordered_metadata_changeset_revisions( repository, repo, downloadable=True )
     if changeset_revisions:
         return changeset_revisions[ -1 ]
-    return INITIAL_CHANGELOG_HASH
-
-def get_named_tmpfile_from_ctx( ctx, filename, dir ):
-    """Return a named temporary file created from a specified file with a given name included in a repository changeset revision."""
-    filename = strip_path( filename )
-    for ctx_file in ctx.files():
-        ctx_file_name = strip_path( ctx_file )
-        if filename == ctx_file_name:
-            try:
-                # If the file was moved, its destination file contents will be returned here.
-                fctx = ctx[ ctx_file ]
-            except LookupError, e:
-                # Continue looking in case the file was moved.
-                fctx = None
-                continue
-            if fctx:
-                fh = tempfile.NamedTemporaryFile( 'wb', prefix="tmp-toolshed-gntfc", dir=dir )
-                tmp_filename = fh.name
-                fh.close()
-                fh = open( tmp_filename, 'wb' )
-                fh.write( fctx.data() )
-                fh.close()
-                return tmp_filename
-    return None
+    return hg_util.INITIAL_CHANGELOG_HASH
 
 def get_next_downloadable_changeset_revision( repository, repo, after_changeset_revision ):
     """
@@ -736,28 +618,6 @@ def get_ordered_metadata_changeset_revisions( repository, repo, downloadable=Tru
     sorted_changeset_tups = sorted( changeset_tups )
     sorted_changeset_revisions = [ str( changeset_tup[ 1 ] ) for changeset_tup in sorted_changeset_tups ]
     return sorted_changeset_revisions
-
-def get_previous_metadata_changeset_revision( repository, repo, before_changeset_revision, downloadable=True ):
-    """
-    Return the changeset_revision in the repository changelog that has associated metadata prior to the changeset to which
-    before_changeset_revision refers.  If there isn't one, return the hash value of an empty repository changelog, INITIAL_CHANGELOG_HASH.
-    """
-    changeset_revisions = get_ordered_metadata_changeset_revisions( repository, repo, downloadable=downloadable )
-    if len( changeset_revisions ) == 1:
-        changeset_revision = changeset_revisions[ 0 ]
-        if changeset_revision == before_changeset_revision:
-            return INITIAL_CHANGELOG_HASH
-        return changeset_revision
-    previous_changeset_revision = None
-    for changeset_revision in changeset_revisions:
-        if changeset_revision == before_changeset_revision:
-            if previous_changeset_revision:
-                return previous_changeset_revision
-            else:
-                # Return the hash value of an empty repository changelog - note that this will not be a valid changeset revision.
-                return INITIAL_CHANGELOG_HASH
-        else:
-            previous_changeset_revision = changeset_revision
 
 def get_prior_import_or_install_required_dict( trans, tsr_ids, repo_info_dicts ):
     """
@@ -974,7 +834,7 @@ def get_repository_file_contents( file_path ):
     else:
         safe_str = ''
         for i, line in enumerate( open( file_path ) ):
-            safe_str = '%s%s' % ( safe_str, to_html_string( line ) )
+            safe_str = '%s%s' % ( safe_str, basic_util.to_html_string( line ) )
             # Stop reading after string is larger than MAX_CONTENT_SIZE.
             if len( safe_str ) > MAX_CONTENT_SIZE:
                 large_str = \
@@ -982,13 +842,17 @@ def get_repository_file_contents( file_path ):
                     util.nice_size( MAX_CONTENT_SIZE )
                 safe_str = '%s%s' % ( safe_str, large_str )
                 break
-        if len( safe_str ) > MAX_DISPLAY_SIZE:
-            # Eliminate the middle of the file to display a file no larger than MAX_DISPLAY_SIZE.  This may not be ideal if the file is larger
-            # than MAX_CONTENT_SIZE.
+        if len( safe_str ) > basic_util.MAX_DISPLAY_SIZE:
+            # Eliminate the middle of the file to display a file no larger than basic_util.MAX_DISPLAY_SIZE.
+            # This may not be ideal if the file is larger than MAX_CONTENT_SIZE.
             join_by_str = \
                 "<br/><br/>...some text eliminated here because file size is larger than maximum viewing size of %s...<br/><br/>" % \
-                util.nice_size( MAX_DISPLAY_SIZE )
-            safe_str = util.shrink_string_by_size( safe_str, MAX_DISPLAY_SIZE, join_by=join_by_str, left_larger=True, beginning_on_size_error=True )
+                util.nice_size( basic_util.MAX_DISPLAY_SIZE )
+            safe_str = util.shrink_string_by_size( safe_str,
+                                                   basic_util.MAX_DISPLAY_SIZE,
+                                                   join_by=join_by_str,
+                                                   left_larger=True,
+                                                   beginning_on_size_error=True )
         return safe_str
 
 def get_repository_files( trans, folder_path ):
@@ -1022,11 +886,6 @@ def get_repository_from_refresh_on_change( trans, **kwd ):
                 return v, repository
     # This should never be reached - raise an exception?
     return v, None
-
-def get_repository_heads( repo ):
-    """Return current repository heads, which are changesets with no child changesets."""
-    heads = [ repo[ h ] for h in repo.heads( None ) ]
-    return heads
 
 def get_repository_ids_requiring_prior_import_or_install( trans, tsr_ids, repository_dependencies ):
     """
@@ -1131,20 +990,13 @@ def get_repository_tools_tups( app, metadata_dict ):
                 repository_tools_tups.append( ( relative_path, guid, tool ) )
     return repository_tools_tups
 
-def get_reversed_changelog_changesets( repo ):
-    """Return a list of changesets in reverse order from that provided by the repository manifest."""
-    reversed_changelog = []
-    for changeset in repo.changelog:
-        reversed_changelog.insert( 0, changeset )
-    return reversed_changelog
-
 def get_shed_tool_conf_dict( app, shed_tool_conf ):
     """Return the in-memory version of the shed_tool_conf file, which is stored in the config_elems entry in the shed_tool_conf_dict associated with the file."""
     for index, shed_tool_conf_dict in enumerate( app.toolbox.shed_tool_confs ):
         if shed_tool_conf == shed_tool_conf_dict[ 'config_filename' ]:
             return index, shed_tool_conf_dict
         else:
-            file_name = strip_path( shed_tool_conf_dict[ 'config_filename' ] )
+            file_name = basic_util.strip_path( shed_tool_conf_dict[ 'config_filename' ] )
             if shed_tool_conf == file_name:
                 return index, shed_tool_conf_dict
 
@@ -1188,7 +1040,7 @@ def get_tool_path_by_shed_tool_conf_filename( trans, shed_tool_conf ):
         if config_filename == shed_tool_conf:
             return shed_tool_conf_dict[ 'tool_path' ]
         else:
-            file_name = strip_path( config_filename )
+            file_name = basic_util.strip_path( config_filename )
             if file_name == shed_tool_conf:
                 return shed_tool_conf_dict[ 'tool_path' ]
     return None
@@ -1331,9 +1183,10 @@ def get_updated_changeset_revisions( trans, name, owner, changeset_revision ):
     repo = hg_util.get_repo_for_repository( trans.app, repository=repository, repo_path=None, create=False )
     # Get the upper bound changeset revision.
     upper_bound_changeset_revision = get_next_downloadable_changeset_revision( repository, repo, changeset_revision )
-    # Build the list of changeset revision hashes defining each available update up to, but excluding, upper_bound_changeset_revision.
+    # Build the list of changeset revision hashes defining each available update up to, but excluding
+    # upper_bound_changeset_revision.
     changeset_hashes = []
-    for changeset in reversed_lower_upper_bounded_changelog( repo, changeset_revision, upper_bound_changeset_revision ):
+    for changeset in hg_util.reversed_lower_upper_bounded_changelog( repo, changeset_revision, upper_bound_changeset_revision ):
         # Make sure to exclude upper_bound_changeset_revision.
         if changeset != upper_bound_changeset_revision:
             changeset_hashes.append( str( repo.changectx( changeset ) ) )
@@ -1477,7 +1330,10 @@ def have_shed_tool_conf_for_install( trans ):
     return False
 
 def open_repository_files_folder( trans, folder_path ):
-    """Return a list of dictionaries, each of which contains information for a file or directory contained within a directory in a repository file hierarchy."""
+    """
+    Return a list of dictionaries, each of which contains information for a file or directory contained
+    within a directory in a repository file hierarchy.
+    """
     try:
         files_list = get_repository_files( trans, folder_path )
     except OSError, e:
@@ -1498,28 +1354,6 @@ def open_repository_files_folder( trans, folder_path ):
                      "key" : full_path }
             folder_contents.append( node )
     return folder_contents
-
-def pretty_print( dict=None ):
-    if dict is not None:
-        return json.to_json_string( dict, sort_keys=True, indent=4 )
-
-def remove_dir( dir ):
-    """Attempt to remove a directory from disk."""
-    if dir:
-        if os.path.exists( dir ):
-            try:
-                shutil.rmtree( dir )
-            except:
-                pass
-
-def remove_file( file_name ):
-    """Attempt to remove a file from disk."""
-    if file_name:
-        if os.path.exists( file_name ):
-            try:
-                os.remove( file_name )
-            except:
-                pass
 
 def repository_was_previously_installed( trans, tool_shed_url, repository_name, repo_info_tuple ):
     """
@@ -1584,34 +1418,6 @@ def reset_previously_installed_repository( trans, repository ):
     trans.install_model.context.add( repository )
     trans.install_model.context.flush()
 
-def reversed_lower_upper_bounded_changelog( repo, excluded_lower_bounds_changeset_revision, included_upper_bounds_changeset_revision ):
-    """
-    Return a reversed list of changesets in the repository changelog after the excluded_lower_bounds_changeset_revision, but up to and
-    including the included_upper_bounds_changeset_revision.  The value of excluded_lower_bounds_changeset_revision will be the value of
-    INITIAL_CHANGELOG_HASH if no valid changesets exist before included_upper_bounds_changeset_revision.
-    """
-    # To set excluded_lower_bounds_changeset_revision, calling methods should do the following, where the value of changeset_revision
-    # is a downloadable changeset_revision.
-    # excluded_lower_bounds_changeset_revision = get_previous_metadata_changeset_revision( repository, repo, changeset_revision, downloadable=? )
-    if excluded_lower_bounds_changeset_revision == INITIAL_CHANGELOG_HASH:
-        appending_started = True
-    else:
-        appending_started = False
-    reversed_changelog = []
-    for changeset in repo.changelog:
-        changeset_hash = str( repo.changectx( changeset ) )
-        if appending_started:
-            reversed_changelog.insert( 0, changeset )
-        if changeset_hash == excluded_lower_bounds_changeset_revision and not appending_started:
-            appending_started = True
-        if changeset_hash == included_upper_bounds_changeset_revision:
-            break
-    return reversed_changelog
-
-def reversed_upper_bounded_changelog( repo, included_upper_bounds_changeset_revision ):
-    """Return a reversed list of changesets in the repository changelog up to and including the included_upper_bounds_changeset_revision."""
-    return reversed_lower_upper_bounded_changelog( repo, INITIAL_CHANGELOG_HASH, included_upper_bounds_changeset_revision )
-
 def set_image_paths( app, encoded_repository_id, text ):
     """
     Handle tool help image display for tools that are contained in repositories in the tool shed or installed into Galaxy as well as image
@@ -1665,41 +1471,6 @@ def set_prior_installation_required( app, repository, required_repository ):
             # Return the string value of prior_installation_required, which defaults to 'False'.
             return str( required_rd_tup[ 4 ] )
     return 'False'
-
-def size_string( raw_text, size=MAX_DISPLAY_SIZE ):
-    """Return a subset of a string (up to MAX_DISPLAY_SIZE) translated to a safe string for display in a browser."""
-    if raw_text and len( raw_text ) >= size:
-        large_str = '\nFile contents truncated because file size is larger than maximum viewing size of %s\n' % util.nice_size( size )
-        raw_text = '%s%s' % ( raw_text[ 0:size ], large_str )
-    return raw_text or ''
-
-def stringify( list ):
-    if list:
-        return ','.join( list )
-    return ''
-
-def strip_path( fpath ):
-    """Attempt to strip the path from a file name."""
-    if not fpath:
-        return fpath
-    try:
-        file_path, file_name = os.path.split( fpath )
-    except:
-        file_name = fpath
-    return file_name
-
-def to_html_string( text ):
-    """Translates the characters in text to an html string"""
-    if text:
-        try:
-            text = unicodify( text )
-        except UnicodeDecodeError, e:
-            return "Error decoding string: %s" % str( e )
-        text = unicode( markupsafe.escape( text ) )
-        text = text.replace( '\n', '<br/>' )
-        text = text.replace( '    ', '&nbsp;&nbsp;&nbsp;&nbsp;' )
-        text = text.replace( ' ', '&nbsp;' )
-    return text
 
 def tool_shed_from_repository_clone_url( repository_clone_url ):
     """Given a repository clone URL, return the tool shed that contains the repository."""

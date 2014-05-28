@@ -17,17 +17,6 @@ from tool_shed.util import export_util
 
 CHUNK_SIZE = 2**20 # 1Mb
 
-def get_file_type_str( changeset_revision, file_type ):
-    if file_type == 'zip':
-        file_type_str = '%s.zip' % changeset_revision
-    elif file_type == 'bz2':
-        file_type_str = '%s.tar.bz2' % changeset_revision
-    elif file_type == 'gz':
-        file_type_str = '%s.tar.gz' % changeset_revision
-    else:
-        file_type_str = ''
-    return file_type_str
-
 def string_as_bool( string ):
     if str( string ).lower() in ( 'true', 'yes', 'on' ):
         return True

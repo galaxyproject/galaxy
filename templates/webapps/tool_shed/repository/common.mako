@@ -446,7 +446,7 @@
 
 <%def name="render_failed_test( failed_test, pad, parent, row_counter, row_is_header=False, render_repository_actions_for='tool_shed' )">
     <% 
-        from tool_shed.util.shed_util_common import to_html_string
+        from tool_shed.util.basic_util import to_html_string
         encoded_id = trans.security.encode_id( failed_test.id )
     %>
     <tr class="datasetRow"

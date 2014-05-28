@@ -470,7 +470,7 @@ class RepositoryReviewController( BaseUIController, ratings_util.ItemRatings ):
             metadata_revision_hashes = [ metadata_revision.changeset_revision for metadata_revision in repository.metadata_revisions ]
             reviewed_revision_hashes = [ review.changeset_revision for review in repository.reviews ]
             reviews_dict = odict()
-            for changeset in suc.get_reversed_changelog_changesets( repo ):
+            for changeset in hg_util.get_reversed_changelog_changesets( repo ):
                 ctx = repo.changectx( changeset )
                 changeset_revision = str( ctx )
                 if changeset_revision in metadata_revision_hashes or changeset_revision in reviewed_revision_hashes:

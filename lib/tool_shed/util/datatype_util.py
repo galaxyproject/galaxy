@@ -3,6 +3,8 @@ import os
 import tempfile
 from galaxy import eggs
 from galaxy.util import asbool
+from tool_shed.util import basic_util
+from tool_shed.util import hg_util
 from tool_shed.util import tool_util
 from tool_shed.util import xml_util
 import tool_shed.util.shed_util_common as suc
@@ -127,7 +129,7 @@ def get_converter_and_display_paths( registration_elem, relative_install_dir ):
             for converter in elem.findall( 'converter' ):
                 converter_config = converter.get( 'file', None )
                 if converter_config:
-                    converter_config_file_name = suc.strip_path( converter_config )
+                    converter_config_file_name = basic_util.strip_path( converter_config )
                     for root, dirs, files in os.walk( relative_install_dir ):
                         if root.find( '.hg' ) < 0:
                             for name in files:
@@ -144,7 +146,7 @@ def get_converter_and_display_paths( registration_elem, relative_install_dir ):
             for display_app in elem.findall( 'display' ):
                 display_config = display_app.get( 'file', None )
                 if display_config:
-                    display_config_file_name = suc.strip_path( display_config )
+                    display_config_file_name = basic_util.strip_path( display_config )
                     for root, dirs, files in os.walk( relative_install_dir ):
                         if root.find( '.hg' ) < 0:
                             for name in files:
@@ -166,7 +168,7 @@ def load_installed_datatypes( app, repository, relative_install_dir, deactivate=
     # Load proprietary datatypes and return information needed for loading proprietary datatypes converters and display applications later.
     metadata = repository.metadata
     repository_dict = None
-    datatypes_config = suc.get_config_from_disk( suc.DATATYPES_CONFIG_FILENAME, relative_install_dir )
+    datatypes_config = hg_util.get_config_from_disk( suc.DATATYPES_CONFIG_FILENAME, relative_install_dir )
     if datatypes_config:
         converter_path, display_path = alter_config_and_load_prorietary_datatypes( app, datatypes_config, relative_install_dir, deactivate=deactivate )
         if converter_path or display_path:

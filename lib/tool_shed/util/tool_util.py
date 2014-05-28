@@ -13,6 +13,7 @@ from galaxy.tools.search import ToolBoxSearch
 from galaxy.util.expressions import ExpressionContext
 from galaxy.web.form_builder import SelectField
 from galaxy.tools.actions.upload import UploadToolAction
+from tool_shed.util import basic_util
 from tool_shed.util import common_util
 from tool_shed.util import hg_util
 from tool_shed.util import xml_util
@@ -119,7 +120,7 @@ def can_use_tool_config_disk_file( trans, repository, repo, file_path, changeset
         return False
     if changeset_revision == repository.tip( trans.app ):
         return True
-    file_name = suc.strip_path( file_path )
+    file_name = basic_util.strip_path( file_path )
     latest_version_of_file = get_latest_tool_config_revision_from_repository_manifest( repo, file_name, changeset_revision )
     can_use_disk_file = filecmp.cmp( file_path, latest_version_of_file )
     try:
@@ -142,7 +143,7 @@ def check_tool_input_params( app, repo_dir, tool_config_name, tool, sample_files
             if options and isinstance( options, dynamic_options.DynamicOptions ):
                 if options.tool_data_table or options.missing_tool_data_table_name:
                     # Make sure the repository contains a tool_data_table_conf.xml.sample file.
-                    sample_tool_data_table_conf = suc.get_config_from_disk( 'tool_data_table_conf.xml.sample', repo_dir )
+                    sample_tool_data_table_conf = hg_util.get_config_from_disk( 'tool_data_table_conf.xml.sample', repo_dir )
                     if sample_tool_data_table_conf:
                         error, correction_msg = handle_sample_tool_data_table_conf_file( app, sample_tool_data_table_conf )
                         if error:
@@ -158,10 +159,10 @@ def check_tool_input_params( app, repo_dir, tool_config_name, tool, sample_files
                 if options.index_file or options.missing_index_file:
                     # Make sure the repository contains the required xxx.loc.sample file.
                     index_file = options.index_file or options.missing_index_file
-                    index_file_name = suc.strip_path( index_file )
+                    index_file_name = basic_util.strip_path( index_file )
                     sample_found = False
                     for sample_file in sample_files:
-                        sample_file_name = suc.strip_path( sample_file )
+                        sample_file_name = basic_util.strip_path( sample_file )
                         if sample_file_name == '%s.sample' % index_file_name:
                             options.index_file = index_file_name
                             options.missing_index_file = None
@@ -206,7 +207,7 @@ def copy_sample_file( app, filename, dest_path=None ):
     """
     if dest_path is None:
         dest_path = os.path.abspath( app.config.tool_data_path )
-    sample_file_name = suc.strip_path( filename )
+    sample_file_name = basic_util.strip_path( filename )
     copied_file = sample_file_name.replace( '.sample', '' )
     full_source_path = os.path.abspath( filename )
     full_destination_path = os.path.join( dest_path, sample_file_name )
@@ -312,7 +313,7 @@ def generate_tool_panel_dict_for_tool_config( guid, tool_config, tool_sections=N
     {<Tool guid> : [{ tool_config : <tool_config_file>, id: <ToolSection id>, version : <ToolSection version>, name : <TooSection name>}]}
     """
     tool_panel_dict = {}
-    file_name = suc.strip_path( tool_config )
+    file_name = basic_util.strip_path( tool_config )
     tool_section_dicts = generate_tool_section_dicts( tool_config=file_name, tool_sections=tool_sections )
     tool_panel_dict[ guid ] = tool_section_dicts
     return tool_panel_dict
@@ -412,11 +413,11 @@ def get_latest_tool_config_revision_from_repository_manifest( repo, filename, ch
     This method is restricted to tool_config files rather than any file since it is likely that, with the exception of tool config files,
     multiple files will have the same name in various directories within the repository.
     """
-    stripped_filename = suc.strip_path( filename )
-    for changeset in suc.reversed_upper_bounded_changelog( repo, changeset_revision ):
+    stripped_filename = basic_util.strip_path( filename )
+    for changeset in hg_util.reversed_upper_bounded_changelog( repo, changeset_revision ):
         manifest_ctx = repo.changectx( changeset )
         for ctx_file in manifest_ctx.files():
-            ctx_file_name = suc.strip_path( ctx_file )
+            ctx_file_name = basic_util.strip_path( ctx_file )
             if ctx_file_name == stripped_filename:
                 try:
                     fctx = manifest_ctx[ ctx_file ]
@@ -442,14 +443,14 @@ def get_list_of_copied_sample_files( repo, ctx, dir ):
     """
     deleted_sample_files = []
     sample_files = []
-    for changeset in suc.reversed_upper_bounded_changelog( repo, ctx ):
+    for changeset in hg_util.reversed_upper_bounded_changelog( repo, ctx ):
         changeset_ctx = repo.changectx( changeset )
         for ctx_file in changeset_ctx.files():
-            ctx_file_name = suc.strip_path( ctx_file )
+            ctx_file_name = basic_util.strip_path( ctx_file )
             # If we decide in the future that files deleted later in the changelog should not be used, we can use the following if statement.
             # if ctx_file_name.endswith( '.sample' ) and ctx_file_name not in sample_files and ctx_file_name not in deleted_sample_files:
             if ctx_file_name.endswith( '.sample' ) and ctx_file_name not in sample_files:
-                fctx = suc.get_file_context_from_ctx( changeset_ctx, ctx_file )
+                fctx = hg_util.get_file_context_from_ctx( changeset_ctx, ctx_file )
                 if fctx in [ 'DELETED' ]:
                     # Since the possibly future used if statement above is commented out, the same file that was initially added will be
                     # discovered in an earlier changeset in the change log and fall through to the else block below.  In other words, if
@@ -536,7 +537,7 @@ def get_version_lineage_for_tool( trans, repository_id, repository_metadata, gui
     version_lineage = [ guid ]
     # Get all ancestor guids of the received guid.
     current_child_guid = guid
-    for changeset in suc.reversed_upper_bounded_changelog( repo, repository_metadata.changeset_revision ):
+    for changeset in hg_util.reversed_upper_bounded_changelog( repo, repository_metadata.changeset_revision ):
         ctx = repo.changectx( changeset )
         rm = suc.get_repository_metadata_by_changeset_revision( trans.app, repository_id, str( ctx ) )
         if rm:
@@ -546,9 +547,9 @@ def get_version_lineage_for_tool( trans, repository_id, repository_metadata, gui
                 current_child_guid = parent_guid
     # Get all descendant guids of the received guid.
     current_parent_guid = guid
-    for changeset in suc.reversed_lower_upper_bounded_changelog( repo,
-                                                                 repository_metadata.changeset_revision,
-                                                                 repository.tip( trans.app ) ):
+    for changeset in hg_util.reversed_lower_upper_bounded_changelog( repo,
+                                                                     repository_metadata.changeset_revision,
+                                                                     repository.tip( trans.app ) ):
         ctx = repo.changectx( changeset )
         rm = suc.get_repository_metadata_by_changeset_revision( trans.app, repository_id, str( ctx ) )
         if rm:
@@ -574,7 +575,7 @@ def handle_missing_data_table_entry( app, relative_install_dir, tool_path, repos
             break
     if missing_data_table_entry:
         # The repository must contain a tool_data_table_conf.xml.sample file that includes all required entries for all tools in the repository.
-        sample_tool_data_table_conf = suc.get_config_from_disk( 'tool_data_table_conf.xml.sample', relative_install_dir )
+        sample_tool_data_table_conf = hg_util.get_config_from_disk( 'tool_data_table_conf.xml.sample', relative_install_dir )
         if sample_tool_data_table_conf:
             # Add entries to the ToolDataTableManager's in-memory data_tables dictionary.
             error, message = handle_sample_tool_data_table_conf_file( app, sample_tool_data_table_conf, persist=True )
@@ -598,11 +599,11 @@ def handle_missing_index_file( app, tool_path, sample_files, repository_tools_tu
         params_with_missing_index_file = repository_tool.params_with_missing_index_file
         for param in params_with_missing_index_file:
             options = param.options
-            missing_file_name = suc.strip_path( options.missing_index_file )
+            missing_file_name = basic_util.strip_path( options.missing_index_file )
             if missing_file_name not in sample_files_copied:
                 # The repository must contain the required xxx.loc.sample file.
                 for sample_file in sample_files:
-                    sample_file_name = suc.strip_path( sample_file )
+                    sample_file_name = basic_util.strip_path( sample_file )
                     if sample_file_name == '%s.sample' % missing_file_name:
                         copy_sample_file( app, sample_file )
                         if options.tool_data_table and options.tool_data_table.missing_index_file:
@@ -643,7 +644,7 @@ def handle_sample_files_and_load_tool_from_tmp_config( trans, repo, repository_i
                 error, message = handle_sample_tool_data_table_conf_file( trans.app, tool_data_table_config )
                 if error:
                     log.debug( message )
-    manifest_ctx, ctx_file = suc.get_ctx_file_path_from_manifest( tool_config_filename, repo, changeset_revision )
+    manifest_ctx, ctx_file = hg_util.get_ctx_file_path_from_manifest( tool_config_filename, repo, changeset_revision )
     if manifest_ctx and ctx_file:
         tool, message2 = load_tool_from_tmp_config( trans, repo, repository_id, manifest_ctx, ctx_file, work_dir )
         message = concat_messages( message, message2 )
@@ -885,7 +886,7 @@ def load_tool_from_changeset_revision( trans, repository_id, changeset_revision,
                 message = concat_messages( message, message2 )
     else:
         tool, message, sample_files = handle_sample_files_and_load_tool_from_tmp_config( trans, repo, repository_id, changeset_revision, tool_config_filename, work_dir )
-    suc.remove_dir( work_dir )
+    basic_util.remove_dir( work_dir )
     trans.app.config.tool_data_path = original_tool_data_path
     # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
     reset_tool_data_tables( trans.app )
@@ -911,7 +912,7 @@ def load_tool_from_config( app, repository_id, full_path ):
 def load_tool_from_tmp_config( trans, repo, repository_id, ctx, ctx_file, work_dir ):
     tool = None
     message = ''
-    tmp_tool_config = suc.get_named_tmpfile_from_ctx( ctx, ctx_file, work_dir )
+    tmp_tool_config = hg_util.get_named_tmpfile_from_ctx( ctx, ctx_file, work_dir )
     if tmp_tool_config:
         element_tree, error_message = xml_util.parse_xml( tmp_tool_config )
         if element_tree is None:
@@ -921,7 +922,7 @@ def load_tool_from_tmp_config( trans, repo, repository_id, ctx, ctx_file, work_d
         tmp_code_files = []
         for code_elem in element_tree_root.findall( 'code' ):
             code_file_name = code_elem.get( 'file' )
-            tmp_code_file_name = suc.copy_file_from_manifest( repo, ctx, code_file_name, work_dir )
+            tmp_code_file_name = hg_util.copy_file_from_manifest( repo, ctx, code_file_name, work_dir )
             if tmp_code_file_name:
                 tmp_code_files.append( tmp_code_file_name )
         tool, valid, message = load_tool_from_config( trans.app, repository_id, tmp_tool_config )

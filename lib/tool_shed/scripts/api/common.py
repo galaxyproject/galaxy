@@ -8,11 +8,8 @@ new_path = [ os.path.join( os.path.dirname( __file__ ), '..', '..', '..', '..', 
 new_path.extend( sys.path[ 1: ] )
 sys.path = new_path
 
-import tool_shed.util.shed_util_common as suc
 from tool_shed.util import common_util
-
-from galaxy import eggs
-import pkg_resources
+from tool_shed.util import hg_util
 
 def delete( api_key, url, data, return_formatted=True ):
     """
@@ -115,7 +112,7 @@ def get_latest_downloadable_changeset_revision_via_api( url, name, owner ):
         return None, error_message
     if len( changeset_revisions ) >= 1:
         return changeset_revisions[ -1 ], error_message
-    return suc.INITIAL_CHANGELOG_HASH, error_message
+    return hg_util.INITIAL_CHANGELOG_HASH, error_message
 
 def get_repository_dict( url, repository_dict ):
     """

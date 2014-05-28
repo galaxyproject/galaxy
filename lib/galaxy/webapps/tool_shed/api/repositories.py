@@ -13,6 +13,7 @@ from galaxy.web.framework.helpers import time_ago
 import tool_shed.repository_types.util as rt_util
 import tool_shed.util.shed_util_common as suc
 from tool_shed.galaxy_install import repository_util
+from tool_shed.util import basic_util
 from tool_shed.util import encoding_util
 from tool_shed.util import hg_util
 from tool_shed.util import import_util
@@ -279,7 +280,7 @@ class RepositoriesController( BaseAPIController ):
                                                                                   repository_status_info_dict,
                                                                                   import_results_tups )
         import_util.check_status_and_reset_downloadable( trans, import_results_tups )
-        suc.remove_dir( file_path )
+        basic_util.remove_dir( file_path )
         # NOTE: the order of installation is defined in import_results_tups, but order will be lost
         # when transferred to return_dict.
         return_dict = {}

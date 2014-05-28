@@ -50,17 +50,35 @@ class Registry( object ):
                 for rca in repository.categories:
                     category = rca.category
                     category_name = str( category.name )
-                    self.viewable_repositories_and_suites_by_category[ category_name ] += 1
+                    if category_name in self.viewable_repositories_and_suites_by_category:
+                        self.viewable_repositories_and_suites_by_category[ category_name ] += 1
+                    else:
+                        self.viewable_repositories_and_suites_by_category[ category_name ] = 1
                     if is_valid:
-                        self.viewable_valid_repositories_and_suites_by_category[ category_name ] += 1
+                        if category_name in self.viewable_valid_repositories_and_suites_by_category:
+                            self.viewable_valid_repositories_and_suites_by_category[ category_name ] += 1
+                        else:
+                            self.viewable_valid_repositories_and_suites_by_category[ category_name ] = 1
                     if repository.type == rt_util.REPOSITORY_SUITE_DEFINITION:
-                        self.viewable_suites_by_category[ category_name ] += 1
+                        if category_name in self.viewable_suites_by_category:
+                            self.viewable_suites_by_category[ category_name ] += 1
+                        else:
+                            self.viewable_suites_by_category[ category_name ] = 1
                         if is_valid:
-                            self.viewable_valid_suites_by_category[ category_name ] += 1
+                            if category_name in self.viewable_valid_suites_by_category:
+                                self.viewable_valid_suites_by_category[ category_name ] += 1
+                            else:
+                                self.viewable_valid_suites_by_category[ category_name ] = 1
                     if is_level_one_certified:
-                        self.certified_level_one_viewable_repositories_and_suites_by_category[ category_name ] += 1
+                        if category_name in self.certified_level_one_viewable_repositories_and_suites_by_category:
+                            self.certified_level_one_viewable_repositories_and_suites_by_category[ category_name ] += 1
+                        else:
+                            self.certified_level_one_viewable_repositories_and_suites_by_category[ category_name ] = 1
                         if repository.type == rt_util.REPOSITORY_SUITE_DEFINITION:
-                            self.certified_level_one_viewable_suites_by_category[ category_name ] += 1
+                            if category_name in self.certified_level_one_viewable_suites_by_category:
+                                self.certified_level_one_viewable_suites_by_category[ category_name ] += 1
+                            else:
+                                self.certified_level_one_viewable_suites_by_category[ category_name ] = 1
                 self.load_repository_and_suite_tuple( repository )
                 if is_level_one_certified:
                     self.load_certified_level_one_repository_and_suite_tuple( repository )
@@ -97,7 +115,7 @@ class Registry( object ):
         repo = hg_util.get_repo_for_repository( self.app, repository=repository, repo_path=None, create=False )
         # Get the latest installable changeset revision since that is all that is currently configured for testing.
         latest_installable_changeset_revision = suc.get_latest_downloadable_changeset_revision( self.app, repository, repo )
-        if latest_installable_changeset_revision not in [ None, suc.INITIAL_CHANGELOG_HASH ]:
+        if latest_installable_changeset_revision not in [ None, hg_util.INITIAL_CHANGELOG_HASH ]:
             encoded_repository_id = self.app.security.encode_id( repository.id )
             repository_metadata = suc.get_repository_metadata_by_changeset_revision( self.app,
                                                                                      encoded_repository_id,
@@ -168,7 +186,7 @@ class Registry( object ):
         name = str( repository.name )
         owner = str( repository.user.username )
         tip_changeset_hash = repository.tip( self.app )
-        if tip_changeset_hash != suc.INITIAL_CHANGELOG_HASH:
+        if tip_changeset_hash != hg_util.INITIAL_CHANGELOG_HASH:
             certified_level_one_tuple = ( name, owner, tip_changeset_hash )
             if repository.type == rt_util.REPOSITORY_SUITE_DEFINITION:
                 if certified_level_one_tuple not in self.certified_level_one_suite_tuples:
@@ -257,17 +275,41 @@ class Registry( object ):
                 for rca in repository.categories:
                     category = rca.category
                     category_name = str( category.name )
-                    self.viewable_repositories_and_suites_by_category[ category_name ] -= 1
+                    if category_name in self.viewable_repositories_and_suites_by_category:
+                        if self.viewable_repositories_and_suites_by_category[ category_name ] > 0:
+                            self.viewable_repositories_and_suites_by_category[ category_name ] -= 1
+                    else:
+                        self.viewable_repositories_and_suites_by_category[ category_name ] = 0
                     if is_valid:
-                        self.viewable_valid_repositories_and_suites_by_category[ category_name ] -= 1
+                        if category_name in self.viewable_valid_repositories_and_suites_by_category:
+                            if self.viewable_valid_repositories_and_suites_by_category[ category_name ] > 0:
+                                self.viewable_valid_repositories_and_suites_by_category[ category_name ] -= 1
+                        else:
+                            self.viewable_valid_repositories_and_suites_by_category[ category_name ] = 0
                     if repository.type == rt_util.REPOSITORY_SUITE_DEFINITION:
-                        self.viewable_suites_by_category[ category_name ] -= 1
+                        if category_name in self.viewable_suites_by_category:
+                            if self.viewable_suites_by_category[ category_name ] > 0:
+                                self.viewable_suites_by_category[ category_name ] -= 1
+                        else:
+                            self.viewable_suites_by_category[ category_name ] = 0
                         if is_valid:
-                            self.viewable_valid_suites_by_category[ category_name ] -= 1
+                            if category_name in self.viewable_valid_suites_by_category:
+                                if self.viewable_valid_suites_by_category[ category_name ] > 0:
+                                    self.viewable_valid_suites_by_category[ category_name ] -= 1
+                            else:
+                                self.viewable_valid_suites_by_category[ category_name ] = 0
                     if is_level_one_certified:
-                        self.certified_level_one_viewable_repositories_and_suites_by_category[ category_name ] -= 1
+                        if category_name in self.certified_level_one_viewable_repositories_and_suites_by_category:
+                            if self.certified_level_one_viewable_repositories_and_suites_by_category[ category_name ] > 0:
+                                self.certified_level_one_viewable_repositories_and_suites_by_category[ category_name ] -= 1
+                        else:
+                            self.certified_level_one_viewable_repositories_and_suites_by_category[ category_name ] = 0
                         if repository.type == rt_util.REPOSITORY_SUITE_DEFINITION:
-                            self.certified_level_one_viewable_suites_by_category[ category_name ] -= 1
+                            if category_name in self.certified_level_one_viewable_suites_by_category:
+                                if self.certified_level_one_viewable_suites_by_category[ category_name ] > 0:
+                                    self.certified_level_one_viewable_suites_by_category[ category_name ] -= 1
+                            else:
+                                self.certified_level_one_viewable_suites_by_category[ category_name ] = 0
                 self.unload_repository_and_suite_tuple( repository )
                 if is_level_one_certified:
                     self.unload_certified_level_one_repository_and_suite_tuple( repository )
@@ -286,7 +328,7 @@ class Registry( object ):
         name = str( repository.name )
         owner = str( repository.user.username )
         tip_changeset_hash = repository.tip( self.app )
-        if tip_changeset_hash != suc.INITIAL_CHANGELOG_HASH:
+        if tip_changeset_hash != hg_util.INITIAL_CHANGELOG_HASH:
             certified_level_one_tuple = ( name, owner, tip_changeset_hash )
             if repository.type == rt_util.REPOSITORY_SUITE_DEFINITION:
                 if certified_level_one_tuple in self.certified_level_one_suite_tuples:

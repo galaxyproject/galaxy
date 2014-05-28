@@ -10,6 +10,7 @@ from galaxy import web
 from galaxy.datatypes import checkers
 import tool_shed.repository_types.util as rt_util
 import tool_shed.util.shed_util_common as suc
+from tool_shed.util import basic_util
 from tool_shed.util import commit_util
 from tool_shed.util import hg_util
 from tool_shed.util import metadata_util
@@ -64,9 +65,9 @@ class UploadController( BaseUIController ):
                 try:
                     commands.clone( hg_util.get_configured_ui(), repo_url, uploaded_directory )
                 except Exception, e:
-                    message = 'Error uploading via mercurial clone: %s' % suc.to_html_string( str( e ) )
+                    message = 'Error uploading via mercurial clone: %s' % basic_util.to_html_string( str( e ) )
                     status = 'error'
-                    suc.remove_dir( uploaded_directory )
+                    basic_util.remove_dir( uploaded_directory )
                     uploaded_directory = None
             elif url:
                 valid_url = True
@@ -296,7 +297,7 @@ class UploadController( BaseUIController ):
                     # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
                     tool_util.reset_tool_data_tables( trans.app )
                     if uploaded_directory:
-                        suc.remove_dir( uploaded_directory )
+                        basic_util.remove_dir( uploaded_directory )
                     trans.response.send_redirect( web.url_for( controller='repository',
                                                                action='browse_repository',
                                                                id=repository_id,
@@ -305,7 +306,7 @@ class UploadController( BaseUIController ):
                                                                status=status ) )
                 else:
                     if uploaded_directory:
-                        suc.remove_dir( uploaded_directory )
+                        basic_util.remove_dir( uploaded_directory )
                     status = 'error'
                 # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
                 tool_util.reset_tool_data_tables( trans.app )

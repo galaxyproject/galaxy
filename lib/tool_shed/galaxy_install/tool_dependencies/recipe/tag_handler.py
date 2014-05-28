@@ -405,7 +405,7 @@ class Repository( RecipeTag ):
                                                                               package_name=package_name,
                                                                               package_version=package_version,
                                                                               tool_dependencies_config=config_to_use )
-                suc.remove_file( tmp_filename )
+                self.remove_file( tmp_filename )
         else:
             message = "Unable to locate required tool shed repository named %s owned by %s with revision %s." % \
                 ( str( required_repository_name ), str( required_repository_owner ), str( default_required_repository_changeset_revision ) )
@@ -428,6 +428,15 @@ class Repository( RecipeTag ):
                 # We'll log the error here, but continue installing packages since some may not require this dependency.
                 print "Error installing tool dependency for required repository: %s" % str( rd_tool_dependency.error_message )
         return tool_dependency, proceed_with_install, action_elem_tuples
+
+    def remove_file( self, file_name ):
+        """Attempt to remove a file from disk."""
+        if file_name:
+            if os.path.exists( file_name ):
+                try:
+                    os.remove( file_name )
+                except:
+                    pass
 
 
 class SetEnvironment( RecipeTag ):

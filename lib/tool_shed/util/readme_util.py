@@ -10,6 +10,7 @@ from galaxy.util import rst_to_html
 from galaxy.util import unicodify
 
 import tool_shed.util.shed_util_common as suc
+from tool_shed.util import basic_util
 from tool_shed.util import common_util
 from tool_shed.util import hg_util
 
@@ -46,7 +47,7 @@ def build_readme_files_dict( trans, repository, changeset_revision, metadata, to
                         log.exception( "Error reading README file '%s' from disk: %s" % ( str( relative_path_to_readme_file ), str( e ) ) )
                         text = None
                     if text:
-                        text_of_reasonable_length = suc.size_string( text )
+                        text_of_reasonable_length = basic_util.size_string( text )
                         if text_of_reasonable_length.find( '.. image:: ' ) >= 0:
                             # Handle image display for README files that are contained in repositories in the tool shed or installed into Galaxy.
                             lock = threading.Lock()
@@ -69,17 +70,17 @@ def build_readme_files_dict( trans, repository, changeset_revision, metadata, to
                                                                                           host_url=web.url_for( '/', qualified=True ) )
                             text_of_reasonable_length = unicodify( text_of_reasonable_length )
                         else:
-                            text_of_reasonable_length = suc.to_html_string( text_of_reasonable_length )
+                            text_of_reasonable_length = basic_util.to_html_string( text_of_reasonable_length )
                         readme_files_dict[ readme_file_name ] = text_of_reasonable_length
                 else:
                     # We must be in the tool shed and have an old changeset_revision, so we need to retrieve the file contents from the repository manifest.
                     ctx = hg_util.get_changectx_for_changeset( repo, changeset_revision )
                     if ctx:
-                        fctx = suc.get_file_context_from_ctx( ctx, readme_file_name )
+                        fctx = hg_util.get_file_context_from_ctx( ctx, readme_file_name )
                         if fctx and fctx not in [ 'DELETED' ]:
                             try:
                                 text = unicodify( fctx.data() )
-                                readme_files_dict[ readme_file_name ] = suc.size_string( text )
+                                readme_files_dict[ readme_file_name ] = basic_util.size_string( text )
                             except Exception, e:
                                 log.exception( "Error reading README file '%s' from repository manifest: %s" % \
                                                ( str( relative_path_to_readme_file ), str( e ) ) )

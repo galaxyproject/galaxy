@@ -11,6 +11,7 @@ from galaxy.web.base.controller import BaseAPIController
 from tool_shed.galaxy_install import repository_util
 from tool_shed.util import common_util
 from tool_shed.util import encoding_util
+from tool_shed.util import hg_util
 from tool_shed.util import metadata_util
 from tool_shed.util import workflow_util
 from tool_shed.util import tool_util
@@ -108,7 +109,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
             changeset_revisions = json.from_json_string( raw_text )
             if len( changeset_revisions ) >= 1:
                 return changeset_revisions[ -1 ]
-        return suc.INITIAL_CHANGELOG_HASH
+        return hg_util.INITIAL_CHANGELOG_HASH
 
     def __get_value_mapper( self, trans, tool_shed_repository ):
         value_mapper={ 'id' : trans.security.encode_id( tool_shed_repository.id ),

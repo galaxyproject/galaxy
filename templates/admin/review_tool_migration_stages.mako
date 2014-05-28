@@ -35,7 +35,7 @@
             </p>
         </div>
         <table class="grid">
-            <% from tool_shed.util.shed_util_common import to_html_string %>
+            <% from tool_shed.util.basic_util import to_html_string %>
             %for stage in migration_stages_dict.keys():
                 <%
                     migration_command = 'sh ./scripts/migrate_tools/%04d_tools.sh' % stage

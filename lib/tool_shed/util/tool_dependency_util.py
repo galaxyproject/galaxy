@@ -7,6 +7,8 @@ from galaxy.model.orm import and_
 from galaxy.model.orm import or_
 import tool_shed.util.shed_util_common as suc
 import tool_shed.repository_types.util as rt_util
+from tool_shed.util import basic_util
+from tool_shed.util import hg_util
 from tool_shed.util import xml_util
 from tool_shed.galaxy_install.tool_dependencies import td_common_util
 
@@ -85,7 +87,7 @@ def create_tool_dependency_objects( app, tool_shed_repository, relative_install_
     if shed_config_dict.get( 'tool_path' ):
         relative_install_dir = os.path.join( shed_config_dict.get( 'tool_path' ), relative_install_dir )
     # Get the tool_dependencies.xml file from the repository.
-    tool_dependencies_config = suc.get_config_from_disk( 'tool_dependencies.xml', relative_install_dir )
+    tool_dependencies_config = hg_util.get_config_from_disk( 'tool_dependencies.xml', relative_install_dir )
     tree, error_message = xml_util.parse_xml( tool_dependencies_config )
     if tree is None:
         return tool_dependency_objects
@@ -629,7 +631,7 @@ def sync_database_with_file_system( app, tool_shed_repository, tool_dependency_n
             error_message += ' prepared for re-installation.'
             print error_message
             tool_dependency.status = app.install_model.ToolDependency.installation_status.NEVER_INSTALLED
-            suc.remove_dir( tool_dependency_install_dir )
+            basic_util.remove_dir( tool_dependency_install_dir )
             can_install_tool_dependency = True
         sa_session.add( tool_dependency )
         sa_session.flush()

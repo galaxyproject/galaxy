@@ -462,8 +462,8 @@ class AdminToolshed( AdminGalaxy ):
         err_msg = ''
         tool_shed_repository = tool_dependencies[ 0 ].tool_shed_repository
         # Get the tool_dependencies.xml file from the repository.
-        tool_dependencies_config = suc.get_config_from_disk( rt_util.TOOL_DEPENDENCY_DEFINITION_FILENAME,
-                                                             tool_shed_repository.repo_path( trans.app ) )
+        tool_dependencies_config = hg_util.get_config_from_disk( rt_util.TOOL_DEPENDENCY_DEFINITION_FILENAME,
+                                                                 tool_shed_repository.repo_path( trans.app ) )
         installed_tool_dependencies = \
             common_install_util.install_specified_packages( app=trans.app,
                                                             tool_shed_repository=tool_shed_repository,
@@ -505,7 +505,7 @@ class AdminToolshed( AdminGalaxy ):
                                             'repository/get_latest_downloadable_changeset_revision%s' % params )
                 raw_text = common_util.tool_shed_get( trans.app, tool_shed_url, url )
                 latest_downloadable_revision = json.from_json_string( raw_text )
-                if latest_downloadable_revision == suc.INITIAL_CHANGELOG_HASH:
+                if latest_downloadable_revision == hg_util.INITIAL_CHANGELOG_HASH:
                     message = 'Error retrieving the latest downloadable revision for this repository via the url <b>%s</b>.' % url
                     status = 'error'
                 else:

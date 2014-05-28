@@ -11,6 +11,7 @@ import tool_shed.repository_types.util as rt_util
 from galaxy import eggs
 from galaxy import web
 from galaxy.util.odict import odict
+from tool_shed.util import basic_util
 from tool_shed.util import commit_util
 from tool_shed.util import common_install_util
 from tool_shed.util import common_util
@@ -101,7 +102,7 @@ def export_repository( trans, tool_shed_url, repository_id, repository_name, cha
                 attributes, sub_elements = get_repository_attributes_and_sub_elements( ordered_repository, archive_name )
                 elem = xml_util.create_element( 'repository', attributes=attributes, sub_elements=sub_elements )
                 exported_repository_registry.exported_repository_elems.append( elem )
-            suc.remove_dir( work_dir )
+            basic_util.remove_dir( work_dir )
         # Keep information about the export in a file name export_info.xml in the archive.
         sub_elements = generate_export_elem( tool_shed_url, repository, changeset_revision, export_repository_dependencies, api )
         export_elem = xml_util.create_element( 'export_info', attributes=None, sub_elements=sub_elements )
@@ -127,7 +128,7 @@ def export_repository( trans, tool_shed_url, repository_id, repository_name, cha
     return repositories_archive, error_messages
 
 def generate_repository_archive( trans, work_dir, tool_shed_url, repository, changeset_revision, file_type ):
-    file_type_str = suc.get_file_type_str( changeset_revision, file_type )
+    file_type_str = get_file_type_str( changeset_revision, file_type )
     file_name = '%s-%s' % ( repository.name, file_type_str )
     return_code, error_message = archive_repository_revision( trans, ui, repository, work_dir, changeset_revision )
     if return_code:
@@ -172,7 +173,7 @@ def generate_repository_archive( trans, work_dir, tool_shed_url, repository, cha
 def generate_repository_archive_filename( tool_shed_url, name, owner, changeset_revision, file_type,
                                           export_repository_dependencies=False, use_tmp_archive_dir=False ):
     tool_shed = remove_protocol_from_tool_shed_url( tool_shed_url )
-    file_type_str = suc.get_file_type_str( changeset_revision, file_type )
+    file_type_str = get_file_type_str( changeset_revision, file_type )
     if export_repository_dependencies:
         repositories_archive_filename = '%s_%s_%s_%s_%s' % ( CAPSULE_WITH_DEPENDENCIES_FILENAME, tool_shed, name, owner, file_type_str )
     else:
@@ -209,6 +210,17 @@ def get_components_from_repo_info_dict( trans, repo_info_dict ):
         if repository_metadata:
             return repository, repository_metadata.changeset_revision
     return None, None
+
+def get_file_type_str( changeset_revision, file_type ):
+    if file_type == 'zip':
+        file_type_str = '%s.zip' % changeset_revision
+    elif file_type == 'bz2':
+        file_type_str = '%s.tar.bz2' % changeset_revision
+    elif file_type == 'gz':
+        file_type_str = '%s.tar.gz' % changeset_revision
+    else:
+        file_type_str = ''
+    return file_type_str
 
 def get_repo_info_dict_for_import( encoded_repository_id, encoded_repository_ids, repo_info_dicts ):
     """
