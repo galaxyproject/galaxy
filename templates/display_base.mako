@@ -32,10 +32,19 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js( "libs/jquery/jstorage", "libs/jquery/jquery.autocomplete", "libs/jquery/jquery.rating", 
-            "galaxy.autocom_tagging" )}
-    ${h.js( "galaxy.panels", "libs/jquery/jstorage", "libs/jquery/jquery.event.drag", "libs/jquery/jquery.event.hover",
-            "libs/jquery/jquery.mousewheel", "libs/jquery/jquery-ui", "libs/require", "libs/farbtastic" )}
+    ${h.js(
+        "libs/jquery/jstorage",
+        "libs/jquery/jquery.rating",
+        "galaxy.panels",
+        "libs/jquery/jquery.event.drag",
+        "libs/jquery/jquery.event.hover",
+        "libs/jquery/jquery.mousewheel",
+        "libs/jquery/jquery-ui",
+        "libs/require",
+        "libs/farbtastic",
+        "libs/jquery/jquery.autocomplete",
+        "galaxy.autocom_tagging"
+    )}
 
     <script type="text/javascript">
         
