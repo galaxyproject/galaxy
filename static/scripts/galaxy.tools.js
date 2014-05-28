@@ -30,7 +30,7 @@ define([ "libs/underscore", "mvc/tools" ], function( _, Tools ) {
             'min_option_count': 2 // Don't show multiple select switch if only
                                   // one dataset available.
         },
-        'select_collection': { // NOT YET IMPLEMENTED
+        'select_collection': {
             'icon_class': 'fa-folder-o',
             'select_by': 'Run tool in parallel across dataset collection',
             'allow_remap': false
