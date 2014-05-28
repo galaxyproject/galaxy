@@ -75,11 +75,12 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
 
     @skip_without_tool( "cat1" )
     def test_extract_from_history( self ):
+        # Run the simple test workflow and extract it back out from history
         workflow = self.workflow_populator.load_workflow( name="test_for_extract" )
         workflow_request, history_id = self._setup_workflow_run( workflow )
         contents_response = self._get( "histories/%s/contents" % history_id )
         self._assert_status_code_is( contents_response, 200 )
-        hda_ids = map( lambda c: c[ "hid" ], contents_response.json() )
+        input_hids = map( lambda c: c[ "hid" ], contents_response.json() )
 
         run_workflow_response = self._post( "workflows", data=workflow_request )
         self._assert_status_code_is( run_workflow_response, 200 )
@@ -89,23 +90,16 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
         jobs_response = self._get( "jobs", data=data )
         self._assert_status_code_is( jobs_response, 200 )
         cat1_job_id = jobs_response.json()[ 0 ][ "id" ]
-
-        contents_response = self._get( "history/%s/contents", data=data )
-        create_from_data = dict(
+        downloaded_workflow = self._extract_and_download_workflow(
             from_history_id=history_id,
-            dataset_ids=dumps( hda_ids ),
+            dataset_ids=dumps( input_hids ),
             job_ids=dumps( [ cat1_job_id ] ),
             workflow_name="test import from history",
         )
-        create_workflow_response = self._post( "workflows", data=create_from_data )
-        self._assert_status_code_is( create_workflow_response, 200 )
-
-        new_workflow_id = create_workflow_response.json()[ "id" ]
-        download_response = self._get( "workflows/%s/download" % new_workflow_id )
-        self._assert_status_code_is( download_response, 200 )
-        downloaded_workflow = download_response.json()
         self.assertEquals( downloaded_workflow[ "name" ], "test import from history" )
         assert len( downloaded_workflow[ "steps" ] ) == 3
+        self._get_steps_of_type( downloaded_workflow, "data_input", expected_len=2 )
+        self._get_steps_of_type( downloaded_workflow, "tool", expected_len=1 )
 
     @skip_without_tool( "collection_paired_test" )
     def test_extract_workflows_with_dataset_collections( self ):
@@ -241,7 +235,8 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
     def _get_steps_of_type( self, downloaded_workflow, type, expected_len=None ):
         steps = [ s for s in downloaded_workflow[ "steps" ].values() if s[ "type" ] == type ]
         if expected_len is not None:
-            assert len( steps ) == expected_len
+            n = len( steps )
+            assert n == expected_len, "Expected %d steps of type %s, found %d" % ( expected_len, type, n )
         return steps
 
     @skip_without_tool( "random_lines1" )
