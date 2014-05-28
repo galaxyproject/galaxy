@@ -145,17 +145,24 @@ var TabularDatasetChunkedView = Backbone.View.extend({
             header_row.append('<th>' + column_names.join('</th><th>') + '</th>');
         }
 
-        // Add first chunk.
-        var first_chunk = this.model.get('first_data_chunk');
+        // Render first chunk.
+        var self = this,
+            first_chunk = this.model.get('first_data_chunk');
         if (first_chunk) {
+            // First chunk is bootstrapped, so render now.
             this._renderChunk(first_chunk);
+        }
+        else {
+            // No bootstrapping, so get first chunk and then render.
+            $.when(self.model.get_next_chunk()).then(function(result) {
+                self._renderChunk(result);
+            });
         }
 
         // -- Show new chunks during scrolling. --
 
-        var self = this,
-            // Flag to ensure that only one chunk is loaded at a time.
-            loading_chunk = false;
+        // Flag to ensure that only one chunk is loaded at a time.
+        var loading_chunk = false;
 
         // Set up chunk loading when scrolling using the scrolling element.
         this.scroll_elt.scroll(function() {
