@@ -652,7 +652,8 @@ var HDABaseView = HistoryContentBaseView.extend(
 });
 
 //------------------------------------------------------------------------------ TEMPLATES
-var skeletonTemplate = [
+//TODO: possibly break these out into a sep. module
+var skeletonTemplate = _.template([
 '<div class="dataset hda">',
     '<div class="dataset-warnings">',
         // error during index fetch - show error on dataset
@@ -704,9 +705,9 @@ var skeletonTemplate = [
 
     '<div class="dataset-body"></div>',
 '</div>'
-].join( '' );
+].join( '' ));
 
-var bodyTemplate = [
+var bodyTemplate = _.template([
 '<div class="dataset-body">',
     '<% if( hda.body ){ %>',
         '<div class="dataset-summary">',
@@ -799,14 +800,15 @@ var bodyTemplate = [
     '<% } %>',
     // end if body
 '</div>'
-].join( '' );
+].join( '' ));
 
 HDABaseView.templates = {
+    // we override here in order to pass the localizer (_L) into the template scope - since we use it as a fn within
     skeleton            : function( hdaJSON ){
-        return _.template( skeletonTemplate, hdaJSON, { variable: 'hda' });
+        return skeletonTemplate({ _l: _l, hda: hdaJSON });
     },
     body                : function( hdaJSON ){
-        return _.template( bodyTemplate, hdaJSON, { variable: 'hda' });
+        return bodyTemplate({ _l: _l, hda: hdaJSON });
     }
 };
 
