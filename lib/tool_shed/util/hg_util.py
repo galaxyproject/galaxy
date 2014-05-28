@@ -4,6 +4,7 @@ import os
 from datetime import datetime
 from time import gmtime
 from time import strftime
+import tempfile
 
 from galaxy.util import listify
 from galaxy import eggs
