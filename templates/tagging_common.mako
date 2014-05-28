@@ -211,7 +211,7 @@
             use_toggle_link: ${iff( use_toggle_link, 'true', 'false' )}
          };
          
-        $('#${elt_id}').find( 'input' ).autocomplete_tagging(options);
+        $('#${elt_id}').autocomplete_tagging(options);
     </script>
     
     ## Use style to hide/display the tag area.
