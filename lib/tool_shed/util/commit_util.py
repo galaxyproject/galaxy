@@ -12,6 +12,7 @@ from galaxy.util import json
 from galaxy.util.odict import odict
 from galaxy.web import url_for
 import tool_shed.util.shed_util_common as suc
+from tool_shed.util import basic_util
 from tool_shed.util import hg_util
 from tool_shed.util import tool_util
 from tool_shed.util import xml_util
@@ -126,7 +127,7 @@ def handle_bz2( repository, uploaded_file_name ):
     bzipped_file = bz2.BZ2File( uploaded_file_name, 'rb' )
     while 1:
         try:
-            chunk = bzipped_file.read( suc.CHUNK_SIZE )
+            chunk = bzipped_file.read( basic_util.CHUNK_SIZE )
         except IOError:
             os.close( fd )
             os.remove( uncompressed )
@@ -239,7 +240,7 @@ def handle_gzip( repository, uploaded_file_name ):
     gzipped_file = gzip.GzipFile( uploaded_file_name, 'rb' )
     while 1:
         try:
-            chunk = gzipped_file.read( suc.CHUNK_SIZE )
+            chunk = gzipped_file.read( basic_util.CHUNK_SIZE )
         except IOError, e:
             os.close( fd )
             os.remove( uncompressed )

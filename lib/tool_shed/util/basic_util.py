@@ -1,5 +1,8 @@
 import logging
 import os
+import shutil
+import sys
+from string import Template
 
 from galaxy.util import unicodify
 
@@ -10,7 +13,51 @@ import markupsafe
 
 log = logging.getLogger( __name__ )
 
+CHUNK_SIZE = 2**20 # 1Mb
+INSTALLATION_LOG = 'INSTALLATION.log'
+# Set no activity timeout to 20 minutes.
+NO_OUTPUT_TIMEOUT = 1200.0
+MAXDIFFSIZE = 8000
 MAX_DISPLAY_SIZE = 32768
+
+def evaluate_template( text, install_environment ):
+    """
+    Substitute variables defined in XML blocks from dependencies file.  The value of the received
+    repository_install_dir is the root installation directory of the repository that contains the
+    tool dependency.  The value of the received install_dir is the root installation directory of
+    the tool_dependency.
+    """
+    return Template( text ).safe_substitute( get_env_var_values( install_environment ) )
+
+def get_env_var_values( install_environment ):
+    """
+    Return a dictionary of values, some of which enable substitution of reserved words for the values.
+    The received install_enviroment object has 2 important attributes for reserved word substitution:
+    install_environment.tool_shed_repository_install_dir is the root installation directory of the repository
+    that contains the tool dependency being installed, and install_environment.install_dir is the root
+    installation directory of the tool dependency.
+    """
+    env_var_dict = {}
+    env_var_dict[ 'REPOSITORY_INSTALL_DIR' ] = install_environment.tool_shed_repository_install_dir
+    env_var_dict[ 'INSTALL_DIR' ] = install_environment.install_dir
+    env_var_dict[ 'system_install' ] = install_environment.install_dir
+    # If the Python interpreter is 64bit then we can safely assume that the underlying system is also 64bit.
+    env_var_dict[ '__is64bit__' ] = sys.maxsize > 2**32
+    return env_var_dict
+
+def move_file( current_dir, source, destination, rename_to=None ):
+    source_path = os.path.abspath( os.path.join( current_dir, source ) )
+    source_file = os.path.basename( source_path )
+    if rename_to is not None:
+        destination_file = rename_to
+        destination_directory = os.path.join( destination )
+        destination_path = os.path.join( destination_directory, destination_file )
+    else:
+        destination_directory = os.path.join( destination )
+        destination_path = os.path.join( destination_directory, source_file )
+    if not os.path.exists( destination_directory ):
+        os.makedirs( destination_directory )
+    shutil.move( source_path, destination_path )
 
 def remove_dir( dir ):
     """Attempt to remove a directory from disk."""
