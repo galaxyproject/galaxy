@@ -41,6 +41,21 @@ class Registry( object ):
         self.load_viewable_repositories_and_suites_by_category()
         self.load_repository_and_suite_tuples()
 
+    def add_category_entry( self, category ):
+        category_name = str( category.name )
+        if category_name not in self.viewable_repositories_and_suites_by_category:
+            self.viewable_repositories_and_suites_by_category[ category_name ] = 0
+        if category_name not in self.viewable_suites_by_category:
+            self.viewable_suites_by_category[ category_name ] = 0
+        if category_name not in self.viewable_valid_repositories_and_suites_by_category:
+            self.viewable_valid_repositories_and_suites_by_category[ category_name ] = 0
+        if category_name not in self.viewable_valid_suites_by_category:
+            self.viewable_valid_suites_by_category[ category_name ] = 0
+        if category_name not in self.certified_level_one_viewable_repositories_and_suites_by_category:
+            self.certified_level_one_viewable_repositories_and_suites_by_category[ category_name ] = 0
+        if category_name not in self.certified_level_one_viewable_suites_by_category:
+            self.certified_level_one_viewable_suites_by_category[ category_name ] = 0
+        
     def add_entry( self, repository ):
         try:
             if repository:
@@ -87,6 +102,44 @@ class Registry( object ):
             # may be slightly skewed, but that is no reason to result in a potential server error.  All
             # will be corrected at next server start.
             log.exception( "Handled error adding entry to repository registry: %s." % str( e ) )
+
+    def edit_category_entry( self, old_name, new_name ):
+        if old_name in self.viewable_repositories_and_suites_by_category:
+            val = self.viewable_repositories_and_suites_by_category[ old_name ]
+            del self.viewable_repositories_and_suites_by_category[ old_name ]
+            self.viewable_repositories_and_suites_by_category[ new_name ] = val
+        else:
+            self.viewable_repositories_and_suites_by_category[ new_name ] = 0
+        if old_name in self.viewable_valid_repositories_and_suites_by_category:
+            val = self.viewable_valid_repositories_and_suites_by_category[ old_name ]
+            del self.viewable_valid_repositories_and_suites_by_category[ old_name ]
+            self.viewable_valid_repositories_and_suites_by_category[ new_name ] = val
+        else:
+            self.viewable_valid_repositories_and_suites_by_category[ new_name ] = 0
+        if old_name in self.viewable_suites_by_category:
+            val = self.viewable_suites_by_category[ old_name ]
+            del self.viewable_suites_by_category[ old_name ]
+            self.viewable_suites_by_category[ new_name ] = val
+        else:
+            self.viewable_suites_by_category[ new_name ] = 0
+        if old_name in self.viewable_valid_suites_by_category:
+            val = self.viewable_valid_suites_by_category[ old_name ]
+            del self.viewable_valid_suites_by_category[ old_name ]
+            self.viewable_valid_suites_by_category[ new_name ] = val
+        else:
+            self.viewable_valid_suites_by_category[ new_name ] = 0
+        if old_name in self.certified_level_one_viewable_repositories_and_suites_by_category:
+            val = self.certified_level_one_viewable_repositories_and_suites_by_category[ old_name ]
+            del self.certified_level_one_viewable_repositories_and_suites_by_category[ old_name ]
+            self.certified_level_one_viewable_repositories_and_suites_by_category[ new_name ] = val
+        else:
+            self.certified_level_one_viewable_repositories_and_suites_by_category[ new_name ] = 0
+        if old_name in self.certified_level_one_viewable_suites_by_category:
+            val = self.certified_level_one_viewable_suites_by_category[ old_name ]
+            del self.certified_level_one_viewable_suites_by_category[ old_name ]
+            self.certified_level_one_viewable_suites_by_category[ new_name ] = val
+        else:
+            self.certified_level_one_viewable_suites_by_category[ new_name ] = 0
 
     def get_certified_level_one_clause_list( self ):
         certified_level_one_tuples = []
@@ -266,6 +319,21 @@ class Registry( object ):
                         if repository.type in [ rt_util.REPOSITORY_SUITE_DEFINITION ]:
                             self.certified_level_one_viewable_suites_by_category[ category_name ] += 1
 
+    def remove_category_entry( self, category ):
+        catgeory_name = str( category.name )
+        if catgeory_name in self.viewable_repositories_and_suites_by_category:
+            del self.viewable_repositories_and_suites_by_category[ catgeory_name ]
+        if catgeory_name in self.viewable_valid_repositories_and_suites_by_category:
+            del self.viewable_valid_repositories_and_suites_by_category[ catgeory_name ]
+        if catgeory_name in self.viewable_suites_by_category:
+            del self.viewable_suites_by_category[ catgeory_name ]
+        if catgeory_name in self.viewable_valid_suites_by_category:
+            del self.viewable_valid_suites_by_category[ catgeory_name ]
+        if catgeory_name in self.certified_level_one_viewable_repositories_and_suites_by_category:
+            del self.certified_level_one_viewable_repositories_and_suites_by_category[ catgeory_name ]
+        if catgeory_name in self.certified_level_one_viewable_suites_by_category:
+            del self.certified_level_one_viewable_suites_by_category[ catgeory_name ]
+        
     def remove_entry( self, repository ):
         try:
             if repository:

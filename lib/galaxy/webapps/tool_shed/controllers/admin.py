@@ -132,6 +132,8 @@ class AdminController( BaseUIController, Admin ):
                 category = trans.app.model.Category( name=name, description=description )
                 trans.sa_session.add( category )
                 trans.sa_session.flush()
+                # Update the Tool Shed's repository registry.
+                trans.app.repository_registry.add_category_entry( category )
                 message = "Category '%s' has been created" % category.name
                 status = 'done'
                 trans.response.send_redirect( web.url_for( controller='admin',
@@ -224,21 +226,32 @@ class AdminController( BaseUIController, Admin ):
                                                        message=message,
                                                        status='error' ) )
         category = suc.get_category( trans, id )
+        original_category_name = str( category.name )
+        original_category_description = str( category.description )
         if kwd.get( 'edit_category_button', False ):
+            flush_needed = False
             new_name = kwd.get( 'name', '' ).strip()
             new_description = kwd.get( 'description', '' ).strip()
-            if category.name != new_name or category.description != new_description:
+            if original_category_name != new_name:
                 if not new_name:
                     message = 'Enter a valid name'
                     status = 'error'
-                elif category.name != new_name and suc.get_category_by_name( trans, new_name ):
+                elif original_category_name != new_name and suc.get_category_by_name( trans, new_name ):
                     message = 'A category with that name already exists'
                     status = 'error'
                 else:
                     category.name = new_name
+                    flush_needed = True
+                if original_category_description != new_description:
                     category.description = new_description
+                    if not flus_needed:
+                        flush_needed = True
+                if flush_needed:
                     trans.sa_session.add( category )
                     trans.sa_session.flush()
+                    if original_category_name != new_name:
+                        # Update the Tool Shed's repository registry.
+                        trans.app.repository_registry.edit_category_entry( original_category_name, new_name )
                     message = "The information has been saved for category '%s'" % ( category.name )
                     status = 'done'
                     return trans.response.send_redirect( web.url_for( controller='admin',
@@ -403,6 +416,8 @@ class AdminController( BaseUIController, Admin ):
                 category.deleted = True
                 trans.sa_session.add( category )
                 trans.sa_session.flush()
+                # Update the Tool Shed's repository registry.
+                trans.app.repository_registry.remove_category_entry( category )
                 message += " %s " % category.name
         else:
             message = "No category ids received for deleting."
@@ -459,6 +474,8 @@ class AdminController( BaseUIController, Admin ):
                     category.deleted = False
                     trans.sa_session.add( category )
                     trans.sa_session.flush()
+                    # Update the Tool Shed's repository registry.
+                    trans.app.repository_registry.add_category_entry( category )
                     count += 1
                     undeleted_categories += " %s" % category.name
             message = "Undeleted %d categories: %s" % ( count, undeleted_categories )
