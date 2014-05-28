@@ -633,9 +633,9 @@ var createTabularDatasetChunkedView = function(options) {
 };
 
 return {
-	Dataset: Dataset,
+    Dataset: Dataset,
     TabularDataset: TabularDataset,
-	DatasetCollection: DatasetCollection,
+    DatasetCollection: DatasetCollection,
     TabularDatasetChunkedView: TabularDatasetChunkedView,
     createTabularDatasetChunkedView: createTabularDatasetChunkedView
 };
