@@ -498,7 +498,7 @@ class FileToolParameter( ToolParameter ):
             # Check that the file is in the right location
             local_filename = os.path.abspath( value['path'] )
             assert local_filename.startswith( upload_store ), \
-                "Filename provided by nginx is not in correct directory"
+                "Filename provided by nginx (%s) is not in correct directory (%s)" % (local_filename, upload_store)
             value = dict(
                 filename=value["name"],
                 local_filename=local_filename
