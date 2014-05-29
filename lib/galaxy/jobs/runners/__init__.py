@@ -24,20 +24,27 @@ log = logging.getLogger( __name__ )
 STOP_SIGNAL = object()
 
 
+JOB_RUNNER_PARAMETER_UNKNOWN_MESSAGE = "Invalid job runner parameter for this plugin: %s"
+JOB_RUNNER_PARAMETER_MAP_PROBLEM_MESSAGE = "Job runner parameter '%s' value '%s' could not be converted to the correct type"
+JOB_RUNNER_PARAMETER_VALIDATION_FAILED_MESSAGE = "Job runner parameter %s failed validation"
+
+
 class RunnerParams( object ):
 
     def __init__( self, specs=None, params=None ):
         self.specs = specs or dict()
         self.params = params or dict()
         for name, value in self.params.items():
-            assert name in self.specs, 'Invalid job runner parameter for this plugin: %s' % name
+            assert name in self.specs, JOB_RUNNER_PARAMETER_UNKNOWN_MESSAGE % name
             if 'map' in self.specs[ name ]:
                 try:
                     self.params[ name ] = self.specs[ name ][ 'map' ]( value )
-                except Exception, e:
-                    raise Exception( 'Job runner parameter "%s" value "%s" could not be converted to the correct type: %s' % ( name, value, e ) )
+                except Exception:
+                    message = JOB_RUNNER_PARAMETER_MAP_PROBLEM_MESSAGE % ( name, value )
+                    log.exception(message)
+                    raise Exception( message )
             if 'valid' in self.specs[ name ]:
-                assert self.specs[ name ][ 'valid' ]( value ), 'Job runner parameter %s failed validation' % name
+                assert self.specs[ name ][ 'valid' ]( value ), JOB_RUNNER_PARAMETER_VALIDATION_FAILED_MESSAGE % name
 
     def __getattr__( self, name ):
         return self.params.get( name, self.specs[ name ][ 'default' ] )
@@ -46,13 +53,15 @@ class RunnerParams( object ):
 
 
 class BaseJobRunner( object ):
+    DEFAULT_SPECS = dict( recheck_missing_job_retries=dict( map=int, valid=lambda x: x >= 0, default=0 ) )
+
     def __init__( self, app, nworkers, **kwargs ):
         """Start the job runner
         """
         self.app = app
         self.sa_session = app.model.context
         self.nworkers = nworkers
-        runner_param_specs = dict( recheck_missing_job_retries=dict( map=int, valid=lambda x: x >= 0, default=0 ) )
+        runner_param_specs = self.DEFAULT_SPECS.copy()
         if 'runner_param_specs' in kwargs:
             runner_param_specs.update( kwargs.pop( 'runner_param_specs' ) )
         if kwargs:
