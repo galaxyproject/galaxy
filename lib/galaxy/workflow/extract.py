@@ -2,6 +2,7 @@
 histories.
 """
 from galaxy.util.odict import odict
+from galaxy import exceptions
 from galaxy import model
 from galaxy.tools.parameters.basic import (
     DataToolParameter,
@@ -88,6 +89,8 @@ def extract_steps( trans, history=None, job_ids=None, dataset_ids=None, dataset_
     for hid in dataset_collection_ids:
         step = model.WorkflowStep()
         step.type = 'data_collection_input'
+        if hid not in summary.collection_types:
+            raise exceptions.RequestParameterInvalidException( "hid %s does not appear to be a collection" % hid )
         collection_type = summary.collection_types[ hid ]
         step.tool_inputs = dict( name="Input Dataset Collection", collection_type=collection_type )
         hid_to_output_pair[ hid ] = ( step, 'output' )
