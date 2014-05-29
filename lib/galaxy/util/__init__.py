@@ -7,6 +7,7 @@ Utility functions used systemwide.
 from __future__ import absolute_import
 
 import binascii
+import collections
 import errno
 import grp
 import json
@@ -692,6 +693,44 @@ def object_to_string( obj ):
 
 def string_to_object( s ):
     return pickle.loads( binascii.unhexlify( s ) )
+
+
+class ParamsWithSpecs( collections.defaultdict ):
+    """
+    """
+
+    def __init__( self, specs=None, params=None ):
+        self.specs = specs or dict()
+        self.params = params or dict()
+        for name, value in self.params.items():
+            if name not in self.specs:
+                self._param_unknown_error( name )
+            if 'map' in self.specs[ name ]:
+                try:
+                    self.params[ name ] = self.specs[ name ][ 'map' ]( value )
+                except Exception:
+                    self._param_map_error( name, value )
+            if 'valid' in self.specs[ name ]:
+                if not self.specs[ name ][ 'valid' ]( value ):
+                    self._param_vaildation_error( name, value )
+
+        self.update( self.params )
+
+    def __missing__( self, name ):
+        return self.specs[ name ][ 'default' ]
+
+    def __getattr__( self, name ):
+        return self[ name ]
+
+    def _param_unknown_error( self, name ):
+        raise NotImplementedError()
+
+    def _param_map_error( self, name, value ):
+        raise NotImplementedError()
+
+    def _param_vaildation_error( self, name, value ):
+        raise NotImplementedError()
+
 
 def compare_urls( url1, url2, compare_scheme=True, compare_hostname=True, compare_path=True ):
     url1 = urlparse( url1 )

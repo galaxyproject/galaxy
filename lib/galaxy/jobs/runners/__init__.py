@@ -16,6 +16,7 @@ from galaxy.jobs.command_factory import build_command
 from galaxy import model
 from galaxy.util import DATABASE_MAX_STRING_SIZE, shrink_stream_by_size
 from galaxy.util import in_directory
+from galaxy.util import ParamsWithSpecs
 from galaxy.jobs.runners.util.job_script import job_script
 from galaxy.jobs.runners.util.env import env_to_statement
 
@@ -29,27 +30,16 @@ JOB_RUNNER_PARAMETER_MAP_PROBLEM_MESSAGE = "Job runner parameter '%s' value '%s'
 JOB_RUNNER_PARAMETER_VALIDATION_FAILED_MESSAGE = "Job runner parameter %s failed validation"
 
 
-class RunnerParams( object ):
+class RunnerParams( ParamsWithSpecs ):
 
-    def __init__( self, specs=None, params=None ):
-        self.specs = specs or dict()
-        self.params = params or dict()
-        for name, value in self.params.items():
-            assert name in self.specs, JOB_RUNNER_PARAMETER_UNKNOWN_MESSAGE % name
-            if 'map' in self.specs[ name ]:
-                try:
-                    self.params[ name ] = self.specs[ name ][ 'map' ]( value )
-                except Exception:
-                    message = JOB_RUNNER_PARAMETER_MAP_PROBLEM_MESSAGE % ( name, value )
-                    log.exception(message)
-                    raise Exception( message )
-            if 'valid' in self.specs[ name ]:
-                assert self.specs[ name ][ 'valid' ]( value ), JOB_RUNNER_PARAMETER_VALIDATION_FAILED_MESSAGE % name
+    def _param_unknown_error( self, name ):
+        raise Exception( JOB_RUNNER_PARAMETER_UNKNOWN_MESSAGE % name )
 
-    def __getattr__( self, name ):
-        return self.params.get( name, self.specs[ name ][ 'default' ] )
+    def _param_map_error( self, name, value ):
+        raise Exception( JOB_RUNNER_PARAMETER_MAP_PROBLEM_MESSAGE % ( name, value ) )
 
-    __getitem__ = __getattr__
+    def _param_vaildation_error( self, name, value ):
+        raise Exception( JOB_RUNNER_PARAMETER_VALIDATION_FAILED_MESSAGE % name )
 
 
 class BaseJobRunner( object ):
