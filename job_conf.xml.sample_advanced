@@ -204,6 +204,10 @@
                  using message queues (in the more traditional mode Galaxy sends
                  files to and pull files from the LWR - this is obviously less
                  appropriate when using a message queue).
+
+                 The default_file_action currently requires pycurl be available
+                 to Galaxy (presumably in its virtualenv). Making this dependency
+                 optional is an open task.
             -->
             <param id="default_file_action">remote_transfer</param>
         </destination>
