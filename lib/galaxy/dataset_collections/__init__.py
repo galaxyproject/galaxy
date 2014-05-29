@@ -147,7 +147,10 @@ class DatasetCollectionsService(
     ):
         assert source == "hdca"  # for now
         source_hdca = self.__get_history_collection_instance( trans, encoded_source_id )
-        parent.add_dataset_collection( source_hdca.copy() )
+        new_hdca = source_hdca.copy()
+        parent.add_dataset_collection( new_hdca )
+        trans.sa_session.add( new_hdca )
+        trans.sa_session.flush()
         return source_hdca
 
     def _set_from_dict( self, trans, dataset_collection_instance, new_data ):

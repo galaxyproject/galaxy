@@ -150,8 +150,10 @@ class HistoryContentsApiTestCase( api.ApiTestCase, TestsDatasets ):
             source='hdca',
             content=hdca_id,
         )
+        assert len( self._get( "histories/%s/contents/dataset_collections" % second_history_id ).json() ) == 0
         create_response = self._post( "histories/%s/contents/dataset_collections" % second_history_id, create_data )
         self.__check_create_collection_response( create_response )
+        assert len( self._get( "histories/%s/contents/dataset_collections" % second_history_id ).json() ) == 1
 
     def __check_create_collection_response( self, response ):
         self._assert_status_code_is( response, 200 )
