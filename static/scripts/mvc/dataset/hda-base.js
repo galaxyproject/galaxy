@@ -1,8 +1,9 @@
 define([
     "mvc/dataset/hda-model",
     "mvc/base-mvc",
+    "mvc/data",
     "utils/localization"
-], function( hdaModel, baseMVC, _l ){
+], function( hdaModel, baseMVC, dataset, _l ){
 /* global Backbone */
 
 /** @class Read only view for history content views to extend.
@@ -313,14 +314,24 @@ var HDABaseView = HistoryContentBaseView.extend(
             var self = this;
             displayBtnData.onclick = function( ev ){
                 if( Galaxy.frame && Galaxy.frame.active ){
+                    // Create frame with TabularChunkedView.
                     Galaxy.frame.add({
                         title       : "Data Viewer: " + self.model.get('name'),
-                        type        : "url",
-                        content     : self.urls.display
+                        type        : "other",
+                        content     : function(parent_elt) {
+                            var new_dataset = new dataset.TabularDataset({id: self.model.id});
+                            $.when(new_dataset.fetch()).then(function() {
+                                dataset.createTabularDatasetChunkedView({
+                                    model: new_dataset,
+                                    parent_elt: parent_elt,
+                                    embedded: true,
+                                    height: '100%'
+                                });
+                            });
+                        }
                     });
                     ev.preventDefault();
                 }
-
             };
         }
         displayBtnData.faIcon = 'fa-eye';

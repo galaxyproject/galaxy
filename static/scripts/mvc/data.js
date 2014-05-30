@@ -69,6 +69,8 @@ var TabularDataset = Dataset.extend({
 
         // If first data chunk is available, next chunk is 1.
         this.attributes.chunk_index = (this.attributes.first_data_chunk ? 1 : 0);
+        this.attributes.chunk_url = galaxy_config.root + 'dataset/display?dataset_id=' + this.id;
+        this.attributes.url_viz = galaxy_config.root + 'visualization';
     },
 
     /**
@@ -617,8 +619,10 @@ var createModelAndView = function(model, view, model_config, parent_elt) {
  * and appends to parent_elt.
  */
 var createTabularDatasetChunkedView = function(options) {
-    // Create and set model.
-    options.model = new TabularDataset(options.dataset_config);
+    // If no model, create and set model from dataset config.
+    if (!options.model) {
+        options.model = new TabularDataset(options.dataset_config);
+    }
 
     var parent_elt = options.parent_elt;
     var embedded = options.embedded;
