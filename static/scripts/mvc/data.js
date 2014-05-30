@@ -133,6 +133,16 @@ var TabularDatasetChunkedView = Backbone.View.extend({
     },
 
     render: function() {
+        // Add loading indicator.
+        var loading_indicator = $('<div/>').attr('id', 'loading_indicator');
+
+        loading_indicator.ajaxStart(function(){
+           $(this).show();
+        }).ajaxStop(function(){
+           $(this).hide();
+        });
+
+        this.$el.append(loading_indicator);
         // Add data table and header.
         var data_table = $('<table/>').attr({
             id: 'content_table',
@@ -176,11 +186,6 @@ var TabularDatasetChunkedView = Backbone.View.extend({
                     }
                 });
             }
-        });
-        $('#loading_indicator').ajaxStart(function(){
-           $(this).show();
-        }).ajaxStop(function(){
-           $(this).hide();
         });
     },
 
