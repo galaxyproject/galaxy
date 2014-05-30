@@ -5,6 +5,15 @@ from galaxy.util import odict
 from logging import getLogger
 log = getLogger( __name__ )
 
+# Fields in .log files corresponding to paths, must have one of the following
+# field names and all such fields are assumed to be paths. This is to allow
+# remote ComputeEnvironments (such as one used by LWR) determine what values to
+# rewrite or transfer...
+PATH_ATTRIBUTES = [ "path" ]
+# ... by default though - don't rewrite anything (if no ComputeEnviornment
+# defined or ComputeEnvironment doesn't supply a rewriter).
+DEFAULT_PATH_REWRITER = lambda x: x
+
 
 class ToolParameterValueWrapper( object ):
     """
@@ -88,9 +97,6 @@ class InputValueWrapper( ToolParameterValueWrapper ):
         return getattr( self.value, key )
 
 
-DEFAULT_PATH_REWRITER = lambda x: x
-
-
 class SelectToolParameterWrapper( ToolParameterValueWrapper ):
     """
     Wraps a SelectTooParameter so that __str__ returns the selected value, but all other
@@ -112,7 +118,11 @@ class SelectToolParameterWrapper( ToolParameterValueWrapper ):
         def __getattr__( self, name ):
             if name not in self._fields:
                 self._fields[ name ] = self._input.options.get_field_by_name_for_value( name, self._value, None, self._other_values )
-            return self._input.separator.join( map( self._path_rewriter, map( str, self._fields[ name ] ) ) )
+            values = map( str, self._fields[ name ] )
+            if name in PATH_ATTRIBUTES:
+                # If we infer this is a path, rewrite it if needed.
+                values = map( self._path_rewriter, values )
+            return self._input.separator.join( values )
 
     def __init__( self, input, value, app, other_values={}, path_rewriter=None ):
         self.input = input
@@ -123,7 +133,9 @@ class SelectToolParameterWrapper( ToolParameterValueWrapper ):
         self.fields = self.SelectToolParameterFieldWrapper( input, value, other_values, self._path_rewriter )
 
     def __str__( self ):
-        return self.input.to_param_dict_string( self.value, other_values=self._other_values, value_map=self._path_rewriter )
+        # Assuming value is never a path - otherwise would need to pass
+        # along following argument value_map=self._path_rewriter.
+        return self.input.to_param_dict_string( self.value, other_values=self._other_values )
 
     def __getattr__( self, key ):
         return getattr( self.input, key )
