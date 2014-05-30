@@ -135,14 +135,8 @@ var TabularDatasetChunkedView = Backbone.View.extend({
     render: function() {
         // Add loading indicator.
         var loading_indicator = $('<div/>').attr('id', 'loading_indicator');
-
-        loading_indicator.ajaxStart(function(){
-           $(this).show();
-        }).ajaxStop(function(){
-           $(this).hide();
-        });
-
         this.$el.append(loading_indicator);
+
         // Add data table and header.
         var data_table = $('<table/>').attr({
             id: 'content_table',
@@ -172,10 +166,12 @@ var TabularDatasetChunkedView = Backbone.View.extend({
             // If not already loading a chunk and have scrolled to the bottom of this element, get next chunk.
             if ( !loading_chunk && self.scrolled_to_bottom() ) {
                 loading_chunk = true;
+                loading_indicator.show();
                 $.when(self.model.get_next_chunk()).then(function(result) {
                     if (result) {
                         self._renderChunk(result);
                         loading_chunk = false;
+                        loading_indicator.hide();
                     }
                 });
             }
