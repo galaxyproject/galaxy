@@ -1052,7 +1052,7 @@ var TrackBrowserRouter = Backbone.Router.extend({
         // Can't put regular expression in routes dictionary.
         // NOTE: parentheses are used to denote parameters returned to callback.
         this.route(/([\w]+)$/, 'change_location');
-        this.route(/([\w]+\:[\d,]+-[\d,]+)$/, 'change_location');
+        this.route(/([\w\+]+\:[\d,]+-[\d,]+)$/, 'change_location');
         
         // Handle navigate events from view.
         var self = this;
