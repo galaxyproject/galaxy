@@ -1460,7 +1460,7 @@ div.form-row label.inline{display:inline}
 div.form-row-input{width:90%;float:left}
 div.form-row-input label{font-weight:normal;display:inline}
 div.form-row-error-message{width:300px;float:left;color:red;font-weight:bold;padding:3px 0}
-.form-row .help,.toolParamHelp{color:#666}.form-row .help a,.toolParamHelp a{color:#666}
+.form-row .help,.toolParamHelp,.ui-table-form-info{color:#666}.form-row .help a,.toolParamHelp a{color:#666}
 .form-row.form-actions{background:whiteSmoke;border-top:solid #ddd 1px;padding-top:10px;padding-bottom:10px;margin-top:5px}
 select{padding:2px;font-size:12px;line-height:1.428571429}
 select,input,textarea{font:inherit}
@@ -1526,13 +1526,13 @@ div.debug{margin:10px;padding:5px;background:#FFFF99;border:solid #FFFF33 1px;co
 .grid-header{padding-bottom:1em}
 .grid-header h2{margin:0;margin-bottom:0.5em}
 .grid-header .title{font-weight:bold}
-.grid{padding-top:1em;border-collapse:collapse;width:100%}
-.grid tbody td{line-height:1.428571429;border-top:solid #DDDDDD 1px;border-bottom:solid #DDDDDD 1px;padding:5px}
+.grid,.ui-table{padding-top:1em;border-collapse:collapse;width:100%}
+.grid tbody td,.ui-table tbody td{line-height:1.428571429;border-top:solid #DDDDDD 1px;border-bottom:solid #DDDDDD 1px;padding:5px}
 .grid tbody td:empty{padding:0}
 .grid thead tr{height:2em}
 .grid thead th{line-height:1.428571429;background:#ebd9b2;color:#000;border-top:solid #d6b161 1px;border-bottom:solid #d6b161 1px;padding:5px;text-align:left;white-space:nowrap}
 .grid tfoot td{background-color:#F8F8F8;border-top:solid #DDDDDD 1px;border-bottom:solid #DDDDDD 1px;padding:5px}
-.grid .current{background-color:#EEEEFF}
+.grid .current,.ui-table .current{background-color:#EEEEFF}
 .count-box{min-width:1.1em;padding:5px;border-width:1px;border-style:solid;text-align:center;display:inline-block}
 .text-filter-val{border:solid 1px #AAAAAA;padding:1px 2px 1px 3px;margin-right:5px;-moz-border-radius:.5em;-webkit-border-radius:.5em;font-style:italic}
 .page-link a,.inactive-link{padding:0px 7px 0px 7px;color:#555}

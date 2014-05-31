@@ -1,3 +1,18 @@
+.ui-table {
+    &:extend(.grid);
+
+    tbody td {
+        &:extend(.grid tbody td);
+    }
+    .current {
+        &:extend(.grid .current);
+    }
+}
+
+.ui-table-form-info {
+    &:extend(.toolParamHelp);
+}
+
 .ui-table-form-separator {
 	font-weight: bold;
 	font-size: 0.9em;
