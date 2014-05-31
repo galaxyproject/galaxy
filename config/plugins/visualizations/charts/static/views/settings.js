@@ -27,12 +27,12 @@ return Backbone.View.extend(
         // change
         var self = this;
         this.chart.on('change', function() {
-            self._refreshTable();
+            self._refresh();
         });
     },
     
     // update dataset
-    _refreshTable: function() {
+    _refresh: function() {
         // identify datasets
         var chart_type = this.chart.get('type');
         

@@ -140,7 +140,7 @@ var View = Backbone.View.extend({
     
     // template
     _template: function(options) {
-        var tmpl =  '<div class="popover-view popover fade ' + options.placement + ' in">' +
+        var tmpl =  '<div class="ui-popover popover fade ' + options.placement + ' in">' +
                         '<div class="arrow"></div>' +
                         '<div class="popover-title">' +
                             '<div class="popover-title-label">' +

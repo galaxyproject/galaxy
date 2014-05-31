@@ -24,7 +24,7 @@ return Backbone.View.extend({
         this.setElement($(this._template()));
         
         // use full screen for viewer
-        this._fullscreen(this.$el, 80);
+        this._fullscreen(this.$el, 100);
         
         // create canvas element
         this._createContainer('div');
@@ -167,7 +167,7 @@ return Backbone.View.extend({
         
         // create chart view
         var self = this;
-        require(['plugin/charts/' + chart_type + '/wrapper'], function(ChartView) {
+        require(['plugin/charts/' + this.app.chartPath(chart_type) + '/wrapper'], function(ChartView) {
             // create chart
             var view = new ChartView(self.app, {canvas : self.canvas_list});
             

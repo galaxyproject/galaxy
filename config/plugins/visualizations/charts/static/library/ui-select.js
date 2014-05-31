@@ -209,7 +209,7 @@ var View = Backbone.View.extend(
     
     // element
     _template: function(options) {
-        var tmpl =  '<div id="' + options.id + '" class="styled-select">' +
+        var tmpl =  '<div id="' + options.id + '" class="ui-select">' +
                         '<div class="button">' +
                             '<i id="icon"/>' +
                         '</div>' +

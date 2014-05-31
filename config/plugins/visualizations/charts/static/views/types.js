@@ -17,6 +17,9 @@ return Backbone.View.extend(
     // initialize
     initialize : function(app, options) {
         
+        // link this
+        var self = this;
+        
         // link app
         this.app = app;
         
@@ -55,7 +58,7 @@ return Backbone.View.extend(
                 $el.append(Utils.wrap(this._template_item({
                     id      : id,
                     title   : type.title,
-                    url     : config.app_root + 'charts/' + id + '/logo.png'
+                    url     : config.app_root + 'charts/' + self.app.chartPath(id) + '/logo.png'
                 })));
             }
             

@@ -223,9 +223,6 @@ return Backbone.View.extend(
         // create view
         var group_view = new GroupView(this.app, {group: group});
         
-        // number of groups
-        var count = self.chart.groups.length;
-        
         // add new tab
         this.tabs.add({
             id              : group.id,

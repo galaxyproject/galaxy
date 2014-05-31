@@ -18,30 +18,36 @@
     -ms-user-select: none; /* IE10+ */
 }
 
-.portlet-view {
-    min-width: 300px;
+.ui-portlet {
+    border: solid @form-border 1px;
+    .border-radius(@panel-border-radius);
 
-    .portlet-title-icon {
-        float: left;
-        font-size: 1.2em;
-        padding-top: 4px;
-    }
-    
-    .portlet-title {
-        overflow: hidden;
-        padding: 2px 5px 2px 10px;
+    position: relative;
+    clear: both;
+    width: auto;
+    height: 100%;
+
+    .portlet-header {
+        padding: 5px 10px;
+        background: @form-heading-bg;
+        border-bottom: solid @form-border 1px;
+        padding: 2px 8px;
+        overflow: auto;
+
+        h1, h2, h3, h4, h5, h6 {
+            float: left;
+            font-weight: normal;
+            display: inline-block;
+            vertical-align: middle;
+            font-size: 1em;
+            margin: 3px;
+            
+            .icon {
+                font-size: 1.2em;
+            }
+        }
     }
 
-    .portlet-title-text {
-        float: left;
-        padding-top: 2px;
-    }
-    
-    .portlet-operations {
-        float: right;
-        cursor: pointer;
-    }
-    
     .portlet-buttons {
         height: 50px;
         padding: 10px;
@@ -50,10 +56,25 @@
     .portlet-content {
         height: inherit;
         padding: 10px;
+        
+        .content {
+            padding     : 10px;
+            height      : 100%;
+            width       : 100%;
+        
+            .buttons {
+                height: 50px;
+                padding: 10px;
+            }
+        }
+    }
+
+    .no-scroll {
+        height: ~'calc(100% - 80px)';
     }
 }
 
-.popover-view {
+.ui-popover {
     max-width: 700px;
     display: none;
 
@@ -70,7 +91,7 @@
     }
 }
 
-.styled-select {
+.ui-select {
     position: relative;
     height: 27px;
     overflow: hidden;

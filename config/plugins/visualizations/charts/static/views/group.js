@@ -79,8 +79,8 @@ return Backbone.View.extend(
         // reset table
         this.table.delAll();
         
-        // load list
-        var list = {};
+        // load list for select fields
+        var select_list = {};
         for (var id in chart_settings.columns) {
             // get definition
             var data_def = chart_settings.columns[id];
@@ -101,7 +101,7 @@ return Backbone.View.extend(
             this.table.append(id);
             
             // add select field to list
-            list[id] = select;
+            select_list[id] = select;
         }
         
         // loading
@@ -113,8 +113,8 @@ return Backbone.View.extend(
         // get dataset
         this.app.datasets.request({id : dataset_id}, function(dataset) {
             // update select fields
-            for (var id in list) {
-                self._addRow(id, dataset, list[id], chart_settings.columns[id])
+            for (var id in select_list) {
+                self._addRow(id, dataset, select_list, chart_settings.columns[id])
             }
             
             // loading
@@ -126,13 +126,21 @@ return Backbone.View.extend(
     },
     
     // add row
-    _addRow: function(id, dataset, select, chart_setting) {
+    _addRow: function(id, dataset, select_list, chart_setting) {
+        // link this
+        var self = this;
+        
         // is a numeric number required
         var is_label    = chart_setting.is_label;
         var is_auto     = chart_setting.is_auto;
-        
+        var is_numeric  = chart_setting.is_numeric;
+        var is_unique   = chart_setting.is_unique;
+
         // configure columns
         var columns = [];
+        
+        // get select
+        var select = select_list[id];
         
         // add auto selection column
         if (is_auto) {
@@ -146,7 +154,15 @@ return Backbone.View.extend(
         var meta = dataset.metadata_column_types;
         for (var key in meta) {
             // check type
-            if ((!is_label && (meta[key] == 'int' || meta[key] == 'float')) || is_label) {
+            var valid = false;
+            if (meta[key] == 'int' || meta[key] == 'float') {
+                valid = is_numeric;
+            } else {
+                valid = is_label;
+            }
+            
+            // check type
+            if (valid) {
                 // add to selection
                 columns.push({
                     'label' : 'Column: ' + (parseInt(key) + 1) + ' [' + meta[key] + ']',
@@ -157,7 +173,6 @@ return Backbone.View.extend(
     
         // update selection list
         select.update(columns);
-        select.show();
         
         // update current value
         if (!select.exists(this.group.get(id))) {
@@ -172,13 +187,30 @@ return Backbone.View.extend(
         }
         select.value(this.group.get(id));
         
-        // add onchange event
-        var self = this;
+        /*/ link group with select field
+        this.group.on('change:' + id, function(){
+            select.value(self.group.get(id));
+        });*/
+        
+        // link select field with group
         select.setOnChange(function(value) {
-            // update model value
-            self.group.set(id, value);
+            /*/ update model value
+            if (is_unique) {
+                // update all groups
+                self.chart.groups.each(function(group) {
+                    group.set(id, value);
+                });
+            } else {*/
+                // only change this group
+                self.group.set(id, value);
+            //}
+            
+            // set modified flag
             self.chart.set('modified', true);
         });
+        
+        // show select field
+        select.show();
     },
     
     // update

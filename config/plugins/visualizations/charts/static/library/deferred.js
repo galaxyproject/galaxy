@@ -18,8 +18,8 @@ return Backbone.Model.extend(
     {
         // loop through queue and check states
         this.on('refresh', function() {
-            if (this.counter == 0) {
-                for (var index in this.queue) {
+            for (var index in this.queue) {
+                if (this.counter == 0) {
                     // get callback
                     var callback = this.queue[index];
                 
