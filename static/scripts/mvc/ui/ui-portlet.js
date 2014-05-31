@@ -39,19 +39,22 @@ var View = Backbone.View.extend(
         // link title
         this.$title = this.$el.find('#portlet-header-text');
         
-        // set content height
+        // set content format
+        var $portlet_content = this.$el.find('#portlet-content');
         if (!this.options.scrollable) {
             if (this.options.title) {
-                this.$el.find('#portlet-content').addClass('no-scroll');
+                $portlet_content.addClass('no-scroll');
             } else {
-                this.$el.find('#portlet-content').css('height', '100%');
+                $portlet_content.addClass('no-scroll-no-title');
             }
+        } else {
+            $portlet_content.addClass('scroll');
         }
         
-        // set content height
+        // set content padding
         if (this.options.nopadding) {
-            this.$el.find('#portlet-content').css('padding', '0px');
-            this.$el.find('#content').css('padding', '0px');
+            $portlet_content.css('padding', '0px');
+            $content.css('padding', '0px');
         }
         
         // append buttons

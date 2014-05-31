@@ -69,7 +69,7 @@ return Backbone.Model.extend(
         'nvd3_scatter'                      : nvd3_scatter,
         'nvd3_histogram'                    : nvd3_histogram,
         'nvd3_histogram_discrete'           : nvd3_histogram_discrete,
-        /*'highcharts_bar'                    : highcharts_bar,
+        'highcharts_bar'                    : highcharts_bar,
         'highcharts_bar_stacked'            : highcharts_bar_stacked,
         'highcharts_bar_horizontal'         : highcharts_bar_horizontal,
         'highcharts_bar_horizontal_stacked' : highcharts_bar_horizontal_stacked,
@@ -78,9 +78,9 @@ return Backbone.Model.extend(
         'highcharts_line'                   : highcharts_line,
         'highcharts_scatter'                : highcharts_scatter,
         'highcharts_histogram'              : highcharts_histogram,
-        'highcharts_histogram_discrete'     : highcharts_histogram_discrete,*/
+        'highcharts_histogram_discrete'     : highcharts_histogram_discrete,
         'highcharts_boxplot'                : highcharts_boxplot,
-        //'highcharts_heatmap'                : highcharts_heatmap
+        'highcharts_heatmap'                : highcharts_heatmap
     }
 });
 
