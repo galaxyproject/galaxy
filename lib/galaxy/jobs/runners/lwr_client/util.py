@@ -63,22 +63,6 @@ def directory_files(directory):
     return contents
 
 
-def parse_amqp_connect_ssl_params(params):
-    ssl_params = filter_destination_params(params, "amqp_connect_ssl_")
-    if not ssl_params:
-        return
-
-    ssl = __import__('ssl')
-    if 'cert_reqs' in ssl_params:
-        value = ssl_params['cert_reqs']
-        ssl_params['cert_reqs'] = getattr(ssl, value.upper())
-    return ssl_params
-
-
-def parse_amqp_publish_kwds(params):
-    return filter_destination_params(params, "amqp_publish_")
-
-
 def filter_destination_params(destination_params, prefix):
     destination_params = destination_params or {}
     return dict([(key[len(prefix):], destination_params[key])
