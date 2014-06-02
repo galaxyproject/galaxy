@@ -89,25 +89,24 @@ class LwrJobRunner( AsynchronousJobRunner ):
     def __init__( self, app, nworkers, **kwds ):
         """Start the job runner """
         super( LwrJobRunner, self ).__init__( app, nworkers, runner_param_specs=LWR_PARAM_SPECS, **kwds )
-        transport = self.runner_params.transport
-        cache = self.runner_params.cache
-        url = self.runner_params.url
         self._init_worker_threads()
-        client_manager_kwargs = {
-            'transport_type': transport,
-            'cache': string_as_bool_or_none(cache),
-            "url": url,
-            'manager': kwds.get("manager", None),
-        }
-        for kwd in self.runner_params.keys():
-            if kwd.startswith('amqp_'):
-                client_manager_kwargs[kwd] = self.runner_params[kwd]
         self.galaxy_url = self.runner_params.galaxy_url
-        self.client_manager = build_client_manager(**client_manager_kwargs)
-        if url:
+        self.__init_client_manager()
+        if self.runner_params.url:
+            # This is a message queue driven runner, don't monitor
+            # just setup required callback.
             self.client_manager.ensure_has_status_update_callback(self.__async_update)
         else:
             self._init_monitor_thread()
+
+    def __init_client_manager( self ):
+        client_manager_kwargs = {}
+        for kwd in 'url', 'manager', 'cache', 'transport':
+            client_manager_kwargs[ kwd ] = self.runner_params[ kwd ]
+        for kwd in self.runner_params.keys():
+            if kwd.startswith( 'amqp_' ):
+                client_manager_kwargs[ kwd ] = self.runner_params[ kwd ]
+        self.client_manager = build_client_manager(**client_manager_kwargs)
 
     def url_to_destination( self, url ):
         """Convert a legacy URL to a job destination"""

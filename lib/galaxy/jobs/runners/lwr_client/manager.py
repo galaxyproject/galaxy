@@ -44,7 +44,7 @@ class ClientManager(object):
             self.job_manager_interface_args = dict(job_manager=kwds['job_manager'], file_cache=kwds['file_cache'])
         else:
             self.job_manager_interface_class = HttpLwrInterface
-            transport_type = kwds.get('transport_type', None)
+            transport_type = kwds.get('transport', None)
             transport = get_transport(transport_type)
             self.job_manager_interface_args = dict(transport=transport)
         cache = kwds.get('cache', None)
@@ -138,7 +138,7 @@ class ObjectStoreClientManager(object):
             self.interface_args = dict(object_store=kwds['object_store'])
         else:
             self.interface_class = HttpLwrInterface
-            transport_type = kwds.get('transport_type', None)
+            transport_type = kwds.get('transport', None)
             transport = get_transport(transport_type)
             self.interface_args = dict(transport=transport)
         self.extra_client_kwds = {}
