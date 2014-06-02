@@ -6,6 +6,7 @@ except ImportError:
 
 import socket
 import logging
+import threading
 from time import sleep
 log = logging.getLogger(__name__)
 
@@ -16,6 +17,7 @@ DEFAULT_EXCHANGE_NAME = "lwr"
 DEFAULT_EXCHANGE_TYPE = "direct"
 # Set timeout to periodically give up looking and check if polling should end.
 DEFAULT_TIMEOUT = 0.2
+DEFAULT_HEARTBEAT = 580
 
 
 class LwrExchange(object):
@@ -50,17 +52,28 @@ class LwrExchange(object):
         queue = self.__queue(queue_name)
         log.debug("Consuming queue '%s'", queue)
         while check:
+            heartbeat_thread = None
             try:
-                with self.connection(self.__url, ssl=self.__connect_ssl, **connection_kwargs) as connection:
-                    with kombu.Consumer(connection, queues=[queue], callbacks=[callback], accept=['json']):
+                # TODO: configurable heartbeat
+                with self.connection(self.__url, ssl=self.__connect_ssl, heartbeat=DEFAULT_HEARTBEAT, **connection_kwargs) as connection:
+                    with kombu.Consumer(connection, queues=[queue], callbacks=[callback], accept=['json']) as consumer:
+                        heartbeat_thread = self.__start_heartbeat(queue_name, connection)
                         while check and connection.connected:
                             try:
                                 connection.drain_events(timeout=self.__timeout)
                             except socket.timeout:
                                 pass
-            except socket.error, exc:
-                log.warning('Got socket.error, will retry: %s', exc)
-                sleep(1)
+            except (IOError, socket.error), exc:
+                # In testing, errno is None
+                log.warning('Got %s, will retry: %s', exc.__class__.__name__, exc)
+                heartbeat_thread.join()
+
+    def heartbeat(self, connection):
+        log.debug('AMQP heartbeat thread alive')
+        while connection.connected:
+            connection.heartbeat_check()
+            sleep(1)
+        log.debug('AMQP heartbeat thread exiting')
 
     def publish(self, name, payload):
         with self.connection(self.__url, ssl=self.__connect_ssl) as connection:
@@ -93,3 +106,9 @@ class LwrExchange(object):
         else:
             key_prefix = "lwr_%s_" % self.__manager_name
         return key_prefix
+
+    def __start_heartbeat(self, queue_name, connection):
+        thread_name = "consume-heartbeat-%s" % (self.__queue_name(queue_name))
+        thread = threading.Thread(name=thread_name, target=self.heartbeat, args=(connection,))
+        thread.start()
+        return thread
