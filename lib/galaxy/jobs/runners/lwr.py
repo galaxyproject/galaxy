@@ -77,6 +77,22 @@ LWR_PARAM_SPECS = dict(
         map=specs.to_str_or_none,
         default=None,
     ),
+    # http://kombu.readthedocs.org/en/latest/reference/kombu.html#kombu.Producer.publish
+    amqp_publish_retry=dict(
+        map=specs.to_bool,
+        default=False,
+    ),
+    amqp_publish_priority=dict(
+        map=int,
+        valid=lambda x: 0 <= x and x <= 9,
+        default=0,
+    ),
+    # http://kombu.readthedocs.org/en/latest/reference/kombu.html#kombu.Exchange.delivery_mode
+    amqp_publish_delivery_mode=dict(
+        map=str,
+        valid=specs.is_in("transient", "persistent"),
+        default="persistent",
+    )
 )
 
 

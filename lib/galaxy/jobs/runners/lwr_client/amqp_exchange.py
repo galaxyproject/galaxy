@@ -39,6 +39,7 @@ class LwrExchange(object):
         manager_name,
         connect_ssl=None,
         timeout=DEFAULT_TIMEOUT,
+        publish_kwds={},
     ):
         """
         """
@@ -49,6 +50,7 @@ class LwrExchange(object):
         self.__connect_ssl = connect_ssl
         self.__exchange = kombu.Exchange(DEFAULT_EXCHANGE_NAME, DEFAULT_EXCHANGE_TYPE)
         self.__timeout = timeout
+        self.__publish_kwds = publish_kwds
 
     @property
     def url(self):
@@ -90,6 +92,7 @@ class LwrExchange(object):
                     exchange=self.__exchange,
                     declare=[self.__exchange],
                     routing_key=key,
+                    **self.__publish_kwds
                 )
 
     def connection(self, connection_string, **kwargs):

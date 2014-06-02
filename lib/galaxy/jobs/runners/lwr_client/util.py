@@ -75,6 +75,10 @@ def parse_amqp_connect_ssl_params(params):
     return ssl_params
 
 
+def parse_amqp_publish_kwds(params):
+    return filter_destination_params(params, "amqp_publish_")
+
+
 def filter_destination_params(destination_params, prefix):
     destination_params = destination_params or {}
     return dict([(key[len(prefix):], destination_params[key])
