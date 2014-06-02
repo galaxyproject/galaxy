@@ -8,6 +8,7 @@ from galaxy.jobs.command_factory import build_command
 from galaxy.tools.deps import dependencies
 from galaxy.util import string_as_bool_or_none
 from galaxy.util.bunch import Bunch
+from galaxy.util import specs
 
 import errno
 from time import sleep
@@ -34,6 +35,50 @@ GENERIC_REMOTE_ERROR = "Failed to communicate with remote job server."
 # url_for from web threads. https://gist.github.com/jmchilton/9098762
 DEFAULT_GALAXY_URL = "http://localhost:8080"
 
+LWR_PARAM_SPECS = dict(
+    transport=dict(
+        map=specs.to_str_or_none,
+        valid=specs.is_in("urllib", "curl", None),
+        default=None
+    ),
+    cache=dict(
+        map=specs.to_bool_or_none,
+        default=None,
+    ),
+    url=dict(
+        map=specs.to_str_or_none,
+        default=None,
+    ),
+    galaxy_url=dict(
+        map=specs.to_str_or_none,
+        default=DEFAULT_GALAXY_URL,
+    ),
+    manager=dict(
+        map=specs.to_str_or_none,
+        default=None,
+    ),
+    amqp_consumer_timeout=dict(
+        map=specs.to_float_or_none,
+        default=None,
+    ),
+    amqp_connect_ssl_ca_certs=dict(
+        map=specs.to_str_or_none,
+        default=None,
+    ),
+    amqp_connect_ssl_keyfile=dict(
+        map=specs.to_str_or_none,
+        default=None,
+    ),
+    amqp_connect_ssl_certfile=dict(
+        map=specs.to_str_or_none,
+        default=None,
+    ),
+    amqp_connect_ssl_cert_reqs=dict(
+        map=specs.to_str_or_none,
+        default=None,
+    ),
+)
+
 
 class LwrJobRunner( AsynchronousJobRunner ):
     """
@@ -41,28 +86,23 @@ class LwrJobRunner( AsynchronousJobRunner ):
     """
     runner_name = "LWRRunner"
 
-    def __init__( self, app, nworkers, transport=None, cache=None, url=None, galaxy_url=DEFAULT_GALAXY_URL, **kwds ):
+    def __init__( self, app, nworkers, **kwds ):
         """Start the job runner """
-        super( LwrJobRunner, self ).__init__( app, nworkers )
+        super( LwrJobRunner, self ).__init__( app, nworkers, runner_param_specs=LWR_PARAM_SPECS, **kwds )
+        transport = self.runner_params.transport
+        cache = self.runner_params.cache
+        url = self.runner_params.url
         self._init_worker_threads()
-        amqp_connect_ssl_args = {}
-        amqp_consumer_timeout = False
-        for kwd in kwds.keys():
-            if kwd.startswith('amqp_connect_ssl_'):
-                amqp_connect_ssl_args[kwd] = kwds[kwd]
         client_manager_kwargs = {
             'transport_type': transport,
             'cache': string_as_bool_or_none(cache),
             "url": url,
-            'amqp_connect_ssl_args': amqp_connect_ssl_args or None,
             'manager': kwds.get("manager", None),
         }
-        if 'amqp_consumer_timeout' in kwds:
-            if kwds['amqp_consumer_timeout'] == 'None':
-                client_manager_kwargs['amqp_consumer_timeout'] = None
-            else:
-                client_manager_kwargs['amqp_consumer_timeout'] = float(kwds['amqp_consumer_timeout'])
-        self.galaxy_url = galaxy_url
+        for kwd in self.runner_params.keys():
+            if kwd.startswith('amqp_'):
+                client_manager_kwargs[kwd] = self.runner_params[kwd]
+        self.galaxy_url = self.runner_params.galaxy_url
         self.client_manager = build_client_manager(**client_manager_kwargs)
         if url:
             self.client_manager.ensure_has_status_update_callback(self.__async_update)
