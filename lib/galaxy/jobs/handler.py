@@ -57,7 +57,7 @@ class JobHandlerQueue( object ):
         self.track_jobs_in_database = self.app.config.track_jobs_in_database
 
         # Initialize structures for handling job limits
-        self.__clear_user_job_count()
+        self.__clear_job_count()
 
         # Keep track of the pid that started the job manager, only it
         # has valid threads
@@ -232,7 +232,7 @@ class JobHandlerQueue( object ):
             except Empty:
                 pass
         # Ensure that we get new job counts on each iteration
-        self.__clear_user_job_count()
+        self.__clear_job_count()
         # Iterate over new and waiting jobs and look for any that are
         # ready to run
         new_waiting_jobs = []
@@ -330,7 +330,10 @@ class JobHandlerQueue( object ):
             self.job_wrappers[job.id].fail( failure_message )
             return JOB_ERROR
         # job is ready to run, check limits
-        state = self.__check_user_jobs( job, self.job_wrappers[job.id] )
+        # TODO: these checks should be refactored to minimize duplication and made more modular/pluggable
+        state = self.__check_destination_jobs( job, self.job_wrappers[job.id] )
+        if state == JOB_READY:
+            state = self.__check_user_jobs( job, self.job_wrappers[job.id] )
         if state == JOB_READY and self.app.config.enable_quotas:
             quota = self.app.quota_agent.get_quota( job.user )
             if quota is not None:
@@ -340,11 +343,15 @@ class JobHandlerQueue( object ):
                         return JOB_USER_OVER_QUOTA
                 except AssertionError, e:
                     pass  # No history, should not happen with an anon user
+        if state == JOB_READY:
+            # PASS.  increase usage by one job (if caching) so that multiple jobs aren't dispatched on this queue iteration
+            self.increase_running_job_count(job.user_id, self.job_wrappers[job.id].job_destination.id)
         return state
 
-    def __clear_user_job_count( self ):
+    def __clear_job_count( self ):
         self.user_job_count = None
         self.user_job_count_per_destination = None
+        self.total_job_count_per_destination = None
 
     def get_user_job_count(self, user_id):
         self.__cache_user_job_count()
@@ -404,14 +411,21 @@ class JobHandlerQueue( object ):
             self.user_job_count_per_destination = {}
 
     def increase_running_job_count(self, user_id, destination_id):
-        if self.user_job_count is None:
-            self.user_job_count = {}
-        if self.user_job_count_per_destination is None:
-            self.user_job_count_per_destination = {}
-        self.user_job_count[user_id] = self.user_job_count.get(user_id, 0) + 1
-        if user_id not in self.user_job_count_per_destination:
-            self.user_job_count_per_destination[user_id] = {}
-        self.user_job_count_per_destination[user_id][destination_id] = self.user_job_count_per_destination[user_id].get(destination_id, 0) + 1
+        if self.app.job_config.limits.registered_user_concurrent_jobs or \
+           self.app.job_config.limits.anonymous_user_concurrent_jobs or \
+           self.app.job_config.limits.destination_user_concurrent_jobs:
+            if self.user_job_count is None:
+                self.user_job_count = {}
+            if self.user_job_count_per_destination is None:
+                self.user_job_count_per_destination = {}
+            self.user_job_count[user_id] = self.user_job_count.get(user_id, 0) + 1
+            if user_id not in self.user_job_count_per_destination:
+                self.user_job_count_per_destination[user_id] = {}
+            self.user_job_count_per_destination[user_id][destination_id] = self.user_job_count_per_destination[user_id].get(destination_id, 0) + 1
+        if self.app.job_config.limits.destination_total_concurrent_jobs:
+            if self.total_job_count_per_destination is None:
+                self.total_job_count_per_destination = {}
+            self.total_job_count_per_destination[destination_id] = self.total_job_count_per_destination.get(destination_id, 0) + 1
 
     def __check_user_jobs( self, job, job_wrapper ):
         if job.user:
@@ -424,25 +438,23 @@ class JobHandlerQueue( object ):
             # If we pass the hard limit, also check the per-destination count
             id = job_wrapper.job_destination.id
             count_per_id = self.get_user_job_count_per_destination(job.user_id)
-            if id in self.app.job_config.limits.concurrent_jobs:
+            if id in self.app.job_config.limits.destination_user_concurrent_jobs:
                 count = count_per_id.get(id, 0)
                 # Check the user's number of dispatched jobs in the assigned destination id against the limit for that id
-                if count >= self.app.job_config.limits.concurrent_jobs[id]:
+                if count >= self.app.job_config.limits.destination_user_concurrent_jobs[id]:
                     return JOB_WAIT
             # If we pass the destination limit (if there is one), also check limits on any tags (if any)
             if job_wrapper.job_destination.tags:
                 for tag in job_wrapper.job_destination.tags:
                     # Check each tag for this job's destination
-                    if tag in self.app.job_config.limits.concurrent_jobs:
+                    if tag in self.app.job_config.limits.destination_user_concurrent_jobs:
                         # Only if there's a limit defined for this tag
                         count = 0
                         for id in [ d.id for d in self.app.job_config.get_destinations(tag) ]:
                             # Add up the aggregate job total for this tag
                             count += count_per_id.get(id, 0)
-                        if count >= self.app.job_config.limits.concurrent_jobs[tag]:
+                        if count >= self.app.job_config.limits.destination_user_concurrent_jobs[tag]:
                             return JOB_WAIT
-            # PASS.  increase usage by one job (if caching) so that multiple jobs aren't dispatched on this queue iteration
-            self.increase_running_job_count(job.user_id, id)
         elif job.galaxy_session:
             # Anonymous users only get the hard limit
             if self.app.job_config.limits.anonymous_user_concurrent_jobs:
@@ -454,6 +466,46 @@ class JobHandlerQueue( object ):
                     return JOB_WAIT
         else:
             log.warning( 'Job %s is not associated with a user or session so job concurrency limit cannot be checked.' % job.id )
+        return JOB_READY
+
+    def __cache_total_job_count_per_destination( self ):
+        # Cache the job count if necessary
+        if self.total_job_count_per_destination is None:
+            self.total_job_count_per_destination = {}
+            result = self.sa_session.execute(select([model.Job.table.c.destination_id, func.count(model.Job.table.c.destination_id).label('job_count')]) \
+                                            .where(and_(model.Job.table.c.state.in_((model.Job.states.QUEUED, model.Job.states.RUNNING)))) \
+                                            .group_by(model.Job.table.c.destination_id))
+            for row in result:
+                self.total_job_count_per_destination[row['destination_id']] = row['job_count']
+
+    def get_total_job_count_per_destination(self):
+        self.__cache_total_job_count_per_destination()
+        # Always use caching (at worst a job will have to wait one iteration,
+        # and this would be more fair anyway as it ensures FIFO scheduling,
+        # insofar as FIFO would be fair...)
+        return self.total_job_count_per_destination
+
+    def __check_destination_jobs( self, job, job_wrapper ):
+        if self.app.job_config.limits.destination_total_concurrent_jobs:
+            id = job_wrapper.job_destination.id
+            count_per_id = self.get_total_job_count_per_destination()
+            if id in self.app.job_config.limits.destination_total_concurrent_jobs:
+                count = count_per_id.get(id, 0)
+                # Check the number of dispatched jobs in the assigned destination id against the limit for that id
+                if count >= self.app.job_config.limits.destination_total_concurrent_jobs[id]:
+                    return JOB_WAIT
+            # If we pass the destination limit (if there is one), also check limits on any tags (if any)
+            if job_wrapper.job_destination.tags:
+                for tag in job_wrapper.job_destination.tags:
+                    # Check each tag for this job's destination
+                    if tag in self.app.job_config.limits.destination_total_concurrent_jobs:
+                        # Only if there's a limit defined for this tag
+                        count = 0
+                        for id in [ d.id for d in self.app.job_config.get_destinations(tag) ]:
+                            # Add up the aggregate job total for this tag
+                            count += count_per_id.get(id, 0)
+                        if count >= self.app.job_config.limits.destination_total_concurrent_jobs[tag]:
+                            return JOB_WAIT
         return JOB_READY
 
     def put( self, job_id, tool_id ):

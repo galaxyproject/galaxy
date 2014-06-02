@@ -211,16 +211,21 @@ class JobConfiguration( object ):
                             walltime=None,
                             walltime_delta=None,
                             output_size=None,
-                            concurrent_jobs={})
+                            destination_user_concurrent_jobs={},
+                            destination_total_concurrent_jobs={})
 
         # Parse job limits
         limits = root.find('limits')
         if limits is not None:
             for limit in self.__findall_with_required(limits, 'limit', ('type',)):
                 type = limit.get('type')
-                if type == 'concurrent_jobs':
+                # concurrent_jobs renamed to destination_user_concurrent_jobs in job_conf.xml 
+                if type in ( 'destination_user_concurrent_jobs', 'concurrent_jobs', 'destination_total_concurrent_jobs' ):
                     id = limit.get('tag', None) or limit.get('id')
-                    self.limits.concurrent_jobs[id] = int(limit.text)
+                    if type == 'destination_total_concurrent_jobs':
+                        self.limits.destination_total_concurrent_jobs[id] = int(limit.text)
+                    else:
+                        self.limits.destination_user_concurrent_jobs[id] = int(limit.text)
                 elif limit.text:
                     self.limits.__dict__[type] = types.get(type, str)(limit.text)
 
@@ -287,7 +292,8 @@ class JobConfiguration( object ):
                             walltime=self.app.config.job_walltime,
                             walltime_delta=self.app.config.job_walltime_delta,
                             output_size=self.app.config.output_size_limit,
-                            concurrent_jobs={})
+                            destination_user_concurrent_jobs={},
+                            destination_total_concurrent_jobs={})
 
         log.debug('Done loading job configuration')
 
