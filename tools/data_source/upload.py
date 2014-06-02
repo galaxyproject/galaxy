@@ -241,7 +241,11 @@ def add_file( dataset, registry, json_file, output_path ):
                         dataset.name = uncompressed_name
                 data_type = 'zip'
         if not data_type:
-            if check_binary( dataset.path ):
+            # TODO refactor this logic.  check_binary isn't guaranteed to be
+            # correct since it only looks at whether the first 100 chars are
+            # printable or not.  If someone specifies a known unsniffable
+            # binary datatype and check_binary fails, the file gets mangled.
+            if check_binary( dataset.path ) or Binary.is_ext_unsniffable(dataset.file_type):
                 # We have a binary dataset, but it is not Bam, Sff or Pdf
                 data_type = 'binary'
                 #binary_ok = False
