@@ -8,6 +8,11 @@ from base.interactor import GalaxyInteractorApi as BaseInteractor
 
 from .api_util import get_master_api_key
 from .api_util import get_user_api_key
+from .api_asserts import (
+    assert_status_code_is,
+    assert_has_keys,
+    assert_error_code_is,
+)
 
 from urllib import urlencode
 
@@ -73,25 +78,13 @@ class ApiTestCase( TwillTestCase ):
         return self.galaxy_interactor.post( *args, **kwds )
 
     def _assert_status_code_is( self, response, expected_status_code ):
-        response_status_code = response.status_code
-        if expected_status_code != response_status_code:
-            try:
-                body = response.json()
-            except Exception:
-                body = "INVALID JSON RESPONSE <%s>" % response.content
-            assertion_message_template = "Request status code (%d) was not expected value %d. Body was %s"
-            assertion_message = assertion_message_template % ( response_status_code, expected_status_code, body )
-            raise AssertionError( assertion_message )
+        assert_status_code_is( response, expected_status_code )
 
     def _assert_has_keys( self, response, *keys ):
-        for key in keys:
-            assert key in response, "Response [%s] does not contain key [%s]" % ( response, key )
+        assert_has_keys( response, *keys )
 
     def _assert_error_code_is( self, response, error_code ):
-        if hasattr( response, "json" ):
-            response = response.json()
-        self._assert_has_keys( response, "err_code" )
-        self.assertEquals( response[ "err_code" ], int( error_code ) )
+        assert_error_code_is( response, error_code )
 
     def _random_key( self ):  # Used for invalid request testing...
         return "1234567890123456"

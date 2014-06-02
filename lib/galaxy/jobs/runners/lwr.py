@@ -5,6 +5,7 @@ from galaxy.jobs.runners import AsynchronousJobState, AsynchronousJobRunner
 from galaxy.jobs import ComputeEnvironment
 from galaxy.jobs import JobDestination
 from galaxy.jobs.command_factory import build_command
+from galaxy.tools.deps import dependencies
 from galaxy.util import string_as_bool_or_none
 from galaxy.util.bunch import Bunch
 
@@ -27,6 +28,7 @@ __all__ = [ 'LwrJobRunner' ]
 
 NO_REMOTE_GALAXY_FOR_METADATA_MESSAGE = "LWR misconfiguration - LWR client configured to set metadata remotely, but remote LWR isn't properly configured with a galaxy_home directory."
 NO_REMOTE_DATATYPES_CONFIG = "LWR client is configured to use remote datatypes configuration when setting metadata externally, but LWR is not configured with this information. Defaulting to datatypes_conf.xml."
+GENERIC_REMOTE_ERROR = "Failed to communicate with remote job server."
 
 # Is there a good way to infer some default for this? Can only use
 # url_for from web threads. https://gist.github.com/jmchilton/9098762
@@ -39,15 +41,33 @@ class LwrJobRunner( AsynchronousJobRunner ):
     """
     runner_name = "LWRRunner"
 
-    def __init__( self, app, nworkers, transport=None, cache=None, url=None, galaxy_url=DEFAULT_GALAXY_URL ):
+    def __init__( self, app, nworkers, transport=None, cache=None, url=None, galaxy_url=DEFAULT_GALAXY_URL, **kwds ):
         """Start the job runner """
         super( LwrJobRunner, self ).__init__( app, nworkers )
-        self.async_status_updates = dict()
-        self._init_monitor_thread()
         self._init_worker_threads()
-        client_manager_kwargs = {'transport_type': transport, 'cache': string_as_bool_or_none(cache), "url": url}
+        amqp_connect_ssl_args = {}
+        amqp_consumer_timeout = False
+        for kwd in kwds.keys():
+            if kwd.startswith('amqp_connect_ssl_'):
+                amqp_connect_ssl_args[kwd] = kwds[kwd]
+        client_manager_kwargs = {
+            'transport_type': transport,
+            'cache': string_as_bool_or_none(cache),
+            "url": url,
+            'amqp_connect_ssl_args': amqp_connect_ssl_args or None,
+            'manager': kwds.get("manager", None),
+        }
+        if 'amqp_consumer_timeout' in kwds:
+            if kwds['amqp_consumer_timeout'] == 'None':
+                client_manager_kwargs['amqp_consumer_timeout'] = None
+            else:
+                client_manager_kwargs['amqp_consumer_timeout'] = float(kwds['amqp_consumer_timeout'])
         self.galaxy_url = galaxy_url
         self.client_manager = build_client_manager(**client_manager_kwargs)
+        if url:
+            self.client_manager.ensure_has_status_update_callback(self.__async_update)
+        else:
+            self._init_monitor_thread()
 
     def url_to_destination( self, url ):
         """Convert a legacy URL to a job destination"""
@@ -56,18 +76,6 @@ class LwrJobRunner( AsynchronousJobRunner ):
     def check_watched_item(self, job_state):
         try:
             client = self.get_client_from_state(job_state)
-
-            if hasattr(self.client_manager, 'ensure_has_status_update_callback'):
-                # Message queue implementation.
-
-                # TODO: Very hacky now, refactor after Dannon merges in his
-                # message queue work, runners need the ability to disable
-                # check_watched_item like this and instead a callback needs to
-                # be issued post job recovery allowing a message queue
-                # consumer to be setup.
-                self.client_manager.ensure_has_status_update_callback(self.__async_update)
-                return job_state
-
             status = client.get_status()
         except Exception:
             # An orphaned job was put into the queue at app startup, so remote server went down
@@ -81,6 +89,9 @@ class LwrJobRunner( AsynchronousJobRunner ):
         if lwr_status == "complete":
             self.mark_as_finished(job_state)
             return None
+        if lwr_status == "failed":
+            self.fail_job(job_state)
+            return None
         if lwr_status == "running" and not job_state.running:
             job_state.running = True
             job_state.job_wrapper.change_state( model.Job.states.RUNNING )
@@ -88,26 +99,9 @@ class LwrJobRunner( AsynchronousJobRunner ):
 
     def __async_update( self, full_status ):
         job_id = full_status[ "job_id" ]
-        job_state = self.__find_watched_job( job_id )
-        if not job_state:
-            # Probably finished too quickly, sleep and try again.
-            # Kind of a hack, why does monitor queue need to no wait
-            # get and sleep instead of doing a busy wait that would
-            # respond immediately.
-            sleep( 2 )
-            job_state = self.__find_watched_job( job_id )
-        if not job_state:
-            log.warn( "Failed to find job corresponding to final status %s in %s" % ( full_status, self.watched ) )
-        else:
-            self.__update_job_state_for_lwr_status(job_state, full_status["status"])
-
-    def __find_watched_job( self, job_id ):
-        found_job = None
-        for async_job_state in self.watched:
-            if str( async_job_state.job_id ) == job_id:
-                found_job = async_job_state
-                break
-        return found_job
+        job, job_wrapper = self.app.job_manager.job_handler.job_queue.job_pair_for_id( job_id )
+        job_state = self.__job_state( job, job_wrapper )
+        self.__update_job_state_for_lwr_status(job_state, full_status["status"])
 
     def queue_job(self, job_wrapper):
         job_destination = job_wrapper.job_destination
@@ -118,9 +112,7 @@ class LwrJobRunner( AsynchronousJobRunner ):
             return
 
         try:
-            dependency_resolution = LwrJobRunner.__dependency_resolution( client )
-            remote_dependency_resolution = dependency_resolution == "remote"
-            requirements = job_wrapper.tool.requirements if remote_dependency_resolution else []
+            dependencies_description = LwrJobRunner.__dependencies_description( client, job_wrapper )
             rewrite_paths = not LwrJobRunner.__rewrite_parameters( client )
             unstructured_path_rewrites = {}
             if compute_environment:
@@ -133,7 +125,8 @@ class LwrJobRunner( AsynchronousJobRunner ):
                 working_directory=job_wrapper.working_directory,
                 tool=job_wrapper.tool,
                 config_files=job_wrapper.extra_filenames,
-                requirements=requirements,
+                dependencies_description=dependencies_description,
+                env=client.env,
                 rewrite_paths=rewrite_paths,
                 arbitrary_files=unstructured_path_rewrites,
             )
@@ -172,7 +165,6 @@ class LwrJobRunner( AsynchronousJobRunner ):
             job_wrapper.prepare( **prepare_kwds )
             self.__prepare_input_files_locally(job_wrapper)
             remote_metadata = LwrJobRunner.__remote_metadata( client )
-            remote_work_dir_copy = LwrJobRunner.__remote_work_dir_copy( client )
             dependency_resolution = LwrJobRunner.__dependency_resolution( client )
             metadata_kwds = self.__build_metadata_configuration(client, job_wrapper, remote_metadata, remote_job_config)
             remote_command_params = dict(
@@ -184,7 +176,7 @@ class LwrJobRunner( AsynchronousJobRunner ):
                 self,
                 job_wrapper=job_wrapper,
                 include_metadata=remote_metadata,
-                include_work_dir_outputs=remote_work_dir_copy,
+                include_work_dir_outputs=False,
                 remote_command_params=remote_command_params,
             )
         except Exception:
@@ -222,14 +214,15 @@ class LwrJobRunner( AsynchronousJobRunner ):
         for key, value in params.iteritems():
             if value:
                 params[key] = model.User.expand_user_properties( job_wrapper.get_job().user, value )
-        return self.get_client( params, job_id )
+        env = getattr( job_wrapper.job_destination, "env", [] )
+        return self.get_client( params, job_id, env )
 
     def get_client_from_state(self, job_state):
         job_destination_params = job_state.job_destination.params
         job_id = job_state.job_id
         return self.get_client( job_destination_params, job_id )
 
-    def get_client( self, job_destination_params, job_id ):
+    def get_client( self, job_destination_params, job_id, env=[] ):
         # Cannot use url_for outside of web thread.
         #files_endpoint = url_for( controller="job_files", job_id=encoded_job_id )
 
@@ -243,6 +236,7 @@ class LwrJobRunner( AsynchronousJobRunner ):
         get_client_kwds = dict(
             job_id=str( job_id ),
             files_endpoint=files_endpoint,
+            env=env
         )
         return self.client_manager.get_client( job_destination_params, **get_client_kwds )
 
@@ -273,7 +267,7 @@ class LwrJobRunner( AsynchronousJobRunner ):
             if failed:
                 job_wrapper.fail("Failed to find or download one or more job outputs from remote server.", exception=True)
         except Exception:
-            message = "Failed to communicate with remote job server."
+            message = GENERIC_REMOTE_ERROR
             job_wrapper.fail( message, exception=True )
             log.exception("failure finishing job %d" % job_wrapper.job_id)
             return
@@ -291,7 +285,7 @@ class LwrJobRunner( AsynchronousJobRunner ):
         Seperated out so we can use the worker threads for it.
         """
         self.stop_job( self.sa_session.query( self.app.model.Job ).get( job_state.job_wrapper.job_id ) )
-        job_state.job_wrapper.fail( job_state.fail_message )
+        job_state.job_wrapper.fail( getattr( job_state, "fail_message", GENERIC_REMOTE_ERROR ) )
 
     def check_pid( self, pid ):
         try:
@@ -338,12 +332,8 @@ class LwrJobRunner( AsynchronousJobRunner ):
 
     def recover( self, job, job_wrapper ):
         """Recovers jobs stuck in the queued/running state when Galaxy started"""
-        job_state = AsynchronousJobState()
-        job_state.job_id = str( job.get_job_runner_external_id() )
-        job_state.runner_url = job_wrapper.get_job_runner_url()
-        job_state.job_destination = job_wrapper.job_destination
+        job_state = self.__job_state( job, job_wrapper )
         job_wrapper.command_line = job.get_command_line()
-        job_state.job_wrapper = job_wrapper
         state = job.get_state()
         if state in [model.Job.states.RUNNING, model.Job.states.QUEUED]:
             log.debug( "(LWR/%s) is still in running state, adding to the LWR queue" % ( job.get_id()) )
@@ -355,14 +345,16 @@ class LwrJobRunner( AsynchronousJobRunner ):
         super( LwrJobRunner, self ).shutdown()
         self.client_manager.shutdown()
 
+    def __job_state( self, job, job_wrapper ):
+        job_state = AsynchronousJobState()
+        job_state.job_id = str( job.get_job_runner_external_id() )
+        job_state.runner_url = job_wrapper.get_job_runner_url()
+        job_state.job_destination = job_wrapper.job_destination
+        job_state.job_wrapper = job_wrapper
+        return job_state
+
     def __client_outputs( self, client, job_wrapper ):
-        remote_work_dir_copy = LwrJobRunner.__remote_work_dir_copy( client )
-        if not remote_work_dir_copy:
-            work_dir_outputs = self.get_work_dir_outputs( job_wrapper )
-        else:
-            # They have already been copied over to look like regular outputs remotely,
-            # no need to handle them differently here.
-            work_dir_outputs = []
+        work_dir_outputs = self.get_work_dir_outputs( job_wrapper )
         output_files = self.get_output_files( job_wrapper )
         client_outputs = ClientOutputs(
             working_directory=job_wrapper.working_directory,
@@ -371,6 +363,19 @@ class LwrJobRunner( AsynchronousJobRunner ):
             version_file=job_wrapper.get_version_string_path(),
         )
         return client_outputs
+
+    @staticmethod
+    def __dependencies_description( lwr_client, job_wrapper ):
+        dependency_resolution = LwrJobRunner.__dependency_resolution( lwr_client )
+        remote_dependency_resolution = dependency_resolution == "remote"
+        if not remote_dependency_resolution:
+            return None
+        requirements = job_wrapper.tool.requirements or []
+        installed_tool_dependencies = job_wrapper.tool.installed_tool_dependencies or []
+        return dependencies.DependenciesDescription(
+            requirements=requirements,
+            installed_tool_dependencies=installed_tool_dependencies,
+        )
 
     @staticmethod
     def __dependency_resolution( lwr_client ):
@@ -383,16 +388,6 @@ class LwrJobRunner( AsynchronousJobRunner ):
     def __remote_metadata( lwr_client ):
         remote_metadata = string_as_bool_or_none( lwr_client.destination_params.get( "remote_metadata", False ) )
         return remote_metadata
-
-    @staticmethod
-    def __remote_work_dir_copy( lwr_client ):
-        # Right now remote metadata handling assumes from_work_dir outputs
-        # have been copied over before it runs. So do that remotely. This is
-        # not the default though because adding it to the command line is not
-        # cross-platform (no cp on Windows) and its un-needed work outside
-        # the context of metadata settting (just as easy to download from
-        # either place.)
-        return LwrJobRunner.__remote_metadata( lwr_client )
 
     @staticmethod
     def __use_remote_datatypes_conf( lwr_client ):
@@ -425,7 +420,21 @@ class LwrJobRunner( AsynchronousJobRunner ):
             outputs_directory = remote_job_config['outputs_directory']
             configs_directory = remote_job_config['configs_directory']
             working_directory = remote_job_config['working_directory']
+            # For metadata calculation, we need to build a list of of output
+            # file objects with real path indicating location on Galaxy server
+            # and false path indicating location on compute server. Since the
+            # LWR disables from_work_dir copying as part of the job command
+            # line we need to take the list of output locations on the LWR
+            # server (produced by self.get_output_files(job_wrapper)) and for
+            # each work_dir output substitute the effective path on the LWR
+            # server relative to the remote working directory as the
+            # false_path to send the metadata command generation module.
+            work_dir_outputs = self.get_work_dir_outputs(job_wrapper, job_working_directory=working_directory)
             outputs = [Bunch(false_path=os.path.join(outputs_directory, os.path.basename(path)), real_path=path) for path in self.get_output_files(job_wrapper)]
+            for output in outputs:
+                for lwr_workdir_path, real_path in work_dir_outputs:
+                    if real_path == output.real_path:
+                        output.false_path = lwr_workdir_path
             metadata_kwds['output_fnames'] = outputs
             metadata_kwds['compute_tmp_dir'] = working_directory
             metadata_kwds['config_root'] = remote_galaxy_home

@@ -3,7 +3,6 @@ import os
 import re
 import test_db_util
 import time
-import urllib
 
 import galaxy.model as model
 import galaxy.model.tool_shed_install as install_model
@@ -39,7 +38,6 @@ class InstallTestRepository( TwillTestCase ):
         # TODO: Figure out a way to alter these attributes during tests.
         self.galaxy_tool_dependency_dir = os.environ.get( 'GALAXY_INSTALL_TEST_TOOL_DEPENDENCY_DIR' )
         self.shed_tools_dict = {}
-        self.home()
 
     def initiate_installation_process( self, install_tool_dependencies=False, install_repository_dependencies=True, no_changes=True,
                                        new_tool_panel_section_label=None ):
@@ -73,22 +71,22 @@ class InstallTestRepository( TwillTestCase ):
         encoded_repository_id = repository_info_dict[ 'repository_id' ]
         tool_shed_url = repository_info_dict[ 'tool_shed_url' ]
         # Pass galaxy_url to the tool shed in order to set cookies and redirects correctly.
-        install_params = urllib.urlencode( dict( repository_ids=encoded_repository_id,
-                                                 changeset_revisions=changeset_revision,
-                                                 galaxy_url=self.url ) )
+        install_params = dict( repository_ids=encoded_repository_id,
+                               changeset_revisions=changeset_revision,
+                               galaxy_url=self.url )
         # If the tool shed does not have the same hostname as the Galaxy server being used for these tests,
         # twill will not carry over previously set cookies for the Galaxy server when following the
         # install_repositories_by_revision redirect, so we have to include 403 in the allowed HTTP
         # status codes and log in again.
-        url = '%s/repository/install_repositories_by_revision?%s' % ( tool_shed_url, install_params )
-        self.visit_url( url, allowed_codes=[ 200, 403 ] )
+        url = '%s/repository/install_repositories_by_revision' % tool_shed_url
+        self.visit_url( url, params=install_params, allowed_codes=[ 200, 403 ] )
         self.logout()
         self.login( email='test@bx.psu.edu', username='test' )
-        install_params = urllib.urlencode( dict( repository_ids=encoded_repository_id,
-                                                 changeset_revisions=changeset_revision,
-                                                 tool_shed_url=tool_shed_url ) )
-        url = '/admin_toolshed/prepare_for_install?%s' % install_params
-        self.visit_url( url )
+        install_params = dict( repository_ids=encoded_repository_id,
+                               changeset_revisions=changeset_revision,
+                               tool_shed_url=tool_shed_url )
+        url = '/admin_toolshed/prepare_for_install'
+        self.visit_url( url, params=install_params )
         # This section is tricky, due to the way twill handles form submission. The tool dependency checkbox needs to
         # be hacked in through tc.browser, putting the form field in kwd doesn't work.
         form = tc.browser.get_form( 'select_tool_panel_section' )
@@ -124,13 +122,6 @@ class InstallTestRepository( TwillTestCase ):
                 log.debug( 'No field %s in form %s, discarding from return value.' % ( str( control ), str( form_id ) ) )
                 del( kwd[ field_name ] )
         return kwd
-
-    def visit_url( self, url, allowed_codes=[ 200 ] ):
-        new_url = tc.go( url )
-        return_code = tc.browser.get_code()
-        assert return_code in allowed_codes, 'Invalid HTTP return code %s, allowed codes: %s' % \
-            ( return_code, ', '.join( str( code ) for code in allowed_codes ) )
-        return new_url
 
     def wait_for_repository_installation( self, repository_ids ):
         final_states = [ install_model.ToolShedRepository.installation_status.ERROR,

@@ -11,6 +11,7 @@ from galaxy.tools.actions import upload_common
 from galaxy.tools.parameters import params_to_incoming
 from galaxy.tools.parameters import visit_input_values
 from galaxy.tools.parameters.basic import DataToolParameter
+from galaxy.tools.parameters.basic import DataCollectionToolParameter
 from galaxy.tools.parameters.basic import UnvalidatedValue
 from galaxy.util.bunch import Bunch
 from galaxy.util.hash_util import is_hashable
@@ -105,33 +106,45 @@ class ToolRunner( BaseUIController ):
                                     **vars )
 
     @web.expose
-    def rerun( self, trans, id=None, from_noframe=None, **kwd ):
+    def rerun( self, trans, id=None, from_noframe=None, job_id=None, **kwd ):
         """
         Given a HistoryDatasetAssociation id, find the job and that created
         the dataset, extract the parameters, and display the appropriate tool
         form with parameters already filled in.
         """
-        if not id:
-            error( "'id' parameter is required" );
-        try:
-            id = int( id )
-
-        except:
-            # it's not an un-encoded id, try to parse as encoded
+        if job_id:
             try:
-                id = trans.security.decode_id( id )
+                job_id = trans.security.decode_id( job_id )
+                job = trans.sa_session.query( trans.app.model.Job ).get( job_id )
             except:
-                error( "Invalid value for 'id' parameter" )
-
-        # Get the dataset object
-        data = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( id )
-        #only allow rerunning if user is allowed access to the dataset.
-        if not ( trans.user_is_admin() or trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), data.dataset ) ):
-            error( "You are not allowed to access this dataset" )
-        # Get the associated job, if any.
-        job = data.creating_job
-        if not job:
-            raise Exception("Failed to get job information for dataset hid %d" % data.hid)
+                error( "Invalid value for 'job_id' parameter" )
+            if not trans.user_is_admin():
+                for data_assoc in job.output_datasets:
+                    #only allow rerunning if user is allowed access to the dataset.
+                    if not trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), data_assoc.dataset.dataset ):
+                        error( "You are not allowed to rerun this job" )
+            param_error_text = "Failed to get parameters for job id %d " % job_id
+        else:
+            if not id:
+                error( "'id' parameter is required" );
+            try:
+                id = int( id )
+            except:
+                # it's not an un-encoded id, try to parse as encoded
+                try:
+                    id = trans.security.decode_id( id )
+                except:
+                    error( "Invalid value for 'id' parameter" )
+            # Get the dataset object
+            data = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( id )
+            #only allow rerunning if user is allowed access to the dataset.
+            if not ( trans.user_is_admin() or trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), data.dataset ) ):
+                error( "You are not allowed to access this dataset" )
+            # Get the associated job, if any.
+            job = data.creating_job
+            if not job:
+                raise Exception("Failed to get job information for dataset hid %d" % data.hid)
+            param_error_text = "Failed to get parameters for dataset id %d " % data.id
         # Get the tool object
         tool_id = job.tool_id
         tool_version = job.tool_version
@@ -171,7 +184,7 @@ class ToolRunner( BaseUIController ):
         try:
             params_objects = job.get_param_values( trans.app, ignore_errors = True )
         except:
-            raise Exception( "Failed to get parameters for dataset id %d " % data.id )
+            raise Exception( param_error_text )
         upgrade_messages = tool.check_and_update_param_values( params_objects, trans, update_values=False )
         # Need to remap dataset parameters. Job parameters point to original
         # dataset used; parameter should be the analygous dataset in the
@@ -186,6 +199,15 @@ class ToolRunner( BaseUIController ):
                 if source_hda not in hda_source_dict or source_hda.hid == hda.hid:
                     hda_source_dict[ source_hda ] = hda
                 source_hda = source_hda.copied_from_history_dataset_association
+        # Ditto for dataset collections.
+        hdca_source_dict = {}
+        for hdca in history.dataset_collections:
+            source_hdca = hdca.copied_from_history_dataset_collection_association
+            while source_hdca:
+                if source_hdca not in hdca_source_dict or source_hdca.hid == hdca.hid:
+                    hdca_source_dict[ source_hdca ] = hdca
+                source_hdca = source_hdca.copied_from_history_dataset_collection_association
+
         # Unpack unvalidated values to strings, they'll be validated when the
         # form is submitted (this happens when re-running a job that was
         # initially run by a workflow)
@@ -210,6 +232,10 @@ class ToolRunner( BaseUIController ):
                     return values
                 if is_hashable( value ) and value not in history.datasets and value in hda_source_dict:
                     return hda_source_dict[ value ]
+            elif isinstance( input, DataCollectionToolParameter ):
+                if is_hashable( value ) and value not in history.dataset_collections and value in hdca_source_dict:
+                    return hdca_source_dict[ value ]
+
         visit_input_values( tool.inputs, params_objects, rerun_callback )
         # Create a fake tool_state for the tool, with the parameters values
         state = tool.new_state( trans )

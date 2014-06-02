@@ -1075,7 +1075,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         if self.galaxy_session.user:
             history.user = self.galaxy_session.user
         # Track genome_build with history
-        history.genome_build = util.dbnames.default_value
+        history.genome_build = self.app.genome_builds.default_value
         # Set the user's default history permissions
         self.app.security_agent.history_set_default_permissions( history )
         # Save
@@ -1238,19 +1238,8 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         Returns the builds defined by galaxy and the builds defined by
         the user (chromInfo in history).
         """
-        dbnames = list()
-        if self.history:
-            datasets = self.sa_session.query( self.app.model.HistoryDatasetAssociation ) \
-                                      .filter_by( deleted=False, history_id=self.history.id, extension="len" )
-            for dataset in datasets:
-                dbnames.append( (dataset.dbkey, dataset.name) )
-        user = self.get_user()
-        if user and 'dbkeys' in user.preferences:
-            user_keys = from_json_string( user.preferences['dbkeys'] )
-            for key, chrom_dict in user_keys.iteritems():
-                dbnames.append((key, "%s (%s) [Custom]" % (chrom_dict['name'], key) ))
-        dbnames.extend( util.dbnames )
-        return dbnames
+        #FIXME: This method should be removed
+        return self.app.genome_builds.get_genome_build_names( trans=self )
 
     @property
     def ucsc_builds( self ):
@@ -1324,7 +1313,7 @@ class FormInput( object ):
     """
     Simple class describing a form input element
     """
-    def __init__( self, type, name, label, value=None, error=None, help=None, use_label=True ):
+    def __init__( self, type, name, label, value=None, error=None, help=None, use_label=True, extra_attributes={}, **kwargs ):
         self.type = type
         self.name = name
         self.label = label
@@ -1332,6 +1321,22 @@ class FormInput( object ):
         self.error = error
         self.help = help
         self.use_label = use_label
+        self.extra_attributes = extra_attributes
+
+
+class DatalistInput( FormInput ):
+    """ Data list input """
+
+    def __init__( self, name, *args, **kwargs ):
+        if 'extra_attributes' not in kwargs:
+            kwargs[ 'extra_attributes' ] = {}
+        kwargs[ 'extra_attributes' ][ 'list' ] = name
+        FormInput.__init__( self, None, name, *args, **kwargs )
+        self.options = kwargs.get( 'options', {} )
+
+    def body_html( self ):
+        options = "".join( [ "<option value='%s'>%s</option>" % ( key, value ) for key, value in self.options.iteritems() ] )
+        return """<datalist id="%s">%s</datalist>""" % ( self.name, options )
 
 
 class SelectInput( FormInput ):

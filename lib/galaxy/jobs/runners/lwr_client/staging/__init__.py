@@ -30,8 +30,11 @@ class ClientJobDescription(object):
         be transferred to remote server).
     working_directory : str
         Local path created by Galaxy for running this job.
-    requirements : list
-        List of requirements for tool execution.
+    dependencies_description : list
+        galaxy.tools.deps.dependencies.DependencyDescription object describing
+        tool dependency context for remote depenency resolution.
+    env: list
+        List of dict object describing environment variables to populate.
     version_file : str
         Path to version file expected on the client server
     arbitrary_files : dict()
@@ -53,7 +56,8 @@ class ClientJobDescription(object):
         input_files,
         client_outputs,
         working_directory,
-        requirements,
+        dependencies_description=None,
+        env=[],
         arbitrary_files=None,
         rewrite_paths=True,
     ):
@@ -63,7 +67,8 @@ class ClientJobDescription(object):
         self.input_files = input_files
         self.client_outputs = client_outputs
         self.working_directory = working_directory
-        self.requirements = requirements
+        self.dependencies_description = dependencies_description
+        self.env = env
         self.rewrite_paths = rewrite_paths
         self.arbitrary_files = arbitrary_files or {}
 
@@ -74,6 +79,15 @@ class ClientJobDescription(object):
     @property
     def version_file(self):
         return self.client_outputs.version_file
+
+    @property
+    def tool_dependencies(self):
+        if not self.remote_dependency_resolution:
+            return None
+        return dict(
+            requirements=(self.tool.requirements or []),
+            installed_tool_dependencies=(self.tool.installed_tool_dependencies or [])
+        )
 
 
 class ClientOutputs(object):
@@ -156,5 +170,5 @@ class LwrOutputs(object):
             return join(output_directory, self.path_helper.local_name(name))
 
         files_directory = "%s_files%s" % (basename(output_file)[0:-len(".dat")], self.path_helper.separator)
-        names = filter(lambda o: o.startswith(files_directory),  self.output_directory_contents)
+        names = filter(lambda o: o.startswith(files_directory), self.output_directory_contents)
         return dict(map(lambda name: (local_path(name), name), names))

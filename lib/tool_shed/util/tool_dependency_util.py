@@ -8,7 +8,7 @@ from galaxy.model.orm import or_
 import tool_shed.util.shed_util_common as suc
 import tool_shed.repository_types.util as rt_util
 from tool_shed.util import xml_util
-from tool_shed.galaxy_install.tool_dependencies import fabric_util
+from tool_shed.galaxy_install.tool_dependencies import td_common_util
 
 log = logging.getLogger( __name__ )
 
@@ -565,10 +565,10 @@ def set_tool_dependency_attributes( app, tool_dependency, status, error_message=
 def sync_database_with_file_system( app, tool_shed_repository, tool_dependency_name, tool_dependency_version,
                                     tool_dependency_install_dir, tool_dependency_type='package' ):
     """
-    The installation directory defined by the received tool_dependency_install_dir exists, so check for the presence
-    of fabric_util.INSTALLATION_LOG.  If the files exists, we'll assume the tool dependency is installed, but not
-    necessarily successfully (it could be in an error state on disk.  However, we can justifiably assume here that no
-    matter the state, an associated database record will exist.
+    The installation directory defined by the received tool_dependency_install_dir exists, so check for
+    the presence of INSTALLATION_LOG.  If the files exists, we'll assume the tool dependency is installed,
+    but not necessarily successfully (it could be in an error state on disk.  However, we can justifiably
+    assume here that no matter the state, an associated database record will exist.
     """
     # This method should be reached very rarely.  It implies that either the Galaxy environment became corrupted (i.e.,
     # the database records for installed tool dependencies is not synchronized with tool dependencies on disk) or the Tool
@@ -596,12 +596,12 @@ def sync_database_with_file_system( app, tool_shed_repository, tool_dependency_n
             ( str( tool_dependency.name ), str( tool_dependency.version ), str( tool_dependency.status ) ) )
     else:
         # We have a pre-existing installation directory on the file system, but our associated database record is
-        # in a state that allowed us to arrive here - see the comment in common_install_util.handle_tool_dependencies().
-        # At this point, we'll inspect the installation directory to see if we have a "proper installation" and
-        # if so, synchronize the database record rather than reinstalling the dependency if we're "running_functional_tests".
-        # If we're not "running_functional_tests, we'll set the tool dependency's installation status to ERROR.
+        # in a state that allowed us to arrive here.  At this point, we'll inspect the installation directory to
+        # see if we have a "proper installation" and if so, synchronize the database record rather than reinstalling
+        # the dependency if we're "running_functional_tests".  If we're not "running_functional_tests, we'll set
+        # the tool dependency's installation status to ERROR.
         tool_dependency_installation_directory_contents = os.listdir( tool_dependency_install_dir )
-        if fabric_util.INSTALLATION_LOG in tool_dependency_installation_directory_contents:
+        if td_common_util.INSTALLATION_LOG in tool_dependency_installation_directory_contents:
             # Since this tool dependency's installation directory contains an installation log, we consider it to be
             # installed.  In some cases the record may be missing from the database due to some activity outside of
             # the control of the Tool Shed.  Since a new record was created for it and we don't know the state of the
@@ -624,7 +624,7 @@ def sync_database_with_file_system( app, tool_shed_repository, tool_dependency_n
                 ( str( tool_dependency_install_dir ),
                   str( tool_dependency_name ),
                   str( tool_dependency_version ),
-                  str( fabric_util.INSTALLATION_LOG ) )
+                  str( td_common_util.INSTALLATION_LOG ) )
             error_message += ' is missing.  This indicates an installation error so the tool dependency is being'
             error_message += ' prepared for re-installation.'
             print error_message
@@ -643,7 +643,7 @@ def sync_database_with_file_system( app, tool_shed_repository, tool_dependency_n
 def tool_dependency_is_orphan( type, name, version, tools ):
     """
     Determine if the combination of the received type, name and version is defined in the <requirement> tag for at least one tool in the
-    received list of tools.  If not, the tool dependency defined by the combination is considered an orphan in it's repository in the tool
+    received list of tools.  If not, the tool dependency defined by the combination is considered an orphan in its repository in the tool
     shed.
     """
     if type == 'package':

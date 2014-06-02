@@ -72,9 +72,9 @@ PBS_ARGMAP = {
     'Variable_List'         : '-v',
 }
 
-# From pbs' job.h
+# From pbs' pbs_job.h
 JOB_EXIT_STATUS = {
-    0:  "job exec successful",
+    0: "job exec successful",
     -1: "job exec failed, before files, no retry",
     -2: "job exec failed, after files, no retry",
     -3: "job execution failed, do retry",
@@ -83,7 +83,10 @@ JOB_EXIT_STATUS = {
     -6: "job aborted on MOM init, chkpt, ok migrate",
     -7: "job restart failed",
     -8: "exec() of user command failed",
-    -11: "job maximum walltime exceeded",  # Added by John, not from job.h.
+    -9: "could not create/open stdout stderr files",
+    -10: "job exceeded a memory limit",
+    -11: "job exceeded a walltime limit",
+    -12: "job exceeded a cpu time limit",
 }
 
 
@@ -293,7 +296,7 @@ class PBSJobRunner( AsynchronousJobRunner ):
         else:
             stage_commands = ''
 
-        env_setup_commands = '%s\n%s' % (stage_commands, job_wrapper.get_env_setup_clause())
+        env_setup_commands = [ stage_commands ]
         script = self.get_job_file(job_wrapper, exit_code_path=ecfile, env_setup_commands=env_setup_commands)
         job_file = "%s/%s.sh" % (self.app.config.cluster_files_directory, job_wrapper.job_id)
         fh = file(job_file, "w")
@@ -314,7 +317,6 @@ class PBSJobRunner( AsynchronousJobRunner ):
         # (if a TaskWrapper was passed in):
         galaxy_job_id = job_wrapper.get_id_tag()
         log.debug("(%s) submitting file %s" % ( galaxy_job_id, job_file ) )
-        log.debug("(%s) command is: %s" % ( galaxy_job_id, command_line ) )
 
         tries = 0
         while tries < 5:

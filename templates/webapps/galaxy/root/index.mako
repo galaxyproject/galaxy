@@ -1,7 +1,6 @@
 <%inherit file="/webapps/galaxy/base_panels.mako"/>
 
 <%namespace file="/root/tool_menu.mako" import="*" />
-<%namespace file="/history/history_panel.mako" import="current_history_panel" />
 
 <%def name="stylesheets()">
     ${parent.stylesheets()}
@@ -93,6 +92,10 @@
             "${_("Purge Deleted Datasets")}": function() {
                 if ( confirm( "Really delete all deleted datasets permanently? This cannot be undone." ) ) {
                     galaxy_main.location = "${h.url_for( controller='history', action='purge_deleted_datasets' )}";
+                    // update the user disk size when the purge page loads
+                    $( '#galaxy_main' ).load( function(){
+                        Galaxy.user.fetch();
+                    })
                 }
             },
             "${_("Show Structure")}": function() {
@@ -181,14 +184,17 @@
 </%def>
 
 <%def name="right_panel()">
+    <!-- current history panel -->
     <div class="unified-panel-header" unselectable="on">
         <div class="unified-panel-header-inner">
             <div style="float: right">
-                <a id="history-refresh-button" class='panel-header-button' href="javascript:void(0)" title="Refresh history">
+                <a id="history-refresh-button" class='panel-header-button' href="javascript:void(0)"
+                   title="${ _( 'Refresh history' ) }">
                     <span class="fa fa-refresh"></span>
                 </a>
                 <a id="history-options-button" class='panel-header-button'
-                   href="${h.url_for( controller='root', action='history_options' )}" target="galaxy_main" title="History options">
+                   href="${h.url_for( controller='root', action='history_options' )}" target="galaxy_main"
+                   title="${ _( 'History options' ) }">
                     <span class="fa fa-cog"></span>
                 </a>
             </div>
@@ -198,15 +204,32 @@
     <div class="unified-panel-body">
         <div id="current-history-panel" class="history-panel"></div>
         ## Don't bootstrap data here - confuses the browser history: load via API
-        ${current_history_panel( selector_to_attach_to='#current-history-panel' )}
         <script type="text/javascript">
+        require([ "mvc/history/current-history-panel" ], function( historyPanel ){
             $(function(){
-                $( '#history-refresh-button' ).on( 'click', function(){
-                    if( top.Galaxy && top.Galaxy.currHistoryPanel ){
-                        top.Galaxy.currHistoryPanel.loadCurrentHistory();
-                        inside_galaxy_frameset = true;
+                var currPanel = new historyPanel.CurrentHistoryPanel({
+                    el              : $( "#current-history-panel" ),
+                    purgeAllowed    : Galaxy.config.allow_user_dataset_purge,
+                    linkTarget      : 'galaxy_main',
+                    onready         : function loadAsCurrentHistoryPanel(){
+                        this.connectToQuotaMeter( Galaxy.quotaMeter )
+                            .connectToOptionsMenu( Galaxy.historyOptionsMenu );
+                        this.loadCurrentHistory();
                     }
                 });
+                Galaxy.currHistoryPanel = currPanel;
+            });
+        });
+        </script>
+        <script type="text/javascript">
+            $(function(){
+                $( '#history-refresh-button' )
+                    .on( 'click', function(){
+                        if( top.Galaxy && top.Galaxy.currHistoryPanel ){
+                            top.Galaxy.currHistoryPanel.loadCurrentHistory();
+                            inside_galaxy_frameset = true;
+                        }
+                    });
             });
         </script>
     </div>

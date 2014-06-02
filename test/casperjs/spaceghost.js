@@ -32,24 +32,34 @@
  */
 
 // ------------------------------------------------------------------- modules
-var Casper = require( 'casper' ).Casper,
+var require = patchRequire( require ),
+    Casper = require( 'casper' ).Casper,
     fs = require( 'fs' ),
     utils = require( 'utils' );
 
 // ------------------------------------------------------------------- inheritance
 /** @class An extension of the Casper object with methods and overrides specifically
  *      for interacting with a Galaxy web page.
- *  @augments Casper
  */
 function SpaceGhost(){
-    SpaceGhost.super_.apply( this, arguments );
-    this._init.apply( this, arguments );
+    // an empty object just to store functions in a prototype for patching onto a casper isntance
 }
-utils.inherits( SpaceGhost, Casper );
 
-/** String representation
- *  @returns {String}
- */
+exports.fromCasper = function fromCasper( casper, options ){
+    "use strict";
+    // patch the sg prototype over the casper instance proto
+    for( var k in SpaceGhost.prototype ){
+        if( SpaceGhost.prototype.hasOwnProperty( k ) ){
+            // monkey patch directly onto the casper instance - we need the prototype
+            casper[ k ] = SpaceGhost.prototype[ k ];
+        }
+    }
+    casper._init( options );
+    return casper;
+};
+
+// =================================================================== METHODS / OVERRIDES
+/** String representation */
 SpaceGhost.prototype.toString = function(){
     var currentUrl = '';
     try {
@@ -58,61 +68,27 @@ SpaceGhost.prototype.toString = function(){
     return 'SpaceGhost(' + currentUrl + ')';
 };
 
-
-// ------------------------------------------------------------------- included libs
-//??: can we require underscore, etc. from the ../../static/scripts/lib?
-// yep!
-//var _ = require( '../../static/scripts/libs/underscore' );
-//var stooges = [{name : 'moe', age : 40}, {name : 'larry', age : 50}, {name : 'curly', age : 60}];
-//console.debug( JSON.stringify( _.pluck(stooges, 'name') ) );
-//exports._ = _;
-
-// ------------------------------------------------------------------- error types
-//TODO: change to inheriting from Error
-PageError.prototype = new CasperError();
-PageError.prototype.constructor = CasperError;
-/** @class Represents a javascript error on the page casper is browsing
- *      (as opposed to an error in the test script).
- */
-function PageError(){
-    CasperError.apply( this, arguments );
-    this.name = "PageError";
-}
-SpaceGhost.prototype.PageError = PageError;
-
-GalaxyError.prototype = new CasperError();
-GalaxyError.prototype.constructor = CasperError;
-/** @class Thrown when Galaxy has (gracefully?) indicated pilot error. */
-function GalaxyError(){
-    CasperError.apply( this, arguments );
-    this.name = "GalaxyError";
-}
-SpaceGhost.prototype.GalaxyError = GalaxyError;
-
-AlertError.prototype = new CasperError();
-AlertError.prototype.constructor = CasperError;
-/** @class Thrown when Galaxy has displayed a javascript alert. */
-function AlertError(){
-    CasperError.apply( this, arguments );
-    this.name = "AlertError";
-}
-SpaceGhost.prototype.AlertError = AlertError;
-
-// =================================================================== METHODS / OVERRIDES
 // ------------------------------------------------------------------- set up
 /** More initialization: cli, event handlers, etc.
  *  @param {Object} options  option hash
  *  @private
  */
 SpaceGhost.prototype._init = function _init( options ){
-    //console.debug( 'init, options:', JSON.stringify( options, null, 2 ) );
-
+    ////console.debug( 'init, options:', JSON.stringify( options, null, 2 ) );
+    //
     //NOTE: cli will override in-script options
     this._setOptionsFromCli();
 
-    // save errors for later output (needs to go before process CLI)
-    /** cache of errors that have occurred
-     *  @memberOf SpaceGhost */
+    this.on( 'step.error', function stepErrorHandler( error ){
+        //console.debug( 'step.error: ' + error.name + ', ' + error.message );
+        this.errors.push({ msg: error.message, backtrace: error.stackArray });
+        //if( error.name !== 'AssertionError' ){
+        //    throw error;
+        //}
+    });
+    // save errors for later output
+    //  set this now so ALL errors are processed well (including errors during set up)
+    /** cache of errors that have occurred */
     this.errors = [];
     this.on( 'error', function pushErrorToStack( msg, backtrace ){
         //this.debug( 'adding error to stack: ' + msg + ', trace:' + this.jsonStr( backtrace ) );
@@ -121,14 +97,19 @@ SpaceGhost.prototype._init = function _init( options ){
     this._processCLIArguments();
     this._setUpEventHandlers();
 
+    /** cache of test failures */
+    this.failures = [];
+    /** cache of test passes */
+    this.passes = [];
+
     // inject these scripts by default
-    this.debug( 'this.options.scriptDir:' + this.options.scriptDir );
     this.options.clientScripts = [
-        //this.options.scriptDir + '../../static/scripts/libs/jquery/jquery.js'
+        //'../../static/scripts/libs/jquery/jquery.js'
         //...
     ].concat( this.options.clientScripts );
     this.debug( 'clientScripts: ' + this.jsonStr( this.options.clientScripts ) );
 
+    this.changeToScriptDir();
     this._loadModules();
 };
 
@@ -141,10 +122,26 @@ SpaceGhost.prototype._setOptionsFromCli = function setOptionsFromCli(){
     // get and remove any casper options passed on the command line
     for( var optionName in this.options ){
         if( this.cli.has( optionName ) ){
-            //console.debug( optionName + ':' + this.options[ optionName ] + ',' + this.cli.get( optionName ) );
+            //console.debug( optionName + ': '
+            //    + '(was) ' + this.options[ optionName ]
+            //    + ', (now) ' + this.cli.get( optionName ) );
             this.options[ optionName ] = this.cli.get( optionName );
             this.cli.drop( optionName );
         }
+    }
+};
+
+/** Change the working directory to that of the current script */
+SpaceGhost.prototype.changeToScriptDir = function changeToScriptDir(){
+    var fs = require( 'fs' ),
+        args = require( 'system' ).args,
+        scriptPathArray = args[4].split( '/' );
+    //console.debug( this.jsonStr( scriptPathArray ) );
+
+    if( scriptPathArray.length > 1 ){
+        scriptPathArray.pop();
+        //console.debug( this.jsonStr( scriptPathArray.join( '/' ) ) );
+        fs.changeWorkingDirectory( scriptPathArray.join( '/' ) );
     }
 };
 
@@ -190,9 +187,10 @@ SpaceGhost.prototype._processCLIArguments = function _processCLIArguments(){
         this.options.returnJsonOnly = true;
 
         this._redirectOutputToStderr();
+        this.test.removeAllListeners( 'tests.complete' );
+
         // output json on fail-first error
         this.on( 'error', function outputJSONOnError( msg, backtrace ){
-            //console.debug( 'return-json caught error' );
             if( spaceghost.options.exitOnError ){
                 this._sendStopSignal();
                 this.outputStateAsJson();
@@ -240,9 +238,8 @@ SpaceGhost.prototype._processCLIArguments = function _processCLIArguments(){
     // --fail-screen: print the casper browser screen output on an test failure
     */
 
-    // get any fixture data passed in as JSON in args
-    //  (NOTE: currently the 2nd arg (with the url being 1st?)
-    this.fixtureData = ( this.cli.has( 0 ) )?( JSON.parse( this.cli.get( 0 ) ) ):( {} );
+    // get any fixture data passed in as JSON (e.g. --data='{ "one": 1 }')
+    this.fixtureData = ( this.cli.has( 'data' ) )?( JSON.parse( this.cli.get( 'data' ) ) ):( {} );
     this.debug( 'fixtureData:' + this.jsonStr( this.fixtureData ) );
 
     /** only output log messages with the given namespace */
@@ -284,18 +281,19 @@ SpaceGhost.prototype._redirectOutputToStderr = function _redirectOutputToStderr(
         spaceghost.stderr( msg );
     };
 
-    //this.removeListener( 'error', this.listeners( 'error' )[0] );
     // clear the casper listener that outputs formatted error messages
-    this.removeListener( 'error', this.listeners( 'error' )[1] );
+    this.removeListener( 'error', this.listeners( 'error' )[0] );
+    //this.removeListener( 'error', this.listeners( 'error' )[1] );
 };
 
 /** Outputs logs, test results and errors in a single JSON formatted object to the console.
  */
 SpaceGhost.prototype.outputStateAsJson = function outputStateAsJson(){
     var returnedJSON = {
-        logs: this.result,
-        testResults: this.test.testResults,
-        errors: this.errors
+        logs        : this.result,
+        passes      : this.passes,
+        failures    : this.failures,
+        errors      : this.errors
     };
     // use phantomjs console since echo can't be used (suppressed - see init)
     console.debug( JSON.stringify( returnedJSON, null, 2 ) );
@@ -303,6 +301,34 @@ SpaceGhost.prototype.outputStateAsJson = function outputStateAsJson(){
 
 
 // ------------------------------------------------------------------- event handling
+/** Sets up event handlers.
+ *  @private
+ */
+SpaceGhost.prototype._setUpEventHandlers = function _setUpEventHandlers(){
+    //console.debug( '_setUpEventHandlers' );
+    var spaceghost = this;
+
+    // ........................ page errors
+    this.on( 'page.error',  this._pageErrorHandler );
+    //this.on( 'load.failed', this._loadFailedHandler );
+
+    // ........................ page info/debugging
+    this.on( 'remote.alert',    this._alertHandler );
+    //this.on( 'remote.message',       function( msg ){ this.debug( 'remote: ' + msg ); });
+    //this.on( 'navigation.requested', function( url ){ this.debug( 'navigation: ' + url ); });
+
+    // ........................ timeouts
+    this._setUpTimeoutHandlers();
+
+    // ........................ test results
+    this.test.on( "fail", function( failure ){
+        spaceghost.failures.push( failure );
+    });
+    this.test.on( "success", function( pass ){
+        spaceghost.passes.push( pass );
+    });
+};
+
 //note: using non-anon fns to allow removal if needed
 
 /** 'load failed' Event handler for failed page loads that only records to the log
@@ -415,25 +441,6 @@ SpaceGhost.prototype._setUpTimeoutHandlers = function _setUpTimeoutHandlers(){
     };
 };
 
-/** Sets up event handlers.
- *  @private
- */
-SpaceGhost.prototype._setUpEventHandlers = function _setUpEventHandlers(){
-    //console.debug( '_setUpEventHandlers' );
-
-    // ........................ page errors
-    this.on( 'page.error',  this._pageErrorHandler );
-    //this.on( 'load.failed', this._loadFailedHandler );
-
-    // ........................ page info/debugging
-    this.on( 'remote.alert',    this._alertHandler );
-    //this.on( 'remote.message',       function( msg ){ this.debug( 'remote: ' + msg ); });
-    //this.on( 'navigation.requested', function( url ){ this.debug( 'navigation: ' + url ); });
-
-    // ........................ timeouts
-    this._setUpTimeoutHandlers();
-};
-
 // ------------------------------------------------------------------- sub modules
 /** Load sub modules (similar to casperjs.test)
  *  @requires User              modules/user.js
@@ -443,11 +450,11 @@ SpaceGhost.prototype._setUpEventHandlers = function _setUpEventHandlers(){
  *  @private
  */
 SpaceGhost.prototype._loadModules = function _loadModules(){
-    this.user           = require( this.options.scriptDir + 'modules/user'  ).create( this );
-    this.tools          = require( this.options.scriptDir + 'modules/tools' ).create( this );
-    this.historypanel   = require( this.options.scriptDir + 'modules/historypanel' ).create( this );
-    this.historyoptions = require( this.options.scriptDir + 'modules/historyoptions' ).create( this );
-    this.api            = require( this.options.scriptDir + 'modules/api' ).create( this );
+    this.user           = require( './modules/user'  ).create( this );
+    this.tools          = require( './modules/tools' ).create( this );
+    this.historypanel   = require( './modules/historypanel' ).create( this );
+    this.historyoptions = require( './modules/historyoptions' ).create( this );
+    this.api            = require( './modules/api' ).create( this );
 };
 
 // =================================================================== PAGE CONTROL
@@ -468,7 +475,7 @@ SpaceGhost.prototype.start = function start(){
  */
 SpaceGhost.prototype.open = function open(){
     //TODO: this can be moved to start (I think...?)
-    //!! override bc phantom has it's lang as 'en-US,*' and galaxy doesn't handle the '*' well (server error)
+    //!! override bc phantom has its lang as 'en-US,*' and galaxy doesn't handle the '*' well (server error)
     this.page.customHeaders = { 'Accept-Language': 'en-US' };
     return Casper.prototype.open.apply( this, arguments );
 };
@@ -484,27 +491,32 @@ SpaceGhost.prototype._sendStopSignal = function _sendStopSignal(){
  *      Exits with 2 if a test has failed.
  *      Exits with 1 if some error has occurred.
  *      Exits with 0 if all tests passed.
- *  @see Casper#run run, boy, run (doesn't he fly?)
  */
 SpaceGhost.prototype.run = function run( onComplete, time ){
+    var oldFn = spaceghost.test.done;
+    spaceghost.test.done = function(){
+        oldFn.call( spaceghost.test );
+    }
     var new_onComplete = function(){
-            onComplete.call( this );
-            var returnCode = ( this.test.testResults.failed )?( 2 ):( 0 );
+        onComplete.call( this );
+        //var returnCode = ( this.test.getFailures() )?( 2 ):( 0 );
+        var returnCode = ( this.failures.length )?( 2 ):( 0 );
 
-            // if --return-json is used: output json and exit
-            //NOTE: used by the test runner to gather JSON test info from stdout
-            if( this.options.returnJsonOnly ){
-                // echo a string to indicate that tests are complete (used in casperjs_runner.py to stop process)
-                this._sendStopSignal();
-                this.outputStateAsJson();
-                this.exit( returnCode );
+        // if --return-json is used: output json and exit
+        //NOTE: used by the test runner to gather JSON test info from stdout
+        if( this.options.returnJsonOnly ){
+            // echo a string to indicate that tests are complete (used in casperjs_runner.py to stop process)
+            this._sendStopSignal();
+            this.outputStateAsJson();
+            this.exit( returnCode );
 
-            // otherwise, render the nice casper output and exit
-            } else {
-                this.test.renderResults( true, returnCode );
-            }
-        };
+        // otherwise, render the nice casper output and exit
+        //} else {
+        //    this.test.renderResults( true, returnCode );
+        }
+    };
     Casper.prototype.run.call( this, new_onComplete, time );
+    //Casper.prototype.run.call( this, onComplete, time );
 };
 
 // ------------------------------------------------------------------- home page
@@ -550,18 +562,18 @@ SpaceGhost.prototype.tryStepsCatch = function tryStepsCatch( stepsFn, catchFn ){
     // create three steps: 1) set up new error handler, 2) try the fn, 3) check for errors and rem. handler
     var originalExitOnError,
         originalErrorHandlers = [],
-        errorMsg = '', errorTrace = [],
-        recordError = function( msg, trace ){
-            errorMsg = msg; errorTrace = trace;
+        errorCaught,
+        recordError = function( error ){
+            errorCaught = error;
         };
 
     // dont bail on the error (but preserve option), uninstall other handlers,
     //  and install hndlr to simply record msg, trace
-    this.then( function(){
+    this.then( function replaceHandlers(){
         originalExitOnError = this.options.exitOnError;
         this.options.exitOnError = false;
-        originalErrorHandlers = this.popAllListeners( 'error' );
-        this.on( 'error', recordError );
+        originalErrorHandlers = this.popAllListeners( 'step.error' );
+        this.on( 'step.error', recordError );
     });
 
     // try the step...
@@ -569,15 +581,15 @@ SpaceGhost.prototype.tryStepsCatch = function tryStepsCatch( stepsFn, catchFn ){
     //TODO: this doesn't work well with wait for (see upload-tests.js)
     //  possibly combine above and below?
 
-    this.then( function(){
-        // ...and if an error was recorded call the catch with the info
-        if( errorMsg ){
-            catchFn.call( this, errorMsg, errorTrace );
-        }
+    this.then( function catchWrapper(){
         // remove that listener either way, restore original handlers, and restore the bail option
-        this.removeListener( 'error', recordError );
-        this.addListeners( 'error', originalErrorHandlers );
+        this.removeListener( 'step.error', recordError );
+        this.addListeners( 'step.error', originalErrorHandlers );
         this.options.exitOnError = originalExitOnError;
+        // ...and if an error was recorded call the catch with the info
+        if( errorCaught ){
+            catchFn.call( this, errorCaught );
+        }
     });
 };
 
@@ -823,8 +835,12 @@ SpaceGhost.prototype.assertStepsRaise = function assertStepsRaise( msgContains, 
     // casper provides an assertRaises but this doesn't work well with steps
     //TODO:  *  @param {Boolean} removeOtherListeners option to remove other listeners while this fires
     var spaceghost = this;
-    function testTheError( msg, backtrace ){
-        spaceghost.test.assert( msg.indexOf( msgContains ) !== -1, 'Raised correct error: ' + msg );
+    function testTheError( errorCaught ){
+        if( errorCaught.message.indexOf( msgContains ) !== -1 ){
+            spaceghost.test.pass( 'Raised correct error: ' + errorCaught.message );
+        } else {
+            throw errorCaught;
+        }
     }
     this.tryStepsCatch( stepsFn, testTheError );
 };
@@ -1085,29 +1101,27 @@ SpaceGhost.prototype.lastError = function(){
 
 // ------------------------------------------------------------------- file system
 /** Load and parse a JSON file into an object.
- *  @param {String} filepath     filepath relative to the current scriptDir
+ *  @param {String} filepath     filepath relative to the current script
  *  @returns {Object} the object parsed
  */
 SpaceGhost.prototype.loadJSONFile = function loadJSONFile( filepath ){
     //precondition: filepath is relative to script dir
-    filepath = this.options.scriptDir + filepath;
     return JSON.parse( fs.read( filepath ) );
 };
 
 /** Write an object to a JSON file.
- *  @param {String} filepath     filepath relative to the current scriptDir
+ *  @param {String} filepath     filepath relative to the current script
  *  @param {Object} object       the object to write
  *  @param {String} mode         'w' for a new file, 'a' for append
  */
 SpaceGhost.prototype.writeJSONFile = function writeJSONFile( filepath, object, mode ){
     mode = mode || 'w';
     //precondition: filepath is relative to script dir
-    filepath = this.options.scriptDir + filepath;
     return fs.write( filepath, this.jsonStr( object ), mode );
 };
 
 /** Save the HTML from the current page to file.
- *  @param {String} filepath    filepath relative to the current scriptDir
+ *  @param {String} filepath    filepath relative to the current script
  *  @param {String} selector    A DOM CSS3/XPath selector (optional)
  *  @param {Boolean} outer      Whether to fetch outer HTML contents (default: false)
  */
@@ -1116,13 +1130,12 @@ SpaceGhost.prototype.writeHTMLFile = function writeHTMLFile( filepath, selector,
 };
 
 /** Read and search a file for the given regex.
- *  @param {String} filepath     filepath relative to the current scriptDir
+ *  @param {String} filepath     filepath relative to the current script
  *  @param {Regex} searchFor     regex to search for
  *  @returns {Object} search results
  */
 SpaceGhost.prototype.searchFile = function searchFile( filepath, regex ){
     //precondition: filepath is relative to script dir
-    filepath = this.options.scriptDir + filepath;
     var read = fs.read( filepath );
     return read.match( regex );
 };
@@ -1235,14 +1248,37 @@ SpaceGhost.prototype.data = {
 };
 
 
-// =================================================================== EXPORTS
-exports.SpaceGhost  = SpaceGhost;
+// =================================================================== error types
+/** @class Represents a javascript error on the page casper is browsing
+ *      (as opposed to an error in the test script).
+ */
+function PageError(){
+    CasperError.apply( this, arguments );
+    this.name = "PageError";
+}
+//TODO: change to inheriting from Error
+PageError.prototype = new CasperError();
+PageError.prototype.constructor = CasperError;
+SpaceGhost.prototype.PageError = PageError;
+
+/** @class Thrown when Galaxy has (gracefully?) indicated pilot error. */
+function GalaxyError(){
+    CasperError.apply( this, arguments );
+    this.name = "GalaxyError";
+}
+GalaxyError.prototype = new CasperError();
+GalaxyError.prototype.constructor = CasperError;
+SpaceGhost.prototype.GalaxyError = GalaxyError;
+
+/** @class Thrown when Galaxy has displayed a javascript alert. */
+function AlertError(){
+    CasperError.apply( this, arguments );
+    this.name = "AlertError";
+}
+AlertError.prototype = new CasperError();
+AlertError.prototype.constructor = CasperError;
+SpaceGhost.prototype.AlertError = AlertError;
+
 exports.PageError   = PageError;
 exports.GalaxyError = GalaxyError;
 exports.AlertError  = AlertError;
-/** creation function
- */
-exports.create = function create(options) {
-    "use strict";
-    return new SpaceGhost(options);
-};

@@ -1,0 +1,51 @@
+<tool id="collection_nested_test" name="collection_nested_test" version="0.1.0">
+  <command>
+    echo #for $f in $f1# ${f.is_collection} #end for# >> $out1;
+    cat #for $f in $f1# #if $f.is_collection# #for $inner in $f# ${inner} #end for# #else# $f # #end if# #end for# >> $out2
+  </command>
+  <inputs>
+    <param name="f1" type="data_collection" />
+  </inputs>
+  <outputs>
+    <data format="txt" name="out1" />
+    <data format="txt" name="out2" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="f1">
+        <collection type="list:paired">
+          <element name="i1">
+            <collection type="paired">
+              <element name="forward" value="simple_line.txt" />
+              <element name="reverse" value="simple_line_alternative.txt" />
+            </collection>
+          </element>
+        </collection>
+      </param>
+      <output name="out1">
+        <assert_contents>
+          <has_line line="True" />
+        </assert_contents>
+      </output>
+      <output name="out2">
+        <assert_contents>
+          <has_line line="This is a line of text." />
+          <has_line line="This is a different line of text." />
+        </assert_contents>
+      </output>
+    </test>
+    <test>
+      <param name="f1">
+        <collection type="paired">
+          <element name="forward" value="simple_line.txt" />
+          <element name="reverse" value="simple_line_alternative.txt" />
+        </collection>
+      </param>
+      <output name="out1">
+        <assert_contents>
+          <has_line line="False False" />
+        </assert_contents>
+      </output>
+    </test>
+  </tests>
+</tool>

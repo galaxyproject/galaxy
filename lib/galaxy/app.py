@@ -5,6 +5,7 @@ import os
 from galaxy import config, jobs
 import galaxy.model
 import galaxy.security
+from galaxy import dataset_collections
 import galaxy.quota
 from galaxy.tags.tag_handler import GalaxyTagHandler
 from galaxy.visualization.genomes import Genomes
@@ -15,8 +16,9 @@ from galaxy.tools.genome_index import load_genome_index_tools
 from galaxy.sample_tracking import external_service_types
 from galaxy.openid.providers import OpenIDProviders
 from galaxy.tools.data_manager.manager import DataManagers
-
+from galaxy.jobs import metrics as job_metrics
 from galaxy.web.base import pluginframework
+from galaxy.queue_worker import GalaxyQueueWorker
 
 import logging
 log = logging.getLogger( __name__ )
@@ -40,7 +42,8 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
 
         # Setup the database engine and ORM
         config_file = kwargs.get( 'global_conf', {} ).get( '__file__', None )
-        self._configure_models( check_migrate_databases=True, check_migrate_tools=True, config_file=config_file )
+        check_migrate_tools = self.config.check_migrate_tools
+        self._configure_models( check_migrate_databases=True, check_migrate_tools=check_migrate_tools, config_file=config_file )
 
         # Manage installed tool shed repositories.
         from tool_shed.galaxy_install import installed_repository_manager
@@ -53,12 +56,22 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
         self._configure_security()
         # Tag handler
         self.tag_handler = GalaxyTagHandler()
+        # Dataset Collection Plugins
+        self.dataset_collections_service = dataset_collections.DatasetCollectionsService(self)
+
+        # Tool Data Tables
+        self._configure_tool_data_tables( from_shed_config=False )
+        # Load dbkey / genome build manager
+        self._configure_genome_builds( data_table_name="__dbkeys__", load_old_style=True )
+
         # Genomes
         self.genomes = Genomes( self )
         # Data providers registry.
         self.data_provider_registry = DataProviderRegistry()
 
-        self._configure_tool_data_tables( from_shed_config=False )
+        # Initialize job metrics manager, needs to be in place before
+        # config so per-destination modifications can be made.
+        self.job_metrics = job_metrics.JobMetrics( self.config.job_metrics_config_file, app=self )
 
         # Initialize the job management configuration
         self.job_config = jobs.JobConfiguration(self)
@@ -134,6 +147,10 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
         # Initialize the external service types
         self.external_service_types = external_service_types.ExternalServiceTypesCollection( self.config.external_service_type_config_file, self.config.external_service_type_path, self )
         self.model.engine.dispose()
+        self.control_worker = GalaxyQueueWorker(self,
+                                                galaxy.queues.control_queue_from_config(self.config),
+                                                galaxy.queue_worker.control_message_to_task)
+        self.control_worker.start()
 
     def shutdown( self ):
         self.job_manager.shutdown()
@@ -142,6 +159,8 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
             self.heartbeat.shutdown()
         if self.update_manager:
             self.update_manager.shutdown()
+        if self.control_worker:
+            self.control_worker.shutdown()
         try:
             # If the datatypes registry was persisted, attempt to
             # remove the temporary file in which it was written.

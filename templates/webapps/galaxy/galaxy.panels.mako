@@ -1,4 +1,5 @@
 <%namespace name="masthead" file="/webapps/galaxy/galaxy.masthead.mako"/>
+<%namespace name="galaxy_client" file="/galaxy_client_app.mako" />
 
 <!DOCTYPE HTML>
 
@@ -30,6 +31,7 @@
     ${h.js(
         'libs/jquery/jquery',
         'libs/jquery/jquery-ui',
+        "libs/jquery/select2",
         'libs/bootstrap',
         'libs/underscore',
         'libs/backbone/backbone',
@@ -37,10 +39,7 @@
         'libs/d3',
         'galaxy.base',
         'galaxy.panels',
-        'libs/handlebars.runtime'
-    )}
-
-    ${h.js(
+        'libs/handlebars.runtime',
         "mvc/ui"
     )}
     
@@ -57,9 +56,6 @@
     
     ## make sure console exists
     <script type="text/javascript">
-        // start a Galaxy namespace for objects created
-        window.Galaxy = window.Galaxy || {};
-
         // console protection
         window.console = window.console ||
         {
@@ -104,27 +100,38 @@
                 "libs/backbone/backbone": { exports: "Backbone" },
             }
         });
-
-        ## get configuration
         var galaxy_config = ${ h.to_json_string( self.galaxy_config ) };
+        
+    </script>
+</%def>
 
-        ## on page load
-        $(function()
-        {
-            ## check if script is defined
+<%def name="javascript_app()">
+    <script type="text/javascript">
+        // load any app configured
+        define( 'app', function(){
             var jscript = galaxy_config.app.jscript;
-            if (jscript)
-            {
-                ## load galaxy app
-                require([jscript], function(js_lib)
-                {
-                    ## load galaxy module application
-                    var module = new js_lib.GalaxyApp();
+            if( jscript ){
+                require([ jscript ], function( js_lib ){
+                    $( function(){
+                        // load galaxy module application
+                        var module = new js_lib.GalaxyApp();
+                    });
                 });
-            } else
+            } else {
                 console.log("'galaxy_config.app.jscript' missing.");
+            }
         });
     </script>
+
+    ## load the Galaxy global js var and run 'app' from above
+    ${ galaxy_client.load( app='app' ) }
+
+    ## alternate call where the module calls itself when included (no call to GalaxyApp()) - the above won't be needed
+    ##precondition: module must call jq onready itself
+    ##<% app_config = self.galaxy_config[ 'app' ]; print app_config %>
+    ##${ galaxy_client.load( app=( app_config[ 'jscript' ] if 'jscript' in app_config else None )) }
+    
+    ##TODO: at that point, we can think about optimizing the various apps
 </%def>
 
 ## default late-load javascripts
@@ -164,6 +171,7 @@
  
         ## load scripts
         ${self.javascripts()}
+        ${self.javascript_app()}
     </head>
     
     <body scroll="no" class="full-content">

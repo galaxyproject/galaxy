@@ -8,7 +8,7 @@
     ${h.js( "libs/require" )}
 
     <script type="text/javascript">
-        require.config({ 
+        require.config({
             baseUrl: "${h.url_for('/static/scripts')}",
             shim: {
                 "libs/backbone/backbone": { exports: "Backbone" },
@@ -23,7 +23,7 @@
                             chunk_url: "${h.url_for( controller='/dataset', action='display',
                                              dataset_id=trans.security.encode_id( dataset.id ))}",
                             first_data_chunk: ${chunk}
-                        } 
+                        }
                 ),
                 parent_elt: $('body')
             });

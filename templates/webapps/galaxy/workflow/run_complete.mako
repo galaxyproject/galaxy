@@ -25,6 +25,6 @@
 
 <script type="text/javascript">
     if( top.Galaxy && top.Galaxy.currHistoryPanel ){
-        top.Galaxy.currHistoryPanel.refreshHdas();
+        top.Galaxy.currHistoryPanel.refreshContents();
     }
 </script>

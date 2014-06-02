@@ -2,6 +2,7 @@ import logging
 import sys
 import urllib2
 from galaxy.util.odict import odict
+from tool_shed.util import common_util
 from tool_shed.util import xml_util
 
 log = logging.getLogger( __name__ )
@@ -39,13 +40,17 @@ class Registry( object ):
 
     def password_manager_for_url( self, url ):
         """
-        If the tool shed is using external auth, the client to the tool shed must authenticate to that as well.  This provides access to the
-        urllib2.HTTPPasswordMgrWithdefaultRealm() object for the url passed in.
+        If the tool shed is using external auth, the client to the tool shed must authenticate to that
+        as well.  This provides access to the urllib2.HTTPPasswordMgrWithdefaultRealm() object for the
+        url passed in.
 
-        Following more what galaxy.demo_sequencer.controllers.common does might be more appropriate at some stage...
+        Following more what galaxy.demo_sequencer.controllers.common does might be more appropriate at
+        some stage...
         """
+        url_sans_protocol = common_util.remove_protocol_from_tool_shed_url( url )
         for shed_name, shed_url in self.tool_sheds.items():
-            if shed_url.find( url ) >= 0:
+            shed_url_sans_protocol = common_util.remove_protocol_from_tool_shed_url( shed_url )
+            if shed_url_sans_protocol.find( url_sans_protocol ) >= 0:
                 return self.tool_sheds_auth[ shed_name ]
         log.debug( "Invalid url '%s' received by tool shed registry's password_manager_for_url method." % str( url ) )
         return None

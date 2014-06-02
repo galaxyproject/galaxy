@@ -4,11 +4,9 @@ API operations on the contents of a history.
 
 from galaxy import exceptions
 from galaxy import util
-from galaxy import web
 
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
-from galaxy.web import _future_expose_api_raw as expose_api_raw
 
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.base.controller import UsesHistoryDatasetAssociationMixin
@@ -17,10 +15,13 @@ from galaxy.web.base.controller import UsesLibraryMixin
 from galaxy.web.base.controller import UsesLibraryMixinItems
 from galaxy.web.base.controller import UsesTagsMixin
 
-from galaxy.web.base.controller import url_for
-from galaxy.util.sanitize_html import sanitize_html
+from galaxy.dataset_collections.util import api_payload_to_create_params
+from galaxy.dataset_collections.util import dictify_dataset_collection_instance
 
-from galaxy.webapps.galaxy.api import histories
+from galaxy.web.base.controller import url_for
+
+from galaxy.managers import histories
+from galaxy.managers import hdas
 
 import logging
 log = logging.getLogger( __name__ )
@@ -32,8 +33,8 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
     def __init__( self, app ):
         super( HistoryContentsController, self ).__init__( app )
         self.mgrs = util.bunch.Bunch(
-            histories = histories.HistoryManager(),
-            hdas = HDAManager()
+            histories=histories.HistoryManager(),
+            hdas=hdas.HDAManager()
         )
 
     def _decode_id( self, trans, id ):
@@ -89,7 +90,7 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         if types:
             types = util.listify(types)
         else:
-            types = [ 'dataset' ]
+            types = [ 'dataset', "dataset_collection" ]
 
         contents_kwds = {'types': types}
         if ids:
@@ -114,7 +115,8 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
                     rval.append( self._detailed_hda_dict( trans, content ) )
                 else:
                     rval.append( self._summary_hda_dict( trans, history_id, content ) )
-
+            elif isinstance(content, trans.app.model.HistoryDatasetCollectionAssociation):
+                rval.append( self.__collection_dict( trans, content ) )
         return rval
 
     #TODO: move to model or Mixin
@@ -140,8 +142,12 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             'visible': hda.visible,
             'purged': hda.purged,
             'hid'   : hda.hid,
-            'url'   : url_for( 'history_content', history_id=encoded_history_id, id=encoded_id, ),
+            'history_content_type' : hda.history_content_type,
+            'url'   : url_for( 'history_content', history_id=encoded_history_id, id=encoded_id, type="dataset" ),
         }
+
+    def __collection_dict( self, trans, dataset_collection_instance, view="collection" ):
+        return dictify_dataset_collection_instance( dataset_collection_instance, security=trans.security, parent=dataset_collection_instance.history, view=view )
 
     def _detailed_hda_dict( self, trans, hda ):
         """
@@ -178,8 +184,25 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         contents_type = kwd.get('type', 'dataset')
         if contents_type == 'dataset':
             return self.__show_dataset( trans, id, **kwd )
+        elif contents_type == 'dataset_collection':
+            return self.__show_dataset_collection( trans, id, history_id, **kwd )
         else:
             return self.__handle_unknown_contents_type( trans, contents_type )
+
+    def __show_dataset_collection( self, trans, id, history_id, **kwd ):
+        try:
+            service = trans.app.dataset_collections_service
+            dataset_collection_instance = service.get_dataset_collection_instance(
+                trans=trans,
+                instance_type='history',
+                id=id,
+            )
+            return self.__collection_dict( trans, dataset_collection_instance, view="element" )
+        except Exception, e:
+            msg = "Error in history API at listing dataset collection: %s" % ( str(e) )
+            log.error( msg, exc_info=True )
+            trans.response.status = 500
+            return msg
 
     def __show_dataset( self, trans, id, **kwd ):
         hda = self.mgrs.hdas.get( trans, self._decode_id( trans, id ), check_ownership=False, check_accessible=True )
@@ -190,8 +213,7 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         hda_dict[ 'display_apps' ] = self.get_display_apps( trans, hda )
         return hda_dict
 
-    #TODO: allow anon users to copy hdas, ldas
-    @expose_api
+    @expose_api_anonymous
     def create( self, trans, history_id, payload, **kwd ):
         """
         create( self, trans, history_id, payload, **kwd )
@@ -216,13 +238,20 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         :rtype:     dict
         :returns:   dictionary containing detailed information for the new HDA
         """
-        #TODO: convert existing, accessible hda - model.DatasetInstance(or hda.datatype).get_converter_types
-        history = self.mgrs.histories.get( trans, self._decode_id( trans, history_id ),
-            check_ownership=True, check_accessible=False )
+        # get the history, if anon user and requesting current history - allow it
+        if( ( trans.user == None )
+        and ( history_id == trans.security.encode_id( trans.history.id ) ) ):
+            history = trans.history
+        # otherwise, check permissions for the history first
+        else:
+            history = self.mgrs.histories.get( trans, self._decode_id( trans, history_id ),
+                check_ownership=True, check_accessible=True )
 
         type = payload.get('type', 'dataset')
         if type == 'dataset':
             return self.__create_dataset( trans, history, payload, **kwd )
+        elif type == 'dataset_collection':
+            return self.__create_dataset_collection( trans, history, payload, **kwd )
         else:
             return self.__handle_unknown_contents_type( trans, type )
 
@@ -262,6 +291,12 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         hda_dict[ 'display_apps' ] = self.get_display_apps( trans, hda )
         return hda_dict
 
+    def __create_dataset_collection( self, trans, history, payload, **kwd ):
+        create_params = api_payload_to_create_params( payload )
+        service = trans.app.dataset_collections_service
+        dataset_collection_instance = service.create( trans, parent=history, **create_params )
+        return self.__collection_dict( trans, dataset_collection_instance, view="element" )
+
     @expose_api_anonymous
     def update( self, trans, history_id, id, payload, **kwd ):
         """
@@ -288,6 +323,8 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         contents_type = kwd.get('type', 'dataset')
         if contents_type == "dataset":
             return self.__update_dataset( trans, history_id, id, payload, **kwd )
+        elif contents_type == "dataset_collection":
+            return self.__update_dataset_collection( trans, history_id, id, payload, **kwd )
         else:
             return self.__handle_unknown_contents_type( trans, contents_type )
 
@@ -327,6 +364,9 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
 
         return changed
 
+    def __update_dataset_collection( self, trans, history_id, id, payload, **kwd ):
+        return trans.app.dataset_collections_service.update( trans, "history", id, payload )
+
     #TODO: allow anonymous del/purge and test security on this
     @expose_api
     def delete( self, trans, history_id, id, purge=False, **kwd ):
@@ -358,6 +398,9 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         contents_type = kwd.get('type', 'dataset')
         if contents_type == "dataset":
             return self.__delete_dataset( trans, history_id, id, purge=purge, **kwd )
+        elif contents_type == "dataset_collection":
+            trans.app.dataset_collections_service.delete( trans, "history", id )
+            return { 'id' : id, "deleted": True }
         else:
             return self.__handle_unknown_contents_type( trans, contents_type )
 
@@ -436,71 +479,4 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         return validated_payload
 
     def __handle_unknown_contents_type( self, trans, contents_type ):
-        # TODO: raise a message exception instead of setting status and returning dict.
-        trans.response.status = 400
-        return { 'error': 'Unknown contents type %s' % type }
-
-
-class HDAManager( object ):
-
-    def __init__( self ):
-        self.histories_mgr = histories.HistoryManager()
-
-    def get( self, trans, unencoded_id, check_ownership=True, check_accessible=True ):
-        """
-        """
-        # this is a replacement for UsesHistoryDatasetAssociationMixin because mixins are a bad soln/structure
-        hda = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( unencoded_id )
-        if hda is None:
-            raise exceptions.ObjectNotFound()
-        hda = self.secure( trans, hda, check_ownership, check_accessible )
-        return hda
-
-    def secure( self, trans, hda, check_ownership=True, check_accessible=True ):
-        """
-        checks if (a) user owns item or (b) item is accessible to user.
-        """
-        # all items are accessible to an admin
-        if trans.user and trans.user_is_admin():
-            return hda
-        if check_ownership:
-            hda = self.check_ownership( trans, hda )
-        if check_accessible:
-            hda = self.check_accessible( trans, hda )
-        return hda
-
-    def can_access_dataset( self, trans, hda ):
-        current_user_roles = trans.get_current_user_roles()
-        return trans.app.security_agent.can_access_dataset( current_user_roles, hda.dataset )
-
-    #TODO: is_owner, is_accessible
-
-    def check_ownership( self, trans, hda ):
-        if not trans.user:
-            #if hda.history == trans.history:
-            #    return hda
-            raise exceptions.AuthenticationRequired( "Must be logged in to manage Galaxy datasets", type='error' )
-        if trans.user_is_admin():
-            return hda
-        # check for ownership of the containing history and accessibility of the underlying dataset
-        if( self.histories_mgr.is_owner( trans, hda.history )
-        and self.can_access_dataset( trans, hda ) ):
-            return hda
-        raise exceptions.ItemOwnershipException(
-            "HistoryDatasetAssociation is not owned by the current user", type='error' )
-
-    def check_accessible( self, trans, hda ):
-        if trans.user and trans.user_is_admin():
-            return hda
-        # check for access of the containing history...
-        self.histories_mgr.check_accessible( trans, hda.history )
-        # ...then the underlying dataset
-        if self.can_access_dataset( trans, hda ):
-            return hda
-        raise exceptions.ItemAccessibilityException(
-            "HistoryDatasetAssociation is not accessible to the current user", type='error' )
-
-    def err_if_uploading( self, trans, hda ):
-        if hda.state == trans.model.Dataset.states.UPLOAD:
-            raise exceptions.Conflict( "Please wait until this dataset finishes uploading" )
-        return hda
+        raise exceptions.UnknownContentsType('Unknown contents type: %s' % type)

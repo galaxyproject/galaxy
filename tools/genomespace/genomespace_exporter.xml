@@ -35,14 +35,18 @@
     <inputs>
         <param format="data" name="input1" type="data" label="Send this dataset to GenomeSpace" />
         <param name="base_url" type="baseurl" />
-        <param name="subdirectory" type="drill_down" display="radio" hierarchy="exact" multiple="False" optional="True" label="Choose Target Directory" dynamic_options="galaxy_code_get_genomespace_folders( genomespace_site = 'prod', trans=__trans__, value=__value__, input_dataset=input1 )" help="Leave blank to generate automatically"/>
+        <param name="subdirectory" type="drill_down" display="radio" hierarchy="exact" multiple="False" optional="True" label="Choose Target Directory" dynamic_options="galaxy_code_get_genomespace_folders( genomespace_site = 'prod', trans=__trans__, value=__value__, input_dataset=input1, base_url=base_url )" help="Leave blank to generate automatically"/>
         <param name="filename" type="text" size="80" help="Leave blank to generate automatically" />
     </inputs>
     <outputs>
         <data format="html" name="output_log" />
     </outputs>
     <help>
-       This Tool allows you to export data to GenomeSpace. You must have logged in using your GenomeSpace OpenID. You can associate your OpenID credentials under the User Preferences panel.
+This Tool allows you to export data to GenomeSpace. You must have logged in using your GenomeSpace OpenID. You can associate your OpenID credentials under the User Preferences panel.
+
+If you are having trouble with this tool, click here_ to refresh your GenomeSpace token before reporting errors.
+
+.. _here:  ${static_path}/../user/openid_auth?openid_provider=genomespace&amp;auto_associate=True
     </help>
     <options refresh="True"/>
     <code file="genomespace_exporter.py" />

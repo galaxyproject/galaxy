@@ -136,6 +136,13 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # Tools can be locally developed or installed from Galaxy tool sheds.
 #tool_config_file = tool_conf.xml,shed_tool_conf.xml
 
+# Enable / disable checking if any tools defined in the above non-shed tool_config_files
+# (i.e., tool_conf.xml) have been migrated from the Galaxy code distribution to the Tool
+# Shed.  This setting should generally be set to False only for development Galaxy environments
+# that are often rebuilt from scratch where migrated tools do not need to be available in the
+# Galaxy tool panel.  If the following setting remains commented, the default setting will be True.
+#check_migrate_tools = True
+
 # Default path to the directory containing the tools defined in tool_conf.xml.
 # Other tool config files must include the tool_path as an attribute in the <toolbox> tag.
 #tool_path = tools
@@ -814,7 +821,21 @@ use_interactive = True
 #user_tool_section_filters = examples:restrict_text
 #user_tool_label_filters = examples:restrict_upload_to_admins, examples:restrict_encode
 
-# ---- Galaxy Message Queue -------------------------------------------------
+# Galaxy Application Internal Message Queue
+
+# Galaxy uses AMQP internally TODO more documentation on what for.
+# For examples, see http://ask.github.io/kombu/userguide/connections.html
+#
+# Without specifying anything here, galaxy will first attempt to use your
+# specified database_connection above.  If that's not specified either, Galaxy
+# will automatically create and use a separate sqlite database located in your
+# <galaxy>/database folder (indicated in the commented out line below).
+
+#amqp_internal_connection = sqlite:///./database/control.sqlite?isolation_level=IMMEDIATE
+
+
+
+# ---- Galaxy External Message Queue -------------------------------------------------
 
 # Galaxy uses AMQ protocol to receive messages from external sources like 
 # bar code scanners. Galaxy has been tested against RabbitMQ AMQP implementation.

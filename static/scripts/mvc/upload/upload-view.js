@@ -378,7 +378,7 @@ return Backbone.View.extend(
         this._updateScreen();
         
         // update galaxy history
-        Galaxy.currHistoryPanel.refreshHdas();
+        Galaxy.currHistoryPanel.refreshContents();
     },
     
     // error

@@ -17,6 +17,7 @@ from galaxy import model
 from galaxy.util import DATABASE_MAX_STRING_SIZE, shrink_stream_by_size
 from galaxy.util import in_directory
 from galaxy.jobs.runners.util.job_script import job_script
+from galaxy.jobs.runners.util.env import env_to_statement
 
 log = logging.getLogger( __name__ )
 
@@ -150,7 +151,11 @@ class BaseJobRunner( object ):
         # Prepare the job
         try:
             job_wrapper.prepare()
-            job_wrapper.runner_command_line = self.build_command_line( job_wrapper, include_metadata=include_metadata, include_work_dir_outputs=include_work_dir_outputs )
+            job_wrapper.runner_command_line = self.build_command_line(
+                job_wrapper,
+                include_metadata=include_metadata,
+                include_work_dir_outputs=include_work_dir_outputs
+            )
         except:
             log.exception("(%s) Failure preparing job" % job_id)
             job_wrapper.fail( "failure preparing job", exception=True )
@@ -195,7 +200,7 @@ class BaseJobRunner( object ):
         output_pairs = []
         # Walk job's output associations to find and use from_work_dir attributes.
         job = job_wrapper.get_job()
-        job_tool = self.app.toolbox.tools_by_id.get( job.tool_id, None )
+        job_tool = job_wrapper.tool
         for dataset_assoc in job.output_datasets + job.output_library_datasets:
             for dataset in dataset_assoc.dataset.dataset.history_associations + dataset_assoc.dataset.dataset.library_associations:
                 if isinstance( dataset, self.app.model.HistoryDatasetAssociation ):
@@ -209,7 +214,6 @@ class BaseJobRunner( object ):
                             destination = job_wrapper.get_output_destination( output_paths[ dataset.dataset_id ] )
                             if in_directory( source_file, job_working_directory ):
                                 output_pairs.append( ( source_file, destination ) )
-                                log.debug( "Copying %s to %s as directed by from_work_dir" % ( source_file, destination ) )
                             else:
                                 # Security violation.
                                 log.exception( "from_work_dir specified a location not in the working directory: %s, %s" % ( source_file, job_wrapper.working_directory ) )
@@ -236,12 +240,6 @@ class BaseJobRunner( object ):
                         dependency_shell_commands = "&&".join( dependency_shell_commands )
                     external_metadata_script = "%s&&%s" % ( dependency_shell_commands, external_metadata_script )
             log.debug( 'executing external set_meta script for job %d: %s' % ( job_wrapper.job_id, external_metadata_script ) )
-            if resolve_requirements:
-                dependency_shell_commands = self.app.datatypes_registry.set_external_metadata_tool.build_dependency_shell_commands()
-                if dependency_shell_commands:
-                    if isinstance( dependency_shell_commands, list ):
-                        dependency_shell_commands = "&&".join( dependency_shell_commands )
-                    external_metadata_script = "%s&&%s" % ( dependency_shell_commands, external_metadata_script )
             external_metadata_proc = subprocess.Popen( args=external_metadata_script,
                                                        shell=True,
                                                        env=os.environ,
@@ -251,12 +249,27 @@ class BaseJobRunner( object ):
             log.debug( 'execution of external set_meta for job %d finished' % job_wrapper.job_id )
 
     def get_job_file(self, job_wrapper, **kwds):
+        job_metrics = job_wrapper.app.job_metrics
+        job_instrumenter = job_metrics.job_instrumenters[ job_wrapper.job_destination.id ]
+
+        env_setup_commands = kwds.get( 'env_setup_commands', [] )
+        env_setup_commands.append( job_wrapper.get_env_setup_clause() or '' )
+        destination = job_wrapper.job_destination or {}
+        envs = destination.get( "env", [] )
+        for env in envs:
+            env_setup_commands.append( env_to_statement( env ) )
+        command_line = job_wrapper.runner_command_line
         options = dict(
+            job_instrumenter=job_instrumenter,
             galaxy_lib=job_wrapper.galaxy_lib_dir,
-            env_setup_commands=job_wrapper.get_env_setup_clause(),
+            env_setup_commands=env_setup_commands,
             working_directory=os.path.abspath( job_wrapper.working_directory ),
-            command=job_wrapper.runner_command_line,
+            command=command_line,
         )
+        ## Additional logging to enable if debugging from_work_dir handling, metadata
+        ## commands, etc... (or just peak in the job script.)
+        job_id = job_wrapper.job_id
+        log.debug( '(%s) command is: %s' % ( job_id, command_line ) )
         options.update(**kwds)
         return job_script(**options)
 
@@ -265,7 +278,36 @@ class BaseJobRunner( object ):
             self.work_queue.put( ( self.finish_job, ajs ) )
 
 
-class AsynchronousJobState( object ):
+class JobState( object ):
+    """
+    Encapsulate state of jobs.
+    """
+
+    def set_defaults( self, files_dir ):
+        if self.job_wrapper is not None:
+            id_tag = self.job_wrapper.get_id_tag()
+            if files_dir is not None:
+                self.job_file = JobState.default_job_file( files_dir, id_tag )
+                self.output_file = os.path.join( files_dir, 'galaxy_%s.o' % id_tag )
+                self.error_file = os.path.join( files_dir, 'galaxy_%s.e' % id_tag )
+                self.exit_code_file = os.path.join( files_dir, 'galaxy_%s.ec' % id_tag )
+            job_name = 'g%s' % id_tag
+            if self.job_wrapper.tool.old_id:
+                job_name += '_%s' % self.job_wrapper.tool.old_id
+            if self.job_wrapper.user:
+                job_name += '_%s' % self.job_wrapper.user
+            self.job_name = ''.join( map( lambda x: x if x in ( string.letters + string.digits + '_' ) else '_', job_name ) )
+
+    @staticmethod
+    def default_job_file( files_dir, id_tag ):
+        return os.path.join( files_dir, 'galaxy_%s.sh' % id_tag )
+
+    @staticmethod
+    def default_exit_code_file( files_dir, id_tag ):
+        return os.path.join( files_dir, 'galaxy_%s.ec' % id_tag )
+
+
+class AsynchronousJobState( JobState ):
     """
     Encapsulate the state of an asynchronous job, this should be subclassed as
     needed for various job runners to capture additional information needed
@@ -291,21 +333,6 @@ class AsynchronousJobState( object ):
         self.set_defaults( files_dir )
 
         self.cleanup_file_attributes = [ 'job_file', 'output_file', 'error_file', 'exit_code_file' ]
-
-    def set_defaults( self, files_dir ):
-        if self.job_wrapper is not None:
-            id_tag = self.job_wrapper.get_id_tag()
-            if files_dir is not None:
-                self.job_file = os.path.join( files_dir, 'galaxy_%s.sh' % id_tag )
-                self.output_file = os.path.join( files_dir, 'galaxy_%s.o' % id_tag )
-                self.error_file = os.path.join( files_dir, 'galaxy_%s.e' % id_tag )
-                self.exit_code_file = os.path.join( files_dir, 'galaxy_%s.ec' % id_tag )
-            job_name = 'g%s' % id_tag
-            if self.job_wrapper.tool.old_id:
-                job_name += '_%s' % self.job_wrapper.tool.old_id
-            if self.job_wrapper.user:
-                job_name += '_%s' % self.job_wrapper.user
-            self.job_name = ''.join( map( lambda x: x if x in ( string.letters + string.digits + '_' ) else '_', job_name ) )
 
     def cleanup( self ):
         for file in [ getattr( self, a ) for a in self.cleanup_file_attributes if hasattr( self, a ) ]:
@@ -396,7 +423,7 @@ class AsynchronousJobRunner( BaseJobRunner ):
         self.watched = new_watched
 
     # Subclasses should implement this unless they override check_watched_items all together.
-    def check_watched_item(self):
+    def check_watched_item(self, job_state):
         raise NotImplementedError()
 
     def finish_job( self, job_state ):

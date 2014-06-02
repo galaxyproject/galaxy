@@ -18,6 +18,7 @@
 <div>
     <table class="manage-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
         <tr class="header">
+            <td>Actions</td>
             <td>Job ID</td>
             <td>User</td>
             <td>Last Update</td>
@@ -27,7 +28,12 @@
             <td>PID/Cluster ID</td>
         </tr>
         %for job in jobs:
-                <td><a href="${ h.url_for( controller="data_manager", action="view_job", id=trans.security.encode_id( job.id ) ) }">${ job.id | h }</a></td>
+                <td>
+                    <div class="icon-btn-group">
+                        <a class="icon-btn" href="${ h.url_for( controller="data_manager", action="view_job", id=trans.security.encode_id( job.id ) ) }" title="View info"><span class="fa fa-info-circle"></span></a><a class="icon-btn" href="${ h.url_for( controller="tool_runner", action="rerun", job_id=trans.security.encode_id( job.id ) ) }" title="Rerun"><span class="fa fa-refresh"></span></a>
+                    </div>
+                </td>
+                <td>${ job.id | h }</td>
                 %if job.history and job.history.user:
                     <td>${job.history.user.email | h}</td>
                 %else:

@@ -372,7 +372,7 @@ class DBKeyParameter( SelectParameter ):
         context = context or {}
         other_values = other_values or {}
         try:
-            values = kwd['trans'].db_builds
+            values = kwd['trans'].app.genome_builds.get_genome_build_names( kwd['trans'] )
         except KeyError:
             pass
         return super(DBKeyParameter, self).get_html_field( value, context, other_values, values, **kwd)
@@ -381,7 +381,7 @@ class DBKeyParameter( SelectParameter ):
         context = context or {}
         other_values = other_values or {}
         try:
-            values = kwd['trans'].db_builds
+            values = kwd['trans'].app.genome_builds.get_genome_build_names( kwd['trans'] )
         except KeyError:
             pass
         return super(DBKeyParameter, self).get_html( value, context, other_values, values, **kwd)
@@ -637,7 +637,6 @@ class JobExternalOutputMetadataWrapper( object ):
         # for the compute server.
         def metadata_path_on_compute(path):
             compute_path = path
-            log.info(compute_tmp_dir)
             if compute_tmp_dir and tmp_dir and in_directory(path, tmp_dir):
                 path_relative = os.path.relpath(path, tmp_dir)
                 compute_path = os.path.join(compute_tmp_dir, path_relative)
@@ -659,7 +658,6 @@ class JobExternalOutputMetadataWrapper( object ):
                 __get_filename_override(),
                 metadata_path_on_compute(metadata_files.filename_override_metadata),
             )
-            log.info(line)
             return line
         if not isinstance( datasets, list ):
             datasets = [ datasets ]

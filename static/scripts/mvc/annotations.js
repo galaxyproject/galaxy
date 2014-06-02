@@ -1,6 +1,7 @@
 define([
-    "mvc/base-mvc"
-], function( baseMVC ){
+    "mvc/base-mvc",
+    "utils/localization"
+], function( baseMVC, _l ){
 // =============================================================================
 /** A view on any model that has a 'annotation' attribute
  */

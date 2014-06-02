@@ -6,6 +6,7 @@ from galaxy.model.orm import and_
 from galaxy.model.orm import or_
 from galaxy.util import json
 from galaxy.util import listify
+from tool_shed.util import hg_util
 import tool_shed.util.shed_util_common as suc
 import tool_shed.grids.util as grids_util
 import tool_shed.repository_types.util as rt_util
@@ -116,7 +117,7 @@ class RepositoryGrid( grids.Grid ):
         def get_value( self, trans, grid, repository ):
             """Display the current repository heads."""
             repo_dir = repository.repo_path( trans.app )
-            repo = hg.repository( suc.get_configured_ui(), repo_dir )
+            repo = hg.repository( hg_util.get_configured_ui(), repo_dir )
             heads = suc.get_repository_heads( repo )
             multiple_heads = len( heads ) > 1
             if multiple_heads:
@@ -124,7 +125,7 @@ class RepositoryGrid( grids.Grid ):
             else:
                 heads_str = ''
             for ctx in heads:
-                heads_str += '%s<br/>' % suc.get_revision_label_from_ctx( ctx, include_date=True )
+                heads_str += '%s<br/>' % hg_util.get_revision_label_from_ctx( ctx, include_date=True )
             heads_str.rstrip( '<br/>' )
             if multiple_heads:
                 heads_str += '</font>'
@@ -1212,7 +1213,7 @@ class RepositoriesWithInvalidToolsGrid( RepositoryGrid ):
             grids.GridColumn.__init__( self, col_name )
 
         def get_value( self, trans, grid, repository ):
-            # At the time this grid is displayed we know that the received repository will have invalid tools in it's latest changeset revision
+            # At the time this grid is displayed we know that the received repository will have invalid tools in its latest changeset revision
             # that has associated metadata.
             val = ''
             repository_metadata = get_latest_repository_metadata_if_it_includes_invalid_tools( trans, repository )
@@ -1338,7 +1339,7 @@ class RepositoryMetadataGrid( grids.Grid ):
         def get_value( self, trans, grid, repository_metadata ):
             repository = repository_metadata.repository
             changeset_revision = repository_metadata.changeset_revision
-            changeset_revision_label = suc.get_revision_label( trans, repository, changeset_revision, include_date=True )
+            changeset_revision_label = hg_util.get_revision_label( trans, repository, changeset_revision, include_date=True )
             return changeset_revision_label
 
 
@@ -1482,7 +1483,7 @@ class RepositoryDependenciesGrid( RepositoryMetadataGrid ):
                                                                                                                                           changeset_revision )
                                 if not required_repository_metadata:
                                     repo_dir = required_repository.repo_path( trans.app )
-                                    repo = hg.repository( suc.get_configured_ui(), repo_dir )
+                                    repo = hg.repository( hg_util.get_configured_ui(), repo_dir )
                                     updated_changeset_revision = suc.get_next_downloadable_changeset_revision( required_repository, repo, changeset_revision )
                                     required_repository_metadata = metadata_util.get_repository_metadata_by_repository_id_changeset_revision( trans,
                                                                                                                                               required_repository_id,
@@ -1939,8 +1940,8 @@ def filter_by_latest_downloadable_changeset_revision_that_has_failing_tool_tests
     of type repository_suite_definition and tool_dependency_definition.
     """
     repository_metadata = get_latest_downloadable_repository_metadata_if_it_includes_tools( trans, repository )
-    if repository_metadata \
-        and repository_metadata.tool_test_results is not None \
+    if repository_metadata is not None \
+        and has_been_tested( repository_metadata ) \
         and not repository_metadata.missing_test_components \
         and not repository_metadata.tools_functionally_correct \
         and not repository_metadata.test_install_error:
@@ -1956,7 +1957,9 @@ def filter_by_latest_downloadable_changeset_revision_that_has_missing_tool_test_
     tool_dependency_definition.
     """
     repository_metadata = get_latest_downloadable_repository_metadata_if_it_includes_tools( trans, repository )
-    if repository_metadata and repository_metadata.missing_test_components:
+    if repository_metadata is not None \
+        and has_been_tested( repository_metadata ) \
+        and repository_metadata.missing_test_components:
         return repository_metadata.changeset_revision
     return None
 
@@ -1967,9 +1970,10 @@ def filter_by_latest_downloadable_changeset_revision_that_has_no_failing_tool_te
     and tool_dependency_definition.
     """
     repository_metadata = get_latest_downloadable_repository_metadata_if_it_includes_tools( trans, repository )
-    if repository_metadata is not None and \
-        not repository_metadata.missing_test_components and \
-        repository_metadata.tools_functionally_correct:
+    if repository_metadata is not None \
+        and has_been_tested( repository_metadata ) \
+        and not repository_metadata.missing_test_components \
+        and repository_metadata.tools_functionally_correct:
         return repository_metadata.changeset_revision
     return None
 
@@ -1992,7 +1996,9 @@ def filter_by_latest_downloadable_changeset_revision_that_has_test_install_error
     """
     repository_metadata = get_latest_downloadable_repository_metadata_if_it_has_test_install_errors( trans, repository )
     # Filter further by eliminating repositories that are missing test components.
-    if repository_metadata is not None and not repository_metadata.missing_test_components:
+    if repository_metadata is not None \
+        and has_been_tested( repository_metadata ) \
+        and not repository_metadata.missing_test_components:
         return repository_metadata.changeset_revision
     return None
 
@@ -2029,7 +2035,7 @@ def get_latest_downloadable_repository_metadata( trans, repository ):
      tool_dependency_definition.
     """
     encoded_repository_id = trans.security.encode_id( repository.id )
-    repo = hg.repository( suc.get_configured_ui(), repository.repo_path( trans.app ) )
+    repo = hg.repository( hg_util.get_configured_ui(), repository.repo_path( trans.app ) )
     tip_ctx = str( repo.changectx( repo.changelog.tip() ) )
     repository_metadata = None
     try:
@@ -2066,7 +2072,9 @@ def get_latest_downloadable_repository_metadata_if_it_has_test_install_errors( t
     well as types repository_suite_definition and tool_dependency_definition.
     """
     repository_metadata = get_latest_downloadable_repository_metadata( trans, repository )
-    if repository_metadata is not None and repository_metadata.test_install_error:
+    if repository_metadata is not None \
+        and has_been_tested( repository_metadata ) \
+        and repository_metadata.test_install_error:
         return repository_metadata
     return None
 
@@ -2077,7 +2085,7 @@ def get_latest_repository_metadata( trans, repository ):
      tool_dependency_definition.
     """
     encoded_repository_id = trans.security.encode_id( repository.id )
-    repo = hg.repository( suc.get_configured_ui(), repository.repo_path( trans.app ) )
+    repo = hg.repository( hg_util.get_configured_ui(), repository.repo_path( trans.app ) )
     tip_ctx = str( repo.changectx( repo.changelog.tip() ) )
     try:
         repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, encoded_repository_id, tip_ctx )
@@ -2103,3 +2111,25 @@ def get_latest_repository_metadata_if_it_includes_invalid_tools( trans, reposito
         if metadata is not None and 'invalid_tools' in metadata:
             return repository_metadata
     return None
+
+def has_been_tested( repository_metadata ):
+    """
+    Return True if the received repository_metadata record'd tool_test_results column was populated by
+    the Tool Shed's install and test framework. 
+    """
+    tool_test_results = repository_metadata.tool_test_results
+    if tool_test_results is None:
+        return False
+    # The install and test framework's preparation scripts will populate the tool_test_results column
+    # with something like this:
+    # [{"test_environment": 
+    #    {"time_tested": "2014-05-15 16:15:18",
+    #     "tool_shed_database_version": 22, 
+    #     "tool_shed_mercurial_version": "2.2.3", 
+    #     "tool_shed_revision": "13459:9a1415f8108f"}
+    # }]
+    tool_test_results = listify( tool_test_results )
+    for test_results_dict in tool_test_results:
+        if len( test_results_dict ) > 1:
+            return True
+    return False

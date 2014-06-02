@@ -1,17 +1,158 @@
 define([
-    "mvc/base-mvc"
-], function( baseMVC ){
+    "mvc/base-mvc",
+    "utils/localization"
+], function( baseMVC, _l ){
 //==============================================================================
-/** @class (HDA) model for a Galaxy dataset
- *      related to a history.
- *  @name HistoryDatasetAssociation
+/** @class model for contents related to a history.
+ *  @name HistoryContent
  *
  *  @augments Backbone.Model
  *  @borrows LoggableMixin#logger as #logger
  *  @borrows LoggableMixin#log as #log
  *  @constructs
  */
-var HistoryDatasetAssociation = Backbone.Model.extend( baseMVC.LoggableMixin ).extend(
+var HistoryContent = Backbone.Model.extend( baseMVC.LoggableMixin ).extend( {
+
+    /** fetch location of this HDA's history in the api */
+    urlRoot: galaxy_config.root + 'api/histories/',
+    /** full url spec. for this HDA */
+    url : function(){
+        return this.urlRoot + this.get( 'history_id' ) + '/contents/' + this.get('history_content_type') + 's/' + this.get( 'id' );
+    },
+
+    /** the more common alias of visible */
+    hidden : function(){
+        return !this.get( 'visible' );
+    },
+
+    // ........................................................................ ajax
+
+    /** save this HDA, _Mark_ing it as deleted (just a flag) */
+    'delete' : function _delete( options ){
+        if( this.get( 'deleted' ) ){ return jQuery.when(); }
+        return this.save( { deleted: true }, options );
+    },
+    /** save this HDA, _Mark_ing it as undeleted */
+    undelete : function _undelete( options ){
+        if( !this.get( 'deleted' ) || this.get( 'purged' ) ){ return jQuery.when(); }
+        return this.save( { deleted: false }, options );
+    },
+
+    /** save this HDA as not visible */
+    hide : function _hide( options ){
+        if( !this.get( 'visible' ) ){ return jQuery.when(); }
+        return this.save( { visible: false }, options );
+    },
+    /** save this HDA as visible */
+    unhide : function _uhide( options ){
+        if( this.get( 'visible' ) ){ return jQuery.when(); }
+        return this.save( { visible: true }, options );
+    },
+
+    /** based on show_deleted, show_hidden (gen. from the container control),
+     *      would this ds show in the list of ds's?
+     *  @param {Boolean} show_deleted are we showing deleted hdas?
+     *  @param {Boolean} show_hidden are we showing hidden hdas?
+     */
+    isVisible : function( show_deleted, show_hidden ){
+        var isVisible = true;
+        if( ( !show_deleted )
+        &&  ( this.get( 'deleted' ) || this.get( 'purged' ) ) ){
+            isVisible = false;
+        }
+        if( ( !show_hidden )
+        &&  ( !this.get( 'visible' ) ) ){
+            isVisible = false;
+        }
+        return isVisible;
+    },
+
+    /** search the attribute with key attrKey for the string searchFor; T/F if found */
+    searchAttribute : function( attrKey, searchFor ){
+        var attrVal = this.get( attrKey );
+        //console.debug( 'searchAttribute', attrKey, attrVal, searchFor );
+        // bail if empty searchFor or unsearchable values
+        if( !searchFor
+        ||  ( attrVal === undefined || attrVal === null ) ){
+            return false;
+        }
+        // pass to sep. fn for deep search of array attributes
+        if( _.isArray( attrVal ) ){ return this._searchArrayAttribute( attrVal, searchFor ); }
+        return ( attrVal.toString().toLowerCase().indexOf( searchFor.toLowerCase() ) !== -1 );
+    },
+
+    /** deep(er) search for array attributes; T/F if found */
+    _searchArrayAttribute : function( array, searchFor ){
+        //console.debug( '_searchArrayAttribute', array, searchFor );
+        searchFor = searchFor.toLowerCase();
+        //precondition: searchFor has already been validated as non-empty string
+        //precondition: assumes only 1 level array
+        //TODO: could possibly break up searchFor more (CSV...)
+        return _.any( array, function( elem ){
+            return ( elem.toString().toLowerCase().indexOf( searchFor.toLowerCase() ) !== -1 );
+        });
+    },
+
+    /** search all searchAttributes for the string searchFor,
+     *      returning a list of keys of attributes that contain searchFor
+     */
+    search : function( searchFor ){
+        var model = this;
+        return _.filter( this.searchAttributes, function( key ){
+            return model.searchAttribute( key, searchFor );
+        });
+    },
+
+    /** alias of search, but returns a boolean; accepts attribute specifiers where
+     *      the attributes searched can be narrowed to a single attribute using
+     *      the form: matches( 'genome_build=hg19' )
+     *      (the attribute keys allowed can also be aliases to the true attribute key;
+     *          see searchAliases above)
+     *  @param {String} term   plain text or ATTR_SPECIFIER sep. key=val pair
+     *  @returns {Boolean} was term found in (any) attribute(s)
+     */
+    matches : function( term ){
+        var ATTR_SPECIFIER = '=',
+            split = term.split( ATTR_SPECIFIER );
+        // attribute is specified - search only that
+        if( split.length >= 2 ){
+            var attrKey = split[0];
+            attrKey = this.searchAliases[ attrKey ] || attrKey;
+            return this.searchAttribute( attrKey, split[1] );
+        }
+        // no attribute is specified - search all attributes in searchAttributes
+        return !!this.search( term ).length;
+    },
+
+    /** an implicit AND search for all terms; IOW, an hda must match all terms given
+     *      where terms is a whitespace separated value string.
+     *      e.g. given terms of: 'blah bler database=hg19'
+     *          an HDA would have to have attributes containing blah AND bler AND a genome_build == hg19
+     *      To include whitespace in terms: wrap the term in double quotations.
+     */
+    matchesAll : function( terms ){
+        var model = this;
+        // break the terms up by whitespace and filter out the empty strings
+        terms = terms.match( /(".*"|\w*=".*"|\S*)/g ).filter( function( s ){ return !!s; });
+        return _.all( terms, function( term ){
+            term = term.replace( /"/g, '' );
+            return model.matches( term );
+        });
+    }
+
+} );
+
+//==============================================================================
+/** @class (HDA) model for a Galaxy dataset
+ *      related to a history.
+ *  @name HistoryDatasetAssociation
+ *
+ *  @augments HistoryContent
+ *  @borrows LoggableMixin#logger as #logger
+ *  @borrows LoggableMixin#log as #log
+ *  @constructs
+ */
+var HistoryDatasetAssociation = HistoryContent.extend(
 /** @lends HistoryDatasetAssociation.prototype */{
     
     ///** logger used to record this.log messages, commonly set to console */
@@ -26,6 +167,7 @@ var HistoryDatasetAssociation = Backbone.Model.extend( baseMVC.LoggableMixin ).e
         history_id          : null,
         // often used with tagging
         model_class         : 'HistoryDatasetAssociation',
+        history_content_type : 'dataset',
         hid                 : 0,
         
         // ---whereas these are Dataset related/inherited
@@ -57,13 +199,6 @@ var HistoryDatasetAssociation = Backbone.Model.extend( baseMVC.LoggableMixin ).e
         annotation          : ''
     },
 
-    /** fetch location of this HDA's history in the api */
-    urlRoot: galaxy_config.root + 'api/histories/',
-    /** full url spec. for this HDA */
-    url : function(){
-        return this.urlRoot + this.get( 'history_id' ) + '/contents/' + this.get( 'id' );
-    },
-    
     /** controller urls assoc. with this HDA */
     urls : function(){
         var id = this.get( 'id' );
@@ -119,29 +254,6 @@ var HistoryDatasetAssociation = Backbone.Model.extend( baseMVC.LoggableMixin ).e
     /** Is this hda deleted or purged? */
     isDeletedOrPurged : function(){
         return ( this.get( 'deleted' ) || this.get( 'purged' ) );
-    },
-
-    /** based on show_deleted, show_hidden (gen. from the container control),
-     *      would this ds show in the list of ds's?
-     *  @param {Boolean} show_deleted are we showing deleted hdas?
-     *  @param {Boolean} show_hidden are we showing hidden hdas?
-     */
-    isVisible : function( show_deleted, show_hidden ){
-        var isVisible = true;
-        if( ( !show_deleted )
-        &&  ( this.get( 'deleted' ) || this.get( 'purged' ) ) ){
-            isVisible = false;
-        }
-        if( ( !show_hidden )
-        &&  ( !this.get( 'visible' ) ) ){
-            isVisible = false;
-        }
-        return isVisible;
-    },
-    
-    /** the more common alias of visible */
-    hidden : function(){
-        return !this.get( 'visible' );
     },
 
     /** Is this HDA in a 'ready' state; where 'Ready' states are states where no
@@ -256,79 +368,6 @@ var HistoryDatasetAssociation = Backbone.Model.extend( baseMVC.LoggableMixin ).e
         tag         : 'tags'
     },
 
-    /** search the attribute with key attrKey for the string searchFor; T/F if found */
-    searchAttribute : function( attrKey, searchFor ){
-        var attrVal = this.get( attrKey );
-        //console.debug( 'searchAttribute', attrKey, attrVal, searchFor );
-        // bail if empty searchFor or unsearchable values
-        if( !searchFor
-        ||  ( attrVal === undefined || attrVal === null ) ){
-            return false;
-        }
-        // pass to sep. fn for deep search of array attributes
-        if( _.isArray( attrVal ) ){ return this._searchArrayAttribute( attrVal, searchFor ); }
-        return ( attrVal.toString().toLowerCase().indexOf( searchFor.toLowerCase() ) !== -1 );
-    },
-
-    /** deep(er) search for array attributes; T/F if found */
-    _searchArrayAttribute : function( array, searchFor ){
-        //console.debug( '_searchArrayAttribute', array, searchFor );
-        searchFor = searchFor.toLowerCase();
-        //precondition: searchFor has already been validated as non-empty string
-        //precondition: assumes only 1 level array
-        //TODO: could possibly break up searchFor more (CSV...)
-        return _.any( array, function( elem ){
-            return ( elem.toString().toLowerCase().indexOf( searchFor.toLowerCase() ) !== -1 );
-        });
-    },
-
-    /** search all searchAttributes for the string searchFor,
-     *      returning a list of keys of attributes that contain searchFor
-     */
-    search : function( searchFor ){
-        var model = this;
-        return _.filter( this.searchAttributes, function( key ){
-            return model.searchAttribute( key, searchFor );
-        });
-    },
-
-    /** alias of search, but returns a boolean; accepts attribute specifiers where
-     *      the attributes searched can be narrowed to a single attribute using
-     *      the form: matches( 'genome_build=hg19' )
-     *      (the attribute keys allowed can also be aliases to the true attribute key;
-     *          see searchAliases above)
-     *  @param {String} term   plain text or ATTR_SPECIFIER sep. key=val pair
-     *  @returns {Boolean} was term found in (any) attribute(s)
-     */
-    matches : function( term ){
-        var ATTR_SPECIFIER = '=',
-            split = term.split( ATTR_SPECIFIER );
-        // attribute is specified - search only that
-        if( split.length >= 2 ){
-            var attrKey = split[0];
-            attrKey = this.searchAliases[ attrKey ] || attrKey;
-            return this.searchAttribute( attrKey, split[1] );
-        }
-        // no attribute is specified - search all attributes in searchAttributes
-        return !!this.search( term ).length;
-    },
-
-    /** an implicit AND search for all terms; IOW, an hda must match all terms given
-     *      where terms is a whitespace separated value string.
-     *      e.g. given terms of: 'blah bler database=hg19'
-     *          an HDA would have to have attributes containing blah AND bler AND a genome_build == hg19
-     *      To include whitespace in terms: wrap the term in double quotations.
-     */
-    matchesAll : function( terms ){
-        var model = this;
-        // break the terms up by whitespace and filter out the empty strings
-        terms = terms.match( /(".*"|\w*=".*"|\S*)/g ).filter( function( s ){ return !!s; });
-        return _.all( terms, function( term ){
-            term = term.replace( /"/g, '' );
-            return model.matches( term );
-        });
-    },
-
     // ........................................................................ misc
     /** String representation */
     toString : function(){
@@ -377,7 +416,6 @@ HistoryDatasetAssociation.STATES = {
 
 /** states that are in a final state (the underlying job is complete) */
 HistoryDatasetAssociation.READY_STATES = [
-    HistoryDatasetAssociation.STATES.NEW,
     HistoryDatasetAssociation.STATES.OK,
     HistoryDatasetAssociation.STATES.EMPTY,
     HistoryDatasetAssociation.STATES.PAUSED,
@@ -392,11 +430,13 @@ HistoryDatasetAssociation.NOT_READY_STATES = [
     HistoryDatasetAssociation.STATES.UPLOAD,
     HistoryDatasetAssociation.STATES.QUEUED,
     HistoryDatasetAssociation.STATES.RUNNING,
-    HistoryDatasetAssociation.STATES.SETTING_METADATA
+    HistoryDatasetAssociation.STATES.SETTING_METADATA,
+    HistoryDatasetAssociation.STATES.NEW
 ];
 
 //==============================================================================
 /** @class Backbone collection of (HDA) models
+ *     TODO: Rename HistoryContentCollection
  *
  *  @borrows LoggableMixin#logger as #logger
  *  @borrows LoggableMixin#log as #log
@@ -404,7 +444,15 @@ HistoryDatasetAssociation.NOT_READY_STATES = [
  */
 var HDACollection = Backbone.Collection.extend( baseMVC.LoggableMixin ).extend(
 /** @lends HDACollection.prototype */{
-    model           : HistoryDatasetAssociation,
+    model : function( attrs, options ) {
+        if( attrs.history_content_type == "dataset" ) {
+            return new HistoryDatasetAssociation( attrs, options );
+        } else if( attrs.history_content_type == "dataset_collection" ) {
+            return new HistoryDatasetCollectionAssociation( attrs, options );
+        } else {
+            // TODO: Handle unknown history_content_type...
+        }
+    },
 
     ///** logger used to record this.log messages, commonly set to console */
     //// comment this out to suppress log output
@@ -578,11 +626,129 @@ var HDACollection = Backbone.Collection.extend( baseMVC.LoggableMixin ).extend(
         Backbone.Collection.prototype.set.call( this, models, options );
     },
 
+    /** Convert this ad-hoc collection of HDAs to a formal collection tracked
+        by the server.
+    **/
+    promoteToHistoryDatasetCollection : function _promote( history, collection_type, options ){
+        options = options || {};
+        options.url = this.url();
+        options.type = "POST";
+        var full_collection_type = collection_type;
+        var element_identifiers = [],
+            name = null;
+
+        // This mechanism is rough - no error handling, allows invalid selections, no way
+        // for user to pick/override element identifiers. This is only really meant 
+        if( collection_type == "list" ) {
+            this.chain().each( function( hda ) {
+                // TODO: Handle duplicate names.
+                var name = hda.attributes.name;
+                var id = hda.id;
+                var content_type = hda.attributes.history_content_type;
+                if( content_type == "dataset" ) {
+                    if( full_collection_type != "list" ) {
+                        console.log( "Invalid collection type" );
+                    }
+                    element_identifiers.push( { name: name, src: "hda", id: id } );
+                } else {
+                    if( full_collection_type == "list" ) {
+                        full_collection_type = "list:" + hda.attributes.collection_type;
+                    } else {
+                        if( full_collection_type != "list:" + hda.attributes.collection_type ) {
+                            console.log( "Invalid collection type" );
+                        }                        
+                    }
+                    element_identifiers.push( { name: name, src: "hdca", id: id } );
+                }
+            });
+            name = "New Dataset List";
+        } else if( collection_type == "paired" ) {
+            var ids = this.ids();
+            if( ids.length != 2 ){
+                // TODO: Do something...
+            }
+            element_identifiers.push( { name: "forward", src: "hda", id: ids[ 0 ] } );
+            element_identifiers.push( { name: "reverse", src: "hda", id: ids[ 1 ] } );
+            name = "New Dataset Pair";
+        }
+        options.data = {type: "dataset_collection",
+                        name: name,
+                        collection_type: full_collection_type,
+                        element_identifiers: JSON.stringify(element_identifiers),
+                       };
+
+        var xhr = jQuery.ajax( options );
+        xhr.done( function( message, status, responseObj ){
+            history.refresh( );
+        });
+        xhr.fail( function( xhr, status, message ){
+            if( xhr.responseJSON && xhr.responseJSON.error ){
+                error = xhr.responseJSON.error;
+            } else {
+                error = xhr.responseJSON;
+            }
+            xhr.responseText = error;
+            // Do something?
+        });
+        return xhr;
+    },
+
     /** String representation. */
     toString : function(){
          return ([ 'HDACollection(', [ this.historyId, this.length ].join(), ')' ].join( '' ));
     }
 });
+
+var HistoryDatasetCollectionAssociation = HistoryContent.extend(
+/** @lends HistoryDatasetCollectionAssociation.prototype */{
+    /** default attributes for a model */
+    defaults : {
+        // parent (containing) history
+        history_id          : null,
+        // often used with tagging
+        model_class         : 'HistoryDatasetCollectionAssociation',
+        history_content_type : 'dataset_collection',
+        hid                 : 0,
+        
+        id                  : null,
+        name                : '(unnamed dataset collection)',
+        // one of HistoryDatasetAssociation.STATES, calling them all 'ok' for now.
+        state               : 'ok',
+
+        accessible          : true,
+        deleted             : false,
+        visible             : true,
+
+        purged              : false, // Purged doesn't make sense for collections - at least right now.
+
+        tags                : [],
+        annotation          : ''
+    },
+    urls : function(){
+    },
+
+    inReadyState : function(){
+        return true; // TODO
+    },
+
+    // ........................................................................ search
+    /** what attributes of an collection will be used in a text search */
+    searchAttributes : [
+        'name'
+    ],
+
+    /** our attr keys don't often match the labels we display to the user - so, when using
+     *      attribute specifiers ('name="bler"') in a term, allow passing in aliases for the
+     *      following attr keys.
+     */
+    searchAliases : {
+        title       : 'name'
+        // TODO: Add tag...
+    },
+
+});
+
+
 
 //==============================================================================
 return {

@@ -2,6 +2,7 @@ import galaxy.tools
 
 from galaxy.tools.parameters.basic import (
     DataToolParameter,
+    DataCollectionToolParameter,
     SelectToolParameter,
 )
 from galaxy.tools.parameters.grouping import (
@@ -57,6 +58,13 @@ class WrappedParameters( object ):
                                                          name=input.name )
             elif isinstance( input, SelectToolParameter ):
                 input_values[ input.name ] = galaxy.tools.SelectToolParameterWrapper( input, input_values[ input.name ], tool.app, other_values=incoming )
+            elif isinstance( input, DataCollectionToolParameter ):
+                input_values[ input.name ] = galaxy.tools.DatasetCollectionWrapper(
+                    input_values[ input.name ],
+                    datatypes_registry=trans.app.datatypes_registry,
+                    tool=tool,
+                    name=input.name,
+                )
             else:
                 input_values[ input.name ] = galaxy.tools.InputValueWrapper( input, input_values[ input.name ], incoming )
 

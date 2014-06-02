@@ -781,7 +781,7 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
             seq_offset = 0,
             gap = Math.round(w_scale/2),
             char_width_px = ctx.canvas.manager.char_width_px,
-            block_color = (strand === "+" ? this.prefs.block_color : this.prefs.reverse_strand_color),
+            block_color = (strand === "+" ? this.prefs.detail_block_color : this.prefs.reverse_strand_color),
             pack_mode = (mode === 'Pack'),
             paint_utils = new ReadPainterUtils(ctx, (pack_mode ? PACK_FEATURE_HEIGHT : SQUISH_FEATURE_HEIGHT), w_scale, mode),
             drawing_blocks = [];

@@ -39,7 +39,7 @@ class DataToolParameterTestCase( TestCase, tools_support.UsesApp ):
         hda1 = MockHistoryDatasetAssociation( name="hda1", id=1 )
         hda2 = MockHistoryDatasetAssociation( name="hda2", id=2 )
         self.stub_active_datasets( hda1, hda2 )
-        field = self.param.get_html_field( trans=self.trans )
+        field = self._simple_field()
         assert len( field.options ) == 2
         assert field.options[ 0 ][ 0 ] == "1: hda1"
         assert field.options[ 1 ][ 0 ] == "2: hda2"
@@ -48,7 +48,7 @@ class DataToolParameterTestCase( TestCase, tools_support.UsesApp ):
         assert not field.options[ 0 ][ 2 ]  # Others not selected
 
         hda2.datatype_matches = False
-        field = self.param.get_html_field( trans=self.trans )
+        field = self._simple_field()
         assert len( field.options ) == 1
         assert field.options[ 0 ][ 2 ] is True  # Last one selected
 
@@ -58,8 +58,8 @@ class DataToolParameterTestCase( TestCase, tools_support.UsesApp ):
         self.stub_active_datasets( hda1, hda2 )
         hda1.visible = False
         hda2.visible = False
-        field = self.param.get_html_field( trans=self.trans, value=hda2 )
-        assert len( field.options ) == 1  # hda1 not an option, not visible or selected
+        field = self._simple_field( value=hda2 )
+        self.assertEquals( len( field.options ), 1 )  # hda1 not an option, not visible or selected
         assert field.options[ 0 ][ 0 ] == "2: (hidden) hda2"
 
     def test_field_implicit_conversion_new( self ):
@@ -67,7 +67,7 @@ class DataToolParameterTestCase( TestCase, tools_support.UsesApp ):
         hda1.datatype_matches = False
         hda1.conversion_destination = ( "tabular", None )
         self.stub_active_datasets( hda1 )
-        field = self.param.get_html_field( trans=self.trans )
+        field = self._simple_field()
         assert len( field.options ) == 1
         assert field.options[ 0 ][ 0 ] == "1: (as tabular) hda1"
         assert field.options[ 0 ][ 1 ] == 1
@@ -77,7 +77,7 @@ class DataToolParameterTestCase( TestCase, tools_support.UsesApp ):
         hda1.datatype_matches = False
         hda1.conversion_destination = ( "tabular", MockHistoryDatasetAssociation( name="hda1converted", id=2 ) )
         self.stub_active_datasets( hda1 )
-        field = self.param.get_html_field( trans=self.trans )
+        field = self._simple_field()
         assert len( field.options ) == 1
         assert field.options[ 0 ][ 0 ] == "1: (as tabular) hda1"
         # This is difference with previous test, value is existing
@@ -86,16 +86,16 @@ class DataToolParameterTestCase( TestCase, tools_support.UsesApp ):
 
     def test_field_multiple( self ):
         self.multiple = True
-        field = self.param.get_html_field( trans=self.trans )
+        field = self._simple_field()
         assert field.multiple
 
     def test_field_empty_selection( self ):
-        field = self.param.get_html_field( trans=self.trans )
+        field = self._simple_field()
         assert len( field.options ) == 0
 
     def test_field_empty_selection_optional( self ):
         self.optional = True
-        field = self.param.get_html_field( trans=self.trans )
+        field = self._simple_field()
         assert len( field.options ) == 1
         option = field.options[ 0 ]
         assert option[ 0 ] == "Selection is Optional"
@@ -170,6 +170,12 @@ class DataToolParameterTestCase( TestCase, tools_support.UsesApp ):
 
     def stub_active_datasets( self, *hdas ):
         self.test_history._active_datasets_children_and_roles = hdas
+
+    def _simple_field( self, **kwds ):
+        field = self.param.get_html_field( trans=self.trans, **kwds )
+        if hasattr( field, "primary_field" ):
+            field = field.primary_field
+        return field
 
     @property
     def param( self ):

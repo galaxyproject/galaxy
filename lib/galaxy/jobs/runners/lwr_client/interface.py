@@ -67,8 +67,8 @@ class LocalLwrInterface(LwrInteface):
         self.object_store = object_store
 
     def __app_args(self):
-        ## Arguments that would be specified from LwrApp if running
-        ## in web server.
+        # Arguments that would be specified from LwrApp if running
+        # in web server.
         return {
             'manager': self.job_manager,
             'file_cache': self.file_cache,

@@ -1,18 +1,18 @@
 from contextlib import contextmanager
-from tool_shed.galaxy_install.tool_dependencies import fabric_util
+from tool_shed.galaxy_install.tool_dependencies.recipe.env_file_builder import EnvFileBuilder
 
 
 def test_env_file_builder():
     install_dir = "/opt/galaxy/dependencies/foo/"
-    env_file_builder = fabric_util.EnvFileBuilder( install_dir )
+    env_file_builder = EnvFileBuilder( install_dir )
     added_lines = []
     mock_return = dict(value=0)
 
     def mock_file_append( text, file_path, **kwds ):
-        added_lines.append(text)
-        return mock_return["value"]
+        added_lines.append( text )
+        return mock_return[ "value" ]
 
-    with __mock_fabric_util_method("file_append", mock_file_append):
+    with __mock_env_file_builder_method( env_file_builder, "file_append", mock_file_append ):
         env_file_builder.append_line( name="PATH", action="prepend_to", value="/usr/bin/local/R" )
         assert added_lines == [ "PATH=/usr/bin/local/R:$PATH; export PATH" ]
         assert env_file_builder.return_code == 0
@@ -36,10 +36,10 @@ def test_env_file_builder():
 ## Poor man's mocking. Need to get a real mocking library as real Galaxy development
 ## dependnecy.
 @contextmanager
-def __mock_fabric_util_method(name, mock_method):
-    real_method = getattr(fabric_util, name)
+def __mock_env_file_builder_method( env_file_builder, name, mock_method ):
+    real_method = getattr( env_file_builder, name )
     try:
-        setattr(fabric_util, name, mock_method)
+        setattr( env_file_builder, name, mock_method )
         yield
     finally:
-        setattr(fabric_util, name, real_method)
+        setattr( env_file_builder, name, real_method )

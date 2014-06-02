@@ -22,14 +22,24 @@
         ${h.css( 'base' )}
 
         ## install nv.d3 module
-        ${h.javascript_link( app_root + "plugins/nv.d3.js" )}
-        ${h.stylesheet_link( app_root + "plugins/nv.d3.css" )}
+        ${h.javascript_link( app_root + "plugins/nvd3/nv.d3.js" )}
+        ${h.stylesheet_link( app_root + "plugins/nvd3/nv.d3.css" )}
+
+        ## install highcharts module
+        ${h.javascript_link( app_root + "plugins/highcharts/highcharts.js" )}
+        ${h.javascript_link( app_root + "plugins/highcharts/highcharts-more.js" )}
+        
+        ## install heat map module
+        ${h.stylesheet_link( app_root + "plugins/heatmap/heatmap.css" )}
 
         ## install boxplot module
         ##${h.javascript_link( app_root + "plugins/box.js" )}
 
         ## load merged/minified code
         ${h.javascript_link( app_root + "build-app.js" )}
+        
+        ## install default css
+        ${h.stylesheet_link( app_root + "app.css" )}
     </head>
 
     <body>
@@ -37,7 +47,8 @@
 
             // get configuration
             var config = {
-                root    : '${root}'
+                root     : '${root}',
+                app_root : '${app_root}'
             };
             
             // link galaxy

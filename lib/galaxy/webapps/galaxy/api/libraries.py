@@ -2,15 +2,15 @@
 API operations on a data library.
 """
 from galaxy import util
-from galaxy import web
 from galaxy import exceptions
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
 from galaxy.model.orm import and_, not_, or_
-from galaxy.web.base.controller import BaseAPIController, url_for
+from galaxy.web.base.controller import BaseAPIController
 
 import logging
 log = logging.getLogger( __name__ )
+
 
 class LibrariesController( BaseAPIController ):
 
@@ -33,7 +33,8 @@ class LibrariesController( BaseAPIController ):
         query = trans.sa_session.query( trans.app.model.Library )
         deleted = kwd.get( 'deleted', 'missing' )
         try:
-            if not trans.user_is_admin(): # non-admins can't see deleted libraries
+            if not trans.user_is_admin():
+                # non-admins can't see deleted libraries
                 deleted = False
             else:
                 deleted = util.asbool( deleted )
@@ -48,20 +49,18 @@ class LibrariesController( BaseAPIController ):
         current_user_role_ids = [ role.id for role in trans.get_current_user_roles() ]
         library_access_action = trans.app.security_agent.permitted_actions.LIBRARY_ACCESS.action
         restricted_library_ids = [ lp.library_id for lp in ( trans.sa_session.query( trans.model.LibraryPermissions )
-                                                                           .filter( trans.model.LibraryPermissions.table.c.action == library_access_action )
-                                                                           .distinct() ) ]
+                                                             .filter( trans.model.LibraryPermissions.table.c.action == library_access_action )
+                                                             .distinct() ) ]
         accessible_restricted_library_ids = [ lp.library_id for lp in ( trans.sa_session.query( trans.model.LibraryPermissions )
-                                                                                      .filter( and_( trans.model.LibraryPermissions.table.c.action == library_access_action,
-                                                                                                     trans.model.LibraryPermissions.table.c.role_id.in_( current_user_role_ids ) ) ) ) ]
-        query = query.filter( or_( not_( trans.model.Library.table.c.id.in_( restricted_library_ids ) ),
-                           trans.model.Library.table.c.id.in_( accessible_restricted_library_ids ) ) )
+                                              .filter( and_( trans.model.LibraryPermissions.table.c.action == library_access_action,
+                                                             trans.model.LibraryPermissions.table.c.role_id.in_( current_user_role_ids ) ) ) ) ]
+        query = query.filter( or_( not_( trans.model.Library.table.c.id.in_( restricted_library_ids ) ), trans.model.Library.table.c.id.in_( accessible_restricted_library_ids ) ) )
         libraries = []
         for library in query:
-            item = library.to_dict( view='element', value_mapper={ 'id' : trans.security.encode_id , 'root_folder_id' : trans.security.encode_id } )
+            item = library.to_dict( view='element', value_mapper={ 'id': trans.security.encode_id, 'root_folder_id': trans.security.encode_id } )
             if trans.app.security_agent.library_is_public( library, contents=False ):
                 item[ 'public' ] = True
             current_user_roles = trans.get_current_user_roles()
-            # can_user_add = trans.app.security_agent.can_add_library_item( current_user_roles, library.root_folder )
             if not trans.user_is_admin():
                 item['can_user_add'] = trans.app.security_agent.can_add_library_item( current_user_roles, library )
                 item['can_user_modify'] = trans.app.security_agent.can_modify_library_item( current_user_roles, library )
@@ -98,7 +97,7 @@ class LibrariesController( BaseAPIController ):
         deleted = util.string_as_bool( deleted )
         try:
             decoded_library_id = trans.security.decode_id( library_id )
-        except Exception:
+        except TypeError:
             raise exceptions.MalformedId( 'Malformed library id ( %s ) specified, unable to decode.' % id )
         try:
             library = trans.sa_session.query( trans.app.model.Library ).get( decoded_library_id )
@@ -107,7 +106,7 @@ class LibrariesController( BaseAPIController ):
             library = None
         if not library or not ( trans.user_is_admin() or trans.app.security_agent.can_access_library( trans.get_current_user_roles(), library ) ):
             raise exceptions.ObjectNotFound( 'Library with the id provided ( %s ) was not found' % id )
-        return library.to_dict( view='element', value_mapper={ 'id' : trans.security.encode_id , 'root_folder_id' : trans.security.encode_id } )
+        return library.to_dict( view='element', value_mapper={ 'id': trans.security.encode_id, 'root_folder_id': trans.security.encode_id } )
 
     @expose_api
     def create( self, trans, payload, **kwd ):
@@ -144,7 +143,14 @@ class LibrariesController( BaseAPIController ):
         library.root_folder = root_folder
         trans.sa_session.add_all( ( library, root_folder ) )
         trans.sa_session.flush()
-        return library.to_dict( view='element', value_mapper={ 'id' : trans.security.encode_id , 'root_folder_id' : trans.security.encode_id } )
+
+        item = library.to_dict( view='element', value_mapper={ 'id': trans.security.encode_id, 'root_folder_id': trans.security.encode_id } )
+        item['can_user_add'] = True
+        item['can_user_modify'] = True
+        item['can_user_manage'] = True
+        if trans.app.security_agent.library_is_public( library, contents=False ):
+            item[ 'public' ] = True
+        return item
 
     @expose_api
     def update( self, trans, id, **kwd ):
@@ -198,7 +204,7 @@ class LibrariesController( BaseAPIController ):
             raise exceptions.RequestParameterMissingException( "You did not specify any payload." )
         trans.sa_session.add( library )
         trans.sa_session.flush()
-        return library.to_dict( view='element', value_mapper={ 'id' : trans.security.encode_id , 'root_folder_id' : trans.security.encode_id } )
+        return library.to_dict( view='element', value_mapper={ 'id': trans.security.encode_id, 'root_folder_id': trans.security.encode_id } )
 
     @expose_api
     def delete( self, trans, id, **kwd ):
@@ -243,5 +249,4 @@ class LibrariesController( BaseAPIController ):
 
         trans.sa_session.add( library )
         trans.sa_session.flush()
-        return library.to_dict( view='element', value_mapper={ 'id' : trans.security.encode_id , 'root_folder_id' : trans.security.encode_id } )
-
+        return library.to_dict( view='element', value_mapper={ 'id': trans.security.encode_id, 'root_folder_id': trans.security.encode_id } )

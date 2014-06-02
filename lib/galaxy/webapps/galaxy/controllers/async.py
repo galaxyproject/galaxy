@@ -135,4 +135,4 @@ class ASync( BaseUIController ):
 
             trans.sa_session.flush()
 
-        return trans.fill_template( 'tool_executed.mako', history=history, toolbox=toolbox, tool=tool, util=util, out_data={} )
+        return trans.fill_template( 'tool_executed.mako', history=history, toolbox=toolbox, tool=tool, util=util, out_data={}, num_jobs=1, job_errors=[] )

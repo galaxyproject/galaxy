@@ -21,8 +21,6 @@
         <param_modifier type="string" modifies="dataset_id">hda_ldda</param_modifier>
         <param type="dbkey">dbkey</param>
     </params>
-    <!-- template_root and template are currently ignored for the 'built-in' visualizations -->
-    <template_root>webapps/galaxy/visualization</template_root>
     <template>circster.mako</template>
     <render_target>_top</render_target>
 </visualization>

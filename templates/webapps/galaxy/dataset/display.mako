@@ -9,7 +9,7 @@
     %if item.datatype.CHUNKABLE:
 
     <script type="text/javascript">
-        require.config({ 
+        require.config({
             baseUrl: "${h.url_for('/static/scripts')}",
             shim: {
                 "libs/backbone/backbone": { exports: "Backbone" },
@@ -17,21 +17,21 @@
         });
 
         require(['mvc/data'], function(data) {
-            // 
+            //
             // Use tabular data display progressively by deleting data from page body
             // and then showing dataset view.
-            // 
+            //
             $('.page-body').children().remove();
 
             data.createTabularDatasetChunkedView({
                 // TODO: encode id.
-                dataset_config: 
-                    _.extend( ${h.to_json_string( item.to_dict() )}, 
+                dataset_config:
+                    _.extend( ${h.to_json_string( item.to_dict() )},
                             {
-                                chunk_url: "${h.url_for( controller='/dataset', action='display', 
+                                chunk_url: "${h.url_for( controller='/dataset', action='display',
                                                  dataset_id=trans.security.encode_id( item.id ))}",
                                 first_data_chunk: ${first_chunk}
-                            } 
+                            }
                     ),
                 parent_elt: $('.page-body')
             });
@@ -58,9 +58,9 @@
 <%def name="render_item_links( data )">
     ## Provide links to save data and import dataset.
     <a href="${h.url_for( controller='/dataset', action='display', dataset_id=trans.security.encode_id( data.id ), to_ext=data.ext )}" class="icon-button disk" title="Save dataset"></a>
-        <a 
+        <a
             href="${h.url_for( controller='/dataset', action='imp', dataset_id=trans.security.encode_id( data.id ) )}"
-            class="icon-button import" 
+            class="icon-button import"
             title="Import dataset"></a>
 </%def>
 
@@ -70,7 +70,7 @@
     %if data_to_render:
         %if truncated:
             <div class="warningmessagelarge">
-                 This dataset is large and only the first megabyte is shown below. | 
+                 This dataset is large and only the first megabyte is shown below. |
                  <a href="${h.url_for( controller='dataset', action='display_by_username_and_slug', username=data.history.user.username, slug=trans.security.encode_id( data.id ), preview=False )}">Show all</a>
             </div>
         %endif
@@ -100,9 +100,9 @@
             | ${get_item_name( item ) | h}
         </div>
     </div>
-    
+
     <div class="unified-panel-body">
-        <div style="overflow: auto; height: 100%;">        
+        <div style="overflow: auto; height: 100%;">
             <div class="page-body">
                 <div style="float: right">
                     ${self.render_item_links( item )}
@@ -110,7 +110,7 @@
                 <div>
                     ${self.render_item_header( item )}
                 </div>
-                
+
                 ${self.render_item( item, item_data )}
             </div>
         </div>
@@ -123,20 +123,20 @@
             About this ${get_class_display_name( item.__class__ )}
         </div>
     </div>
-    
+
     <div class="unified-panel-body">
         <div style="overflow: auto; height: 100%;">
             <div style="padding: 10px;">
                 <h4>Author</h4>
-                
+
                 <p>${item.history.user.username | h}</p>
-                
+
                 <div><img src="https://secure.gravatar.com/avatar/${h.md5(item.history.user.email)}?d=identicon&s=150"></div>
 
-                ## Page meta. 
-                
+                ## Page meta.
+
                 ## No links for datasets right now.
-        
+
                 ## Tags.
                 <p>
                 <h4>Tags</h4>
@@ -155,7 +155,7 @@
                     Yours:
                     ${render_individual_tagging_element( user=trans.get_user(), tagged_item=item, elt_context='view.mako', use_toggle_link=False, tag_click_fn='community_tag_click' )}
                 </div>
-            </div>    
+            </div>
         </div>
     </div>
 

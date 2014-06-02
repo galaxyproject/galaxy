@@ -13,6 +13,7 @@ import tool_shed.repository_types.util as rt_util
 import tool_shed.util.shed_util_common as suc
 from tool_shed.galaxy_install import repository_util
 from tool_shed.util import encoding_util
+from tool_shed.util import hg_util
 from tool_shed.util import import_util
 from tool_shed.util import metadata_util
 from tool_shed.util import repository_maintenance_util
@@ -49,7 +50,7 @@ class RepositoriesController( BaseAPIController ):
                 log.debug( error_message )
                 return []
             repo_dir = repository.repo_path( trans.app )
-            repo = hg.repository( suc.get_configured_ui(), repo_dir )
+            repo = hg.repository( hg_util.get_configured_ui(), repo_dir )
             ordered_installable_revisions = suc.get_ordered_metadata_changeset_revisions( repository, repo, downloadable=True )
             return ordered_installable_revisions
         else:
@@ -133,7 +134,7 @@ class RepositoriesController( BaseAPIController ):
                 # The changeset_revision column in the repository_metadata table has been updated with a new
                 # value value, so find the changeset_revision to which we need to update.
                 repo_dir = repository.repo_path( trans.app )
-                repo = hg.repository( suc.get_configured_ui(), repo_dir )
+                repo = hg.repository( hg_util.get_configured_ui(), repo_dir )
                 new_changeset_revision = suc.get_next_downloadable_changeset_revision( repository, repo, changeset_revision )
                 repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans,
                                                                                          encoded_repository_id,
@@ -276,7 +277,7 @@ class RepositoriesController( BaseAPIController ):
     @web.expose_api
     def repository_ids_for_setting_metadata( self, trans, my_writable=False, **kwd ):
         """
-        GET /api/get_repository_ids_for_setting_metadata
+        GET /api/repository_ids_for_setting_metadata
 
         Displays a collection (list) of repository ids ordered for setting metadata.
 

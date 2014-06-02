@@ -7,6 +7,7 @@ import logging, sys, os, time
 from operator import itemgetter
 from cgi import escape
 from galaxy.util import restore_text, relpath, nice_size, unicodify
+from galaxy.util.json import to_json_string
 from galaxy.web import url_for
 from binascii import hexlify
 
@@ -406,6 +407,14 @@ class SelectField(BaseField):
             return selected_options
         return None
 
+    def to_dict( self ):
+        return dict(
+            name=self.name,
+            multiple=self.multiple,
+            options=self.options
+        )
+
+
 class DrillDownField( BaseField ):
     """
     A hierarchical select field, which allows users to 'drill down' a tree-like set of options.
@@ -534,6 +543,42 @@ class DrillDownField( BaseField ):
         recurse_options( rval, self.options, drilldown_id, expanded_options )
         rval.append( '</div>' )
         return unicodify( '\n'.join( rval ) )
+
+
+class SwitchingSelectField(BaseField):
+
+    def __init__( self, delegate_fields, default_field=None ):
+        self.delegate_fields = delegate_fields
+        self.default_field = default_field or delegate_fields.keys()[ 0 ]
+
+    @property
+    def primary_field( self ):
+        primary_field = self.delegate_fields[ self.delegate_fields.keys()[ 0 ] ]
+        return primary_field
+
+    def get_html( self, prefix="", disabled=False ):
+        primary_field = self.primary_field
+        html = '<div class="switch-option">'
+        html += primary_field.get_html( prefix=prefix, disabled=disabled )
+        html += '<input name="__switch_default__" type="hidden" value="%s" />' % self.default_field
+        options = []
+        for name, delegate_field in self.delegate_fields.items():
+            field = to_json_string( delegate_field.to_dict() )
+            option = " '%s': %s" % ( name, field )
+            options.append( option )
+        html += '<script>$(document).ready( function() {\nvar switchOptions = {\n'
+        html += ','.join( options )
+        html += '};\n'
+        html += 'if ( window.enhanced_galaxy_tools ) {\n'
+        html += 'require( [ "galaxy.tools" ], function( mod_tools ) { new mod_tools.SwitchSelectView({\n'
+        html += 'el: $(\'[name="%s%s"]\').closest( "div.switch-option" ),' % ( prefix, primary_field.name )
+        html += 'default_option: "%s",\n' % self.default_field
+        html += 'prefix: "%s",\n' % prefix
+        html += 'switch_options: switchOptions }); } )\n'
+        html += "}"
+        html += '});\n</script></div>'
+        return html
+
 
 class AddressField(BaseField):
     @staticmethod

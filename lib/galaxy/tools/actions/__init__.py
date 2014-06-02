@@ -2,13 +2,17 @@ import os
 
 from galaxy.exceptions import ObjectInvalid
 from galaxy.model import LibraryDatasetDatasetAssociation
+from galaxy import model
 from galaxy.tools.parameters import DataToolParameter
+from galaxy.tools.parameters import DataCollectionToolParameter
 from galaxy.tools.parameters.wrapped import WrappedParameters
 from galaxy.util.json import from_json_string
 from galaxy.util.json import to_json_string
 from galaxy.util.none_like import NoneDataset
 from galaxy.util.odict import odict
 from galaxy.util.template import fill_template
+from galaxy.util import listify
+from galaxy.util.json import to_json_string
 from galaxy.web import url_for
 
 import logging
@@ -50,6 +54,7 @@ class DefaultToolAction( object ):
                         if converted_dataset:
                             data = converted_dataset
                         else:
+                            # FIXME: merge with hda.get_converted_dataset() mode as it's nearly identical.
                             #run converter here
                             new_data = data.datatype.convert_dataset( trans, data, target_ext, return_output=True, visible=False ).values()[0]
                             new_data.hid = data.hid
@@ -108,8 +113,44 @@ class DefaultToolAction( object ):
                     for conversion_name, conversion_data in conversions:
                         #allow explicit conversion to be stored in job_parameter table
                         target_dict[ conversion_name ] = conversion_data.id  # a more robust way to determine JSONable value is desired
+            elif isinstance( input, DataCollectionToolParameter ):
+                for i, v in enumerate( value.collection.dataset_instances ):
+                    data = v
+                    current_user_roles = trans.get_current_user_roles()
+                    if not trans.app.security_agent.can_access_dataset( current_user_roles, data.dataset ):
+                        raise Exception( "User does not have permission to use a dataset (%s) provided for input." % data.id )
+                    # Skipping implicit conversion stuff for now, revisit at
+                    # some point and figure out if implicitly converting a
+                    # dataset collection makes senese.
+
+                    #if i == 0:
+                    #    # Allow copying metadata to output, first item will be source.
+                    #    input_datasets[ prefix + input.name ] = data.dataset_instance
+                    input_datasets[ prefix + input.name + str( i + 1 ) ] = data
+
         tool.visit_inputs( param_values, visitor )
         return input_datasets
+
+    def collect_input_dataset_collections( self, tool, param_values, trans ):
+        input_dataset_collections = dict()
+
+        def visitor( prefix, input, value, parent=None ):
+            if isinstance( input, DataToolParameter ):
+                if isinstance( value, model.HistoryDatasetCollectionAssociation ):
+                    input_dataset_collections[ prefix + input.name ] = ( value, True )
+                    target_dict = parent
+                    if not target_dict:
+                        target_dict = param_values
+                    # This is just a DataToolParameter, so replace this
+                    # collection with individual datasets. Database will still
+                    # record collection which should be enought for workflow
+                    # extraction and tool rerun.
+                    target_dict[ input.name ] = value.collection.dataset_instances[:]  # shallow copy
+            elif isinstance( input, DataCollectionToolParameter ):
+                input_dataset_collections[ prefix + input.name ] = ( value, False )
+
+        tool.visit_inputs( param_values, visitor )
+        return input_dataset_collections
 
     def execute(self, tool, trans, incoming={}, return_job=False, set_output_hid=True, set_output_history=True, history=None, job_params=None, rerun_remap_job_id=None):
         """
@@ -122,6 +163,9 @@ class DefaultToolAction( object ):
             history = tool.get_default_history_by_trans( trans, create=True )
 
         out_data = odict()
+        # Track input dataset collections - but replace with simply lists so collect
+        # input datasets can process these normally.
+        inp_dataset_collections = self.collect_input_dataset_collections( tool, incoming, trans )
         # Collect any input datasets from the incoming parameters
         inp_data = self.collect_input_datasets( tool, incoming, trans )
 
@@ -149,36 +193,10 @@ class DefaultToolAction( object ):
 
         # Collect chromInfo dataset and add as parameters to incoming
         db_datasets = {}
-        db_dataset = trans.db_dataset_for( input_dbkey )
+        ( chrom_info, db_dataset ) = trans.app.genome_builds.get_chrom_info( input_dbkey, trans=trans, custom_build_hack_get_len_from_fasta_conversion=tool.id!='CONVERTER_fasta_to_len' )
         if db_dataset:
-            db_datasets[ "chromInfo" ] = db_dataset
-            incoming[ "chromInfo" ] = db_dataset.file_name
-        else:
-            # -- Get chrom_info (len file) from either a custom or built-in build. --
-
-            chrom_info = None
-            if trans.user and ( 'dbkeys' in trans.user.preferences ) and ( input_dbkey in from_json_string( trans.user.preferences[ 'dbkeys' ] ) ):
-                # Custom build.
-                custom_build_dict = from_json_string( trans.user.preferences[ 'dbkeys' ] )[ input_dbkey ]
-                # HACK: the attempt to get chrom_info below will trigger the
-                # fasta-to-len converter if the dataset is not available or,
-                # which will in turn create a recursive loop when
-                # running the fasta-to-len tool. So, use a hack in the second
-                # condition below to avoid getting chrom_info when running the
-                # fasta-to-len converter.
-                if 'fasta' in custom_build_dict and tool.id != 'CONVERTER_fasta_to_len':
-                    # Build is defined by fasta; get len file, which is obtained from converting fasta.
-                    build_fasta_dataset = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( custom_build_dict[ 'fasta' ] )
-                    chrom_info = build_fasta_dataset.get_converted_dataset( trans, 'len' ).file_name
-                elif 'len' in custom_build_dict:
-                    # Build is defined by len file, so use it.
-                    chrom_info = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( custom_build_dict[ 'len' ] ).file_name
-
-            if not chrom_info:
-                # Default to built-in build.
-                chrom_info = os.path.join( trans.app.config.len_file_path, "%s.len" % input_dbkey )
-            incoming[ "chromInfo" ] = os.path.abspath( chrom_info )
-        inp_data.update( db_datasets )
+            inp_data.update( { "chromInfo": db_dataset } )
+        incoming[ "chromInfo" ] = chrom_info
 
         # Determine output dataset permission/roles list
         existing_datasets = [ inp for inp in inp_data.values() if inp ]
@@ -327,6 +345,13 @@ class DefaultToolAction( object ):
         # FIXME: Don't need all of incoming here, just the defined parameters
         #        from the tool. We need to deal with tools that pass all post
         #        parameters to the command as a special case.
+        for name, ( dataset_collection, reduced ) in inp_dataset_collections.iteritems():
+            # TODO: Does this work if nested in repeat/conditional?
+            if reduced:
+                incoming[ name ] = "__collection_reduce__|%s" % dataset_collection.id
+            # Should verify security? We check security of individual
+            # datasets below?
+            job.add_input_dataset_collection( name, dataset_collection )
         for name, value in tool.params_to_strings( incoming, trans.app ).iteritems():
             job.add_parameter( name, value )
         current_user_roles = trans.get_current_user_roles()
@@ -421,6 +446,15 @@ class DefaultToolAction( object ):
 
 
 def on_text_for_names( input_names ):
+    # input_names may contain duplicates... this is because the first value in
+    # multiple input dataset parameters will appear twice once as param_name
+    # and once as param_name1.
+    unique_names = []
+    for name in input_names:
+        if name not in unique_names:
+            unique_names.append( name )
+    input_names = unique_names
+
     # Build name for output datasets based on tool name and input names
     if len( input_names ) == 1:
         on_text = input_names[0]

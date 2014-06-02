@@ -149,7 +149,7 @@ class DataProvider( object ):
         """
         String representation for easier debugging.
 
-        Will call `__str__` on it's source so this will display piped dataproviders.
+        Will call `__str__` on its source so this will display piped dataproviders.
         """
         # we need to protect against recursion (in __getattr__) if self.source hasn't been set
         source_str = str( self.source ) if hasattr( self, 'source' ) else ''

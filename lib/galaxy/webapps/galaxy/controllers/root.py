@@ -139,7 +139,7 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
     @web.expose
     def history( self, trans, as_xml=False, show_deleted=None, show_hidden=None, **kwd ):
         """
-        Display the current history in it's own page or as xml.
+        Display the current history in its own page or as xml.
         """
         if as_xml:
             return self.history_as_xml( trans,
@@ -541,3 +541,8 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
             raise HTTPBadGateway()
         trans.response.status = code
         return { 'error': 'Fake error!' }
+
+    @web.expose
+    def test( self, trans, **kwargs ):
+        #trans.response.headers[ 'Content-Type' ] = 'text/plain'
+        return trans.fill_template( 'test/test.mako', **kwargs )

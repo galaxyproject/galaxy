@@ -1,10 +1,12 @@
 define([
     "mvc/dataset/hda-model",
     "mvc/dataset/hda-edit",
+    "mvc/collection/dataset-collection-edit",
     "mvc/history/readonly-history-panel",
     "mvc/tags",
-    "mvc/annotations"
-], function( hdaModel, hdaEdit, readonlyPanel, tagsMod, annotationsMod ){
+    "mvc/annotations",
+    "utils/localization"
+], function( hdaModel, hdaEdit, datasetCollectionEdit, readonlyPanel, tagsMod, annotationsMod, _l ){
 /* =============================================================================
 TODO:
 
@@ -48,6 +50,9 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
         this.tagsEditor = null;
         /** editor for annotations - sub-view */
         this.annotationEditor = null;
+
+        /** allow user purge of dataset files? */
+        this.purgeAllowed = attributes.purgeAllowed || false;
 
         // states/modes the panel can be in
         /** is the panel currently showing the dataset selection controls? */
@@ -136,7 +141,7 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
                 panel.toggleHDAAnnotationEditors( false, panel.fxSpeed );
             },
             $activator      : faIconButton({
-                title   : _l( 'Edit history Annotation' ),
+                title   : _l( 'Edit history annotation' ),
                 classes : 'history-annotate-btn',
                 faIcon  : 'fa-comment'
             }).appendTo( $where.find( '.history-secondary-actions' ) )
@@ -196,41 +201,50 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
      *  ajax calls made for multiple datasets are queued
      */
     _setUpDatasetActionsPopup : function( $where ){
-        var panel = this;
-        ( new PopupMenu( $where.find( '.history-dataset-action-popup-btn' ), [
-            {
-                html: _l( 'Hide datasets' ), func: function(){
-                    var action = hdaModel.HistoryDatasetAssociation.prototype.hide;
-                    panel.getSelectedHdaCollection().ajaxQueue( action );
-                }
-            },
-            {
-                html: _l( 'Unhide datasets' ), func: function(){
-                    var action = hdaModel.HistoryDatasetAssociation.prototype.unhide;
-                    panel.getSelectedHdaCollection().ajaxQueue( action );
-                }
-            },
-            {
-                html: _l( 'Delete datasets' ), func: function(){
-                    var action = hdaModel.HistoryDatasetAssociation.prototype['delete'];
-                    panel.getSelectedHdaCollection().ajaxQueue( action );
-                }
-            },
-            {
-                html: _l( 'Undelete datasets' ), func: function(){
-                    var action = hdaModel.HistoryDatasetAssociation.prototype.undelete;
-                    panel.getSelectedHdaCollection().ajaxQueue( action );
-                }
-            },
-            {
+        var panel = this,
+            actions = [
+                {   html: _l( 'Hide datasets' ), func: function(){
+                        var action = hdaModel.HistoryDatasetAssociation.prototype.hide;
+                        panel.getSelectedHdaCollection().ajaxQueue( action );
+                    }
+                },
+                {   html: _l( 'Unhide datasets' ), func: function(){
+                        var action = hdaModel.HistoryDatasetAssociation.prototype.unhide;
+                        panel.getSelectedHdaCollection().ajaxQueue( action );
+                    }
+                },
+                {   html: _l( 'Delete datasets' ), func: function(){
+                        var action = hdaModel.HistoryDatasetAssociation.prototype['delete'];
+                        panel.getSelectedHdaCollection().ajaxQueue( action );
+                    }
+                },
+                {   html: _l( 'Undelete datasets' ), func: function(){
+                        var action = hdaModel.HistoryDatasetAssociation.prototype.undelete;
+                        panel.getSelectedHdaCollection().ajaxQueue( action );
+                    }
+                }            ];
+        if( panel.purgeAllowed ){
+            actions.push({
                 html: _l( 'Permanently delete datasets' ), func: function(){
                     if( confirm( _l( 'This will permanently remove the data in your datasets. Are you sure?' ) ) ){
                         var action = hdaModel.HistoryDatasetAssociation.prototype.purge;
                         panel.getSelectedHdaCollection().ajaxQueue( action );
                     }
                 }
+            });
+        }
+        actions.push( {
+            html: _l( 'Build Dataset List (Experimental)' ), func: function() {
+                panel.getSelectedHdaCollection().promoteToHistoryDatasetCollection( panel.model, "list" );
             }
-        ]));
+        } );
+        actions.push( {
+            // TODO: Only show quick pair if two things selected.
+            html: _l( 'Build Dataset Pair (Experimental)' ), func: function() {
+                panel.getSelectedHdaCollection().promoteToHistoryDatasetCollection( panel.model, "paired" );
+            }
+        } );
+        return new PopupMenu( $where.find( '.history-dataset-action-popup-btn' ), actions );
     },
 
     // ------------------------------------------------------------------------ hda sub-views
@@ -253,22 +267,37 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
         } // otherwise, the hdaView rendering should handle it
     },
 
-    /** Create an HDA view for the given HDA (but leave attachment for addHdaView above)
+    /** Create an HDA view for the given HDA (but leave attachment for addContentView above)
      *  @param {HistoryDatasetAssociation} hda
      */
-    _createHdaView : function( hda ){
+    _createContentView : function( hda ){
         var hdaId = hda.get( 'id' ),
+            historyContentType = hda.get( 'history_content_type' ),
+            hdaView = null;
+
+        if( historyContentType == "dataset" ) { 
             hdaView = new this.HDAViewClass({
                 model           : hda,
                 linkTarget      : this.linkTarget,
                 expanded        : this.storage.get( 'expandedHdas' )[ hdaId ],
                 //draggable       : true,
                 selectable      : this.selecting,
+                purgeAllowed    : this.purgeAllowed,
                 hasUser         : this.model.ownedByCurrUser(),
                 logger          : this.logger,
                 tagsEditorShown       : ( this.tagsEditor && !this.tagsEditor.hidden ),
                 annotationEditorShown : ( this.annotationEditor && !this.annotationEditor.hidden )
             });
+        } else if ( historyContentType == "dataset_collection" ) {
+            hdaView = new datasetCollectionEdit.DatasetCollectionEditView({
+                model           : hda,
+                linkTarget      : this.linkTarget,
+                expanded        : this.storage.get( 'expandedHdas' )[ hdaId ],
+                //draggable       : true,
+                hasUser         : this.model.ownedByCurrUser(),
+                logger          : this.logger
+            });
+        }
         this._setUpHdaListeners( hdaView );
         return hdaView;
     },
@@ -326,9 +355,8 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
             hdaView.remove();
             delete panel.hdaViews[ hdaView.model.id ];
             if( _.isEmpty( panel.hdaViews ) ){
-                panel.$emptyMessage().fadeIn( panel.fxSpeed, function(){
-                    panel.trigger( 'empty-history', panel );
-                });
+                panel.trigger( 'empty-history', panel );
+                panel._renderEmptyMsg();
             }
         });
     },

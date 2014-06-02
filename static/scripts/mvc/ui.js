@@ -339,7 +339,7 @@ var PopupMenu = Backbone.View.extend({
         return this;
     },
 
-    // search for a menu option by it's html
+    // search for a menu option by its html
     findIndexByHtml: function( html ){
         for( var i = 0; i < this.options.length; i++ ){
             if( _.has( this.options[i], 'html' ) && ( this.options[i].html === html )){
@@ -349,7 +349,7 @@ var PopupMenu = Backbone.View.extend({
         return null;
     },
 
-    // search for a menu option by it's html
+    // search for a menu option by its html
     findItemByHtml: function( html ){
         return this.options[( this.findIndexByHtml( html ))];
     },
@@ -750,7 +750,7 @@ function LoadingIndicator( $where, options ){
      *
      *      When clicked in a particular node, the onclick function will
      *      be called (with the element as this) and the element will
-     *      switch to the next mode, replacing it's html content with
+     *      switch to the next mode, replacing its html content with
      *      that mode's html.
      *
      *      If there is no next mode, the element will switch back to

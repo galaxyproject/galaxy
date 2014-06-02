@@ -66,6 +66,7 @@ def __main__():
                 log.debug("Did not load option %s from %s" % (option, config_file_name))
     # config object is required by ObjectStore class so create it now
     universe_config = config.Configuration(**conf_dict)
+    universe_config.ensure_tempdir()
     object_store = build_object_store_from_config(universe_config)
     galaxy.model.Dataset.object_store = object_store
 

@@ -2,11 +2,35 @@
 define(['utils/utils', 'plugin/library/ui-select'], function(Utils, Select) {
 
 // plugin
+var Image = Backbone.View.extend(
+{
+    // options
+    optionsDefault: {
+        url  : ''
+    },
+    
+    // initialize
+    initialize : function(options) {
+        // get options
+        this.options = Utils.merge(options, this.optionsDefault);
+            
+        // create new element
+        this.setElement(this._template(this.options));
+    },
+    
+    // template
+    _template: function(options) {
+        return '<img src="' + options.url + '"/>';
+    }
+});
+
+// plugin
 var Label = Backbone.View.extend(
 {
     // options
     optionsDefault: {
-        title  : ''
+        title : '',
+        cls   : ''
     },
     
     // initialize
@@ -25,7 +49,41 @@ var Label = Backbone.View.extend(
     
     // template
     _template: function(options) {
-        return '<label><b>' + options.title + '</b></label>';
+        return '<label class="' + options.cls + '"><b>' + options.title + '</b></label>';
+    },
+    
+    // value
+    value: function() {
+        return options.title;
+    }
+});
+
+// plugin
+var Text = Backbone.View.extend(
+{
+    // options
+    optionsDefault: {
+        title  : '',
+        cls    : ''
+    },
+    
+    // initialize
+    initialize : function(options) {
+        // get options
+        this.options = Utils.merge(options, this.optionsDefault);
+            
+        // create new element
+        this.setElement(this._template(this.options));
+    },
+    
+    // title
+    title: function(new_title) {
+        this.$el.html(new_title);
+    },
+    
+    // template
+    _template: function(options) {
+        return '<div class="' + options.cls + '">' + options.title + '</div>';
     },
     
     // value
@@ -70,39 +128,6 @@ var Button = Backbone.View.extend(
         str +=          options.title +
                     '</button>';
         return str;
-    }
-});
-
-// plugin
-var Icon = Backbone.View.extend(
-{
-    // options
-    optionsDefault: {
-        float       : 'right',
-        icon        : '',
-        tooltip     : '',
-        placement   : 'bottom',
-        title       : ''
-    },
-    
-    // initialize
-    initialize : function(options) {
-        // get options
-        this.options = Utils.merge(options, this.optionsDefault);
-            
-        // create new element
-        this.setElement(this._template(this.options));
-        
-        // add tooltip
-        $(this.el).tooltip({title: options.tooltip, placement: 'bottom'});
-    },
-    
-    // element
-    _template: function(options) {
-        return  '<div>' +
-                    '<span class="fa ' + options.icon + '" style="font-size: 1.2em;"/>&nbsp;' +
-                    options.title +
-                '</div>';
     }
 });
 
@@ -156,6 +181,39 @@ var ButtonIcon = Backbone.View.extend(
         }
         str +=      '</div>';
         return str;
+    }
+});
+
+// plugin
+var Icon = Backbone.View.extend(
+{
+    // options
+    optionsDefault: {
+        float       : 'right',
+        icon        : '',
+        tooltip     : '',
+        placement   : 'bottom',
+        title       : ''
+    },
+    
+    // initialize
+    initialize : function(options) {
+        // get options
+        this.options = Utils.merge(options, this.optionsDefault);
+            
+        // create new element
+        this.setElement(this._template(this.options));
+        
+        // add tooltip
+        $(this.el).tooltip({title: options.tooltip, placement: 'bottom'});
+    },
+    
+    // element
+    _template: function(options) {
+        return  '<div>' +
+                    '<span class="fa ' + options.icon + '" style="font-size: 1.2em;"/>&nbsp;' +
+                    options.title +
+                '</div>';
     }
 });
 
@@ -517,16 +575,18 @@ var Input = Backbone.View.extend(
 
 // return
 return {
-    Label   : Label,
-    Button  : Button,
-    Icon  : Icon,
-    ButtonIcon : ButtonIcon,
-    Input : Input,
-    Anchor  : Anchor,
-    Message : Message,
-    Searchbox : Searchbox,
-    Title : Title,
-    Select : Select,
-    ButtonMenu : ButtonMenu
+    Label       : Label,
+    Image       : Image,
+    Button      : Button,
+    Icon        : Icon,
+    ButtonIcon  : ButtonIcon,
+    Input       : Input,
+    Anchor      : Anchor,
+    Message     : Message,
+    Searchbox   : Searchbox,
+    Title       : Title,
+    Text        : Text,
+    Select      : Select,
+    ButtonMenu  : ButtonMenu
 }
 });

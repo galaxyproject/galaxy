@@ -283,7 +283,7 @@ class Tabular( data.Text ):
             return self._serve_raw(trans, dataset, to_ext)
         elif dataset.metadata.columns > 50:
             #Fancy tabular display is only suitable for datasets without an incredibly large number of columns.
-            #We should add a new datatype 'matrix', with it's own draw method, suitable for this kind of data.
+            #We should add a new datatype 'matrix', with its own draw method, suitable for this kind of data.
             #For now, default to the old behavior, ugly as it is.  Remove this after adding 'matrix'.
             max_peek_size = 1000000 # 1 MB
             if os.stat( dataset.file_name ).st_size < max_peek_size:

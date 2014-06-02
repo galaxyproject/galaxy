@@ -14,7 +14,7 @@
     ${self.get_body()}
 </%def>
 
-## render this as it's own page
+## render this as its own page
 <%def name="as_page()">
 <!DOCTYPE HTML>
 <html>

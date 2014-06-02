@@ -1,7 +1,7 @@
-from galaxy import config, tools, web, util
-from galaxy.web.base.controller import BaseController, BaseAPIController
-from galaxy.util.bunch import Bunch
+from galaxy import web, util
+from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.framework.helpers import is_true
+from galaxy.webapps.galaxy.controllers.data_admin import build_param_dict as massage
 
 def get_id( base, format ):
     if format:
@@ -76,7 +76,6 @@ class GenomesController( BaseAPIController ):
         #                    'download'  Download and index
         #                    'index'     Index only
         params = util.Params( payload )
-        from galaxy.web.controllers.data_admin import build_param_dict as massage
         paramdict = massage( params, trans )
         func = params.get( 'func', 'download' )
         if func == 'download':

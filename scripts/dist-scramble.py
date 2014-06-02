@@ -1,7 +1,7 @@
 """
 Scrambles eggs for distribution on multiple platforms.
 
-(from http://wiki.g2.bx.psu.edu/Admin/Config/Eggs)
+(from https://wiki.galaxyproject.org/Admin/Config/Eggs )
 This is mostly designed for use by Galaxy Developers at Penn State who are
 building eggs for distribution via the Galaxy Eggs distribution site.
 dist-scramble.py uses the dist-eggs.ini config file to determine what platforms

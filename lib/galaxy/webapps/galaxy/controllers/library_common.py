@@ -292,9 +292,9 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
             new_folder = trans.app.model.LibraryFolder( name=util.restore_text( params.name ),
                                                         description=util.restore_text( params.description ) )
             # We are associating the last used genome build with folders, so we will always
-            # initialize a new folder with the first dbkey in util.dbnames which is currently
+            # initialize a new folder with the first dbkey in genome builds list which is currently
             # ?    unspecified (?)
-            new_folder.genome_build = util.dbnames.default_value
+            new_folder.genome_build = trans.app.genome_builds.default_value
             parent_folder.add_folder( new_folder )
             trans.sa_session.add( new_folder )
             trans.sa_session.flush()
@@ -473,6 +473,20 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
             dbkey = dbkey[0]
         file_formats = [ dtype_name for dtype_name, dtype_value in trans.app.datatypes_registry.datatypes_by_extension.iteritems() if dtype_value.allow_datatype_change ]
         file_formats.sort()
+
+        def __ok_to_edit_metadata( ldda_id ):
+            #prevent modifying metadata when dataset is queued or running as input/output
+            #This code could be more efficient, i.e. by using mappers, but to prevent slowing down loading a History panel, we'll leave the code here for now
+            for job_to_dataset_association in trans.sa_session.query( self.app.model.JobToInputLibraryDatasetAssociation ) \
+                                                              .filter_by( ldda_id=ldda_id ) \
+                                                              .all() \
+                                            + trans.sa_session.query( self.app.model.JobToOutputLibraryDatasetAssociation ) \
+                                                              .filter_by( ldda_id=ldda_id ) \
+                                                              .all():
+                if job_to_dataset_association.job.state not in [ job_to_dataset_association.job.states.OK, job_to_dataset_association.job.states.ERROR, job_to_dataset_association.job.states.DELETED ]:
+                    return False
+            return True
+
         # See if we have any associated templates
         widgets = []
         info_association, inherited = ldda.get_info_association()
@@ -480,14 +494,18 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
             widgets = ldda.get_template_widgets( trans )
         if params.get( 'change', False ):
             # The user clicked the Save button on the 'Change data type' form
-            if ldda.datatype.allow_datatype_change and trans.app.datatypes_registry.get_datatype_by_extension( params.datatype ).allow_datatype_change:
-                trans.app.datatypes_registry.change_datatype( ldda, params.datatype )
-                trans.sa_session.flush()
-                message = "Data type changed for library dataset '%s'." % ldda.name
-                status = 'done'
+            if __ok_to_edit_metadata( ldda.id ):
+                if ldda.datatype.allow_datatype_change and trans.app.datatypes_registry.get_datatype_by_extension( params.datatype ).allow_datatype_change:
+                    trans.app.datatypes_registry.change_datatype( ldda, params.datatype )
+                    trans.sa_session.flush()
+                    message = "Data type changed for library dataset '%s'." % ldda.name
+                    status = 'done'
+                else:
+                    message = "You are unable to change datatypes in this manner. Changing %s to %s is not allowed." % ( ldda.extension, params.datatype )
+                    status = 'error'
             else:
-                message = "You are unable to change datatypes in this manner. Changing %s to %s is not allowed." % ( ldda.extension, params.datatype )
-                status = 'error'
+                message = "This dataset is currently being used as input or output.  You cannot change datatype until the jobs have completed or you have canceled them."
+                status = "error"
         elif params.get( 'save', False ):
             # The user clicked the Save button on the 'Edit Attributes' form
             old_name = ldda.name
@@ -501,33 +519,40 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                 ldda.name = new_name
                 ldda.info = new_info
                 ldda.message = new_message
-                # The following for loop will save all metadata_spec items
-                for name, spec in ldda.datatype.metadata_spec.items():
-                    if spec.get("readonly"):
-                        continue
-                    optional = params.get( "is_" + name, None )
-                    if optional and optional == 'true':
-                        # optional element... == 'true' actually means it is NOT checked (and therefore ommitted)
-                        setattr( ldda.metadata, name, None )
-                    else:
-                        setattr( ldda.metadata, name, spec.unwrap( params.get ( name, None ) ) )
-                ldda.metadata.dbkey = dbkey
-                ldda.datatype.after_setting_metadata( ldda )
+                if __ok_to_edit_metadata( ldda.id ):
+                    # The following for loop will save all metadata_spec items
+                    for name, spec in ldda.datatype.metadata_spec.items():
+                        if spec.get("readonly"):
+                            continue
+                        optional = params.get( "is_" + name, None )
+                        if optional and optional == 'true':
+                            # optional element... == 'true' actually means it is NOT checked (and therefore ommitted)
+                            setattr( ldda.metadata, name, None )
+                        else:
+                            setattr( ldda.metadata, name, spec.unwrap( params.get ( name, None ) ) )
+                    ldda.metadata.dbkey = dbkey
+                    ldda.datatype.after_setting_metadata( ldda )
+                    message = "Attributes updated for library dataset '%s'." % ldda.name
+                    status = 'done'
+                else:
+                    message = "Attributes updated, but metadata could not be changed because this dataset is currently being used as input or output. You must cancel or wait for these jobs to complete before changing metadata."
+                    status = 'warning'
                 trans.sa_session.flush()
-                message = "Attributes updated for library dataset '%s'." % ldda.name
-                status = 'done'
         elif params.get( 'detect', False ):
             # The user clicked the Auto-detect button on the 'Edit Attributes' form
-            for name, spec in ldda.datatype.metadata_spec.items():
-                # We need to be careful about the attributes we are resetting
-                if name not in [ 'name', 'info', 'dbkey' ]:
-                    if spec.get( 'default' ):
-                        setattr( ldda.metadata, name, spec.unwrap( spec.get( 'default' ) ) )
-            ldda.datatype.set_meta( ldda )
-            ldda.datatype.after_setting_metadata( ldda )
+            if __ok_to_edit_metadata( ldda.id ):
+                for name, spec in ldda.datatype.metadata_spec.items():
+                    # We need to be careful about the attributes we are resetting
+                    if name not in [ 'name', 'info', 'dbkey' ]:
+                        if spec.get( 'default' ):
+                            setattr( ldda.metadata, name, spec.unwrap( spec.get( 'default' ) ) )
+                message = "Attributes have been queued to be updated for library dataset '%s'." % ldda.name
+                status = 'done'
+                trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute( trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming = { 'input1':ldda } )
+            else:
+                message = "This dataset is currently being used as input or output.  You cannot change metadata until the jobs have completed or you have canceled them."
+                status = 'error'
             trans.sa_session.flush()
-            message = "Information updated for library dataset '%s'." % ldda.name
-            status = 'done'
         elif params.get( 'change_extended_metadata', False):
             em_string = util.restore_text( params.get("extended_metadata", "") )
             if len(em_string):
@@ -1408,7 +1433,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                 file_formats = trans.app.datatypes_registry.upload_file_formats
                 # Send list of genome builds to the form so the "dbkey" select list can be populated dynamically
                 def get_dbkey_options( last_used_build ):
-                    for dbkey, build_name in util.dbnames:
+                    for dbkey, build_name in trans.app.genome_builds.get_genome_build_names( trans=trans ):
                         yield build_name, dbkey, ( dbkey==last_used_build )
                 dbkeys = get_dbkey_options( last_used_build )
                 # Send the current history to the form to enable importing datasets from history to library
@@ -1645,9 +1670,9 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
             contents = util.string_as_bool( params.get( 'contents', 'False' ) )
             trans.app.security_agent.make_library_public( library, contents=contents )
             if contents:
-                message = "The data library (%s) and all it's contents have been made publicly accessible." % library.name
+                message = "The data library (%s) and all its contents have been made publicly accessible." % library.name
             else:
-                message = "The data library (%s) has been made publicly accessible, but access to it's contents has been left unchanged." % library.name
+                message = "The data library (%s) has been made publicly accessible, but access to its contents has been left unchanged." % library.name
         elif item_type == 'folder':
             folder = trans.sa_session.query( trans.model.LibraryFolder ).get( trans.security.decode_id( id ) )
             self._check_access( trans, cntrller, is_admin, folder, current_user_roles, use_panels, library_id, show_deleted )
@@ -2281,13 +2306,13 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                 include = True
                 if move_folder:
                     if __is_contained_in( folder, move_folder ):
-                        # Don't allow moving a folder to one of it's sub-folders (circular issues in db)
+                        # Don't allow moving a folder to one of its sub-folders (circular issues in db)
                         include = False
                     if move_folder.id == folder.id:
                         # Don't allow moving a folder to itself
                         include = False
                     if move_folder.parent and move_folder.parent.id == folder.id:
-                        # Don't allow moving a folder to it's current parent folder
+                        # Don't allow moving a folder to its current parent folder
                         include = False
                 if include:
                     filtered_folders.append( folder )

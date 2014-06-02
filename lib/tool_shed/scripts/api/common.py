@@ -9,6 +9,7 @@ new_path.extend( sys.path[ 1: ] )
 sys.path = new_path
 
 import tool_shed.util.shed_util_common as suc
+from tool_shed.util import common_util
 
 from galaxy import eggs
 import pkg_resources
@@ -90,7 +91,7 @@ def get_api_url( base, parts=[], params=None ):
         parts.insert( 0, 'api' )
     elif 'api' not in parts:
         parts.insert( 0, 'api' )
-    url = suc.url_join( base, *parts )
+    url = common_util.url_join( base, *parts )
     if params is not None:
         try:
             query_string = urllib.urlencode( params )

@@ -185,8 +185,8 @@ class InstalledRepositoryGrid( grids.Grid ):
                                                        operation='install latest revision' ) ),
                    grids.GridOperation( label="Install",
                                         condition=( lambda item: \
-                                                        not item.deleted and \
-                                                        item.status == tool_shed_install.ToolShedRepository.installation_status.NEW ),
+                                                    not item.deleted and \
+                                                    item.status == tool_shed_install.ToolShedRepository.installation_status.NEW ),
                                         allow_multiple=False,
                                         url_args=dict( controller='admin_toolshed',
                                                        action='manage_repository',
@@ -196,7 +196,7 @@ class InstalledRepositoryGrid( grids.Grid ):
                                                     not item.deleted and \
                                                     item.status not in \
                                                         [ tool_shed_install.ToolShedRepository.installation_status.ERROR,
-                                                         tool_shed_install.ToolShedRepository.installation_status.NEW ] ),
+                                                          tool_shed_install.ToolShedRepository.installation_status.NEW ] ),
                                         allow_multiple=False,
                                         url_args=dict( controller='admin_toolshed',
                                                        action='browse_repositories',

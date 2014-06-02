@@ -686,10 +686,19 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
             msg = []
             refresh = False
             display_app = trans.app.datatypes_registry.display_applications.get( app_name )
-            assert display_app, "Unknown display application has been requested: %s" % app_name
+            if not display_app:
+                log.debug( "Unknown display application has been requested: %s", app_name )
+                return paste.httpexceptions.HTTPNotFound( "The requested display application (%s) is not available." % ( app_name ) )
             dataset_hash, user_hash = encode_dataset_user( trans, data, user )
-            display_link = display_app.get_link( link_name, data, dataset_hash, user_hash, trans, app_kwds )
-            assert display_link, "Unknown display link has been requested: %s" % link_name
+            try:
+                display_link = display_app.get_link( link_name, data, dataset_hash, user_hash, trans, app_kwds )
+            except Exception, e:
+                log.debug( "Error generating display_link: %s", e )
+                # User can sometimes recover from, e.g. conversion errors by fixing input metadata, so use conflict
+                return paste.httpexceptions.HTTPConflict( "Error generating display_link: %s" % e )
+            if not display_link:
+                log.debug( "Unknown display link has been requested: %s", link_name )
+                return paste.httpexceptions.HTTPNotFound( "Unknown display link has been requested: %s" % link_name )
             if data.state == data.states.ERROR:
                 msg.append( ( 'This dataset is in an error state, you cannot view it at an external display application.', 'error' ) )
             elif data.deleted:
@@ -715,8 +724,12 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
                         assert value, "An invalid parameter name was provided: %s" % action_param
                         assert value.parameter.viewable, "This parameter is not viewable."
                         if value.parameter.type == 'data':
-                            content_length = os.path.getsize( value.file_name )
-                            rval = open( value.file_name )
+                            try:
+                                content_length = os.path.getsize( value.file_name )
+                                rval = open( value.file_name )
+                            except OSError, e:
+                                log.debug( "Unable to access requested file in display application: %s", e )
+                                return paste.httpexceptions.HTTPNotFound( "This file is no longer available." )
                         else:
                             rval = str( value )
                             content_length = len( rval )
@@ -953,7 +966,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
                     toolbox = self.get_toolbox()
                     tool = toolbox.get_tool( job.tool_id )
                     assert tool is not None, 'Requested tool has not been loaded.'
-                    #Load parameter objects, if a parameter type has changed, its possible for the value to no longer be valid
+                    #Load parameter objects, if a parameter type has changed, it's possible for the value to no longer be valid
                     try:
                         params_objects = job.get_param_values( trans.app, ignore_errors=False )
                     except:
@@ -968,7 +981,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
         return trans.fill_template( "show_params.mako", inherit_chain=inherit_chain, history=trans.get_history(), hda=hda, job=job, tool=tool, params_objects=params_objects, upgrade_messages=upgrade_messages, has_parameter_errors=has_parameter_errors )
 
     @web.expose
-    def copy_datasets( self, trans, source_history=None, source_dataset_ids="", target_history_id=None, target_history_ids="", new_history_name="", do_copy=False, **kwd ):
+    def copy_datasets( self, trans, source_history=None, source_content_ids="", target_history_id=None, target_history_ids="", new_history_name="", do_copy=False, **kwd ):
         user = trans.get_user()
         if source_history is not None:
             history = self.get_history(trans, source_history)
@@ -976,25 +989,29 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
         else:
             history = current_history = trans.get_history()
         refresh_frames = []
-        if source_dataset_ids:
-            if not isinstance( source_dataset_ids, list ):
-                source_dataset_ids = source_dataset_ids.split(",")
-            source_dataset_ids = set(map( trans.security.decode_id, source_dataset_ids ))
+        if source_content_ids:
+            if not isinstance( source_content_ids, list ):
+                source_content_ids = source_content_ids.split(",")
+            encoded_dataset_collection_ids = [ s[ len("dataset_collection|"): ] for s in source_content_ids if s.startswith("dataset_collection|") ]
+            encoded_dataset_ids = [ s[ len("dataset|"): ] for s in source_content_ids if s.startswith("dataset|") ]
+            decoded_dataset_collection_ids = set(map( trans.security.decode_id, encoded_dataset_collection_ids ))
+            decoded_dataset_ids = set(map( trans.security.decode_id, encoded_dataset_ids ))
         else:
-            source_dataset_ids = []
+            decoded_dataset_collection_ids = []
+            decoded_dataset_ids = []
         if target_history_id:
             target_history_ids = [ trans.security.decode_id(target_history_id) ]
         elif target_history_ids:
             if not isinstance( target_history_ids, list ):
                 target_history_ids = target_history_ids.split(",")
-            target_history_ids = set([ trans.security.decode_id(h) for h in target_history_ids if h ])
+            target_history_ids = list(set([ trans.security.decode_id(h) for h in target_history_ids if h ]))
         else:
             target_history_ids = []
         done_msg = error_msg = ""
         new_history = None
         if do_copy:
-            invalid_datasets = 0
-            if not source_dataset_ids or not ( target_history_ids or new_history_name ):
+            invalid_contents = 0
+            if not ( decoded_dataset_ids or decoded_dataset_collection_ids ) or not ( target_history_ids or new_history_name ):
                 error_msg = "You must provide both source datasets and target histories. "
             else:
                 if new_history_name:
@@ -1010,45 +1027,49 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
                     target_histories = [ history ]
                 if len( target_histories ) != len( target_history_ids ):
                     error_msg = error_msg + "You do not have permission to add datasets to %i requested histories.  " % ( len( target_history_ids ) - len( target_histories ) )
-                source_hdas = map( trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get, source_dataset_ids )
-                source_hdas.sort(key=lambda hda: hda.hid)
-                for hda in source_hdas:
-                    if hda is None:
+                source_contents = map( trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get, decoded_dataset_ids )
+                source_contents.extend( map( trans.sa_session.query( trans.app.model.HistoryDatasetCollectionAssociation ).get, decoded_dataset_collection_ids ) )
+                source_contents.sort(key=lambda content: content.hid)
+                for content in source_contents:
+                    if content is None:
                         error_msg = error_msg + "You tried to copy a dataset that does not exist. "
-                        invalid_datasets += 1
-                    elif hda.history != history:
+                        invalid_contents += 1
+                    elif content.history != history:
                         error_msg = error_msg + "You tried to copy a dataset which is not in your current history. "
-                        invalid_datasets += 1
+                        invalid_contents += 1
                     else:
                         for hist in target_histories:
-                            hist.add_dataset( hda.copy( copy_children = True ) )
+                            if content.history_content_type == "dataset":
+                                hist.add_dataset( content.copy( copy_children=True ) )
+                            else:
+                                hist.add_dataset_collection( content.copy( ) )
                 if current_history in target_histories:
                     refresh_frames = ['history']
                 trans.sa_session.flush()
                 hist_names_str = ", ".join( ['<a href="%s" target="_top">%s</a>' %
-                                            ( url_for( controller="history", action="switch_to_history", \
-                                                        hist_id=trans.security.encode_id( hist.id ) ), hist.name ) \
-                                                        for hist in target_histories ] )
-                num_source = len( source_dataset_ids ) - invalid_datasets
+                                            ( url_for( controller="history", action="switch_to_history",
+                                                       hist_id=trans.security.encode_id( hist.id ) ), hist.name )
+                                            for hist in target_histories ] )
+                num_source = len( source_content_ids ) - invalid_contents
                 num_target = len(target_histories)
                 done_msg = "%i %s copied to %i %s: %s." % (num_source, inflector.cond_plural(num_source, "dataset"), num_target, inflector.cond_plural(num_target, "history"), hist_names_str )
                 trans.sa_session.refresh( history )
-        source_datasets = history.visible_datasets
+        source_contents = history.active_contents
         target_histories = [history]
         if user:
-           target_histories = user.active_histories
+            target_histories = user.active_histories
         return trans.fill_template( "/dataset/copy_view.mako",
-                                    source_history = history,
-                                    current_history = current_history,
-                                    source_dataset_ids = source_dataset_ids,
-                                    target_history_id = target_history_id,
-                                    target_history_ids = target_history_ids,
-                                    source_datasets = source_datasets,
-                                    target_histories = target_histories,
-                                    new_history_name = new_history_name,
-                                    done_msg = done_msg,
-                                    error_msg = error_msg,
-                                    refresh_frames = refresh_frames )
+                                    source_history=history,
+                                    current_history=current_history,
+                                    source_content_ids=source_content_ids,
+                                    target_history_id=target_history_id,
+                                    target_history_ids=target_history_ids,
+                                    source_contents=source_contents,
+                                    target_histories=target_histories,
+                                    new_history_name=new_history_name,
+                                    done_msg=done_msg,
+                                    error_msg=error_msg,
+                                    refresh_frames=refresh_frames )
 
     def _copy_datasets( self, trans, dataset_ids, target_histories, imported=False ):
         """ Helper method for copying datasets. """

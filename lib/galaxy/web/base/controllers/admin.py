@@ -5,6 +5,7 @@ from galaxy.model.orm import and_, func, or_
 from galaxy.util import inflector
 from galaxy.web.form_builder import CheckboxField
 from string import punctuation as PUNCTUATION
+import galaxy.queue_worker
 
 log = logging.getLogger( __name__ )
 
@@ -62,8 +63,9 @@ class Admin( object ):
         toolbox = self.app.toolbox
         tool_id = None
         if params.get( 'reload_tool_button', False ):
-            tool_id = params.tool_id
-            message, status = toolbox.reload_tool_by_id( tool_id )
+            tool_id = params.get('tool_id', None)
+            galaxy.queue_worker.send_control_task(trans, 'reload_tool', noop_self=True, kwargs={'tool_id': tool_id} )
+            message, status = trans.app.toolbox.reload_tool_by_id( tool_id)
         return trans.fill_template( '/admin/reload_tool.mako',
                                     tool_id=tool_id,
                                     toolbox=toolbox,

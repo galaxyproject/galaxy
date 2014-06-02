@@ -6,6 +6,7 @@ except ImportError:
 
 import socket
 import logging
+from time import sleep
 log = logging.getLogger(__name__)
 
 
@@ -13,8 +14,8 @@ KOMBU_UNAVAILABLE = "Attempting to bind to AMQP message queue, but kombu depende
 
 DEFAULT_EXCHANGE_NAME = "lwr"
 DEFAULT_EXCHANGE_TYPE = "direct"
-DEFAULT_TIMEOUT = 0.2  # Set timeout to periodically give up looking and check
-                       # if polling should end.
+# Set timeout to periodically give up looking and check if polling should end.
+DEFAULT_TIMEOUT = 0.2
 
 
 class LwrExchange(object):
@@ -30,13 +31,14 @@ class LwrExchange(object):
     name _default_.
     """
 
-    def __init__(self, url, manager_name, timeout=DEFAULT_TIMEOUT):
+    def __init__(self, url, manager_name, connect_ssl=None, timeout=DEFAULT_TIMEOUT):
         """
         """
         if not kombu:
             raise Exception(KOMBU_UNAVAILABLE)
         self.__url = url
         self.__manager_name = manager_name
+        self.__connect_ssl = connect_ssl
         self.__exchange = kombu.Exchange(DEFAULT_EXCHANGE_NAME, DEFAULT_EXCHANGE_TYPE)
         self.__timeout = timeout
 
@@ -46,20 +48,24 @@ class LwrExchange(object):
 
     def consume(self, queue_name, callback, check=True, connection_kwargs={}):
         queue = self.__queue(queue_name)
-        with self.connection(self.__url, **connection_kwargs) as connection:
-            with kombu.Consumer(connection, queues=[queue], callbacks=[callback], accept=['json']):
-                log.debug("Consuming queue %s" % queue)
-                while check:
-                    try:
-                        connection.drain_events(timeout=self.__timeout)
-                    except socket.timeout:
-                        pass
+        log.debug("Consuming queue '%s'", queue)
+        while check:
+            try:
+                with self.connection(self.__url, ssl=self.__connect_ssl, **connection_kwargs) as connection:
+                    with kombu.Consumer(connection, queues=[queue], callbacks=[callback], accept=['json']):
+                        while check and connection.connected:
+                            try:
+                                connection.drain_events(timeout=self.__timeout)
+                            except socket.timeout:
+                                pass
+            except socket.error, exc:
+                log.warning('Got socket.error, will retry: %s', exc)
+                sleep(1)
 
     def publish(self, name, payload):
-        with self.connection(self.__url) as connection:
+        with self.connection(self.__url, ssl=self.__connect_ssl) as connection:
             with pools.producers[connection].acquire() as producer:
                 key = self.__queue_name(name)
-                log.debug("Publishing with key %s and payload %s" % (key, payload))
                 producer.publish(
                     payload,
                     serializer='json',

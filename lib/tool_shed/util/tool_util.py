@@ -13,8 +13,10 @@ from galaxy.tools.parameters import dynamic_options
 from galaxy.tools.search import ToolBoxSearch
 from galaxy.util.expressions import ExpressionContext
 from galaxy.web.form_builder import SelectField
-from tool_shed.util import xml_util
 from galaxy.tools.actions.upload import UploadToolAction
+from tool_shed.util import common_util
+from tool_shed.util import hg_util
+from tool_shed.util import xml_util
 import tool_shed.util.shed_util_common as suc
 from xml.etree import ElementTree as XmlET
 
@@ -27,9 +29,9 @@ from mercurial import ui
 log = logging.getLogger( __name__ )
 
 def add_to_shed_tool_config( app, shed_tool_conf_dict, elem_list ):
-    # A tool shed repository is being installed so change the shed_tool_conf file.  Parse the config file to generate the entire list
-    # of config_elems instead of using the in-memory list since it will be a subset of the entire list if one or more repositories have
-    # been deactivated.
+    # A tool shed repository is being installed so change the shed_tool_conf file.  Parse the
+    # config file to generate the entire list of config_elems instead of using the in-memory list
+    # since it will be a subset of the entire list if one or more repositories have been deactivated.
     shed_tool_conf = shed_tool_conf_dict[ 'config_filename' ]
     tool_path = shed_tool_conf_dict[ 'tool_path' ]
     config_elems = []
@@ -44,8 +46,8 @@ def add_to_shed_tool_config( app, shed_tool_conf_dict, elem_list ):
         # Persist the altered shed_tool_config file.
         suc.config_elems_to_xml_file( app, config_elems, shed_tool_conf, tool_path )
 
-def add_to_tool_panel( app, repository_name, repository_clone_url, changeset_revision, repository_tools_tups, owner, shed_tool_conf, tool_panel_dict,
-                       new_install=True ):
+def add_to_tool_panel( app, repository_name, repository_clone_url, changeset_revision, repository_tools_tups, owner,
+                       shed_tool_conf, tool_panel_dict, new_install=True ):
     """A tool shed repository is being installed or updated so handle tool panel alterations accordingly."""
     # We need to change the in-memory version and the file system version of the shed_tool_conf file.
     index, shed_tool_conf_dict = suc.get_shed_tool_conf_dict( app, shed_tool_conf )
@@ -205,7 +207,10 @@ def copy_disk_sample_files_to_dir( trans, repo_files_dir, dest_path ):
     return sample_files
 
 def copy_sample_file( app, filename, dest_path=None ):
-    """Copy xxx.sample to dest_path/xxx.sample and dest_path/xxx.  The default value for dest_path is ~/tool-data."""
+    """
+    Copy xxx.sample to dest_path/xxx.sample and dest_path/xxx.  The default value for dest_path
+    is ~/tool-data.
+    """
     if dest_path is None:
         dest_path = os.path.abspath( app.config.tool_data_path )
     sample_file_name = suc.strip_path( filename )
@@ -216,15 +221,18 @@ def copy_sample_file( app, filename, dest_path=None ):
     if full_source_path != full_destination_path:
         # It's ok to overwrite the .sample version of the file.
         shutil.copy( full_source_path, full_destination_path )
-    # Only create the .loc file if it does not yet exist.  We don't overwrite it in case it contains stuff proprietary to the local instance.
+    # Only create the .loc file if it does not yet exist.  We don't overwrite it in case it
+    # contains stuff proprietary to the local instance.
     if not os.path.exists( os.path.join( dest_path, copied_file ) ):
         shutil.copy( full_source_path, os.path.join( dest_path, copied_file ) )
 
 def copy_sample_files( app, sample_files, tool_path=None, sample_files_copied=None, dest_path=None ):
     """
-    Copy all appropriate files to dest_path in the local Galaxy environment that have not already been copied.  Those that have been copied
-    are contained in sample_files_copied.  The default value for dest_path is ~/tool-data.  We need to be careful to copy only appropriate
-    files here because tool shed repositories can contain files ending in .sample that should not be copied to the ~/tool-data directory.
+    Copy all appropriate files to dest_path in the local Galaxy environment that have not
+    already been copied.  Those that have been copied are contained in sample_files_copied.
+    The default value for dest_path is ~/tool-data.  We need to be careful to copy only
+    appropriate files here because tool shed repositories can contain files ending in .sample
+    that should not be copied to the ~/tool-data directory.
     """
     filenames_not_to_copy = [ 'tool_data_table_conf.xml.sample' ]
     sample_files_copied = util.listify( sample_files_copied )
@@ -320,7 +328,7 @@ def generate_tool_panel_elem_list( repository_name, repository_clone_url, change
     """Generate a list of ElementTree Element objects for each section or tool."""
     elem_list = []
     tool_elem = None
-    cleaned_repository_clone_url = suc.clean_repository_clone_url( repository_clone_url )
+    cleaned_repository_clone_url = common_util.remove_protocol_and_user_from_clone_url( repository_clone_url )
     if not owner:
         owner = suc.get_repository_owner( cleaned_repository_clone_url )
     tool_shed = cleaned_repository_clone_url.split( '/repos/' )[ 0 ].rstrip( '/' )
@@ -531,7 +539,7 @@ def get_version_lineage_for_tool( trans, repository_id, repository_metadata, gui
     """
     repository = suc.get_repository_by_id( trans, repository_id )
     repo_dir = repository.repo_path( trans.app )
-    repo = hg.repository( suc.get_configured_ui(), repo_dir )
+    repo = hg.repository( hg_util.get_configured_ui(), repo_dir )
     # Initialize the tool lineage
     version_lineage = [ guid ]
     # Get all ancestor guids of the received guid.
@@ -630,7 +638,7 @@ def handle_sample_files_and_load_tool_from_disk( trans, repo_files_dir, reposito
 def handle_sample_files_and_load_tool_from_tmp_config( trans, repo, repository_id, changeset_revision, tool_config_filename, work_dir ):
     tool = None
     message = ''
-    ctx = suc.get_changectx_for_changeset( repo, changeset_revision )
+    ctx = hg_util.get_changectx_for_changeset( repo, changeset_revision )
     # We're not currently doing anything with the returned list of deleted_sample_files here.  It is intended to help handle sample files that are in
     # the manifest, but have been deleted from disk.
     sample_files, deleted_sample_files = get_list_of_copied_sample_files( repo, ctx, dir=work_dir )
@@ -859,7 +867,7 @@ def load_tool_from_changeset_revision( trans, repository_id, changeset_revision,
     original_tool_data_path = trans.app.config.tool_data_path
     repository = suc.get_repository_in_tool_shed( trans, repository_id )
     repo_files_dir = repository.repo_path( trans.app )
-    repo = hg.repository( suc.get_configured_ui(), repo_files_dir )
+    repo = hg.repository( hg_util.get_configured_ui(), repo_files_dir )
     message = ''
     tool = None
     can_use_disk_file = False

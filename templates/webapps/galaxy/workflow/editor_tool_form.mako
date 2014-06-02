@@ -1,5 +1,6 @@
 <%
 from galaxy.tools.parameters import DataToolParameter, RuntimeValue
+from galaxy.tools.parameters import DataCollectionToolParameter
 from galaxy.util.expressions import ExpressionContext
 %>
 
@@ -59,6 +60,13 @@ from galaxy.util.expressions import ExpressionContext
             </label>
             <div>
                 Data input '${param.name}' (${" or ".join( param.extensions )})
+            </div>
+        %elif type( param ) is DataCollectionToolParameter:
+            <label>
+                ${param.get_label()}
+            </label>
+            <div>
+                Data collection input '${param.name}'
             </div>
         %else:
             %if isinstance( value, RuntimeValue ):    

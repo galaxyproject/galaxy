@@ -8,6 +8,7 @@
   <tool file="multi_page.xml"/>
   <tool file="multi_select.xml" />
   <tool file="multi_output.xml" />
+  <tool file="multi_output_configured.xml" />
   <tool file="composite_output.xml" />
   <tool file="metadata.xml" />
   <tool file="output_order.xml" />
@@ -17,4 +18,7 @@
   <tool file="parallelism_optional.xml" />
   <tool file="implicit_default_conds.xml" />
   <tool file="multi_data_param.xml" />
+  <tool file="collection_paired_test.xml" />
+  <tool file="collection_nested_test.xml" />
+  <tool file="collection_mixed_param.xml" />
 </toolbox>

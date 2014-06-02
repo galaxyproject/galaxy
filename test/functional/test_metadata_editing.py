@@ -27,7 +27,6 @@ class TestMetadataEdit( TwillTestCase ):
         latest_hda = sa_session.query( galaxy.model.HistoryDatasetAssociation ) \
                               .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ) \
                               .first()
-        self.home()
         # Due to twill not being able to handle the permissions forms, we'll eliminate
         # DefaultHistoryPermissions prior to uploading a dataset so that the permission
         # form will not be displayed on ted edit attributes page.

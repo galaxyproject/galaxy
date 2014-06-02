@@ -17,6 +17,7 @@ import pexpect
 import json
 import socket
 import time
+import numbers
 from uuid import UUID, uuid4
 from string import Template
 from itertools import ifilter
@@ -85,6 +86,38 @@ class HasName:
         if isinstance(name, str):
             name = unicode(name, 'utf-8')
         return name
+
+
+class HasJobMetrics:
+
+    def _init_metrics( self ):
+        self.text_metrics = []
+        self.numeric_metrics = []
+
+    def add_metric( self, plugin, metric_name, metric_value ):
+        if isinstance( plugin, str ):
+            plugin = unicode( plugin, 'utf-8' )
+
+        if isinstance( metric_name, str ):
+            metric_name = unicode( metric_name, 'utf-8' )
+
+        if isinstance( metric_value, numbers.Number ):
+            metric = self._numeric_metric( plugin, metric_name, metric_value )
+            self.numeric_metrics.append( metric )
+        else:
+            if isinstance( metric_value, str ):
+                metric_value = unicode( metric_value, 'utf-8' )
+            if len( metric_value ) > 1022:
+                # Truncate these values - not needed with sqlite
+                # but other backends must need it.
+                metric_value = metric_value[ :1022 ]
+            metric = self._text_metric( plugin, metric_name, metric_value )
+            self.text_metrics.append( metric )
+
+    @property
+    def metrics( self ):
+        # TODO: Make iterable, concatenate with chain
+        return self.text_metrics + self.numeric_metrics
 
 
 class User( object, Dictifiable ):
@@ -226,7 +259,31 @@ class User( object, Dictifiable ):
         return Template( in_string ).safe_substitute( environment )
 
 
-class Job( object, Dictifiable ):
+class BaseJobMetric( object ):
+
+    def __init__( self, plugin, metric_name, metric_value ):
+        self.plugin = plugin
+        self.metric_name = metric_name
+        self.metric_value = metric_value
+
+
+class JobMetricText( BaseJobMetric ):
+    pass
+
+
+class JobMetricNumeric( BaseJobMetric ):
+    pass
+
+
+class TaskMetricText( BaseJobMetric ):
+    pass
+
+
+class TaskMetricNumeric( BaseJobMetric ):
+    pass
+
+
+class Job( object, HasJobMetrics, Dictifiable ):
     dict_collection_visible_keys = [ 'id', 'state', 'exit_code', 'update_time', 'create_time' ]
     dict_element_visible_keys = [ 'id', 'state', 'exit_code', 'update_time', 'create_time'  ]
 
@@ -234,6 +291,9 @@ class Job( object, Dictifiable ):
     A job represents a request to run a tool given input datasets, tool
     parameters, and output datasets.
     """
+    _numeric_metric = JobMetricNumeric
+    _text_metric = JobMetricText
+
     states = Bunch( NEW = 'new',
                     UPLOAD = 'upload',
                     WAITING = 'waiting',
@@ -255,6 +315,8 @@ class Job( object, Dictifiable ):
         self.parameters = []
         self.input_datasets = []
         self.output_datasets = []
+        self.input_dataset_collections = []
+        self.output_dataset_collections = []
         self.input_library_datasets = []
         self.output_library_datasets = []
         self.state = Job.states.NEW
@@ -267,6 +329,7 @@ class Job( object, Dictifiable ):
         self.imported = False
         self.handler = None
         self.exit_code = None
+        self._init_metrics()
 
     @property
     def finished( self ):
@@ -370,6 +433,12 @@ class Job( object, Dictifiable ):
         self.info = info
     def set_runner_name( self, job_runner_name ):
         self.job_runner_name = job_runner_name
+
+    def get_job( self ):
+        # Added so job and task have same interface (.get_job() ) to get at
+        # underlying job object.
+        return self
+
     def set_runner_external_id( self, job_runner_external_id ):
         self.job_runner_external_id = job_runner_external_id
     def set_post_job_actions( self, post_job_actions ):
@@ -387,6 +456,10 @@ class Job( object, Dictifiable ):
         self.input_datasets.append( JobToInputDatasetAssociation( name, dataset ) )
     def add_output_dataset( self, name, dataset ):
         self.output_datasets.append( JobToOutputDatasetAssociation( name, dataset ) )
+    def add_input_dataset_collection( self, name, dataset ):
+        self.input_dataset_collections.append( JobToInputDatasetCollectionAssociation( name, dataset ) )
+    def add_output_dataset_collection( self, name, dataset ):
+        self.output_dataset_collections.append( JobToOutputDatasetCollectionAssociation( name, dataset ) )
     def add_input_library_dataset( self, name, dataset ):
         self.input_library_datasets.append( JobToInputLibraryDatasetAssociation( name, dataset ) )
     def add_output_library_dataset( self, name, dataset ):
@@ -472,10 +545,14 @@ class Job( object, Dictifiable ):
 
         return rval
 
-class Task( object ):
+
+class Task( object, HasJobMetrics ):
     """
     A task represents a single component of a job.
     """
+    _numeric_metric = TaskMetricNumeric
+    _text_metric = TaskMetricText
+
     states = Bunch( NEW = 'new',
                     WAITING = 'waiting',
                     QUEUED = 'queued',
@@ -498,6 +575,7 @@ class Task( object ):
         self.stderr = ""
         self.exit_code = None
         self.prepare_input_files_cmd = prepare_files_cmd
+        self._init_metrics()
 
     def get_param_values( self, app ):
         """
@@ -608,6 +686,7 @@ class Task( object ):
     def set_prepare_input_files_cmd( self, prepare_input_files_cmd ):
         self.prepare_input_files_cmd = prepare_input_files_cmd
 
+
 class JobParameter( object ):
     def __init__( self, name, value ):
         self.name = name
@@ -623,6 +702,19 @@ class JobToOutputDatasetAssociation( object ):
         self.name = name
         self.dataset = dataset
 
+
+class JobToInputDatasetCollectionAssociation( object ):
+    def __init__( self, name, dataset ):
+        self.name = name
+        self.dataset = dataset
+
+
+class JobToOutputDatasetCollectionAssociation( object ):
+    def __init__( self, name, dataset_collection ):
+        self.name = name
+        self.dataset_collection = dataset_collection
+
+
 class JobToInputLibraryDatasetAssociation( object ):
     def __init__( self, name, dataset ):
         self.name = name
@@ -632,6 +724,13 @@ class JobToOutputLibraryDatasetAssociation( object ):
     def __init__( self, name, dataset ):
         self.name = name
         self.dataset = dataset
+
+
+class ImplicitlyCreatedDatasetCollectionInput( object ):
+    def __init__( self, name, input_dataset_collection ):
+        self.name = name
+        self.input_dataset_collection = input_dataset_collection
+
 
 class PostJobAction( object ):
     def __init__( self, action_type, workflow_step, output_name = None, action_arguments = None):
@@ -834,6 +933,14 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
         self.datasets.append( dataset )
         return dataset
 
+    def add_dataset_collection( self, history_dataset_collection, set_hid=True ):
+        if set_hid:
+            history_dataset_collection.hid = self._next_hid()
+        history_dataset_collection.history = self
+        # TODO: quota?
+        self.dataset_collections.append( history_dataset_collection )
+        return history_dataset_collection
+
     def copy( self, name=None, target_user=None, activatable=False, all_datasets=False ):
         """
         Return a copy of this history using the given `name` and `target_user`.
@@ -874,6 +981,19 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
             db_session.flush()
             # Copy annotation.
             self.copy_item_annotation( db_session, self.user, hda, target_user, new_hda )
+        # Copy history dataset collections
+        if all_datasets:
+            hdcas = self.dataset_collections
+        else:
+            hdcas = self.active_dataset_collections
+        for hdca in hdcas:
+            new_hdca = hdca.copy( )
+            new_history.add_dataset_collection( new_hdca, set_hid=False )
+            db_session.add( new_hdca )
+            db_session.flush()
+            # Copy annotation.
+            self.copy_item_annotation( db_session, self.user, hdca, target_user, new_hdca )
+
         new_history.hid_counter = self.hid_counter
         db_session.add( new_history )
         db_session.flush()
@@ -972,6 +1092,12 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
             self._active_datasets_children_and_roles = query.all()
         return self._active_datasets_children_and_roles
 
+    @property
+    def active_contents( self ):
+        """ Return all active contents ordered by hid.
+        """
+        return self.contents_iter( types=[ "dataset", "dataset_collection" ], deleted=False, visible=True )
+
     def contents_iter( self, **kwds ):
         """
         Fetch filtered list of contents of history.
@@ -983,6 +1109,8 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
         iters = []
         if 'dataset' in types:
             iters.append( self.__dataset_contents_iter( **kwds ) )
+        if 'dataset_collection' in types:
+            iters.append( self.__collection_contents_iter( **kwds ) )
         return galaxy.util.merge_sorted_iterables( operator.attrgetter( "hid" ), *iters )
 
     def __dataset_contents_iter(self, **kwds):
@@ -1011,6 +1139,9 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
             return ifilter(python_filter, query)
         else:
             return query
+
+    def __collection_contents_iter( self, **kwds ):
+        return self.__filter_contents( HistoryDatasetCollectionAssociation, **kwds )
 
     def copy_tags_from(self,target_user,source_history):
         for src_shta in source_history.tags:
@@ -1495,8 +1626,7 @@ class DatasetInstance( object ):
             raise NoConverterException("A dependency (%s) is missing a converter." % dependency)
         except KeyError:
             pass # No deps
-        new_dataset = self.datatype.convert_dataset( trans, self, target_ext, return_output=True, visible=False, deps=deps, set_output_history=False ).values()[0]
-        new_dataset.name = self.name
+        new_dataset = self.datatype.convert_dataset( trans, self, target_ext, return_output=True, visible=False, deps=deps, set_output_history=True ).values()[0]
         assoc = ImplicitlyConvertedDatasetAssociation( parent=self, file_type=target_ext, dataset=new_dataset, metadata_safe=False )
         session = trans.sa_session
         session.add( new_dataset )
@@ -1860,6 +1990,7 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations, 
                      purged = hda.purged,
                      visible = hda.visible,
                      state = hda.state,
+                     history_content_type=hda.history_content_type,
                      file_size = int( hda.get_size() ),
                      update_time = hda.update_time.isoformat(),
                      data_type = hda.ext,
@@ -1928,6 +2059,10 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations, 
             changed[ key ] = new_val
 
         return changed
+
+    @property
+    def history_content_type( self ):
+        return "dataset"
 
 
 class HistoryDatasetAssociationDisplayAtAuthorization( object ):
@@ -2443,6 +2578,308 @@ class ImplicitlyConvertedDatasetAssociation( object ):
             self.purged = True
             try: os.unlink( self.file_name )
             except Exception, e: print "Failed to purge associated file (%s) from disk: %s" % ( self.file_name, e )
+
+
+DEFAULT_COLLECTION_NAME = "Unnamed Collection"
+
+
+class DatasetCollection( object, Dictifiable, UsesAnnotations ):
+    """
+    """
+    dict_collection_visible_keys = ( 'id', 'name', 'collection_type' )
+    dict_element_visible_keys = ( 'id', 'name', 'collection_type' )
+
+    def __init__(
+        self,
+        id=None,
+        collection_type=None,
+    ):
+        self.id = id
+        self.collection_type = collection_type
+
+    @property
+    def dataset_instances( self ):
+        instances = []
+        for element in self.elements:
+            if element.is_collection:
+                instances.extend( element.child_collection.dataset_instances )
+            else:
+                instance = element.dataset_instance
+                instances.append( instance )
+        return instances
+
+    @property
+    def state( self ):
+        # TODO: DatasetCollection state handling...
+        return 'ok'
+
+    def validate( self ):
+        if self.collection_type is None:
+            raise Exception("Each dataset collection must define a collection type.")
+
+    def __getitem__( self, key ):
+        get_by_attribute = "element_index" if isinstance( key, int ) else "element_identifier"
+        for element in self.elements:
+            if getattr( element, get_by_attribute ) == key:
+                return element
+        error_message = "Dataset collection has no %s with key %s." % ( get_by_attribute, key )
+        raise KeyError( error_message )
+
+    def copy( self ):
+        new_collection = DatasetCollection(
+            collection_type=self.collection_type,
+        )
+        for element in self.elements:
+            element.copy_to_collection( new_collection )
+        object_session( self ).add( new_collection )
+        object_session( self ).flush()
+        return new_collection
+
+    def set_from_dict( self, new_data ):
+        # Nothing currently editable in this class.
+        return {}
+
+
+class DatasetCollectionInstance( object, HasName ):
+    """
+    """
+    def __init__(
+        self,
+        collection=None,
+        deleted=False,
+    ):
+        # Relationships
+        self.collection = collection
+        # Since deleted property is shared between history and dataset collections,
+        # it could be on either table - some places in the code however it is convient
+        # it is on instance instead of collection.
+        self.deleted = deleted
+
+    @property
+    def state( self ):
+        return self.collection.state
+
+    def display_name( self ):
+        return self.get_display_name()
+
+    def _base_to_dict( self, view ):
+        return dict(
+            id=self.id,
+            name=self.name,
+            collection_type=self.collection.collection_type,
+            type="collection",  # contents type (distinguished from file or folder (in case of library))
+        )
+
+    def set_from_dict( self, new_data ):
+        """
+        Set object attributes to the values in dictionary new_data limiting
+        to only those keys in dict_element_visible_keys.
+
+        Returns a dictionary of the keys, values that have been changed.
+        """
+        # precondition: keys are proper, values are parsed and validated
+        changed = self.collection.set_from_dict( new_data )
+
+        # unknown keys are ignored here
+        for key in [ k for k in new_data.keys() if k in self.editable_keys ]:
+            new_val = new_data[ key ]
+            old_val = self.__getattribute__( key )
+            if new_val == old_val:
+                continue
+
+            self.__setattr__( key, new_val )
+            changed[ key ] = new_val
+
+        return changed
+
+
+class HistoryDatasetCollectionAssociation( DatasetCollectionInstance, Dictifiable ):
+    """ Associates a DatasetCollection with a History. """
+    editable_keys = ( 'name', 'deleted', 'visible' )
+
+    def __init__(
+        self,
+        id=None,
+        hid=None,
+        collection=None,
+        history=None,
+        name=None,
+        deleted=False,
+        visible=True,
+        copied_from_history_dataset_collection_association=None,
+        implicit_output_name=None,
+        implicit_input_collections=[],
+    ):
+        super( HistoryDatasetCollectionAssociation, self ).__init__(
+            collection=collection,
+            deleted=deleted,
+        )
+        self.id = id
+        self.hid = hid
+        self.history = history
+        self.name = name
+        self.visible = visible
+        self.copied_from_history_dataset_collection_association = copied_from_history_dataset_collection_association
+        self.implicit_output_name = implicit_output_name
+        self.implicit_input_collections = implicit_input_collections
+
+    @property
+    def history_content_type( self ):
+        return "dataset_collection"
+
+    def to_dict( self, view='collection' ):
+        dict_value = dict(
+            hid=self.hid,
+            history_id=self.history.id,
+            history_content_type=self.history_content_type,
+            visible=self.visible,
+            deleted=self.deleted,
+            **self._base_to_dict(view=view)
+        )
+        return dict_value
+
+    def add_implicit_input_collection( self, name, history_dataset_collection ):
+        self.implicit_input_collections.append( ImplicitlyCreatedDatasetCollectionInput( name, history_dataset_collection)  )
+
+    def find_implicit_input_collection( self, name ):
+        matching_collection = None
+        for implicit_input_collection in self.implicit_input_collections:
+            if implicit_input_collection.name == name:
+                matching_collection = implicit_input_collection.input_dataset_collection
+                break
+        return matching_collection
+
+    def copy( self ):
+        """
+        Create a copy of this history dataset collection association. Copy
+        underlying collection.
+        """
+        hdca = HistoryDatasetCollectionAssociation(
+            hid=self.hid,
+            collection=self.collection.copy(),
+            visible=self.visible,
+            deleted=self.deleted,
+            name=self.name,
+            copied_from_history_dataset_collection_association=self,
+        )
+
+        object_session( self ).add( hdca )
+        object_session( self ).flush()
+        return hdca
+
+
+class LibraryDatasetCollectionAssociation( DatasetCollectionInstance, Dictifiable ):
+    """ Associates a DatasetCollection with a library folder. """
+    editable_keys = ( 'name', 'deleted' )
+
+    def __init__(
+        self,
+        id=None,
+        collection=None,
+        name=None,
+        deleted=False,
+        folder=None,
+    ):
+        super(LibraryDatasetCollectionAssociation, self).__init__(
+            collection=collection,
+            deleted=deleted,
+        )
+        self.id = id
+        self.folder = folder
+        self.name = name
+
+    def to_dict( self, view='collection' ):
+        dict_value = dict(
+            folder_id=self.folder.id,
+            **self._base_to_dict(view=view)
+        )
+        return dict_value
+
+
+class DatasetCollectionElement( object, Dictifiable ):
+    """ Associates a DatasetInstance (hda or ldda) with a DatasetCollection. """
+    # actionable dataset id needs to be available via API...
+    dict_collection_visible_keys = ( 'id', 'element_type', 'element_index', 'element_identifier' )
+    dict_element_visible_keys = ( 'id', 'element_type', 'element_index', 'element_identifier' )
+
+    def __init__(
+        self,
+        id=None,
+        collection=None,
+        element=None,
+        element_index=None,
+        element_identifier=None,
+    ):
+        if isinstance(element, HistoryDatasetAssociation):
+            self.hda = element
+            #self.instance_type = 'hda'
+        elif isinstance(element, LibraryDatasetDatasetAssociation):
+            self.ldda = element
+            #self.instance_type = 'ldda'
+        elif isinstance( element, DatasetCollection ):
+            self.child_collection = element
+        else:
+            raise AttributeError( 'Unknown element type provided: %s' % type( element ) )
+
+        self.id = id
+        self.collection = collection
+        self.element_index = element_index
+        self.element_identifier = element_identifier or str(element_index)
+
+    @property
+    def element_type( self ):
+        if self.hda:
+            return "hda"
+        elif self.ldda:
+            return "ldda"
+        elif self.child_collection:
+            #TOOD: Rename element_type to element_type.
+            return "dataset_collection"
+        else:
+            raise Exception( "Unknown element instance type" )
+
+    @property
+    def is_collection( self ):
+        return self.element_type == "dataset_collection"
+
+    @property
+    def element_object( self ):
+        if self.hda:
+            return self.hda
+        elif self.ldda:
+            return self.ldda
+        elif self.child_collection:
+            return self.child_collection
+        else:
+            raise Exception( "Unknown element instance type" )
+
+    @property
+    def dataset_instance( self ):
+        element_object = self.element_object
+        if isinstance( element_object, DatasetCollection ):
+            raise AttributeError( "Nested collection has no associated dataset_instance." )
+        return element_object
+
+    @property
+    def dataset( self ):
+        return self.dataset_instance.dataset
+
+    def first_dataset_instance( self ):
+        element_object = self.element_object
+        if isinstance( element_object, DatasetCollection ):
+            return element_object.dataset_instances[ 0 ]
+        else:
+            return element_object
+
+    def copy_to_collection( self, collection ):
+        new_element = DatasetCollectionElement(
+            element=self.element_object,
+            collection=collection,
+            element_index=self.element_index,
+            element_identifier=self.element_identifier,
+        )
+        return new_element
+
 
 class Event( object ):
     def __init__( self, message=None, history=None, user=None, galaxy_session=None ):
@@ -3448,6 +3885,15 @@ class StoredWorkflowTagAssociation ( ItemTagAssociation ):
 class VisualizationTagAssociation ( ItemTagAssociation ):
     pass
 
+
+class HistoryDatasetCollectionTagAssociation( ItemTagAssociation ):
+    pass
+
+
+class LibraryDatasetCollectionTagAssociation( ItemTagAssociation ):
+    pass
+
+
 class ToolTagAssociation( ItemTagAssociation ):
     def __init__( self, id=None, user=None, tool_id=None, tag_id=None, user_tname=None, value=None ):
         self.id = id
@@ -3477,6 +3923,15 @@ class PageAnnotationAssociation( object ):
 
 class VisualizationAnnotationAssociation( object ):
     pass
+
+
+class HistoryDatasetCollectionAnnotationAssociation( object ):
+    pass
+
+
+class LibraryDatasetCollectionAnnotationAssociation( object ):
+    pass
+
 
 # Item rating classes.
 
@@ -3510,6 +3965,17 @@ class PageRatingAssociation( ItemRatingAssociation ):
 class VisualizationRatingAssociation( ItemRatingAssociation ):
     def set_item( self, visualization ):
         self.visualization = visualization
+
+
+class HistoryDatasetCollectionRatingAssociation( ItemRatingAssociation ):
+    def set_item( self, dataset_collection ):
+        self.dataset_collection = dataset_collection
+
+
+class LibraryDatasetCollectionRatingAssociation( ItemRatingAssociation ):
+    def set_item( self, dataset_collection ):
+        self.dataset_collection = dataset_collection
+
 
 #Data Manager Classes
 class DataManagerHistoryAssociation( object ):

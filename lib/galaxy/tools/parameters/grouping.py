@@ -53,6 +53,9 @@ class Group( object, Dictifiable ):
         return group_dict
 
 class Repeat( Group ):
+
+    dict_collection_visible_keys = ( 'name', 'type', 'title', 'help', 'default', 'min', 'max' )
+
     type = "repeat"
     def __init__( self ):
         Group.__init__( self )
@@ -116,6 +119,16 @@ class Repeat( Group ):
                 rval_dict[ input.name ] = input.get_initial_value( trans, context, history=history )
             rval.append( rval_dict )
         return rval
+
+    def to_dict( self, trans, view='collection', value_mapper=None ):
+        repeat_dict = super( Repeat, self ).to_dict( trans, view=view, value_mapper=value_mapper )
+
+        def input_to_dict( input ):
+            return input.to_dict( trans, view=view, value_mapper=value_mapper )
+
+        repeat_dict[ "inputs" ] = map( input_to_dict, self.inputs.values() )
+        return repeat_dict
+
 
 class UploadDataset( Group ):
     type = "upload_dataset"
@@ -517,7 +530,29 @@ class Conditional( Group ):
             rval[ child_input.name ] = child_input.get_initial_value( trans, child_context, history=history )
         return rval
 
-class ConditionalWhen( object ):
+    def to_dict( self, trans, view='collection', value_mapper=None ):
+        cond_dict = super( Conditional, self ).to_dict( trans, view=view, value_mapper=value_mapper )
+
+        def nested_to_dict( input ):
+            return input.to_dict( trans, view=view, value_mapper=value_mapper )
+
+        cond_dict[ "cases" ] = map( nested_to_dict, self.cases )
+        cond_dict[ "test_param" ] = nested_to_dict( self.test_param )
+        return cond_dict
+
+
+class ConditionalWhen( object, Dictifiable ):
+    dict_collection_visible_keys = ( 'value', )
+
     def __init__( self ):
         self.value = None
         self.inputs = None
+
+    def to_dict( self, trans, view='collection', value_mapper=None ):
+        when_dict = super( ConditionalWhen, self ).to_dict( view=view, value_mapper=value_mapper )
+
+        def input_to_dict( input ):
+            return input.to_dict( trans, view=view, value_mapper=value_mapper )
+
+        when_dict[ "inputs" ] = map( input_to_dict, self.inputs.values() )
+        return when_dict

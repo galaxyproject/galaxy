@@ -1,8 +1,8 @@
 // dependencies
-define(['mvc/ui/ui-tabs', 'plugin/library/ui-table', 'plugin/library/ui', 'mvc/ui/ui-portlet', 'utils/utils',
+define(['mvc/ui/ui-tabs', 'plugin/library/ui', 'mvc/ui/ui-portlet', 'utils/utils',
         'plugin/models/chart', 'plugin/models/group',
-        'plugin/views/group', 'plugin/views/settings'],
-    function(Tabs, Table, Ui, Portlet, Utils, Chart, Group, GroupView, SettingsView) {
+        'plugin/views/group', 'plugin/views/settings', 'plugin/views/types'],
+    function(Tabs, Ui, Portlet, Utils, Chart, Group, GroupView, SettingsView, TypesView) {
 
 // widget
 return Backbone.View.extend(
@@ -61,62 +61,27 @@ return Backbone.View.extend(
         });
         
         //
-        // table with chart types
+        // grid with chart types
         //
-        this.table = new Table.View({
-            header : false,
-            onconfirm : function(type) {
-                if (self.chart.groups.length > 0) {
-                    // show modal
-                    self.app.modal.show({
-                        title   : 'Switching to another chart type?',
-                        body    : 'If you continue your settings and selections will be cleared.',
-                        buttons : {
-                            'Cancel'    : function() {
-                                // hide modal
-                                self.app.modal.hide();
-                            },
-                            'Continue'  : function() {
-                                // hide modal
-                                self.app.modal.hide();
-                                
-                                // confirm
-                                self.table.value(type);
-                            }
-                        }
-                    });
-                } else {
-                    // confirm
-                    self.table.value(type);
-                }
-            },
-            onchange : function(type) {
+        this.types = new TypesView(app, {
+            onchange   : function(type) {
                 // reset type relevant chart content
-                self.chart.groups.reset();
                 self.chart.settings.clear();
                 
                 // update chart type
                 self.chart.set({type: type});
+                
+                // set modified flag
+                self.chart.set('modified', true);
             },
             ondblclick  : function(chart_id) {
-                self.tabs.show('settings');
-            },
-            content: 'No chart types available'
-        });
-        
-        // load chart types into table
-        var types_n = 0;
-        var types = app.types.attributes;
-        for (var id in types){
-            var chart_type = types[id];
-            this.table.add (++types_n + '.');
-            if (chart_type.execute) {
-                this.table.add(chart_type.title + ' (requires processing)');
-            } else {
-                this.table.add (chart_type.title);
+                // show viewport
+                self.app.go('viewer');
+                        
+                // save chart
+                self._saveChart();
             }
-            this.table.append(id);
-        }
+        });
         
         //
         // tabs
@@ -146,7 +111,7 @@ return Backbone.View.extend(
         $main.append(Utils.wrap((new Ui.Label({ title : 'Provide a chart title:'})).$el));
         $main.append(Utils.wrap(this.title.$el));
         $main.append(Utils.wrap((new Ui.Label({ title : 'Select a chart type:'})).$el));
-        $main.append(Utils.wrap(this.table.$el));
+        $main.append(Utils.wrap(this.types.$el));
         
         // add tab
         this.tabs.add({
@@ -184,7 +149,7 @@ return Backbone.View.extend(
             self._refreshTitle();
         });
         this.chart.on('change:type', function(chart) {
-            self.table.value(chart.get('type'));
+            self.types.value(chart.get('type'));
         });
         this.chart.on('reset', function(chart) {
             self._resetChart();
@@ -294,7 +259,7 @@ return Backbone.View.extend(
     _resetChart: function() {
         // reset chart details
         this.chart.set('id', Utils.uuid());
-        this.chart.set('type', 'bardiagram');
+        this.chart.set('type', 'nvd3_bar');
         this.chart.set('dataset_id', this.app.options.config.dataset_id);
         this.chart.set('title', 'New Chart');
         
@@ -306,7 +271,7 @@ return Backbone.View.extend(
     _saveChart: function() {
         // update chart data
         this.chart.set({
-            type        : this.table.value(),
+            type        : this.types.value(),
             title       : this.title.value(),
             date        : Utils.time()
         });

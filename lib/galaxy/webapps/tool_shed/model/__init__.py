@@ -20,8 +20,8 @@ class APIKeys( object ):
 
 
 class User( object, Dictifiable ):
-    dict_collection_visible_keys = ( 'id', 'email' )
-    dict_element_visible_keys = ( 'id', 'email', 'username' )
+    dict_collection_visible_keys = ( 'id', 'username' )
+    dict_element_visible_keys = ( 'id', 'username' )
 
     def __init__( self, email=None, password=None ):
         self.email = email

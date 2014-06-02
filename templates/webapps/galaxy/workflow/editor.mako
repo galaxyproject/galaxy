@@ -363,6 +363,9 @@
                     <div class="toolTitle">
                         <a href="#" onclick="add_node_for_module( 'data_input', 'Input Dataset' )">Input dataset</a>
                     </div>
+                    <div class="toolTitle">
+                        <a href="#" onclick="add_node_for_module( 'data_collection_input', 'Input Dataset Collection' )">Input dataset collection</a>
+                    </div>
                 </div>
             </div>
         </div>

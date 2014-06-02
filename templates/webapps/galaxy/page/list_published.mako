@@ -26,7 +26,8 @@
 
     <div style="overflow: auto; height: 100%;">
         <div class="page-container" style="padding: 10px;">
-            ${h.to_unicode( grid )}
+            <!-- embedded grid -->
+            ${h.to_unicode( embedded_grid )}
         </div>
     </div>
 </%def>

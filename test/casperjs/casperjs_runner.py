@@ -3,26 +3,34 @@
 Allows integration of casperjs tests with buildbot, run_functional_tests.sh
 
 Tests can be run in any of the following ways:
-* casperjs mytests.js --url='http://localhost:8080'
+* casperjs test mytests.js --url='http://localhost:8080'
 * python casperjs_runner.py
 * nosetests
 * sh run_functional_tests.sh test/casperjs/test_runner
 * sh run_functional_tests.sh
 
 Note: that you can enable (lots of) debugging info using cli options:
-* casperjs usertests.js --url='http://localhost:8080' --verbose=true --logLevel=debug
+* casperjs test usertests.js --url='http://localhost:8080' --verbose=true --logLevel=debug
 
 (see casperjs.org for more information)
 
 Note: This seems to not work with CasperJS 1.1 (and PhantomJS 1.9) - Casper 1.0.xx and
 PhantomJS 1.8 work for me (John).
 
-Note: Example of specifing user and admin user credentials.
+Note: You can pass in extra data using --data='<some JSON object>'
+    and it will be available in your script as spaceghost.fixtureData.
 
-casperjs api-configuration-tests.js --url="http://localhost:8080" \
-    --admin='{"email": "foo@example.com", "password": "123456" }' \
-    '{ "testUser": { "email": "foo@example.com", "password": "123456" } }'
+    Example using a specific user account:
+        casperjs test api-history-tests.js --url="http://localhost:8080" \
+            --data='{ "testUser": { "email": "foo@example.com", "password": "123456" } }'
+        // ...then, in script:
+        spaceghost.user.loginOrRegisterUser(
+            spaceghost.fixtureData.testUser.email,
+            spaceghost.fixtureData.testUser.password );
 
+    Example of specifing user and admin user credentials:
+        casperjs test api-configuration-tests.js --url="http://localhost:8080" \
+            --admin='{"email": "foo@example.com", "password": "123456" }' \
 """
 # -------------------------------------------------------------------- can't do 2.5
 import sys
@@ -120,6 +128,11 @@ class CasperJSTestCase( unittest.TestCase ):
             #log.debug( '%s stderr output:\n%s', rel_script_path, stderr_output )
 
             log.debug( 'process.returncode: %d', process.returncode )
+
+            # 1.1 has an annoying info bar that happens before it gets to our stuff, so...
+            stdout_output = '\n'.join( stdout_output.split( '\n' )[1:] )
+            #log.debug( 'stdout_output:\n' + stdout_output )
+
             if process.returncode == 1:
                 #TODO: this is a fail on first effect
                 raise self.browser_error_to_exception( rel_script_path, stdout_output )
@@ -140,7 +153,10 @@ class CasperJSTestCase( unittest.TestCase ):
         """
         command_line_list = [ self.exec_path ]
 
-        # make rel_script_path an absolute path (when this is not run from it's dir - i.e. run_functional_tests.sh)
+        # as of casperjs 1.1, we always need to use the 'test' command
+        command_line_list.append( 'test' )
+
+        # make rel_script_path an absolute path (when this is not run from its dir - i.e. run_functional_tests.sh)
         curr_dir = os.path.dirname( __file__ )
         script_path = os.path.join( curr_dir, rel_script_path )
         command_line_list.append( script_path )
@@ -163,7 +179,8 @@ class CasperJSTestCase( unittest.TestCase ):
         command_line_list.extend( args )
 
         # send extra data - encode kwargs as json to pass to casper for decoding
-        command_line_list.append( json.dumps( kwargs ) )
+        # as of 1.1, we need to pass this under a opt
+        command_line_list.append( '--data=' + json.dumps( kwargs ) )
         return command_line_list
 
     def strip_escape_codes( self, msg ):
@@ -220,6 +237,7 @@ class CasperJSTestCase( unittest.TestCase ):
         """Handle the results of the js tests by either converting them
         with the results adapter or checking for a failure list.
         """
+
         # if given an adapter - use it
         if self.results_adapter:
             self.results_adapter.convert( results, self )
@@ -227,7 +245,7 @@ class CasperJSTestCase( unittest.TestCase ):
         # - otherwise, assert no failures found
         else:
             js_test_results = json.loads( results )
-            failures = js_test_results[ 'testResults' ][ 'failures' ]
+            failures = js_test_results[ 'failures' ]
             assert len( failures ) == 0, (
                 "%d assertions failed in the headless browser tests" % ( len( failures ) )
                 + " (see the log for details)" )

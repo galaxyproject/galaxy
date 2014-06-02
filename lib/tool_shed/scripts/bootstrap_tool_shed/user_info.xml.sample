@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<!--
+If you are planning to use the export / import repository capsule process for development in your
+local Tool Shed, make sure to change the following to be the account you'll use for development.
+When you export your developed repositories for importing into another Tool Shed, this account
+must be available in that Tool Shed..
+-->
+<user>
+    <email>admin@test.org</email>
+    <password>testuser</password>
+    <username>admin</username>
+</user>

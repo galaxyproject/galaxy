@@ -2,6 +2,7 @@ import logging
 import os
 import re
 import shutil
+import stat
 import sys
 import tarfile
 import time
@@ -9,6 +10,7 @@ import traceback
 import urllib2
 import zipfile
 from string import Template
+from tool_shed.util import common_util
 import tool_shed.util.shed_util_common as suc
 from galaxy.datatypes import checkers
 
@@ -16,6 +18,7 @@ log = logging.getLogger( __name__ )
 
 # Set no activity timeout to 20 minutes.
 NO_OUTPUT_TIMEOUT = 1200.0
+INSTALLATION_LOG = 'INSTALLATION.log'
 
 
 class CompressedFile( object ):
@@ -108,23 +111,69 @@ class CompressedFile( object ):
     def open_zip( self, filepath, mode ):
         return zipfile.ZipFile( filepath, mode )
 
-def clean_tool_shed_url( base_url ):
-    if base_url:
-        if base_url.find( '://' ) > -1:
-            try:
-                protocol, base = base_url.split( '://' )
-            except ValueError, e:
-                # The received base_url must be an invalid url.
-                log.debug( "Returning unchanged invalid base_url from td_common_util.clean_tool_shed_url: %s" % str( base_url ) )
-                return base_url
-            return base.rstrip( '/' )
-        return base_url.rstrip( '/' )
-    return base_url
+def assert_directory_executable( full_path ):
+    """
+    Return True if a symbolic link or directory exists and is executable, but if
+    full_path is a file, return False.
+    """
+    if full_path is None:
+        return False
+    if os.path.isfile( full_path ):
+        return False
+    if os.path.isdir( full_path ):
+        # Make sure the owner has execute permission on the directory.
+        # See http://docs.python.org/2/library/stat.html
+        if stat.S_IXUSR & os.stat( full_path )[ stat.ST_MODE ] == 64:
+            return True
+    return False
 
-def create_env_var_dict( elem, tool_dependency_install_dir=None, tool_shed_repository_install_dir=None ):
+def assert_directory_exists( full_path ):
+    """
+    Return True if a symbolic link or directory exists, but if full_path is a file,
+    return False.    """
+    if full_path is None:
+        return False
+    if os.path.isfile( full_path ):
+        return False
+    if os.path.isdir( full_path ):
+        return True
+    return False
+
+def assert_file_executable( full_path ):
+    """
+    Return True if a symbolic link or file exists and is executable, but if full_path
+    is a directory, return False.
+    """
+    if full_path is None:
+        return False
+    if os.path.isdir( full_path ):
+        return False
+    if os.path.exists( full_path ):
+        # Make sure the owner has execute permission on the file.
+        # See http://docs.python.org/2/library/stat.html
+        if stat.S_IXUSR & os.stat( full_path )[ stat.ST_MODE ] == 64:
+            return True
+    return False
+
+def assert_file_exists( full_path ):
+    """
+    Return True if a symbolic link or file exists, but if full_path is a directory,
+    return False.
+    """
+    if full_path is None:
+        return False
+    if os.path.isdir( full_path ):
+        return False
+    if os.path.exists( full_path ):
+        return True
+    return False
+
+def create_env_var_dict( elem, install_environment ):
     env_var_name = elem.get( 'name', 'PATH' )
     env_var_action = elem.get( 'action', 'prepend_to' )
     env_var_text = None
+    tool_dependency_install_dir = install_environment.install_dir
+    tool_shed_repository_install_dir = install_environment.tool_shed_repository_install_dir
     if elem.text and elem.text.find( 'REPOSITORY_INSTALL_DIR' ) >= 0:
         if tool_shed_repository_install_dir and elem.text.find( '$REPOSITORY_INSTALL_DIR' ) != -1:
             env_var_text = elem.text.replace( '$REPOSITORY_INSTALL_DIR', tool_shed_repository_install_dir )
@@ -140,9 +189,10 @@ def create_env_var_dict( elem, tool_dependency_install_dir=None, tool_shed_repos
             env_var_text = elem.text.replace( '$INSTALL_DIR', tool_shed_repository_install_dir )
             return dict( name=env_var_name, action=env_var_action, value=env_var_text )
     if elem.text:
-        # Allow for environment variables that contain neither REPOSITORY_INSTALL_DIR nor INSTALL_DIR since there may be command line
-        # parameters that are tuned for a Galaxy instance.  Allowing them to be set in one location rather than being hard coded into
-        # each tool config is the best approach.  For example:
+        # Allow for environment variables that contain neither REPOSITORY_INSTALL_DIR nor INSTALL_DIR
+        # since there may be command line parameters that are tuned for a Galaxy instance.  Allowing them
+        # to be set in one location rather than being hard coded into each tool config is the best approach.
+        # For example:
         # <environment_variable name="GATK2_SITE_OPTIONS" action="set_to">
         #    "--num_threads 4 --num_cpu_threads_per_data_thread 3 --phone_home STANDARD"
         # </environment_variable>
@@ -165,6 +215,15 @@ def egrep_escape( text ):
     # Whereas single quotes should not be escaped
     regex = regex.replace( r"\'", "'" )
     return regex
+
+def evaluate_template( text, install_environment ):
+    """
+    Substitute variables defined in XML blocks from dependencies file.  The value of the received
+    repository_install_dir is the root installation directory of the repository that contains the
+    tool dependency.  The value of the received install_dir is the root installation directory of
+    the tool_dependency.
+    """
+    return Template( text ).safe_substitute( get_env_var_values( install_environment ) )
 
 def format_traceback():
     ex_type, ex, tb = sys.exc_info()
@@ -192,7 +251,8 @@ def get_env_shell_file_paths( app, elem ):
     repository_owner = elem.get( 'owner', None )
     changeset_revision = elem.get( 'changeset_revision', None )
     if toolshed and repository_name and repository_owner and changeset_revision:
-        toolshed = clean_tool_shed_url( toolshed )
+         # The protocol is not stored, but the port is if it exists.
+        toolshed = common_util.remove_protocol_from_tool_shed_url( toolshed )
         repository = suc.get_repository_for_dependency_relationship( app, toolshed, repository_name, repository_owner, changeset_revision )
         if repository:
             for sub_elem in elem:
@@ -200,10 +260,12 @@ def get_env_shell_file_paths( app, elem ):
                 tool_dependency_name = sub_elem.get( 'name' )
                 tool_dependency_version = sub_elem.get( 'version' )
                 if tool_dependency_type and tool_dependency_name and tool_dependency_version:
-                    # Get the tool_dependency so we can get it's installation directory.
+                    # Get the tool_dependency so we can get its installation directory.
                     tool_dependency = None
                     for tool_dependency in repository.tool_dependencies:
-                        if tool_dependency.type == tool_dependency_type and tool_dependency.name == tool_dependency_name and tool_dependency.version == tool_dependency_version:
+                        if tool_dependency.type == tool_dependency_type and \
+                            tool_dependency.name == tool_dependency_name and \
+                            tool_dependency.version == tool_dependency_version:
                             break
                     if tool_dependency:
                         tool_dependency_key = '%s/%s' % ( tool_dependency_name, tool_dependency_version )
@@ -266,10 +328,18 @@ def get_env_shell_file_paths_from_setup_environment_elem( app, all_env_shell_fil
         action_dict[ 'action_shell_file_paths' ] = env_shell_file_paths
     return action_dict
 
-def get_env_var_values( install_dir ):
+def get_env_var_values( install_environment ):
+    """
+    Return a dictionary of values, some of which enable substitution of reserved words for the values.
+    The received install_enviroment object has 2 important attributes for reserved word substitution:
+    install_environment.tool_shed_repository_install_dir is the root installation directory of the repository
+    that contains the tool dependency being installed, and install_environment.install_dir is the root
+    installation directory of the tool dependency.
+    """
     env_var_dict = {}
-    env_var_dict[ 'INSTALL_DIR' ] = install_dir
-    env_var_dict[ 'system_install' ] = install_dir
+    env_var_dict[ 'REPOSITORY_INSTALL_DIR' ] = install_environment.tool_shed_repository_install_dir
+    env_var_dict[ 'INSTALL_DIR' ] = install_environment.install_dir
+    env_var_dict[ 'system_install' ] = install_environment.install_dir
     # If the Python interpreter is 64bit then we can safely assume that the underlying system is also 64bit.
     env_var_dict[ '__is64bit__' ] = sys.maxsize > 2**32
     return env_var_dict
@@ -344,7 +414,7 @@ def parse_package_elem( package_elem, platform_info_dict=None, include_after_ins
     # tag set) to be processed in the order they are defined in the tool_dependencies.xml file.
     actions_elem_tuples = []
     # The tag sets that will go into the actions_elem_list are those that install a compiled binary if
-    # the architecture and operating system match it's defined attributes.  If compiled binary is not
+    # the architecture and operating system match its defined attributes.  If compiled binary is not
     # installed, the first <actions> tag set [following those that have the os and architecture attributes]
     # that does not have os or architecture attributes will be processed.  This tag set must contain the
     # recipe for downloading and compiling source.
@@ -452,6 +522,10 @@ def parse_package_elem( package_elem, platform_info_dict=None, include_after_ins
             continue
     return actions_elem_tuples
 
+def __shellquote( s ):
+    """Quote and escape the supplied string for use in shell expressions."""
+    return "'" + s.replace( "'", "'\\''" ) + "'"
+
 def url_download( install_dir, downloaded_file_name, download_url, extract=True ):
     file_path = os.path.join( install_dir, downloaded_file_name )
     src = None
@@ -502,11 +576,3 @@ def zipfile_ok( path_to_archive ):
         if not member_path.startswith( basename ):
             return False
     return True
-
-def __shellquote(s):
-    """Quote and escape the supplied string for use in shell expressions."""
-    return "'" + s.replace( "'", "'\\''" ) + "'"
-
-def evaluate_template( text, install_dir ):
-    """ Substitute variables defined in XML blocks from dependencies file."""
-    return Template( text ).safe_substitute( get_env_var_values( install_dir ) )

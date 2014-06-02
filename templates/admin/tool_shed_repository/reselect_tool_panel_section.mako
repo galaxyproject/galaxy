@@ -53,7 +53,7 @@
                 <%
                     if len( shed_tool_conf_select_field.options ) == 1:
                         select_help = "Your Galaxy instance is configured with 1 shed-related tool configuration file, so repositories will be "
-                        select_help += "installed using it's <b>tool_path</b> setting."
+                        select_help += "installed using its <b>tool_path</b> setting."
                     else:
                         select_help = "Your Galaxy instance is configured with %d shed-related tool configuration files, " % len( shed_tool_conf_select_field.options )
                         select_help += "so select the file whose <b>tool_path</b> setting you want used for installing repositories."

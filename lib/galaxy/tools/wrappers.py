@@ -1,5 +1,9 @@
 import pipes
 from galaxy.util.none_like import NoneDataset
+from galaxy.util import odict
+
+from logging import getLogger
+log = getLogger( __name__ )
 
 
 class ToolParameterValueWrapper( object ):
@@ -180,6 +184,10 @@ class DatasetFilenameWrapper( ToolParameterValueWrapper ):
         self.false_path = getattr( dataset_path, "false_path", None )
         self.false_extra_files_path = getattr( dataset_path, "false_extra_files_path", None )
 
+    @property
+    def is_collection( self ):
+        return False
+
     def __str__( self ):
         if self.false_path is not None:
             return self.false_path
@@ -198,7 +206,18 @@ class DatasetFilenameWrapper( ToolParameterValueWrapper ):
         return bool( self.dataset )
 
 
-class DatasetListWrapper( list ):
+class HasDatasets:
+
+    def _dataset_wrapper( self, dataset, dataset_paths, **kwargs ):
+        wrapper_kwds = kwargs.copy()
+        if dataset:
+            real_path = dataset.file_name
+            if real_path in dataset_paths:
+                wrapper_kwds[ "dataset_path" ] = dataset_paths[ real_path ]
+        return DatasetFilenameWrapper( dataset, **wrapper_kwds )
+
+
+class DatasetListWrapper( list, HasDatasets ):
     """
     """
     def __init__( self, datasets, dataset_paths=[], **kwargs ):
@@ -206,12 +225,61 @@ class DatasetListWrapper( list ):
             datasets = [datasets]
 
         def to_wrapper( dataset ):
-            wrapper_kwds = kwargs.copy()
-            if dataset:
-                #A None dataset does not have a filename
-                real_path = dataset.file_name
-                if real_path in dataset_paths:
-                    wrapper_kwds[ "dataset_path" ] = dataset_paths[ real_path ]
-            return DatasetFilenameWrapper( dataset, **wrapper_kwds )
+            return self._dataset_wrapper( dataset, dataset_paths, **kwargs )
 
         list.__init__( self, map( to_wrapper, datasets ) )
+    def __str__( self ):
+        return ','.join( map( str, self ) )
+
+
+class DatasetCollectionWrapper( object, HasDatasets ):
+
+    def __init__( self, has_collection, dataset_paths=[], **kwargs ):
+        super(DatasetCollectionWrapper, self).__init__()
+
+        if hasattr( has_collection, "name" ):
+            # It is a HistoryDatasetCollectionAssociation
+            collection = has_collection.collection
+            self.name = has_collection.name
+        else:
+            # It is a DatasetCollectionElement instance referencing another collection
+            collection = has_collection.child_collection
+            self.name = has_collection.element_identifier
+
+        elements = collection.elements
+        element_instances = odict.odict()
+
+        element_instance_list = []
+        for dataset_collection_element in elements:
+            element_object = dataset_collection_element.element_object
+            element_identifier = dataset_collection_element.element_identifier
+
+            if dataset_collection_element.is_collection:
+                element_wrapper = DatasetCollectionWrapper( dataset_collection_element, dataset_paths, **kwargs )
+            else:
+                element_wrapper = self._dataset_wrapper( element_object, dataset_paths, **kwargs)
+
+            element_instances[element_identifier] = element_wrapper
+            element_instance_list.append( element_wrapper )
+
+        self.element_instances = element_instances
+        self.element_instance_list = element_instance_list
+
+    def keys( self ):
+        return self.element_instances.keys()
+
+    @property
+    def is_collection( self ):
+        return True
+
+    def __getitem__( self, key ):
+        if isinstance( key, int ):
+            return self.element_instance_list[ key ]
+        else:
+            return self.element_instances[ key ]
+
+    def __getattr__( self, key ):
+        return self.element_instances[ key ]
+
+    def __iter__( self ):
+        return self.element_instance_list.__iter__()

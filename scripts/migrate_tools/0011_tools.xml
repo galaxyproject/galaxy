@@ -1,0 +1,69 @@
+<?xml version="1.0"?>
+<toolshed name="toolshed.g2.bx.psu.edu">
+    <repository changeset_revision="3b33da018e74" owner="devteam" name="annotation_profiler" description="Profile Annotations for a set of genomic intervals">
+        <tool file="annotation_profiler/annotation_profiler.xml" id="Annotation_Profiler_0" version="1.0.0" />
+    </repository>
+    <repository changeset_revision="30f0948c649c" owner="devteam" name="blat_coverage_report" description="Polymorphism of the Reads">
+        <tool id="generate_coverage_report" version="1.0.0" file="metag_tools/blat_coverage_report.xml" />
+    </repository>
+    <repository changeset_revision="807e3e50845a" owner="devteam" name="blat_mapping" description="Coverage of the Reads in wiggle format">
+        <tool id="blat2wig" version="1.0.0" file="metag_tools/blat_mapping.xml" />
+    </repository>
+    <repository changeset_revision="9bc0c48a027f" owner="devteam" name="canonical_correlation_analysis" description="Canonical Correlation Analysis">
+        <tool file="multivariate_stats/cca.xml" id="cca1" version="1.0.0" />
+    </repository>
+    <repository changeset_revision="ab28e7de2db3" owner="devteam" name="convert_solid_color2nuc" description="Convert Color Space to Nucleotides">
+        <tool id="color2nuc" version="1.0.0" file="metag_tools/convert_SOLiD_color2nuc.xm" />
+    </repository>
+    <repository changeset_revision="ece409f6573c" owner="devteam" name="fasta_compute_length" description="Compute sequence length">
+        <tool file="fasta_tools/fasta_compute_length.xml" id="fasta_compute_length" version="__VERSION__" />
+    </repository>
+    <repository changeset_revision="2126e1b833a2" owner="devteam" name="fasta_concatenate_by_species" description="Concatenate FASTA alignment by species">
+        <tool file="fasta_tools/fasta_concatenate_by_species.xml" id="fasta_concatenate0" version="0.0.0" />
+    </repository>
+    <repository changeset_revision="16679a7f554a" owner="devteam" name="fasta_filter_by_length" description="Filter sequences by length">
+        <tool file="fasta_tools/fasta_filter_by_length.xml" id="fasta_filter_by_length" version="1.1" />
+    </repository>
+    <repository changeset_revision="9d189d08f2ad" owner="devteam" name="fasta_to_tabular" description="FASTA-to-Tabular converter">
+        <tool file="fasta_tools/fasta_to_tabular.xml" id="fasta2tab" version="1.1.0" />
+    </repository>
+    <repository changeset_revision="ef23c03d7497" owner="devteam" name="fastqsolexa_to_fasta_qual" description="FASTQSOLEXA-to-FASTA-QUAL extracts sequences and quality scores from FASTQSOLEXA data">
+        <tool id="fastqsolexa_to_fasta_qual" version="1.0.0" file="metag_tools/fastqsolexa_to_fasta_qual.xml" />
+    </repository>
+    <repository changeset_revision="7a092113eb8c" owner="devteam" name="kernel_canonical_correlation_analysis" description="Kernel Canonical Correlation Analysis">
+        <tool file="multivariate_stats/kcca.xml" id="kcca1" version="1.0.0" />
+    </repository>
+    <repository changeset_revision="e9ebd4bfbdfc" owner="devteam" name="kernel_principal_component_analysis" description="Kernel Principal Component Analysis">
+        <tool file="multivariate_stats/kpca.xml" id="kpca1" version="1.0.0" />
+    </repository>
+    <repository changeset_revision="601abbd22cea" owner="devteam" name="mapping_to_ucsc" description="Format mapping data as UCSC custom track">
+        <tool id="mapToUCSC" version="1.0.0" file="metag_tools/mapping_to_ucsc.xml" />
+    </repository>
+    <repository changeset_revision="dc7b4acb3fa6" owner="devteam" name="megablast_wrapper" description="Megablast compare short reads against htgs, nt, and wgs databases">
+        <tool file="metag_tools/megablast_wrapper.xml" id="megablast_wrapper" version="1.2.0" />
+    </repository>
+    <repository changeset_revision="03ca082aeb2e" owner="devteam" name="megablast_xml_parser" description="Parse blast XML output">
+        <tool file="metag_tools/megablast_xml_parser.xml" id="megablast_xml_parser" version="1.0.0" />
+    </repository>
+    <repository changeset_revision="f568051cdf2e" owner="devteam" name="principal_component_analysis" description="Principal Component Analysis">
+        <tool file="multivariate_stats/pca.xml" id="pca1" version="1.0.2" />
+    </repository>
+    <repository changeset_revision="ee49255302d8" owner="devteam" name="rmap" description="RMAP for Solexa Short Reads Alignment">
+        <tool id="rmap_wrapper" version="1.0.0" file="metag_tools/rmap_wrapper.xml" />
+    </repository>
+    <repository changeset_revision="f6e5bb5aa2f5" owner="devteam" name="rmapq" description="RMAPQ for Solexa Short Reads Alignment with Quality Scores">
+        <tool id="rmapq_wrapper" version="1.0.0" file="metag_tools/rmapq_wrapper.xml" />
+    </repository>
+    <repository changeset_revision="556ceed24699" owner="devteam" name="short_reads_figure_high_quality_length" description="Histogram of high quality score reads">
+        <tool id="hist_high_quality_score" version="1.0.0" file="metag_tools/short_reads_figure_high_quality_length.xml" />
+    </repository>
+    <repository changeset_revision="b52b9c7aabd9" owner="devteam" name="short_reads_figure_score" description="Build base quality distribution">
+        <tool file="metag_tools/short_reads_figure_score.xml" id="quality_score_distribution" version="1.0.2" />
+    </repository>
+    <repository changeset_revision="f17a1585733b" owner="devteam" name="short_reads_trim_seq" description="Select high quality segments">
+        <tool file="metag_tools/short_reads_trim_seq.xml" id="trim_reads" version="1.0.0" />
+    </repository>
+    <repository changeset_revision="0b4e36026794" owner="devteam" name="tabular_to_fasta" description="Tabular-to-FASTA">
+        <tool file="fasta_tools/tabular_to_fasta.xml" id="tab2fasta" version="1.1.0" />
+    </repository>
+</toolshed>

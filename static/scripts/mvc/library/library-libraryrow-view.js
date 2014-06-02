@@ -1,13 +1,11 @@
 // dependencies
 define([
-    "galaxy.masthead", 
+    "galaxy.masthead",
     "utils/utils",
-    "libs/toastr",
-    "mvc/library/library-model"], 
-function(mod_masthead, 
-         mod_utils, 
-         mod_toastr,
-         mod_library_model) {
+    "libs/toastr"],
+function(mod_masthead,
+         mod_utils,
+         mod_toastr) {
 
 // galaxy library row view
 var LibraryRowView = Backbone.View.extend({
@@ -17,7 +15,6 @@ var LibraryRowView = Backbone.View.extend({
     'click .save_library_btn'           : 'save_library_modification',
     'click .delete_library_btn'         : 'delete_library',
     'click .undelete_library_btn'       : 'undelete_library',
-    'click .upload_library_btn'         : 'upload_to_library',
     'click .permission_library_btn'     : 'permissions_on_library'
   },
 
@@ -39,7 +36,7 @@ var LibraryRowView = Backbone.View.extend({
 
   render: function(library){
     if (typeof library === 'undefined'){
-      var library = Galaxy.libraries.libraryListView.collection.get(this.$el.data('id'));
+      library = Galaxy.libraries.libraryListView.collection.get(this.$el.data('id'));
     }
     this.prepareButtons(library);
     var tmpl = this.templateRow();
@@ -51,7 +48,7 @@ var LibraryRowView = Backbone.View.extend({
   repaint: function(library){
     /* need to hide manually because of the element removal in setElement 
     invoked in render() */
-    $(".tooltip").hide(); 
+    $(".tooltip").hide();
     /* we need to store the old element to be able to replace it with 
     new one */
     var old_element = this.$el;
@@ -62,7 +59,11 @@ var LibraryRowView = Backbone.View.extend({
     /* now we attach new tooltips to the newly created row element */
     this.$el.find("[data-toggle]").tooltip();
   },
-
+  
+  /**
+   * Function modifies the visibility of buttons for 
+   * the filling of the row template of given library.
+   */
   prepareButtons: function(library){
     vis_config = this.element_visibility_config;
 
@@ -71,25 +72,23 @@ var LibraryRowView = Backbone.View.extend({
       vis_config.cancel_library_btn = false;
       vis_config.delete_library_btn = false;
       if (library.get('deleted') === true ){
-        // if (Galaxy.currUser.isAdmin()){
           vis_config.undelete_library_btn = true;
           vis_config.upload_library_btn = false;
           vis_config.edit_library_btn = false;
           vis_config.permission_library_btn = false;
-        // }
       } else if (library.get('deleted') === false ) {
         vis_config.save_library_btn = false;
         vis_config.cancel_library_btn = false;
         vis_config.undelete_library_btn = false;
         if (library.get('can_user_add') === true){
           vis_config.upload_library_btn = true;
-        }    
+        }
         if (library.get('can_user_modify') === true){
           vis_config.edit_library_btn = true;
-        }    
+        }
         if (library.get('can_user_manage') === true){
           vis_config.permission_library_btn = true;
-        }    
+        }
       }
     } else if (this.edit_mode === true){
       vis_config.upload_library_btn = false;
@@ -98,13 +97,10 @@ var LibraryRowView = Backbone.View.extend({
       vis_config.save_library_btn = true;
       vis_config.cancel_library_btn = true;
       vis_config.delete_library_btn = true;
+      vis_config.undelete_library_btn = false;
     }
 
     this.element_visibility_config = vis_config;
-  },
-
-  upload_to_library: function(){
-    mod_toastr.info('Coming soon. Stay tuned.');
   },
 
   permissions_on_library: function(){
@@ -136,7 +132,7 @@ var LibraryRowView = Backbone.View.extend({
             is_changed = true;
         } else{
             mod_toastr.warning('Library name has to be at least 3 characters long');
-            return
+            return;
         }
     }
 
@@ -162,7 +158,11 @@ var LibraryRowView = Backbone.View.extend({
             mod_toastr.success('Changes to library saved');
           },
           error: function(model, response){
-            mod_toastr.error('An error occured during updating the library :(');
+            if (typeof response.responseJSON !== "undefined"){
+              mod_toastr.error(response.responseJSON.err_msg);
+            } else {
+              mod_toastr.error('An error occured during updating the library :(');
+            }
           }
         });
     } else {
@@ -183,15 +183,19 @@ var LibraryRowView = Backbone.View.extend({
         Galaxy.libraries.libraryListView.collection.add(library);
         row_view.edit_mode = false;
         if (Galaxy.libraries.preferences.get('with_deleted') === false){
-          $(".tooltip").hide(); 
+          $('.tooltip').hide();
           row_view.$el.remove();
         } else if (Galaxy.libraries.preferences.get('with_deleted') === true){
           row_view.repaint(library);
         }
         mod_toastr.success('Library has been marked deleted');
       },
-      error: function(){
-        mod_toastr.error('An error occured during deleting the library :(');
+      error: function(model, response){
+        if (typeof response.responseJSON !== "undefined"){
+          mod_toastr.error(response.responseJSON.err_msg);
+        } else {
+          mod_toastr.error('An error occured during deleting the library :(');
+        }
       }
     });
   },
@@ -212,8 +216,12 @@ var LibraryRowView = Backbone.View.extend({
         row_view.repaint(library);
         mod_toastr.success('Library has been undeleted');
       },
-      error: function(){
-        mod_toastr.error('An error occured while undeleting the library :(');
+      error: function(model, response){
+        if (typeof response.responseJSON !== "undefined"){
+          mod_toastr.error(response.responseJSON.err_msg);
+        } else {
+          mod_toastr.error('An error occured while undeleting the library :(');
+        }
       }
     });
   },
@@ -223,7 +231,11 @@ var LibraryRowView = Backbone.View.extend({
 
     tmpl_array.push('           <tr class="<% if(library.get("deleted") === true) { print("active") } %>" style="display:none;" data-id="<%- library.get("id") %>">');
     tmpl_array.push('               <% if(!edit_mode) { %>');
-    tmpl_array.push('                 <td><a href="#folders/<%- library.get("root_folder_id") %>"><%- library.get("name") %></a></td>');
+    tmpl_array.push('                 <% if(library.get("deleted")) { %>');
+    tmpl_array.push('                   <td style="color:grey;"><span data-toggle="tooltip" data-placement="top" title="Marked deleted" style="color:grey;" class="fa fa-ban fa-lg deleted_lib_ico"> </span> <%- library.get("name") %></td>');
+    tmpl_array.push('                 <% } else { %>');
+    tmpl_array.push('                   <td><a href="#folders/<%- library.get("root_folder_id") %>"><%- library.get("name") %></a></td>');
+    tmpl_array.push('                 <% } %>');
     tmpl_array.push('                 <td><%= _.escape(library.get("description")) %></td>');
     tmpl_array.push('                 <td><%= _.escape(library.get("synopsis")) %></td>');
     tmpl_array.push('               <% } else if(edit_mode){ %>');
@@ -232,27 +244,23 @@ var LibraryRowView = Backbone.View.extend({
     tmpl_array.push('                 <td><input type="text" class="form-control input_library_synopsis" placeholder="synopsis" value="<%- library.get("synopsis") %>"></td>');
     tmpl_array.push('               <% } %>');
     tmpl_array.push('               <td class="right-center">');
-    tmpl_array.push('                   <% if(library.get("deleted") === true) { %>');
-    tmpl_array.push('                       <span data-toggle="tooltip" data-placement="top" title="Marked deleted" style="color:grey;" class="fa fa-ban fa-lg deleted_lib_ico"> </span>');
-    tmpl_array.push('                   <% } else if(library.get("public") === true) { %>');
-    tmpl_array.push('                     <span data-toggle="tooltip" data-placement="top" title="Public" style="color:grey;" class="fa fa-globe fa-lg public_lib_ico"> </span>');
+    tmpl_array.push('                   <% if( (library.get("public")) && (library.get("deleted") === false) ) { %>');
+    tmpl_array.push('                     <span data-toggle="tooltip" data-placement="top" title="Unrestricted library" style="color:grey;" class="fa fa-globe fa-lg public_lib_ico"> </span>');
     tmpl_array.push('                   <% }%>');
-    tmpl_array.push('                   <button data-toggle="tooltip" data-placement="top" title="Upload to library" class="primary-button btn-xs upload_library_btn" type="button" style="<% if(button_config.upload_library_btn === false) { print("display:none;") } %>"><span class="fa fa-upload"></span></button>');
-    tmpl_array.push('                   <button data-toggle="tooltip" data-placement="top" title="Modify library" class="primary-button btn-xs edit_library_btn" type="button" style="<% if(button_config.edit_library_btn === false) { print("display:none;") } %>"><span class="fa fa-pencil"></span></button>');
+    tmpl_array.push('                   <button data-toggle="tooltip" data-placement="top" title="Modify <%- library.get("name") %>" class="primary-button btn-xs edit_library_btn" type="button" style="<% if(button_config.edit_library_btn === false) { print("display:none;") } %>"><span class="fa fa-pencil"></span></button>');
     tmpl_array.push('                   <button data-toggle="tooltip" data-placement="top" title="Modify permissions" class="primary-button btn-xs permission_library_btn" type="button" style="<% if(button_config.permission_library_btn === false) { print("display:none;") } %>"><span class="fa fa-group"></span></button>');
     tmpl_array.push('                   <button data-toggle="tooltip" data-placement="top" title="Save changes" class="primary-button btn-xs save_library_btn" type="button" style="<% if(button_config.save_library_btn === false) { print("display:none;") } %>"><span class="fa fa-floppy-o"> Save</span></button>');
     tmpl_array.push('                   <button data-toggle="tooltip" data-placement="top" title="Discard changes" class="primary-button btn-xs cancel_library_btn" type="button" style="<% if(button_config.cancel_library_btn === false) { print("display:none;") } %>"><span class="fa fa-times"> Cancel</span></button>');
-    tmpl_array.push('                   <button data-toggle="tooltip" data-placement="top" title="Delete library (can be undeleted later)" class="primary-button btn-xs delete_library_btn" type="button" style="<% if(button_config.delete_library_btn === false) { print("display:none;") } %>"><span class="fa fa-trash-o"> Delete</span></button>');
-    tmpl_array.push('                   <button data-toggle="tooltip" data-placement="top" title="Undelete library" class="primary-button btn-xs undelete_library_btn" type="button" style="<% if(button_config.undelete_library_btn === false) { print("display:none;") } %>"><span class="fa fa-unlock"> Undelete</span></button>');
+    tmpl_array.push('                   <button data-toggle="tooltip" data-placement="top" title="Delete <%- library.get("name") %>" class="primary-button btn-xs delete_library_btn" type="button" style="<% if(button_config.delete_library_btn === false) { print("display:none;") } %>"><span class="fa fa-trash-o"> Delete</span></button>');
+    tmpl_array.push('                   <button data-toggle="tooltip" data-placement="top" title="Undelete <%- library.get("name") %> " class="primary-button btn-xs undelete_library_btn" type="button" style="<% if(button_config.undelete_library_btn === false) { print("display:none;") } %>"><span class="fa fa-unlock"> Undelete</span></button>');
     tmpl_array.push('               </td>');
     tmpl_array.push('           </tr>');
 
-    return _.template(tmpl_array.join('')); 
+    return _.template(tmpl_array.join(''));
   }
    
 });
 
-  // return
 return {
     LibraryRowView: LibraryRowView
 };

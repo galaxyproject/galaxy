@@ -162,10 +162,24 @@ class JobConfiguration( object ):
 
         # Parse destinations
         destinations = root.find('destinations')
+        job_metrics = self.app.job_metrics
         for destination in self.__findall_with_required(destinations, 'destination', ('id', 'runner')):
             id = destination.get('id')
+            destination_metrics = destination.get( "metrics", None )
+            if destination_metrics:
+                if not util.asbool( destination_metrics ):
+                    # disable
+                    job_metrics.set_destination_instrumenter( id, None )
+                else:
+                    metrics_conf_path = self.app.config.resolve_path( destination_metrics )
+                    job_metrics.set_destination_conf_file( id, metrics_conf_path )
+            else:
+                metrics_elements = self.__findall_with_required( destination, 'job_metrics', () )
+                if metrics_elements:
+                    job_metrics.set_destination_conf_element( id, metrics_elements[ 0 ] )
             job_destination = JobDestination(**dict(destination.items()))
             job_destination['params'] = self.__get_params(destination)
+            job_destination['env'] = self.__get_envs(destination)
             self.destinations[id] = (job_destination,)
             if job_destination.tags is not None:
                 for tag in job_destination.tags:
@@ -335,6 +349,25 @@ class JobConfiguration( object ):
         rval = {}
         for param in parent.findall('param'):
             rval[param.get('id')] = param.text
+        return rval
+
+    def __get_envs(self, parent):
+        """Parses any child <env> tags in to a dictionary suitable for persistence.
+
+        :param parent: Parent element in which to find child <param> tags.
+        :type parent: ``xml.etree.ElementTree.Element``
+
+        :returns: dict
+        """
+        rval = []
+        for param in parent.findall('env'):
+            rval.append( dict(
+                name=param.get('id'),
+                file=param.get('file'),
+                execute=param.get('exec'),
+                value=param.text,
+                raw=util.asbool(param.get('raw', 'false'))
+            ) )
         return rval
 
     @property
@@ -931,6 +964,8 @@ class JobWrapper( object ):
                         trynum += 1
                         log.warning( 'Error accessing %s, will retry: %s', dataset.dataset.file_name, e )
                         time.sleep( 2 )
+                if getattr( dataset, "hidden_beneath_collection_instance", None ):
+                    dataset.visible = False
                 dataset.blurb = 'done'
                 dataset.peek = 'no peek'
                 dataset.info = (dataset.info or '')
@@ -1068,8 +1103,10 @@ class JobWrapper( object ):
         # Finally set the job state.  This should only happen *after* all
         # dataset creation, and will allow us to eliminate force_history_refresh.
         job.state = final_job_state
+        if not job.tasks:
+            # If job was composed of tasks, don't attempt to recollect statisitcs
+            self._collect_metrics( job )
         self.sa_session.flush()
-
         log.debug( 'job %d ended' % self.job_id )
         delete_files = self.app.config.cleanup_job == 'always' or ( job.state == job.states.OK and self.app.config.cleanup_job == 'onsuccess' )
         self.cleanup( delete_files=delete_files )
@@ -1094,6 +1131,16 @@ class JobWrapper( object ):
         except:
             log.exception( "Unable to cleanup job %d" % self.job_id )
 
+    def _collect_metrics( self, has_metrics ):
+        job = has_metrics.get_job()
+        per_plugin_properties = self.app.job_metrics.collect_properties( job.destination_id, self.job_id, self.working_directory )
+        if per_plugin_properties:
+            log.info( "Collecting job metrics for %s" % has_metrics )
+        for plugin, properties in per_plugin_properties.iteritems():
+            for metric_name, metric_value in properties.iteritems():
+                if metric_value is not None:
+                    has_metrics.add_metric( plugin, metric_name, metric_value )
+
     def get_output_sizes( self ):
         sizes = []
         output_paths = self.get_output_fnames()
@@ -1115,6 +1162,11 @@ class JobWrapper( object ):
                 log.warning( '(%s) Job has reached walltime, it will be terminated' % ( self.get_id_tag() ) )
                 return 'Job ran longer than the maximum allowed execution time (%s), please try different inputs or parameters' % self.app.job_config.limits.walltime
         return None
+
+    def has_limits( self ):
+        has_output_limit = self.app.job_config.limits.output_size > 0
+        has_walltime_limit = self.app.job_config.limits.walltime_delta is not None
+        return has_output_limit or has_walltime_limit
 
     def get_command_line( self ):
         return self.command_line
@@ -1262,7 +1314,7 @@ class JobWrapper( object ):
             config_file = self.app.config.config_file
         if datatypes_config is None:
             datatypes_config = self.app.datatypes_registry.integrated_datatypes_configs
-        return self.external_output_metadata.setup_external_metadata( [ output_dataset_assoc.dataset for output_dataset_assoc in job.output_datasets ],
+        return self.external_output_metadata.setup_external_metadata( [ output_dataset_assoc.dataset for output_dataset_assoc in job.output_datasets + job.output_library_datasets ],
                                                                       self.sa_session,
                                                                       exec_dir=exec_dir,
                                                                       tmp_dir=tmp_dir,
@@ -1508,6 +1560,7 @@ class TaskWrapper(JobWrapper):
         task.stdout = util.shrink_string_by_size( stdout, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
         if len( stderr ) > DATABASE_MAX_STRING_SIZE:
             log.error( "stderr for task %d is greater than %s, only a portion will be logged to database" % ( task.id, DATABASE_MAX_STRING_SIZE_PRETTY ) )
+        self._collect_metrics( task )
         task.stderr = util.shrink_string_by_size( stderr, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
         task.exit_code = tool_exit_code
         task.command_line = self.command_line

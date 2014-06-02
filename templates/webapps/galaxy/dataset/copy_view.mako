@@ -59,17 +59,18 @@
                 </select>
             </div>
             <div class="toolFormBody">
-                %if len(source_datasets) > 0:
-                    %for data in source_datasets:
+                %if source_contents:
+                    %for data in source_contents:
                         <%
                             checked = ""
                             encoded_id = trans.security.encode_id(data.id)
-                            if data.id in source_dataset_ids:
+                            input_id = "%s|%s" % ( data.history_content_type, encoded_id )
+                            if input_id in source_content_ids:
                                 checked = " checked='checked'"
                         %>
                         <div class="form-row">
-                            <input type="checkbox" name="source_dataset_ids" id="dataset_${encoded_id}" value="${encoded_id}"${checked}/>
-                            <label for="dataset_${encoded_id}" style="display: inline;font-weight:normal;"> ${data.hid}: ${h.to_unicode(data.name)}</label>
+                            <input type="checkbox" name="source_content_ids" id="${input_id}" value="${input_id}"${checked}/>
+                            <label for="${input_id}" style="display: inline;font-weight:normal;"> ${data.hid}: ${h.to_unicode(data.name)}</label>
                         </div>
                     %endfor
                 %else:

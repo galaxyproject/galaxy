@@ -35,6 +35,7 @@ from sqlalchemy import and_
 from galaxy import jobs, model
 from galaxy.jobs.error_level import StdioErrorLevel
 from galaxy.datatypes.metadata import JobExternalOutputMetadataWrapper
+from galaxy import exceptions
 from galaxy.jobs import ParallelismInfo
 from galaxy.tools.actions import DefaultToolAction
 from galaxy.tools.actions.data_source import DataSourceToolAction
@@ -42,6 +43,7 @@ from galaxy.tools.actions.data_manager import DataManagerToolAction
 from galaxy.tools.deps import build_dependency_manager
 from galaxy.tools.deps.requirements import parse_requirements_from_xml
 from galaxy.tools.parameters import check_param, params_from_strings, params_to_strings
+from galaxy.tools.parameters import output_collect
 from galaxy.tools.parameters.basic import (BaseURLToolParameter,
                                            DataToolParameter, HiddenToolParameter, LibraryDatasetToolParameter,
                                            SelectToolParameter, ToolParameter, UnvalidatedValue,
@@ -53,6 +55,7 @@ from galaxy.tools.parameters.validation import LateValidationError
 from galaxy.tools.filters import FilterFactory
 from galaxy.tools.test import parse_tests_elem
 from galaxy.util import listify, parse_xml, rst_to_html, string_as_bool, string_to_object, xml_text, xml_to_string
+from galaxy.tools.parameters.meta import expand_meta_parameters
 from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.hash_util import hmac_new
@@ -63,8 +66,10 @@ from galaxy.web import url_for
 from galaxy.web.form_builder import SelectField
 from galaxy.model.item_attrs import Dictifiable
 from galaxy.model import Workflow
+from tool_shed.util import common_util
 from tool_shed.util import shed_util_common as suc
 from .loader import load_tool, template_macro_params
+from .execute import execute as execute_job
 from .wrappers import (
     ToolParameterValueWrapper,
     RawObjectWrapper,
@@ -73,6 +78,7 @@ from .wrappers import (
     SelectToolParameterWrapper,
     DatasetFilenameWrapper,
     DatasetListWrapper,
+    DatasetCollectionWrapper,
 )
 
 
@@ -467,6 +473,8 @@ class ToolBox( object, Dictifiable ):
                                              .first()
 
     def __get_tool_shed_repository( self, tool_shed, name, owner, installed_changeset_revision ):
+        # We store only the port, if one exists, in the database.
+        tool_shed = common_util.remove_protocol_from_tool_shed_url( tool_shed )
         return self.app.install_model.context.query( self.app.install_model.ToolShedRepository ) \
                               .filter( and_( self.app.install_model.ToolShedRepository.table.c.tool_shed == tool_shed,
                                              self.app.install_model.ToolShedRepository.table.c.name == name,
@@ -532,7 +540,10 @@ class ToolBox( object, Dictifiable ):
                     # Backward compatibility issue - the tag used to be named 'changeset_revision'.
                     installed_changeset_revision_elem = elem.find( "changeset_revision" )
                 installed_changeset_revision = installed_changeset_revision_elem.text
-                tool_shed_repository = self.__get_tool_shed_repository( tool_shed, repository_name, repository_owner, installed_changeset_revision )
+                tool_shed_repository = self.__get_tool_shed_repository( tool_shed,
+                                                                        repository_name,
+                                                                        repository_owner,
+                                                                        installed_changeset_revision )
                 if tool_shed_repository:
                     # Only load tools if the repository is not deactivated or uninstalled.
                     can_load_into_panel_dict = not tool_shed_repository.deleted
@@ -583,7 +594,7 @@ class ToolBox( object, Dictifiable ):
                 # the case where the tool is contained in a repository installed from the tool shed, and the Galaxy
                 # administrator has retrieved updates to the installed repository.  In this case, the tool may have
                 # been updated, but the version was not changed, so the tool should always be reloaded here.  We used
-                # to only load the tool if it's it was not found in self.tools_by_id, but performing that check did
+                # to only load the tool if it was not found in self.tools_by_id, but performing that check did
                 # not enable this scenario.
                 self.tools_by_id[ tool.id ] = tool
                 if load_panel_dict:
@@ -945,6 +956,18 @@ class DefaultToolState( object ):
         else:
             self.rerun_remap_job_id = None
         self.inputs = params_from_strings( tool.inputs, values, app, ignore_errors=True )
+
+    def copy( self ):
+        """
+        WARNING! Makes a shallow copy, *SHOULD* rework to have it make a deep
+        copy.
+        """
+        new_state = DefaultToolState()
+        new_state.page = self.page
+        new_state.rerun_remap_job_id = self.rerun_remap_job_id
+        # This need to be copied.
+        new_state.inputs = self.inputs
+        return new_state
 
 
 class ToolOutput( object, Dictifiable ):
@@ -1446,6 +1469,7 @@ class Tool( object, Dictifiable ):
             output.hidden = string_as_bool( data_elem.get("hidden", "") )
             output.tool = self
             output.actions = ToolOutputActionGroup( output, data_elem.find( 'actions' ) )
+            output.dataset_collectors = output_collect.dataset_collectors_from_elem( data_elem )
             self.outputs[ output.name ] = output
 
     # TODO: Include the tool's name in any parsing warnings.
@@ -1898,7 +1922,24 @@ class Tool( object, Dictifiable ):
                 message = 'Failure executing tool (attempting to rerun invalid job).'
                 return 'message.mako', dict( status='error', message=message, refresh_frames=[] )
 
-        state, state_new = self.__fetch_state( trans, incoming, history, all_pages=all_pages )
+        # Fixed set of input parameters may correspond to any number of jobs.
+        # Expand these out to individual parameters for given jobs (tool
+        # executions).
+        expanded_incomings, collection_info = expand_meta_parameters( trans, self, incoming )
+
+        if not expanded_incomings:
+            raise exceptions.MessageException( "Tool execution failed, trying to run a tool over an empty collection." )
+
+        # Remapping a single job to many jobs doesn't make sense, so disable
+        # remap if multi-runs of tools are being used.
+        if rerun_remap_job_id and len( expanded_incomings ) > 1:
+            message = 'Failure executing tool (cannot create multiple jobs when remapping existing job).'
+            return 'message.mako', dict( status='error', message=message, refresh_frames=[] )
+
+        all_states = []
+        for expanded_incoming in expanded_incomings:
+            state, state_new = self.__fetch_state( trans, expanded_incoming, history, all_pages=all_pages )
+            all_states.append( state )
         if state_new:
             # This feels a bit like a hack. It allows forcing full processing
             # of inputs even when there is no state in the incoming dictionary
@@ -1912,7 +1953,13 @@ class Tool( object, Dictifiable ):
                     self.update_state( trans, self.inputs_by_page[state.page], state.inputs, incoming, old_errors=old_errors or {}, source=source )
                 return "tool_form.mako", dict( errors={}, tool_state=state, param_values={}, incoming={} )
 
-        errors, params = self.__check_param_values( trans, incoming, state, old_errors, process_state, history=history, source=source )
+        all_errors = []
+        all_params = []
+        for expanded_incoming, expanded_state in zip(expanded_incomings, all_states):
+            errors, params = self.__check_param_values( trans, expanded_incoming, expanded_state, old_errors, process_state, history=history, source=source )
+            all_errors.append( errors )
+            all_params.append( params )
+
         if self.__should_refresh_state( incoming ):
             template, template_vars = self.__handle_state_refresh( trans, state, errors )
         else:
@@ -1920,19 +1967,25 @@ class Tool( object, Dictifiable ):
 
             # If there were errors, we stay on the same page and display
             # error messages
-            if errors:
+            if any( all_errors ):
                 error_message = "One or more errors were found in the input you provided. The specific errors are marked below."
                 template = "tool_form.mako"
                 template_vars = dict( errors=errors, tool_state=state, incoming=incoming, error_message=error_message )
             # If we've completed the last page we can execute the tool
             elif all_pages or state.page == self.last_page:
-                tool_executed, result = self.__handle_tool_execute( trans, rerun_remap_job_id, params, history )
-                if tool_executed:
+                execution_tracker = execute_job( trans, self, all_params, history=history, rerun_remap_job_id=rerun_remap_job_id, collection_info=collection_info )
+                if execution_tracker.successful_jobs:
                     template = 'tool_executed.mako'
-                    template_vars = dict( out_data=result )
+                    template_vars = dict(
+                        out_data=execution_tracker.output_datasets,
+                        num_jobs=len( execution_tracker.successful_jobs ),
+                        job_errors=execution_tracker.execution_errors,
+                        jobs=execution_tracker.successful_jobs,
+                        implicit_collections=execution_tracker.created_collections,
+                    )
                 else:
                     template = 'message.mako'
-                    template_vars = dict( status='error', message=result, refresh_frames=[] )
+                    template_vars = dict( status='error', message=execution_tracker.execution_errors[0], refresh_frames=[] )
             # Otherwise move on to the next page
             else:
                 template, template_vars = self.__handle_page_advance( trans, state, errors )
@@ -1941,13 +1994,14 @@ class Tool( object, Dictifiable ):
     def __should_refresh_state( self, incoming ):
         return not( 'runtool_btn' in incoming or 'URL' in incoming or 'ajax_upload' in incoming )
 
-    def __handle_tool_execute( self, trans, rerun_remap_job_id, params, history ):
+    def handle_single_execution( self, trans, rerun_remap_job_id, params, history ):
         """
         Return a pair with whether execution is successful as well as either
         resulting output data or an error message indicating the problem.
         """
         try:
-            _, out_data = self.execute( trans, incoming=params, history=history, rerun_remap_job_id=rerun_remap_job_id )
+            params = self.__remove_meta_properties( params )
+            job, out_data = self.execute( trans, incoming=params, history=history, rerun_remap_job_id=rerun_remap_job_id )
         except httpexceptions.HTTPFound, e:
             #if it's a paste redirect exception, pass it up the stack
             raise e
@@ -1956,7 +2010,7 @@ class Tool( object, Dictifiable ):
             message = 'Error executing tool: %s' % str(e)
             return False, message
         if isinstance( out_data, odict ):
-            return True, out_data
+            return job, out_data.items()
         else:
             if isinstance( out_data, str ):
                 message = out_data
@@ -2111,7 +2165,7 @@ class Tool( object, Dictifiable ):
             elif isinstance( input, Conditional ):
                 group_state = state[input.name]
                 group_prefix = "%s|" % ( key )
-                # Deal with the 'test' element and see if it's value changed
+                # Deal with the 'test' element and see if its value changed
                 if input.value_ref and not input.value_ref_in_group:
                     # We are referencing an existent parameter, which is not
                     # part of this group
@@ -2127,28 +2181,31 @@ class Tool( object, Dictifiable ):
                                                                      context,
                                                                      source )
 
-                current_case = input.get_current_case( value, trans )
-                # Current case has changed, throw away old state
-                group_state = state[input.name] = {}
-                # TODO: we should try to preserve values if we can
-                self.fill_in_new_state( trans, input.cases[current_case].inputs, group_state, context, history=history )
-                group_errors = self.populate_state( trans,
-                                                    input.cases[current_case].inputs,
-                                                    group_state,
-                                                    incoming,
-                                                    history,
-                                                    source,
-                                                    prefix=group_prefix,
-                                                    context=context,
-                )
                 if test_param_error:
-                    group_errors[ input.test_param.name ] = test_param_error
-                if group_errors:
-                    errors[ input.name ] = group_errors
-                # Store the current case in a special value
-                group_state['__current_case__'] = current_case
-                # Store the value of the test element
-                group_state[ input.test_param.name ] = value
+                    errors[ input.name ] = [ test_param_error ]
+                    # Store the value of the test element
+                    group_state[ input.test_param.name ] = value
+                else:
+                    current_case = input.get_current_case( value, trans )
+                    # Current case has changed, throw away old state
+                    group_state = state[input.name] = {}
+                    # TODO: we should try to preserve values if we can
+                    self.fill_in_new_state( trans, input.cases[current_case].inputs, group_state, context, history=history )
+                    group_errors = self.populate_state( trans,
+                                                        input.cases[current_case].inputs,
+                                                        group_state,
+                                                        incoming,
+                                                        history,
+                                                        source,
+                                                        prefix=group_prefix,
+                                                        context=context,
+                    )
+                    if group_errors:
+                        errors[ input.name ] = group_errors
+                    # Store the current case in a special value
+                    group_state['__current_case__'] = current_case
+                    # Store the value of the test element
+                    group_state[ input.test_param.name ] = value
             elif isinstance( input, UploadDataset ):
                 group_state = state[input.name]
                 group_errors = []
@@ -2201,7 +2258,7 @@ class Tool( object, Dictifiable ):
         Update the tool state in `state` using the user input in `incoming`.
         This is designed to be called recursively: `inputs` contains the
         set of inputs being processed, and `prefix` specifies a prefix to
-        add to the name of each input to extract it's value from `incoming`.
+        add to the name of each input to extract its value from `incoming`.
 
         If `update_only` is True, values that are not in `incoming` will
         not be modified. In this case `old_errors` can be provided, and any
@@ -2281,7 +2338,7 @@ class Tool( object, Dictifiable ):
                 group_old_errors = old_errors.get( input.name, {} )
                 old_current_case = group_state['__current_case__']
                 group_prefix = "%s|" % ( key )
-                # Deal with the 'test' element and see if it's value changed
+                # Deal with the 'test' element and see if its value changed
                 if input.value_ref and not input.value_ref_in_group:
                     # We are referencing an existent parameter, which is not
                     # part of this group
@@ -2402,7 +2459,27 @@ class Tool( object, Dictifiable ):
                     if error:
                         errors[ input.name ] = error
                     state[ input.name ] = value
+                    state.update( self.__meta_properties_for_state( key, incoming, incoming_value, value )  )
         return errors
+
+    def __remove_meta_properties( self, incoming ):
+        result = incoming.copy()
+        meta_property_suffixes = [
+            "__multirun__",
+            "__collection_multirun__",
+        ]
+        for key, value in incoming.iteritems():
+            if any( map( lambda s: key.endswith(s), meta_property_suffixes ) ):
+                del result[ key ]
+        return result
+
+    def __meta_properties_for_state( self, key, incoming, incoming_val, state_val ):
+        meta_properties = {}
+        multirun_key = "%s|__multirun__" % key
+        if multirun_key in incoming:
+            multi_value = incoming[ multirun_key ]
+            meta_properties[ multirun_key ] = multi_value
+        return meta_properties
 
     @property
     def params_with_missing_data_table_entry( self ):
@@ -2596,12 +2673,18 @@ class Tool( object, Dictifiable ):
 
     def build_dependency_shell_commands( self ):
         """Return a list of commands to be run to populate the current environment to include this tools requirements."""
+        return self.app.toolbox.dependency_manager.dependency_shell_commands(
+            self.requirements,
+            installed_tool_dependencies=self.installed_tool_dependencies
+        )
+
+    @property
+    def installed_tool_dependencies(self):
         if self.tool_shed_repository:
             installed_tool_dependencies = self.tool_shed_repository.tool_dependencies_installed_or_in_error
         else:
             installed_tool_dependencies = None
-        return self.app.toolbox.dependency_manager.dependency_shell_commands( self.requirements,
-                                                                              installed_tool_dependencies=installed_tool_dependencies )
+        return installed_tool_dependencies
 
     def build_redirect_url_params( self, param_dict ):
         """
@@ -2791,94 +2874,7 @@ class Tool( object, Dictifiable ):
         Find any additional datasets generated by a tool and attach (for
         cases where number of outputs is not known in advance).
         """
-        new_primary_datasets = {}
-        try:
-            json_file = open( os.path.join( job_working_directory, jobs.TOOL_PROVIDED_JOB_METADATA_FILE ), 'r' )
-            for line in json_file:
-                line = json.loads( line )
-                if line.get( 'type' ) == 'new_primary_dataset':
-                    new_primary_datasets[ os.path.split( line.get( 'filename' ) )[-1] ] = line
-        except Exception:
-            # This should not be considered an error or warning condition, this file is optional
-            pass
-        # Loop through output file names, looking for generated primary
-        # datasets in form of:
-        #     'primary_associatedWithDatasetID_designation_visibility_extension(_DBKEY)'
-        primary_datasets = {}
-        for name, outdata in output.items():
-            filenames = []
-            if 'new_file_path' in self.app.config.collect_outputs_from:
-                filenames.extend( glob.glob(os.path.join(self.app.config.new_file_path, "primary_%i_*" % outdata.id) ) )
-            if 'job_working_directory' in self.app.config.collect_outputs_from:
-                filenames.extend( glob.glob(os.path.join(job_working_directory, "primary_%i_*" % outdata.id) ) )
-            for filename in filenames:
-                if not name in primary_datasets:
-                    primary_datasets[name] = {}
-                fields = os.path.basename(filename).split("_")
-                fields.pop(0)
-                parent_id = int(fields.pop(0))
-                designation = fields.pop(0)
-                visible = fields.pop(0).lower()
-                if visible == "visible":
-                    visible = True
-                else:
-                    visible = False
-                ext = fields.pop(0).lower()
-                dbkey = outdata.dbkey
-                if fields:
-                    dbkey = fields[ 0 ]
-                # Create new primary dataset
-                primary_data = self.app.model.HistoryDatasetAssociation( extension=ext,
-                                                                         designation=designation,
-                                                                         visible=visible,
-                                                                         dbkey=dbkey,
-                                                                         create_dataset=True,
-                                                                         sa_session=self.sa_session )
-                self.app.security_agent.copy_dataset_permissions( outdata.dataset, primary_data.dataset )
-                self.sa_session.add( primary_data )
-                self.sa_session.flush()
-                # Move data from temp location to dataset location
-                self.app.object_store.update_from_file(primary_data.dataset, file_name=filename, create=True)
-                primary_data.set_size()
-                primary_data.name = "%s (%s)" % ( outdata.name, designation )
-                primary_data.info = outdata.info
-                primary_data.init_meta( copy_from=outdata )
-                primary_data.dbkey = dbkey
-                # Associate new dataset with job
-                job = None
-                for assoc in outdata.creating_job_associations:
-                    job = assoc.job
-                    break
-                if job:
-                    assoc = self.app.model.JobToOutputDatasetAssociation( '__new_primary_file_%s|%s__' % ( name, designation ), primary_data )
-                    assoc.job = job
-                    self.sa_session.add( assoc )
-                    self.sa_session.flush()
-                primary_data.state = outdata.state
-                #add tool/metadata provided information
-                new_primary_datasets_attributes = new_primary_datasets.get( os.path.split( filename )[-1] )
-                if new_primary_datasets_attributes:
-                    dataset_att_by_name = dict( ext='extension' )
-                    for att_set in [ 'name', 'info', 'ext', 'dbkey' ]:
-                        dataset_att_name = dataset_att_by_name.get( att_set, att_set )
-                        setattr( primary_data, dataset_att_name, new_primary_datasets_attributes.get( att_set, getattr( primary_data, dataset_att_name ) ) )
-                primary_data.set_meta()
-                primary_data.set_peek()
-                self.sa_session.add( primary_data )
-                self.sa_session.flush()
-                outdata.history.add_dataset( primary_data )
-                # Add dataset to return dict
-                primary_datasets[name][designation] = primary_data
-                # Need to update all associated output hdas, i.e. history was
-                # shared with job running
-                for dataset in outdata.dataset.history_associations:
-                    if outdata == dataset:
-                        continue
-                    new_data = primary_data.copy()
-                    dataset.history.add_dataset( new_data )
-                    self.sa_session.add( new_data )
-                    self.sa_session.flush()
-        return primary_datasets
+        return output_collect.collect_primary_datatasets( self, output, job_working_directory )
 
     def to_dict( self, trans, link_details=False, io_details=False ):
         """ Returns dict of tool. """

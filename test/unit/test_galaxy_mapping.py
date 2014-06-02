@@ -55,6 +55,15 @@ class MappingTests( unittest.TestCase ):
         self.persist( visualization )
         persist_and_check_annotation( model.VisualizationAnnotationAssociation, visualization=visualization )
 
+        dataset_collection = model.DatasetCollection( collection_type="paired" )
+        history_dataset_collection = model.HistoryDatasetCollectionAssociation( collection=dataset_collection )
+        self.persist( history_dataset_collection )
+        persist_and_check_annotation( model.HistoryDatasetCollectionAnnotationAssociation, history_dataset_collection=history_dataset_collection )
+
+        library_dataset_collection = model.LibraryDatasetCollectionAssociation( collection=dataset_collection )
+        self.persist( library_dataset_collection )
+        persist_and_check_annotation( model.LibraryDatasetCollectionAnnotationAssociation, library_dataset_collection=library_dataset_collection )
+
     def test_ratings( self ):
         model = self.model
 
@@ -95,6 +104,15 @@ class MappingTests( unittest.TestCase ):
         visualization.user = u
         self.persist( visualization )
         persist_and_check_rating( model.VisualizationRatingAssociation, visualization=visualization )
+
+        dataset_collection = model.DatasetCollection( collection_type="paired" )
+        history_dataset_collection = model.HistoryDatasetCollectionAssociation( collection=dataset_collection )
+        self.persist( history_dataset_collection )
+        persist_and_check_rating( model.HistoryDatasetCollectionRatingAssociation, history_dataset_collection=history_dataset_collection )
+
+        library_dataset_collection = model.LibraryDatasetCollectionAssociation( collection=dataset_collection )
+        self.persist( library_dataset_collection )
+        persist_and_check_rating( model.LibraryDatasetCollectionRatingAssociation, library_dataset_collection=library_dataset_collection )
 
     def test_display_name( self ):
 
@@ -161,6 +179,59 @@ class MappingTests( unittest.TestCase ):
         visualization.user = u
         tag_and_test( visualization, model.VisualizationTagAssociation, "tagged_visualizations" )
 
+        dataset_collection = model.DatasetCollection( collection_type="paired" )
+        history_dataset_collection = model.HistoryDatasetCollectionAssociation( collection=dataset_collection )
+        tag_and_test( history_dataset_collection, model.HistoryDatasetCollectionTagAssociation, "tagged_history_dataset_collections" )
+
+        library_dataset_collection = model.LibraryDatasetCollectionAssociation( collection=dataset_collection )
+        tag_and_test( library_dataset_collection, model.LibraryDatasetCollectionTagAssociation, "tagged_library_dataset_collections" )
+
+    def test_collections_in_histories(self):
+        model = self.model
+
+        u = model.User( email="mary@example.com", password="password" )
+        h1 = model.History( name="History 1", user=u)
+        d1 = model.HistoryDatasetAssociation( extension="txt", history=h1, create_dataset=True, sa_session=model.session )
+        d2 = model.HistoryDatasetAssociation( extension="txt", history=h1, create_dataset=True, sa_session=model.session )
+
+        c1 = model.DatasetCollection(collection_type="pair")
+        hc1 = model.HistoryDatasetCollectionAssociation(history=h1, collection=c1, name="HistoryCollectionTest1")
+
+        dce1 = model.DatasetCollectionElement(collection=c1, element=d1, element_identifier="left")
+        dce2 = model.DatasetCollectionElement(collection=c1, element=d2, element_identifier="right")
+
+        self.persist( u, h1, d1, d2, c1, hc1, dce1, dce2 )
+
+        loaded_dataset_collection = self.query( model.HistoryDatasetCollectionAssociation ).filter( model.HistoryDatasetCollectionAssociation.name == "HistoryCollectionTest1" ).first().collection
+        self.assertEquals(len(loaded_dataset_collection.elements), 2)
+        assert loaded_dataset_collection.collection_type == "pair"
+        assert loaded_dataset_collection[ "left" ] == dce1
+        assert loaded_dataset_collection[ "right" ] == dce2
+
+    def test_collections_in_library_folders(self):
+        model = self.model
+
+        u = model.User( email="mary2@example.com", password="password" )
+        lf = model.LibraryFolder( name="RootFolder" )
+        l = model.Library( name="Library1", root_folder=lf )
+        ld1 = model.LibraryDataset( )
+        ld2 = model.LibraryDataset( )
+        #self.persist( u, l, lf, ld1, ld2, expunge=False )
+
+        ldda1 = model.LibraryDatasetDatasetAssociation( extension="txt", library_dataset=ld1 )
+        ldda2 = model.LibraryDatasetDatasetAssociation( extension="txt", library_dataset=ld1 )
+        #self.persist(  ld1, ld2, ldda1, ldda2, expunge=False )
+
+        c1 = model.DatasetCollection(collection_type="pair")
+        dce1 = model.DatasetCollectionElement(collection=c1, element=ldda1)
+        dce2 = model.DatasetCollectionElement(collection=c1, element=ldda2)
+        self.persist( u, l, lf, ld1, ld2, c1, ldda1, ldda2, dce1, dce2 )
+
+        # TODO:
+        #loaded_dataset_collection = self.query( model.DatasetCollection ).filter( model.DatasetCollection.name == "LibraryCollectionTest1" ).first()
+        #self.assertEquals(len(loaded_dataset_collection.datasets), 2)
+        #assert loaded_dataset_collection.collection_type == "pair"
+
     def test_basic( self ):
         model = self.model
 
@@ -209,6 +280,51 @@ class MappingTests( unittest.TestCase ):
         assert hist0.name == "History 1"
         assert hist1.name == "History 2b"
         # gvk TODO need to ad test for GalaxySessions, but not yet sure what they should look like.
+
+    def test_jobs( self ):
+        model = self.model
+        u = model.User( email="jobtest@foo.bar.baz", password="password" )
+        job = model.Job()
+        job.user = u
+        job.tool_id = "cat1"
+
+        self.persist( u, job )
+
+        loaded_job = model.session.query( model.Job ).filter( model.Job.user == u ).first()
+        assert loaded_job.tool_id == "cat1"
+
+    def test_job_metrics( self ):
+        model = self.model
+        u = model.User( email="jobtest@foo.bar.baz", password="password" )
+        job = model.Job()
+        job.user = u
+        job.tool_id = "cat1"
+
+        job.add_metric( "gx", "galaxy_slots", 5 )
+        job.add_metric( "system", "system_name", "localhost" )
+
+        self.persist( u, job )
+
+        task = model.Task( job=job, working_directory="/tmp", prepare_files_cmd="split.sh" )
+        task.add_metric( "gx", "galaxy_slots", 5 )
+        task.add_metric( "system", "system_name", "localhost" )
+
+        big_value = ":".join( [ "%d" % i for i in range( 2000 ) ] )
+        task.add_metric( "env", "BIG_PATH", big_value )
+        self.persist( task )
+        # Ensure big values truncated
+        assert len( task.text_metrics[ 1 ].metric_value ) <= 1023
+
+    def test_tasks( self ):
+        model = self.model
+        u = model.User( email="jobtest@foo.bar.baz", password="password" )
+        job = model.Job()
+        task = model.Task( job=job, working_directory="/tmp", prepare_files_cmd="split.sh" )
+        job.user = u
+        self.persist( u, job, task )
+
+        loaded_task = model.session.query( model.Task ).filter( model.Task.job == job ).first()
+        assert loaded_task.prepare_input_files_cmd == "split.sh"
 
     def test_history_contents( self ):
         model = self.model

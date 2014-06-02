@@ -29,7 +29,8 @@ Tools.prototype.toString = function toString(){
 
 */
 // =================================================================== INTERNAL
-var xpath = require( 'casper' ).selectXPath;
+var require = patchRequire( require ),
+    xpath = require( 'casper' ).selectXPath;
 
 // ------------------------------------------------------------------- get avail. tools
 // list available tools
@@ -158,9 +159,6 @@ Tools.prototype.uploadFile = function uploadFile( filepath, callback, timeoutAft
         filename = this.filenameFromFilepath( filepath ),
         uploadInfo = {};
 
-    // precondition: filepath is relative to scriptDir
-    filepath = spaceghost.options.scriptDir + filepath;
-
     spaceghost.info( 'uploading file: ' + filepath + ' (timeout after ' + timeoutAfterMs + ')' );
     this._uploadFile( filepath );
 
@@ -183,31 +181,22 @@ Tools.prototype.uploadFile = function uploadFile( filepath, callback, timeoutAft
 
     // the hpanel should refresh and display the uploading file, wait for that to go into the ok state
     // throw if uploaded HDA doesn't appear, or it doesn't move to 'ok' after allotted time
-    spaceghost.historypanel.waitForHdas( function afterHpanelRefresh(){
+    //spaceghost.historypanel.waitForHdas()
+    spaceghost.historypanel.waitForHda( filename,
+        // success: update the upload info and run callback
+        function whenInStateFn( newHdaInfo ){
+            this.info( 'Upload complete: ' + newHdaInfo.text );
+            uploadInfo.hdaElement = newHdaInfo;
+            callback.call( spaceghost, uploadInfo );
+        },
+        function timeoutFn( newHdaInfo ){
+            this.warning( 'timeout waiting for upload: ' + filename + ', ' + this.jsonStr( newHdaInfo ) );
+            throw new spaceghost.GalaxyError( 'Upload Error: timeout waiting for ok state: '
+                + '"' + uploadInfo.filepath + '" (waited ' + timeoutAfterMs + ' ms)' );
+        },
+        timeoutAfterMs
+    );
 
-        var hdaElement = this.historypanel.hdaElementInfoByTitle( uploadInfo.filename );
-        if( hdaElement === null ){
-            var hdaContainer = this.historypanel.data.selectors.hdaContainer;
-            this.warning( 'Upload Error: ' + hdaContainer + ':\n' + this.getHTML( hdaContainer ) );
-            throw new this.GalaxyError( 'Upload Error: uploaded file HDA not found: ' + uploadInfo.filename );
-        }
-        this.debug( 'uploaded HDA element: ' + this.jsonStr( this.quickInfo( hdaElement ) ) );
-        uploadInfo.hdaElement = hdaElement;
-
-        this.historypanel.waitForHdaState( '#' + uploadInfo.hdaElement.attributes.id, 'ok',
-            // success: update the upload info and run callback
-            function whenInStateFn( newHdaInfo ){
-                this.info( 'Upload complete: ' + newHdaInfo.text );
-                uploadInfo.hdaElement = newHdaInfo;
-                callback.call( spaceghost, uploadInfo );
-
-            }, function timeoutFn( newHdaInfo ){
-                this.warning( 'timeout waiting for upload:\n' + this.jsonStr( this.quickInfo( newHdaInfo ) ) );
-                throw new spaceghost.GalaxyError( 'Upload Error: timeout waiting for ok state: '
-                    + '"' + uploadInfo.filepath + '" (waited ' + timeoutAfterMs + ' ms)' );
-
-            }, timeoutAfterMs );
-    });
     return spaceghost;
 };
 //TODO: upload via url

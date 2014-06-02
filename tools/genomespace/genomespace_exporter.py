@@ -11,6 +11,7 @@ import optparse
 import os
 import urllib
 import urllib2
+from urlparse import urljoin
 
 log = logging.getLogger( "tools.genomespace.genomespace_exporter" )#( __name__ )
 
@@ -117,9 +118,15 @@ def get_genome_space_launch_apps( atm_url, url_opener, file_url, file_type ):
                 break
     return webtools
     
-def galaxy_code_get_genomespace_folders( genomespace_site='prod', trans=None, value=None, **kwd ):
+def galaxy_code_get_genomespace_folders( genomespace_site='prod', trans=None, value=None, base_url=None, **kwd ):
     if value:
-        value = value[0]#single select, only 1 value
+        if isinstance( value, list ):
+            value = value[0] #single select, only 1 value
+        elif not isinstance( value, basestring ):
+            #unvalidated value
+            value = value.value
+            if isinstance( value, list ):
+                value = value[0] #single select, only 1 value
     def recurse_directory_dict( url_opener, cur_options, url ):
         cur_directory = urllib2.Request( url, headers = { 'Content-Type': 'application/json', 'Accept': 'application/json, text/plain' } ) 
         cur_directory.get_method = lambda: 'GET'
@@ -142,19 +149,19 @@ def galaxy_code_get_genomespace_folders( genomespace_site='prod', trans=None, va
     if trans and trans.user:
         username = trans.user.preferences.get( 'genomespace_username', None )
         token = trans.user.preferences.get( 'genomespace_token', None )
-        if None in ( username, token ):
-            return []
-        url_opener = get_cookie_opener( username, token )
-        genomespace_site_dict = get_genomespace_site_urls()[ genomespace_site ]
-        dm_url = genomespace_site_dict['dmServer']
-        #get export root directory
-        #directory_dict = get_default_directory( url_opener, dm_url ).get( 'directory', None ) #This directory contains shares and other items outside of the users home
-        directory_dict = get_personal_directory( url_opener, dm_url ).get( 'directory', None ) #Limit export list to only user's home dir
-        if directory_dict is None:
-            return []
-        #what directory to stuff this in
-        recurse_directory_dict( url_opener, rval, directory_dict.get( 'url' ) )
-    
+        if None not in ( username, token ):
+            url_opener = get_cookie_opener( username, token )
+            genomespace_site_dict = get_genomespace_site_urls()[ genomespace_site ]
+            dm_url = genomespace_site_dict['dmServer']
+            #get export root directory
+            #directory_dict = get_default_directory( url_opener, dm_url ).get( 'directory', None ) #This directory contains shares and other items outside of the users home
+            directory_dict = get_personal_directory( url_opener, dm_url ).get( 'directory', None ) #Limit export list to only user's home dir
+            if directory_dict is not None:
+                recurse_directory_dict( url_opener, rval, directory_dict.get( 'url' ) )
+    if not rval:
+        if not base_url:
+            base_url = '..'
+        rval = [ { 'name':'Your GenomeSpace token appears to be <strong>expired</strong>, please <a href="%s">reauthenticate</a>.' % ( urljoin( base_url, 'user/openid_auth?openid_provider=genomespace&amp;auto_associate=True' ) ), 'value': '', 'options':[], 'selected': False  } ]
     return rval
     
 

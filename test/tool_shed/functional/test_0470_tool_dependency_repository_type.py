@@ -44,9 +44,9 @@ emboss_repository_long_description = "Galaxy wrappers for Emboss version 5.0.0 t
 
 8. Change the repository type of the package_emboss_5_0_0 repository to be tool_dependency_definition.
 
-9. Reset metadata on the package_emboss_5_0_0 repository. It should now have only it's tip as the installable revision.
+9. Reset metadata on the package_emboss_5_0_0 repository. It should now have only its tip as the installable revision.
 
-10. Reset metadata on the emboss_5 repository. It should now have only it's tip as the installable revision.
+10. Reset metadata on the emboss_5 repository. It should now have only its tip as the installable revision.
 '''
 
 
@@ -245,7 +245,7 @@ class TestEnvironmentInheritance( ShedTwillTestCase ):
     def test_0050_reset_emboss_5_metadata( self ):
         '''Reset metadata on emboss_5.'''
         '''
-        This is step 10 - Reset metadata on the emboss_5 repository. It should now have only it's tip as the installable revision.
+        This is step 10 - Reset metadata on the emboss_5 repository. It should now have only its tip as the installable revision.
         '''
         emboss_repository = self.test_db_util.get_repository_by_name_and_owner( emboss_repository_name, common.test_user_1_name )
         self.reset_repository_metadata( emboss_repository )

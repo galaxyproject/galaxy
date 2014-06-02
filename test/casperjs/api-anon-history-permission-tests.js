@@ -1,30 +1,14 @@
-/* Utility to load a specific page and output html, page text, or a screenshot
- *  Optionally wait for some time, text, or dom selector
- */
-try {
-    //...if there's a better way - please let me know, universe
-    var scriptDir = require( 'system' ).args[3]
-            // remove the script filename
-            .replace( /[\w|\.|\-|_]*$/, '' )
-            // if given rel. path, prepend the curr dir
-            .replace( /^(?!\/)/, './' ),
-        spaceghost = require( scriptDir + 'spaceghost' ).create({
-            // script options here (can be overridden by CLI)
-            //verbose: true,
-            //logLevel: debug,
-            scriptDir: scriptDir
-        });
+var require = patchRequire( require ),
+    spaceghost = require( 'spaceghost' ).fromCasper( casper ),
+    xpath = require( 'casper' ).selectXPath,
+    utils = require( 'utils' ),
+    format = utils.format;
 
-} catch( error ){
-    console.debug( error );
-    phantom.exit( 1 );
-}
-spaceghost.start();
-
+spaceghost.test.begin( 'Test permissions for accessible, published, and inaccessible histories '
+                        + 'with anonymous users over the API', 0, function suite( test ){
+    spaceghost.start();
 
 // =================================================================== SET UP
-var utils = require( 'utils' );
-
 var email = spaceghost.user.getRandomEmail(),
     password = '123456';
 if( spaceghost.fixtureData.testUser ){
@@ -63,9 +47,9 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
 
 //// ------------------------------------------------------------------------------------------- upload some files
 spaceghost.then( function(){
-    this.api.tools.thenUpload( inaccessibleHistory.id, { filepath: this.options.scriptDir + '/../../test-data/1.bed' });
-    this.api.tools.thenUpload(   accessibleHistory.id, { filepath: this.options.scriptDir + '/../../test-data/1.bed' });
-    this.api.tools.thenUpload(    publishedHistory.id, { filepath: this.options.scriptDir + '/../../test-data/1.bed' });
+    this.api.tools.thenUpload( inaccessibleHistory.id, { filepath: '../../test-data/1.bed' });
+    this.api.tools.thenUpload(   accessibleHistory.id, { filepath: '../../test-data/1.bed' });
+    this.api.tools.thenUpload(    publishedHistory.id, { filepath: '../../test-data/1.bed' });
 });
 spaceghost.then( function(){
     // check that they're there
@@ -98,13 +82,11 @@ function testAnonReadFunctionsOnAccessible( history, hdas ){
         'hda show worked' );
 
     this.test.comment( 'Attempting to copy an accessible hda (default is accessible)'
-                     + ' fails from accessible history (currently login is required): ' + history.name );
-    this.api.assertRaises( function(){
-        this.api.hdas.create( this.api.histories.show( 'current' ).id, {
-            source  : 'hda',
-            content : hdas[0].id
-        });
-    }, 403, 'API authentication required for this request', 'update authentication required' );
+                     + ' should work from accessible history: ' + history.name );
+    this.api.hdas.create( this.api.histories.show( 'current' ).id, {
+        source  : 'hda',
+        content : hdas[0].id
+    });
 }
 
 function testAnonReadFunctionsOnInaccessible( history, hdas ){
@@ -137,7 +119,7 @@ function testAnonReadFunctionsOnInaccessible( history, hdas ){
             content : hdas[0].id
         });
         this.debug( this.jsonStr( returned ) );
-    }, 403, 'API authentication required for this request', 'hda copy from failed with error' );
+    }, 403, 'History is not accessible to the current user', 'hda copy from failed with error' );
 
 }
 
@@ -174,7 +156,7 @@ function testAnonWriteFunctions( history, hdas ){
             // should error before it checks the id
             content : 'bler'
         });
-    }, 403, 'API authentication required for this request', 'hda copy to failed' );
+    }, 403, 'Must be logged in to manage Galaxy histories', 'hda copy to failed' );
 }
 
 function testAnonInaccessible( history, hdas ){
@@ -220,5 +202,5 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
 
 
 // ===================================================================
-spaceghost.run( function(){
+    spaceghost.run( function(){ test.done(); });
 });

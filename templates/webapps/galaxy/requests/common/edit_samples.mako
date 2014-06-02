@@ -78,7 +78,7 @@ ${render_samples_messages(request, is_admin, is_submitted, message, status)}
                 grid_header = '<h3>Edit Current Samples of Sequencing Request "%s"</h3>' % request.name
             %>
             ${render_samples_grid( cntrller, request, displayable_sample_widgets, action='edit_samples', encoded_selected_sample_ids=encoded_selected_sample_ids, render_buttons=False, grid_header=grid_header )}
-            %if len( sample_operation_select_field.options ) > 1 and not is_unsubmitted:
+            %if len( sample_operation_select_field.options ) >= 1 and not is_unsubmitted:
                 <div class="form-row" style="background-color:#FAFAFA;">
                     For selected samples: 
                     ${sample_operation_select_field.get_html()}

@@ -31,9 +31,9 @@ def url_to_destination_params(url):
     if not url.endswith("/"):
         url += "/"
 
-    ## Check for private token embedded in the URL. A URL of the form
-    ## https://moo@cow:8913 will try to contact https://cow:8913
-    ## with a private key of moo
+    # Check for private token embedded in the URL. A URL of the form
+    # https://moo@cow:8913 will try to contact https://cow:8913
+    # with a private key of moo
     private_token_format = "https?://(.*)@.*/?"
     private_token_match = match(private_token_format, url)
     private_token = None
