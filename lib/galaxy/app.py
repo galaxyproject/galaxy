@@ -159,6 +159,8 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
             self.heartbeat.shutdown()
         if self.update_manager:
             self.update_manager.shutdown()
+        if self.control_worker:
+            self.control_worker.shutdown()
         try:
             # If the datatypes registry was persisted, attempt to
             # remove the temporary file in which it was written.

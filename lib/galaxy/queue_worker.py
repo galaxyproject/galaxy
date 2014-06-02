@@ -63,6 +63,9 @@ class GalaxyQueueWorker(ConsumerMixin, threading.Thread):
             log.warning("Recieved a malformed task message:\n%s" % body)
         message.ack()
 
+    def shutdown(self):
+        self.should_stop = True
+
 
 def send_control_task(trans, task, noop_self=False, kwargs={}):
     log.info("Sending %s control task." % task)
