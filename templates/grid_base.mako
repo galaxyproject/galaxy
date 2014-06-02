@@ -54,7 +54,7 @@
     ${h.js("libs/jquery/jquery.autocomplete", "galaxy.autocom_tagging", "libs/jquery/jquery.rating" )}
 
     ## grid container
-    <div id="grid-container"><div>
+    <div id="grid-container"></div>
 
     ## load javascript
     <script type="text/javascript">
