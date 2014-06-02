@@ -58,7 +58,7 @@ LWR_PARAM_SPECS = dict(
         default=None,
     ),
     amqp_consumer_timeout=dict(
-        map=specs.to_float_or_none,
+        map=lambda val: None if val == "None" else float(val),
         default=None,
     ),
     amqp_connect_ssl_ca_certs=dict(

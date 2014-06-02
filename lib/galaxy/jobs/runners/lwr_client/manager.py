@@ -84,8 +84,8 @@ class MessageQueueClientManager(object):
             connect_ssl=self.connect_ssl,
             publish_kwds=parse_amqp_publish_kwds(kwds)
         )
-        timeout = kwds.get('amqp_consumer_timeout', None)
-        if timeout is not None:
+        timeout = kwds.get('amqp_consumer_timeout', False)
+        if timeout is not False:
             exchange_kwds['timeout'] = timeout
         self.exchange = LwrExchange(self.url, **exchange_kwds)
         self.status_cache = {}
