@@ -253,12 +253,44 @@
         <tool id="baz" handler="special_handlers" destination="bigmem"/>
     </tools>
     <limits>
-        <!-- Certain limits can be defined. -->
+        <!-- Certain limits can be defined. The 'concurrent_jobs' limits all
+             control the number of jobs that can be "active" at a time, that
+             is, dispatched to a runner and in the 'queued' or 'running'
+             states.
+
+             A race condition exists that will allow destination_* concurrency
+             limits to be surpassed when multiple handlers are allowed to
+             handle jobs for the same destination. To prevent this, assign all
+             jobs for a specific destination to a single handler.
+        -->
+        <!-- registered_user_concurrent_jobs:
+                Limit on the number of jobs a user with a registered Galaxy
+                account can have active across all destinations.
+        -->
         <limit type="registered_user_concurrent_jobs">2</limit>
+        <!-- anonymous_user_concurrent_jobs:
+                Likewise, but for unregistered/anonymous users.
+        -->
         <limit type="anonymous_user_concurrent_jobs">1</limit>
+        <!-- destination_user_concurrent_jobs:
+                The number of jobs a user can have active in the specified
+                destination, or across all destinations identified by the
+                specified tag. (formerly: concurrent_jobs)
+        -->
+        <limit type="destination_user_concurrent_jobs" id="local">1</limit>
+        <limit type="destination_user_concurrent_jobs" tag="mycluster">2</limit>
+        <limit type="destination_user_concurrent_jobs" tag="longjobs">1</limit>
+        <!-- destination_total_concurrent_jobs:
+                The number of jobs that can be active in the specified
+                destination (or across all destinations identified by the
+                specified tag) by any/all users.
+        -->
+        <limit type="destination_total_concurrent_jobs" id="local">16</limit>
+        <limit type="destination_total_concurrent_jobs" tag="longjobs">100</limit>
+        <!-- walltime:
+                Amount of time a job can run (in any destination) before it
+                will be terminated by Galaxy.
+         -->
         <limit type="walltime">24:00:00</limit>
-        <limit type="concurrent_jobs" id="local">1</limit>
-        <limit type="concurrent_jobs" tag="mycluster">2</limit>
-        <limit type="concurrent_jobs" tag="longjobs">1</limit>
     </limits>
 </job_conf>
