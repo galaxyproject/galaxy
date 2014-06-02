@@ -4,7 +4,8 @@
 <%namespace file="login.mako" import="render_openid_form" />
 
 <%def name="load()">
-    ${parent.load()}
     <h2>Associate more OpenIDs</h2>
     ${render_openid_form( kwargs['redirect'], True, kwargs['openid_providers'] )}
+    <br/><br/>
+    ${parent.load()}
 </%def>
