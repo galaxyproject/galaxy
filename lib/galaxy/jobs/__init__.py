@@ -79,6 +79,9 @@ class JobToolConfiguration( Bunch ):
         self['params'] = dict()
         super(JobToolConfiguration, self).__init__(**kwds)
 
+    def get_resource_group( self ):
+        return self.get( "resources", None )
+
 
 class JobConfiguration( object ):
     """A parser and interface to advanced job management features.
@@ -99,8 +102,12 @@ class JobConfiguration( object ):
         self.destination_tags = {}
         self.default_destination_id = None
         self.tools = {}
+        self.resource_groups = {}
+        self.default_resource_group = None
+        self.resource_parameters = {}
         self.limits = Bunch()
 
+        self.__parse_resource_parameters()
         # Initialize the config
         try:
             tree = util.parse_xml(self.app.config.job_config_file)
@@ -189,6 +196,16 @@ class JobConfiguration( object ):
 
         # Determine the default destination
         self.default_destination_id = self.__get_default(destinations, self.destinations.keys())
+
+        # Parse resources...
+        resources = root.find('resources')
+        if resources is not None:
+            self.default_resource_group = resources.get( "default", None )
+            for group in self.__findall_with_required(resources, 'group'):
+                id = group.get('id')
+                fields_str = group.get('fields', None) or group.text or ''
+                fields = [ f for f in fields_str.split(",") if f ]
+                self.resource_groups[ id ] = fields
 
         # Parse tool mappings
         tools = root.find('tools')
@@ -296,6 +313,49 @@ class JobConfiguration( object ):
                             destination_total_concurrent_jobs={})
 
         log.debug('Done loading job configuration')
+
+    def get_tool_resource_parameters( self, tool_id ):
+        """ Given a tool id, return XML elements describing parameters to
+        insert into job resources.
+
+        :tool id: A tool ID (a string)
+
+        :returns: List of parameter elements.
+        """
+        fields = []
+
+        if not tool_id:
+            return fields
+
+        # TODO: Only works with exact matches, should handle different kinds of ids
+        # the way destination lookup does.
+        resource_group = None
+        if tool_id in self.tools:
+            resource_group = self.tools[ tool_id ][ 0 ].get_resource_group()
+        resource_group = resource_group or self.default_resource_group
+
+        if resource_group and resource_group in self.resource_groups:
+            fields_names = self.resource_groups[ resource_group ]
+            fields = [ self.resource_parameters[ n ] for n in fields_names ]
+
+        return fields
+
+    def __parse_resource_parameters( self ):
+        if not os.path.exists( self.app.config.job_resource_params_file ):
+            return
+
+        resource_definitions = util.parse_xml( self.app.config.job_resource_params_file )
+        resource_definitions_root = resource_definitions.getroot()
+        # TODO: Also handling conditionals would be awesome!
+        for parameter_elem in resource_definitions_root.findall( "param" ):
+            name = parameter_elem.get( "name" )
+            # Considered prepending __job_resource_param__ here and then
+            # stripping it off when making it available to dynamic job
+            # destination. Not needed because resource parameters are wrapped
+            # in a conditional.
+            ## expanded_name = "__job_resource_param__%s" % name
+            ## parameter_elem.set( "name", expanded_name )
+            self.resource_parameters[ name ] = parameter_elem
 
     def __get_default(self, parent, names):
         """Returns the default attribute set in a parent tag like <handlers> or <destinations>, or return the ID of the child, if there is no explicit default and only one child.

@@ -86,6 +86,16 @@ log = logging.getLogger( __name__ )
 
 WORKFLOW_PARAMETER_REGULAR_EXPRESSION = re.compile( '''\$\{.+?\}''' )
 
+JOB_RESOURCE_CONDITIONAL_XML = """<conditional name="__job_resource">
+    <param name="__job_resource__select" type="select" label="Job Resource Parameters">
+        <option value="no">Use default job resource parameters</option>
+        <option value="yes">Specify job resource parameters</option>
+    </param>
+    <when value="no"></when>
+    <when value="yes">
+    </when>
+</conditional>"""
+
 
 class ToolNotFoundException( Exception ):
     pass
@@ -678,6 +688,24 @@ class ToolBox( object, Dictifiable ):
         elif root.get( 'tool_type', None ) is not None:
             ToolClass = tool_types.get( root.get( 'tool_type' ) )
         else:
+            # Normal tool - only insert dynamic resource parameters for these
+            # tools.
+            if hasattr( self.app, "job_config" ):  # toolshed may not have job_config?
+                tool_id = root.get( 'id' ) if root else None
+                parameters = self.app.job_config.get_tool_resource_parameters( tool_id )
+                if parameters:
+                    inputs = root.find('inputs')
+                    # If tool has not inputs, create some so we can insert conditional
+                    if not inputs:
+                        inputs = ElementTree.fromstring( "<inputs></inputs>")
+                        root.append( inputs )
+                    # Insert a conditional allowing user to specify resource parameters.
+                    conditional_element = ElementTree.fromstring( JOB_RESOURCE_CONDITIONAL_XML )
+                    when_yes_elem = conditional_element.findall( "when" )[ 1 ]
+                    for parameter in parameters:
+                        when_yes_elem.append( parameter )
+                    inputs.append( conditional_element )
+
             ToolClass = Tool
         return ToolClass( config_file, root, self.app, guid=guid, repository_id=repository_id, **kwds )
 

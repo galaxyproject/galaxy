@@ -71,7 +71,7 @@ class JobRunnerMapper( object ):
                 actual_args[ possible_arg_name ] = possible_args[ possible_arg_name ]
 
         # Don't hit the DB to load the job object if not needed
-        if "job" in function_arg_names or "user" in function_arg_names or "user_email" in function_arg_names:
+        if "job" in function_arg_names or "user" in function_arg_names or "user_email" in function_arg_names or "resource_params" in function_arg_names:
             job = self.job_wrapper.get_job()
             history = job.history
             user = history and history.user
@@ -85,6 +85,24 @@ class JobRunnerMapper( object ):
 
             if "user_email" in function_arg_names:
                 actual_args[ "user_email" ] = user_email
+
+            if "resource_params" in function_arg_names:
+                # Find the dymically inserted resource parameters and give them
+                # to rule.
+                app = self.job_wrapper.app
+                param_values = job.get_param_values( app, ignore_errors=True )
+                resource_params = {}
+                try:
+                    resource_params_raw = param_values[ "__job_resource" ]
+                    if resource_params_raw[ "__job_resource__select" ].lower() in [ "1", "yes", "true" ]:
+                        for key, value in resource_params_raw.iteritems():
+                            #if key.startswith( "__job_resource_param__" ):
+                            #    resource_key = key[ len( "__job_resource_param__" ): ]
+                            #    resource_params[ resource_key ] = value
+                            resource_params[ key ] = value
+                except KeyError:
+                    pass
+                actual_args[ "resource_params" ] = resource_params
 
         return expand_function( **actual_args )
 
