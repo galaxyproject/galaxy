@@ -55,7 +55,7 @@ class Registry( object ):
             self.certified_level_one_viewable_repositories_and_suites_by_category[ category_name ] = 0
         if category_name not in self.certified_level_one_viewable_suites_by_category:
             self.certified_level_one_viewable_suites_by_category[ category_name ] = 0
-        
+
     def add_entry( self, repository ):
         try:
             if repository:
@@ -156,7 +156,7 @@ class Registry( object ):
                                                             model.RepositoryMetadata.table.c.changeset_revision,
                                                             latest_installable_changeset_revision ) )
         return clause_list
-        
+
     def get_certified_level_one_tuple( self, repository ):
         """
         Return True if the latest installable changeset_revision of the received repository is level one certified.
@@ -333,7 +333,7 @@ class Registry( object ):
             del self.certified_level_one_viewable_repositories_and_suites_by_category[ catgeory_name ]
         if catgeory_name in self.certified_level_one_viewable_suites_by_category:
             del self.certified_level_one_viewable_suites_by_category[ catgeory_name ]
-        
+
     def remove_entry( self, repository ):
         try:
             if repository:
