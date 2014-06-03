@@ -180,8 +180,8 @@ var TabularDatasetChunkedView = Backbone.View.extend({
                     if (result) {
                         self._renderChunk(result);
                         loading_chunk = false;
-                        loading_indicator.hide();
                     }
+                    loading_indicator.hide();
                 });
             }
         });
