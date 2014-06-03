@@ -24,6 +24,8 @@ class UsersController( BaseAPIController ):
 :       param key: the current Galaxy admin user's API key
 
         The following parameters are included in the payload.
+        :param email (required): the email address of the user
+        :param password (required): the password of the user
         :param username (required): the public username of the user
         """
         user_dict = dict( message = '',
