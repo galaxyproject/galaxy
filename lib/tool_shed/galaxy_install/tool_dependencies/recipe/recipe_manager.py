@@ -97,7 +97,8 @@ class TagManager( object ):
         return tool_dependency, proceed_with_install, action_elem_tuples
 
     def load_tag_handlers( self ):
-        tag_handlers = dict( install=tag_handler.Install(),
+        tag_handlers = dict( environment_variable=tag_handler.SetEnvironment(),
+                             install=tag_handler.Install(),
                              package=tag_handler.Package(),
                              readme=tag_handler.ReadMe(),
                              repository=tag_handler.Repository(),

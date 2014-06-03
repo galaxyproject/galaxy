@@ -187,7 +187,6 @@ class InstallManager( object ):
         a partial or full list of ToolDependency records associated with the tool_shed_repository.
         """
         tag_manager = TagManager()
-        sa_session = app.install_model.context
         # The value of package_name should match the value of the "package" type in the tool config's
         # <requirements> tag set, but it's not required.
         package_name = elem.get( 'name', None )

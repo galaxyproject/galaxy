@@ -465,11 +465,11 @@ class AdminToolshed( AdminGalaxy ):
         tool_dependencies_config = hg_util.get_config_from_disk( rt_util.TOOL_DEPENDENCY_DEFINITION_FILENAME,
                                                                  tool_shed_repository.repo_path( trans.app ) )
         installed_tool_dependencies = \
-            common_install_util.install_specified_packages( app=trans.app,
-                                                            tool_shed_repository=tool_shed_repository,
-                                                            tool_dependencies_config=tool_dependencies_config,
-                                                            tool_dependencies=tool_dependencies,
-                                                            from_tool_migration_manager=False )
+            common_install_util.install_specified_tool_dependencies( app=trans.app,
+                                                                     tool_shed_repository=tool_shed_repository,
+                                                                     tool_dependencies_config=tool_dependencies_config,
+                                                                     tool_dependencies=tool_dependencies,
+                                                                     from_tool_migration_manager=False )
         for installed_tool_dependency in installed_tool_dependencies:
             if installed_tool_dependency.status == trans.app.install_model.ToolDependency.installation_status.ERROR:
                 text = util.unicodify( installed_tool_dependency.error_message )
