@@ -623,11 +623,11 @@ def install_tool_shed_repository( trans, tool_shed_repository, repo_info_dict, t
             # Get the tool_dependencies.xml file from the repository.
             tool_dependencies_config = hg_util.get_config_from_disk( 'tool_dependencies.xml', install_dir )
             installed_tool_dependencies = \
-                common_install_util.install_specified_packages( app=trans.app,
-                                                                tool_shed_repository=tool_shed_repository,
-                                                                tool_dependencies_config=tool_dependencies_config,
-                                                                tool_dependencies=tool_shed_repository.tool_dependencies,
-                                                                from_tool_migration_manager=False )
+                common_install_util.install_specified_tool_dependencies( app=trans.app,
+                                                                         tool_shed_repository=tool_shed_repository,
+                                                                         tool_dependencies_config=tool_dependencies_config,
+                                                                         tool_dependencies=tool_shed_repository.tool_dependencies,
+                                                                         from_tool_migration_manager=False )
             basic_util.remove_dir( work_dir )
         suc.update_tool_shed_repository_status( trans.app,
                                                 tool_shed_repository,
@@ -881,11 +881,11 @@ def repair_tool_shed_repository( trans, repository, repo_info_dict ):
             # Get the tool_dependencies.xml file from the repository.
             tool_dependencies_config = hg_util.get_config_from_disk( 'tool_dependencies.xml', repository.repo_path( trans.app ) )
             installed_tool_dependencies = \
-                common_install_util.install_specified_packages( app=trans.app,
-                                                                tool_shed_repository=repository,
-                                                                tool_dependencies_config=tool_dependencies_config,
-                                                                tool_dependencies=repository.tool_dependencies,
-                                                                from_tool_migration_manager=False )
+                common_install_util.install_specified_tool_dependencies( app=trans.app,
+                                                                         tool_shed_repository=repository,
+                                                                         tool_dependencies_config=tool_dependencies_config,
+                                                                         tool_dependencies=repository.tool_dependencies,
+                                                                         from_tool_migration_manager=False )
             for installed_tool_dependency in installed_tool_dependencies:
                 if installed_tool_dependency.status in [ trans.install_model.ToolDependency.installation_status.ERROR ]:
                     repair_dict = add_repair_dict_entry( repository.name, installed_tool_dependency.error_message )
