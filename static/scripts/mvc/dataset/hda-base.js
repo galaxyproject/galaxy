@@ -47,7 +47,7 @@ var HistoryContentBaseView = Backbone.View.extend( baseMVC.LoggableMixin ).exten
             }
             if( this.draggable ){ this.draggableOn(); }
             next();
-        });        
+        });
     },
 
     /** Show or hide the body/details of history content.
@@ -117,7 +117,7 @@ var HistoryContentBaseView = Backbone.View.extend( baseMVC.LoggableMixin ).exten
         this.$el.find( '.dataset-selector span' )
             .removeClass( 'fa-square-o' ).addClass( 'fa-check-square-o' );
         if( !this.selected ){
-            this.trigger( 'selected', this );
+            this.trigger( 'selected', this, event );
             this.selected = true;
         }
         return false;
@@ -130,7 +130,7 @@ var HistoryContentBaseView = Backbone.View.extend( baseMVC.LoggableMixin ).exten
         this.$el.find( '.dataset-selector span' )
             .removeClass( 'fa-check-square-o' ).addClass( 'fa-square-o' );
         if( this.selected ){
-            this.trigger( 'de-selected', this );
+            this.trigger( 'de-selected', this, event );
             this.selected = false;
         }
         return false;
@@ -142,7 +142,7 @@ var HistoryContentBaseView = Backbone.View.extend( baseMVC.LoggableMixin ).exten
         } else {
             this.select( event );
         }
-    },
+    }
 
 });
 

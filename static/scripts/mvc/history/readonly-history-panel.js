@@ -613,7 +613,7 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( baseMVC.LoggableMixin ).extend(
         var hdaId = hda.get( 'id' ),
             historyContentType = hda.get( "history_content_type" ),
             hdaView = null;
-        if( historyContentType == "dataset" ) {
+        if( historyContentType === "dataset" ){
             hdaView = new this.HDAViewClass({
                 model           : hda,
                 linkTarget      : this.linkTarget,
@@ -716,6 +716,38 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( baseMVC.LoggableMixin ).extend(
     //    var model = this.model.hdas.findWhere( terms );
     //    return ( model )?( this.hdaViews[ model.id ] ):( undefined );
     //},
+
+    hdaViewRange : function( viewA, viewB ){
+        //console.debug( 'a: ', viewA, viewA.model );
+        //console.debug( 'b: ', viewB, viewB.model );
+        if( viewA === viewB ){ return [ viewA ]; }
+        //TODO: would probably be better if we cache'd the views as an ordered list (as well as a map)
+        var panel = this,
+            withinSet = false,
+            set = [];
+        this.model.hdas.getVisible(
+            this.storage.get( 'show_deleted' ),
+            this.storage.get( 'show_hidden' ),
+            this.filters
+        ).each( function( hda ){
+            //console.debug( 'checking: ', hda.get( 'name' ) );
+            if( withinSet ){
+                //console.debug( '\t\t adding: ', hda.get( 'name' ) );
+                set.push( panel.hdaViews[ hda.id ] );
+                if( hda === viewA.model || hda === viewB.model ){
+                    //console.debug( '\t found last: ', hda.get( 'name' ) );
+                    withinSet = false;
+                }
+            } else {
+                if( hda === viewA.model || hda === viewB.model ){
+                    //console.debug( 'found first: ', hda.get( 'name' ) );
+                    withinSet = true;
+                    set.push( panel.hdaViews[ hda.id ] );
+                }
+            }
+        });
+        return set;
+    },
 
     // ------------------------------------------------------------------------ panel events
     /** event map */

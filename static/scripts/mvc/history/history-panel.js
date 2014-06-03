@@ -45,6 +45,8 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
         // ---- set up instance vars
         /** selected hda ids */
         this.selectedHdaIds = [];
+        /** last selected hda */
+        this.lastSelectedViewId = null;
 
         /** editor for tags - sub-view */
         this.tagsEditor = null;
@@ -275,7 +277,7 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
             historyContentType = hda.get( 'history_content_type' ),
             hdaView = null;
 
-        if( historyContentType == "dataset" ) { 
+        if( historyContentType === "dataset" ) {
             hdaView = new this.HDAViewClass({
                 model           : hda,
                 linkTarget      : this.linkTarget,
@@ -288,7 +290,7 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
                 tagsEditorShown       : ( this.tagsEditor && !this.tagsEditor.hidden ),
                 annotationEditorShown : ( this.annotationEditor && !this.annotationEditor.hidden )
             });
-        } else if ( historyContentType == "dataset_collection" ) {
+        } else if ( historyContentType === "dataset_collection" ) {
             hdaView = new datasetCollectionEdit.DatasetCollectionEditView({
                 model           : hda,
                 linkTarget      : this.linkTarget,
@@ -311,12 +313,33 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
         readonlyPanel.ReadOnlyHistoryPanel.prototype._setUpHdaListeners.call( this, hdaView );
 
         // maintain a list of hdas that are selected
-        hdaView.on( 'selected', function( hdaView ){
-            var id = hdaView.model.get( 'id' );
-            historyView.selectedHdaIds = _.union( historyView.selectedHdaIds, [ id ] );
+        hdaView.on( 'selected', function( hdaView, event ){
+            if( !event ){ return; }
+            //console.debug( 'selected', event );
+            var selectedIds = [];
+            //console.debug( historyView.lastSelectedViewId, historyView.hdaViews[ historyView.lastSelectedViewId ] );
+
+            // shift will select a range, but not set lastSelectedViewId
+            if( ( event.shiftKey )
+            &&  ( historyView.lastSelectedViewId && _.has( historyView.hdaViews, historyView.lastSelectedViewId ) ) ){
+                var lastSelectedView = historyView.hdaViews[ historyView.lastSelectedViewId ];
+                selectedIds = historyView.selectDatasetRange( hdaView, lastSelectedView )
+                    .map( function( view ){ return view.model.id; });
+
+            // only
+            } else {
+                var id = hdaView.model.get( 'id' );
+                historyView.lastSelectedViewId = id;
+                //console.debug( 'lastSelectedViewId:', historyView.lastSelectedViewId );
+                selectedIds = [ id ];
+            }
+            //console.debug( 'selectedIds:', selectedIds );
+            historyView.selectedHdaIds = _.union( historyView.selectedHdaIds, selectedIds );
+            //TODO: might want to use getSelectedHdaViews instead managing these lists with ops
             //console.debug( 'selected', historyView.selectedHdaIds );
         });
-        hdaView.on( 'de-selected', function( hdaView ){
+        hdaView.on( 'de-selected', function( hdaView, event ){
+            //console.debug( 'de-selected', event );
             var id = hdaView.model.get( 'id' );
             historyView.selectedHdaIds = _.without( historyView.selectedHdaIds, id );
             //console.debug( 'de-selected', historyView.selectedHdaIds );
@@ -386,6 +409,7 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
             view.showSelector();
         });
         this.selectedHdaIds = [];
+        this.lastSelectedViewId = null;
     },
 
     /** hide selectors on all visible hdas and associated controls */
@@ -397,6 +421,7 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
             view.hideSelector();
         });
         this.selectedHdaIds = [];
+        this.lastSelectedViewId = null;
     },
 
     /** show or hide selectors on all visible hdas and associated controls */
@@ -417,9 +442,19 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
 
     /** deselect all visible hdas */
     deselectAllDatasets : function( event ){
+        this.lastSelectedViewId = null;
         _.each( this.hdaViews, function( view ){
             view.deselect( event );
         });
+    },
+
+    /** select a range of datasets between A and B */
+    selectDatasetRange : function( viewA, viewB ){
+        var range = this.hdaViewRange( viewA, viewB );
+        _.each( range, function( view ){
+            view.select();
+        });
+        return range;
     },
 
     /** return an array of all currently selected hdas */

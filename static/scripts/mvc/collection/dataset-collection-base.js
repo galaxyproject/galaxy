@@ -39,41 +39,39 @@ var DatasetCollectionBaseView = hdaBase.HistoryContentBaseView.extend({
     templateSkeleton : function (){
         return [
             '<div class="dataset hda">',
-            '    <div class="dataset-warnings">',
-            '<% if ( deleted ) { %>',
-            '        <div class="dataset-deleted-msg warningmessagesmall"><strong>',
-            '             This dataset has been deleted.', // Localize?
-            '        </div>',
-            '<% } %>',
-            '<% if ( ! visible ) { %>',
-            '        <div class="dataset-hidden-msg warningmessagesmall"><strong>',
-            '             This dataset has been hidden.', // Localize?
-            '        </div>',
-            '<% } %>',
-            '     </div>',
-            '     <div class="dataset-selector"><span class="fa fa-2x fa-square-o"></span></div>',
-            '         <div class="dataset-primary-actions"></div>',
-            '         <div class="dataset-title-bar clear" tabindex="0">',
-            '              <span class="dataset-state-icon state-icon"></span>',
-            '              <div class="dataset-title">',
-            '                   <span class="hda-hid"><%= hid %></span>',
-            '                   <span class="dataset-name"><%= name %></span>',
-            '              </div>',
-            '     </div>',
-            '     <div class="dataset-body"></div>',
-            '</div>',
+                '<div class="dataset-warnings">',
+                    '<% if ( deleted ) { %>',
+                        '<div class="dataset-deleted-msg warningmessagesmall"><strong>',
+                            _l( 'This dataset has been deleted.' ),
+                        '</div>',
+                    '<% } %>',
+                    '<% if ( ! visible ) { %>',
+                        '<div class="dataset-hidden-msg warningmessagesmall"><strong>',
+                            _l( 'This dataset has been hidden.' ),
+                        '</div>',
+                    '<% } %>',
+                '</div>',
+                '<div class="dataset-selector"><span class="fa fa-2x fa-square-o"></span></div>',
+                '<div class="dataset-primary-actions"></div>',
+                '<div class="dataset-title-bar clear" tabindex="0">',
+                    '<span class="dataset-state-icon state-icon"></span>',
+                    '<div class="dataset-title">',
+                        '<span class="hda-hid"><%= hid %></span> ',
+                        '<span class="dataset-name"><%= name %></span>',
+                    '</div>',
+                '</div>',
+                '<div class="dataset-body"></div>',
+            '</div>'
         ].join( '' );
     },
 
     templateBody : function() {
         return [
             '<div class="dataset-body">',
-            '    <div class="dataset-summary">',
-            '        A dataset collection.',
-            '    </div>',
-
+                '<div class="dataset-summary">',
+                'A dataset collection.',
+            '</div>'
         ].join( '' );
-
     },
     
     _buildNewRender : function(){
@@ -170,8 +168,7 @@ var DatasetCollectionBaseView = hdaBase.HistoryContentBaseView.extend({
      */
     _render_body_ok : function(){
         // most common state renderer and the most complicated
-        var view = this,
-            $body = $( _.template(this.templateBody(), this.model.toJSON() ) )
+        var $body = $( _.template( this.templateBody(), this.model.toJSON() ) );
 
         // return shortened form if del'd (no display apps or peek?)
         if( this.model.get( 'deleted' ) ){

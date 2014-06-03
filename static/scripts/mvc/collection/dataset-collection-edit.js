@@ -57,7 +57,7 @@ var DatasetCollectionEditView = datasetCollectionBase.DatasetCollectionBaseView.
         }
         deleteBtnData.faIcon = 'fa-times';
         return faIconButton( deleteBtnData );
-    },
+    }
 
 });
 
