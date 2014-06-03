@@ -446,11 +446,11 @@ class ToolMigrationManager( object ):
             # Get the tool_dependencies.xml file from disk.
             tool_dependencies_config = suc.get_config_from_disk( 'tool_dependencies.xml', repo_install_dir )
             installed_tool_dependencies = \
-                common_install_util.install_specified_packages( app=self.app,
-                                                                tool_shed_repository=tool_shed_repository,
-                                                                tool_dependencies_config=tool_dependencies_config,
-                                                                tool_dependencies=tool_dependencies,
-                                                                from_tool_migration_manager=True )
+                common_install_util.install_specified_tool_dependencies( app=self.app,
+                                                                         tool_shed_repository=tool_shed_repository,
+                                                                         tool_dependencies_config=tool_dependencies_config,
+                                                                         tool_dependencies=tool_dependencies,
+                                                                         from_tool_migration_manager=True )
             for installed_tool_dependency in installed_tool_dependencies:
                 if installed_tool_dependency.status == self.app.install_model.ToolDependency.installation_status.ERROR:
                     print '\nThe ToolMigrationManager returned the following error while installing tool dependency ', installed_tool_dependency.name, ':'

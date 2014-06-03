@@ -437,9 +437,12 @@ class SetEnvironment( RecipeTag ):
 
     def process_tag_set( self, app, tool_shed_repository, tool_dependency, package_elem, package_name, package_version,
                          from_tool_migration_manager=False, tool_dependency_db_records=None ):
+        # We need to handle two tag sets for package_elem here, this:
         # <set_environment version="1.0">
         #    <environment_variable name="R_SCRIPT_PATH"action="set_to">$REPOSITORY_INSTALL_DIR</environment_variable>
         # </set_environment>
+        # or this:
+        # <environment_variable name="R_SCRIPT_PATH"action="set_to">$REPOSITORY_INSTALL_DIR</environment_variable>
         action_elem_tuples = []
         proceed_with_install = False
         if tool_dependency_db_records is None:
@@ -470,6 +473,9 @@ class SetEnvironment( RecipeTag ):
             <set_environment version="1.0">
                 <environment_variable name="R_SCRIPT_PATH" action="set_to">$REPOSITORY_INSTALL_DIR</environment_variable>
             </set_environment>
+        
+        This method must also handle the sub-element tag::
+            <environment_variable name="R_SCRIPT_PATH" action="set_to">$REPOSITORY_INSTALL_DIR</environment_variable>
         """
         # TODO: Add support for a repository dependency definition within this tool dependency type's tag set.  This should look something like
         # the following.  See the implementation of support for this in the tool dependency package type's method above.
@@ -485,11 +491,19 @@ class SetEnvironment( RecipeTag ):
         tool_dependencies = []
         env_var_version = elem.get( 'version', '1.0' )
         tool_shed_repository_install_dir = os.path.abspath( tool_shed_repository.repo_files_directory( app ) )
-        for env_var_elem in elem:
-            # Althoug we're in a loop here, this method will always return only a single ToolDependency or None.
+        if elem.tag == 'environment_variable':
+            # <environment_variable name="R_SCRIPT_PATH" action="set_to">$REPOSITORY_INSTALL_DIR</environment_variable>
+            elems = [ elem ]
+        else:
+            # <set_environment version="1.0">
+            #    <environment_variable name="R_SCRIPT_PATH" action="set_to">$REPOSITORY_INSTALL_DIR</environment_variable>
+            # </set_environment>
+            elems = [ env_var_elem for env_var_elem in elem ]
+        for env_var_elem in elems:
             env_var_name = env_var_elem.get( 'name', None )
-            # The value of env_var_name must match the text value of at least 1 <requirement> tag in the tool config's <requirements> tag set whose
-            # "type" attribute is "set_environment" (e.g., <requirement type="set_environment">R_SCRIPT_PATH</requirement>).
+            # The value of env_var_name must match the text value of at least 1 <requirement> tag in the
+            # tool config's <requirements> tag set whose "type" attribute is "set_environment" (e.g., 
+            # <requirement type="set_environment">R_SCRIPT_PATH</requirement>).
             env_var_action = env_var_elem.get( 'action', None )
             if env_var_name and env_var_action:
                 # Tool dependencies of type "set_environmnet" always have the version attribute set to None.
