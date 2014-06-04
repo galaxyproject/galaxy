@@ -197,7 +197,7 @@ def submit( url, data, api_key=None, return_formatted=True ):
             print e.read( 1024 )
             sys.exit( 1 )
         else:
-            return 'Error. '+ str( e.read( 1024 ) )
+            return dict( status='error', message=str( e.read( 1024 ) ) )
     if not return_formatted:
         return r
     print 'Response'
