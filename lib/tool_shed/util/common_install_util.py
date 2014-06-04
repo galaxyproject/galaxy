@@ -447,6 +447,8 @@ def get_required_repo_info_dicts( trans, tool_shed_url, repo_info_dicts ):
                     # Handle secure / insecure Tool Shed URL protocol changes and port changes.
                     tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( trans.app, tool_shed_url )
                 url = common_util.url_join( tool_shed_url, '/repository/get_required_repo_info_dict' )
+                # Fix for handling 307 redirect not being handled nicely by urllib2.urlopen when the urllib2.Request has data provided
+                url = urllib2.urlopen( urllib2.Request( url ) ).geturl()
                 request = urllib2.Request( url, data=urllib.urlencode( dict( encoded_str=encoded_required_repository_str ) ) )
                 response = urllib2.urlopen( request ).read()
                 if response:
