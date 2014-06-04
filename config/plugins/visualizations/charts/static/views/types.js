@@ -29,42 +29,24 @@ return Backbone.View.extend(
         // create new element
         var $el = $('<div class="charts-grid"/>');
         
+        // construct chart type subset selection buttons
+        this.library = new Ui.RadioButton({
+            data    : [ { label: 'Default', value: 'default' },
+                        { label: 'NVD3 (only)', value: 'nvd3' },
+                        { label: 'Highcharts (only)', value: 'highcharts' }],
+            onchange: function(value) {
+                self._filter(value);
+            }
+        });
+        $el.append(Utils.wrap(this.library.$el).css('text-align', 'center'));
+        
         // set element
         this.setElement($el);
-                
-        // load chart types into categories
-        var categories = {};
-        var types = app.types.attributes;
-        for (var id in types) {
-            var type = types[id];
-            var category = type.category;
-            if (!categories[category]) {
-                categories[category] = {};
-            }
-            categories[category][id] = type;
-        }
         
-        // add categories and charts to screen
-        for (var category in categories) {
-            // create empty element
-            var $el = $('<div style="clear: both;"/>')
-            
-            // add header label
-            $el.append(Utils.wrap(this._template_header({title: category})));
-            
-            // add chart types
-            for (var id in categories[category]) {
-                var type = categories[category][id];
-                $el.append(Utils.wrap(this._template_item({
-                    id      : id,
-                    title   : type.title,
-                    url     : config.app_root + 'charts/' + self.app.chartPath(id) + '/logo.png'
-                })));
-            }
-            
-            // add to view
-            this.$el.append(Utils.wrap($el));
-        }
+        // render
+        this._render();
+        
+        this.library.value('default');
     },
     
     // value
@@ -94,6 +76,59 @@ return Backbone.View.extend(
             
             // return current value
             return after;
+        }
+    },
+    
+    // filter
+    _filter: function(value) {
+        var types = this.app.types.attributes;
+        for (var id in types) {
+            var type = types[id];
+            var $el = this.$el.find('#' + id);
+            var keywords = type.keywords || '';
+            if (keywords.indexOf(value) == -1) {
+                $el.hide();
+            } else {
+                $el.show();
+            }
+        }
+    },
+    
+    // render
+    _render: function() {
+        // load chart types into categories
+        var categories = {};
+        var types = this.app.types.attributes;
+        for (var id in types) {
+            // add category
+            var type = types[id];
+            var category = type.category;
+            if (!categories[category]) {
+                categories[category] = {};
+            }
+            categories[category][id] = type;
+        }
+        
+        // add categories and charts to screen
+        for (var category in categories) {
+            // create empty element
+            var $el = $('<div style="clear: both;"/>')
+            
+            // add header label
+            $el.append(Utils.wrap(this._template_header({title: category})));
+            
+            // add chart types
+            for (var id in categories[category]) {
+                var type = categories[category][id];
+                $el.append(Utils.wrap(this._template_item({
+                    id      : id,
+                    title   : type.title + ' (' + type.library + ')',
+                    url     : config.app_root + 'charts/' + this.app.chartPath(id) + '/logo.png'
+                })));
+            }
+            
+            // add to view
+            this.$el.append(Utils.wrap($el));
         }
     },
     

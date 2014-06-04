@@ -3,6 +3,7 @@ define(['plugin/charts/highcharts/common/config'], function(config) {
 return $.extend(true, {}, config, {
     title       : 'Pie chart',
     category    : 'Area charts',
+    keywords    : 'highcharts',
     use_panels  : true,
     columns : {
         label : {

@@ -3,9 +3,10 @@ define([], function() {
 return $.extend(true, {}, {
     title       : 'Box plot',
     category    : 'Data processing (requires \'charts\' tool from Toolshed)',
-    library     : 'highcharts.js',
+    library     : 'Highcharts',
     tag         : 'div',
     execute     : 'boxplot',
+    keywords    : 'default highcharts',
     columns     : {
         y : {
             title       : 'Observations',

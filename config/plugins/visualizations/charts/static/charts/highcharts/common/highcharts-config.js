@@ -2,7 +2,16 @@
 define([], function() {
 
 // widget
-return function(settings) {
+return function(chart, settings) {
+    // helper label enabled
+    var labelEnabled = function(axis) {
+        if (settings.get(axis + '_type') == 'hide') {
+            return false;
+        } else {
+            return true;
+        }
+    };
+
     // highcharts configuration
     return {
         chart: {
@@ -11,7 +20,7 @@ return function(settings) {
 	    },
 	    
 	    title: {
-	        text                        : ''
+	        text                        : chart.get('title')
 	    },
 	    
 	    legend: {
@@ -34,12 +43,26 @@ return function(settings) {
                         color           : (Highcharts.theme && Highcharts.theme.textColor) || 'gray'
                     }
                 },
+            labels: {
+                formatter               : function() {
+                    var format = d3.format(settings.get('x_axis_tick') + settings.get('x_axis_type'));
+                    return format(this.value);
+                },
+                enabled                 : labelEnabled('x_axis')
+            },
             tickPixelInterval           : 100
         },
         
         yAxis: {
             title: {
                 text                    : settings.get('y_axis_label')
+            },
+            labels: {
+                formatter               : function() {
+                    var format = d3.format(settings.get('y_axis_tick') + settings.get('y_axis_type'));
+                    return format(this.value);
+                },
+                enabled                 : labelEnabled('y_axis')
             }
         },
     

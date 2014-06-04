@@ -3,7 +3,9 @@ define([], function() {
 return $.extend(true, {}, {
     title       : 'Pie chart',
     category    : 'Area charts',
+    library     : 'NVD3',
     tag         : 'svg',
+    keywords    : 'default nvd3',
     use_panels  : true,
     columns : {
         label : {

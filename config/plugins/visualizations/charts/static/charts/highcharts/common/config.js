@@ -3,8 +3,9 @@ define([], function() {
 return {
     title       : '',
     category    : '',
-    library     : 'highcharts',
+    library     : 'Highcharts',
     tag         : 'div',
+    keywords    : 'highcharts',
     settings    : {
         separator_label  : {
             title       : 'X axis',
@@ -197,7 +198,7 @@ return {
         legend_enabled : {
             title       : 'Show legend',
             info        : 'Would you like to add a legend?',
-            type        : 'select',
+            type        : 'radiobutton',
             init        : 'true',
             data        : [
                 {

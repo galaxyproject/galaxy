@@ -13,7 +13,7 @@ return $.extend(true, {}, nvd3_config, {
     },
     settings    : {
         x_axis_label : {
-            init : 'Breaks'
+            init : 'Values'
         },
         y_axis_label : {
             init : 'Density'

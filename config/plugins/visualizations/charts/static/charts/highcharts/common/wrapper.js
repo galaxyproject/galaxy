@@ -23,7 +23,7 @@ return Backbone.View.extend(
     draw : function(process_id, hc_type, chart, request_dictionary, callback)
     {
         // create configuration
-        this.hc_config = configmaker(chart.settings);
+        this.hc_config = configmaker(chart, chart.settings);
         
         // request data
         var self = this;

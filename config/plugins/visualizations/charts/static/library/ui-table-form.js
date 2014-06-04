@@ -85,6 +85,31 @@ var View = Backbone.View.extend(
                     }
                 });
                 break;
+            // radiobox field
+            case 'radiobutton' :
+                field = new Ui.RadioButton({
+                    id          : 'field-' + id,
+                    data        : settings_def.data,
+                    value       : model.get(id),
+                    onchange    : function(value) {
+                        // set new value
+                        model.set(id, value);
+                        
+                        // find selected dictionary
+                        var dict = _.findWhere(settings_def.data, {value: value});
+                        if (dict) {
+                            for (var i in dict.show) {
+                                var target = dict.show[i];
+                                self.table.get(target).show();
+                            }
+                            for (var i in dict.hide) {
+                                var target = dict.hide[i];
+                                self.table.get(target).hide();
+                            }
+                        }
+                    }
+                });
+                break;
             // select field
             case 'select' :
                 field = new Ui.Select.View({

@@ -30,9 +30,17 @@ define(["libs/underscore"], function(_) {
                 width   : width,
                 height  : height
             });
+            
+            // hide input fields
+            $svg.find('.highcharts-button').hide();
+            
+            // create xml string
             xmlString += serializer.serializeToString(this);
+            
+            // show input fields
+            $svg.find('.highcharts-button').show();
         });
-           
+       
         // do the post
         _post($el, screenshot_url, {
             filename    : name || 'chart',

@@ -54,7 +54,7 @@ var View = Backbone.View.extend(
         // set content padding
         if (this.options.nopadding) {
             $portlet_content.css('padding', '0px');
-            $content.css('padding', '0px');
+            this.$content.css('padding', '0px');
         }
         
         // append buttons

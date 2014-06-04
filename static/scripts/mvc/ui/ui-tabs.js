@@ -158,7 +158,8 @@ var View = Backbone.View.extend(
         
         // show selected tab
         if (id) {
-            this.$el.find('.active').removeClass('active');
+            this.$el.find('.tab-element').removeClass('active');
+            this.$el.find('.tab-pane').removeClass('active');
             this.$el.find('#tab-' + id).addClass('active');
             this.$el.find('#tab-content-' + id).addClass('active');
         }
@@ -218,7 +219,7 @@ var View = Backbone.View.extend(
     
     // fill template tab
     _template_tab: function(options) {
-        var tmpl =  '<li id="tab-' + options.id + '">' +
+        var tmpl =  '<li id="tab-' + options.id + '" class="tab-element">' +
                         '<a id="tab-title-link-' + options.id + '" title="" href="#tab-content-' + options.id + '" data-original-title="">' +
                             '<span id="tab-title-text-' + options.id + '">' + options.title + '</span>';
         

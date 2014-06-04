@@ -3,8 +3,9 @@ define([], function() {
 return {
     title       : '',
     category    : '',
-    library     : 'nvd3.js',
+    library     : 'NVD3',
     tag         : 'svg',
+    keywords    : 'nvd3',
     settings    : {
         separator_label  : {
             title       : 'X axis',

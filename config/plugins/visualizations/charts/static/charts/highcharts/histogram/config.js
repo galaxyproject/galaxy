@@ -4,6 +4,7 @@ return $.extend(true, {}, config, {
     title       : 'Histogram',
     category    : 'Data processing (requires \'charts\' tool from Toolshed)',
     execute     : 'histogram',
+    keywords    : 'default highcharts',
     columns     : {
         y : {
             title       : 'Observations',
@@ -12,7 +13,7 @@ return $.extend(true, {}, config, {
     },
     settings    : {
         x_axis_label : {
-            init : 'Breaks'
+            init : 'Values'
         },
         y_axis_label : {
             init : 'Density'
