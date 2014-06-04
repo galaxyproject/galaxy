@@ -36,6 +36,8 @@ return function(chart, settings) {
                 },
             labels: {
                 formatter               : function() {
+                    if (settings.get('x_axis_type') == 'auto')
+                        return this.value;
                     var format = d3.format(settings.get('x_axis_tick') + settings.get('x_axis_type'));
                     return format(this.value);
                 },
@@ -50,6 +52,8 @@ return function(chart, settings) {
             },
             labels: {
                 formatter               : function() {
+                    if (settings.get('y_axis_type') == 'auto')
+                        return this.value;
                     var format = d3.format(settings.get('y_axis_tick') + settings.get('y_axis_type'));
                     return format(this.value);
                 },

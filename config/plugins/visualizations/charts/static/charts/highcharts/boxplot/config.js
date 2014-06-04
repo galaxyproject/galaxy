@@ -1,6 +1,6 @@
-define([], function() {
+define(['plugin/charts/highcharts/common/config'], function(config) {
 
-return $.extend(true, {}, {
+return $.extend(true, {}, config, {
     title       : 'Box plot',
     category    : 'Data processing (requires \'charts\' tool from Toolshed)',
     library     : 'Highcharts',

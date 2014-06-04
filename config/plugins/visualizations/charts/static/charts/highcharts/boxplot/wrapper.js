@@ -29,7 +29,7 @@ return Backbone.View.extend(
         chart.settings.set('legend_enabled', 'false')
         
         // create configuration
-        this.hc_config = configmaker(chart.settings);
+        this.hc_config = configmaker(chart, chart.settings);
         
         // request data
         var self = this;
