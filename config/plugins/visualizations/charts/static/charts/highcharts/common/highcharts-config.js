@@ -1,10 +1,14 @@
 // dependencies
 define([], function() {
 
-// widget
-return function(chart, settings) {
-    // highcharts configuration
-    return {
+// highcharts configuration
+return function(chart) {
+
+    // get chart settings
+    var settings = chart.settings;
+
+    // initialize config object
+    var hc_config = {
         chart: {
 	        type                        : '',
             zoomType                    : 'xy'
@@ -23,7 +27,6 @@ return function(chart, settings) {
         },
         
         xAxis: {
-            categories                  : settings.get('x_axis_categories'),
             title: {
                 text                    : settings.get('x_axis_label')
             },
@@ -60,7 +63,6 @@ return function(chart, settings) {
                 enabled                 : !(settings.get('y_axis_type') == 'hide')
             }
         },
-    
         plotOptions: {
             series: {
                 animation               : false,
@@ -89,44 +91,10 @@ return function(chart, settings) {
         },
        
         series: []
-	}/*,
+	}
     
-    // highcharts stacking
-    hc_stacklabels: {
-        enabled: true,
-        style: {
-            fontWeight: 'bold',
-            color: (Highcharts.theme && Highcharts.theme.textColor) || 'gray'
-        }
-    },
-
-    // initialize
-    initialize: function(settings) {
-        // stacking
-        if (settings.get('x_stacked')) {
-            this.hc_config.xAxis.stackLabels = this.hc_stacklabels;
-            this.hc_config.plotOptions.column = {
-                stacking    : 'normal',
-                dataLabels  : {
-                    enabled : true,
-                    color: (Highcharts.theme && Highcharts.theme.dataLabelsColor) || 'white',
-                    style: {
-                        textShadow: '0 0 3px black, 0 0 3px black'
-                    }
-                }
-            }
-        }
-        
-        // stacking
-        if (settings.get('y_stacked')) {
-            this.hc_config.yAxis.stackLabels = this.hc_stacklabels;
-            this.hc_config.plotOptions.column = {
-                stacking    : 'normal'
-            }
-        }
-        
-        console.log(this.hc_config);
-    }*/
+    // callback
+    return hc_config;
 };
 
 });

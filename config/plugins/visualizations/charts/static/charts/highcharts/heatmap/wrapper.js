@@ -1,5 +1,5 @@
 // dependencies
-define(['plugin/charts/highcharts/common/wrapper'], function(Highcharts) {
+define(['plugin/charts/highcharts/common/wrapper'], function(HighchartsWrapper) {
 
 // widget
 return Backbone.View.extend(
@@ -13,13 +13,14 @@ return Backbone.View.extend(
     // render
     draw : function(process_id, chart, request_dictionary)
     {
-        // finalize configuration
-        chart.settings.set('plotoptions_series_stacking', 'normal');
-        chart.settings.set('x_axis_categories', [])
-        
         // draw chart
-        var hc = new Highcharts(this.app, this.options);
-        hc.draw(process_id, 'heatmap', chart, request_dictionary);
+        var hc = new HighchartsWrapper(this.app, this.options);
+        hc.draw(process_id, 'heatmap', chart, request_dictionary, function(model) {
+            model.colorAxis = {
+                minColor                    : '#00FF99',
+                maxColor                    : '#000066'
+            }
+        });
     }
 });
 

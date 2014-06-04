@@ -114,6 +114,9 @@ return Backbone.Model.extend(
         // initiating chart
         console.debug('Storage::load() - Loading chart type ' + chart_type + '.');
         
+        // parse chart definition
+        this.chart.definition = chart_definition;
+        
         // main
         this.chart.set(chart_dict.attributes);
         

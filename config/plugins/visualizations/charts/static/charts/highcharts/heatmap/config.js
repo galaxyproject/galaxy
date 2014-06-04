@@ -3,18 +3,21 @@ define(['plugin/charts/highcharts/common/config'], function(config) {
 return $.extend(true, {}, config, {
     title       : 'Heatmap',
     category    : 'Data processing (requires \'charts\' tool from Toolshed)',
-    execute     : 'heatmap',
+    //execute     : 'heatmap',
     use_panels  : true,
+    keywords    : 'default highcharts',
     columns: {
-        row_label: {
+        y: {
             title       : 'Row labels',
-            is_label    : true
+            is_label    : true,
+            is_numeric  : true
         },
-        col_label: {
+        x: {
             title       : 'Column labels',
-            is_label    : true
+            is_label    : true,
+            is_numeric  : true
         },
-        value: {
+        z: {
             title       : 'Observations',
             is_numeric  : true
         }

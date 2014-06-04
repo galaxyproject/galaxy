@@ -74,16 +74,16 @@ return Backbone.View.extend(
         var self = this;
         
         // configure chart type
-        var chart_settings = this.app.types.get(chart_type);
-    
+        var chart_definition = this.chart.definition;
+        
         // reset table
         this.table.delAll();
         
         // load list for select fields
         var select_list = {};
-        for (var id in chart_settings.columns) {
+        for (var id in chart_definition.columns) {
             // get definition
-            var data_def = chart_settings.columns[id];
+            var data_def = chart_definition.columns[id];
             if (!data_def) {
                 console.debug('Group::_refreshTable() - Skipping column definition.');
                 continue;
@@ -114,7 +114,7 @@ return Backbone.View.extend(
         this.app.datasets.request({id : dataset_id}, function(dataset) {
             // update select fields
             for (var id in select_list) {
-                self._addRow(id, dataset, select_list, chart_settings.columns[id])
+                self._addRow(id, dataset, select_list, chart_definition.columns[id])
             }
             
             // loading
@@ -126,15 +126,15 @@ return Backbone.View.extend(
     },
     
     // add row
-    _addRow: function(id, dataset, select_list, chart_setting) {
+    _addRow: function(id, dataset, select_list, column_definition) {
         // link this
         var self = this;
         
         // is a numeric number required
-        var is_label    = chart_setting.is_label;
-        var is_auto     = chart_setting.is_auto;
-        var is_numeric  = chart_setting.is_numeric;
-        var is_unique   = chart_setting.is_unique;
+        var is_label    = column_definition.is_label;
+        var is_auto     = column_definition.is_auto;
+        var is_numeric  = column_definition.is_numeric;
+        var is_unique   = column_definition.is_unique;
 
         // configure columns
         var columns = [];

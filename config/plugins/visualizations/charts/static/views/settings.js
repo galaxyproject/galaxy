@@ -33,16 +33,13 @@ return Backbone.View.extend(
     
     // update dataset
     _refresh: function() {
-        // identify datasets
-        var chart_type = this.chart.get('type');
+        // get settings
+        var chart_definition = this.chart.definition;
         
         // check if dataset is available
-        if (!chart_type) {
+        if (!chart_definition) {
             return;
         }
-        
-        // get settings
-        var chart_definition = this.app.types.get(chart_type);
         
         // set title
         this.form.title(chart_definition.category + ' - ' + chart_definition.title + ':');

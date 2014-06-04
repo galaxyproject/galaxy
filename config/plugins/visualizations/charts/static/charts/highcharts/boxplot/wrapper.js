@@ -11,7 +11,7 @@ return Backbone.View.extend(
     },
             
     // render
-    draw : function(process_id, chart, request_dictionary)
+    draw : function(process_id, chart, request_dictionary, callback)
     {
         // configure request
         var index = 0;
@@ -29,7 +29,7 @@ return Backbone.View.extend(
         chart.settings.set('legend_enabled', 'false')
         
         // create configuration
-        this.hc_config = configmaker(chart, chart.settings);
+        this.hc_config = configmaker(chart, callback);
         
         // request data
         var self = this;

@@ -47,7 +47,7 @@ return Backbone.View.extend(
                 'back'  : new Ui.ButtonIcon({
                     icon    : 'fa-caret-left',
                     tooltip : 'Return to Viewer',
-                    title   : 'Return',
+                    title   : 'Cancel',
                     onclick : function() {
                         // show viewport
                         self.app.go('viewer');
@@ -63,15 +63,27 @@ return Backbone.View.extend(
         // grid with chart types
         //
         this.types = new TypesView(app, {
-            onchange   : function(type) {
+            onchange   : function(chart_type) {
+                // get chart definition
+                var chart_definition = self.app.types.get(chart_type);
+                if (!chart_definition) {
+                    console.debug('FAILED - Editor::onchange() - Chart type not supported.');
+                }
+        
+                // parse chart definition
+                self.chart.definition = chart_definition;
+        
                 // reset type relevant chart content
                 self.chart.settings.clear();
                 
                 // update chart type
-                self.chart.set({type: type});
+                self.chart.set({type: chart_type});
                 
                 // set modified flag
                 self.chart.set('modified', true);
+                
+                // log
+                console.debug('Editor::onchange() - Switched chart type.');
             },
             ondblclick  : function(chart_id) {
                 self._saveChart();
@@ -230,6 +242,9 @@ return Backbone.View.extend(
         
         // update titles
         this._refreshGroupKey();
+        
+        // reset
+        this.chart.set('modified', true);
     },
     
     // remove group
@@ -252,7 +267,7 @@ return Backbone.View.extend(
     _resetChart: function() {
         // reset chart details
         this.chart.set('id', Utils.uuid());
-        this.chart.set('type', 'nvd3_bar');
+        this.chart.set('type', 'highcharts_bar');
         this.chart.set('dataset_id', this.app.options.config.dataset_id);
         this.chart.set('title', 'New Chart');
         
@@ -262,18 +277,30 @@ return Backbone.View.extend(
     
     // create chart
     _saveChart: function() {
-        // ensure that data group is available
+        // update chart data
+        this.chart.set({
+            type        : this.types.value(),
+            title       : this.title.value(),
+            date        : Utils.time()
+        });
+        
+        // make sure that at least one data group is available
         if (this.chart.groups.length == 0) {
+            this.message.update({message: 'Please select data columns before drawing the chart.'});
             var group = this._addGroupModel();
             this.tabs.show(group.id);
             return;
         }
         
-        // very selected group columns
+        // make sure that all necessary columns are assigned
         var self = this;
         var valid = true;
+        var chart_def = this.chart.definition;
         this.chart.groups.each(function(group) {
-            for (var key in group.attributes) {
+            if (!valid) {
+                return;
+            }
+            for (var key in chart_def.columns) {
                 if (group.attributes[key] == 'null') {
                     self.message.update({status: 'danger', message: 'This chart type requires column types not found in your tabular file.'});
                     self.tabs.show(group.id);
@@ -290,13 +317,6 @@ return Backbone.View.extend(
         
         // show viewport
         this.app.go('viewer');
-                        
-        // update chart data
-        this.chart.set({
-            type        : this.types.value(),
-            title       : this.title.value(),
-            date        : Utils.time()
-        });
         
         // wait until chart is ready
         var self = this;

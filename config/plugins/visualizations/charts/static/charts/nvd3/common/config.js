@@ -198,7 +198,7 @@ return {
         show_legend : {
             title       : 'Show legend',
             info        : 'Would you like to add a legend?',
-            type        : 'select',
+            type        : 'radiobutton',
             init        : 'true',
             data        : [
                 {

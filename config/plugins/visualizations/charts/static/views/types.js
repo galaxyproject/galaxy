@@ -32,13 +32,13 @@ return Backbone.View.extend(
         // construct chart type subset selection buttons
         this.library = new Ui.RadioButton({
             data    : [ { label: 'Default', value: 'default' },
-                        { label: 'NVD3 (only)', value: 'nvd3' },
-                        { label: 'Highcharts (only)', value: 'highcharts' }],
+                        { label: 'Classic', value: 'nvd3' },
+                        { label: 'Zoomable', value: 'highcharts' }],
             onchange: function(value) {
                 self._filter(value);
             }
         });
-        $el.append(Utils.wrap(this.library.$el).css('text-align', 'center'));
+        $el.append(Utils.wrap(this.library.$el));
         
         // set element
         this.setElement($el);
@@ -86,7 +86,7 @@ return Backbone.View.extend(
             var type = types[id];
             var $el = this.$el.find('#' + id);
             var keywords = type.keywords || '';
-            if (keywords.indexOf(value) == -1) {
+            if (keywords.indexOf(value) == -1 && value != 'all') {
                 $el.hide();
             } else {
                 $el.show();

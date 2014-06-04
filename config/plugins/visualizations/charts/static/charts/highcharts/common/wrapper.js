@@ -22,15 +22,13 @@ return Backbone.View.extend(
     // render
     draw : function(process_id, hc_type, chart, request_dictionary, callback)
     {
-        // create configuration
-        this.hc_config = configmaker(chart, chart.settings);
-        
         // request data
         var self = this;
         this.app.datasets.request(request_dictionary, function() {
+            // check if this chart has multiple panels
             if (self.options.canvas.length == 1) {
                 // groups
-                if (self._drawGroups(hc_type, chart, request_dictionary.groups, self.options.canvas[0])) {
+                if (self._drawGroups(hc_type, chart, request_dictionary.groups, self.options.canvas[0], callback)) {
                     // set chart state
                     chart.state('ok', 'Chart drawn.');
                 }
@@ -40,9 +38,9 @@ return Backbone.View.extend(
                 for (var group_index in request_dictionary.groups) {
                     // get group
                     var group = request_dictionary.groups[group_index];
-                
+                    
                     // draw group
-                    if (!self._drawGroups(hc_type, chart, [group], self.options.canvas[group_index])) {
+                    if (!self._drawGroups(hc_type, chart, [group], self.options.canvas[group_index], callback)) {
                         valid = false;
                         break;
                     }
@@ -60,9 +58,17 @@ return Backbone.View.extend(
     },
     
     // draw all data into a single canvas
-    _drawGroups: function(hc_type, chart, groups, canvas) {
+    _drawGroups: function(hc_type, chart, groups, canvas, callback) {
+        // create configuration
+        var hc_config = configmaker(chart);
+        
+        // make custom wrapper callback
+        if (callback) {
+            callback(hc_config);
+        }
+    
         // reset
-        this.hc_config.series = [];
+        hc_config.series = [];
         
         // loop through data groups
         for (var key in groups) {
@@ -92,12 +98,12 @@ return Backbone.View.extend(
             };
             
             // append series
-            this.hc_config.series.push(hc_series);
+            hc_config.series.push(hc_series);
         }
         
         // draw plot
         try {
-            canvas.highcharts(this.hc_config);
+            canvas.highcharts(hc_config);
             return true;
         } catch (err) {
             var regex = /\www\.highcharts\.com([^&]+)/;

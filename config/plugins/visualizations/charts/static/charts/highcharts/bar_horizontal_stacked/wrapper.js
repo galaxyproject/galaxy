@@ -15,7 +15,6 @@ return Backbone.View.extend(
     {
         // finalize configuration
         chart.settings.set('plotoptions_series_stacking', 'normal');
-        chart.settings.set('x_axis_categories', [])
         
         // draw chart
         var hc = new Highcharts(this.app, this.options);

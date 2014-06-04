@@ -136,10 +136,10 @@ return Backbone.View.extend({
         var chart_type = chart.get('type');
         
         // load chart settings
-        this.chart_settings = this.app.types.get(chart_type);
+        this.chart_definition = chart.definition;
         
         // read settings
-        var use_panels = this.chart_settings.use_panels;
+        var use_panels = this.chart_definition.use_panels;
         
         // determine number of svg/div-elements to create
         var n_panels = 1;
@@ -148,14 +148,14 @@ return Backbone.View.extend({
         }
         
         // create canvas element and add to canvas list
-        this._createContainer(this.chart_settings.tag, n_panels);
+        this._createContainer(this.chart_definition.tag, n_panels);
             
         // set chart state
         chart.state('wait', 'Please wait...');
         
         // clean up data if there is any from previous jobs
-        if (!this.chart_settings.execute ||
-            (this.chart_settings.execute && chart.get('modified'))) {
+        if (!this.chart_definition.execute ||
+            (this.chart_definition.execute && chart.get('modified'))) {
             
             // reset jobs
             this.app.jobs.cleanup(chart);
@@ -171,7 +171,7 @@ return Backbone.View.extend({
             var view = new ChartView(self.app, {canvas : self.canvas_list});
             
             // request data
-            if (self.chart_settings.execute) {
+            if (self.chart_definition.execute) {
                 self.app.jobs.request(chart, self._defaultSettingsString(chart), self._defaultRequestString(chart),
                     function() {
                         view.draw(process_id, chart, self._defaultRequestDictionary(chart));
@@ -203,7 +203,7 @@ return Backbone.View.extend({
             group_index++;
             
             // add selected columns to column string
-            for (var key in self.chart_settings.columns) {
+            for (var key in self.chart_definition.columns) {
                 request_string += key + '_' + group_index + ':' + (parseInt(group.get(key)) + 1) + ', ';
             }
         });
@@ -236,7 +236,7 @@ return Backbone.View.extend({
         };
         
         // update request dataset id
-        if (this.chart_settings.execute) {
+        if (this.chart_definition.execute) {
             request_dictionary.id = chart.get('dataset_id_job');
         } else {
             request_dictionary.id = chart.get('dataset_id');
@@ -249,9 +249,9 @@ return Backbone.View.extend({
 
             // add columns
             var columns = {};
-            for (var column_key in self.chart_settings.columns) {
+            for (var column_key in self.chart_definition.columns) {
                 // get settings for column
-                var column_settings = self.chart_settings.columns[column_key];
+                var column_settings = self.chart_definition.columns[column_key];
                 
                 // add to columns
                 columns[column_key] = {
