@@ -7,6 +7,8 @@ from os.path import join
 import os.path
 import hashlib
 import shutil
+import json
+import base64
 
 
 def unique_path_prefix(path):
@@ -68,6 +70,20 @@ def filter_destination_params(destination_params, prefix):
     return dict([(key[len(prefix):], destination_params[key])
                  for key in destination_params
                  if key.startswith(prefix)])
+
+
+def to_base64_json(data):
+    """
+
+    >>> x = from_base64_json(to_base64_json(dict(a=5)))
+    >>> x["a"]
+    5
+    """
+    return base64.b64encode(json.dumps(data))
+
+
+def from_base64_json(data):
+    return json.loads(base64.b64decode(data))
 
 
 class PathHelper(object):

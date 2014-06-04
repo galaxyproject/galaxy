@@ -78,8 +78,8 @@ class LocalLwrInterface(LwrInteface):
 
     def execute(self, command, args={}, data=None, input_path=None, output_path=None):
         # If data set, should be unicode (on Python 2) or str (on Python 3).
-        from lwr import routes
-        from lwr.framework import build_func_args
+        from lwr.web import routes
+        from lwr.web.framework import build_func_args
         controller = getattr(routes, command)
         action = controller.func
         body_args = dict(body=self.__build_body(data, input_path))

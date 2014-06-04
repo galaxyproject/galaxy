@@ -402,7 +402,10 @@ class LwrJobRunner( AsynchronousJobRunner ):
 
     def __job_state( self, job, job_wrapper ):
         job_state = AsynchronousJobState()
-        job_state.job_id = str( job.get_job_runner_external_id() )
+        # TODO: Determine why this is set when using normal message queue updates
+        # but not CLI submitted MQ updates...
+        raw_job_id = job.get_job_runner_external_id() or job_wrapper.job_id
+        job_state.job_id = str( raw_job_id )
         job_state.runner_url = job_wrapper.get_job_runner_url()
         job_state.job_destination = job_wrapper.job_destination
         job_state.job_wrapper = job_wrapper

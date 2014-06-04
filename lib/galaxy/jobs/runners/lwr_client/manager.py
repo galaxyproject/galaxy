@@ -8,6 +8,7 @@ from os import getenv
 from .client import JobClient
 from .client import InputCachingJobClient
 from .client import MessageJobClient
+from .client import MessageCLIJobClient
 from .interface import HttpLwrInterface
 from .interface import LocalLwrInterface
 from .object_client import ObjectStoreClient
@@ -71,6 +72,12 @@ class ClientManager(object):
         pass
 
 
+try:
+    from galaxy.jobs.runners.util.cli import factory as cli_factory
+except ImportError:
+    from lwr.managers.util.cli import factory as cli_factory
+
+
 class MessageQueueClientManager(object):
 
     def __init__(self, **kwds):
@@ -90,7 +97,8 @@ class MessageQueueClientManager(object):
             def callback_wrapper(body, message):
                 try:
                     if "job_id" in body:
-                        self.status_cache[body["job_id"]] = body
+                        job_id = body["job_id"]
+                        self.status_cache[job_id] = body
                     log.debug("Handling asynchronous status update from remote LWR.")
                     callback(body)
                 except Exception:
@@ -116,9 +124,15 @@ class MessageQueueClientManager(object):
         return self.active
 
     def get_client(self, destination_params, job_id, **kwargs):
+        if job_id is None:
+            raise Exception("Cannot generate LWR client for empty job_id.")
         destination_params = _parse_destination_params(destination_params)
         destination_params.update(**kwargs)
-        return MessageJobClient(destination_params, job_id, self)
+        if 'shell_plugin' in destination_params:
+            shell = cli_factory.get_shell(destination_params)
+            return MessageCLIJobClient(destination_params, job_id, self, shell)
+        else:
+            return MessageJobClient(destination_params, job_id, self)
 
 
 class ObjectStoreClientManager(object):
