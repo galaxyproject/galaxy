@@ -39,7 +39,7 @@ return Backbone.View.extend({
         this.chart.on('set:state', function() {
             // get info element
             var $info = self.$el.find('#info');
-            var $container = self.$el.find('container');
+            var $container = self.$el.find('.charts-viewport-container');
             
             // get icon
             var $icon = $info.find('#icon');
@@ -51,21 +51,20 @@ return Backbone.View.extend({
             $info.show();
             $info.find('#text').html(self.chart.get('state_info'));
 
-            // hide containers
-            $container.hide();
-
             // check status
             var state = self.chart.get('state');
             switch (state) {
                 case 'ok':
                     $info.hide();
-                    $container.show()
+                    $container.show();
                     break;
                 case 'failed':
                     $icon.addClass('icon fa fa-warning');
+                    $container.hide();
                     break;
                 default:
                     $icon.addClass('icon fa fa-spinner fa-spin');
+                    $container.show();
             }
         });
     },
@@ -182,7 +181,6 @@ return Backbone.View.extend({
                     }
                 );
             } else {
-                // load data into view
                 view.draw(process_id, chart, self._defaultRequestDictionary(chart));
             }
         });

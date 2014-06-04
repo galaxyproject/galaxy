@@ -28,6 +28,9 @@ return Backbone.View.extend(
         // configure options
         this.options = Utils.merge(options, this.optionsDefault);
         
+        // message element
+        this.message = new Ui.Message();
+        
         // create portlet
         this.portlet = new Portlet.View({
             icon : 'fa-bar-chart-o',
@@ -38,10 +41,6 @@ return Backbone.View.extend(
                     tooltip : 'Draw Chart',
                     title   : 'Draw',
                     onclick : function() {
-                        // show viewport
-                        self.app.go('viewer');
-                        
-                        // save chart
                         self._saveChart();
                     }
                 }),
@@ -75,10 +74,6 @@ return Backbone.View.extend(
                 self.chart.set('modified', true);
             },
             ondblclick  : function(chart_id) {
-                // show viewport
-                self.app.go('viewer');
-                        
-                // save chart
                 self._saveChart();
             }
         });
@@ -135,6 +130,7 @@ return Backbone.View.extend(
         });
         
         // append tabs
+        this.portlet.append(this.message.$el);
         this.portlet.append(this.tabs.$el);
         
         // elements
@@ -266,17 +262,41 @@ return Backbone.View.extend(
     
     // create chart
     _saveChart: function() {
+        // ensure that data group is available
+        if (this.chart.groups.length == 0) {
+            var group = this._addGroupModel();
+            this.tabs.show(group.id);
+            return;
+        }
+        
+        // very selected group columns
+        var self = this;
+        var valid = true;
+        this.chart.groups.each(function(group) {
+            for (var key in group.attributes) {
+                if (group.attributes[key] == 'null') {
+                    self.message.update({status: 'danger', message: 'This chart type requires column types not found in your tabular file.'});
+                    self.tabs.show(group.id);
+                    valid = false;
+                    return;
+                }
+            }
+        });
+        
+        // validate if columns have been selected
+        if (!valid) {
+            return;
+        }
+        
+        // show viewport
+        this.app.go('viewer');
+                        
         // update chart data
         this.chart.set({
             type        : this.types.value(),
             title       : this.title.value(),
             date        : Utils.time()
         });
-        
-        // ensure that data group is available
-        if (this.chart.groups.length == 0) {
-            this._addGroupModel();
-        }
         
         // wait until chart is ready
         var self = this;

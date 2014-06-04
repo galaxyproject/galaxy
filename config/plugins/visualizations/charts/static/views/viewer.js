@@ -21,6 +21,9 @@ return Backbone.View.extend(
         // link this
         var self = this;
         
+        // message element
+        this.message = new Ui.Message();
+        
         // create portlet
         this.portlet = new Portlet.View({
             icon : 'fa-bar-chart-o',
@@ -53,6 +56,7 @@ return Backbone.View.extend(
         });
         
         // append portlet
+        this.portlet.append(this.message.$el);
         this.portlet.append(this.viewport_view.$el);
         
         // set element
@@ -91,22 +95,7 @@ return Backbone.View.extend(
         if (chart.deferred.ready()) {
             callback();
         } else {
-            // show modal
-            var self = this;
-            this.app.modal.show({
-                title   : 'Please wait!',
-                body    : 'Your chart is currently being processed. Please wait and try again.',
-                buttons : {
-                    'Close'     : function() {self.app.modal.hide();},
-                    'Retry'     : function() {
-                        // hide modal
-                        self.app.modal.hide();
-                        
-                        // retry
-                        setTimeout(function() { self._wait(chart, callback); }, self.app.config.get('query_timeout'));
-                    }
-                }
-            });
+            this.message.update({message: 'Your chart is currently being processed. Please wait and try again.'});
         }
     }
 });

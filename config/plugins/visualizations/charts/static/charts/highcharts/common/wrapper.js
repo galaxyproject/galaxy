@@ -30,22 +30,28 @@ return Backbone.View.extend(
         this.app.datasets.request(request_dictionary, function() {
             if (self.options.canvas.length == 1) {
                 // groups
-                self._drawGroups(hc_type, chart, request_dictionary.groups, self.options.canvas[0]);
-
-                // set chart state
-                chart.state('ok', 'Chart drawn.');
+                if (self._drawGroups(hc_type, chart, request_dictionary.groups, self.options.canvas[0])) {
+                    // set chart state
+                    chart.state('ok', 'Chart drawn.');
+                }
             } else {
                 // loop through data groups
+                var valid = true;
                 for (var group_index in request_dictionary.groups) {
                     // get group
                     var group = request_dictionary.groups[group_index];
                 
                     // draw group
-                    self._drawGroups(hc_type, chart, [group], self.options.canvas[group_index]);
+                    if (!self._drawGroups(hc_type, chart, [group], self.options.canvas[group_index])) {
+                        valid = false;
+                        break;
+                    }
                 }
                 
                 // set chart state
-                chart.state('ok', 'Multi-panel chart drawn.');
+                if (valid) {
+                    chart.state('ok', 'Multi-panel chart drawn.');
+                }
             }
             
             // unregister process
@@ -90,7 +96,19 @@ return Backbone.View.extend(
         }
         
         // draw plot
-        canvas.highcharts(this.hc_config);
+        try {
+            canvas.highcharts(this.hc_config);
+            return true;
+        } catch (err) {
+            var regex = /\www\.highcharts\.com([^&]+)/;
+            var match = err.match(regex);
+            if (match.length > 0) {
+                chart.state('failed', 'Highcharts error: <a target="_blank" href="http://' + match[0] + '">' + match[0] + '</a>');
+            } else {
+                chart.state('failed', err);
+            }
+            return false;
+        }
     }
 });
 
