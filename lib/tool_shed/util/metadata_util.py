@@ -1694,6 +1694,8 @@ def populate_containers_dict_from_repository_metadata( trans, tool_shed_url, too
 
 def reset_all_metadata_on_installed_repository( trans, id ):
     """Reset all metadata on a single tool shed repository installed into a Galaxy instance."""
+    invalid_file_tups = []
+    metadata_dict = {}
     repository = suc.get_installed_tool_shed_repository( trans, id )
     repository_clone_url = common_util.generate_clone_url_for_installed_repository( trans.app, repository )
     tool_path, relative_install_dir = repository.get_tool_relative_path( trans.app )
