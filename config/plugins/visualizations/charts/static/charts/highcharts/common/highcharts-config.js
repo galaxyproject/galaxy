@@ -3,15 +3,6 @@ define([], function() {
 
 // widget
 return function(chart, settings) {
-    // helper label enabled
-    var labelEnabled = function(axis) {
-        if (settings.get(axis + '_type') == 'hide') {
-            return false;
-        } else {
-            return true;
-        }
-    };
-
     // highcharts configuration
     return {
         chart: {
@@ -48,7 +39,7 @@ return function(chart, settings) {
                     var format = d3.format(settings.get('x_axis_tick') + settings.get('x_axis_type'));
                     return format(this.value);
                 },
-                enabled                 : labelEnabled('x_axis')
+                enabled                 : !(settings.get('x_axis_type') == 'hide')
             },
             tickPixelInterval           : 100
         },
@@ -62,7 +53,7 @@ return function(chart, settings) {
                     var format = d3.format(settings.get('y_axis_tick') + settings.get('y_axis_type'));
                     return format(this.value);
                 },
-                enabled                 : labelEnabled('y_axis')
+                enabled                 : !(settings.get('y_axis_type') == 'hide')
             }
         },
     
