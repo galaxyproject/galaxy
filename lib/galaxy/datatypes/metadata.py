@@ -722,7 +722,7 @@ class JobExternalOutputMetadataWrapper( object ):
                 sa_session.flush()
             metadata_files_list.append( metadata_files )
         #return command required to build
-        return "%s %s %s %s %s %s %s %s" % ( os.path.join( exec_dir, 'set_metadata.sh' ), dataset_files_path, tmp_dir, config_root, config_file, datatypes_config, job_metadata, " ".join( map( __metadata_files_list_to_cmd_line, metadata_files_list ) ) )
+        return "%s %s %s %s %s %s %s %s" % ( os.path.join( exec_dir, 'set_metadata.sh' ), dataset_files_path, compute_tmp_dir or tmp_dir, config_root, config_file, datatypes_config, job_metadata, " ".join( map( __metadata_files_list_to_cmd_line, metadata_files_list ) ) )
 
     def external_metadata_set_successfully( self, dataset, sa_session ):
         metadata_files = self.get_output_filenames_by_dataset( dataset, sa_session )
