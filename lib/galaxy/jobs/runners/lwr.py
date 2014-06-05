@@ -301,7 +301,7 @@ class LwrJobRunner( AsynchronousJobRunner ):
         try:
             client = self.get_client_from_state(job_state)
             run_results = client.full_status()
-
+            remote_working_directory = run_results.get("working_directory", None)
             stdout = run_results.get('stdout', '')
             stderr = run_results.get('stderr', '')
             exit_code = run_results.get('returncode', None)
@@ -330,7 +330,12 @@ class LwrJobRunner( AsynchronousJobRunner ):
             self._handle_metadata_externally( job_wrapper, resolve_requirements=True )
         # Finish the job
         try:
-            job_wrapper.finish( stdout, stderr, exit_code )
+            job_wrapper.finish(
+                stdout,
+                stderr,
+                exit_code,
+                remote_working_directory=remote_working_directory
+            )
         except Exception:
             log.exception("Job wrapper finish method failed")
             job_wrapper.fail("Unable to finish job", exception=True)

@@ -952,7 +952,7 @@ class JobWrapper( object ):
         self.sa_session.add(job)
         self.sa_session.flush()
 
-    def finish( self, stdout, stderr, tool_exit_code=None ):
+    def finish( self, stdout, stderr, tool_exit_code=None, remote_working_directory=None ):
         """
         Called to indicate that the associated command has been run. Updates
         the output datasets based on stderr and stdout from the command, and
@@ -1070,7 +1070,14 @@ class JobWrapper( object ):
                         #since if it is edited, the metadata changed on the running output will no longer match
                         #the metadata that was stored to disk for use via the external process,
                         #and the changes made by the user will be lost, without warning or notice
-                        dataset.metadata.from_JSON_dict( self.external_output_metadata.get_output_filenames_by_dataset( dataset, self.sa_session ).filename_out )
+                        output_filename = self.external_output_metadata.get_output_filenames_by_dataset( dataset, self.sa_session ).filename_out
+
+                        def path_rewriter( path ):
+                            if remote_working_directory and path and path.startswith( remote_working_directory ):
+                                return path.replace( remote_working_directory, self.working_directory, 1 )
+                            return path
+
+                        dataset.metadata.from_JSON_dict( output_filename, path_rewriter=path_rewriter )
                     try:
                         assert context.get( 'line_count', None ) is not None
                         if ( not dataset.datatype.composite_type and dataset.dataset.is_multi_byte() ) or self.tool.is_multi_byte:

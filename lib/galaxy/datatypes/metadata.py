@@ -126,13 +126,18 @@ class MetadataCollection( object ):
                 rval[key] = self.spec[key].param.make_copy( value, target_context=self, source_context=to_copy )
         return rval
 
-    def from_JSON_dict( self, filename ):
+    def from_JSON_dict( self, filename, path_rewriter=None ):
         dataset = self.parent
         log.debug( 'loading metadata from file for: %s %s' % ( dataset.__class__.__name__, dataset.id ) )
         JSONified_dict = json.load( open( filename ) )
         for name, spec in self.spec.items():
             if name in JSONified_dict:
-                dataset._metadata[ name ] = spec.param.from_external_value( JSONified_dict[ name ], dataset )
+                from_ext_kwds = {}
+                external_value = JSONified_dict[ name ]
+                param = spec.param
+                if isinstance( param, FileParameter ):
+                    from_ext_kwds[ 'path_rewriter' ] = path_rewriter
+                dataset._metadata[ name ] = param.from_external_value( external_value, dataset, **from_ext_kwds )
             elif name in dataset._metadata:
                 #if the metadata value is not found in our externally set metadata but it has a value in the 'old'
                 #metadata associated with our dataset, we'll delete it from our dataset's metadata dict
@@ -521,7 +526,7 @@ class FileParameter( MetadataParameter ):
             value = value.id
         return value
 
-    def from_external_value( self, value, parent ):
+    def from_external_value( self, value, parent, path_rewriter=None ):
         """
         Turns a value read from a external dict into its value to be pushed directly into the metadata dict.
         """
@@ -532,8 +537,13 @@ class FileParameter( MetadataParameter ):
             if mf is None:
                 mf = self.new_file( dataset = parent, **value.kwds )
             # Ensure the metadata file gets updated with content
-            parent.dataset.object_store.update_from_file( mf, file_name=value.file_name, extra_dir='_metadata_files', extra_dir_at_root=True, alt_name=os.path.basename(mf.file_name) )
-            os.unlink( value.file_name )
+            file_name = value.file_name
+            if path_rewriter:
+                # Job may have run with a different (non-local) tmp/working
+                # directory. Correct.
+                file_name = path_rewriter( file_name )
+            parent.dataset.object_store.update_from_file( mf, file_name=file_name, extra_dir='_metadata_files', extra_dir_at_root=True, alt_name=os.path.basename(mf.file_name) )
+            os.unlink( file_name )
             value = mf.id
         return value
 
