@@ -563,6 +563,8 @@ class ToolBox( object, Dictifiable ):
                     # a new repository, so any included tools can be loaded into the tool panel.
                     can_load_into_panel_dict = True
             tool = self.load_tool( os.path.join( tool_path, path ), guid=guid, repository_id=repository_id )
+            if string_as_bool(elem.get( 'hidden', False )):
+                tool.hidden = True
             key = 'tool_%s' % str( tool.id )
             if can_load_into_panel_dict:
                 if guid is not None:
