@@ -2978,6 +2978,16 @@ class Workflow( object, Dictifiable ):
         self.has_errors = None
         self.steps = []
 
+    def has_outputs_defined(self):
+        """
+        Returns true or false indicating whether or not a workflow has outputs defined.
+        """
+        for step in self.steps:
+            if step.workflow_outputs:
+                return True
+        return False
+
+
 
 class WorkflowStep( object ):
 

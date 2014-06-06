@@ -1915,10 +1915,7 @@ mapper( model.Workflow, model.Workflow.table,
                                      order_by=asc(model.WorkflowStep.table.c.order_index),
                                      cascade="all, delete-orphan",
                                      lazy=False ),
-                     # outputs = relation( WorkflowOutput, backref='workflow',
-                     #                 primaryjoin=(Workflow.table.c.id == WorkflowStep.table.c.workflow_id),
-                     #                 secondaryjoin=(WorkflowStep.table.c.id == WorkflowOutput.table.c.workflow_step_id))
-                                      ) )
+                     ) )
 
 mapper( model.WorkflowStep, model.WorkflowStep.table,
                 properties=dict(
@@ -2140,9 +2137,9 @@ class_mapper(model.HistoryDatasetCollectionAssociation).add_property( "creating_
 def db_next_hid( self ):
     """
     db_next_hid( self )
-    
+
     Override __next_hid to generate from the database in a concurrency safe way.
-    Loads the next history ID from the DB and returns it. 
+    Loads the next history ID from the DB and returns it.
     It also saves the future next_id into the DB.
 
     :rtype:     int
