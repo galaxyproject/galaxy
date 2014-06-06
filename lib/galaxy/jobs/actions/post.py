@@ -9,7 +9,8 @@ from galaxy.util.json import to_json_string
 
 log = logging.getLogger( __name__ )
 
-def get_form_template(action_type, title, content, help, on_output = True ):
+
+def get_form_template(action_type, title, content, help, on_output=True ):
     if on_output:
         form = """
             if (pja.action_type == "%s"){
@@ -19,7 +20,7 @@ def get_form_template(action_type, title, content, help, on_output = True ):
                 p_str += "</div><div class='toolParamHelp'>%s</div></div>";
             }""" % (action_type, title, content, help)
     else:
-        form =  """
+        form = """
             if (pja.action_type == "%s"){
                 p_str = "<div class='pjaForm toolForm'><span class='action_tag' style='display:none'>"+ pja.action_type + "</span><div class='toolFormTitle'> %s \
                 <div style='float: right;' class='buttons'><img src='/static/images/history-buttons/delete_icon.png'></div></div><div class='toolFormBody'>";
@@ -37,7 +38,7 @@ class DefaultJobAction(object):
     verbose_name = "Default Job"
 
     @classmethod
-    def execute(cls, app, sa_session, action, job, replacement_dict = None):
+    def execute(cls, app, sa_session, action, job, replacement_dict=None):
         pass
 
     @classmethod
@@ -61,12 +62,12 @@ class EmailAction(DefaultJobAction):
 
     @classmethod
     def execute(cls, app, sa_session, action, job, replacement_dict):
-        if action.action_arguments and action.action_arguments.has_key('host'):
+        if action.action_arguments and 'host' in action.action_arguments:
             host = action.action_arguments['host']
         else:
             host = 'usegalaxy.org'
         frm = 'galaxy-noreply@%s' % host
-        to  = job.user.email
+        to = job.user.email
         subject = "Galaxy workflow step notification '%s'" % (job.history.name)
         outdata = ', '.join(ds.dataset.display_name() for ds in job.output_datasets)
         body = "Your Galaxy job generating dataset '%s' is complete as of %s." % (outdata, datetime.datetime.now().strftime( "%I:%M" ))
@@ -81,11 +82,11 @@ class EmailAction(DefaultJobAction):
             p_str += "<label for='pja__"+pja.output_name+"__EmailAction'>There are no additional options for this action.  You will be emailed upon job completion.</label>\
                         <input type='hidden' value='%s' name='pja__"+pja.output_name+"__EmailAction__host'/><input type='hidden' name='pja__"+pja.output_name+"__EmailAction'/>";
             """ % trans.request.host
-        return get_form_template(cls.name, cls.verbose_name, form, "This action will send an email notifying you when the job is done.", on_output = False)
+        return get_form_template(cls.name, cls.verbose_name, form, "This action will send an email notifying you when the job is done.", on_output=False)
 
     @classmethod
     def get_short_str(cls, pja):
-        if pja.action_arguments and pja.action_arguments.has_key('host'):
+        if pja.action_arguments and 'host' in pja.action_arguments:
             return "Email the current user from server %s when this job is complete." % pja.action_arguments['host']
         else:
             return "Email the current user when this job is complete."
@@ -94,6 +95,7 @@ class EmailAction(DefaultJobAction):
 class ChangeDatatypeAction(DefaultJobAction):
     name = "ChangeDatatypeAction"
     verbose_name = "Change Datatype"
+
     @classmethod
     def execute(cls, app, sa_session, action, job, replacement_dict):
         for dataset_assoc in job.output_datasets:
@@ -116,7 +118,7 @@ class ChangeDatatypeAction(DefaultJobAction):
                  p_str += "<scrip" + "t type='text/javascript'>$('#pja__" + pja.output_name + "__ChangeDatatypeAction__newtype').val('" + pja.action_arguments.newtype + "');</scrip" + "t>";
             }
             """ % dt_list
-            # Note the scrip + t hack above.  Is there a better way?
+        # Note the scrip + t hack above.  Is there a better way?
         return get_form_template(cls.name, cls.verbose_name, ps, 'This action will change the datatype of the output to the indicated value.')
 
     @classmethod
@@ -131,7 +133,7 @@ class RenameDatasetAction(DefaultJobAction):
     @classmethod
     def execute(cls, app, sa_session, action, job, replacement_dict):
         # Prevent renaming a dataset to the empty string.
-        if action.action_arguments and action.action_arguments.has_key('newname') and action.action_arguments['newname'] != '':
+        if action.action_arguments and action.action_arguments.get('newname', ''):
             new_name = action.action_arguments['newname']
 
             #  TODO: Unify and simplify replacement options.
@@ -165,10 +167,9 @@ class RenameDatasetAction(DefaultJobAction):
                 tokens = to_be_replaced.split("|")
                 operations = []
                 if len(tokens) > 1:
-                   input_file_var = tokens[0].strip()
-                   for i in range(1, len(tokens)):
-                       operations.append(tokens[i].strip())
-
+                    input_file_var = tokens[0].strip()
+                    for i in range(1, len(tokens)):
+                        operations.append(tokens[i].strip())
                 replacement = ""
                 #  Lookp through inputs find one with "to_be_replaced" input
                 #  variable name, and get the replacement name
@@ -220,7 +221,7 @@ class RenameDatasetAction(DefaultJobAction):
     @classmethod
     def get_short_str(cls, pja):
         # Prevent renaming a dataset to the empty string.
-        if pja.action_arguments and pja.action_arguments.has_key('newname') and pja.action_arguments['newname'] != '':
+        if pja.action_arguments and pja.action_arguments.get('newname', ''):
             return "Rename output '%s' to '%s'." % (pja.output_name, pja.action_arguments['newname'])
         else:
             return "Rename action used without a new name specified.  Output name will be unchanged."
@@ -234,18 +235,20 @@ class HideDatasetAction(DefaultJobAction):
     def execute(cls, app, sa_session, action, job, replacement_dict):
         for dataset_assoc in job.output_datasets:
             if dataset_assoc.dataset.state != dataset_assoc.dataset.states.ERROR and ( action.output_name == '' or dataset_assoc.name == action.output_name ):
-                dataset_assoc.dataset.visible=False
+                dataset_assoc.dataset.visible = False
 
     @classmethod
     def get_config_form(cls, trans):
-        return  """
-                if (pja.action_type == "HideDatasetAction"){
-                    p_str += "<input type='hidden' name='pja__"+pja.output_name+"__HideDatasetAction'/>";
-                }
-                """
+        return """
+               if (pja.action_type == "HideDatasetAction"){
+                   p_str += "<input type='hidden' name='pja__"+pja.output_name+"__HideDatasetAction'/>";
+               }
+               """
+
     @classmethod
     def get_short_str(cls, pja):
         return "Hide output '%s'." % pja.output_name
+
 
 class DeleteDatasetAction(DefaultJobAction):
     # This is disabled for right now.  Deleting a dataset in the middle of a workflow causes errors (obviously) for the subsequent steps using the data.
@@ -256,7 +259,7 @@ class DeleteDatasetAction(DefaultJobAction):
     def execute(cls, app, sa_session, action, job, replacement_dict):
         for dataset_assoc in job.output_datasets:
             if action.output_name == '' or dataset_assoc.name == action.output_name:
-                dataset_assoc.dataset.deleted=True
+                dataset_assoc.dataset.deleted = True
 
     @classmethod
     def get_config_form(cls, trans):
@@ -271,10 +274,10 @@ class DeleteDatasetAction(DefaultJobAction):
         return "Delete this dataset after creation."
 
 
-
 class ColumnSetAction(DefaultJobAction):
     name = "ColumnSetAction"
     verbose_name = "Assign Columns"
+
     @classmethod
     def execute(cls, app, sa_session, action, job, replacement_dict):
         for dataset_assoc in job.output_datasets:
@@ -401,22 +404,21 @@ class DeleteIntermediatesAction(DefaultJobAction):
             p_str += "<label for='pja__"+pja.output_name+"__DeleteIntermediatesAction'>There are no additional options for this action.</label>\
                         <input type='hidden' name='pja__"+pja.output_name+"__DeleteIntermediatesAction'/>";
             """
-        return get_form_template(cls.name, cls.verbose_name, form, "All steps in this workflow will have non-output datasets deleted if they are no longer being used as job inputs at the time of this job finishing.This action will delete non-output datasets of parent steps in this workflow.", on_output = False)
+        return get_form_template(cls.name, cls.verbose_name, form, "All steps in this workflow will have non-output datasets deleted if they are no longer being used as job inputs at the time of this job finishing.", on_output=False)
 
     @classmethod
     def get_short_str(cls, pja):
         return "Delete parent datasets of this step created in this workflow that aren't flagged as outputs."
 
 
-
 class ActionBox(object):
 
-    actions = { "RenameDatasetAction" : RenameDatasetAction,
-                "HideDatasetAction" : HideDatasetAction,
+    actions = { "RenameDatasetAction": RenameDatasetAction,
+                "HideDatasetAction": HideDatasetAction,
                 "ChangeDatatypeAction": ChangeDatatypeAction,
-                "ColumnSetAction" : ColumnSetAction,
-                "EmailAction" : EmailAction,
-                "DeleteIntermediatesAction" : DeleteIntermediatesAction,
+                "ColumnSetAction": ColumnSetAction,
+                "EmailAction": EmailAction,
+                "DeleteIntermediatesAction": DeleteIntermediatesAction,
                 }
     public_actions = ['RenameDatasetAction', 'ChangeDatatypeAction',
                       'ColumnSetAction', 'EmailAction',
@@ -438,10 +440,10 @@ class ActionBox(object):
                 sp = key.split('__')
                 ao_key = sp[2] + sp[1]
                 # flag / output_name / pjatype / desc
-                if not ao_key in npd:
-                    npd[ao_key] = {'action_type' : sp[2],
-                                  'output_name' : sp[1],
-                                  'action_arguments' : {}}
+                if ao_key not in npd:
+                    npd[ao_key] = {'action_type': sp[2],
+                                   'output_name': sp[1],
+                                   'action_arguments': {}}
                 if len(sp) > 3:
                     if sp[3] == 'output_name':
                         npd[ao_key]['output_name'] = val
@@ -468,6 +470,6 @@ class ActionBox(object):
         return forms
 
     @classmethod
-    def execute(cls, app, sa_session, pja, job, replacement_dict = None):
-        if ActionBox.actions.has_key(pja.action_type):
+    def execute(cls, app, sa_session, pja, job, replacement_dict=None):
+        if pja.action_type in ActionBox.actions:
             ActionBox.actions[pja.action_type].execute(app, sa_session, pja, job, replacement_dict)
