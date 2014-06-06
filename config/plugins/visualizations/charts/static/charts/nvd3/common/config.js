@@ -5,7 +5,7 @@ return {
     category    : '',
     library     : 'NVD3',
     tag         : 'svg',
-    keywords    : 'nvd3',
+    keywords    : 'default nvd3',
     settings    : {
         separator_label  : {
             title       : 'X axis',

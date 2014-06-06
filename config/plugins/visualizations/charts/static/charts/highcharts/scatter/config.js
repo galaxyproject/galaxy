@@ -3,7 +3,7 @@ define(['plugin/charts/highcharts/common/config'], function(config) {
 return $.extend(true, {}, config, {
     title       : 'Scatter plot',
     category    : 'Others',
-    keywords    : 'default highcharts',
+    keywords    : 'highcharts',
     columns     : {
         x : {
             title       : 'Values for x-axis',

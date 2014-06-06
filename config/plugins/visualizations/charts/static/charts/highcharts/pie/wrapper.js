@@ -11,9 +11,7 @@ return Backbone.View.extend(
     },
             
     // render
-    draw : function(process_id, chart, request_dictionary)
-    {
-        // draw chart
+    draw : function(process_id, chart, request_dictionary) {
         var hc = new Highcharts(this.app, this.options);
         hc.draw(process_id, 'pie', chart, request_dictionary);
     }

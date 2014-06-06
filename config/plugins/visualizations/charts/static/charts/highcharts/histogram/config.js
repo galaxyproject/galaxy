@@ -4,7 +4,7 @@ return $.extend(true, {}, config, {
     title       : 'Histogram',
     category    : 'Data processing (requires \'charts\' tool from Toolshed)',
     execute     : 'histogram',
-    keywords    : 'default highcharts',
+    keywords    : 'highcharts',
     columns     : {
         y : {
             title       : 'Observations',

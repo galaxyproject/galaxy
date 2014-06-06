@@ -3,7 +3,7 @@ define(['plugin/charts/highcharts/common/config'], function(config) {
 return $.extend(true, {}, config, {
     title       : 'Stacked horizontal',
     category    : 'Bar diagrams',
-    keywords    : 'default highcharts',
+    keywords    : 'highcharts',
     settings    : {
         x_axis_type : {
             init : 'hide'

@@ -4,7 +4,7 @@ return $.extend(true, {}, config, {
     title       : 'Discrete Histogram',
     category    : 'Data processing (requires \'charts\' tool from Toolshed)',
     execute     : 'histogramdiscrete',
-    keywords    : 'default highcharts',
+    keywords    : 'highcharts',
     columns     : {
         y : {
             title       : 'Observations',
@@ -13,16 +13,10 @@ return $.extend(true, {}, config, {
     },
     settings    : {
         x_axis_label : {
-            init : 'Breaks'
+            init : 'Labels'
         },
         y_axis_label : {
             init : 'Density'
-        },
-        y_axis_type : {
-            init : 'f'
-        },
-        y_axis_tick : {
-            init : '.2'
         }
     }
 });

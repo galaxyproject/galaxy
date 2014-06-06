@@ -29,24 +29,14 @@ return Backbone.View.extend(
         // create new element
         var $el = $('<div class="charts-grid"/>');
         
-        // construct chart type subset selection buttons
-        this.library = new Ui.RadioButton({
-            data    : [ { label: 'Default', value: 'default' },
-                        { label: 'Classic', value: 'nvd3' },
-                        { label: 'Zoomable', value: 'highcharts' }],
-            onchange: function(value) {
-                self._filter(value);
-            }
-        });
-        $el.append(Utils.wrap(this.library.$el));
-        
         // set element
         this.setElement($el);
         
         // render
         this._render();
         
-        this.library.value('default');
+        // show only default chart types
+        this._filter('default');
     },
     
     // value

@@ -11,12 +11,7 @@ return Backbone.View.extend(
     },
             
     // render
-    draw : function(process_id, chart, request_dictionary)
-    {
-        // settings
-        chart.settings.set('x_axis_categories', [])
-    
-        // draw chart
+    draw : function(process_id, chart, request_dictionary) {
         var hc = new Highcharts(this.app, this.options);
         hc.draw(process_id, 'line', chart, request_dictionary);
     }

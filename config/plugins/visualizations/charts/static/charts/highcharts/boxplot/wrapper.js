@@ -1,5 +1,5 @@
 // dependencies
-define(['plugin/charts/highcharts/common/highcharts-config'], function(configmaker) {
+define(['plugin/charts/highcharts/common/highcharts-config', 'plugin/charts/highcharts/common/wrapper'], function(configmaker, Highcharts) {
 
 // widget
 return Backbone.View.extend(
@@ -11,8 +11,7 @@ return Backbone.View.extend(
     },
             
     // render
-    draw : function(process_id, chart, request_dictionary, callback)
-    {
+    draw : function(process_id, chart, request_dictionary, callback) {
         // configure request
         var index = 0;
         for (var i in request_dictionary.groups) {
@@ -34,7 +33,6 @@ return Backbone.View.extend(
         // request data
         var self = this;
         this.app.datasets.request(request_dictionary, function() {
-            
             // reset data/categories
             var data = [];
             var categories = [];

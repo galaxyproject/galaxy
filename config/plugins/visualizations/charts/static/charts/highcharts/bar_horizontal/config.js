@@ -3,7 +3,7 @@ define(['plugin/charts/highcharts/common/config'], function(config) {
 return $.extend(true, {}, config, {
     title       : 'Horizontal',
     category    : 'Bar diagrams',
-    keywords    : 'default highcharts',
+    keywords    : 'highcharts',
     columns     : {
         x : {
             title       : 'Values for x-axis',

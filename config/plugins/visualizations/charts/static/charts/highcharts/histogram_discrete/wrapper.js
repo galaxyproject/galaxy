@@ -37,9 +37,6 @@ return Backbone.View.extend(
             });
         }
         
-        // settings
-        chart.settings.set('x_axis_categories', [])
-    
         // draw chart
         var hc = new Highcharts(this.app, this.options);
         hc.draw(process_id, 'column', chart, tmp_dict);

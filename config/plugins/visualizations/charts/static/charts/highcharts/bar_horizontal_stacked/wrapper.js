@@ -11,8 +11,7 @@ return Backbone.View.extend(
     },
             
     // render
-    draw : function(process_id, chart, request_dictionary)
-    {
+    draw : function(process_id, chart, request_dictionary) {
         // finalize configuration
         chart.settings.set('plotoptions_series_stacking', 'normal');
         

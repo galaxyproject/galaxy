@@ -15,7 +15,7 @@ return function(chart) {
 	    },
 	    
 	    title: {
-	        text                        : chart.get('title')
+	        text                        : ''
 	    },
 	    
 	    legend: {
@@ -39,14 +39,15 @@ return function(chart) {
                 },
             labels: {
                 formatter               : function() {
-                    if (settings.get('x_axis_type') == 'auto')
+                    var axis_type = settings.get('x_axis_type');
+                    if (axis_type == 'auto' || axis_type === undefined)
                         return this.value;
-                    var format = d3.format(settings.get('x_axis_tick') + settings.get('x_axis_type'));
+                    var format = d3.format(settings.get('x_axis_tick') + axis_type);
                     return format(this.value);
                 },
                 enabled                 : !(settings.get('x_axis_type') == 'hide')
             },
-            tickPixelInterval           : 100
+            gridLineWidth               : settings.get('x_axis_grid')
         },
         
         yAxis: {
@@ -55,13 +56,15 @@ return function(chart) {
             },
             labels: {
                 formatter               : function() {
-                    if (settings.get('y_axis_type') == 'auto')
+                    var axis_type = settings.get('y_axis_type');
+                    if (axis_type == 'auto' || axis_type === undefined)
                         return this.value;
-                    var format = d3.format(settings.get('y_axis_tick') + settings.get('y_axis_type'));
+                    var format = d3.format(settings.get('y_axis_tick') + axis_type);
                     return format(this.value);
                 },
                 enabled                 : !(settings.get('y_axis_type') == 'hide')
-            }
+            },
+            gridLineWidth               : settings.get('y_axis_grid')
         },
         plotOptions: {
             series: {

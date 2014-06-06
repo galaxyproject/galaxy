@@ -254,10 +254,9 @@ return Backbone.View.extend({
                 var column_settings = self.chart_definition.columns[column_key];
                 
                 // add to columns
-                columns[column_key] = {
-                    index       : group.get(column_key),
-                    is_label    : column_settings.is_label
-                }
+                columns[column_key] = Utils.merge ({
+                    index : group.get(column_key)
+                }, column_settings);
             }
             
             // add group data

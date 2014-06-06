@@ -26,9 +26,8 @@
         ${h.stylesheet_link( app_root + "plugins/nvd3/nv.d3.css" )}
 
         ## install highcharts module
-        ${h.javascript_link( app_root + "plugins/highcharts/highcharts.js" )}
-        ${h.javascript_link( app_root + "plugins/highcharts/highcharts-more.js" )}
-        ${h.javascript_link( app_root + "plugins/highcharts/heatmap.js" )}
+        ${h.javascript_link( "http://code.highcharts.com/highcharts.js" )}
+        ${h.javascript_link( "http://code.highcharts.com/modules/heatmap.js" )}
         
         ## install boxplot module
         ##${h.javascript_link( app_root + "plugins/box.js" )}

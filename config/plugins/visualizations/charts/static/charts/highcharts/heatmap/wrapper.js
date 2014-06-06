@@ -11,9 +11,7 @@ return Backbone.View.extend(
     },
             
     // render
-    draw : function(process_id, chart, request_dictionary)
-    {
-        // draw chart
+    draw : function(process_id, chart, request_dictionary) {
         var hc = new HighchartsWrapper(this.app, this.options);
         hc.draw(process_id, 'heatmap', chart, request_dictionary, function(model) {
             model.colorAxis = {
