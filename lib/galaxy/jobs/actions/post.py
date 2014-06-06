@@ -1,11 +1,13 @@
+"""
+Actions to be run at job completion.  Currently only used in workflows.
+"""
+
 import datetime
 import logging
 from galaxy.util import send_mail
 from galaxy.util.json import to_json_string
 
 log = logging.getLogger( __name__ )
-
-# DBTODO This still needs refactoring and general cleanup.
 
 def get_form_template(action_type, title, content, help, on_output = True ):
     if on_output:
@@ -26,14 +28,11 @@ def get_form_template(action_type, title, content, help, on_output = True ):
             }""" % (action_type, title, content, help)
     return form
 
-# def get_field(action, argument, i_type, label = None):
-#     fstr = ''
-#     fname = """pja__"+pja.output_name+"__%s__%s""" % (action, argument)
-#     if label:
-#         fstr += """<label for='pja__"+pja.output_name+"__ColumnSetAction__chromCol'>Chrom Column</label>"""
-#     fstr += """<input type='text' value=" + chromCol + " name='pja__"+pja.output_name+"__ColumnSetAction__chromCol'/>"""
 
 class DefaultJobAction(object):
+    """
+    Base job action.
+    """
     name = "DefaultJobAction"
     verbose_name = "Default Job"
 
@@ -54,6 +53,9 @@ class DefaultJobAction(object):
 
 
 class EmailAction(DefaultJobAction):
+    """
+    This action sends an email to the galaxy user responsible for a job.
+    """
     name = "EmailAction"
     verbose_name = "Email Notification"
 
@@ -358,6 +360,54 @@ class SetMetadataAction(DefaultJobAction):
         return get_form_template(cls.name, cls.verbose_name, form, "This action will set metadata in the output dataset.")
 
 
+class DeleteIntermediatesAction(DefaultJobAction):
+    name = "DeleteIntermediatesAction"
+    verbose_name = "Delete Non-Output Completed Intermediate Steps"
+
+    @classmethod
+    def execute(cls, app, sa_session, action, job, replacement_dict):
+        # TODO Optimize this later.  Just making it work for now.
+        # TODO Support purging as well as deletion if user_purge is enabled.
+        # Dataset candidates for deletion must be
+        # 1) Created by the workflow.
+        # 2) Not have any job_to_input_dataset associations with states other
+        # than OK or DELETED.  If a step errors, we don't want to delete/purge it
+        # automatically.
+        # 3) Not marked as a workflow output.
+        # POTENTIAL ISSUES:  When many outputs are being finish()ed
+        # concurrently, sometimes non-terminal steps won't be cleaned up
+        # because of the lag in job state updates.
+        wfi = job.workflow_invocation_step.workflow_invocation
+        if wfi.workflow.has_outputs_defined():
+            jobs_to_check = [wfistep.job for wfistep in wfi.steps if not wfistep.workflow_step.workflow_outputs]
+            for j2c in jobs_to_check:
+                for input_dataset in [x.dataset for x in j2c.input_datasets if x.dataset.creating_job.workflow_invocation_step and x.dataset.creating_job.workflow_invocation_step.workflow_invocation == wfi]:
+                    safe_to_delete = True
+                    for job_to_check in [d_j.job for d_j in input_dataset.dependent_jobs]:
+                        if job_to_check != job and job_to_check.state not in [job.states.OK, job.states.DELETED]:
+                            log.debug("Workflow Intermediates cleanup attempted, but non-terminal state '%s' detected for job %s" % (job_to_check.state, job_to_check.id))
+                            safe_to_delete = False
+                    if safe_to_delete:
+                        # Support purging here too.
+                        input_dataset.mark_deleted()
+        else:
+            # No workflow outputs defined, so we can't know what to delete.
+            # We could make this work differently in the future
+            pass
+
+    @classmethod
+    def get_config_form(cls, trans):
+        form = """
+            p_str += "<label for='pja__"+pja.output_name+"__DeleteIntermediatesAction'>There are no additional options for this action.</label>\
+                        <input type='hidden' name='pja__"+pja.output_name+"__DeleteIntermediatesAction'/>";
+            """
+        return get_form_template(cls.name, cls.verbose_name, form, "All steps in this workflow will have non-output datasets deleted if they are no longer being used as job inputs at the time of this job finishing.This action will delete non-output datasets of parent steps in this workflow.", on_output = False)
+
+    @classmethod
+    def get_short_str(cls, pja):
+        return "Delete parent datasets of this step created in this workflow that aren't flagged as outputs."
+
+
 
 class ActionBox(object):
 
@@ -366,10 +416,11 @@ class ActionBox(object):
                 "ChangeDatatypeAction": ChangeDatatypeAction,
                 "ColumnSetAction" : ColumnSetAction,
                 "EmailAction" : EmailAction,
-                # "SetMetadataAction" : SetMetadataAction,
-                # "DeleteDatasetAction" : DeleteDatasetAction,
+                "DeleteIntermediatesAction" : DeleteIntermediatesAction,
                 }
-    public_actions = ['RenameDatasetAction', 'ChangeDatatypeAction', 'ColumnSetAction', 'EmailAction']
+    public_actions = ['RenameDatasetAction', 'ChangeDatatypeAction',
+                      'ColumnSetAction', 'EmailAction',
+                      'DeleteIntermediatesAction']
     immediate_actions = ['ChangeDatatypeAction', 'RenameDatasetAction']
 
     @classmethod
