@@ -517,7 +517,7 @@ class AdminToolshed( AdminGalaxy ):
                     tmp_clone_url = common_util.url_join( tool_shed_url, 'repos', owner, name )
                     tmp_repo_info_tuple = ( None, tmp_clone_url, latest_downloadable_revision, None, owner, None, None )
                     installed_repository, installed_changeset_revision = \
-                        suc.repository_was_previously_installed( trans, tool_shed_url, name, tmp_repo_info_tuple )
+                        suc.repository_was_previously_installed( trans, tool_shed_url, name, tmp_repo_info_tuple, from_tip=False )
                     if installed_repository:
                         current_changeset_revision = str( installed_repository.changeset_revision )
                         message = 'Revision <b>%s</b> of repository <b>%s</b> owned by <b>%s</b> has already been installed.' % \
@@ -1854,6 +1854,10 @@ class AdminToolshed( AdminGalaxy ):
                                                                                          name,
                                                                                          owner,
                                                                                          changeset_revision )
+        original_metadata_dict = repository.metadata
+        original_repository_dependencies_dict = original_metadata_dict.get( 'repository_dependencies', {} )
+        original_repository_dependencies = original_repository_dependencies_dict.get( 'repository_dependencies', [] )
+        original_tool_dependencies_dict = original_metadata_dict.get( 'tool_dependencies', {} )
         if changeset_revision and latest_changeset_revision and latest_ctx_rev:
             if changeset_revision == latest_changeset_revision:
                 message = "The installed repository named '%s' is current, there are no updates available.  " % name
@@ -1910,32 +1914,80 @@ class AdminToolshed( AdminGalaxy ):
                                                                                          repository,
                                                                                          repository_tools_tups )
                     if 'repository_dependencies' in metadata_dict or 'tool_dependencies' in metadata_dict:
-                        if 'repository_dependencies' in metadata_dict:
-                            # Updates received include newly defined repository dependencies, so allow the user
-                            # the option of installting them.  We cannot update the repository with the changes
-                            # until that happens, so we have to send them along.
-                            new_kwd = dict( tool_shed_url=tool_shed_url,
-                                            updating_repository_id=trans.security.encode_id( repository.id ),
+                        new_repository_dependencies_dict = metadata_dict.get( 'repository_dependencies', {} )
+                        new_repository_dependencies = new_repository_dependencies_dict.get( 'repository_dependencies', [] )
+                        new_tool_dependencies_dict = metadata_dict.get( 'tool_dependencies', {} )
+                        if new_repository_dependencies:
+                            # [[http://localhost:9009', package_picard_1_56_0', devteam', 910b0b056666', False', False']]
+                            proceed_to_install = False
+                            if new_repository_dependencies == original_repository_dependencies:
+                                for new_repository_tup in new_repository_dependencies:
+                                    # Make sure all dependencies are installed.
+                                    # TODO: Repository dependencies that are not installed should be displayed to to the user,
+                                    # giving them the option to install them or now.  This is the same behavior as when initially
+                                    # installing and when re-installing.
+                                    new_tool_shed, new_name, new_owner, new_changeset_revision, new_pir, new_oicct = \
+                                        common_util.parse_repository_dependency_tuple( new_repository_tup )
+                                    # Mock up a repo_info_tupe that has the information needed to see if the repository dependency
+                                    # was previously installed.
+                                    repo_info_tuple = ( '', new_tool_shed, new_changeset_revision, '', new_owner, [], [] )
+                                    # Since the value of new_changeset_revision came from a repository dependency
+                                    # definition, it may occur earlier in the Tool Shed's repository changelog than
+                                    # the Galaxy tool_shed_repository.installed_changeset_revision record value, so
+                                    # we set from_tip to True to make sure we get the entire set of changeset revisions
+                                    # from the Tool Shed.
+                                    new_repository_db_record, installed_changeset_revision = \
+                                        suc.repository_was_previously_installed( trans,
+                                                                                 tool_shed_url,
+                                                                                 new_name,
+                                                                                 repo_info_tuple,
+                                                                                 from_tip=True )
+                                    if new_repository_db_record:
+                                        if new_repository_db_record.status in [ trans.install_model.ToolShedRepository.installation_status.ERROR,
+                                                                                trans.install_model.ToolShedRepository.installation_status.NEW,
+                                                                                trans.install_model.ToolShedRepository.installation_status.UNINSTALLED ]:
+                                            proceed_to_install = True
+                                            break
+                                    else:
+                                        proceed_to_install = True
+                                        break
+                            if proceed_to_install:
+                                # Updates received include newly defined repository dependencies, so allow the user
+                                # the option of installting them.  We cannot update the repository with the changes
+                                # until that happens, so we have to send them along.
+                                new_kwd = dict( tool_shed_url=tool_shed_url,
+                                                updating_repository_id=trans.security.encode_id( repository.id ),
+                                                updating_to_ctx_rev=latest_ctx_rev,
+                                                updating_to_changeset_revision=latest_changeset_revision,
+                                                encoded_updated_metadata=encoding_util.tool_shed_encode( metadata_dict ),
+                                                updating=True )
+                                return self.prepare_for_install( trans, **new_kwd )
+                        # Updates received did not include any newly defined repository dependencies but did include
+                        # newly defined tool dependencies.  If the newly defined tool dependencies are not the same
+                        # as the originally defined tool dependencies, we need to install them.
+                        proceed_to_install = False
+                        for new_key, new_val in new_tool_dependencies_dict.items():
+                            if new_key not in original_tool_dependencies_dict:
+                                proceed_to_install = True
+                                break
+                            original_val = original_tool_dependencies_dict[ new_key ]
+                            if new_val != original_val:
+                                proceed_to_install = True
+                                break
+                        if proceed_to_install:
+                            encoded_tool_dependencies_dict = encoding_util.tool_shed_encode( metadata_dict.get( 'tool_dependencies', {} ) )
+                            encoded_relative_install_dir = encoding_util.tool_shed_encode( relative_install_dir )
+                            new_kwd = dict( updating_repository_id=trans.security.encode_id( repository.id ),
                                             updating_to_ctx_rev=latest_ctx_rev,
                                             updating_to_changeset_revision=latest_changeset_revision,
                                             encoded_updated_metadata=encoding_util.tool_shed_encode( metadata_dict ),
-                                            updating=True )
-                            return self.prepare_for_install( trans, **new_kwd )
-                        # Updates received did not include any newly defined repository dependencies but did include
-                        # newly defined tool dependencies.
-                        encoded_tool_dependencies_dict = encoding_util.tool_shed_encode( metadata_dict.get( 'tool_dependencies', {} ) )
-                        encoded_relative_install_dir = encoding_util.tool_shed_encode( relative_install_dir )
-                        new_kwd = dict( updating_repository_id=trans.security.encode_id( repository.id ),
-                                        updating_to_ctx_rev=latest_ctx_rev,
-                                        updating_to_changeset_revision=latest_changeset_revision,
-                                        encoded_updated_metadata=encoding_util.tool_shed_encode( metadata_dict ),
-                                        encoded_relative_install_dir=encoded_relative_install_dir,
-                                        encoded_tool_dependencies_dict=encoded_tool_dependencies_dict,
-                                        message=message,
-                                        status = status )
-                        return self.install_tool_dependencies_with_update( trans, **new_kwd )
+                                            encoded_relative_install_dir=encoded_relative_install_dir,
+                                            encoded_tool_dependencies_dict=encoded_tool_dependencies_dict,
+                                            message=message,
+                                            status = status )
+                            return self.install_tool_dependencies_with_update( trans, **new_kwd )
                     # Updates received did not include any newly defined repository dependencies or newly defined
-                    # tool dependencies.
+                    # tool dependencies that need to be installed.
                     repository = repository_util.update_repository_record( trans,
                                                                            repository=repository,
                                                                            updated_metadata_dict=metadata_dict,

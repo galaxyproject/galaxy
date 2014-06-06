@@ -2594,31 +2594,44 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                     status=status )
 
     @web.expose
-    def previous_changeset_revisions( self, trans, **kwd ):
+    def previous_changeset_revisions( self, trans, from_tip=False, **kwd ):
         """
-        Handle a request from a local Galaxy instance.  This method will handle the case where the repository was previously installed using an
-        older changeset_revsion, but later the repository was updated in the tool shed and the Galaxy admin is trying to install the latest
-        changeset revision of the same repository instead of updating the one that was previously installed.
+        Handle a request from a local Galaxy instance.  This method will handle two scenarios: (1) the
+        repository was previously installed using an older changeset_revsion, but later the repository
+        was updated in the tool shed and the Galaxy admin is trying to install the latest changeset
+        revision of the same repository instead of updating the one that was previously installed. (2)
+        the admin is attempting to get updates for an installed repository that has a repository dependency
+        and both the repository and its dependency have available updates.  In this case, the from_tip
+        parameter will be True because the repository dependency definition may define a changeset hash
+        for the dependency that is newer than the installed changeset revision of the dependency (this is
+        due to the behavior of "Tool dependency definition" repositories, whose metadata is always the tip),
+        so the complete list of changset hashes in the changelog must be returned.
         """
         name = kwd.get( 'name', None )
         owner = kwd.get( 'owner', None )
-        changeset_revision = kwd.get( 'changeset_revision', None )
-        repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
-        repo = hg_util.get_repo_for_repository( trans.app, repository=repository, repo_path=None, create=False )
-        # Get the lower bound changeset revision.
-        lower_bound_changeset_revision = metadata_util.get_previous_metadata_changeset_revision( repository,
-                                                                                                 repo,
-                                                                                                 changeset_revision,
-                                                                                                 downloadable=True )
-        # Build the list of changeset revision hashes.
-        changeset_hashes = []
-        for changeset in hg_util.reversed_lower_upper_bounded_changelog( repo,
-                                                                         lower_bound_changeset_revision,
-                                                                         changeset_revision ):
-            changeset_hashes.append( str( repo.changectx( changeset ) ) )
-        if changeset_hashes:
-            changeset_hashes_str = ','.join( changeset_hashes )
-            return changeset_hashes_str
+        if name is not None and owner is not None:
+            repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
+            from_tip = util.string_as_bool( from_tip )
+            if from_tip:
+                changeset_revision = repository.tip( trans.app )
+            else:
+                changeset_revision = kwd.get( 'changeset_revision', None )
+            if changeset_revision is not None:
+                repo = hg_util.get_repo_for_repository( trans.app, repository=repository, repo_path=None, create=False )
+                # Get the lower bound changeset revision.
+                lower_bound_changeset_revision = metadata_util.get_previous_metadata_changeset_revision( repository,
+                                                                                                         repo,
+                                                                                                         changeset_revision,
+                                                                                                         downloadable=True )
+                # Build the list of changeset revision hashes.
+                changeset_hashes = []
+                for changeset in hg_util.reversed_lower_upper_bounded_changelog( repo,
+                                                                                 lower_bound_changeset_revision,
+                                                                                 changeset_revision ):
+                    changeset_hashes.append( str( repo.changectx( changeset ) ) )
+                if changeset_hashes:
+                    changeset_hashes_str = ','.join( changeset_hashes )
+                    return changeset_hashes_str
         return ''
 
     @web.expose

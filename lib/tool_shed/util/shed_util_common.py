@@ -1352,7 +1352,7 @@ def open_repository_files_folder( trans, folder_path ):
             folder_contents.append( node )
     return folder_contents
 
-def repository_was_previously_installed( trans, tool_shed_url, repository_name, repo_info_tuple ):
+def repository_was_previously_installed( trans, tool_shed_url, repository_name, repo_info_tuple, from_tip=False ):
     """
     Find out if a repository is already installed into Galaxy - there are several scenarios where this
     is necessary.  For example, this method will handle the case where the repository was previously
@@ -1375,10 +1375,11 @@ def repository_was_previously_installed( trans, tool_shed_url, repository_name, 
         return tool_shed_repository, changeset_revision
     # Get all previous changeset revisions from the tool shed for the repository back to, but excluding,
     # the previous valid changeset revision to see if it was previously installed using one of them.
-    params = '?galaxy_url=%s&name=%s&owner=%s&changeset_revision=%s' % ( url_for( '/', qualified=True ),
-                                                                         str( repository_name ),
-                                                                         str( repository_owner ),
-                                                                         changeset_revision )
+    params = '?galaxy_url=%s&name=%s&owner=%s&changeset_revision=%s&from_tip=%s' % ( url_for( '/', qualified=True ),
+                                                                                     str( repository_name ),
+                                                                                     str( repository_owner ),
+                                                                                     changeset_revision,
+                                                                                     str( from_tip ) )
     url = common_util.url_join( tool_shed_url,
                                 'repository/previous_changeset_revisions%s' % params )
     text = common_util.tool_shed_get( trans.app, tool_shed_url, url )

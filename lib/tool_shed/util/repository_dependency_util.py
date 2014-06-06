@@ -75,6 +75,10 @@ def build_repository_dependency_relationships( trans, repo_info_dicts, tool_shed
                             # Make sure required_repository is in the repository_dependency table.
                             repository_dependency = get_repository_dependency_by_repository_id( trans, required_repository.id )
                             if not repository_dependency:
+                                log.debug( 'Creating new repository_dependency record for installed revision %s of repository: %s owned by %s.' % \
+                                    ( str( required_repository.installed_changeset_revision ),
+                                      str( required_repository.name ),
+                                      str( required_repository.owner ) ) )
                                 repository_dependency = trans.install_model.RepositoryDependency( tool_shed_repository_id=required_repository.id )
                                 trans.install_model.context.add( repository_dependency )
                                 trans.install_model.context.flush()
@@ -129,7 +133,7 @@ def create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_
     for repo_info_dict in all_repo_info_dicts:
         # If the user elected to install repository dependencies, all items in the all_repo_info_dicts list will
         # be processed.  However, if repository dependencies are not to be installed, only those items contained
-        # in the received repo_info_dicts list will be processed but the the all_repo_info_dicts list will be used
+        # in the received repo_info_dicts list will be processed but the all_repo_info_dicts list will be used
         # to create all defined repository dependency relationships.
         if is_in_repo_info_dicts( repo_info_dict, repo_info_dicts ) or install_repository_dependencies:
             for name, repo_info_tuple in repo_info_dict.items():
@@ -138,7 +142,7 @@ def create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_
                     suc.get_repo_info_tuple_contents( repo_info_tuple )
                 # See if the repository has an existing record in the database.
                 repository_db_record, installed_changeset_revision = \
-                    suc.repository_was_previously_installed( trans, tool_shed_url, name, repo_info_tuple )
+                    suc.repository_was_previously_installed( trans, tool_shed_url, name, repo_info_tuple, from_tip=False )
                 if repository_db_record:
                     if repository_db_record.status in [ trans.install_model.ToolShedRepository.installation_status.INSTALLED,
                                                         trans.install_model.ToolShedRepository.installation_status.CLONING,

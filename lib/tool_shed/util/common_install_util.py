@@ -264,7 +264,8 @@ def get_installed_and_missing_repository_dependencies_for_new_or_updated_install
                 repository, installed_changeset_revision = suc.repository_was_previously_installed( trans,
                                                                                                     tool_shed,
                                                                                                     name,
-                                                                                                    tmp_repo_info_tuple )
+                                                                                                    tmp_repo_info_tuple,
+                                                                                                    from_tip=False )
                 if repository:
                     new_rd_tup = [ tool_shed,
                                    name,
