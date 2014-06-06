@@ -404,7 +404,7 @@ class DeleteIntermediatesAction(DefaultJobAction):
             p_str += "<label for='pja__"+pja.output_name+"__DeleteIntermediatesAction'>There are no additional options for this action.</label>\
                         <input type='hidden' name='pja__"+pja.output_name+"__DeleteIntermediatesAction'/>";
             """
-        return get_form_template(cls.name, cls.verbose_name, form, "All steps in this workflow will have non-output datasets deleted if they are no longer being used as job inputs at the time of this job finishing.", on_output=False)
+        return get_form_template(cls.name, cls.verbose_name, form, "All non-output steps of this workflow will have datasets deleted if they are no longer being used as job inputs when the job this PostJobAction is attached to is finished.  You *must* be using workflow outputs (the snowflake) in your workflow for this to have any effect.", on_output=False)
 
     @classmethod
     def get_short_str(cls, pja):
