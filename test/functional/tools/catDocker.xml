@@ -1,0 +1,28 @@
+<tool id="catdc" name="Concatenate datasets (in docker)">
+    <description>tail-to-head</description>
+    <requirements>
+      <container type="docker">busybox:ubuntu-14.04</container>
+    </requirements>
+    <command>
+      echo "Galaxy slots passed through contain as \$GALAXY_SLOTS";
+      cat $input1
+      #for $q in $queries
+            ${q.input2}
+      #end for
+      &gt; $out_file1;
+      echo "Work dir output" &gt; working_file
+
+    </command>
+    <inputs>
+        <param name="input1" type="data" label="Concatenate Dataset"/>
+        <repeat name="queries" title="Dataset">
+            <param name="input2" type="data" label="Select" />
+        </repeat>
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="input" metadata_source="input1"/>
+        <data name="out_file2" format="txt" from_work_dir="working_file" />
+    </outputs>
+    <help>
+    </help>
+</tool>

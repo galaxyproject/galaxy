@@ -1,4 +1,6 @@
 from os import getcwd
+from os import chmod
+from os.path import join
 from os.path import abspath
 
 CAPTURE_RETURN_CODE = "return_code=$?"
@@ -8,7 +10,14 @@ from logging import getLogger
 log = getLogger( __name__ )
 
 
-def build_command( runner, job_wrapper, include_metadata=False, include_work_dir_outputs=True, remote_command_params={} ):
+def build_command(
+    runner,
+    job_wrapper,
+    container=None,
+    include_metadata=False,
+    include_work_dir_outputs=True,
+    remote_command_params={}
+):
     """
     Compose the sequence of commands necessary to execute a job. This will
     currently include:
@@ -29,7 +38,35 @@ def build_command( runner, job_wrapper, include_metadata=False, include_work_dir
 
     __handle_version_command(commands_builder, job_wrapper)
     __handle_task_splitting(commands_builder, job_wrapper)
-    __handle_dependency_resolution(commands_builder, job_wrapper, remote_command_params)
+
+    # One could imagine also allowing dependencies inside of the container but
+    # that is too sophisticated for a first crack at this - build your
+    # containers ready to go!
+    if not container:
+        __handle_dependency_resolution(commands_builder, job_wrapper, remote_command_params)
+
+    if container:
+        # Stop now and build command before handling metadata and copying
+        # working directory files back. These should always happen outside
+        # of docker container - no security implications when generating
+        # metadata and means no need for Galaxy to be available to container
+        # and not copying workdir outputs back means on can be more restrictive
+        # of where container can write to in some circumstances.
+
+        local_container_script = join( job_wrapper.working_directory, "container.sh" )
+        fh = file( local_container_script, "w" )
+        fh.write( "#!/bin/sh\n%s" % commands_builder.build() )
+        fh.close()
+        chmod( local_container_script, 0755 )
+
+        compute_container_script = local_container_script
+        if 'working_directory' in remote_command_params:
+            compute_container_script = "/bin/sh %s" % join(remote_command_params['working_directory'], "container.sh")
+
+        run_in_container_command = container.containerize_command(
+            compute_container_script
+        )
+        commands_builder = CommandsBuilder( run_in_container_command )
 
     if include_work_dir_outputs:
         __handle_work_dir_outputs(commands_builder, job_wrapper, runner, remote_command_params)

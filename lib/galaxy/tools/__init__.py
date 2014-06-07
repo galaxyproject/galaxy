@@ -1346,7 +1346,9 @@ class Tool( object, Dictifiable ):
         self.__tests_populated = False
 
         # Requirements (dependencies)
-        self.requirements = parse_requirements_from_xml( root )
+        requirements, containers = parse_requirements_from_xml( root )
+        self.requirements = requirements
+        self.containers = containers
         # Determine if this tool can be used in workflows
         self.is_workflow_compatible = self.check_workflow_compatible(root)
         # Trackster configuration.
