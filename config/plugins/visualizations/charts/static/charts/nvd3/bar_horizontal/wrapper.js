@@ -14,7 +14,7 @@ return Backbone.View.extend(
     draw : function(process_id, chart, request_dictionary)
     {
         var nvd3 = new NVD3(this.app, this.options);
-        nvd3.draw(process_id, nv.models.multiBarHorizontalChart(), chart, request_dictionary);
+        nvd3.draw('multiBarHorizontalChart', process_id, chart, request_dictionary);
     }
 });
 

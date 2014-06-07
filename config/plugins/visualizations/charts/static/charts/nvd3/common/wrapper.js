@@ -1,5 +1,5 @@
 // dependencies
-define([], function() {
+define(['plugin/charts/tools', 'plugin/plugins/nvd3/nv.d3'], function(Tools) {
 
 // widget
 return Backbone.View.extend(
@@ -9,58 +9,75 @@ return Backbone.View.extend(
         this.app        = app;
         this.options    = options;
     },
-            
+    
     // render
-    draw : function(process_id, nvd3_model, chart, request_dictionary, callback)
+    draw : function(type, process_id, chart, request_dictionary, callback) {
+        var self = this;
+        var plot = Tools.panelHelper({
+            app                 : this.app,
+            process_id          : process_id,
+            canvas              : this.options.canvas,
+            chart               : chart,
+            request_dictionary  : request_dictionary,
+            render              : function(chart, groups, canvas) {
+                                    return self.render(type, chart, groups, canvas, callback)
+                                }
+        });
+    },
+    
+    // render
+    render : function(type, chart, groups, canvas, callback)
     {
+        // create nvd3 model
+        var d3chart = nv.models[type]();
+        
         // request data
         var self = this;
-        this.app.datasets.request(request_dictionary, function() {
-            nv.addGraph(function() {
+        nv.addGraph(function() {
+            try {
                 // x axis
-                self._axis(nvd3_model.xAxis, chart.settings.get('x_axis_type'), chart.settings.get('x_axis_tick'));
+                self._axis(d3chart.xAxis, chart.settings.get('x_axis_type'), chart.settings.get('x_axis_tick'));
                 
                 // x axis label
-                nvd3_model.xAxis.axisLabel(chart.settings.get('x_axis_label'));
+                d3chart.xAxis.axisLabel(chart.settings.get('x_axis_label'));
                 
                 // y axis
-                self._axis(nvd3_model.yAxis, chart.settings.get('y_axis_type'), chart.settings.get('y_axis_tick'));
+                self._axis(d3chart.yAxis, chart.settings.get('y_axis_type'), chart.settings.get('y_axis_tick'));
                 
                 // y axis label
-                nvd3_model.yAxis.axisLabel(chart.settings.get('y_axis_label'))
+                d3chart.yAxis.axisLabel(chart.settings.get('y_axis_label'))
                                 .axisLabelDistance(30);
                 
                 // controls
-                nvd3_model.options({showControls: false});
+                d3chart.options({showControls: false});
                 
                 // legend
-                if (nvd3_model.showLegend) {
+                if (d3chart.showLegend) {
                     var legend_visible = true;
                     if (chart.settings.get('show_legend') == 'false') {
                         legend_visible = false;
                     }
-                    nvd3_model.showLegend(legend_visible);
+                    d3chart.showLegend(legend_visible);
                 }
                 
                 // custom callback
                 if (callback) {
-                    callback(nvd3_model);
+                    callback(d3chart);
                 }
                 
                 // parse data to canvas
-                self.options.canvas[0].datum(request_dictionary.groups)
-                                      .call(nvd3_model);
+                canvas.datum(groups)
+                      .call(d3chart);
      
+                
                 // refresh on window resize
-                nv.utils.windowResize(nvd3_model.update);
-                
-                // set chart state
-                chart.state('ok', 'Chart has been drawn.');
-                
-                // unregister process
-                chart.deferred.done(process_id);
-            });
+                nv.utils.windowResize(d3chart.update);
+            } catch (err) {
+                self._handleError(chart, err);
+            }
         });
+        
+        return true;
     },
     
     // make axis
@@ -74,6 +91,11 @@ return Backbone.View.extend(
             default:
                 axis.tickFormat(d3.format(tick + type));
         }
+    },
+    
+    // handle error
+    _handleError: function(chart, err) {
+        chart.state('failed', err);
     }
 });
 

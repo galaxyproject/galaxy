@@ -139,7 +139,7 @@ return Backbone.View.extend({
         this.chart_definition = chart.definition;
         
         // read settings
-        var use_panels = this.chart_definition.use_panels;
+        var use_panels = this.chart_definition.use_panels || (chart.settings.get('use_panels') === 'true');
         
         // determine number of svg/div-elements to create
         var n_panels = 1;

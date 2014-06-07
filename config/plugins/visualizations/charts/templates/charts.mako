@@ -21,16 +21,8 @@
         ## shared css
         ${h.css( 'base' )}
 
-        ## install nv.d3 module
-        ${h.javascript_link( app_root + "plugins/nvd3/nv.d3.js" )}
+        ## css
         ${h.stylesheet_link( app_root + "plugins/nvd3/nv.d3.css" )}
-
-        ## install highcharts module
-        ${h.javascript_link( "http://code.highcharts.com/highcharts.js" )}
-        ${h.javascript_link( "http://code.highcharts.com/modules/heatmap.js" )}
-        
-        ## install boxplot module
-        ##${h.javascript_link( app_root + "plugins/box.js" )}
 
         ## load merged/minified code
         ${h.javascript_link( app_root + "build-app.js" )}
@@ -41,7 +33,6 @@
 
     <body>
         <script type="text/javascript">
-
             // get configuration
             var config = {
                 root     : '${root}',
