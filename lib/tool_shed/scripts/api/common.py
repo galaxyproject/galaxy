@@ -18,6 +18,9 @@ def delete( api_key, url, data, return_formatted=True ):
     """
     try:
         url = make_url( url, api_key=api_key, args=None )
+        # Fix for handling 307 redirect not being handled nicely by urllib2.urlopen when the
+        # urllib2.Request has data provided.
+        url = urllib2.urlopen( urllib2.Request( url ) ).geturl()
         req = urllib2.Request( url, headers = { 'Content-Type': 'application/json' }, data = json.dumps( data ))
         req.get_method = lambda: 'DELETE'
         r = json.loads( urllib2.urlopen( req ).read() )
@@ -174,12 +177,18 @@ def make_url( url, api_key=None, args=None ):
 def post( url, data, api_key=None ):
     """Do the POST."""
     url = make_url( url, api_key=api_key, args=None )
+    # Fix for handling 307 redirect not being handled nicely by urllib2.urlopen when the
+    # urllib2.Request has data provided.
+    url = urllib2.urlopen( urllib2.Request( url ) ).geturl()
     req = urllib2.Request( url, headers = { 'Content-Type': 'application/json' }, data = json.dumps( data ) )
     return json.loads( urllib2.urlopen( req ).read() )
 
 def put( url, data, api_key=None ):
     """Do the PUT."""
     url = make_url( url, api_key=api_key, args=None )
+    # Fix for handling 307 redirect not being handled nicely by urllib2.urlopen when the
+    # urllib2.Request has data provided.
+    url = urllib2.urlopen( urllib2.Request( url ) ).geturl()
     req = urllib2.Request( url, headers = { 'Content-Type': 'application/json' }, data = json.dumps( data ))
     req.get_method = lambda: 'PUT'
     return json.loads( urllib2.urlopen( req ).read() )
