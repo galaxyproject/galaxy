@@ -85,6 +85,11 @@
     "message": "You don't have proper permissions to perform the requested operation"
    },
    {
+    "name": "ADMIN_REQUIRED",
+    "code": 403006,
+    "message": "Action requires admin account."
+   },   
+   {
     "name": "USER_OBJECT_NOT_FOUND",
     "code": 404001,
     "message": "No such object found."

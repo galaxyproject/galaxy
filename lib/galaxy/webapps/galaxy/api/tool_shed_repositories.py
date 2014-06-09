@@ -5,6 +5,7 @@ from time import strftime
 
 from galaxy import util
 from galaxy import web
+from galaxy import exceptions
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.util import json
 from galaxy.web.base.controller import BaseAPIController
@@ -43,7 +44,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
             return dict( status='error', error=message )
         # Make sure the current user's API key proves he is an admin user in this Galaxy instance.
         if not trans.user_is_admin():
-            raise HTTPForbidden( detail='You are not authorized to install a tool shed repository into this Galaxy instance.' )
+            raise exceptions.AdminRequiredException( 'You are not authorized to request the latest installable revision for a repository in this Galaxy instance.' )
 
     @expose_api
     def exported_workflows( self, trans, id, **kwd ):
@@ -103,7 +104,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
             raise HTTPBadRequest( detail="Missing required parameter 'owner'." )
         # Make sure the current user's API key proves he is an admin user in this Galaxy instance.
         if not trans.user_is_admin():
-            raise HTTPForbidden( detail='You are not authorized to request the latest installable revision for a repository in this Galaxy instance.' )
+            raise exceptions.AdminRequiredException( 'You are not authorized to request the latest installable revision for a repository in this Galaxy instance.' )
         params = '?name=%s&owner=%s' % ( name, owner )
         url = common_util.url_join( tool_shed_url,
                                     'api/repositories/get_ordered_installable_revisions%s' % params )
