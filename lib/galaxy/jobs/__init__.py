@@ -1073,8 +1073,12 @@ class JobWrapper( object ):
                         output_filename = self.external_output_metadata.get_output_filenames_by_dataset( dataset, self.sa_session ).filename_out
 
                         def path_rewriter( path ):
-                            if remote_working_directory and path and path.startswith( remote_working_directory ):
-                                return path.replace( remote_working_directory, self.working_directory, 1 )
+                            if not remote_working_directory or not path:
+                                return path
+                            normalized_remote_working_directory = os.path.normpath( remote_working_directory )
+                            normalized_path = os.path.normpath( path )
+                            if normalized_path.startswith( normalized_remote_working_directory ):
+                                return normalized_path.replace( normalized_remote_working_directory, self.working_directory, 1 )
                             return path
 
                         dataset.metadata.from_JSON_dict( output_filename, path_rewriter=path_rewriter )
