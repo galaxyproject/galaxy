@@ -540,6 +540,10 @@ class Conditional( Group ):
         cond_dict[ "test_param" ] = nested_to_dict( self.test_param )
         return cond_dict
 
+    @property
+    def is_job_resource_conditional(self):
+        return self.name == "__job_resource"
+
 
 class ConditionalWhen( object, Dictifiable ):
     dict_collection_visible_keys = ( 'value', )

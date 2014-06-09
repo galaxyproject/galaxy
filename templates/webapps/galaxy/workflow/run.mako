@@ -339,6 +339,9 @@ if wf_parms:
           ## <div class="form-row"><input type="submit" name="${step.id}|${prefix}${input.name}_add" value="Add new ${input.title}" /></div>
       </div>
     %elif input.type == "conditional":
+      %if input.is_job_resource_conditional:
+        <% continue %>
+      %endif
       <% group_values = values[input.name] %>
       <% current_case = group_values['__current_case__'] %>
       <% new_prefix = prefix + input.name + "|" %>
