@@ -5,6 +5,7 @@ from time import strftime
 
 from galaxy import util
 from galaxy import web
+from galaxy.web import _future_expose_api as expose_api
 from galaxy.util import json
 from galaxy.web.base.controller import BaseAPIController
 
@@ -34,7 +35,7 @@ def get_message_for_no_shed_tool_config():
 class ToolShedRepositoriesController( BaseAPIController ):
     """RESTful controller for interactions with tool shed repositories."""
 
-    @web.expose_api
+    @expose_api
     def exported_workflows( self, trans, id, **kwd ):
         """
         GET /api/tool_shed_repositories/{encoded_tool_shed_repository_id}/exported_workflows
@@ -67,7 +68,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
             exported_workflows.append( display_dict )
         return exported_workflows
 
-    @web.expose_api
+    @expose_api
     def get_latest_installable_revision( self, trans, payload, **kwd ):
         """
         POST /api/tool_shed_repositories/get_latest_installable_revision
@@ -116,7 +117,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
                        'error_message' : tool_shed_repository.error_message or '' }
         return value_mapper
 
-    @web.expose_api
+    @expose_api
     def import_workflow( self, trans, payload, **kwd ):
         """
         POST /api/tool_shed_repositories/import_workflow
@@ -149,7 +150,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
             return {}
         return workflow.to_dict( view='element' )
 
-    @web.expose_api
+    @expose_api
     def import_workflows( self, trans, **kwd ):
         """
         POST /api/tool_shed_repositories/import_workflows
@@ -177,7 +178,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
                 imported_workflow_dicts.append( workflow.to_dict( view='element' ) )
         return imported_workflow_dicts
 
-    @web.expose_api
+    @expose_api
     def index( self, trans, **kwd ):
         """
         GET /api/tool_shed_repositories
@@ -195,7 +196,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
             tool_shed_repository_dicts.append( tool_shed_repository_dict )
         return tool_shed_repository_dicts
 
-    @web.expose_api
+    @expose_api
     def install_repository_revision( self, trans, payload, **kwd ):
         """
         POST /api/tool_shed_repositories/install_repository_revision
@@ -403,7 +404,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
         # Display the list of installed repositories.
         return installed_tool_shed_repositories
 
-    @web.expose_api
+    @expose_api
     def install_repository_revisions( self, trans, payload, **kwd ):
         """
         POST /api/tool_shed_repositories/install_repository_revisions
@@ -487,7 +488,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
                 all_installed_tool_shed_repositories.extend( installed_tool_shed_repositories )
         return all_installed_tool_shed_repositories
 
-    @web.expose_api
+    @expose_api
     def repair_repository_revision( self, trans, payload, **kwd ):
         """
         POST /api/tool_shed_repositories/repair_repository_revision
@@ -538,7 +539,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
         # Display the list of repaired repositories.
         return tool_shed_repositories
 
-    @web.expose_api
+    @expose_api
     def reset_metadata_on_installed_repositories( self, trans, payload, **kwd ):
         """
         PUT /api/tool_shed_repositories/reset_metadata_on_installed_repositories
@@ -581,7 +582,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
         results[ 'stop_time' ] = stop_time
         return json.to_json_string( results, sort_keys=True, indent=4 )
 
-    @web.expose_api
+    @expose_api
     def show( self, trans, id, **kwd ):
         """
         GET /api/tool_shed_repositories/{encoded_tool_shed_repsository_id}
