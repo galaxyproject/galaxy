@@ -238,41 +238,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
         # Keep track of all repositories that are installed - there may be more than one if repository dependencies are installed.
         installed_tool_shed_repositories = []
         # Get all of the information necessary for installing the repository from the specified tool shed.
-        params = '?name=%s&owner=%s&changeset_revision=%s' % ( name, owner, changeset_revision )
-        url = common_util.url_join( tool_shed_url,
-                                    'api/repositories/get_repository_revision_install_info%s' % params )
-        try:
-            raw_text = common_util.tool_shed_get( trans.app, tool_shed_url, url )
-        except Exception, e:
-            message = "Error attempting to retrieve installation information from tool shed %s for revision %s of repository %s owned by %s: %s" % \
-                ( str( tool_shed_url ), str( changeset_revision ), str( name ), str( owner ), str( e ) )
-            log.warn( message )
-            raise exceptions.InternalServerError( message )
-        if raw_text:
-            # If successful, the response from get_repository_revision_install_info will be 3
-            # dictionaries, a dictionary defining the Repository, a dictionary defining the
-            # Repository revision (RepositoryMetadata), and a dictionary including the additional
-            # information required to install the repository.
-            items = json.from_json_string( raw_text )
-            repository_revision_dict = items[ 1 ]
-            repo_info_dict = items[ 2 ]
-        else:
-            message = "Unable to retrieve installation information from tool shed %s for revision %s of repository %s owned by %s: %s" % \
-                ( str( tool_shed_url ), str( changeset_revision ), str( name ), str( owner ), str( e ) )
-            log.warn( message )
-            raise exceptions.InternalServerError( message )
-        # Make sure the tool shed returned everything we need for installing the repository.
-        if not repository_revision_dict or not repo_info_dict:
-            key = kwd.get( 'key', None )
-            invalid_parameter_message = "No information is available for the requested repository revision.\n"
-            invalid_parameter_message += "One or more of the following parameter values is likely invalid:\n"
-            invalid_parameter_message += "key: %s\n" % str( key )
-            invalid_parameter_message += "tool_shed_url: %s\n" % str( tool_shed_url )
-            invalid_parameter_message += "name: %s\n" % str( name )
-            invalid_parameter_message += "owner: %s\n" % str( owner )
-            invalid_parameter_message += "changeset_revision: %s\n" % str( changeset_revision )
-            raise exceptions.RequestParameterInvalidException( invalid_parameter_message )
-        repo_info_dicts = [ repo_info_dict ]
+        repository_revision_dict, repo_info_dicts = self.__get_install_info_from_tool_shed( trans.app, tool_shed_url, name, owner, changeset_revision )
         try:
             has_repository_dependencies = repository_revision_dict[ 'has_repository_dependencies' ]
         except:
@@ -388,6 +354,42 @@ class ToolShedRepositoriesController( BaseAPIController ):
             raise exceptions.RequestParameterInvalidException( 'All repositories that you are attempting to install have been previously installed.' )
         # Display the list of installed repositories.
         return installed_tool_shed_repositories
+
+    def __get_install_info_from_tool_shed( self, app, tool_shed_url, name, owner, changeset_revision ):
+        params = '?name=%s&owner=%s&changeset_revision=%s' % ( name, owner, changeset_revision )
+        url = common_util.url_join( tool_shed_url,
+                                    'api/repositories/get_repository_revision_install_info%s' % params )
+        try:
+            raw_text = common_util.tool_shed_get( app, tool_shed_url, url )
+        except Exception, e:
+            message = "Error attempting to retrieve installation information from tool shed %s for revision %s of repository %s owned by %s: %s" % \
+                ( str( tool_shed_url ), str( changeset_revision ), str( name ), str( owner ), str( e ) )
+            log.warn( message )
+            raise exceptions.InternalServerError( message )
+        if raw_text:
+            # If successful, the response from get_repository_revision_install_info will be 3
+            # dictionaries, a dictionary defining the Repository, a dictionary defining the
+            # Repository revision (RepositoryMetadata), and a dictionary including the additional
+            # information required to install the repository.
+            items = json.from_json_string( raw_text )
+            repository_revision_dict = items[ 1 ]
+            repo_info_dict = items[ 2 ]
+        else:
+            message = "Unable to retrieve installation information from tool shed %s for revision %s of repository %s owned by %s: %s" % \
+                ( str( tool_shed_url ), str( changeset_revision ), str( name ), str( owner ), str( e ) )
+            log.warn( message )
+            raise exceptions.InternalServerError( message )
+        # Make sure the tool shed returned everything we need for installing the repository.
+        if not repository_revision_dict or not repo_info_dict:
+            invalid_parameter_message = "No information is available for the requested repository revision.\n"
+            invalid_parameter_message += "One or more of the following parameter values is likely invalid:\n"
+            invalid_parameter_message += "tool_shed_url: %s\n" % str( tool_shed_url )
+            invalid_parameter_message += "name: %s\n" % str( name )
+            invalid_parameter_message += "owner: %s\n" % str( owner )
+            invalid_parameter_message += "changeset_revision: %s\n" % str( changeset_revision )
+            raise exceptions.RequestParameterInvalidException( invalid_parameter_message )
+        repo_info_dicts = [ repo_info_dict ]
+        return repository_revision_dict, repo_info_dicts
 
     @expose_api
     def install_repository_revisions( self, trans, payload, **kwd ):
