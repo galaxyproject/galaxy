@@ -628,7 +628,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         # If the honeypot field is not empty we are dealing with a bot.
         honeypot_field = params.get( 'bear_field', '' )
         if honeypot_field != '':
-            return trans.show_error_message( "You are considered a bot. If you are not one please try registering again and follow the form's legend. <a target=\"_top\" href=\"%s\">Go to the home page</a>." ) % url_for( '/' )
+            return trans.show_error_message( "You've been flagged as a possible bot. If you are not, please try registering again and fill the form out carefully. <a target=\"_top\" href=\"%s\">Go to the home page</a>." ) % url_for( '/' )
 
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
