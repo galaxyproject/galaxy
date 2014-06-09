@@ -36,66 +36,69 @@ return Backbone.View.extend(
     
     // draw group
     _draw_group: function(chart, group, canvas) {
-        
-        // add title
-        var title = canvas.append('text');
-  
-        // configure title attributes
-        this._fix_title(chart, canvas, title, group.key);
-  
-        // format chart data
-        var pie_data = [];
-        for (var key in group.values) {
-            var value = group.values[key];
-            pie_data.push ({
-                y : value.y,
-                x : value.label
-            });
-        }
+        try {
+            // add title
+            var title = canvas.append('text');
+      
+            // configure title attributes
+            this._fix_title(chart, canvas, title, group.key);
+      
+            // format chart data
+            var pie_data = [];
+            for (var key in group.values) {
+                var value = group.values[key];
+                pie_data.push ({
+                    y : value.y,
+                    x : value.label
+                });
+            }
 
-        // add graph to screen
-        var self = this;
-        nv.addGraph(function() {
-            // legend
-            var legend_visible = true;
-            if (chart.settings.get('show_legend') == 'false') {
-                legend_visible = false;
-            }
-            
-            // legend
-            var label_outside = true;
-            if (chart.settings.get('label_outside') == 'false') {
-                label_outside = false;
-            }
-            
-            // label type
-            var label_type = chart.settings.get('label_type');
-            
-            // ratio
-            var donut_ratio = parseFloat(chart.settings.get('donut_ratio'))
-            
-            // create chart model
-            var chart_3d = nv.models.pieChart()
-                .donut(true)
-                .labelThreshold(.05)
-                .showLegend(legend_visible)
-                .labelType(label_type)
-                .donutRatio(donut_ratio)
-                .donutLabelsOutside(label_outside);
-            
-            // add data to canvas
-            canvas.datum(pie_data)
-                  .call(chart_3d);
-            
-            // add resize trigger
-            nv.utils.windowResize(function() {
-                // update chart
-                chart_3d.update();
+            // add graph to screen
+            var self = this;
+            nv.addGraph(function() {
+                // legend
+                var legend_visible = true;
+                if (chart.settings.get('show_legend') == 'false') {
+                    legend_visible = false;
+                }
                 
-                // fix title
-                self._fix_title(chart, canvas, title, group.key);
+                // legend
+                var label_outside = true;
+                if (chart.settings.get('label_outside') == 'false') {
+                    label_outside = false;
+                }
+                
+                // label type
+                var label_type = chart.settings.get('label_type');
+                
+                // ratio
+                var donut_ratio = parseFloat(chart.settings.get('donut_ratio'))
+                
+                // create chart model
+                var chart_3d = nv.models.pieChart()
+                    .donut(true)
+                    .labelThreshold(.05)
+                    .showLegend(legend_visible)
+                    .labelType(label_type)
+                    .donutRatio(donut_ratio)
+                    .donutLabelsOutside(label_outside);
+                
+                // add data to canvas
+                canvas.datum(pie_data)
+                      .call(chart_3d);
+                
+                // add resize trigger
+                nv.utils.windowResize(function() {
+                    // update chart
+                    chart_3d.update();
+                    
+                    // fix title
+                    self._fix_title(chart, canvas, title, group.key);
+                });
             });
-        });
+        } catch (err) {
+            console.log(err);
+        }
     },
     
     // fix title

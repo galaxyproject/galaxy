@@ -41,7 +41,7 @@ function panelHelper (options)
             chart.deferred.done(process_id);
         } catch (err) {
             // log
-            console.debug('FAILED: Tools::draw() - ' + err);
+            console.debug('FAILED: Tools::panelHelper() - ' + err);
         
             // set chart state
             chart.state('failed', err);
@@ -50,6 +50,35 @@ function panelHelper (options)
             chart.deferred.done(process_id);
         }
     });
+};
+
+// get domain boundaries value
+function getDomains(groups, keys) {
+    
+    // get  value
+    function _apply(operator, key) {
+        var value = undefined;
+        for (var group_index in groups) {
+            var value_sub = d3[operator](groups[group_index].values, function(d) { return d[key]; });
+            if (value === undefined) {
+                value = value_sub;
+            } else {
+                value = Math[operator](value, value_sub);
+            }
+        }
+        return value;
+    };
+    
+    var result = {};
+    for (var index in keys) {
+        var key = keys[index];
+        result[key] = {
+            min : _apply('min', key),
+            max : _apply('max', key),
+        };
+       
+    }
+    return result;
 };
 
 // series maker
@@ -74,7 +103,7 @@ function makeSeries(group) {
 };
 
 // category maker
-function makeCategories(chart, groups) {
+function makeCategories(chart, groups, with_index) {
     // hashkeys, arrays and counter for labeled columns
     var categories  = {};
     var array       = {};
@@ -99,8 +128,17 @@ function makeCategories(chart, groups) {
             for (var key in categories) {
                 var value = String(value_dict[key]);
                 if (categories[key][value] === undefined) {
+                    // add index
                     categories[key][value] = counter[key];
-                    array[key].push([counter[key], value]);
+       
+                    // array formatter
+                    if (with_index) {
+                        array[key].push([counter[key], value]);
+                    } else {
+                        array[key].push(value);
+                    }
+       
+                    // increase counter
                     counter[key]++;
                 }
             }
@@ -131,7 +169,8 @@ function makeCategories(chart, groups) {
 return {
     panelHelper     : panelHelper,
     makeCategories  : makeCategories,
-    makeSeries      : makeSeries
+    makeSeries      : makeSeries,
+    getDomains      : getDomains
 }
 
 });

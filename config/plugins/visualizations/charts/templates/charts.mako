@@ -56,11 +56,15 @@
             require.config({
                 baseUrl: config.root + "static/scripts/",
                 paths: {
-                    "plugin": "${app_root}"
+                    "plugin"        : "${app_root}",
+                    "bean"          : "${app_root}/plugins/flotr2/bean",
+                    "flotr2"        : "${app_root}/plugins/flotr2/flotr2-amd",
+                    "d3"            : "libs/d3"
                 },
                 shim: {
                     "libs/underscore": { exports: "_" },
-                    "libs/backbone/backbone": { exports: "Backbone" }
+                    "libs/backbone/backbone": { exports: "Backbone" },
+                    "d3": { exports: "d3"}
                 }
             });
 
