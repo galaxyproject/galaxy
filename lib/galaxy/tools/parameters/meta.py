@@ -19,7 +19,7 @@ def expand_meta_parameters( trans, tool, incoming ):
         if multirun_key in incoming:
             multi_value = util.listify( incoming[ multirun_key ] )
             if len( multi_value ) > 1:
-                return permutations.input_classification.MULTIPLIED, multi_value
+                return permutations.input_classification.MATCHED, multi_value
             else:
                 if len( multi_value ) == 0:
                     multi_value = None
