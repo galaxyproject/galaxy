@@ -1371,7 +1371,8 @@ class Bunch( dict ):
     Bunch based on a dict
     """
     def __getattr__( self, key ):
-        if key not in self: raise AttributeError, key
+        if key not in self:
+            raise AttributeError(key)
         return self[key]
 
     def __setattr__( self, key, value ):
