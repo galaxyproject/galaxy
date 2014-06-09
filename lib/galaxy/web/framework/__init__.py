@@ -753,7 +753,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
                     galaxy_session_requires_flush = True
                 elif (galaxy_session.user.email != remote_user_email and
                       self.app.config.allow_user_impersonation and
-                      remote_user_email not in [ x.strip() for x in self.app.config.get( "admin_users", "" ).split( "," ) ]):
+                      remote_user_email not in self.app.config.admin_users_list):
                     # Session exists but is not associated with the correct
                     # remote user, and the currently set remote_user is not a
                     # potentially impersonating admin.
