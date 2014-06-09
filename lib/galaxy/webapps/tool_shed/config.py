@@ -83,6 +83,7 @@ class Configuration( object ):
         self.template_path = resolve_path( kwargs.get( "template_path", "templates" ), self.root )
         self.template_cache = resolve_path( kwargs.get( "template_cache_path", "database/compiled_templates/community" ), self.root )
         self.admin_users = kwargs.get( "admin_users", "" )
+        self.admin_users_list = [u.strip() for u in self.admin_users.split(',') if u]
         self.sendmail_path = kwargs.get('sendmail_path',"/usr/sbin/sendmail")
         self.mailing_join_addr = kwargs.get('mailing_join_addr',"galaxy-announce-join@bx.psu.edu")
         self.error_email_to = kwargs.get( 'error_email_to', None )
