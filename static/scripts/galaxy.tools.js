@@ -110,9 +110,9 @@ define([ "libs/underscore", "mvc/tools" ], function( _, Tools ) {
         enableSelectBy: function( enableIndex, onValue ) {
             var selectionType = SELECTION_TYPE[onValue];
             if(selectionType["allow_remap"]) {
-                $("div#remap-row").css("display", "none");
-            } else {
                 $("div#remap-row").css("display", "inherit");
+            } else {
+                $("div#remap-row").css("display", "none");
             }
             this.formRow().find( "i" ).each(function(index, iElement) {
                 if(index == enableIndex) {
