@@ -8,7 +8,7 @@ from galaxy.util import unicodify
 
 from galaxy import eggs
 
-eggs.require( 'markupsafe' )
+eggs.require( 'MarkupSafe' )
 import markupsafe
 
 log = logging.getLogger( __name__ )
