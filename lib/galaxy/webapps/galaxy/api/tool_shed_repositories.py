@@ -93,15 +93,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
         :param owner (required): the owner of the Repository
         """
         # Get the information about the repository to be installed from the payload.
-        tool_shed_url = payload.get( 'tool_shed_url', '' )
-        if not tool_shed_url:
-            raise HTTPBadRequest( detail="Missing required parameter 'tool_shed_url'." )
-        name = payload.get( 'name', '' )
-        if not name:
-            raise HTTPBadRequest( detail="Missing required parameter 'name'." )
-        owner = payload.get( 'owner', '' )
-        if not owner:
-            raise HTTPBadRequest( detail="Missing required parameter 'owner'." )
+        tool_shed_url, name, owner = self.__parse_repository_from_payload( payload )
         # Make sure the current user's API key proves he is an admin user in this Galaxy instance.
         if not trans.user_is_admin():
             raise exceptions.AdminRequiredException( 'You are not authorized to request the latest installable revision for a repository in this Galaxy instance.' )
@@ -241,18 +233,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
                                           file will be selected automatically.
         """
         # Get the information about the repository to be installed from the payload.
-        tool_shed_url = payload.get( 'tool_shed_url', '' )
-        if not tool_shed_url:
-            raise HTTPBadRequest( detail="Missing required parameter 'tool_shed_url'." )
-        name = payload.get( 'name', '' )
-        if not name:
-            raise HTTPBadRequest( detail="Missing required parameter 'name'." )
-        owner = payload.get( 'owner', '' )
-        if not owner:
-            raise HTTPBadRequest( detail="Missing required parameter 'owner'." )
-        changeset_revision = payload.get( 'changeset_revision', '' )
-        if not changeset_revision:
-            raise HTTPBadRequest( detail="Missing required parameter 'changeset_revision'." )
+        tool_shed_url, name, owner, changeset_revision = self.__parse_repository_from_payload( payload, include_changeset=True )
         self.__ensure_can_install_repos( trans )
         # Keep track of all repositories that are installed - there may be more than one if repository dependencies are installed.
         installed_tool_shed_repositories = []
@@ -501,18 +482,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
         :param changeset_revision (required): the changeset_revision of the RepositoryMetadata object associated with the Repository
         """
         # Get the information about the repository to be installed from the payload.
-        tool_shed_url = payload.get( 'tool_shed_url', '' )
-        if not tool_shed_url:
-            raise HTTPBadRequest( detail="Missing required parameter 'tool_shed_url'." )
-        name = payload.get( 'name', '' )
-        if not name:
-            raise HTTPBadRequest( detail="Missing required parameter 'name'." )
-        owner = payload.get( 'owner', '' )
-        if not owner:
-            raise HTTPBadRequest( detail="Missing required parameter 'owner'." )
-        changeset_revision = payload.get( 'changeset_revision', '' )
-        if not changeset_revision:
-            raise HTTPBadRequest( detail="Missing required parameter 'changeset_revision'." )
+        tool_shed_url, name, owner, changeset_revision = self.__parse_repository_from_payload( payload, include_changeset=True )
         tool_shed_repositories = []
         tool_shed_repository = suc.get_tool_shed_repository_by_shed_name_owner_changeset_revision( trans.app, tool_shed_url, name, owner, changeset_revision )
         repair_dict = repository_util.get_repair_dict( trans, tool_shed_repository )
@@ -536,6 +506,26 @@ class ToolShedRepositoriesController( BaseAPIController ):
                 tool_shed_repositories.append( repository_dict )
         # Display the list of repaired repositories.
         return tool_shed_repositories
+
+    def __parse_repository_from_payload( self, payload, include_changeset=False ):
+        # Get the information about the repository to be installed from the payload.
+        tool_shed_url = payload.get( 'tool_shed_url', '' )
+        if not tool_shed_url:
+            raise exceptions.RequestParameterMissingException( "Missing required parameter 'tool_shed_url'." )
+        name = payload.get( 'name', '' )
+        if not name:
+            raise exceptions.RequestParameterMissingException( "Missing required parameter 'name'." )
+        owner = payload.get( 'owner', '' )
+        if not owner:
+            raise exceptions.RequestParameterMissingException( "Missing required parameter 'owner'." )
+        if not include_changeset:
+            return tool_shed_url, name, owner
+
+        changeset_revision = payload.get( 'changeset_revision', '' )
+        if not changeset_revision:
+            raise HTTPBadRequest( detail="Missing required parameter 'changeset_revision'." )
+
+        return tool_shed_url, name, owner, changeset_revision
 
     @expose_api
     def reset_metadata_on_installed_repositories( self, trans, payload, **kwd ):
