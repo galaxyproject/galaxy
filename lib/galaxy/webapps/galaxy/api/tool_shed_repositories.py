@@ -347,7 +347,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
                                   tool_shed_url=tool_shed_url )
         # Create the tool_shed_repository database records and gather additional information for repository installation.
         created_or_updated_tool_shed_repositories, tool_panel_section_keys, repo_info_dicts, filtered_repo_info_dicts = \
-            repository_util.handle_tool_shed_repositories( trans, installation_dict, using_api=True )
+            repository_util.handle_tool_shed_repositories( trans.app, installation_dict, using_api=True )
         if created_or_updated_tool_shed_repositories:
             # Build the dictionary of information necessary for installing the repositories.
             installation_dict = dict( created_or_updated_tool_shed_repositories=created_or_updated_tool_shed_repositories,
@@ -370,12 +370,12 @@ class ToolShedRepositoriesController( BaseAPIController ):
             # changeset_revision, there may be multiple repositories for installation at this point because repository dependencies may have added
             # additional repositories for installation along with the single specified repository.
             encoded_kwd, query, tool_shed_repositories, encoded_repository_ids = \
-                repository_util.initiate_repository_installation( trans, installation_dict )
+                repository_util.initiate_repository_installation( trans.app, installation_dict )
             # Some repositories may have repository dependencies that are required to be installed before the dependent repository, so we'll
             # order the list of tsr_ids to ensure all repositories install in the required order.
             tsr_ids = [ trans.security.encode_id( tool_shed_repository.id ) for tool_shed_repository in tool_shed_repositories ]
             ordered_tsr_ids, ordered_repo_info_dicts, ordered_tool_panel_section_keys = \
-                repository_util.order_components_for_installation( trans, tsr_ids, repo_info_dicts, tool_panel_section_keys=tool_panel_section_keys )
+                repository_util.order_components_for_installation( trans.app, tsr_ids, repo_info_dicts, tool_panel_section_keys=tool_panel_section_keys )
             # Install the repositories, keeping track of each one for later display.
             for index, tsr_id in enumerate( ordered_tsr_ids ):
                 tool_shed_repository = trans.install_model.context.query( trans.install_model.ToolShedRepository ).get( trans.security.decode_id( tsr_id ) )
@@ -384,7 +384,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
 
                     repo_info_dict = ordered_repo_info_dicts[ index ]
                     tool_panel_section_key = ordered_tool_panel_section_keys[ index ]
-                    repository_util.install_tool_shed_repository( trans,
+                    repository_util.install_tool_shed_repository( trans.app,
                                                                   tool_shed_repository,
                                                                   repo_info_dict,
                                                                   tool_panel_section_key,

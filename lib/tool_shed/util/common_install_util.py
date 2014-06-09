@@ -22,18 +22,19 @@ from tool_shed.galaxy_install.tool_dependencies.recipe.recipe_manager import Tag
 
 log = logging.getLogger( __name__ )
 
-def activate_repository( trans, repository ):
+def activate_repository( app, repository ):
     """Activate an installed tool shed repository that has been marked as deactivated."""
-    repository_clone_url = common_util.generate_clone_url_for_installed_repository( trans.app, repository )
-    shed_tool_conf, tool_path, relative_install_dir = suc.get_tool_panel_config_tool_path_install_dir( trans.app, repository )
+    install_model = app.install_model
+    repository_clone_url = common_util.generate_clone_url_for_installed_repository( app, repository )
+    shed_tool_conf, tool_path, relative_install_dir = suc.get_tool_panel_config_tool_path_install_dir( app, repository )
     repository.deleted = False
-    repository.status = trans.install_model.ToolShedRepository.installation_status.INSTALLED
+    repository.status = install_model.ToolShedRepository.installation_status.INSTALLED
     if repository.includes_tools_for_display_in_tool_panel:
         metadata = repository.metadata
-        repository_tools_tups = suc.get_repository_tools_tups( trans.app, metadata )
+        repository_tools_tups = suc.get_repository_tools_tups( app, metadata )
         # Reload tools into the appropriate tool panel section.
         tool_panel_dict = repository.metadata[ 'tool_panel_section' ]
-        tool_util.add_to_tool_panel( trans.app,
+        tool_util.add_to_tool_panel( app,
                                      repository.name,
                                      repository_clone_url,
                                      repository.installed_changeset_revision,
@@ -43,32 +44,32 @@ def activate_repository( trans, repository ):
                                      tool_panel_dict,
                                      new_install=False )
         if repository.includes_data_managers:
-            tp, data_manager_relative_install_dir = repository.get_tool_relative_path( trans.app )
+            tp, data_manager_relative_install_dir = repository.get_tool_relative_path( app )
             # Hack to add repository.name here, which is actually the root of the installed repository
             data_manager_relative_install_dir = os.path.join( data_manager_relative_install_dir, repository.name )
-            new_data_managers = data_manager_util.install_data_managers( trans.app,
-                                                                         trans.app.config.shed_data_manager_config_file,
+            new_data_managers = data_manager_util.install_data_managers( app,
+                                                                         app.config.shed_data_manager_config_file,
                                                                          metadata,
-                                                                         repository.get_shed_config_dict( trans.app ),
+                                                                         repository.get_shed_config_dict( app ),
                                                                          data_manager_relative_install_dir,
                                                                          repository,
                                                                          repository_tools_tups )
-    trans.install_model.context.add( repository )
-    trans.install_model.context.flush()
+    install_model.context.add( repository )
+    install_model.context.flush()
     if repository.includes_datatypes:
         if tool_path:
             repository_install_dir = os.path.abspath( os.path.join( tool_path, relative_install_dir ) )
         else:
             repository_install_dir = os.path.abspath( relative_install_dir )
         # Activate proprietary datatypes.
-        installed_repository_dict = datatype_util.load_installed_datatypes( trans.app, repository, repository_install_dir, deactivate=False )
+        installed_repository_dict = datatype_util.load_installed_datatypes( app, repository, repository_install_dir, deactivate=False )
         if installed_repository_dict:
             converter_path = installed_repository_dict.get( 'converter_path' )
             if converter_path is not None:
-                datatype_util.load_installed_datatype_converters( trans.app, installed_repository_dict, deactivate=False )
+                datatype_util.load_installed_datatype_converters( app, installed_repository_dict, deactivate=False )
             display_path = installed_repository_dict.get( 'display_path' )
             if display_path is not None:
-                datatype_util.load_installed_display_applications( trans.app, installed_repository_dict, deactivate=False )
+                datatype_util.load_installed_display_applications( app, installed_repository_dict, deactivate=False )
 
 def get_dependencies_for_repository( trans, tool_shed_url, repo_info_dict, includes_tool_dependencies, updating=False ):
     """
@@ -107,7 +108,7 @@ def get_dependencies_for_repository( trans, tool_shed_url, repo_info_dict, inclu
             installed_rd, missing_rd = \
                 get_installed_and_missing_repository_dependencies_for_new_or_updated_install( trans, repo_info_tuple )
         # Discover all repository dependencies and retrieve information for installing them.
-        all_repo_info_dict = get_required_repo_info_dicts( trans, tool_shed_url, util.listify( repo_info_dict ) )
+        all_repo_info_dict = get_required_repo_info_dicts( trans.app, tool_shed_url, util.listify( repo_info_dict ) )
         has_repository_dependencies = all_repo_info_dict.get( 'has_repository_dependencies', False )
         has_repository_dependencies_only_if_compiling_contained_td = \
             all_repo_info_dict.get( 'has_repository_dependencies_only_if_compiling_contained_td', False )
@@ -145,7 +146,7 @@ def get_dependencies_for_repository( trans, tool_shed_url, repo_info_dict, inclu
                             missing_td[ td_key ] = td_dict
     else:
         # We have a single repository with (possibly) no defined repository dependencies.
-        all_repo_info_dict = get_required_repo_info_dicts( trans, tool_shed_url, util.listify( repo_info_dict ) )
+        all_repo_info_dict = get_required_repo_info_dicts( trans.app, tool_shed_url, util.listify( repo_info_dict ) )
         has_repository_dependencies = all_repo_info_dict.get( 'has_repository_dependencies', False )
         has_repository_dependencies_only_if_compiling_contained_td = \
             all_repo_info_dict.get( 'has_repository_dependencies_only_if_compiling_contained_td', False )
@@ -261,7 +262,7 @@ def get_installed_and_missing_repository_dependencies_for_new_or_updated_install
                 #                     repository_dependencies, installed_td )
                 tmp_clone_url = common_util.generate_clone_url_from_repo_info_tup( trans, rd_tup )
                 tmp_repo_info_tuple = ( None, tmp_clone_url, changeset_revision, None, owner, None, None )
-                repository, installed_changeset_revision = suc.repository_was_previously_installed( trans,
+                repository, installed_changeset_revision = suc.repository_was_previously_installed( trans.app,
                                                                                                     tool_shed,
                                                                                                     name,
                                                                                                     tmp_repo_info_tuple,
@@ -380,7 +381,7 @@ def get_installed_and_missing_tool_dependencies_for_repository( trans, tool_depe
                 missing_tool_dependencies[ td_key ] = val
     return installed_tool_dependencies, missing_tool_dependencies
 
-def get_required_repo_info_dicts( trans, tool_shed_url, repo_info_dicts ):
+def get_required_repo_info_dicts( app, tool_shed_url, repo_info_dicts ):
     """
     Inspect the list of repo_info_dicts for repository dependencies and append a repo_info_dict for each of
     them to the list.  All repository_dependencies entries in each of the received repo_info_dicts includes
@@ -444,9 +445,9 @@ def get_required_repo_info_dicts( trans, tool_shed_url, repo_info_dicts ):
                     encoded_required_repository_tups.append( encoding_util.encoding_sep.join( required_repository_tup ) )
                 encoded_required_repository_str = encoding_util.encoding_sep2.join( encoded_required_repository_tups )
                 encoded_required_repository_str = encoding_util.tool_shed_encode( encoded_required_repository_str )
-                if trans.webapp.name == 'galaxy':
+                if suc.is_tool_shed_client( app ):
                     # Handle secure / insecure Tool Shed URL protocol changes and port changes.
-                    tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( trans.app, tool_shed_url )
+                    tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( app, tool_shed_url )
                 url = common_util.url_join( tool_shed_url, '/repository/get_required_repo_info_dict' )
                 # Fix for handling 307 redirect not being handled nicely by urllib2.urlopen when the urllib2.Request has data provided
                 url = urllib2.urlopen( urllib2.Request( url ) ).geturl()

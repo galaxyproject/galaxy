@@ -262,7 +262,7 @@ def get_repo_info_dicts( trans, tool_shed_url, repository_id, changeset_revision
                                                  str( repository.user.username ),
                                                  repository_dependencies,
                                                  None )
-    all_required_repo_info_dict = common_install_util.get_required_repo_info_dicts( trans, tool_shed_url, [ repo_info_dict ] )
+    all_required_repo_info_dict = common_install_util.get_required_repo_info_dicts( trans.app, tool_shed_url, [ repo_info_dict ] )
     all_repo_info_dicts = all_required_repo_info_dict.get( 'all_repo_info_dicts', [] )
     return all_repo_info_dicts
 
@@ -320,7 +320,7 @@ def order_components_for_import( trans, primary_repository_id, repository_ids, r
     # Create a dictionary whose keys are the received repository_ids and whose values are a list of
     # repository_ids, each of which is contained in the received list of repository_ids and whose associated
     # repository must be imported prior to the repository associated with the repository_id key.
-    prior_import_required_dict = suc.get_prior_import_or_install_required_dict( trans, repository_ids, repo_info_dicts )
+    prior_import_required_dict = suc.get_prior_import_or_install_required_dict( trans.app, repository_ids, repo_info_dicts )
     processed_repository_ids = []
     # Process the list of repository dependencies defined for the repository associated with the received
     # primary_repository_id.

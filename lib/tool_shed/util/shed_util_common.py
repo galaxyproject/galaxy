@@ -571,27 +571,28 @@ def get_next_prior_import_or_install_required_dict_entry( prior_required_dict, p
             continue
         return key
 
-def get_or_create_tool_shed_repository( trans, tool_shed, name, owner, changeset_revision ):
+def get_or_create_tool_shed_repository( app, tool_shed, name, owner, changeset_revision ):
     """
     Return a tool shed repository database record defined by the combination of tool shed, repository name, repository owner and changeset_revision
     or installed_changeset_revision.  A new tool shed repository record will be created if one is not located.
     """
+    install_model = app.install_model
     # We store the port in the database.
     tool_shed = common_util.remove_protocol_from_tool_shed_url( tool_shed )
     # This method is used only in Galaxy, not the tool shed.
-    repository = get_repository_for_dependency_relationship( trans.app, tool_shed, name, owner, changeset_revision )
+    repository = get_repository_for_dependency_relationship( app, tool_shed, name, owner, changeset_revision )
     if not repository:
-        tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( trans.app, tool_shed )
+        tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( app, tool_shed )
         repository_clone_url = os.path.join( tool_shed_url, 'repos', owner, name )
-        ctx_rev = get_ctx_rev( trans.app, tool_shed_url, name, owner, changeset_revision )
-        repository = create_or_update_tool_shed_repository( app=trans.app,
+        ctx_rev = get_ctx_rev( app, tool_shed_url, name, owner, changeset_revision )
+        repository = create_or_update_tool_shed_repository( app=app,
                                                             name=name,
                                                             description=None,
                                                             installed_changeset_revision=changeset_revision,
                                                             ctx_rev=ctx_rev,
                                                             repository_clone_url=repository_clone_url,
                                                             metadata_dict={},
-                                                            status=trans.install_model.ToolShedRepository.installation_status.NEW,
+                                                            status=install_model.ToolShedRepository.installation_status.NEW,
                                                             current_changeset_revision=None,
                                                             owner=owner,
                                                             dist_to_shed=False )
@@ -616,7 +617,7 @@ def get_ordered_metadata_changeset_revisions( repository, repo, downloadable=Tru
     sorted_changeset_revisions = [ str( changeset_tup[ 1 ] ) for changeset_tup in sorted_changeset_tups ]
     return sorted_changeset_revisions
 
-def get_prior_import_or_install_required_dict( trans, tsr_ids, repo_info_dicts ):
+def get_prior_import_or_install_required_dict( app, tsr_ids, repo_info_dicts ):
     """
     This method is used in the Tool Shed when exporting a repository and its dependencies, and in Galaxy when a repository and its dependencies
     are being installed.  Return a dictionary whose keys are the received tsr_ids and whose values are a list of tsr_ids, each of which is contained
@@ -628,13 +629,13 @@ def get_prior_import_or_install_required_dict( trans, tsr_ids, repo_info_dicts )
         prior_import_or_install_required_dict[ tsr_id ] = []
     # Inspect the repository dependencies for each repository about to be installed and populate the dictionary.
     for repo_info_dict in repo_info_dicts:
-        repository, repository_dependencies = get_repository_and_repository_dependencies_from_repo_info_dict( trans, repo_info_dict )
+        repository, repository_dependencies = get_repository_and_repository_dependencies_from_repo_info_dict( app, repo_info_dict )
         if repository:
-            encoded_repository_id = trans.security.encode_id( repository.id )
+            encoded_repository_id = app.security.encode_id( repository.id )
             if encoded_repository_id in tsr_ids:
                 # We've located the database table record for one of the repositories we're about to install, so find out if it has any repository
                 # dependencies that require prior installation.
-                prior_import_or_install_ids = get_repository_ids_requiring_prior_import_or_install( trans, tsr_ids, repository_dependencies )
+                prior_import_or_install_ids = get_repository_ids_requiring_prior_import_or_install( app, tsr_ids, repository_dependencies )
                 prior_import_or_install_required_dict[ encoded_repository_id ] = prior_import_or_install_ids
     return prior_import_or_install_required_dict
 
@@ -707,23 +708,24 @@ def get_repo_info_tuple_contents( repo_info_tuple ):
         description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = repo_info_tuple
     return description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies
 
-def get_repository_and_repository_dependencies_from_repo_info_dict( trans, repo_info_dict ):
+def get_repository_and_repository_dependencies_from_repo_info_dict( app, repo_info_dict ):
     """Return a tool_shed_repository or repository record defined by the information in the received repo_info_dict."""
     repository_name = repo_info_dict.keys()[ 0 ]
     repo_info_tuple = repo_info_dict[ repository_name ]
     description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = \
         get_repo_info_tuple_contents( repo_info_tuple )
-    if trans.webapp.name == 'galaxy':
+    if hasattr( app, "install_model" ):
+        # In a tool shed client (Galaxy, or something install repositories like Galaxy)
         tool_shed = get_tool_shed_from_clone_url( repository_clone_url )
-        repository = get_repository_for_dependency_relationship( trans.app, tool_shed, repository_name, repository_owner, changeset_revision )
+        repository = get_repository_for_dependency_relationship( app, tool_shed, repository_name, repository_owner, changeset_revision )
     else:
         # We're in the tool shed.
-        repository = get_repository_by_name_and_owner( trans.app, repository_name, repository_owner )
+        repository = get_repository_by_name_and_owner( app, repository_name, repository_owner )
     return repository, repository_dependencies
 
 def get_repository_by_id( trans, id ):
     """Get a repository from the database via id."""
-    if trans.webapp.name == 'galaxy':
+    if is_tool_shed_client( trans.app ):
         return trans.install_model.context.query( trans.install_model.ToolShedRepository ).get( trans.security.decode_id( id ) )
     else:
         return trans.sa_session.query( trans.model.Repository ).get( trans.security.decode_id( id ) )
@@ -731,15 +733,12 @@ def get_repository_by_id( trans, id ):
 def get_repository_by_name( app, name ):
     """Get a repository from the database via name."""
     repository_query = get_repository_query( app )
-    if app.name == 'galaxy':
-        return repository_query.filter_by( name=name ).first()
-    else:
-        return repository_query.filter_by( name=name ).first()
+    return repository_query.filter_by( name=name ).first()
 
 def get_repository_by_name_and_owner( app, name, owner ):
     """Get a repository from the database via name and owner"""
     repository_query = get_repository_query( app )
-    if app.name == 'galaxy':
+    if is_tool_shed_client( app ):
         return repository_query \
                          .filter( and_( app.install_model.ToolShedRepository.table.c.name == name,
                                         app.install_model.ToolShedRepository.table.c.owner == owner ) ) \
@@ -884,7 +883,7 @@ def get_repository_from_refresh_on_change( trans, **kwd ):
     # This should never be reached - raise an exception?
     return v, None
 
-def get_repository_ids_requiring_prior_import_or_install( trans, tsr_ids, repository_dependencies ):
+def get_repository_ids_requiring_prior_import_or_install( app, tsr_ids, repository_dependencies ):
     """
     This method is used in the Tool Shed when exporting a repository and its dependencies, and in Galaxy when a repository and its dependencies
     are being installed.  Inspect the received repository_dependencies and determine if the encoded id of each required repository is in the received
@@ -908,14 +907,14 @@ def get_repository_ids_requiring_prior_import_or_install( trans, tsr_ids, reposi
                 # dependency.
                 if not asbool( only_if_compiling_contained_td ):
                     if asbool( prior_installation_required ):
-                        if trans.webapp.name == 'galaxy':
+                        if is_tool_shed_client( app ):
                             # We store the port, if one exists, in the database.
                             tool_shed = common_util.remove_protocol_from_tool_shed_url( tool_shed )
-                            repository = get_repository_for_dependency_relationship( trans.app, tool_shed, name, owner, changeset_revision )
+                            repository = get_repository_for_dependency_relationship( app, tool_shed, name, owner, changeset_revision )
                         else:
-                            repository = get_repository_by_name_and_owner( trans.app, name, owner )
+                            repository = get_repository_by_name_and_owner( app, name, owner )
                         if repository:
-                            encoded_repository_id = trans.security.encode_id( repository.id )
+                            encoded_repository_id = app.security.encode_id( repository.id )
                             if encoded_repository_id in tsr_ids:
                                 prior_tsr_ids.append( encoded_repository_id )
     return prior_tsr_ids
@@ -963,7 +962,7 @@ def get_repository_owner_from_clone_url( repository_clone_url ):
     return get_repository_owner( tmp_url )
 
 def get_repository_query( app ):
-    if app.name == "galaxy":
+    if is_tool_shed_client( app ):
         query = app.install_model.context.query( app.install_model.ToolShedRepository )
     else:
         query = app.model.context.query( app.model.Repository )
@@ -1326,6 +1325,16 @@ def have_shed_tool_conf_for_install( trans ):
             return True
     return False
 
+
+def is_tool_shed_client( app ):
+    """ The tool shed and clients to the tool (i.e. Galaxy) require a lot
+    of similar functionality in this file but with small differences. This
+    method should determine if the app performing the action is the tool shed
+    or a client of the tool shed.
+    """
+    return hasattr( app, "install_model" )
+
+
 def open_repository_files_folder( trans, folder_path ):
     """
     Return a list of dictionaries, each of which contains information for a file or directory contained
@@ -1352,7 +1361,7 @@ def open_repository_files_folder( trans, folder_path ):
             folder_contents.append( node )
     return folder_contents
 
-def repository_was_previously_installed( trans, tool_shed_url, repository_name, repo_info_tuple, from_tip=False ):
+def repository_was_previously_installed( app, tool_shed_url, repository_name, repo_info_tuple, from_tip=False ):
     """
     Find out if a repository is already installed into Galaxy - there are several scenarios where this
     is necessary.  For example, this method will handle the case where the repository was previously
@@ -1361,12 +1370,12 @@ def repository_was_previously_installed( trans, tool_shed_url, repository_name, 
     updating the one that was previously installed.  We'll look in the database instead of on disk since
     the repository may be currently uninstalled.
     """
-    tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( trans.app, tool_shed_url )
+    tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( app, tool_shed_url )
     description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = \
         get_repo_info_tuple_contents( repo_info_tuple )
     tool_shed = get_tool_shed_from_clone_url( repository_clone_url )
     # See if we can locate the repository using the value of changeset_revision.
-    tool_shed_repository = get_tool_shed_repository_by_shed_name_owner_installed_changeset_revision( trans.app,
+    tool_shed_repository = get_tool_shed_repository_by_shed_name_owner_installed_changeset_revision( app,
                                                                                                      tool_shed,
                                                                                                      repository_name,
                                                                                                      repository_owner,
@@ -1382,11 +1391,11 @@ def repository_was_previously_installed( trans, tool_shed_url, repository_name, 
                                                                                      str( from_tip ) )
     url = common_util.url_join( tool_shed_url,
                                 'repository/previous_changeset_revisions%s' % params )
-    text = common_util.tool_shed_get( trans.app, tool_shed_url, url )
+    text = common_util.tool_shed_get( app, tool_shed_url, url )
     if text:
         changeset_revisions = util.listify( text )
         for previous_changeset_revision in changeset_revisions:
-            tool_shed_repository = get_tool_shed_repository_by_shed_name_owner_installed_changeset_revision( trans.app,
+            tool_shed_repository = get_tool_shed_repository_by_shed_name_owner_installed_changeset_revision( app,
                                                                                                              tool_shed,
                                                                                                              repository_name,
                                                                                                              repository_owner,
@@ -1395,7 +1404,7 @@ def repository_was_previously_installed( trans, tool_shed_url, repository_name, 
                 return tool_shed_repository, previous_changeset_revision
     return None, None
 
-def reset_previously_installed_repository( trans, repository ):
+def reset_previously_installed_repository( install_model, repository ):
     """
     Reset the atrributes of a tool_shed_repository that was previsouly installed.  The repository will be in some state other than INSTALLED,
     so all atributes will be set to the default NEW state.  This will enable the repository to be freshly installed.
@@ -1411,10 +1420,10 @@ def reset_previously_installed_repository( trans, repository ):
     repository.deleted = False
     repository.tool_shed_status = None
     repository.uninstalled = False
-    repository.status = trans.install_model.ToolShedRepository.installation_status.NEW
+    repository.status = install_model.ToolShedRepository.installation_status.NEW
     repository.error_message = None
-    trans.install_model.context.add( repository )
-    trans.install_model.context.flush()
+    install_model.context.add( repository )
+    install_model.context.flush()
 
 def set_image_paths( app, encoded_repository_id, text ):
     """
@@ -1423,7 +1432,7 @@ def set_image_paths( app, encoded_repository_id, text ):
     the caller to open the file.
     """
     if text:
-        if app.name == 'galaxy':
+        if is_tool_shed_client( app ):
             route_to_images = 'admin_toolshed/static/images/%s' % encoded_repository_id
         else:
             # We're in the tool shed.
