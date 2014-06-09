@@ -246,8 +246,8 @@ class ToolShedRepositoriesController( BaseAPIController ):
         except Exception, e:
             message = "Error attempting to retrieve installation information from tool shed %s for revision %s of repository %s owned by %s: %s" % \
                 ( str( tool_shed_url ), str( changeset_revision ), str( name ), str( owner ), str( e ) )
-            log.debug( message )
-            return dict( status='error', error=message )
+            log.warn( message )
+            raise exceptions.InternalServerError( message )
         if raw_text:
             # If successful, the response from get_repository_revision_install_info will be 3
             # dictionaries, a dictionary defining the Repository, a dictionary defining the
@@ -259,8 +259,8 @@ class ToolShedRepositoriesController( BaseAPIController ):
         else:
             message = "Unable to retrieve installation information from tool shed %s for revision %s of repository %s owned by %s: %s" % \
                 ( str( tool_shed_url ), str( changeset_revision ), str( name ), str( owner ), str( e ) )
-            log.debug( message )
-            return dict( status='error', error=message )
+            log.warn( message )
+            raise exceptions.InternalServerError( message )
         # Make sure the tool shed returned everything we need for installing the repository.
         if not repository_revision_dict or not repo_info_dict:
             key = kwd.get( 'key', None )
@@ -271,24 +271,24 @@ class ToolShedRepositoriesController( BaseAPIController ):
             invalid_parameter_message += "name: %s\n" % str( name )
             invalid_parameter_message += "owner: %s\n" % str( owner )
             invalid_parameter_message += "changeset_revision: %s\n" % str( changeset_revision )
-            raise HTTPBadRequest( detail=invalid_parameter_message )
+            raise exceptions.RequestParameterInvalidException( invalid_parameter_message )
         repo_info_dicts = [ repo_info_dict ]
         try:
             has_repository_dependencies = repository_revision_dict[ 'has_repository_dependencies' ]
         except:
-            raise HTTPBadRequest( detail="Missing required parameter 'has_repository_dependencies'." )
+            raise exceptions.InternalServerError( "Tool shed response missing required parameter 'has_repository_dependencies'." )
         try:
             includes_tools = repository_revision_dict[ 'includes_tools' ]
         except:
-            raise HTTPBadRequest( detail="Missing required parameter 'includes_tools'." )
+            raise exceptions.InternalServerError( "Tool shed response missing required parameter 'includes_tools'." )
         try:
             includes_tool_dependencies = repository_revision_dict[ 'includes_tool_dependencies' ]
         except:
-            raise HTTPBadRequest( detail="Missing required parameter 'includes_tool_dependencies'." )
+            raise exceptions.InternalServerError( "Tool shed response missing required parameter 'includes_tool_dependencies'." )
         try:
             includes_tools_for_display_in_tool_panel = repository_revision_dict[ 'includes_tools_for_display_in_tool_panel' ]
         except:
-            raise HTTPBadRequest( detail="Missing required parameter 'includes_tools_for_display_in_tool_panel'." )
+            raise exceptions.InternalServerError( "Tool shed response missing required parameter 'includes_tools_for_display_in_tool_panel'." )
         # Get the information about the Galaxy components (e.g., tool pane section, tool config file, etc) that will contain the repository information.
         install_repository_dependencies = payload.get( 'install_repository_dependencies', False )
         install_tool_dependencies = payload.get( 'install_tool_dependencies', False )
@@ -296,7 +296,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
             if trans.app.config.tool_dependency_dir is None:
                 no_tool_dependency_dir_message = "Tool dependencies can be automatically installed only if you set the value of your 'tool_dependency_dir' "
                 no_tool_dependency_dir_message += "setting in your Galaxy configuration file (universe_wsgi.ini) and restart your Galaxy server."
-                raise HTTPBadRequest( detail=no_tool_dependency_dir_message )
+                raise exceptions.ConfigDoesNotAllowException( no_tool_dependency_dir_message )
         new_tool_panel_section_label = payload.get( 'new_tool_panel_section_label', '' )
         shed_tool_conf = payload.get( 'shed_tool_conf', None )
         if shed_tool_conf:
@@ -385,7 +385,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
                     installed_tool_shed_repositories.append( tool_shed_repository_dict )
         else:
             # We're attempting to install more than 1 repository, and all of them have already been installed.
-            return dict( status='error', error='All repositories that you are attempting to install have been previously installed.' )
+            raise exceptions.RequestParameterInvalidException( 'All repositories that you are attempting to install have been previously installed.' )
         # Display the list of installed repositories.
         return installed_tool_shed_repositories
 
