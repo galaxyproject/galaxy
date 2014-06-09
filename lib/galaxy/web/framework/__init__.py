@@ -370,9 +370,8 @@ def require_admin( func ):
     def decorator( self, trans, *args, **kwargs ):
         if not trans.user_is_admin():
             msg = "You must be an administrator to access this feature."
-            admin_users = trans.app.config.get( "admin_users", "" ).split( "," )
             user = trans.get_user()
-            if not admin_users:
+            if not trans.app.config.admin_users_list:
                 msg = "You must be logged in as an administrator to access this feature, but no administrators are set in the Galaxy configuration."
             elif not user:
                 msg = "You must be logged in as an administrator to access this feature."
@@ -1104,8 +1103,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
     def user_is_admin( self ):
         if self.api_inherit_admin:
             return True
-        admin_users = [ x.strip() for x in self.app.config.get( "admin_users", "" ).split( "," ) ]
-        return self.user and admin_users and self.user.email in admin_users
+        return self.user and self.user.email in self.app.config.admin_users_list
 
     def user_can_do_run_as( self ):
         run_as_users = [ user for user in self.app.config.get( "api_allow_run_as", "" ).split( "," ) if user ]
