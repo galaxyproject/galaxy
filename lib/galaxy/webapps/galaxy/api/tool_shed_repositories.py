@@ -344,16 +344,19 @@ class ToolShedRepositoriesController( BaseAPIController ):
                                                                   tool_path,
                                                                   install_tool_dependencies,
                                                                   reinstalling=False )
-                    tool_shed_repository_dict = tool_shed_repository.as_dict( value_mapper=self.__get_value_mapper( trans, tool_shed_repository ) )
-                    tool_shed_repository_dict[ 'url' ] = web.url_for( controller='tool_shed_repositories',
-                                                                      action='show',
-                                                                      id=trans.security.encode_id( tool_shed_repository.id ) )
-                    installed_tool_shed_repositories.append( tool_shed_repository_dict )
+                    installed_tool_shed_repositories.append( tool_shed_repository )
         else:
             # We're attempting to install more than 1 repository, and all of them have already been installed.
             raise exceptions.RequestParameterInvalidException( 'All repositories that you are attempting to install have been previously installed.' )
         # Display the list of installed repositories.
-        return installed_tool_shed_repositories
+
+        def to_dict( tool_shed_repository ):
+            tool_shed_repository_dict = tool_shed_repository.as_dict( value_mapper=self.__get_value_mapper( trans, tool_shed_repository ) )
+            tool_shed_repository_dict[ 'url' ] = web.url_for( controller='tool_shed_repositories',
+                                                              action='show',
+                                                              id=trans.security.encode_id( tool_shed_repository.id ) )
+            return tool_shed_repository_dict
+        return map( to_dict, installed_tool_shed_repositories )
 
     def __get_install_info_from_tool_shed( self, app, tool_shed_url, name, owner, changeset_revision ):
         params = '?name=%s&owner=%s&changeset_revision=%s' % ( name, owner, changeset_revision )
