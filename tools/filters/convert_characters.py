@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 #By, Guruprasad Ananda.
 
-import sys
 import re
+import sys
 
 
 def stop_err(msg):
