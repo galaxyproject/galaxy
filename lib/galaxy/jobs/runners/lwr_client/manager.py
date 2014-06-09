@@ -103,7 +103,10 @@ class MessageQueueClientManager(object):
                     callback(body)
                 except Exception:
                     log.exception("Failure processing job status update message.")
-                message.ack()
+                except BaseException as e:
+                    log.exception("Failure processing job status update message - BaseException type %s" % type(e))
+                finally:
+                    message.ack()
 
             def run():
                 self.exchange.consume("status_update", callback_wrapper, check=self)

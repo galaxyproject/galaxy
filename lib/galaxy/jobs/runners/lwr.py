@@ -153,10 +153,16 @@ class LwrJobRunner( AsynchronousJobRunner ):
         return job_state
 
     def __async_update( self, full_status ):
-        job_id = full_status[ "job_id" ]
-        job, job_wrapper = self.app.job_manager.job_handler.job_queue.job_pair_for_id( job_id )
-        job_state = self.__job_state( job, job_wrapper )
-        self.__update_job_state_for_lwr_status(job_state, full_status["status"])
+        job_id = None
+        try:
+            job_id = full_status[ "job_id" ]
+            job, job_wrapper = self.app.job_manager.job_handler.job_queue.job_pair_for_id( job_id )
+            job_state = self.__job_state( job, job_wrapper )
+            self.__update_job_state_for_lwr_status(job_state, full_status["status"])
+        except Exception:
+            log.exception( "Failed to update LWR job status for job_id %s" % job_id )
+            raise
+            # Nothing else to do? - Attempt to fail the job?
 
     def queue_job(self, job_wrapper):
         job_destination = job_wrapper.job_destination
