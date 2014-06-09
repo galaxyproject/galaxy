@@ -617,7 +617,7 @@ def populate_tool_dependencies_dicts( trans, tool_shed_url, tool_path, repositor
                                                                                            tool_dependencies=tool_dependencies )
                     # The required_repository may have been installed with a different changeset revision.
                     required_repository, installed_changeset_revision = \
-                        suc.repository_was_previously_installed( trans, tool_shed_url, name, repo_info_tuple, from_tip=False )
+                        suc.repository_was_previously_installed( trans.app, tool_shed_url, name, repo_info_tuple, from_tip=False )
                     if required_repository:
                         required_repository_installed_tool_dependencies, required_repository_missing_tool_dependencies = \
                             get_installed_and_missing_tool_dependencies_for_installed_repository( trans, required_repository, tool_dependencies )

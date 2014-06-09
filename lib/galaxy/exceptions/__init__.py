@@ -112,6 +112,11 @@ class InsufficientPermissionsException( MessageException ):
     err_code = error_codes.INSUFFICIENT_PERMISSIONS
 
 
+class AdminRequiredException( MessageException ):
+    status_code = 403
+    err_code = error_codes.ADMIN_REQUIRED
+
+
 class ObjectNotFound( MessageException ):
     """ Accessed object was not found """
     status_code = 404

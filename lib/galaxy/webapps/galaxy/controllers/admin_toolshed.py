@@ -47,7 +47,7 @@ class AdminToolshed( AdminGalaxy ):
         repository_id = kwd[ 'id' ]
         repository = suc.get_installed_tool_shed_repository( trans, repository_id )
         try:
-            common_install_util.activate_repository( trans, repository )
+            common_install_util.activate_repository( trans.app, repository )
         except Exception, e:
             error_message = "Error activating repository %s: %s" % ( repository.name, str( e ) )
             log.exception( error_message )
@@ -107,7 +107,7 @@ class AdminToolshed( AdminGalaxy ):
                     # repository dependencies and tool dependencies will be current.  Only allow selecting a different section
                     # in the tool panel if the repository was uninstalled and it contained tools that should be displayed in
                     # the tool panel.
-                    changeset_revision_dict = repository_util.get_update_to_changeset_revision_and_ctx_rev( trans, repository )
+                    changeset_revision_dict = repository_util.get_update_to_changeset_revision_and_ctx_rev( trans.app, repository )
                     current_changeset_revision = changeset_revision_dict.get( 'changeset_revision', None )
                     current_ctx_rev = changeset_revision_dict.get( 'ctx_rev', None )
                     if current_changeset_revision and current_ctx_rev:
@@ -517,7 +517,7 @@ class AdminToolshed( AdminGalaxy ):
                     tmp_clone_url = common_util.url_join( tool_shed_url, 'repos', owner, name )
                     tmp_repo_info_tuple = ( None, tmp_clone_url, latest_downloadable_revision, None, owner, None, None )
                     installed_repository, installed_changeset_revision = \
-                        suc.repository_was_previously_installed( trans, tool_shed_url, name, tmp_repo_info_tuple, from_tip=False )
+                        suc.repository_was_previously_installed( trans.app, tool_shed_url, name, tmp_repo_info_tuple, from_tip=False )
                     if installed_repository:
                         current_changeset_revision = str( installed_repository.changeset_revision )
                         message = 'Revision <b>%s</b> of repository <b>%s</b> owned by <b>%s</b> has already been installed.' % \
@@ -629,7 +629,7 @@ class AdminToolshed( AdminGalaxy ):
         for index, tool_shed_repository in enumerate( tool_shed_repositories ):
             repo_info_dict = repo_info_dicts[ index ]
             tool_panel_section_key = tool_panel_section_keys[ index ]
-            repository_util.install_tool_shed_repository( trans,
+            repository_util.install_tool_shed_repository( trans.app,
                                                           tool_shed_repository,
                                                           repo_info_dict,
                                                           tool_panel_section_key,
@@ -692,7 +692,7 @@ class AdminToolshed( AdminGalaxy ):
                 # dependent repository, so we'll order the list of tsr_ids to ensure all repositories install in the
                 # required order.
                 ordered_tsr_ids, ordered_repo_info_dicts, ordered_tool_panel_section_keys = \
-                    repository_util.order_components_for_installation( trans,
+                    repository_util.order_components_for_installation( trans.app,
                                                                        tsr_ids,
                                                                        repo_info_dicts,
                                                                        tool_panel_section_keys=tool_panel_section_keys )
@@ -948,7 +948,7 @@ class AdminToolshed( AdminGalaxy ):
     @web.expose
     @web.require_admin
     def prepare_for_install( self, trans, **kwd ):
-        if not suc.have_shed_tool_conf_for_install( trans ):
+        if not suc.have_shed_tool_conf_for_install( trans.app ):
             message = 'The <b>tool_config_file</b> setting in <b>universe_wsgi.ini</b> must include at least one '
             message += 'shed tool configuration file name with a <b>&lt;toolbox&gt;</b> tag that includes a <b>tool_path</b> '
             message += 'attribute value which is a directory relative to the Galaxy installation directory in order '
@@ -1070,7 +1070,7 @@ class AdminToolshed( AdminGalaxy ):
                                       tool_path=tool_path,
                                       tool_shed_url=tool_shed_url )
             created_or_updated_tool_shed_repositories, tool_panel_section_keys, repo_info_dicts, filtered_repo_info_dicts = \
-                repository_util.handle_tool_shed_repositories( trans, installation_dict, using_api=False )
+                repository_util.handle_tool_shed_repositories( trans.app, installation_dict, using_api=False )
             if created_or_updated_tool_shed_repositories:
                 installation_dict = dict( created_or_updated_tool_shed_repositories=created_or_updated_tool_shed_repositories,
                                           filtered_repo_info_dicts=filtered_repo_info_dicts,
@@ -1089,7 +1089,7 @@ class AdminToolshed( AdminGalaxy ):
                                           tool_path=tool_path,
                                           tool_shed_url=tool_shed_url )
                 encoded_kwd, query, tool_shed_repositories, encoded_repository_ids = \
-                    repository_util.initiate_repository_installation( trans, installation_dict )
+                    repository_util.initiate_repository_installation( trans.app, installation_dict )
                 return trans.fill_template( 'admin/tool_shed_repository/initiate_repository_installation.mako',
                                             encoded_kwd=encoded_kwd,
                                             query=query,
@@ -1287,7 +1287,7 @@ class AdminToolshed( AdminGalaxy ):
         if tool_shed_repository.includes_tools_for_display_in_tool_panel:
             # Handle the selected tool panel location for loading tools included in the tool shed repository.
             tool_section, tool_panel_section_key = \
-                tool_util.handle_tool_panel_selection( trans=trans,
+                tool_util.handle_tool_panel_selection( toolbox=trans.app.toolbox,
                                                        metadata=metadata,
                                                        no_changes_checked=no_changes_checked,
                                                        tool_panel_section_id=tool_panel_section_id,
@@ -1345,7 +1345,7 @@ class AdminToolshed( AdminGalaxy ):
             repo_info_dicts.append( repo_info_dict )
         # Make sure all tool_shed_repository records exist.
         created_or_updated_tool_shed_repositories, tool_panel_section_keys, repo_info_dicts, filtered_repo_info_dicts = \
-            repository_dependency_util.create_repository_dependency_objects( trans=trans,
+            repository_dependency_util.create_repository_dependency_objects( app=trans.app,
                                                                              tool_path=tool_path,
                                                                              tool_shed_url=tool_shed_url,
                                                                              repo_info_dicts=repo_info_dicts,
@@ -1713,7 +1713,7 @@ class AdminToolshed( AdminGalaxy ):
         """An error occurred while cloning the repository, so reset everything necessary to enable another attempt."""
         repository = suc.get_installed_tool_shed_repository( trans, kwd[ 'id' ] )
         if kwd.get( 'reset_repository', False ):
-            repository_util.set_repository_attributes( trans,
+            repository_util.set_repository_attributes( trans.app,
                                                        repository,
                                                        status=trans.install_model.ToolShedRepository.installation_status.NEW,
                                                        error_message=None,

@@ -467,14 +467,14 @@ def get_list_of_copied_sample_files( repo, ctx, dir ):
                     fh.close()
     return sample_files, deleted_sample_files
 
-def get_or_create_tool_section( trans, tool_panel_section_id, new_tool_panel_section_label=None ):
+def get_or_create_tool_section( toolbox, tool_panel_section_id, new_tool_panel_section_label=None ):
     tool_panel_section_key = str( tool_panel_section_id )
-    if tool_panel_section_key in trans.app.toolbox.tool_panel:
-        # Appending a tool to an existing section in trans.app.toolbox.tool_panel
-        tool_section = trans.app.toolbox.tool_panel[ tool_panel_section_key ]
+    if tool_panel_section_key in toolbox.tool_panel:
+        # Appending a tool to an existing section in toolbox.tool_panel
+        tool_section = toolbox.tool_panel[ tool_panel_section_key ]
         log.debug( "Appending to tool panel section: %s" % str( tool_section.name ) )
     else:
-        # Appending a new section to trans.app.toolbox.tool_panel
+        # Appending a new section to toolbox.tool_panel
         if new_tool_panel_section_label is None:
             # This might add an ugly section label to the tool panel, but, oh well...
             new_tool_panel_section_label = tool_panel_section_id
@@ -483,7 +483,7 @@ def get_or_create_tool_section( trans, tool_panel_section_id, new_tool_panel_sec
         elem.attrib[ 'id' ] = tool_panel_section_id
         elem.attrib[ 'version' ] = ''
         tool_section = galaxy.tools.ToolSection( elem )
-        trans.app.toolbox.tool_panel[ tool_panel_section_key ] = tool_section
+        toolbox.tool_panel[ tool_panel_section_key ] = tool_section
         log.debug( "Loading new tool panel section: %s" % str( tool_section.name ) )
     return tool_panel_section_key, tool_section
 
@@ -669,7 +669,7 @@ def handle_sample_tool_data_table_conf_file( app, filename, persist=False ):
         error = True
     return error, message
 
-def handle_tool_panel_selection( trans, metadata, no_changes_checked, tool_panel_section_id, new_tool_panel_section_label ):
+def handle_tool_panel_selection( toolbox, metadata, no_changes_checked, tool_panel_section_id, new_tool_panel_section_label ):
     """
     Handle the selected tool panel location for loading tools included in tool shed repositories when installing
     or reinstalling them.
@@ -697,17 +697,17 @@ def handle_tool_panel_selection( trans, metadata, no_changes_checked, tool_panel
                 original_section_name = tool_section_dict[ 'name' ]
                 if original_section_id:
                     tool_panel_section_key, tool_section = \
-                        get_or_create_tool_section( trans,
+                        get_or_create_tool_section( toolbox,
                                                     tool_panel_section_id=original_section_id,
                                                     new_tool_panel_section_label=new_tool_panel_section_label )
         else:
             # The user elected to change the tool panel section to contain the tools.
-            tool_panel_section_key, tool_section = handle_tool_panel_section( trans,
+            tool_panel_section_key, tool_section = handle_tool_panel_section( toolbox,
                                                                               tool_panel_section_id=tool_panel_section_id,
                                                                               new_tool_panel_section_label=new_tool_panel_section_label )
     return tool_section, tool_panel_section_key
 
-def handle_tool_panel_section( trans, tool_panel_section_id=None, new_tool_panel_section_label=None ):
+def handle_tool_panel_section( toolbox, tool_panel_section_id=None, new_tool_panel_section_label=None ):
     """Return a ToolSection object retrieved from the current in-memory tool_panel."""
     # If tool_panel_section_id is received, the section exists in the tool panel.  In this case, the value of the
     # received tool_panel_section_id must be the id retrieved from a tool panel config (e.g., tool_conf.xml, which
@@ -715,12 +715,12 @@ def handle_tool_panel_section( trans, tool_panel_section_id=None, new_tool_panel
     if new_tool_panel_section_label:
         section_id = str( new_tool_panel_section_label.lower().replace( ' ', '_' ) )
         tool_panel_section_key, tool_section = \
-            get_or_create_tool_section( trans,
+            get_or_create_tool_section( toolbox,
                                         tool_panel_section_id=section_id,
                                         new_tool_panel_section_label=new_tool_panel_section_label )
     elif tool_panel_section_id:
         tool_panel_section_key = str( tool_panel_section_id )
-        tool_section = trans.app.toolbox.tool_panel[ tool_panel_section_key ]
+        tool_section = toolbox.tool_panel[ tool_panel_section_key ]
     else:
         return None, None
     return tool_panel_section_key, tool_section
