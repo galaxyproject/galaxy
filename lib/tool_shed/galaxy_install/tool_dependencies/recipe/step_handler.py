@@ -859,7 +859,7 @@ class SetupPerlEnvironment( RecipeStep ):
                                 return tool_dependency, filtered_actions, dir
                             return tool_dependency, None, None
                 # Pull in perl dependencies (runtime).
-                env_file_builder.handle_action_shell_file_paths( env_file_builder, action_dict )
+                env_file_builder.handle_action_shell_file_paths( action_dict )
                 # Recursively add dependent PERL5LIB and PATH to env.sh & anything else needed.
                 env_file_builder.append_line( name="PERL5LIB",
                                               action="prepend_to",
@@ -1083,7 +1083,7 @@ class SetupRubyEnvironment( RecipeStep ):
                             return tool_dependency, filtered_actions, dir
                         return tool_dependency, None, None
                 # Pull in ruby dependencies (runtime).
-                env_file_builder.handle_action_shell_file_paths( env_file_builder, action_dict )
+                env_file_builder.handle_action_shell_file_paths( action_dict )
                 env_file_builder.append_line( name="GEM_PATH",
                                               action="prepend_to",
                                               value=install_environment.install_dir )
