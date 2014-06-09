@@ -3,7 +3,9 @@ define(['plugin/charts/nvd3/common/config'], function(nvd3_config) {
 return $.extend(true, {}, nvd3_config, {
     title       : 'Stream',
     category    : 'Area charts',
+    zoomable    : 'axis',
     keywords    : 'default nvd3',
+    showmaxmin  : true,
     columns     : {
         y : {
             title       : 'Values for y-axis',

@@ -1,4 +1,4 @@
-define([], function() {
+define(['plugin/plugins/nvd3/nv.d3'], function() {
 
 return {
     title       : '',

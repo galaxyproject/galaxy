@@ -11,8 +11,7 @@ return Backbone.View.extend(
     },
             
     // render
-    draw : function(process_id, chart, request_dictionary)
-    {
+    draw : function(process_id, chart, request_dictionary) {
         var nvd3 = new NVD3(this.app, this.options);
         nvd3.draw('lineChart', process_id, chart, request_dictionary);
     }

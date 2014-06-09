@@ -5,6 +5,11 @@ return $.extend(true, {}, nvd3_config, {
     category    : 'Others',
     keywords    : 'default nvd3',
     columns     : {
+        x : {
+            title       : 'Values for x-axis',
+            is_label    : true,
+            is_auto     : true
+        },
         y : {
             title       : 'Values for y-axis',
             is_numeric  : true
