@@ -179,7 +179,10 @@ def post( url, data, api_key=None ):
     url = make_url( url, api_key=api_key, args=None )
     # Fix for handling 307 redirect not being handled nicely by urllib2.urlopen when the
     # urllib2.Request has data provided.
-    url = urllib2.urlopen( urllib2.Request( url ) ).geturl()
+    # NOTE: This approach does *not* work -- this makes an extra GET request to the
+    # base collection with the method as the ID.  That will never decode
+    # correctly.
+    # url = urllib2.urlopen( urllib2.Request( url ) ).geturl()
     req = urllib2.Request( url, headers = { 'Content-Type': 'application/json' }, data = json.dumps( data ) )
     return json.loads( urllib2.urlopen( req ).read() )
 
