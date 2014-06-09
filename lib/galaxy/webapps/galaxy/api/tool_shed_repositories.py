@@ -35,6 +35,16 @@ def get_message_for_no_shed_tool_config():
 class ToolShedRepositoriesController( BaseAPIController ):
     """RESTful controller for interactions with tool shed repositories."""
 
+    def __ensure_can_install_repos( self, trans ):
+        # Make sure this Galaxy instance is configured with a shed-related tool panel configuration file.
+        if not suc.have_shed_tool_conf_for_install( trans.app ):
+            message = get_message_for_no_shed_tool_config()
+            log.debug( message )
+            return dict( status='error', error=message )
+        # Make sure the current user's API key proves he is an admin user in this Galaxy instance.
+        if not trans.user_is_admin():
+            raise HTTPForbidden( detail='You are not authorized to install a tool shed repository into this Galaxy instance.' )
+
     @expose_api
     def exported_workflows( self, trans, id, **kwd ):
         """
@@ -242,14 +252,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
         changeset_revision = payload.get( 'changeset_revision', '' )
         if not changeset_revision:
             raise HTTPBadRequest( detail="Missing required parameter 'changeset_revision'." )
-        # Make sure this Galaxy instance is configured with a shed-related tool panel configuration file.
-        if not suc.have_shed_tool_conf_for_install( trans ):
-            message = get_message_for_no_shed_tool_config()
-            log.debug( message )
-            return dict( status='error', error=message )
-        # Make sure the current user's API key proves he is an admin user in this Galaxy instance.
-        if not trans.user_is_admin():
-            raise HTTPForbidden( detail='You are not authorized to install a tool shed repository into this Galaxy instance.' )
+        self.__ensure_can_install_repos( trans )
         # Keep track of all repositories that are installed - there may be more than one if repository dependencies are installed.
         installed_tool_shed_repositories = []
         # Get all of the information necessary for installing the repository from the specified tool shed.
@@ -439,13 +442,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
                                           (e.g., <toolbox tool_path="../shed_tools">).  If this parameter is not set, a shed-related tool panel configuration
                                           file will be selected automatically.
         """
-        if not suc.have_shed_tool_conf_for_install( trans ):
-            # This Galaxy instance is not configured with a shed-related tool panel configuration file.
-            message = get_message_for_no_shed_tool_config()
-            log.debug( message )
-            return dict( status='error', error=message )
-        if not trans.user_is_admin():
-            raise HTTPForbidden( detail='You are not authorized to install a tool shed repository into this Galaxy instance.' )
+        self.__ensure_can_install_repos( trans )
         # Get the information about all of the repositories to be installed.
         tool_shed_urls = util.listify( payload.get( 'tool_shed_urls', '' ) )
         names = util.listify( payload.get( 'names', '' ) )

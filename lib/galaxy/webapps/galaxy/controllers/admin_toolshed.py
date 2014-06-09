@@ -948,7 +948,7 @@ class AdminToolshed( AdminGalaxy ):
     @web.expose
     @web.require_admin
     def prepare_for_install( self, trans, **kwd ):
-        if not suc.have_shed_tool_conf_for_install( trans ):
+        if not suc.have_shed_tool_conf_for_install( trans.app ):
             message = 'The <b>tool_config_file</b> setting in <b>universe_wsgi.ini</b> must include at least one '
             message += 'shed tool configuration file name with a <b>&lt;toolbox&gt;</b> tag that includes a <b>tool_path</b> '
             message += 'attribute value which is a directory relative to the Galaxy installation directory in order '

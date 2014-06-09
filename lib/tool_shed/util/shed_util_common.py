@@ -1314,11 +1314,11 @@ def handle_email_alerts( trans, repository, content_alert_str='', new_repo_alert
             except Exception, e:
                 log.exception( "An error occurred sending a tool shed repository update alert by email." )
 
-def have_shed_tool_conf_for_install( trans ):
-    if not trans.app.toolbox.shed_tool_confs:
+def have_shed_tool_conf_for_install( app ):
+    if not app.toolbox.shed_tool_confs:
         return False
-    migrated_tools_conf_path, migrated_tools_conf_name = os.path.split( trans.app.config.migrated_tools_config )
-    for shed_tool_conf_dict in trans.app.toolbox.shed_tool_confs:
+    migrated_tools_conf_path, migrated_tools_conf_name = os.path.split( app.config.migrated_tools_config )
+    for shed_tool_conf_dict in app.toolbox.shed_tool_confs:
         shed_tool_conf = shed_tool_conf_dict[ 'config_filename' ]
         shed_tool_conf_path, shed_tool_conf_name = os.path.split( shed_tool_conf )
         if shed_tool_conf_name != migrated_tools_conf_name:
