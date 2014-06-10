@@ -5,7 +5,7 @@ return $.extend(true, {}, nvd3_config, {
     title       : 'Histogram',
     category    : 'Data processing (requires \'charts\' tool from Toolshed)',
     execute     : 'histogram',
-    keywords    : 'default large',
+    keywords    : 'small medium large',
     columns     : {
         y : {
             title   : 'Observations',
