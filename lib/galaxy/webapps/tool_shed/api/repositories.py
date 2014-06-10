@@ -30,7 +30,7 @@ class RepositoriesController( BaseAPIController ):
     @web.expose_api
     def add_repository_registry_entry( self, trans, payload, **kwd ):
         """
-        POST /api/repository_revisions/add_repository_registry_entry
+        POST /api/repositories/add_repository_registry_entry
         Adds appropriate entries to the repository registry for the repository defined by the received name and owner.
 
         :param key: the user's API key
@@ -65,7 +65,7 @@ class RepositoriesController( BaseAPIController ):
         # Update the repository registry.
         trans.app.repository_registry.add_entry( repository )
         response_dict[ 'status' ] = 'ok'
-        response_dict[ 'message' ] = 'Entries for repository %s owned by %s have been added to the Tool Shed repository registry..' \
+        response_dict[ 'message' ] = 'Entries for repository %s owned by %s have been added to the Tool Shed repository registry.' \
             % ( name, owner )
         return response_dict
 
@@ -315,7 +315,7 @@ class RepositoriesController( BaseAPIController ):
     @web.expose_api
     def remove_repository_registry_entry( self, trans, payload, **kwd ):
         """
-        POST /api/repository_revisions/add_repository_registry_entry
+        POST /api/repositories/remove_repository_registry_entry
         Removes appropriate entries from the repository registry for the repository defined by the received name and owner.
 
         :param key: the user's API key

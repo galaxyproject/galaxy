@@ -160,6 +160,19 @@ def get_repository_dependencies( app, tool_shed_url, repository_name, repository
             repository_dependencies_dict = encoding_util.tool_shed_decode( encoded_text )
     return tool_shed_accessible, repository_dependencies_dict
 
+def get_protocol_from_tool_shed_url( tool_shed_url ):
+    """Return the protocol from the received tool_shed_url if it exists."""
+    try:
+        if tool_shed_url.find( '://' ) > 0:
+            return tool_shed_url.split( '://' )[0].lower()
+    except Exception, e:
+        # We receive a lot of calls here where the tool_shed_url is None.  The container_util uses
+        # that value when creating a header row.  If the tool_shed_url is not None, we have a problem.
+        if tool_shed_url is not None:
+            log.exception( "Handled exception getting the protocol from Tool Shed URL %s:\n%s" % ( str( tool_shed_url ), str( e ) ) )
+        # Default to HTTP protocol.
+        return 'http'
+
 def get_tool_dependencies( app, tool_shed_url, repository_name, repository_owner, changeset_revision ):
     tool_dependencies = []
     tool_shed_accessible = True

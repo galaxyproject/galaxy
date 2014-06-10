@@ -11,31 +11,43 @@ sys.path = new_path
 from tool_shed.util import common_util
 from tool_shed.util import hg_util
 
+def build_request_with_data( url, data, api_key, method ):
+    """Build a request with the received method."""
+    protocol = common_util.get_protocol_from_tool_shed_url( url )
+    if protocol == 'http':
+        opener = urllib2.build_opener( urllib2.HTTPHandler )
+    elif protocol == 'https':
+        opener = urllib2.build_opener( urllib2.HTTPSHandler )
+    url = make_url( url, api_key=api_key, args=None )
+    request = urllib2.Request( url, headers={ 'Content-Type': 'application/json' }, data=json.dumps( data ) )
+    request_method = request.get_method()
+    if request_method != method:
+        request.get_method = lambda: method
+    return opener, request
+
 def delete( api_key, url, data, return_formatted=True ):
     """
     Sends an API DELETE request and acts as a generic formatter for the JSON response.  The
     'data' will become the JSON payload read by the Tool Shed.
     """
     try:
-        url = make_url( url, api_key=api_key, args=None )
-        # Fix for handling 307 redirect not being handled nicely by urllib2.urlopen when the
-        # urllib2.Request has data provided.
-        url = urllib2.urlopen( urllib2.Request( url ) ).geturl()
-        req = urllib2.Request( url, headers = { 'Content-Type': 'application/json' }, data = json.dumps( data ))
-        req.get_method = lambda: 'DELETE'
-        r = json.loads( urllib2.urlopen( req ).read() )
+        opener, request = build_request_with_data( url, data, api_key, 'DELETE' )
+        delete_request = opener.open( request )
+        response = json.loads( delete_request.read() )
     except urllib2.HTTPError, e:
         if return_formatted:
             print e
             print e.read( 1024 )
             sys.exit( 1 )
         else:
-            return 'Error. '+ str( e.read( 1024 ) )
-    if not return_formatted:
-        return r
-    print 'Response'
-    print '--------'
-    print r
+            return dict( status='error', message=str( e.read( 1024 ) ) )
+    if return_formatted:
+        return response
+        print 'Response'
+        print '--------'
+        print response
+    else:
+        return response
 
 def display( url, api_key=None, return_formatted=True ):
     """Sends an API GET request and acts as a generic formatter for the JSON response."""
@@ -176,25 +188,21 @@ def make_url( url, api_key=None, args=None ):
 
 def post( url, data, api_key=None ):
     """Do the POST."""
-    url = make_url( url, api_key=api_key, args=None )
-    # Fix for handling 307 redirect not being handled nicely by urllib2.urlopen when the
-    # urllib2.Request has data provided.
-    # NOTE: This approach does *not* work -- this makes an extra GET request to the
-    # base collection with the method as the ID.  That will never decode
-    # correctly.
-    # url = urllib2.urlopen( urllib2.Request( url ) ).geturl()
-    req = urllib2.Request( url, headers = { 'Content-Type': 'application/json' }, data = json.dumps( data ) )
-    return json.loads( urllib2.urlopen( req ).read() )
+    try:
+        opener, request = build_request_with_data( url, data, api_key, 'POST' )
+        post_request = opener.open( request )
+        return json.loads( post_request.read() )
+    except urllib2.HTTPError, e:
+        return dict( status='error', message=str( e.read( 1024 ) ) )
 
 def put( url, data, api_key=None ):
     """Do the PUT."""
-    url = make_url( url, api_key=api_key, args=None )
-    # Fix for handling 307 redirect not being handled nicely by urllib2.urlopen when the
-    # urllib2.Request has data provided.
-    url = urllib2.urlopen( urllib2.Request( url ) ).geturl()
-    req = urllib2.Request( url, headers = { 'Content-Type': 'application/json' }, data = json.dumps( data ))
-    req.get_method = lambda: 'PUT'
-    return json.loads( urllib2.urlopen( req ).read() )
+    try:
+        opener, request = build_request_with_data( url, data, api_key, 'PUT' )
+        put_request = opener.open( request )
+        return json.loads( put_request.read() )
+    except urllib2.HTTPError, e:
+        return dict( status='error', message=str( e.read( 1024 ) ) )
 
 def submit( url, data, api_key=None, return_formatted=True ):
     """
@@ -202,7 +210,7 @@ def submit( url, data, api_key=None, return_formatted=True ):
     'data' will become the JSON payload read by the Tool Shed.
     """
     try:
-        r = post( url, data, api_key=api_key )
+        response = post( url, data, api_key=api_key )
     except urllib2.HTTPError, e:
         if return_formatted:
             print e
@@ -211,13 +219,13 @@ def submit( url, data, api_key=None, return_formatted=True ):
         else:
             return dict( status='error', message=str( e.read( 1024 ) ) )
     if not return_formatted:
-        return r
+        return response
     print 'Response'
     print '--------'
-    if type( r ) == list:
+    if type( response ) == list:
         # Currently the only implemented responses are lists of dicts, because submission creates
         # some number of collection elements.
-        for i in r:
+        for i in response:
             if type( i ) == dict:
                 if 'url' in i:
                     print i.pop( 'url' )
@@ -230,7 +238,7 @@ def submit( url, data, api_key=None, return_formatted=True ):
             else:
                 print i
     else:
-        print r
+        print response
 
 def update( api_key, url, data, return_formatted=True ):
     """
@@ -238,16 +246,17 @@ def update( api_key, url, data, return_formatted=True ):
     'data' will become the JSON payload read by the Tool Shed.
     """
     try:
-        r = put( url, data, api_key=api_key )
+        response = put( url, data, api_key=api_key )
     except urllib2.HTTPError, e:
         if return_formatted:
             print e
             print e.read( 1024 )
             sys.exit( 1 )
         else:
-            return 'Error. ' + str( e.read( 1024 ) )
-    if not return_formatted:
-        return r
-    print 'Response'
-    print '--------'
-    print r
+            return dict( status='error', message=str( e.read( 1024 ) ) )
+    if return_formatted:
+        print 'Response'
+        print '--------'
+        print response
+    else:
+        return response
