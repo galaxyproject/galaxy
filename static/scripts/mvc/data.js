@@ -122,6 +122,7 @@ var TabularDatasetChunkedView = Backbone.View.extend({
     initialize: function(options) {
         // Row count for rendering.
         this.row_count = 0;
+        this.loading_chunk = false;
 
         // CSS colors used in table.
         this.header_color = '#AAA';
@@ -134,10 +135,32 @@ var TabularDatasetChunkedView = Backbone.View.extend({
         });
     },
 
+    expand_to_container: function(){
+        if (this.$el.height() < this.scroll_elt.height()){
+            this.attempt_to_fetch();
+        }
+    },
+
+    attempt_to_fetch: function( func ){
+        var self = this;
+        if ( !this.loading_chunk && this.scrolled_to_bottom() ) {
+            this.loading_chunk = true;
+            this.loading_indicator.show();
+            $.when(self.model.get_next_chunk()).then(function(result) {
+                if (result) {
+                    self._renderChunk(result);
+                    self.loading_chunk = false;
+                }
+                self.loading_indicator.hide();
+                self.expand_to_container();
+            });
+        }
+    },
+
     render: function() {
         // Add loading indicator.
-        var loading_indicator = $('<div/>').attr('id', 'loading_indicator');
-        this.$el.append(loading_indicator);
+        this.loading_indicator = $('<div/>').attr('id', 'loading_indicator');
+        this.$el.append(this.loading_indicator);
 
         // Add data table and header.
         var data_table = $('<table/>').attr({
@@ -167,23 +190,9 @@ var TabularDatasetChunkedView = Backbone.View.extend({
 
         // -- Show new chunks during scrolling. --
 
-        // Flag to ensure that only one chunk is loaded at a time.
-        var loading_chunk = false;
-
         // Set up chunk loading when scrolling using the scrolling element.
-        this.scroll_elt.scroll(function() {
-            // If not already loading a chunk and have scrolled to the bottom of this element, get next chunk.
-            if ( !loading_chunk && self.scrolled_to_bottom() ) {
-                loading_chunk = true;
-                loading_indicator.show();
-                $.when(self.model.get_next_chunk()).then(function(result) {
-                    if (result) {
-                        self._renderChunk(result);
-                        loading_chunk = false;
-                    }
-                    loading_indicator.hide();
-                });
-            }
+        this.scroll_elt.scroll(function(){
+            self.attempt_to_fetch();
         });
     },
 
@@ -641,6 +650,10 @@ var createTabularDatasetChunkedView = function(options) {
 
     if (parent_elt) {
         parent_elt.append(view.$el);
+        // If we're sticking this in another element, once it's appended check
+        // to make sure we've filled enough space.
+        // Without this, the scroll elements don't work.
+        view.expand_to_container();
     }
 
     return view;
