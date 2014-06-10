@@ -20,22 +20,28 @@ return Backbone.View.extend(
     },
             
     // render
-    draw : function(process_id, chart, request_dictionary, callback) {
+    draw : function(options) {
+        _.extend(this.options, options);
         var self = this;
         var plot = new Tools.panelHelper({
             app                 : this.app,
-            process_id          : process_id,
+            process_id          : this.options.process_id,
             canvas              : this.options.canvas,
-            chart               : chart,
-            request_dictionary  : request_dictionary,
+            chart               : this.options.chart,
+            request_dictionary  : this.options.request_dictionary,
             render              : function(groups, canvas) {
-                                    return self.render(chart, groups, canvas, callback)
+                                    return self.render(groups, canvas)
                                 }
         });
     },
     
     // draw all data into a single canvas
-    render: function(chart, groups, el_canvas, callback) {
+    render: function(groups, el_canvas) {
+        // set chart settings
+        var chart       = this.options.chart;
+        var makeConfig  = this.options.makeConfig;
+        var makeSeries  = this.options.makeSeries;
+        
         // create configuration
         var plot_config = configmaker(chart);
         var plot_data = []
@@ -43,16 +49,11 @@ return Backbone.View.extend(
         // identify categories
         this._makeCategories(chart, groups, plot_config, true);
         
-        // loop through data groups
-        for (var key in groups) {
-            // get group
-            var group = groups[key];
-            
-            // reset data
-            var data = Tools.makeSeries(group, ['x', 'y']);
-            
-            // append series
-            plot_data.push(data);
+        // reset data
+        if (makeSeries) {
+            plot_data = makeSeries(groups);
+        } else {
+            plot_data = Tools.makeSeries(groups);
         }
         
         // draw plot
@@ -61,8 +62,8 @@ return Backbone.View.extend(
             var canvas = el_canvas[0];
             
             // make custom wrapper callback
-            if (callback) {
-                callback(plot_config);
+            if (makeConfig) {
+                makeConfig(plot_config);
             }
         
             // Draw graph with default options, overwriting with passed options
@@ -90,6 +91,12 @@ return Backbone.View.extend(
     
     // create categories
     _makeCategories: function(chart, groups, plot_config) {
+        
+        // check length
+        if (groups.length == 0) {
+            return;
+        }
+        
         // result
         var result = Tools.makeCategories(chart, groups);
         
@@ -103,6 +110,9 @@ return Backbone.View.extend(
         
         // add x tick formatter
         function axisTickFormatter (axis_char, plot_axis, axis_type, axis_tick) {
+            // get chart definition from first group
+            var chart_definition = groups[0];
+            
             /*if (axis_type != 'auto' && axis_type !== undefined) {
                 plot_axis.tickOptions.formatter = function(format, value) {
                     if (axis_type == 'hide') {
@@ -112,14 +122,11 @@ return Backbone.View.extend(
                     return format(v);
                 }
             } else {*/
-                if (chart.definition.columns[axis_char].is_label) {
+                if (chart_definition.columns[axis_char] && chart_definition.columns[axis_char].is_label) {
                     plot_axis.tickOptions.formatter = function(format, value) {
-                        if (value == parseInt(value)) {
-                            if (result.array[axis_char] !== undefined) {
-                                return result.array[axis_char][value];
-                            } else {
-                                return '';
-                            }
+                        if (result.array[axis_char] !== undefined &&
+                            result.array[axis_char][value] !== undefined) {
+                            return result.array[axis_char][value];
                         } else {
                             return '';
                         }
@@ -127,8 +134,8 @@ return Backbone.View.extend(
                 }
             //}
         }
-        axisTickFormatter ('x', plot_config.axes.xaxis, chart.settings.get('x_axis_type'), chart.settings.get('x_axis_tick'));
-        axisTickFormatter ('y', plot_config.axes.yaxis, chart.settings.get('y_axis_type'), chart.settings.get('y_axis_tick'));
+        //axisTickFormatter ('x', plot_config.axes.xaxis, chart.settings.get('x_axis_type'), chart.settings.get('x_axis_tick'));
+        //axisTickFormatter ('y', plot_config.axes.yaxis, chart.settings.get('y_axis_type'), chart.settings.get('y_axis_tick'));
     },
     
     // handle error

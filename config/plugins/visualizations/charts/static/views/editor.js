@@ -117,7 +117,6 @@ return Backbone.View.extend(
         var $main = $('<div/>');
         $main.append(Utils.wrap((new Ui.Label({ title : 'Provide a chart title:'})).$el));
         $main.append(Utils.wrap(this.title.$el));
-        $main.append(Utils.wrap((new Ui.Label({ title : 'Select a chart type:'})).$el));
         $main.append(Utils.wrap(this.types.$el));
         
         // add tab

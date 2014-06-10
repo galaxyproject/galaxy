@@ -7,6 +7,20 @@ define(["libs/underscore"], function(_) {
 
     // screenshot
     function create ($el, screenshot_url, name) {
+        if ($el.find('svg').length > 0) {
+            _fromSVG ($el, screenshot_url, name);
+        } else {
+            _fromCanvas ($el);
+        }
+    };
+    
+    // from jqplot
+    function _fromCanvas ($el) {
+        $el.find('#canvas').jqplotSaveImage({});
+    };
+    
+    // from svg
+    function _fromSVG ($el, screenshot_url, name) {
         var serializer = new XMLSerializer();
         var xmlString = '';
         var self = this;

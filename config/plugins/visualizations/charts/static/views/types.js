@@ -29,12 +29,14 @@ return Backbone.View.extend(
         // create new element
         var $el = $('<div class="charts-grid"/>');
         
+        // add label
+        $el.append(Utils.wrap((new Ui.Label({ title : 'How many data points would you like to analyze?'})).$el));
+        
         // construct chart type subset selection buttons
         this.library = new Ui.RadioButton({
-            data    : [ { label: 'Default', value: 'default' },
-                        { label: 'Small (<1k lines)', value: 'small' },
-                        { label: 'Medium (<10k lines)', value: 'medium' },
-                        { label: 'Large (>10k lines)', value: 'large' }],
+            data    : [ { label: 'Few (<1k)', value: 'small' },
+                        { label: 'Some (<10k)', value: 'medium' },
+                        { label: 'Many (>10k)', value: 'large' }],
             onchange: function(value) {
                     self._filter(value);
             }
@@ -48,7 +50,7 @@ return Backbone.View.extend(
         this._render();
         
         // set
-        this.library.value('default');
+        this.library.value('small');
     },
     
     // value
@@ -83,15 +85,21 @@ return Backbone.View.extend(
     
     // filter
     _filter: function(value) {
+        // hide all category headers
+        this.$el.find('.header').hide();
+        
+        // show chart types
         var types = this.app.types.attributes;
         for (var id in types) {
             var type = types[id];
             var $el = this.$el.find('#' + id);
+            var $header = this.$el.find('#types-header-' + this.categories_index[type.category]);
             var keywords = type.keywords || '';
-            if (keywords.indexOf(value) == -1 && value != 'all') {
-                $el.hide();
-            } else {
+            if (keywords.indexOf(value) >= 0) {
                 $el.show();
+                $header.show();
+            } else {
+                $el.hide();
             }
         }
     },
@@ -99,29 +107,38 @@ return Backbone.View.extend(
     // render
     _render: function() {
         // load chart types into categories
-        var categories = {};
+        this.categories = {};
+        this.categories_index = {};
+        
+        // counter
+        var category_index = 0;
+        
+        // identify categories
         var types = this.app.types.attributes;
         for (var id in types) {
-            // add category
             var type = types[id];
             var category = type.category;
-            if (!categories[category]) {
-                categories[category] = {};
+            if (!this.categories[category]) {
+                this.categories[category] = {};
+                this.categories_index[category] = category_index++;
             }
-            categories[category][id] = type;
+            this.categories[category][id] = type;
         }
         
         // add categories and charts to screen
-        for (var category in categories) {
+        for (var category in this.categories) {
             // create empty element
             var $el = $('<div style="clear: both;"/>')
             
             // add header label
-            $el.append(Utils.wrap(this._template_header({title: category})));
+            $el.append(Utils.wrap(this._template_header({
+                id      : 'types-header-' + this.categories_index[category],
+                title   : category
+            })));
             
             // add chart types
-            for (var id in categories[category]) {
-                var type = categories[category][id];
+            for (var id in this.categories[category]) {
+                var type = this.categories[category][id];
                 $el.append(Utils.wrap(this._template_item({
                     id      : id,
                     title   : type.title + ' (' + type.library + ')',
@@ -155,7 +172,7 @@ return Backbone.View.extend(
 
     // template
     _template_header: function(options) {
-        return  '<div class="header">' +
+        return  '<div id="' + options.id + '" class="header">' +
                     '&bull; ' + options.title +
                 '<div>';
     },

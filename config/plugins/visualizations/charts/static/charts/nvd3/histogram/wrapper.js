@@ -32,8 +32,14 @@ return Backbone.View.extend(
         
         // load nvd3
         var nvd3 = new NVD3(this.app, this.options);
-        nvd3.draw('multiBarChart', process_id, chart, request_dictionary, function(nvd3_model) {
-            nvd3_model.options({showControls: true});
+        nvd3.draw({
+            type                : 'multiBarChart',
+            process_id          : process_id,
+            chart               : chart,
+            request_dictionary  : request_dictionary,
+            makeConfig          : function(nvd3_model) {
+                nvd3_model.options({showControls: true});
+            }
         });
     }
 });

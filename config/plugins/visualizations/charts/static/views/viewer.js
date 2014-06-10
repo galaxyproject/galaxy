@@ -43,7 +43,7 @@ return Backbone.View.extend(
                 }),
                 picture_button: new Ui.ButtonIcon({
                     icon    : 'fa-camera',
-                    tooltip : 'Download PDF-file (' + self.app.config.get('screenshot_url') + ')',
+                    tooltip : 'SVGs are converted to PDF via ' + self.app.config.get('screenshot_url') + ' and CANVAS-based charts to PNG-files.',
                     title   : 'Screenshot',
                     onclick : function() {
                         // attempt to load chart editor

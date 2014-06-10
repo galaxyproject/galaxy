@@ -82,31 +82,44 @@ function getDomains(groups, keys) {
 };
 
 // series maker
-function makeSeries(group, order) {
-    // reset data
-    var data = [];
+function makeSeries(groups, order) {
+    // plot data
+    var plot_data = [];
     
-    // format chart data
-    for (var value_index in group.values) {
-        // parse data
-        var point = [];
-        if (order) {
-            for (var order_index in order) {
-                var column_index = order[order_index];
-                point.push(group.values[value_index][column_index]);
-            }
-        } else {
-            for (var column_index in group.values[value_index]) {
-                point.push(group.values[value_index][column_index]);
-            }
-        }
+    // loop through data groups
+    for (var key in groups) {
+        // get group
+        var group = groups[key];
+            
+        // reset data
+        var data = [];
         
-        // add to data
-        data.push (point);
+        // format chart data
+        for (var value_index in group.values) {
+            // parse data
+            var point = [];
+            if (order) {
+                for (var order_index in order) {
+                    var column_index = order[order_index];
+                    point.push(group.values[value_index][column_index]);
+                }
+            } else {
+                for (var column_index in group.values[value_index]) {
+                    point.push(group.values[value_index][column_index]);
+                }
+            }
+            
+            // add to data
+            data.push (point);
+        }
+
+        // append series
+        plot_data.push(data);
     }
-    
+        
+       
     // return
-    return data;
+    return plot_data;
 };
 
 // category maker
@@ -174,10 +187,10 @@ function makeCategories(chart, groups, with_index) {
     
 // return
 return {
-    panelHelper     : panelHelper,
-    makeCategories  : makeCategories,
-    makeSeries      : makeSeries,
-    getDomains      : getDomains
+    panelHelper         : panelHelper,
+    makeCategories      : makeCategories,
+    makeSeries          : makeSeries,
+    getDomains          : getDomains
 }
 
 });

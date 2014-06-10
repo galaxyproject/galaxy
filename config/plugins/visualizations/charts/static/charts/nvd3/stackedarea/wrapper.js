@@ -14,11 +14,16 @@ return Backbone.View.extend(
     draw : function(process_id, chart, request_dictionary)
     {
         var nvd3 = new NVD3(this.app, this.options);
-        nvd3.draw('stackedAreaChart', process_id, chart, request_dictionary, function(nvd3_model) {
-            // make plot
-            nvd3_model.x(function(d) { return d.x })
+        nvd3.draw({
+            type                : 'stackedAreaChart',
+            process_id          : process_id,
+            chart               : chart,
+            request_dictionary  : request_dictionary,
+            makeConfig          : function(nvd3_model) {
+                nvd3_model.x(function(d) { return d.x })
                       .y(function(d) { return d.y })
                       .clipEdge(true);
+            }
         });
     }
 });

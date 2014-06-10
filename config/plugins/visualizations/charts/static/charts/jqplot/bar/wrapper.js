@@ -13,12 +13,26 @@ return Backbone.View.extend(
     // render
     draw : function(process_id, chart, request_dictionary) {
         var plot = new Plot(this.app, this.options);
-        plot.draw(process_id, chart, request_dictionary, function(plot_config){
-            $.extend(true, plot_config, {
-                seriesDefaults: {
-                    renderer: $.jqplot.BarRenderer
-                }
-            });
+        plot.draw({
+            process_id          : process_id,
+            chart               : chart,
+            request_dictionary  : request_dictionary,
+            makeConfig          : function(plot_config){
+                $.extend(true, plot_config, {
+                    seriesDefaults: {
+                        renderer    : $.jqplot.BarRenderer
+                    },
+                    axes: {
+                        xaxis: {
+                            pad     : 1.2
+                        },
+                        
+                        yaxis: {
+                            pad     : 1.2
+                        }
+                    }
+                });
+            }
         });
     }
 });

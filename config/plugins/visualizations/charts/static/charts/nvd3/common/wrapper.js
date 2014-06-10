@@ -11,23 +11,27 @@ return Backbone.View.extend(
     },
     
     // render
-    draw : function(type, process_id, chart, request_dictionary, callback) {
+    draw : function(options) {
+        _.extend(this.options, options);
         var self = this;
         var plot = Tools.panelHelper({
             app                 : this.app,
-            process_id          : process_id,
+            process_id          : this.options.process_id,
             canvas              : this.options.canvas,
-            chart               : chart,
-            request_dictionary  : request_dictionary,
+            chart               : this.options.chart,
+            request_dictionary  : this.options.request_dictionary,
             render              : function(groups, canvas) {
-                                    return self.render(type, chart, groups, canvas, callback)
+                                    return self.render(groups, canvas)
                                 }
         });
     },
     
     // render
-    render : function(type, chart, groups, canvas, callback)
-    {
+    render : function(groups, canvas) {
+        var chart       = this.options.chart;
+        var type        = this.options.type;
+        var makeConfig  = this.options.makeConfig;
+    
         // create nvd3 model
         var d3chart = nv.models[type]()
         
@@ -57,8 +61,8 @@ return Backbone.View.extend(
                 }
                 
                 // custom callback
-                if (callback) {
-                    callback(d3chart);
+                if (makeConfig) {
+                    makeConfig(d3chart);
                 }
                 
                 // make categories
@@ -118,6 +122,11 @@ return Backbone.View.extend(
             }
         }
 
+        // clip edges
+        if (nvd3_model.clipEdge) {
+            nvd3_model.clipEdge(true);
+        }
+        
         // d3 zoom wrapper
         var d3zoom = d3.behavior.zoom()
             .x(x)

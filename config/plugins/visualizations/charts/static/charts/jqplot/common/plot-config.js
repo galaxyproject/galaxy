@@ -18,7 +18,7 @@ return function(chart) {
        
         seriesDefaults: {
             renderer                : $.jqplot.LineRenderer,
-            lineWidth               : 1,                    // Width of the line in pixels.
+            //lineWidth               : 1,                    // Width of the line in pixels.
             shadow                  : false,                // show shadow or not.
             showLine                : true,                 // whether to render the line segments or not.
        
@@ -36,7 +36,7 @@ return function(chart) {
                 //barPadding        : 5,
                 //barMargin         : 2,
                 //barWidth            : Math.max(0.5 / chart.groups.length, 2),
-                barWidth            : 1,
+                barWidth            : 10,
                 //fillToZero        : true,
                 //stackedValue      : true
             },
@@ -66,8 +66,19 @@ return function(chart) {
         // A value of "outside" would not shrink the grid and allow
         // the legend to overflow the container.
         legend: {
+            renderer                : $.jqplot.EnhancedLegendRenderer,
             show                    : chart.settings.get('show_legend') == 'true',
-            placement               : 'insideGrid'
+            placement               : 'outsideGrid',
+            location                : 'n',
+            rendererOptions: {
+                textColor           : '#000000',
+                fontSize            : '12pt',
+                border              : 'none',
+                shadowAlpha         : 1,
+                background          : 'rgba(255, 255, 255, 0.9)',
+                fontFamily          : 'Arial',
+                numberRows          : 1
+            }
         },
        
         axesDefaults: {
@@ -77,7 +88,7 @@ return function(chart) {
             },
             tickRenderer            : $.jqplot.CanvasAxisTickRenderer ,
             tickOptions: {
-                fontSize            : '10pt',
+                fontSize            : '12pt',
                 textColor           : '#000000'
             }
         },
@@ -86,16 +97,18 @@ return function(chart) {
             // Use a category axis on the x axis and use our custom ticks.
             xaxis: {
                 label               : chart.settings.get('x_axis_label'),
-                tickRenderer        : $.jqplot.AxisTickRenderer,
+                tickRenderer        : $.jqplot.CanvasAxisTickRenderer,
                 tickOptions: {
                     angle           : -30
                 },
-                tickInterval        : 1
+                tickInterval        : 1,
+                pad                 : 0
             },
             // Pad the y axis just a little so bars can get close to, but
             // not touch, the grid boundaries.  1.2 is the default padding.
             yaxis: {
                 label               : chart.settings.get('y_axis_label'),
+                pad                 : 0
                 //tickOptions       : {formatString: '$%d'},
                 //padding             : 1.2,
                 //autoscale:true
@@ -111,7 +124,8 @@ return function(chart) {
         cursor: {
             show                    : true,
             zoom                    : true,
-            showTooltip             : true
+            showTooltip             : true,
+            style                   : 'pointer'
         }
     };
     
