@@ -4,6 +4,7 @@ return $.extend(true, {}, nvd3_config, {
     title       : 'Expanded',
     zoomable    : 'axis',
     category    : 'Area charts',
+    keywords    : 'default small',
     columns     : {
         y : {
             title       : 'Values for y-axis',

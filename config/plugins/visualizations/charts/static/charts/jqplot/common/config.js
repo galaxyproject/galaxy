@@ -1,11 +1,11 @@
-define(['plugin/plugins/nvd3/nv.d3'], function() {
+define([], function() {
 
 return {
     title       : '',
     category    : '',
-    library     : 'NVD3',
-    tag         : 'svg',
-    keywords    : 'small',
+    library     : 'JqPlot',
+    tag         : 'div',
+    keywords    : 'default medium',
     settings    : {
         separator_label  : {
             title       : 'X axis',
@@ -200,22 +200,6 @@ return {
             info        : 'Would you like to add a legend?',
             type        : 'radiobutton',
             init        : 'true',
-            data        : [
-                {
-                    label   : 'Yes',
-                    value   : 'true'
-                },
-                {
-                    label   : 'No',
-                    value   : 'false'
-                }
-            ]
-        },
-        use_panels : {
-            title       : 'Use multi-panels',
-            info        : 'Would you like to separate your data into individual panels?',
-            type        : 'radiobutton',
-            init        : 'false',
             data        : [
                 {
                     label   : 'Yes',

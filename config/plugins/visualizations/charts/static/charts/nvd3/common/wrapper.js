@@ -19,7 +19,7 @@ return Backbone.View.extend(
             canvas              : this.options.canvas,
             chart               : chart,
             request_dictionary  : request_dictionary,
-            render              : function(chart, groups, canvas) {
+            render              : function(groups, canvas) {
                                     return self.render(type, chart, groups, canvas, callback)
                                 }
         });
@@ -53,11 +53,7 @@ return Backbone.View.extend(
                 
                 // legend
                 if (d3chart.showLegend) {
-                    var legend_visible = true;
-                    if (chart.settings.get('show_legend') == 'false') {
-                        legend_visible = false;
-                    }
-                    d3chart.showLegend(legend_visible);
+                    d3chart.showLegend(chart.settings.get('show_legend') == 'true');
                 }
                 
                 // custom callback

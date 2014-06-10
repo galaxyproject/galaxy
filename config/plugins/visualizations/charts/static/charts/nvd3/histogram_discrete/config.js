@@ -4,6 +4,7 @@ return $.extend(true, {}, nvd3_config, {
     title       : 'Discrete Histogram',
     category    : 'Data processing (requires \'charts\' tool from Toolshed)',
     execute     : 'histogramdiscrete',
+    keywords    : 'default large',
     columns     : {
         x : {
             title       : 'Observations',

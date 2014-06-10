@@ -5,7 +5,7 @@ return $.extend(true, {}, {
     category    : 'Area charts',
     library     : 'NVD3',
     tag         : 'svg',
-    keywords    : 'default nvd3',
+    keywords    : 'default small',
     use_panels  : true,
     columns : {
         label : {

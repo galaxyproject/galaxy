@@ -29,14 +29,26 @@ return Backbone.View.extend(
         // create new element
         var $el = $('<div class="charts-grid"/>');
         
+        // construct chart type subset selection buttons
+        this.library = new Ui.RadioButton({
+            data    : [ { label: 'Default', value: 'default' },
+                        { label: 'Small (<1k lines)', value: 'small' },
+                        { label: 'Medium (<10k lines)', value: 'medium' },
+                        { label: 'Large (>10k lines)', value: 'large' }],
+            onchange: function(value) {
+                    self._filter(value);
+            }
+        });
+        $el.append(Utils.wrap(this.library.$el));
+        
         // set element
         this.setElement($el);
         
         // render
         this._render();
         
-        // show only default chart types
-        this._filter('default');
+        // set
+        this.library.value('default');
     },
     
     // value

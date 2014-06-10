@@ -19,7 +19,7 @@ function panelHelper (options)
             // check if this chart has multiple panels
             if (!chart.definition.use_panels && chart.settings.get('use_panels') !== 'true') {
                 // draw all groups into a single panel
-                if (render(chart, request_dictionary.groups, canvas[0])) {
+                if (render(request_dictionary.groups, canvas[0])) {
                     chart.state('ok', 'Chart drawn.');
                 }
             } else {
@@ -27,7 +27,7 @@ function panelHelper (options)
                 var valid = true;
                 for (var group_index in request_dictionary.groups) {
                     var group = request_dictionary.groups[group_index];
-                    if (!render(chart, [group], canvas[group_index])) {
+                    if (!render([group], canvas[group_index])) {
                         valid = false;
                         break;
                     }
@@ -82,16 +82,23 @@ function getDomains(groups, keys) {
 };
 
 // series maker
-function makeSeries(group) {
+function makeSeries(group, order) {
     // reset data
     var data = [];
-       
+    
     // format chart data
     for (var value_index in group.values) {
         // parse data
         var point = [];
-        for (var column_index in group.values[value_index]) {
-            point.push(group.values[value_index][column_index]);
+        if (order) {
+            for (var order_index in order) {
+                var column_index = order[order_index];
+                point.push(group.values[value_index][column_index]);
+            }
+        } else {
+            for (var column_index in group.values[value_index]) {
+                point.push(group.values[value_index][column_index]);
+            }
         }
         
         // add to data

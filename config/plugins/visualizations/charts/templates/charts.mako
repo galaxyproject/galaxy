@@ -21,8 +21,13 @@
         ## shared css
         ${h.css( 'base' )}
 
-        ## css
+        ## nvd3
         ${h.stylesheet_link( app_root + "plugins/nvd3/nv.d3.css" )}
+
+        ## jqplot
+        ${h.stylesheet_link( app_root + "plugins/jqplot/jquery.jqplot.css" )}
+        ${h.javascript_link( app_root + "plugins/jqplot/jquery.jqplot.js" )}
+        ${h.javascript_link( app_root + "plugins/jqplot/jquery.jqplot.plugins.js" )}
 
         ## load merged/minified code
         ${h.javascript_link( app_root + "build-app.js" )}
@@ -56,15 +61,13 @@
             require.config({
                 baseUrl: config.root + "static/scripts/",
                 paths: {
-                    "plugin"        : "${app_root}",
-                    "bean"          : "${app_root}/plugins/flotr2/bean",
-                    "flotr2"        : "${app_root}/plugins/flotr2/flotr2-amd",
-                    "d3"            : "libs/d3"
+                    "plugin"        : "${app_root}"
                 },
                 shim: {
                     "libs/underscore": { exports: "_" },
                     "libs/backbone/backbone": { exports: "Backbone" },
-                    "d3": { exports: "d3"}
+                    "d3": { exports: "d3"},
+
                 }
             });
 

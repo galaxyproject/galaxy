@@ -12,9 +12,9 @@ define(['plugin/charts/nvd3/bar/config',
         'plugin/charts/nvd3/line/config',
         'plugin/charts/nvd3/scatter/config',
         'plugin/charts/nvd3/stackedarea/config',
-        'plugin/charts/flot/bar/config',
-        'plugin/charts/dygraph/bar/config',
-        'plugin/charts/others/boxplot/config',
+        'plugin/charts/jqplot/bar/config',
+        'plugin/charts/jqplot/line/config',
+        'plugin/charts/jqplot/scatter/config'
         ], function(nvd3_bar,
                     nvd3_bar_stacked,
                     nvd3_bar_horizontal,
@@ -28,9 +28,9 @@ define(['plugin/charts/nvd3/bar/config',
                     nvd3_line,
                     nvd3_scatter,
                     nvd3_stackedarea,
-                    flot_bar,
-                    dygraph_bar,
-                    others_boxplot
+                    jqplot_bar,
+                    jqplot_line,
+                    jqplot_scatter
             ) {
 
 // widget
@@ -38,6 +38,7 @@ return Backbone.Model.extend(
 {
     // types
     defaults: {
+        'jqplot_bar'                        : jqplot_bar,
         'nvd3_bar'                          : nvd3_bar,
         'nvd3_bar_stacked'                  : nvd3_bar_stacked,
         'nvd3_bar_horizontal'               : nvd3_bar_horizontal,
@@ -51,9 +52,8 @@ return Backbone.Model.extend(
         'nvd3_scatter'                      : nvd3_scatter,
         'nvd3_histogram'                    : nvd3_histogram,
         'nvd3_histogram_discrete'           : nvd3_histogram_discrete,
-        'flot_bar'                          : flot_bar,
-        //'dygraph_bar'                       : dygraph_bar,
-        //'others_boxplot'                    : others_boxplot
+        'jqplot_line'                       : jqplot_line,
+        'jqplot_scatter'                    : jqplot_scatter
     }
 });
 

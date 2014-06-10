@@ -1,9 +1,8 @@
-define(['plugin/charts/nvd3/common/config'], function(nvd3_config) {
+define(['plugin/charts/jqplot/common/config'], function(plot_config) {
 
-return $.extend(true, {}, nvd3_config, {
-    title       : 'Line with focus',
+return $.extend(true, {}, plot_config, {
+    title       : 'Line chart',
     category    : 'Others',
-    keywords    : 'default small',
     columns     : {
         x : {
             title       : 'Values for x-axis',
@@ -11,7 +10,7 @@ return $.extend(true, {}, nvd3_config, {
             is_auto     : true
         },
         y : {
-            title       : 'Values for y-axis',
+            title   : 'Values for y-axis',
             is_numeric  : true
         }
     }

@@ -4,7 +4,7 @@ return $.extend(true, {}, nvd3_config, {
     title       : 'Stream',
     category    : 'Area charts',
     zoomable    : 'axis',
-    keywords    : 'default nvd3',
+    keywords    : 'default small',
     showmaxmin  : true,
     columns     : {
         y : {
