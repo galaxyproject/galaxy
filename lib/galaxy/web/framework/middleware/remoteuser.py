@@ -76,6 +76,8 @@ class RemoteUser( object ):
                     return self.error( start_response, title, message )
             if path_info.startswith( '/user/create' ) and environ[ self.remote_user_header ] in self.admin_users:
                 pass # admins can create users
+            elif path_info.startswith( '/user/logout' ) and environ[ self.remote_user_header ] in self.admin_users:
+                pass  # Admin users may be impersonating, allow logout.
             elif path_info.startswith( '/user/api_keys' ):
                 pass # api keys can be managed when remote_user is in use
             elif path_info.startswith( '/user/edit_username' ):
