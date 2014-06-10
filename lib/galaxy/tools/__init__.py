@@ -2589,10 +2589,13 @@ class Tool( object, Dictifiable ):
             # No value, insert the default
             if input.name not in values:
                 if isinstance( input, Conditional ):
-                    messages[ input.name ] = { input.test_param.name: "No value found for '%s%s', used default" % ( prefix, input.label ) }
+                    cond_messages = {}
+                    if not input.is_job_resource_conditional:
+                        cond_messages = { input.test_param.name: "No value found for '%s%s', used default" % ( prefix, input.label ) }
+                        messages[ input.name ] = cond_messages
                     test_value = input.test_param.get_initial_value( trans, context )
                     current_case = input.get_current_case( test_value, trans )
-                    self.check_and_update_param_values_helper( input.cases[ current_case ].inputs, {}, trans, messages[ input.name ], context, prefix, allow_workflow_parameters=allow_workflow_parameters )
+                    self.check_and_update_param_values_helper( input.cases[ current_case ].inputs, {}, trans, cond_messages, context, prefix, allow_workflow_parameters=allow_workflow_parameters )
                 elif isinstance( input, Repeat ):
                     if input.min:
                         messages[ input.name ] = []
