@@ -11,13 +11,25 @@ sys.path = new_path
 from tool_shed.util import common_util
 from tool_shed.util import hg_util
 
+
+class HTTPRedirectWithDataHandler( urllib2.HTTPRedirectHandler ):
+
+    def redirect_request( self, request, fp, code, msg, headers, newurl ):
+        request_method = request.get_method()
+        if ( code in ( 301, 302, 303, 307 ) and request_method in ( "GET", "HEAD", "POST", "PUT", "DELETE" ) ):
+            newurl = newurl.replace( ' ', '%20' )
+            return urllib2.Request( newurl,
+                                    data=request.data,
+                                    headers=request.headers,
+                                    origin_req_host=request.get_origin_req_host(),
+                                    unverifiable=True )
+        else:
+            urllib2.HTTPRedirectHandler.redirect_request( request, fp, code, msg, headers, newurl )
+
 def build_request_with_data( url, data, api_key, method ):
     """Build a request with the received method."""
-    protocol = common_util.get_protocol_from_tool_shed_url( url )
-    if protocol == 'http':
-        opener = urllib2.build_opener( urllib2.HTTPHandler )
-    elif protocol == 'https':
-        opener = urllib2.build_opener( urllib2.HTTPSHandler )
+    opener = urllib2.build_opener( HTTPRedirectWithDataHandler )
+    urllib2.install_opener( opener )
     url = make_url( url, api_key=api_key, args=None )
     request = urllib2.Request( url, headers={ 'Content-Type': 'application/json' }, data=json.dumps( data ) )
     request_method = request.get_method()
