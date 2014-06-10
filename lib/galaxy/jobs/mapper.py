@@ -5,6 +5,7 @@ import os
 log = logging.getLogger( __name__ )
 
 import galaxy.jobs.rules
+from .rule_helper import RuleHelper
 
 DYNAMIC_RUNNER_NAME = "dynamic"
 DYNAMIC_DESTINATION_ID = "dynamic_legacy_from_url"
@@ -56,12 +57,13 @@ class JobRunnerMapper( object ):
 
     def __invoke_expand_function( self, expand_function ):
         function_arg_names = inspect.getargspec( expand_function ).args
-
+        app = self.job_wrapper.app
         possible_args = { "job_id" : self.job_wrapper.job_id,
                           "tool" : self.job_wrapper.tool,
                           "tool_id" : self.job_wrapper.tool.id,
                           "job_wrapper" : self.job_wrapper,
-                          "app" : self.job_wrapper.app }
+                          "rule_helper": RuleHelper( app ),
+                          "app" : app }
 
         actual_args = {}
 
