@@ -25,7 +25,7 @@ class Tabular( data.Text ):
 
     # All tabular data is chunkable.
     CHUNKABLE = True
-    CHUNK_SIZE = 50000
+    CHUNK_SIZE = 1000
 
     """Add metadata elements"""
     MetadataElement( name="comment_lines", default=0, desc="Number of comment lines", readonly=False, optional=True, no_value=0 )
