@@ -1,26 +1,40 @@
-/**
- * Screenshot creator
-*/
-
 // dependencies
 define(["libs/underscore"], function(_) {
 
     // screenshot
-    function create ($el, screenshot_url, name) {
-        if ($el.find('svg').length > 0) {
-            _fromSVG ($el, screenshot_url, name);
+    function create (options) {
+        if (options.$el.find('svg').length > 0) {
+            _fromSVG (options);
         } else {
-            _fromCanvas ($el);
+            _fromCanvas (options);
         }
     };
     
     // from jqplot
-    function _fromCanvas ($el) {
-        $el.find('.charts-viewport-canvas').jqplotSaveImage({});
+    function _fromCanvas (options) {
+        try {
+            var $canvas = options.$el.find('.jqplot-target');
+            var imgData = $canvas.jqplotToImageStr({});
+            if (imgData) {
+                window.location.href = imgData.replace('image/png', 'image/octet-stream');
+            }
+        } catch (err) {
+            console.debug('FAILED - Screenshot::_fromCanvas() - ' + err);
+            if (options.error) {
+                options.error(err);
+            }
+        }
     };
     
     // from svg
-    function _fromSVG ($el, screenshot_url, name) {
+    function _fromSVG (options) {
+       
+        // get parameters
+        var $el = options.$el;
+        var screenshot_url = options.url;
+        var name = options.name;
+       
+        // serialize svg
         var serializer = new XMLSerializer();
         var xmlString = '';
         var self = this;

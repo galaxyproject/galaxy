@@ -48,7 +48,14 @@ return Backbone.View.extend(
                     onclick : function() {
                         // attempt to load chart editor
                         self._wait (self.chart, function() {
-                            Screenshot.create(self.viewport_view.$el, self.app.config.get('screenshot_url'), self.chart.get('title'));
+                            Screenshot.create({
+                                $el     : self.viewport_view.$el,
+                                url     : self.app.config.get('screenshot_url'),
+                                title   : self.chart.get('title'),
+                                error   : function(err) {
+                                    self.message.update({ message: 'Please reduce your chart to a single panel and try again.', status: 'danger' });
+                                }
+                            });
                         });
                     }
                 })
