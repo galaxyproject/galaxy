@@ -13,6 +13,7 @@ from sqlalchemy.sql.expression import and_, or_, select, func
 from galaxy import model
 from galaxy.util.sleeper import Sleeper
 from galaxy.jobs import JobWrapper, TaskWrapper, JobDestination
+from galaxy.jobs.mapper import JobNotReadyException
 
 log = logging.getLogger( __name__ )
 
@@ -326,6 +327,9 @@ class JobHandlerQueue( object ):
         try:
             # Cause the job_destination to be set and cached by the mapper
             job_destination = job_wrapper.job_destination
+        except JobNotReadyException as e:
+            job_state = e.job_state or JOB_WAIT
+            return job_state, None
         except Exception, e:
             failure_message = getattr( e, 'failure_message', DEFAULT_JOB_PUT_FAILURE_MESSAGE )
             if failure_message == DEFAULT_JOB_PUT_FAILURE_MESSAGE:

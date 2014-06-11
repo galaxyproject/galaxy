@@ -16,6 +16,13 @@ class JobMappingException( Exception ):
         self.failure_message = failure_message
 
 
+class JobNotReadyException( Exception ):
+
+    def __init__( self, job_state=None, message=None ):
+        self.job_state = job_state
+        self.message = message
+
+
 class JobRunnerMapper( object ):
     """
     This class is responsible to managing the mapping of jobs
