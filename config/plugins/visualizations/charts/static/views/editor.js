@@ -266,7 +266,7 @@ return Backbone.View.extend(
     _resetChart: function() {
         // reset chart details
         this.chart.set('id', Utils.uuid());
-        this.chart.set('type', 'highcharts_bar');
+        this.chart.set('type', 'nvd3_bar');
         this.chart.set('dataset_id', this.app.options.config.dataset_id);
         this.chart.set('title', 'New Chart');
         

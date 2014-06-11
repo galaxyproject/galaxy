@@ -7,6 +7,7 @@ return function(chart) {
     // get chart settings
     var settings = chart.settings;
     var plot_config = {
+        enablePlugins: true,
         seriesColors: function() {
             var colors = [];
             var colorScale = d3.scale.category20();
@@ -61,30 +62,11 @@ return function(chart) {
         // is specified for each series.
         series: [],
        
-        // Show the legend and put it outside the grid, but inside the
-        // plot container, shrinking the grid to accomodate the legend.
-        // A value of "outside" would not shrink the grid and allow
-        // the legend to overflow the container.
-        legend: {
-            renderer                : $.jqplot.EnhancedLegendRenderer,
-            show                    : chart.settings.get('show_legend') == 'true',
-            placement               : 'outsideGrid',
-            location                : 'n',
-            rendererOptions: {
-                textColor           : '#000000',
-                fontSize            : '12pt',
-                border              : 'none',
-                shadowAlpha         : 1,
-                background          : 'rgba(255, 255, 255, 0.9)',
-                fontFamily          : 'Arial',
-                numberRows          : 1
-            }
-        },
-       
         axesDefaults: {
             labelRenderer           : $.jqplot.CanvasAxisLabelRenderer,
             labelOptions: {
-                fontSize            : '12pt'
+                fontSize            : '12pt',
+                textColor           : '#000000'
             },
             tickRenderer            : $.jqplot.CanvasAxisTickRenderer ,
             tickOptions: {
@@ -108,6 +90,7 @@ return function(chart) {
             // not touch, the grid boundaries.  1.2 is the default padding.
             yaxis: {
                 label               : chart.settings.get('y_axis_label'),
+                tickOptions         : {},
                 pad                 : 0
                 //tickOptions       : {formatString: '$%d'},
                 //padding             : 1.2,
@@ -116,7 +99,7 @@ return function(chart) {
         },
        
         grid: {
-            background              : '#FFFFFF', // CSS color spec for background color of grid.
+            background              : '#FFFFFF',
             borderWidth             : 0,
             shadow                  : false
         },
@@ -124,10 +107,37 @@ return function(chart) {
         cursor: {
             show                    : true,
             zoom                    : true,
-            showTooltip             : true,
+            showTooltip             : false,
             style                   : 'pointer'
+        },
+        highlighter: {
+            show                    : true,
+            showMarker              : false,
+            tooltipAxes             : 'xy'
         }
     };
+    
+    // Show the legend and put it outside the grid, but inside the
+    // plot container, shrinking the grid to accomodate the legend.
+    // A value of "outside" would not shrink the grid and allow
+    // the legend to overflow the container.
+    if (chart.settings.get('show_legend') == 'true') {
+        plot_config.legend = {
+            renderer                : $.jqplot.EnhancedLegendRenderer,
+            show                    : true,
+            placement               : 'outsideGrid',
+            location                : 'n',
+            rendererOptions: {
+                textColor           : '#000000',
+                fontSize            : '12pt',
+                border              : 'none',
+                shadowAlpha         : 1,
+                background          : 'rgba(255, 255, 255, 0.9)',
+                fontFamily          : 'Arial',
+                numberRows          : 1
+            }
+        };
+    }
     
     // callback
     return plot_config;

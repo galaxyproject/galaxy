@@ -39,14 +39,8 @@ return Backbone.View.extend(
         var self = this;
         nv.addGraph(function() {
             try {
-                // x axis
-                self._axis(d3chart.xAxis, chart.settings.get('x_axis_type'), chart.settings.get('x_axis_tick'));
-                
                 // x axis label
                 d3chart.xAxis.axisLabel(chart.settings.get('x_axis_label'));
-                
-                // y axis
-                self._axis(d3chart.yAxis, chart.settings.get('y_axis_type'), chart.settings.get('y_axis_tick'));
                 
                 // y axis label
                 d3chart.yAxis.axisLabel(chart.settings.get('y_axis_label'))
@@ -60,13 +54,13 @@ return Backbone.View.extend(
                     d3chart.showLegend(chart.settings.get('show_legend') == 'true');
                 }
                 
+                // make categories
+                self._makeAxes(d3chart, groups, chart.settings);
+                
                 // custom callback
                 if (makeConfig) {
                     makeConfig(d3chart);
                 }
-                
-                // make categories
-                self._makeCategories(chart, groups, d3chart);
                 
                 // hide min/max values
                 d3chart.xAxis.showMaxMin(false);
@@ -94,6 +88,11 @@ return Backbone.View.extend(
     
     // add zoom handler
     _addZoom: function(nvd3_model, svg, zoom_mode) {
+        // clip edges
+        if (nvd3_model.clipEdge) {
+            nvd3_model.clipEdge(true);
+        }
+        
         // get canvas dimensions
         var width = parseInt(svg.style('width'));
         var height = parseInt(svg.style('height'));
@@ -109,63 +108,97 @@ return Backbone.View.extend(
         var y = d3.scale.linear()
             .domain(y_domain)
             .range([height, 0]);
-            
+        
+        // min/max boundaries
+        var x_boundary = nvd3_model.xScale().domain().slice();
+        var y_boundary = nvd3_model.yScale().domain().slice();
+        
+        // create d3 zoom handler
+        var d3zoom = d3.behavior.zoom();
+        
+        // fix domain
+        function fixDomain(domain, boundary) {
+            domain[0] = Math.max(domain[0], boundary[0]);
+            domain[1] = Math.min(domain[1], boundary[1]);
+            return domain;
+        };
+        
         // zoom event handler
         function zoomed() {
             if (zoom_mode == 'axis') {
-                nvd3_model.xDomain(x.domain());
-                nvd3_model.yDomain(y.domain());
+                nvd3_model.xDomain(fixDomain(x.domain(), x_boundary));
+                nvd3_model.yDomain(fixDomain(y.domain(), y_boundary));
                 nvd3_model.update();
             } else {
                 var translate = d3.event.translate;
                 svg.select('.nvd3').attr("transform", "translate(" + translate + ")  scale(" + d3.event.scale + ")");
             }
-        }
+        };
 
-        // clip edges
-        if (nvd3_model.clipEdge) {
-            nvd3_model.clipEdge(true);
-        }
-        
-        // d3 zoom wrapper
-        var d3zoom = d3.behavior.zoom()
-            .x(x)
-            .y(y)
-            .scaleExtent([1, 10])
-            .on("zoom", zoomed);
+        // zoom event handler
+        function unzoomed() {
+            if (zoom_mode == 'axis') {
+                nvd3_model.xDomain(x_boundary);
+                nvd3_model.yDomain(y_boundary);
+                nvd3_model.update();
+                d3zoom.scale(1);
+                d3zoom.translate([0,0]);
+            } else {
+                var translate = d3.event.translate;
+                svg.select('.nvd3').attr("transform", "translate([0,0]) scale(1)");
+            }
+        };
+
+        // initialize wrapper
+        d3zoom.x(x)
+              .y(y)
+              .scaleExtent([1, 10])
+              .on("zoom", zoomed);
             
         // add handler
-        svg.call(d3zoom);
+        svg.call(d3zoom).on("dblclick.zoom", unzoomed);
     },
 
-    // create categories
-    _makeCategories: function(chart, groups, d3chart) {
+    // create axes formatting
+    _makeAxes: function(d3chart, groups, settings) {
         // result
-        var result = Tools.makeCategories(chart, groups);
+        var categories = Tools.makeCategories(groups);
         
-        // add categories to flot configuration
-        for (var key in result.array) {
-            var axis = key + 'Axis';
-            if (d3chart[axis]) {
-                var a = result.array[key];
-                d3chart[axis].tickFormat(function(value) {
-                    return a[value];
-                });
-            }
-        }
-    },
-    
-    // make axis
-    _axis: function(axis, type, tick) {
-        switch (type) {
-            case 'hide':
+        // make axis
+        function makeAxis (id) {
+            var axis        = d3chart[id + 'Axis'];
+            var type        = settings.get(id + '_axis_type');
+            var tick        = settings.get(id + '_axis_tick');
+            var is_category = categories.array[id];
+            
+            // hide axis
+            if (type == 'hide') {
                 axis.tickFormat(function() { return '' });
-                break;
-            case 'auto':
-                break;
-            default:
-                axis.tickFormat(d3.format(tick + type));
-        }
+                return;
+            }
+            
+            // format values/labels
+            if (type == 'auto') {
+                if (is_category) {
+                    axis.tickFormat(function(value) {
+                        return categories.array[id][value]
+                    });
+                }
+            } else {
+                var formatter = d3.format(tick + type);
+                if (is_category) {
+                    axis.tickFormat(function(value) {
+                        return formatter(categories.array[id][value]);
+                    });
+                } else {
+                    axis.tickFormat(formatter);
+                }
+            }
+        };
+    
+        // make axes
+        makeAxis('x');
+        makeAxis('y');
     },
     
     // handle error

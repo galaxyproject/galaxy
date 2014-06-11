@@ -134,6 +134,7 @@ return Backbone.View.extend(
         var is_label    = column_definition.is_label;
         var is_auto     = column_definition.is_auto;
         var is_numeric  = column_definition.is_numeric;
+        var is_unique   = column_definition.is_unique;
         
         // configure columns
         var columns = [];
@@ -184,11 +185,31 @@ return Backbone.View.extend(
             // update model value
             this.group.set(id, first);
         }
-        select.value(this.group.get(id));
+        
+        // set initial value
+        if (is_unique) {
+            select.value(this.chart.groups.first().get(id));
+        } else {
+            select.value(this.group.get(id));
+        }
+        
+        // link group with select field
+        this.group.on('change:' + id, function(){
+            select.value(self.group.get(id));
+        });
         
         // link select field with group
         select.setOnChange(function(value) {
-            self.group.set(id, value);
+            // update model value
+            if (is_unique) {
+                // update all groups
+                self.chart.groups.each(function(group) {
+                    group.set(id, value);
+                });
+            } else {
+                // only change this group
+                self.group.set(id, value);
+            }
             self.chart.set('modified', true);
         });
         

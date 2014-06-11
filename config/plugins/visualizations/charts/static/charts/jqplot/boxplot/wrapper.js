@@ -1,5 +1,5 @@
 // dependencies
-define(['plugin/charts/jqplot/common/wrapper'], function(Plot) {
+define(['plugin/charts/jqplot/common/wrapper', 'plugin/charts/tools'], function(Plot, Tools) {
 
 // widget
 return Backbone.View.extend(
@@ -19,8 +19,7 @@ return Backbone.View.extend(
             group.columns = null;
             group.columns = {
                 x: {
-                    index: index++,
-                    is_numeric: true
+                    index       : index++
                 }
             }
         }
@@ -30,66 +29,67 @@ return Backbone.View.extend(
             process_id          : process_id,
             chart               : chart,
             request_dictionary  : request_dictionary,
-            makeConfig          : function(plot_config){
+            makeConfig          : function(plot_config, groups){
+                var boundary = Tools.getDomains(groups, 'x');
                 $.extend(true, plot_config, {
                     seriesDefaults: {
                         renderer: $.jqplot.OHLCRenderer,
                         rendererOptions : {
-                            candleStick : true
+                            candleStick     : true,
+                            fillUpBody      : true,
+                            fillDownBody    : true
+                        }
+                    },
+                    axes : {
+                        xaxis: {
+                            pad: 1.2
+                        },
+                        yaxis: {
+                            min: boundary.x.min,
+                            max: boundary.x.max
                         }
                     }
                 });
             },
             makeSeries          : function (groups) {
+                /* example data
+                var catOHLC = [
+                    [0, 138.7, 139.68, 135.18, 135.4],
+                    [1, 143.46, 144.66, 139.79, 140.02],
+                    [2, 140.67, 143.56, 132.88, 142.44],
+                    [3, 136.01, 139.5, 134.53, 139.48]
+                ];
+                return [catOHLC];
+                */
+                
                 // plot data
                 var plot_data = [];
                 
                 // check group length
-                if (groups.length == 0 && groups[0].values.length == 0) {
-                    return;
+                if (groups.length == 0 || groups[0].values.length < 5) {
+                    chart.state('failed', 'Boxplot data could not be found.');
+                    return [plot_data];
                 }
                 
-                 // reset data/categories
-                var data = [];
-                
-                /*/ loop through data groups
-                for (var key in request_dictionary.groups) {
+                // loop through data groups
+                for (var group_index in request_dictionary.groups) {
                     // get group
-                    var group = request_dictionary.groups[key];
-                    
+                    var group = request_dictionary.groups[group_index];
+                  
                     // format chart data
                     var point = [];
-                    point.push(group.key);
-                    for (var key in [0, 1, 3, 4]) {
-                        point.push(group.values[key].x);
+                    point.push(parseInt(group_index));
+                    var indeces = [2, 4, 0, 1];
+                    for (var key in indeces) {
+                        point.push(group.values[indeces[key]].x);
                     }
-                    
+                  
                     // add to data
-                    data.push (point);
-                }*/
-                
-                /*/ loop through data groups
-                for (var key in groups) {
-                    var group = groups[key];
-                    var point = [];
-                    for (var value_index in group.values) {
-                        point.push(group.values[value_index].x);
-                    }
                     plot_data.push (point);
                 }
                 
                 // return
                 return [plot_data];
-
-                var catOHLC = [[1, 138.7, 139.68, 135.18, 135.4],
-                    [2, 143.46, 144.66, 139.79, 140.02],
-                    [3, 140.67, 143.56, 132.88, 142.44],
-                    [4, 136.01, 139.5, 134.53, 139.48],
-                    [5, 443.82, 144.56, 136.04, 136.97],
-                    [6, 136.47, 146.4, 136, 144.67],
-                    [7, 124.76, 135.9, 124.55, 135.81],
-                    [8, 223.73, 129.31, 121.57, 122.5]];
-                return [catOHLC];*/
             }
         });
     }

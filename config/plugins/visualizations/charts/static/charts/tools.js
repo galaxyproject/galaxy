@@ -81,15 +81,15 @@ function getDomains(groups, keys) {
     return result;
 };
 
-// series maker
-function makeSeries(groups, order) {
+// default series maker
+function makeSeries(groups, keys) {
     // plot data
     var plot_data = [];
     
     // loop through data groups
-    for (var key in groups) {
+    for (var group_index in groups) {
         // get group
-        var group = groups[key];
+        var group = groups[group_index];
             
         // reset data
         var data = [];
@@ -98,9 +98,9 @@ function makeSeries(groups, order) {
         for (var value_index in group.values) {
             // parse data
             var point = [];
-            if (order) {
-                for (var order_index in order) {
-                    var column_index = order[order_index];
+            if (keys) {
+                for (var key_index in keys) {
+                    var column_index = keys[key_index];
                     point.push(group.values[value_index][column_index]);
                 }
             } else {
@@ -122,8 +122,50 @@ function makeSeries(groups, order) {
     return plot_data;
 };
 
-// category maker
-function makeCategories(chart, groups, with_index) {
+// default category maker
+function makeCategories(groups, with_index) {
+    // hashkeys, arrays and counter for labeled columns
+    var array = {};
+    
+    // identify label columns
+    var chart_definition = groups[0];
+    for (var key in chart_definition.columns) {
+        var column_def = chart_definition.columns[key];
+        if (column_def.is_label) {
+            array[key] = [];
+        }
+    }
+
+    // collect string labels in array
+    if (groups && groups[0]) {
+        var group = groups[0];
+        for (var j in group.values) {
+            var value_dict = group.values[j];
+            for (var key in array) {
+                array[key].push (String(value_dict[key]));
+            }
+        }
+    }
+       
+    // index all values contained in label columns (for all groups)
+    for (var i in groups) {
+        var group = groups[i];
+        for (var j in group.values) {
+            var value_dict = group.values[j];
+            for (var key in array) {
+                value_dict[key] = parseInt(j)
+            }
+        }
+    }
+    
+    // return dictionary
+    return {
+        array : array
+    }
+};
+
+// category make for unique category labels
+function makeCategoriesUnique(groups, with_index) {
     // hashkeys, arrays and counter for labeled columns
     var categories  = {};
     var array       = {};

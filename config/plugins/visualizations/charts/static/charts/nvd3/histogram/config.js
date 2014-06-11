@@ -1,6 +1,5 @@
 
 define(['plugin/charts/nvd3/common/config'], function(nvd3_config) {
-
 return $.extend(true, {}, nvd3_config, {
     title       : 'Histogram',
     category    : 'Data processing (requires \'charts\' tool from Toolshed)',
@@ -8,7 +7,7 @@ return $.extend(true, {}, nvd3_config, {
     keywords    : 'small medium large',
     columns     : {
         y : {
-            title   : 'Observations',
+            title       : 'Observations',
             is_numeric  : true
         }
     },

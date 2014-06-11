@@ -56,7 +56,7 @@ return Backbone.Model.extend(
         'nvd3_histogram_discrete'           : nvd3_histogram_discrete,
         'jqplot_line'                       : jqplot_line,
         'jqplot_scatter'                    : jqplot_scatter,
-        //'jqplot_boxplot'                    : jqplot_boxplot
+        'jqplot_boxplot'                    : jqplot_boxplot
     }
 });
 

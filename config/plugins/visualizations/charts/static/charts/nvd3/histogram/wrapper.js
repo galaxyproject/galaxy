@@ -2,8 +2,7 @@
 define(['plugin/charts/nvd3/common/wrapper'], function(NVD3) {
 
 // widget
-return Backbone.View.extend(
-{
+return Backbone.View.extend({
     // initialize
     initialize: function(app, options) {
         this.app        = app;
@@ -11,18 +10,18 @@ return Backbone.View.extend(
     },
             
     // render
-    draw : function(process_id, chart, request_dictionary)
-    {
+    draw : function(process_id, chart, request_dictionary){
         // configure request
         var index = 1;
         for (var i in request_dictionary.groups) {
             var group = request_dictionary.groups[i];
             group.columns = {
                 x: {
-                    index: 0
+                    index       : 0,
+                    is_numeric  : true
                 },
                 y: {
-                    index: index++
+                    index       : index++
                 }
             }
         }

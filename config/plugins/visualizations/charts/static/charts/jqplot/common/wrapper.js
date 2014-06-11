@@ -37,35 +37,41 @@ return Backbone.View.extend(
     
     // draw all data into a single canvas
     render: function(groups, el_canvas) {
-        // set chart settings
-        var chart       = this.options.chart;
-        var makeConfig  = this.options.makeConfig;
-        var makeSeries  = this.options.makeSeries;
+        // get parameters
+        var chart           = this.options.chart;
+        var makeCategories  = this.options.makeCategories;
+        var makeSeries      = this.options.makeSeries;
+        var makeConfig      = this.options.makeConfig;
         
         // create configuration
         var plot_config = configmaker(chart);
         var plot_data = []
-        
-        // identify categories
-        this._makeCategories(chart, groups, plot_config, true);
-        
-        // reset data
-        if (makeSeries) {
-            plot_data = makeSeries(groups);
-        } else {
-            plot_data = Tools.makeSeries(groups);
-        }
-        
+            
         // draw plot
         try {
             // canvas
             var canvas = el_canvas[0];
+    
+            // make custom categories call
+            this._makeAxes(plot_config, groups, chart.settings);
             
-            // make custom wrapper callback
-            if (makeConfig) {
-                makeConfig(plot_config);
+            // make custom series call
+            if (makeSeries) {
+                plot_data = makeSeries(groups);
+            } else {
+                plot_data = Tools.makeSeries(groups);
             }
-        
+    
+            // make custom config call
+            if (makeConfig) {
+                makeConfig(plot_config, groups);
+            }
+            
+            // check chart state
+            if (chart.get('state') == 'failed') {
+                return false;
+            }
+            
             // Draw graph with default options, overwriting with passed options
             function drawGraph (opts) {
                 el_canvas.empty();
@@ -89,53 +95,54 @@ return Backbone.View.extend(
         }
     },
     
-    // create categories
-    _makeCategories: function(chart, groups, plot_config) {
-        
-        // check length
-        if (groups.length == 0) {
-            return;
-        }
-        
+    // create axes formatting
+    _makeAxes: function(plot_config, groups, settings) {
         // result
-        var result = Tools.makeCategories(chart, groups);
-        
-        /*/ add categories to plot configuration
-        for (var key in result.array) {
-            var axis = key + 'axis';
-            if (plot_config.axes[axis]) {
-                plot_config.axes[axis].ticks = result.array[key];
-            }
-        }*/
-        
-        // add x tick formatter
-        function axisTickFormatter (axis_char, plot_axis, axis_type, axis_tick) {
-            // get chart definition from first group
-            var chart_definition = groups[0];
-            
-            /*if (axis_type != 'auto' && axis_type !== undefined) {
-                plot_axis.tickOptions.formatter = function(format, value) {
-                    if (axis_type == 'hide') {
-                        return '';
-                    }
-                    var format = d3.format(axis_tick + axis_type);
-                    return format(v);
-                }
-            } else {*/
-                if (chart_definition.columns[axis_char] && chart_definition.columns[axis_char].is_label) {
-                    plot_axis.tickOptions.formatter = function(format, value) {
-                        if (result.array[axis_char] !== undefined &&
-                            result.array[axis_char][value] !== undefined) {
-                            return result.array[axis_char][value];
-                        } else {
-                            return '';
-                        }
-                    }
-                }
-            //}
+        var makeCategories = this.options.makeCategories;
+        var categories;
+        if (makeCategories) {
+            categories = makeCategories(groups, plot_config);
+        } else {
+            categories = Tools.makeCategories(groups);
         }
-        //axisTickFormatter ('x', plot_config.axes.xaxis, chart.settings.get('x_axis_type'), chart.settings.get('x_axis_tick'));
-        //axisTickFormatter ('y', plot_config.axes.yaxis, chart.settings.get('y_axis_type'), chart.settings.get('y_axis_tick'));
+                
+        // make axis
+        function makeAxis (id) {
+            var axis        = plot_config.axes[id + 'axis'].tickOptions;
+            var type        = settings.get(id + '_axis_type');
+            var tick        = settings.get(id + '_axis_tick');
+            var is_category = categories.array[id];
+            
+            // hide axis
+            if (type == 'hide') {
+                axis.formatter = function(format, value) { return '' };
+                return;
+            }
+            
+            // format values/labels
+            if (type == 'auto') {
+                if (is_category) {
+                    axis.formatter = function(format, value) {
+                        return categories.array[id][value] || '';
+                    };
+                }
+            } else {
+                var formatter = d3.format(tick + type);
+                if (is_category) {
+                    axis.formatter = function(format, value) {
+                        return formatter(categories.array[id][value]);
+                    };
+                } else {
+                    axis.formatter = function(format, value) {
+                        return formatter(value);
+                    }
+                }
+            }
+        };
+    
+        // make axes
+        makeAxis('x');
+        makeAxis('y');
     },
     
     // handle error

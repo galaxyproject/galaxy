@@ -7,7 +7,8 @@ return $.extend(true, {}, plot_config, {
         x : {
             title       : 'Values for x-axis',
             is_label    : true,
-            is_auto     : true
+            is_auto     : true,
+            is_unique   : true
         },
         y : {
             title   : 'Values for y-axis',
