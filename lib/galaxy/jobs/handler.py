@@ -291,33 +291,37 @@ class JobHandlerQueue( object ):
         job can be dispatched. Otherwise, return JOB_WAIT indicating that input
         datasets are still being prepared.
         """
-        # If tracking in the database, job.state is guaranteed to be NEW and the inputs are guaranteed to be OK
         if not self.track_jobs_in_database:
-            in_memory_job_state = self.__check_in_memory_job_state( job )
-            if in_memory_job_state:
-                return in_memory_job_state
-            # If no problems, all inputs ready to go, continue
-            # with same checks either way.
+            in_memory_not_ready_state = self.__verify_in_memory_job_inputs( job )
+            if in_memory_not_ready_state:
+                return in_memory_not_ready_state
+
+        # Else, if tracking in the database, job.state is guaranteed to be NEW and
+        # the inputs are guaranteed to be OK.
 
         # Create the job wrapper so that the destination can be set
-        if job.id not in self.job_wrappers:
-            self.job_wrappers[job.id] = self.job_wrapper( job )
+        job_id = job.id
+        job_wrapper = self.job_wrappers.get( job_id, None )
+        if not job_wrapper:
+            job_wrapper = self.job_wrapper( job )
+            self.job_wrappers[ job_id ] = job_wrapper
+
         # Cause the job_destination to be set and cached by the mapper
         try:
-            self.job_wrappers[job.id].job_destination
+            job_destination = job_wrapper.job_destination
         except Exception, e:
             failure_message = getattr( e, 'failure_message', DEFAULT_JOB_PUT_FAILURE_MESSAGE )
             if failure_message == DEFAULT_JOB_PUT_FAILURE_MESSAGE:
                 log.exception( 'Failed to generate job destination' )
             else:
                 log.debug( "Intentionally failing job with message (%s)" % failure_message )
-            self.job_wrappers[job.id].fail( failure_message )
+            job_wrapper.fail( failure_message )
             return JOB_ERROR
         # job is ready to run, check limits
         # TODO: these checks should be refactored to minimize duplication and made more modular/pluggable
-        state = self.__check_destination_jobs( job, self.job_wrappers[job.id] )
+        state = self.__check_destination_jobs( job, job_wrapper )
         if state == JOB_READY:
-            state = self.__check_user_jobs( job, self.job_wrappers[job.id] )
+            state = self.__check_user_jobs( job, job_wrapper )
         if state == JOB_READY and self.app.config.enable_quotas:
             quota = self.app.quota_agent.get_quota( job.user )
             if quota is not None:
@@ -329,10 +333,13 @@ class JobHandlerQueue( object ):
                     pass  # No history, should not happen with an anon user
         if state == JOB_READY:
             # PASS.  increase usage by one job (if caching) so that multiple jobs aren't dispatched on this queue iteration
-            self.increase_running_job_count(job.user_id, self.job_wrappers[job.id].job_destination.id)
+            self.increase_running_job_count(job.user_id, job_destination.id )
         return state
 
-    def __check_in_memory_job_state( self, job ):
+    def __verify_in_memory_job_inputs( self, job ):
+        """ Perform the same checks that happen via SQL for in-memory managed
+        jobs.
+        """
         if job.state == model.Job.states.DELETED:
             return JOB_DELETED
         elif job.state == model.Job.states.ERROR:
