@@ -156,7 +156,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMix
             output_dict[ 'output_name' ] = output_name
             outputs.append( trans.security.encode_dict_ids( output_dict ) )
 
-        for job in vars[ 'jobs' ]:
+        for job in vars.get('jobs', []):
             rval[ 'jobs' ].append( self.encode_all_ids( trans, job.to_dict( view='collection' ), recursive=True ) )
 
         for output_name, collection_instance in vars.get( 'implicit_collections', {} ).iteritems():
