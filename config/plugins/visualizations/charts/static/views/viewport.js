@@ -107,20 +107,16 @@ return Backbone.View.extend({
         // create requested canvas elements
         for (var i = 0; i < n; i++) {
             // create element
-            var canvas_el = $(this._templateContainer(tag, parseInt(100 / n)));
+            var container_el = $(this._templateContainer(tag, parseInt(100 / n)));
             
             // add to view
-            this.$el.append(canvas_el);
+            this.$el.append(container_el);
             
             // add to list
-            this.container_list[i] = canvas_el;
+            this.container_list[i] = container_el;
             
             // add a separate list for canvas elements
-            if (tag == 'svg') {
-                this.canvas_list[i] = d3.select(canvas_el.find('#canvas')[0]);
-            } else {
-                this.canvas_list[i] = canvas_el.find('#canvas');
-            }
+            this.canvas_list[i] = container_el.find('.charts-viewport-canvas').attr('id');
         }
     },
     
@@ -167,8 +163,8 @@ return Backbone.View.extend({
         // create chart view
         var self = this;
         require(['plugin/charts/' + this.app.chartPath(chart_type) + '/wrapper'], function(ChartView) {
-            // create chart
-            var view = new ChartView(self.app, {canvas : self.canvas_list});
+            // create chart and parse list of dom ids
+            var view = new ChartView(self.app, {canvas_list : self.canvas_list});
             
             // request data
             if (self.chart_definition.execute) {
@@ -284,7 +280,7 @@ return Backbone.View.extend({
     _templateContainer: function(tag, width) {
         return  '<div class="charts-viewport-container" style="width:' + width + '%;">' +
                     '<div id="menu"/>' +
-                    '<' + tag + ' id="canvas" class="charts-viewport-canvas">' +
+                    '<' + tag + ' id="' + Utils.uuid() + '" class="charts-viewport-canvas">' +
                 '</div>';
     }
     

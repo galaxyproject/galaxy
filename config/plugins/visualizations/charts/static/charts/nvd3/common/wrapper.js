@@ -17,17 +17,17 @@ return Backbone.View.extend(
         var plot = Tools.panelHelper({
             app                 : this.app,
             process_id          : this.options.process_id,
-            canvas              : this.options.canvas,
+            canvas_list         : this.options.canvas_list,
             chart               : this.options.chart,
             request_dictionary  : this.options.request_dictionary,
-            render              : function(groups, canvas) {
-                                    return self.render(groups, canvas)
+            render              : function(canvas_id, groups) {
+                                    return self.render(canvas_id, groups)
                                 }
         });
     },
     
     // render
-    render : function(groups, canvas) {
+    render : function(canvas_id, groups) {
         var chart       = this.options.chart;
         var type        = this.options.type;
         var makeConfig  = this.options.makeConfig;
@@ -67,7 +67,11 @@ return Backbone.View.extend(
                 d3chart.yAxis.showMaxMin(chart.definition.showmaxmin);
                 
                 // draw chart
-                canvas.datum(groups)
+                if ($('#' + canvas_id).length == 0) {
+                    return;
+                }
+                var canvas = d3.select('#' + canvas_id);
+                    canvas.datum(groups)
                       .call(d3chart);
                     
                 // add zoom/pan handler

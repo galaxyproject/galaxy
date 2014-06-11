@@ -12,7 +12,7 @@ function panelHelper (options)
     var chart               = options.chart;
     var request_dictionary  = options.request_dictionary;
     var render              = options.render;
-    var canvas              = options.canvas;
+    var canvas_list         = options.canvas_list;
     var app                 = options.app;
     
     // get request size from chart
@@ -22,23 +22,23 @@ function panelHelper (options)
     request_dictionary.success = function() {
         try {
             // check if this chart has multiple panels
-            if (!chart.definition.use_panels && chart.settings.get('use_panels') !== 'true') {
-                // draw all groups into a single panel
-                if (render(request_dictionary.groups, canvas[0])) {
-                    chart.state('ok', 'Chart drawn.');
-                }
-            } else {
+            if (chart.definition.use_panels || chart.settings.get('use_panels') === 'true') {
                 // draw groups in separate panels
                 var valid = true;
                 for (var group_index in request_dictionary.groups) {
                     var group = request_dictionary.groups[group_index];
-                    if (!render([group], canvas[group_index])) {
+                    if (!render(canvas_list[group_index], [group])) {
                         valid = false;
                         break;
                     }
                 }
                 if (valid) {
                     chart.state('ok', 'Multi-panel chart drawn.');
+                }
+            } else {
+                // draw all groups into a single panel
+                if (render(canvas_list[0], request_dictionary.groups)) {
+                    chart.state('ok', 'Chart drawn.');
                 }
             }
             
@@ -58,7 +58,9 @@ function panelHelper (options)
     
     // add progress
     request_dictionary.progress = function(percentage) {
-        chart.state('wait', 'Loading data...' + percentage + '%');
+        if (chart.get('state') == 'wait') {
+            chart.state('wait', 'Loading data...' + percentage + '%');
+        }
     };
     
     // request data

@@ -211,6 +211,22 @@ return {
                     value   : 'false'
                 }
             ]
+        },
+        use_panels : {
+            title       : 'Use multi-panels',
+            info        : 'Would you like to separate your data into individual panels?',
+            type        : 'radiobutton',
+            init        : 'false',
+            data        : [
+                {
+                    label   : 'Yes',
+                    value   : 'true'
+                },
+                {
+                    label   : 'No',
+                    value   : 'false'
+                }
+            ]
         }
     }
 };

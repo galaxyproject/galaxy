@@ -34,7 +34,7 @@ return Backbone.View.extend(
         
         // construct chart type subset selection buttons
         this.library = new Ui.RadioButton({
-            data    : [ { label: 'Few (<1k)', value: 'small' },
+            data    : [ { label: 'Few (<500)', value: 'small' },
                         { label: 'Some (<10k)', value: 'medium' },
                         { label: 'Many (>10k)', value: 'large' }],
             onchange: function(value) {

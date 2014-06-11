@@ -26,17 +26,17 @@ return Backbone.View.extend(
         var plot = new Tools.panelHelper({
             app                 : this.app,
             process_id          : this.options.process_id,
-            canvas              : this.options.canvas,
+            canvas_list         : this.options.canvas_list,
             chart               : this.options.chart,
             request_dictionary  : this.options.request_dictionary,
-            render              : function(groups, canvas) {
-                                    return self.render(groups, canvas)
+            render              : function(canvas_id, groups) {
+                                    return self.render(canvas_id, groups)
                                 }
         });
     },
     
     // draw all data into a single canvas
-    render: function(groups, el_canvas) {
+    render: function(canvas_id, groups) {
         // get parameters
         var chart           = this.options.chart;
         var makeCategories  = this.options.makeCategories;
@@ -45,13 +45,10 @@ return Backbone.View.extend(
         
         // create configuration
         var plot_config = configmaker(chart);
-        var plot_data = []
-            
+        var plot_data = [];
+        
         // draw plot
         try {
-            // canvas
-            var canvas = el_canvas[0];
-    
             // make custom categories call
             this._makeAxes(plot_config, groups, chart.settings);
             
@@ -72,11 +69,15 @@ return Backbone.View.extend(
                 return false;
             }
             
-            // Draw graph with default options, overwriting with passed options
+            // draw graph with default options, overwriting with passed options
             function drawGraph (opts) {
-                el_canvas.empty();
+                var canvas = $('#' + canvas_id);
+                if(canvas.length == 0) {
+                    return;
+                }
+                canvas.empty();
                 var plot_cnf = _.extend(_.clone(plot_config), opts || {});
-                return plot = $.jqplot('canvas', plot_data, plot_cnf);
+                return plot = $.jqplot(canvas_id, plot_data, plot_cnf);
             }
   
             // draw plot
@@ -84,7 +85,7 @@ return Backbone.View.extend(
             
             // catch window resize event
             var self = this;
-            $(window).resize(function () {
+            $(window).on('resize', function () {
                 drawGraph();
             });
         
