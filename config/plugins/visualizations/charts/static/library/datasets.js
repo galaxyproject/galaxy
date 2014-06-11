@@ -20,19 +20,82 @@ return Backbone.Collection.extend(
         this.options = Utils.merge(options, this.optionsDefault);
     },
     
-    // wait
+    // request handler
     request: function(request_dictionary, success, error) {
-        // link this
-        var self = this;
-        
-        // check if column data is requested
         if (request_dictionary.groups) {
-            this._get_dataset(request_dictionary.id, function() {
-                self._get(request_dictionary, success);
-            });
+            this._get_blocks(request_dictionary, success, error);
         } else {
             this._get_dataset(request_dictionary.id, success, error)
         }
+    },
+    
+    // multiple request handler
+    _get_blocks: function(request_dictionary, success, error) {
+        // query block size
+        var query_size = this.app.config.get('query_limit');
+        
+        // set range
+        var query_start = request_dictionary.start || 0;
+        var query_end   = query_start + request_dictionary.query_limit || query_start + this.app.config.get('query_limit');
+
+        // get query limit
+        var query_range = Math.abs(query_end - query_start);
+        if (query_range <= 0) {
+            console.debug('FAILED - Datasets::request() - Invalid query range.');
+            return;
+        }
+        
+        // get number of required queries
+        var query_number = Math.ceil(query_range / query_size) || 1;
+        
+        // get query dictionary template
+        var query_dictionary_template = $.extend(true, {}, request_dictionary);
+        
+        // fetch blocks
+        var self = this;
+        function fetch_blocks (query, success, error) {
+            self._get(query, function() {
+                // copy values from query into request_dictionary
+                var done = false;
+                for (var group_index in request_dictionary.groups) {
+                    // get source/destination
+                    destination_group = request_dictionary.groups[group_index];
+                    source_group = query.groups[group_index];
+                    
+                    // check if value fields already exist
+                    if (!destination_group.values) {
+                        destination_group.values = [];
+                    }
+                    
+                    // concat values
+                    destination_group.values = destination_group.values.concat(source_group.values);
+                    
+                    // validate
+                    if (source_group.values.length == 0) {
+                        done = true;
+                        break;
+                    }
+                }
+                
+                // check if for remaining queries
+                if (--query_number > 0 && !done) {
+                    var start = query.start + query_size;
+                    query = $.extend(true, query_dictionary_template, {start: start});
+                    fetch_blocks(query, success, error);
+                } else {
+                    success();
+                }
+            });
+        
+        };
+        
+        // prepare query
+        var query = $.extend(true, query_dictionary_template, {start: query_start});
+        
+        // get dataset meta data
+        this._get_dataset(request_dictionary.id, function() {
+            fetch_blocks(query, success, error);
+        });
     },
     
     // get dataset
@@ -62,18 +125,14 @@ return Backbone.Collection.extend(
     
     // get block id
     _block_id: function (options, column) {
-        return options.id + '_' + options.start + '_' + options.end + '_' + column;
+        return options.id + '_' + options.start + '_' + options.start + this.app.config.get('query_limit') + '_' + column;
     },
     
     // fills request dictionary with data from cache/response
     _get: function(request_dictionary, callback) {
-        // set start/end
-        if (!request_dictionary.start) {
-            request_dictionary.start = 0;
-        }
-        if (!request_dictionary.end) {
-            request_dictionary.end = this.app.config.get('query_limit');
-        }
+        // set start
+        request_dictionary.start = request_dictionary.start || 0;
+        
         // get column indices
         var column_list = [];
         var column_map  = {};
@@ -99,7 +158,7 @@ return Backbone.Collection.extend(
             }
         }
         
-        // check length
+        // check length of blocks not available in cache
         if (column_list.length == 0) {
             // fill dictionary from cache
             this._fill_from_cache(request_dictionary);
@@ -115,7 +174,6 @@ return Backbone.Collection.extend(
         var dataset_request = {
             dataset_id  : request_dictionary.id,
             start       : request_dictionary.start,
-            end         : request_dictionary.end,
             columns     : column_list
         }
         
@@ -161,7 +219,7 @@ return Backbone.Collection.extend(
         
         // check length
         if (limit == 0) {
-            console.debug('FAILED - Datasets::_fill_from_cache() - Invalid range.');
+            console.debug('Datasets::_fill_from_cache() - Reached data range limit.');
         }
         
         // initialize group values
@@ -230,17 +288,13 @@ return Backbone.Collection.extend(
         var offset  = dataset_request.start ? dataset_request.start : 0;
         
         // set limit
-        var limit   = Math.abs(dataset_request.end - dataset_request.start);
-        var query_limit = this.app.config.get('query_limit');
-        if (!limit || limit > query_limit) {
-            limit = query_limit;
-        }
+        var limit = this.app.config.get('query_limit');
         
         // check length
         var n_columns = 0;
         if (dataset_request.columns) {
             n_columns = dataset_request.columns.length;
-            console.debug('Datasets::_fetch() - Fetching ' + n_columns + ' column(s)');
+            console.debug('Datasets::_fetch() - Fetching ' + n_columns + ' column(s) at ' + offset + '.');
         }
         if (n_columns == 0) {
             console.debug('Datasets::_fetch() - No columns requested');

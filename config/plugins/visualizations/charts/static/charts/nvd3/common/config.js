@@ -6,6 +6,7 @@ return {
     library     : 'NVD3',
     tag         : 'svg',
     keywords    : 'small',
+    query_limit : 500,
     settings    : {
         separator_label  : {
             title       : 'X axis',

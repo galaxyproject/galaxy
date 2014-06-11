@@ -12,6 +12,9 @@ function panelHelper (options)
     var canvas              = options.canvas;
     var app                 = options.app;
     
+    // get request size from chart
+    request_dictionary.query_limit = chart.definition.query_limit;
+    
     // request data
     var self = this;
     app.datasets.request(request_dictionary, function() {

@@ -6,6 +6,7 @@ return {
     library     : 'JqPlot',
     tag         : 'div',
     keywords    : 'default medium',
+    query_limit : 10000,
     settings    : {
         separator_label  : {
             title       : 'X axis',
