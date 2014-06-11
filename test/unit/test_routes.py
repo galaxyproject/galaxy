@@ -76,6 +76,16 @@ def test_galaxy_routes( ):
         type="dataset_collection"
     )
 
+    assert_url_is(
+        url_for( "history_content", history_id="123", id="456" ),
+        "/api/histories/123/contents/456"
+    )
+
+    assert_url_is(
+        url_for( "history_content_typed", history_id="123", id="456", type="dataset" ),
+        "/api/histories/123/contents/datasets/456"
+    )
+
 
 def assert_url_is( actual, expected ):
     assert actual == expected, "Expected URL [%s] but obtained [%s]" % ( expected, actual )
