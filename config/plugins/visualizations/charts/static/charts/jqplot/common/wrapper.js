@@ -38,10 +38,11 @@ return Backbone.View.extend(
     // draw all data into a single canvas
     render: function(canvas_id, groups) {
         // get parameters
-        var chart           = this.options.chart;
-        var makeCategories  = this.options.makeCategories;
-        var makeSeries      = this.options.makeSeries;
-        var makeConfig      = this.options.makeConfig;
+        var chart               = this.options.chart;
+        var makeCategories      = this.options.makeCategories;
+        var makeSeries          = this.options.makeSeries;
+        var makeSeriesLabels    = this.options.makeSeriesLabels;
+        var makeConfig          = this.options.makeConfig;
         
         // create configuration
         var plot_config = configmaker(chart);
@@ -50,18 +51,25 @@ return Backbone.View.extend(
         // draw plot
         try {
             // make custom categories call
-            this._makeAxes(plot_config, groups, chart.settings);
+            this._makeAxes(groups, plot_config, chart.settings);
             
             // make custom series call
             if (makeSeries) {
-                plot_data = makeSeries(groups);
+                plot_config.series = makeSeriesLabels(groups, plot_config);
+            } else {
+                plot_config.series = this._makeSeriesLabels(groups);
+            }
+    
+            // make custom series call
+            if (makeSeries) {
+                plot_data = makeSeries(groups, plot_config);
             } else {
                 plot_data = Tools.makeSeries(groups);
             }
     
             // make custom config call
             if (makeConfig) {
-                makeConfig(plot_config, groups);
+                makeConfig(groups, plot_config);
             }
             
             // check chart state
@@ -96,8 +104,19 @@ return Backbone.View.extend(
         }
     },
     
+    // make series labels
+    _makeSeriesLabels: function(groups, plot_config) {
+        var series = [];
+        for (var group_index in groups) {
+            series.push({
+                label: groups[group_index].key
+            });
+        }
+        return series;
+    },
+    
     // create axes formatting
-    _makeAxes: function(plot_config, groups, settings) {
+    _makeAxes: function(groups, plot_config, settings) {
         // result
         var makeCategories = this.options.makeCategories;
         var categories;

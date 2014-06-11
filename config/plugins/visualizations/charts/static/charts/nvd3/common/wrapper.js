@@ -62,6 +62,11 @@ return Backbone.View.extend(
                     makeConfig(d3chart);
                 }
                 
+                // hide controls if in multi-viewer mode
+                if (chart.settings.get('use_panels') === 'true') {
+                    d3chart.options({showControls: false});
+                }
+        
                 // hide min/max values
                 d3chart.xAxis.showMaxMin(false);
                 d3chart.yAxis.showMaxMin(chart.definition.showmaxmin);

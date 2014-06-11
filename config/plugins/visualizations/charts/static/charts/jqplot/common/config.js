@@ -100,6 +100,22 @@ return {
             ]
 
         },
+        x_axis_grid : {
+            title       : 'Axis grid',
+            info        : 'Would you like to show grid lines for this axis?',
+            type        : 'radiobutton',
+            init        : 'false',
+            data        : [
+                {
+                    label   : 'On',
+                    value   : 'true'
+                },
+                {
+                    label   : 'Off',
+                    value   : 'false'
+                }
+            ]
+        },
         separator_tick  : {
             title       : 'Y axis',
             type        : 'separator'
@@ -191,6 +207,22 @@ return {
                 }
             ]
 
+        },
+        y_axis_grid : {
+            title       : 'Axis grid',
+            info        : 'Would you like to show grid lines for this axis?',
+            type        : 'radiobutton',
+            init        : 'true',
+            data        : [
+                {
+                    label   : 'On',
+                    value   : 'true'
+                },
+                {
+                    label   : 'Off',
+                    value   : 'false'
+                }
+            ]
         },
         separator_legend : {
             title       : 'Others',

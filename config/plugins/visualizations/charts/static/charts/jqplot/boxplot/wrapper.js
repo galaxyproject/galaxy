@@ -19,17 +19,16 @@ return Backbone.View.extend(
             group.columns = null;
             group.columns = {
                 x: {
-                    index       : index++
+                    index: index++
                 }
             }
         }
-        
         var plot = new Plot(this.app, this.options);
         plot.draw({
             process_id          : process_id,
             chart               : chart,
             request_dictionary  : request_dictionary,
-            makeConfig          : function(plot_config, groups){
+            makeConfig          : function(groups, plot_config){
                 var boundary = Tools.getDomains(groups, 'x');
                 $.extend(true, plot_config, {
                     seriesDefaults: {
@@ -42,7 +41,8 @@ return Backbone.View.extend(
                     },
                     axes : {
                         xaxis: {
-                            pad: 1.2
+                            min: -1,
+                            max: groups.length + 0.01
                         },
                         yaxis: {
                             min: boundary.x.min,
@@ -51,7 +51,29 @@ return Backbone.View.extend(
                     }
                 });
             },
-            makeSeries          : function (groups) {
+            makeCategories: function(groups) {
+                // define custom category labels
+                var x_labels = [];
+                for (var group_index in groups) {
+                    x_labels.push(groups[group_index].key);
+                }
+                
+                // use default mapping
+                Tools.mapCategories (groups, x_labels);
+                
+                // return labels array for x axis
+                return {
+                    array: {
+                        x : x_labels
+                    }
+                }
+            },
+            makeSeriesLabels : function (groups, plot_config) {
+                return [{
+                    label: 'Boxplot values'
+                }];
+            },
+            makeSeries: function (groups) {
                 /* example data
                 var catOHLC = [
                     [0, 138.7, 139.68, 135.18, 135.4],
@@ -72,14 +94,14 @@ return Backbone.View.extend(
                 }
                 
                 // loop through data groups
-                for (var group_index in request_dictionary.groups) {
+                var indeces = [2, 4, 0, 1];
+                for (var group_index in groups) {
                     // get group
-                    var group = request_dictionary.groups[group_index];
+                    var group = groups[group_index];
                   
                     // format chart data
                     var point = [];
                     point.push(parseInt(group_index));
-                    var indeces = [2, 4, 0, 1];
                     for (var key in indeces) {
                         point.push(group.values[indeces[key]].x);
                     }
@@ -88,6 +110,14 @@ return Backbone.View.extend(
                     plot_data.push (point);
                 }
                 
+                // HACK: the boxplot renderer has an issue with single elements
+                var point = [];
+                point[0] = plot_data.length;
+                for (var key in indeces) {
+                    point.push(0);
+                }
+                plot_data.push (point);
+
                 // return
                 return [plot_data];
             }

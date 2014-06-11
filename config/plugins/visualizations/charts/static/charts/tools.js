@@ -22,7 +22,7 @@ function panelHelper (options)
     request_dictionary.success = function() {
         try {
             // check if this chart has multiple panels
-            if (chart.definition.use_panels || chart.settings.get('use_panels') === 'true') {
+            if (chart.settings.get('use_panels') === 'true') {
                 // draw groups in separate panels
                 var valid = true;
                 for (var group_index in request_dictionary.groups) {
@@ -131,7 +131,6 @@ function makeSeries(groups, keys) {
         // append series
         plot_data.push(data);
     }
-        
        
     // return
     return plot_data;
@@ -163,6 +162,17 @@ function makeCategories(groups, with_index) {
     }
        
     // index all values contained in label columns (for all groups)
+    mapCategories(array, groups);
+    
+    // return dictionary
+    return {
+        array : array
+    }
+};
+
+// apply default mapping
+// index all values contained in label columns (for all groups)
+function mapCategories(array, groups) {
     for (var i in groups) {
         var group = groups[i];
         for (var j in group.values) {
@@ -172,15 +182,10 @@ function makeCategories(groups, with_index) {
             }
         }
     }
-    
-    // return dictionary
-    return {
-        array : array
-    }
 };
 
 // category make for unique category labels
-function makeCategoriesUnique(groups, with_index) {
+function makeUniqueCategories(groups, with_index) {
     // hashkeys, arrays and counter for labeled columns
     var categories  = {};
     var array       = {};
@@ -247,7 +252,8 @@ return {
     panelHelper         : panelHelper,
     makeCategories      : makeCategories,
     makeSeries          : makeSeries,
-    getDomains          : getDomains
+    getDomains          : getDomains,
+    mapCategories       : mapCategories
 }
 
 });

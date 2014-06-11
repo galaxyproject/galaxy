@@ -16,7 +16,7 @@ define(["libs/underscore"], function(_) {
     
     // from jqplot
     function _fromCanvas ($el) {
-        $el.find('#canvas').jqplotSaveImage({});
+        $el.find('.charts-viewport-canvas').jqplotSaveImage({});
     };
     
     // from svg

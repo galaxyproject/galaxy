@@ -1,6 +1,6 @@
 // dependencies
-define(['mvc/ui/ui-portlet', 'plugin/library/ui', 'plugin/library/screenshot', 'utils/utils'],
-        function(Portlet, Ui, Screenshot, Utils) {
+define(['mvc/ui/ui-portlet', 'plugin/library/ui', 'utils/utils'],
+        function(Portlet, Ui, Utils) {
 
 // widget
 return Backbone.View.extend({
@@ -134,12 +134,9 @@ return Backbone.View.extend({
         // load chart settings
         this.chart_definition = chart.definition;
         
-        // read settings
-        var use_panels = this.chart_definition.use_panels || (chart.settings.get('use_panels') === 'true');
-        
         // determine number of svg/div-elements to create
         var n_panels = 1;
-        if (use_panels) {
+        if (chart.settings.get('use_panels') === 'true') {
             n_panels = chart.groups.length;
         }
         

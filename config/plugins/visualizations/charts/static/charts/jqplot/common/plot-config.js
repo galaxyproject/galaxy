@@ -57,11 +57,6 @@ return function(chart) {
             }
         },
        
-        // Custom labels for the series are specified with the "label"
-        // option on the series option.  Here a series option object
-        // is specified for each series.
-        series: [],
-       
         axesDefaults: {
             labelRenderer           : $.jqplot.CanvasAxisLabelRenderer,
             labelOptions: {
@@ -76,25 +71,22 @@ return function(chart) {
         },
     
         axes: {
-            // Use a category axis on the x axis and use our custom ticks.
             xaxis: {
                 label               : chart.settings.get('x_axis_label'),
                 tickRenderer        : $.jqplot.CanvasAxisTickRenderer,
                 tickOptions: {
-                    angle           : -30
+                    angle           : chart.settings.get('use_panels') === 'true' ? 0 : -30,
+                    showGridline    : chart.settings.get('x_axis_grid') === 'true'
                 },
                 tickInterval        : 1,
                 pad                 : 0
             },
-            // Pad the y axis just a little so bars can get close to, but
-            // not touch, the grid boundaries.  1.2 is the default padding.
             yaxis: {
                 label               : chart.settings.get('y_axis_label'),
-                tickOptions         : {},
+                tickOptions         : {
+                    showGridline    : chart.settings.get('y_axis_grid') === 'true'
+                },
                 pad                 : 0
-                //tickOptions       : {formatString: '$%d'},
-                //padding             : 1.2,
-                //autoscale:true
             }
         },
        
@@ -110,17 +102,17 @@ return function(chart) {
             showTooltip             : false,
             style                   : 'pointer'
         },
+       
         highlighter: {
             show                    : true,
             showMarker              : false,
             tooltipAxes             : 'xy'
-        }
+        },
+       
+        series: []
     };
     
-    // Show the legend and put it outside the grid, but inside the
-    // plot container, shrinking the grid to accomodate the legend.
-    // A value of "outside" would not shrink the grid and allow
-    // the legend to overflow the container.
+    // Show the legend and put it outside the grid
     if (chart.settings.get('show_legend') == 'true') {
         plot_config.legend = {
             renderer                : $.jqplot.EnhancedLegendRenderer,

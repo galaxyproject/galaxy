@@ -6,7 +6,7 @@ return $.extend(true, {}, plot_config, {
     library     : 'jqPlot',
     tag         : 'div',
     execute     : 'boxplot',
-    keywords    : 'default large',
+    keywords    : 'small medium large',
     columns     : {
         y : {
             title       : 'Observations',
@@ -14,123 +14,8 @@ return $.extend(true, {}, plot_config, {
         }
     },
     settings    : {
-        separator_label  : {
-            title       : 'X axis',
-            type        : 'separator'
-        },
-        x_axis_label : {
-            title       : 'Axis label',
-            info        : 'Provide a label for the axis.',
-            type        : 'text',
-            init        : 'X-axis',
-            placeholder : 'Axis label'
-        },
-        separator_tick  : {
-            title       : 'Y axis',
-            type        : 'separator'
-        },
-        y_axis_label : {
-            title       : 'Axis label',
-            info        : 'Provide a label for the axis.',
-            type        : 'text',
-            init        : 'Y-axis',
-            placeholder : 'Axis label'
-        },
-        y_axis_type : {
-            title       : 'Axis value type',
-            info        : 'Select the value type of the axis.',
-            type        : 'select',
-            init        : 'auto',
-            data        : [
-                {
-                    label   : '-- Do not show values --',
-                    value   : 'hide',
-                    hide    : ['y_axis_tick']
-                },
-                {
-                    label   : 'Auto',
-                    value   : 'auto',
-                    hide    : ['y_axis_tick']
-                },
-                {
-                    label   : 'Float',
-                    value   : 'f',
-                    show    : ['y_axis_tick']
-                },
-                {
-                    label   : 'Exponent',
-                    value   : 'e',
-                    show    : ['y_axis_tick']
-                },
-                {
-                    label   : 'Integer',
-                    value   : 'd',
-                    hide    : ['y_axis_tick']
-                },
-                {
-                    label   : 'Percentage',
-                    value   : 'p',
-                    show    : ['y_axis_tick']
-                },
-                {
-                    label   : 'Rounded',
-                    value   : 'r',
-                    show    : ['y_axis_tick']
-                },
-                {
-                    label   : 'SI-prefix',
-                    value   : 's',
-                    show    : ['y_axis_tick']
-                }
-            ]
-        },
-        y_axis_tick : {
-            title       : 'Axis tick format',
-            info        : 'Select the tick format for the axis.',
-            type        : 'select',
-            init        : '.1',
-            data        : [
-                {
-                    label   : '0.00001',
-                    value   : '.5'
-                },
-                {
-                    label   : '0.0001',
-                    value   : '.4'
-                },
-                {
-                    label   : '0.001',
-                    value   : '.3'
-                },
-                {
-                    label   : '0.01',
-                    value   : '.2'
-                },
-                {
-                    label   : '0.1',
-                    value   : '.1'
-                },
-                {
-                    label   : '1',
-                    value   : '1'
-                }
-            ]
-        },
-        y_axis_grid : {
-            title       : 'Axis grid',
-            info        : 'Would you like to show grid lines for this axis?',
-            type        : 'radiobutton',
-            init        : '1',
-            data        : [
-                {
-                    label   : 'On',
-                    value   : '1'
-                },
-                {
-                    label   : 'Off',
-                    value   : '0'
-                }
-            ]
+        show_legend : {
+            init : 'false'
         }
     }
 });

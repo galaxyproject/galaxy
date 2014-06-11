@@ -12,6 +12,11 @@ return $.extend(true, {}, plot_config, {
             title   : 'Values for y-axis',
             is_numeric  : true
         }
+    },
+    settings : {
+        x_axis_grid : {
+            init : 'true'
+        }
     }
 });
 

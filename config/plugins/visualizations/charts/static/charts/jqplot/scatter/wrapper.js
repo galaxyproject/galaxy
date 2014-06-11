@@ -17,7 +17,7 @@ return Backbone.View.extend(
             process_id          : process_id,
             chart               : chart,
             request_dictionary  : request_dictionary,
-            makeConfig          : function(plot_config){
+            makeConfig          : function(groups, plot_config){
                 $.extend(true, plot_config, {
                     seriesDefaults: {
                         renderer: $.jqplot.LineRenderer,
