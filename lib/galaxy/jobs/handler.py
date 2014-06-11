@@ -306,8 +306,25 @@ class JobHandlerQueue( object ):
             job_wrapper = self.job_wrapper( job )
             self.job_wrappers[ job_id ] = job_wrapper
 
-        # Cause the job_destination to be set and cached by the mapper
+        # If state == JOB_READY, assume job_destination also set - otherwise
+        # in case of various error or cancelled states do not assume
+        # destination has been set.
+        state, job_destination = self.__verify_job_ready( job, job_wrapper )
+
+        if state == JOB_READY:
+            # PASS.  increase usage by one job (if caching) so that multiple jobs aren't dispatched on this queue iteration
+            self.increase_running_job_count(job.user_id, job_destination.id )
+        return state
+
+    def __verify_job_ready( self, job, job_wrapper ):
+        """ Compute job destination and verify job is ready at that
+        destination by checking job limits and quota. If this method
+        return a job state of JOB_READY - it MUST also return a job
+        destination.
+        """
+        job_destination = None
         try:
+            # Cause the job_destination to be set and cached by the mapper
             job_destination = job_wrapper.job_destination
         except Exception, e:
             failure_message = getattr( e, 'failure_message', DEFAULT_JOB_PUT_FAILURE_MESSAGE )
@@ -316,7 +333,7 @@ class JobHandlerQueue( object ):
             else:
                 log.debug( "Intentionally failing job with message (%s)" % failure_message )
             job_wrapper.fail( failure_message )
-            return JOB_ERROR
+            return JOB_ERROR, job_destination
         # job is ready to run, check limits
         # TODO: these checks should be refactored to minimize duplication and made more modular/pluggable
         state = self.__check_destination_jobs( job, job_wrapper )
@@ -328,13 +345,10 @@ class JobHandlerQueue( object ):
                 try:
                     usage = self.app.quota_agent.get_usage( user=job.user, history=job.history )
                     if usage > quota:
-                        return JOB_USER_OVER_QUOTA
+                        return JOB_USER_OVER_QUOTA, job_destination
                 except AssertionError, e:
                     pass  # No history, should not happen with an anon user
-        if state == JOB_READY:
-            # PASS.  increase usage by one job (if caching) so that multiple jobs aren't dispatched on this queue iteration
-            self.increase_running_job_count(job.user_id, job_destination.id )
-        return state
+        return state, job_destination
 
     def __verify_in_memory_job_inputs( self, job ):
         """ Perform the same checks that happen via SQL for in-memory managed
