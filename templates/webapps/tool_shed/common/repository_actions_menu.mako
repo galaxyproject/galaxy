@@ -54,7 +54,7 @@
         else:
             can_push = False
 
-        if not is_deprecated and not is_new and ( not changeset_is_malicious or can_push ):
+        if not is_deprecated and not is_new and not is_malicious:
             can_download = True
         else:
             can_download = False
