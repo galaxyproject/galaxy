@@ -70,10 +70,38 @@ def app_factory( global_conf, **kwargs ):
     webapp.add_route( '/u/:username/v/:slug', controller='visualization', action='display_by_username_and_slug' )
     webapp.add_route( '/search', controller='search', action='index' )
 
-    # ================
-    # =====  API =====
-    # ================
+    # TODO: Refactor above routes into external method to allow testing in
+    # isolation as well.
+    populate_api_routes( webapp, app )
 
+    # ==== Done
+    # Indicate that all configuration settings have been provided
+    webapp.finalize_config()
+
+    # Wrap the webapp in some useful middleware
+    if kwargs.get( 'middleware', True ):
+        webapp = wrap_in_middleware( webapp, global_conf, **kwargs )
+    if asbool( kwargs.get( 'static_enabled', True ) ):
+        webapp = wrap_in_static( webapp, global_conf, plugin_frameworks=[ app.visualizations_registry ], **kwargs )
+        #webapp = wrap_in_static( webapp, global_conf, plugin_frameworks=None, **kwargs )
+    if asbool(kwargs.get('pack_scripts', False)):
+        pack_scripts()
+    # Close any pooled database connections before forking
+    try:
+        galaxy.model.mapping.metadata.engine.connection_provider._pool.dispose()
+    except:
+        pass
+     # Close any pooled database connections before forking
+    try:
+        galaxy.model.tool_shed_install.mapping.metadata.engine.connection_provider._pool.dispose()
+    except:
+        pass
+
+    # Return
+    return webapp
+
+
+def populate_api_routes( webapp, app ):
     webapp.add_api_controllers( 'galaxy.webapps.galaxy.api', app )
 
     valid_history_contents_types = [
@@ -349,32 +377,6 @@ def app_factory( global_conf, **kwargs ):
     webapp.mapper.connect( "create", "/api/metrics",
         controller="metrics", action="create", conditions=dict( method=["POST"] ) )
 
-
-    # ==== Done
-    # Indicate that all configuration settings have been provided
-    webapp.finalize_config()
-
-    # Wrap the webapp in some useful middleware
-    if kwargs.get( 'middleware', True ):
-        webapp = wrap_in_middleware( webapp, global_conf, **kwargs )
-    if asbool( kwargs.get( 'static_enabled', True ) ):
-        webapp = wrap_in_static( webapp, global_conf, plugin_frameworks=[ app.visualizations_registry ], **kwargs )
-        #webapp = wrap_in_static( webapp, global_conf, plugin_frameworks=None, **kwargs )
-    if asbool(kwargs.get('pack_scripts', False)):
-        pack_scripts()
-    # Close any pooled database connections before forking
-    try:
-        galaxy.model.mapping.metadata.engine.connection_provider._pool.dispose()
-    except:
-        pass
-     # Close any pooled database connections before forking
-    try:
-        galaxy.model.tool_shed_install.mapping.metadata.engine.connection_provider._pool.dispose()
-    except:
-        pass
-
-    # Return
-    return webapp
 
 def pack_scripts():
     from glob import glob
