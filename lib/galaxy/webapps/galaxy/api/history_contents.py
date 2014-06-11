@@ -7,6 +7,7 @@ from galaxy import util
 
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
+from galaxy.web import url_for
 
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.base.controller import UsesHistoryDatasetAssociationMixin
@@ -18,7 +19,6 @@ from galaxy.web.base.controller import UsesTagsMixin
 from galaxy.dataset_collections.util import api_payload_to_create_params
 from galaxy.dataset_collections.util import dictify_dataset_collection_instance
 
-from galaxy.web.base.controller import url_for
 
 from galaxy.managers import histories
 from galaxy.managers import hdas
