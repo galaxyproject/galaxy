@@ -11,7 +11,7 @@
 %>
 <%inherit file="${inherit(context)}"/>
 
-${render_tool_shed_repository_actions( repository )}
+${render_tool_shed_repository_actions( repository, metadata=metadata )}
 
 %if message:
     ${render_msg( message, status )}
