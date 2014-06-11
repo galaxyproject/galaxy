@@ -240,7 +240,7 @@ class JobHandlerQueue( object ):
             try:
                 # Check the job's dependencies, requeue if they're not done.
                 # Some of these states will only happen when using the in-memory job queue
-                job_state = self.__check_if_ready_to_run( job )
+                job_state = self.__check_job_state( job )
                 if job_state == JOB_WAIT:
                     new_waiting_jobs.append( job.id )
                 elif job_state == JOB_INPUT_ERROR:
@@ -281,7 +281,7 @@ class JobHandlerQueue( object ):
         # Done with the session
         self.sa_session.remove()
 
-    def __check_if_ready_to_run( self, job ):
+    def __check_job_state( self, job ):
         """
         Check if a job is ready to run by verifying that each of its input
         datasets is ready (specifically in the OK state). If any input dataset
@@ -293,28 +293,12 @@ class JobHandlerQueue( object ):
         """
         # If tracking in the database, job.state is guaranteed to be NEW and the inputs are guaranteed to be OK
         if not self.track_jobs_in_database:
-            if job.state == model.Job.states.DELETED:
-                return JOB_DELETED
-            elif job.state == model.Job.states.ERROR:
-                return JOB_ADMIN_DELETED
-            for dataset_assoc in job.input_datasets + job.input_library_datasets:
-                idata = dataset_assoc.dataset
-                if not idata:
-                    continue
-                # don't run jobs for which the input dataset was deleted
-                if idata.deleted:
-                    self.job_wrappers.pop(job.id, self.job_wrapper( job )).fail( "input data %s (file: %s) was deleted before the job started" % ( idata.hid, idata.file_name ) )
-                    return JOB_INPUT_DELETED
-                # an error in the input data causes us to bail immediately
-                elif idata.state == idata.states.ERROR:
-                    self.job_wrappers.pop(job.id, self.job_wrapper( job )).fail( "input data %s is in error state" % ( idata.hid ) )
-                    return JOB_INPUT_ERROR
-                elif idata.state == idata.states.FAILED_METADATA:
-                    self.job_wrappers.pop(job.id, self.job_wrapper( job )).fail( "input data %s failed to properly set metadata" % ( idata.hid ) )
-                    return JOB_INPUT_ERROR
-                elif idata.state != idata.states.OK and not ( idata.state == idata.states.SETTING_METADATA and job.tool_id is not None and job.tool_id == self.app.datatypes_registry.set_external_metadata_tool.id ):
-                    # need to requeue
-                    return JOB_WAIT
+            in_memory_job_state = self.__check_in_memory_job_state( job )
+            if in_memory_job_state:
+                return in_memory_job_state
+            # If no problems, all inputs ready to go, continue
+            # with same checks either way.
+
         # Create the job wrapper so that the destination can be set
         if job.id not in self.job_wrappers:
             self.job_wrappers[job.id] = self.job_wrapper( job )
@@ -347,6 +331,33 @@ class JobHandlerQueue( object ):
             # PASS.  increase usage by one job (if caching) so that multiple jobs aren't dispatched on this queue iteration
             self.increase_running_job_count(job.user_id, self.job_wrappers[job.id].job_destination.id)
         return state
+
+    def __check_in_memory_job_state( self, job ):
+        if job.state == model.Job.states.DELETED:
+            return JOB_DELETED
+        elif job.state == model.Job.states.ERROR:
+            return JOB_ADMIN_DELETED
+        for dataset_assoc in job.input_datasets + job.input_library_datasets:
+            idata = dataset_assoc.dataset
+            if not idata:
+                continue
+            # don't run jobs for which the input dataset was deleted
+            if idata.deleted:
+                self.job_wrappers.pop(job.id, self.job_wrapper( job )).fail( "input data %s (file: %s) was deleted before the job started" % ( idata.hid, idata.file_name ) )
+                return JOB_INPUT_DELETED
+            # an error in the input data causes us to bail immediately
+            elif idata.state == idata.states.ERROR:
+                self.job_wrappers.pop(job.id, self.job_wrapper( job )).fail( "input data %s is in error state" % ( idata.hid ) )
+                return JOB_INPUT_ERROR
+            elif idata.state == idata.states.FAILED_METADATA:
+                self.job_wrappers.pop(job.id, self.job_wrapper( job )).fail( "input data %s failed to properly set metadata" % ( idata.hid ) )
+                return JOB_INPUT_ERROR
+            elif idata.state != idata.states.OK and not ( idata.state == idata.states.SETTING_METADATA and job.tool_id is not None and job.tool_id == self.app.datatypes_registry.set_external_metadata_tool.id ):
+                # need to requeue
+                return JOB_WAIT
+
+        # All inputs ready to go.
+        return None
 
     def __clear_job_count( self ):
         self.user_job_count = None
