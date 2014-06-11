@@ -50,7 +50,7 @@ return Backbone.View.extend({
             // show info
             $info.show();
             $info.find('#text').html(self.chart.get('state_info'));
-
+            
             // check status
             var state = self.chart.get('state');
             switch (state) {
@@ -274,7 +274,7 @@ return Backbone.View.extend({
     _template: function() {
         return  '<div class="charts-viewport">' +
                     '<div id="info" class="info">' +
-                        '<span id="icon" class="icon" />' +
+                        '<span id="icon" class="icon"/>' +
                         '<span id="text" class="text" />' +
                     '</div>' +
                 '</div>';

@@ -4,6 +4,9 @@ define(['utils/utils'], function(Utils) {
 // render
 function panelHelper (options)
 {
+    // link this
+    var self = this;
+    
     // require parameters
     var process_id          = options.process_id;
     var chart               = options.chart;
@@ -15,9 +18,8 @@ function panelHelper (options)
     // get request size from chart
     request_dictionary.query_limit = chart.definition.query_limit;
     
-    // request data
-    var self = this;
-    app.datasets.request(request_dictionary, function() {
+    // define success function
+    request_dictionary.success = function() {
         try {
             // check if this chart has multiple panels
             if (!chart.definition.use_panels && chart.settings.get('use_panels') !== 'true') {
@@ -52,7 +54,15 @@ function panelHelper (options)
             // unregister process
             chart.deferred.done(process_id);
         }
-    });
+    };
+    
+    // add progress
+    request_dictionary.progress = function(percentage) {
+        chart.state('wait', 'Loading data...' + percentage + '%');
+    };
+    
+    // request data
+    app.datasets.request(request_dictionary);
 };
 
 // get domain boundaries value

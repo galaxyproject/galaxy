@@ -21,18 +21,23 @@ return Backbone.Collection.extend(
     },
     
     // request handler
-    request: function(request_dictionary, success, error) {
+    request: function(request_dictionary) {
         if (request_dictionary.groups) {
-            this._get_blocks(request_dictionary, success, error);
+            this._get_blocks(request_dictionary);
         } else {
-            this._get_dataset(request_dictionary.id, success, error)
+            this._get_dataset(request_dictionary.id, request_dictionary.success, request_dictionary.error)
         }
     },
     
     // multiple request handler
-    _get_blocks: function(request_dictionary, success, error) {
+    _get_blocks: function(request_dictionary) {
+        // get callbacks
+        var success     = request_dictionary.success;
+        var progress    = request_dictionary.progress;
+        
         // query block size
-        var query_size = this.app.config.get('query_limit');
+        var query_size    = this.app.config.get('query_limit');
+        var query_timeout = this.app.config.get('query_timeout');
         
         // set range
         var query_start = request_dictionary.start || 0;
@@ -51,9 +56,12 @@ return Backbone.Collection.extend(
         // get query dictionary template
         var query_dictionary_template = $.extend(true, {}, request_dictionary);
         
+        // reset query counter
+        var query_counter = 0;
+        
         // fetch blocks
         var self = this;
-        function fetch_blocks (query, success, error) {
+        function fetch_blocks (query) {
             self._get(query, function() {
                 // copy values from query into request_dictionary
                 var done = false;
@@ -78,10 +86,16 @@ return Backbone.Collection.extend(
                 }
                 
                 // check if for remaining queries
-                if (--query_number > 0 && !done) {
+                if (++query_counter < query_number && !done) {
+                    // report progress
+                    if (progress) {
+                        progress(parseInt((query_counter / query_number) * 100));
+                    }
+                    
+                    // next query
                     var start = query.start + query_size;
                     query = $.extend(true, query_dictionary_template, {start: start});
-                    fetch_blocks(query, success, error);
+                    fetch_blocks(query);
                 } else {
                     success();
                 }
@@ -94,7 +108,7 @@ return Backbone.Collection.extend(
         
         // get dataset meta data
         this._get_dataset(request_dictionary.id, function() {
-            fetch_blocks(query, success, error);
+            fetch_blocks(query);
         });
     },
     
@@ -197,12 +211,12 @@ return Backbone.Collection.extend(
     
     // convert
     _fill_from_cache: function(request_dictionary) {
-        // log
-        console.debug('Datasets::_fill_from_cache() - Filling request from cache.');
-    
         // identify start of request
         var start = request_dictionary.start;
         
+        // log
+        console.debug('Datasets::_fill_from_cache() - Filling request from cache at ' + start + '.');
+    
         // identify end of request
         var limit = 0;
         for (var i in request_dictionary.groups) {
