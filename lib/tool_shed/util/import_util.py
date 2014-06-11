@@ -33,7 +33,7 @@ def check_status_and_reset_downloadable( trans, import_results_tups ):
             if repository is not None:
                 # Do not allow the repository to be automatically installed if population resulted in errors.
                 tip_changeset_revision = repository.tip( trans.app )
-                repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans.app,
+                repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans,
                                                                                          trans.security.encode_id( repository.id ),
                                                                                          tip_changeset_revision )
                 if repository_metadata:
