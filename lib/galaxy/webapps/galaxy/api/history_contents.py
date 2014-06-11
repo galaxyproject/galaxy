@@ -143,7 +143,7 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             'purged': hda.purged,
             'hid'   : hda.hid,
             'history_content_type' : hda.history_content_type,
-            'url'   : url_for( 'history_content', history_id=encoded_history_id, id=encoded_id, type="dataset" ),
+            'url'   : url_for( 'history_content', history_id=encoded_history_id, id=encoded_id ),
         }
 
     def __collection_dict( self, trans, dataset_collection_instance, view="collection" ):
