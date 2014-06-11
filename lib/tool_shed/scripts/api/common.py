@@ -13,22 +13,36 @@ from tool_shed.util import hg_util
 
 
 class HTTPRedirectWithDataHandler( urllib2.HTTPRedirectHandler ):
+    
+    def __init__( self, method ):
+        '''
+        Upon first inspection, it would seem that this shouldn't be necessary, but for some reason
+        not having a constructor explicitly set the request method breaks PUT requests.
+        '''
+        self.valid_methods = [ 'GET', 'HEAD', 'POST', 'PUT', 'DELETE' ]
+        self.redirect_codes = [ '301', '302', '303', '307' ]
+        self.method = method
 
-    def redirect_request( self, request, fp, code, msg, headers, newurl ):
+    def redirect_request( self, request, fp, code, msg, headers, new_url ):
         request_method = request.get_method()
-        if ( code in ( 301, 302, 303, 307 ) and request_method in ( "GET", "HEAD", "POST", "PUT", "DELETE" ) ):
-            newurl = newurl.replace( ' ', '%20' )
-            return urllib2.Request( newurl,
-                                    data=request.data,
-                                    headers=request.headers,
-                                    origin_req_host=request.get_origin_req_host(),
-                                    unverifiable=True )
+        if str( code ) in self.redirect_codes and request_method in self.valid_methods:
+            new_url = new_url.replace( ' ', '%20' )
+            request = urllib2.Request( new_url,
+                                       data=request.data,
+                                       headers=request.headers,
+                                       origin_req_host=request.get_origin_req_host(),
+                                       unverifiable=True )
+            if self.method in self.valid_methods:
+                if request.get_method() != self.method:
+                    request.get_method = lambda: self.method
+            return request
         else:
-            urllib2.HTTPRedirectHandler.redirect_request( request, fp, code, msg, headers, newurl )
+            urllib2.HTTPRedirectHandler.redirect_request( request, fp, code, msg, headers, new_url )
 
 def build_request_with_data( url, data, api_key, method ):
     """Build a request with the received method."""
-    opener = urllib2.build_opener( HTTPRedirectWithDataHandler )
+    http_redirect_with_data_handler = HTTPRedirectWithDataHandler( method=method )
+    opener = urllib2.build_opener( http_redirect_with_data_handler )
     urllib2.install_opener( opener )
     url = make_url( url, api_key=api_key, args=None )
     request = urllib2.Request( url, headers={ 'Content-Type': 'application/json' }, data=json.dumps( data ) )
