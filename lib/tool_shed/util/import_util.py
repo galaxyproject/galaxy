@@ -24,26 +24,27 @@ def check_status_and_reset_downloadable( trans, import_results_tups ):
         name, owner = name_owner
         if not ok:
             repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
-            # Do not allow the repository to be automatically installed if population resulted in errors.
-            tip_changeset_revision = repository.tip( trans.app )
-            repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans.app,
-                                                                                     trans.security.encode_id( repository.id ),
-                                                                                     tip_changeset_revision )
-            if repository_metadata:
-                if repository_metadata.downloadable:
-                    repository_metadata.downloadable = False
-                    trans.sa_session.add( repository_metadata )
-                    if not flush:
-                        flush = True
-                # Do not allow dependent repository revisions to be automatically installed if population
-                # resulted in errors.
-                dependent_downloadable_revisions = suc.get_dependent_downloadable_revisions( trans, repository_metadata )
-                for dependent_downloadable_revision in dependent_downloadable_revisions:
-                    if dependent_downloadable_revision.downloadable:
-                        dependent_downloadable_revision.downloadable = False
-                        trans.sa_session.add( dependent_downloadable_revision )
+            if repository is not None:
+                # Do not allow the repository to be automatically installed if population resulted in errors.
+                tip_changeset_revision = repository.tip( trans.app )
+                repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans.app,
+                                                                                         trans.security.encode_id( repository.id ),
+                                                                                         tip_changeset_revision )
+                if repository_metadata:
+                    if repository_metadata.downloadable:
+                        repository_metadata.downloadable = False
+                        trans.sa_session.add( repository_metadata )
                         if not flush:
                             flush = True
+                    # Do not allow dependent repository revisions to be automatically installed if population
+                    # resulted in errors.
+                    dependent_downloadable_revisions = suc.get_dependent_downloadable_revisions( trans, repository_metadata )
+                    for dependent_downloadable_revision in dependent_downloadable_revisions:
+                        if dependent_downloadable_revision.downloadable:
+                            dependent_downloadable_revision.downloadable = False
+                            trans.sa_session.add( dependent_downloadable_revision )
+                            if not flush:
+                                flush = True
     if flush:
         trans.sa_session.flush()
 
