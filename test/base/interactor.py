@@ -386,8 +386,7 @@ class GalaxyInteractorTwill( object ):
         self.twill_test_case.verify_dataset_correctness( outfile, hid=hid, attributes=attributes, shed_tool_id=shed_tool_id, maxseconds=maxseconds )
 
     def get_job_stream( self, history_id, output_data, stream ):
-        encoded_id = self.twill_test_case.security.encode_id( output_data.get( 'id' ) )
-        return self.twill_test_case._get_job_stream_output( encoded_id, stream=stream, format=False )
+        return self.twill_test_case._get_job_stream_output( output_data.get( 'id' ), stream=stream, format=False )
 
     def stage_data_async( self, test_data, history, shed_tool_id, async=True ):
             name = test_data.get( 'name', None )
