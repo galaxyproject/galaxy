@@ -72,7 +72,8 @@ class CloudController(BaseUIController):
         cml = cloudman.launch.CloudManLauncher(key_id, secret)
         result = cml.launch(cluster_name, ami, instance_type, password,
                             cfg.kernel_id, cfg.ramdisk_id, cfg.key_name,
-                            cfg.security_groups, cfg.placement)
+                            cfg.security_groups, cfg.placement,
+                            bucket_default=bucket_default)
         # result is a dict with sg_names, kp_name, kp_material, rs, and instance_id
         if not result['rs']:
             trans.response.status = 400
