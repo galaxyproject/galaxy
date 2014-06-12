@@ -177,7 +177,16 @@ class BaseJobRunner( object ):
         raise NotImplementedError()
 
     def build_command_line( self, job_wrapper, include_metadata=False, include_work_dir_outputs=True ):
-        return build_command( self, job_wrapper, include_metadata=include_metadata, include_work_dir_outputs=include_work_dir_outputs )
+        # TODO: Eliminate extra kwds no longer used (since LWR skips
+        # abstraction and calls build_command directly).
+        container = self._find_container( job_wrapper )
+        return build_command(
+            self,
+            job_wrapper,
+            include_metadata=include_metadata,
+            include_work_dir_outputs=include_work_dir_outputs,
+            container=container
+        )
 
     def get_work_dir_outputs( self, job_wrapper, job_working_directory=None ):
         """
@@ -275,6 +284,31 @@ class BaseJobRunner( object ):
     def _complete_terminal_job( self, ajs, **kwargs ):
         if ajs.job_wrapper.get_state() != model.Job.states.DELETED:
             self.work_queue.put( ( self.finish_job, ajs ) )
+
+    def _find_container(
+        self,
+        job_wrapper,
+        compute_working_directory=None,
+        compute_tool_directory=None,
+        compute_job_directory=None
+    ):
+        if not compute_working_directory:
+            compute_working_directory = job_wrapper.working_directory
+
+        if not compute_tool_directory:
+            compute_tool_directory = job_wrapper.tool.tool_dir
+
+        tool = job_wrapper.tool
+        from galaxy.tools.deps import containers
+        tool_info = containers.ToolInfo(tool.containers, tool.requirements)
+        job_info = containers.JobInfo(compute_working_directory, compute_tool_directory, compute_job_directory)
+
+        destination_info = job_wrapper.job_destination.params
+        return self.app.container_finder.find_container(
+            tool_info,
+            destination_info,
+            job_info
+        )
 
 
 class JobState( object ):

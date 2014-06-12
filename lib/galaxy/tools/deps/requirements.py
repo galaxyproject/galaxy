@@ -26,6 +26,25 @@ class ToolRequirement( object ):
         return ToolRequirement( name=name, type=type, version=version )
 
 
+DEFAULT_CONTAINER_TYPE = "docker"
+
+
+class ContainerDescription( object ):
+
+    def __init__( self, identifier=None, type="docker" ):
+        self.identifier = identifier
+        self.type = type
+
+    def to_dict( self ):
+        return dict(identifier=self.identifier, type=self.type)
+
+    @staticmethod
+    def from_dict( dict ):
+        identifier = dict["identifier"]
+        type = dict.get("type", DEFAULT_CONTAINER_TYPE)
+        return ContainerDescription( identifier=identifier, type=type )
+
+
 def parse_requirements_from_xml( xml_root ):
     """
 
@@ -63,4 +82,15 @@ def parse_requirements_from_xml( xml_root ):
         requirement = ToolRequirement( name=name, type=type, version=version )
         requirements.append( requirement )
 
-    return requirements
+    container_elems = []
+    if requirements_elem is not None:
+        container_elems = requirements_elem.findall( 'container' )
+
+    containers = []
+    for container_elem in container_elems:
+        identifier = xml_text( container_elem )
+        type = container_elem.get( "type", DEFAULT_CONTAINER_TYPE )
+        container = ContainerDescription( identifier=identifier, type=type )
+        containers.append( container )
+
+    return requirements, containers

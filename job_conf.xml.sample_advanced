@@ -97,6 +97,90 @@
                elements. This empty block will simply disable job metrics for the
                corresponding destination. -->
         </destination>
+        <destination id="docker_local" runner="local">
+          <param id="docker_enabled">true</param>
+          <!-- docker_volumes can be used to configure volumes to expose to docker,
+               For added isolation append :ro to the path to mount it read only.
+               Galaxy will attempt to infer a reasonable set of defaults which
+               volumes should be exposed how based on Galaxy's settings and the
+               destination - but be sure to add any library paths or data incides
+               that may be needed read-only.
+          -->
+          <!-- 
+          <param id="docker_volumes">$defaults,/mnt/galaxyData/libraries:ro,/mnt/galaxyData/indices:ro</param>
+          -->
+          <!-- For a stock Galaxy instance and traditional job runner $defaults will
+               expand out as:
+               
+               $galaxy_root:ro,$tool_directory:ro,$working_directory:rw,$default_file_path:rw
+
+               This assumes most of what is needed is available under Galaxy's root directory,
+               the tool directory, and the Galaxy's file_path (if using object store creatively
+               you will definitely need to expand defaults).
+
+               This configuration allows any docker instance to write to any Galaxy
+               file - for greater isolation set outputs_to_working_directory in
+               universe_wsgi.ini. This will cause $defaults to allow writing to much
+               less. It will then expand as follows:
+
+               $galaxy_root:ro,$tool_directory:ro,$working_directory:rw,$default_file_path:ro
+
+               If using the LWR, defaults will be even further restricted because the 
+               LWR will (by default) stage all needed inputs into the job's job_directory
+               (so there is not need to allow the docker container to read all the
+               files - let alone write over them). Defaults in this case becomes:
+
+               $job_directory:ro,$tool_directory:ro,$job_directory/outputs:rw,$working_directory:rw
+
+               Python string.Template is used to expand volumes and values $defaults,
+               $galaxy_root, $default_file_path, $tool_directory, $working_directory,
+               are available to all jobs and $job_directory is also available for
+               LWR jobs.
+          -->
+          <!-- Control memory allocatable by docker container with following option:
+          -->
+          <!-- <param id="docker_memory">24G</param> -->
+          <!-- By default Docker will need to runnable by Galaxy using 
+               password-less sudo - this can be configured by adding the
+               following line to the sudoers file of all compute nodes
+               with docker enabled:
+               
+               galaxy  ALL = (root) NOPASSWD: SETENV: /usr/bin/docker
+
+               The follow option is set to false to disable sudo (docker 
+               must likewise be configured to allow this).               
+          -->
+          <!-- <param id="docker_sudo">false</param> -->
+          <!-- Following option can be used to tweak sudo command used by
+               default. -->
+          <!-- <param id="docker_sudo_cmd">/usr/bin/sudo --extra_param</param> -->
+          <!-- By default, docker container will not have any networking
+               enabled. host networking can be bridged by uncommenting next option
+               http://docs.docker.io/reference/run/#network-settings
+          -->
+          <!-- <param id="docker_net">bridge</param> -->
+          <!-- Following command can be used to tweak docker command. -->
+          <!-- <param id="docker_cmd">/usr/local/custom_docker/docker</param> -->
+          <!-- Following can be used to connect to docke server in different
+               ways (translated as -H argument to docker client).
+          <!-- <param id="docker_host">unix:///var/run/docker.sock</param> -->
+          <!-- <param id="docker_host">:5555</param> -->
+          <!-- <param id="docker_host">:5555</param> -->
+          <!-- <param id="docker_host">tcp://127.0.0.1:4243</param> -->
+
+          <!-- If deployer wants to use docker for isolation, but does not
+               trust tool's specified container - a destination wide override
+               can be set. This will cause all jobs on this destination to use
+               that docker image. -->
+          <!-- <param id="docker_container_id_override">busybox:ubuntu-14.04</param> -->
+
+          <!-- Likewise, if deployer wants to use docker for isolation and
+               does trust tool's specified container - but also wants tool's not
+               configured to run in a container the following option can provide
+               a fallback. -->
+          <!-- <param id="dockers_default_container_id">busybox:ubuntu-14.04</param> -->
+
+        </destination>
         <destination id="pbs" runner="pbs" tags="mycluster"/>
         <destination id="pbs_longjobs" runner="pbs" tags="mycluster,longjobs">
             <!-- Define parameters that are native to the job runner plugin. -->

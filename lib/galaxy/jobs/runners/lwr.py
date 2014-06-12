@@ -233,9 +233,21 @@ class LwrJobRunner( AsynchronousJobRunner ):
                 metadata_kwds=metadata_kwds,
                 dependency_resolution=dependency_resolution,
             )
+            remote_working_directory = remote_job_config['working_directory']
+            # TODO: Following defs work for LWR, always worked for LWR but should be
+            # calculated at some other level.
+            remote_job_directory = os.path.abspath(os.path.join(remote_working_directory, os.path.pardir))
+            remote_tool_directory = os.path.abspath(os.path.join(remote_job_directory, "tool_files"))
+            container = self._find_container(
+                job_wrapper,
+                compute_working_directory=remote_working_directory,
+                compute_tool_directory=remote_tool_directory,
+                compute_job_directory=remote_job_directory,
+            )
             command_line = build_command(
                 self,
                 job_wrapper=job_wrapper,
+                container=container,
                 include_metadata=remote_metadata,
                 include_work_dir_outputs=False,
                 remote_command_params=remote_command_params,

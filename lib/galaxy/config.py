@@ -582,6 +582,16 @@ class ConfiguresGalaxyMixin:
         import galaxy.tools.search
         self.toolbox_search = galaxy.tools.search.ToolBoxSearch( self.toolbox )
 
+        from galaxy.tools.deps import containers
+        galaxy_root_dir = os.path.abspath(self.config.root)
+        file_path = os.path.abspath(getattr(self.config, "file_path"))
+        app_info = containers.AppInfo(
+            galaxy_root_dir,
+            default_file_path=file_path,
+            outputs_to_working_directory=self.config.outputs_to_working_directory
+        )
+        self.container_finder = galaxy.tools.deps.containers.ContainerFinder(app_info)
+
     def _configure_tool_data_tables( self, from_shed_config ):
         from galaxy.tools.data import ToolDataTableManager
 
